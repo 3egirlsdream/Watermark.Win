@@ -35,13 +35,20 @@ namespace JointWatermark
         public VM vm;
         public MainWindow()
         {
-            InitializeComponent();
-            vm = new VM();
-            this.DataContext = vm;
-            binpath = Environment.CurrentDirectory; ;
-            path = binpath.Substring(0, binpath.IndexOf("bin"));
-            logo = path + "\\sony.png";
-            xy.Text = "44°29′12\"E 33°23′46\"W";
+            try
+            {
+                InitializeComponent();
+                vm = new VM();
+                this.DataContext = vm;
+                binpath = AppDomain.CurrentDomain.BaseDirectory;
+                path = binpath;//.Substring(0, binpath.IndexOf("bin"));
+                logo = path + "\\sony.png";
+                xy.Text = "44°29′12\"E 33°23′46\"W";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void SelectPictureClick(object sender, RoutedEventArgs e)
