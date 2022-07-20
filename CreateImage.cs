@@ -119,7 +119,7 @@ namespace JointWatermark
 
                 dFile = $@"{MainWindow.binpath}\\{dFile}";
                 //保存图片
-                _bitmap.Save(dFile);
+                _bitmap.Save(dFile, System.Drawing.Imaging.ImageFormat.Jpeg);
                 g.Dispose();
                 return;
             });
