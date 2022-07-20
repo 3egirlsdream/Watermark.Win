@@ -15,53 +15,93 @@
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" MinHeight="177"/>
-                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="140"/>
             </Grid.RowDefinitions>
-            <materialDesign:Card
+            <materialDesign:Card MouseLeftButtonDown="SelectPictureClick"
                 Grid.Row="0"
                 Margin="12"
                 Width="auto"
                 Height="auto"
                 materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                <Image x:Name="sourceImg" Source="./yaofan.jpg" />
+                <Grid>
+                    <materialDesign:PackIcon x:Name="plus1" Kind="Plus" Height="auto" Width="auto" HorizontalAlignment="Center" Margin="30"/>
+                    <Image x:Name="sourceImg"/>
+                </Grid>
+                
             </materialDesign:Card>
-            <Button Grid.Row="1" Width="120" Height="30" Content="选择本地图片" Click="SelectPictureClick"/>
-            <StackPanel Orientation="Horizontal" Grid.Row="2">
-                <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="sony" Cursor="Hand"
+            <!--<Button Grid.Row="1" Width="120" Height="30" Content="选择本地图片" Click="SelectPictureClick"/>-->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="sony" Cursor="Hand"
                 Margin="12 0"
                 Width="60"
                 Height="60"
                 materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                    <Image Source="./sony.png" Stretch="Uniform"/>
-                </materialDesign:Card>
-                <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="leica" Cursor="Hand"
+                        <Image Source="./sony.png" Stretch="Uniform"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="leica" Cursor="Hand"
+                Margin="14 0"
+                Width="60"
+                Height="60"
+                materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                        <Image Source="leica.png" Height="40" Width="40"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="canon" Cursor="Hand"
+                Margin="14 0"
+                Width="60"
+                Height="60"
+                materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                        <Image Source="canon.png" Height="40" Width="40"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="fujifilm" Cursor="Hand"
+                Margin="14 0"
+                Width="60"
+                Height="60"
+                materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                        <Image Source="./fujifilm.png" Stretch="Uniform"/>
+                    </materialDesign:Card>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Grid.Row="1">
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="xbox" Cursor="Hand"
                 Margin="12 0"
                 Width="60"
                 Height="60"
                 materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                    <Image Source="leica.png" Height="40" Width="40"/>
-                </materialDesign:Card>
-                <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="canon" Cursor="Hand"
-                Margin="12 0"
+                        <Image Source="./xbox.png" Stretch="Fill" Margin="10"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="huawei" Cursor="Hand"
+                Margin="14 0"
                 Width="60"
                 Height="60"
                 materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                    <Image Source="canon.png" Height="40" Width="40"/>
-                </materialDesign:Card>
-                <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown_1" Cursor="Hand"
-                 Margin="12 0"
+                        <Image Source="huawei.png" Height="40" Width="40"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="github" Cursor="Hand"
+                Margin="14 0"
                 Width="60"
                 Height="60"
                 materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                    <Grid>
-                        <materialDesign:PackIcon x:Name="plus" Kind="Plus" Height="40" Width="40" Margin="10"/>
-                        <Image x:Name="selfmade" Visibility="Collapsed" Source="canon.png" Height="40" Width="40"/>
-                    </Grid>
-                </materialDesign:Card>
-            </StackPanel>
-            <StackPanel Grid.Row="3" Margin="5">
+                        <Image Source="github.png" Height="40" Width="40"/>
+                    </materialDesign:Card>
+                    <materialDesign:Card MouseLeftButtonDown="Card_MouseLeftButtonDown_1" Cursor="Hand"
+                 Margin="14 0"
+                Width="60"
+                Height="60"
+                materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                        <Grid>
+                            <materialDesign:PackIcon x:Name="plus" Kind="Plus" Height="40" Width="40" Margin="10"/>
+                            <Image x:Name="selfmade" Visibility="Collapsed" Source="canon.png" Height="40" Width="40"/>
+                        </Grid>
+                    </materialDesign:Card>
+                </StackPanel>
+            </Grid>
+            
+            <StackPanel Grid.Row="2" Margin="5">
                 <TextBox materialDesign:HintAssist.Hint="设备名" Text="A7C" Cursor="Arrow" x:Name="deviceName" Margin="10 5" TextChanged="deviceName_TextChanged"/>
                 <TextBox x:Name="xy" materialDesign:HintAssist.Hint="坐标"  Margin="10 5" TextChanged="deviceName_TextChanged"/>
                 <TextBox x:Name="mount" materialDesign:HintAssist.Hint="镜头参数" Text="f/1.8 1/40 ISO 400"  Margin="10 5" TextChanged="deviceName_TextChanged"/>

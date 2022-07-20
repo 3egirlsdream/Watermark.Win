@@ -33,6 +33,7 @@ namespace JointWatermark
         public static string sourceImgUrl;
         public static string lastUrl;
         public VM vm;
+        private DateTime LastDate = DateTime.Now;
         public MainWindow()
         {
             try
@@ -76,7 +77,7 @@ namespace JointWatermark
             {
                 logo = path + "\\" + tag + ".png";
                 if(!string.IsNullOrEmpty(sourceImgUrl))
-                    SetPreviewImg();
+                    SetPreviewImg(false);
             }
         }
 
@@ -144,10 +145,15 @@ namespace JointWatermark
             }
         }
 
-        private async void SetPreviewImg()
+        private async void SetPreviewImg(bool f = true)
         {
             try
             {
+                if (f)
+                {
+                    await Task.Delay(5000);
+                }
+                if ((DateTime.Now - LastDate).TotalSeconds < 5) return;
                 Bitmap sourceImage = new Bitmap(sourceImgUrl);
                 var img = Image.FromFile(sourceImgUrl);
                 DateTime datetime;
@@ -209,8 +215,28 @@ namespace JointWatermark
 
         private void deviceName_TextChanged(object sender, TextChangedEventArgs e)
         {
+            LastDate = DateTime.Now;
             if(!string.IsNullOrEmpty(sourceImgUrl))
                 SetPreviewImg();
+        }
+
+        private void SelectPictureClick(object sender, MouseButtonEventArgs e)
+        {
+            // 实例化一个文件选择对象
+            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.DefaultExt = ".png";  // 设置默认类型
+                                         // 设置可选格式
+            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png
+      |JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                BitmapImage bitmap = new BitmapImage(new Uri(dialog.FileName, UriKind.Absolute));
+                sourceImg.Source = bitmap;// ; // 获取选择的文件名
+                sourceImgUrl = dialog.FileName;
+                plus1.Visibility = Visibility.Collapsed;
+            }
         }
     }
 
