@@ -105,7 +105,8 @@ namespace JointWatermark
                     datetime = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss");
                 }
 
-                InitExifInfo(url.Url);
+                if(vm.Images.Count > 1)
+                    InitExifInfo(url.Url);
 
                 var Width = sourceImage.Width;
                 var Height = sourceImage.Height;
@@ -351,7 +352,15 @@ namespace JointWatermark
                 }
 
                 mount.Text = $"F/{rs["f"]} {rs["exposure"]} ISO{rs["ISO"]} {rs["mm"]}";
-                deviceName.Text = $"{rs["producer"]} {rs["model"]}";
+                if (showCor.IsChecked == true)
+                {
+                    deviceName.Text = $"{rs["producer"]} {rs["model"]}";
+                }
+                else
+                {
+                    deviceName.Text = $"{rs["model"]}";
+                }
+
                 if (rs.TryGetValue("mount", out string val) && !string.IsNullOrEmpty(val))
                 {
                     xy.Text = val;
