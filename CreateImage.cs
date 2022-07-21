@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,9 +11,9 @@ namespace JointWatermark
 {
     internal class CreateImage
     {
-        public static Task CreatePic(int width, int height)
+        public static Task<string> CreatePic(int width, int height)
         {
-           return  Task.Run(() =>
+            return  Task.Run(() =>
             {
                 var hei = height * 0.13;
                 Bitmap bmp = new Bitmap(width, (int)hei);                      //改图只显示最近输入的700个点的数据曲线。
@@ -25,14 +26,63 @@ namespace JointWatermark
                         Color c = Color.FromArgb(255, 255, 255);
                         bmp.SetPixel(i, j, c);
                     }
-                bmp.Save("watermark.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);//指定图片格式   
+
+                var sPath = MainWindow.binpath + "temp";
+                if (!Directory.Exists(sPath))
+                {
+                    Directory.CreateDirectory(sPath);
+                }
+
+                var rtlPath = sPath + $"\\{Guid.NewGuid().ToString("N")}.jpg";
+
+                bmp.Save(rtlPath, System.Drawing.Imaging.ImageFormat.Jpeg);//指定图片格式   
                 bmp.Dispose();
+                return rtlPath;
             });
             
         }
 
 
-        public static Task AddWaterMarkImg(string sFile, string dFile, string waterFile, DateTime datetime, string deviceName, Bitmap map1, Tuple<int, int> tuple, bool preview, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
+        public static Task AddWaterMarkImg(string sFile, string dFile, string waterFile, string datetime, string deviceName, Bitmap map1, Tuple<int, int> tuple, bool preview, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
+        {
+
+            return CreateWatermark(sFile, dFile, waterFile, datetime, deviceName, map1, tuple, preview, mount, xy, 1, 0.8, -1, -1).ContinueWith(c =>
+            {
+                Bitmap sourceImage = new Bitmap(sFile);
+                Bitmap waterImage = new Bitmap(c.Result);
+
+                double xs = (double)(sourceImage.Height / 2) / waterImage.Height;
+                float waterWidth = (float)(waterImage.Width * xs);
+
+
+               //拼接图片
+                var w = tuple.Item1;
+                var h = tuple.Item2 + sourceImage.Height;
+                RectangleF area = new RectangleF(0, 0, waterWidth, h);
+                var _bitmap = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+                _bitmap.SetResolution(96.0F, 96.0F); // 重点
+                                                     //_bitmap.SetResolution(300, 300);
+                Graphics _g = Graphics.FromImage(_bitmap);
+                _g.FillRectangle(Brushes.White, new Rectangle(0, 0, w, h));
+                _g.DrawImage(map1, 0, 0, w, map1.Height);
+                map1.SetResolution(72, 72);
+                _g.DrawImage(waterImage, 0, map1.Height, w, waterImage.Height);
+
+                var sPath = MainWindow.binpath + "output";
+                if (!Directory.Exists(sPath))
+                {
+                    Directory.CreateDirectory(sPath);
+                }
+
+                dFile = $@"{sPath}\\{dFile}";
+               //保存图片
+                _bitmap.Save(dFile, System.Drawing.Imaging.ImageFormat.Jpeg);
+            });
+
+        }
+
+
+        public static Task<string> CreateWatermark(string sFile, string dFile, string waterFile, string datetime, string deviceName, Bitmap map1, Tuple<int, int> tuple, bool preview, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
         {
             return Task.Run(() =>
             {
@@ -49,11 +99,12 @@ namespace JointWatermark
                 float rectWidth = waterWidth;
                 float rectHeight = waterHeight;
 
-                if (locationX == -1) locationX = (int)(((double)2 / 3) * sourceImage.Width - rectWidth);
+                if (locationX == -1) locationX = (int)(((double)2 / 3) * sourceImage.Width - rectWidth) + 20;
                 if (locationY == -1) locationY = (int)(0.5 * sourceImage.Height - 0.5 * rectHeight);
-                //声明矩形域
-                RectangleF textArea = new RectangleF(locationX, locationY, rectWidth, rectHeight);
+                //声明矩形域 画logo
+                RectangleF textArea = new RectangleF(locationX - 30, locationY + 5, rectWidth, rectHeight);
                 Bitmap w_bitmap = ChangeOpacity(waterImage, scale, opacity);
+                g.DrawImage(w_bitmap, textArea);
 
                 //字体比例
                 double fontxs = ((double)sourceImage.Height / 156);
@@ -80,7 +131,7 @@ namespace JointWatermark
                 c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);
                 point = new Point(100, (int)(0.6 * sourceImage.Height));
-                g.DrawString(datetime.ToString("yyyy.MM.dd HH:mm:ss"), font, brush, point);
+                g.DrawString(datetime, font, brush, point);
 
                 //画设备
                 font = new Font("微软雅黑", (int)(28 * fontxs), FontStyle.Bold);
@@ -88,42 +139,21 @@ namespace JointWatermark
                 point = new Point(100, (int)(0.25 * sourceImage.Height));
                 g.DrawString(deviceName, font, brush, point);
 
-                g.DrawImage(w_bitmap, textArea);
-                bitmap.Save("temp_" + dFile);
-
-                if (preview)
+                var sPath = MainWindow.binpath + "temp";
+                if (!Directory.Exists(sPath))
                 {
-                    waterImage.Dispose();
-                    w_bitmap.Dispose();
-                    bitmap.Dispose();
-                    g.Dispose();
-                    sourceImage.Dispose();
-                    return;
+                    Directory.CreateDirectory(sPath);
                 }
+                var resultPath = sPath + "\\temp_" + dFile;
+                bitmap.Save(resultPath, ImageFormat.Jpeg);
 
-                var map2 = new Bitmap("temp_" + dFile);
-
-                //拼接图片
-                var w = tuple.Item1;
-                var h = tuple.Item2 + sourceImage.Height;
-                RectangleF area = new RectangleF(0, 0, rectWidth, h);
-                var _bitmap = new Bitmap(w, h, PixelFormat.Format24bppRgb);
-                _bitmap.SetResolution(96.0F, 96.0F); // 重点
-                                                     //_bitmap.SetResolution(300, 300);
-                Graphics _g = Graphics.FromImage(_bitmap);
-                _g.FillRectangle(Brushes.White, new Rectangle(0, 0, w, h));
-                _g.DrawImage(map1, 0, 0, w, map1.Height);
-                map1.SetResolution(72, 72);
-                _g.DrawImage(map2, 0, map1.Height, w, map2.Height);
-                map2.SetResolution(72, 72);
-
-                dFile = $@"{MainWindow.binpath}\\{dFile}";
-                //保存图片
-                _bitmap.Save(dFile, System.Drawing.Imaging.ImageFormat.Jpeg);
+                waterImage.Dispose();
+                w_bitmap.Dispose();
+                bitmap.Dispose();
                 g.Dispose();
-                return;
+                sourceImage.Dispose();
+                return resultPath;
             });
-
         }
 
         /// <summary>
