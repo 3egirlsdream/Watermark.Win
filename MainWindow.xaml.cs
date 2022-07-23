@@ -324,7 +324,7 @@ namespace JointWatermark
                 xy.Text = "44°29′12\"E 33°23′46\"W";
 
                 var ex = new ExifInfo2();
-                var rs = ex.GetImageInfo(filePath, Image.FromFile(filePath));
+                var rs = ex.GetImageInfo(Image.FromFile(filePath));
 
                 if (!rs.ContainsKey("f") || !rs.ContainsKey("exposure")|| !rs.ContainsKey("ISO")|| !rs.ContainsKey("mm"))
                 {

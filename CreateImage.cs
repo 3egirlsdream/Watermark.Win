@@ -113,8 +113,8 @@ namespace JointWatermark
                 //绘制右侧镜头参数
                 float fontSize = 25 * fontxs;
                 var font = new Font(Global.FontFamily, (int)fontSize, FontStyle.Bold);
-                var size = GetFontSize(g, mount + '\0', fontSize);
-                var oneSize = GetFontSize(g, "\0", fontSize);
+                var size = GetFontSize(g, mount + 'F', fontSize);
+                var oneSize = GetFontSize(g, "F", fontSize);
                 var padding_right = GetFontSize(g, "23mm", fontSize);
                 var brush = new SolidBrush(Color.Black);
                 Params = new Node(emptyWmMap.Width - (int)size.Width - (int)padding_right.Width, (int)(0.3 * emptyWmMap.Height));
@@ -124,7 +124,7 @@ namespace JointWatermark
                 //绘制右侧坐标（镜头型号）
                 var font20 = (20 * fontxs);
                 XY = new Node(Params.X, (int)(1.04 * size.Height +  Params.Y));
-                var font20Size = GetFontSize(g, "\0", font20);
+                var font20Size = GetFontSize(g, "F", font20);
                 font = new Font(Global.FontFamilyLight, (int)font20, FontStyle.Regular);
                 var c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);

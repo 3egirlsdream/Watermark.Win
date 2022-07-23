@@ -593,7 +593,7 @@ namespace JointWatermark
 
     public class ExifInfo2
     {
-        public Dictionary<string, string> GetImageInfo(string path, Image image)
+        public Dictionary<string, string> GetImageInfo(Image image)
         {
             Dictionary<string, string> list = new Dictionary<string, string>();
 
