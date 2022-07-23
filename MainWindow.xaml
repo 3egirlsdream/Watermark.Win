@@ -43,6 +43,12 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                     <Separator Grid.Row="1" Style="{StaticResource MaterialDesignDarkSeparator}" />
+                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="LightbulbQuestion"  Grid.Row="2"  VerticalAlignment="Center" Margin="2"/>
+                        <Label Content="网页端地址：" VerticalAlignment="Center" />
+                        <TextBox IsReadOnly="True" Text="http://thankful.top:1000/" VerticalAlignment="Center"/>
+                    </StackPanel>
+                   
                     <Button
                         Click="ListBox_SelectionChanged"
                         Grid.Row="2"
@@ -84,7 +90,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBox materialDesign:HintAssist.Hint="设备名" Text="A7C" Cursor="Arrow" x:Name="deviceName" Margin="10 5" TextChanged="deviceName_TextChanged"/>
                     <TextBlock Grid.Column="1" Text="显示品牌名" VerticalAlignment="Center"/>
-                    <ToggleButton x:Name="showCor" Grid.Column="2" Style="{StaticResource MaterialDesignSwitchToggleButton}" VerticalAlignment="Center" DockPanel.Dock="Right" IsChecked="True"/>
+                    <ToggleButton x:Name="showCor" Grid.Column="2" Style="{StaticResource MaterialDesignSwitchToggleButton}" VerticalAlignment="Center" DockPanel.Dock="Right" IsChecked="True" Checked="CheckShowProducer" Unchecked="CheckShowProducer"/>
                 </Grid>
                
                 <TextBox x:Name="xy" materialDesign:HintAssist.Hint="坐标"  Margin="10 5" TextChanged="deviceName_TextChanged"/>

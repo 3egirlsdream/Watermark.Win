@@ -29,11 +29,6 @@ namespace JointWatermark
     /// </summary>
     public partial class MainWindow : Window
     {
-        public static string logo = "";
-        public static string binpath;
-        public static string path;
-        public static string sourceImgUrl;
-        public static string lastUrl;
         public VM vm;
         private DateTime LastDate = DateTime.Now;
         public List<string> MultiImages = new List<string>();
@@ -46,15 +41,16 @@ namespace JointWatermark
                 MultiImages = new List<string>();
                 vm = new VM();
                 this.DataContext = vm;
-                binpath = AppDomain.CurrentDomain.BaseDirectory;
-                path = binpath;//.Substring(0, binpath.IndexOf("bin"));
+                Global.BasePath = AppDomain.CurrentDomain.BaseDirectory;
                 xy.Text = "44°29′12\"E 33°23′46\"W";
                 vm.Images = new ObservableCollection<ImageInstance>();
+                Global.Path_temp = Global.BasePath + $"{Global.SeparatorChar}temp";
+                Global.Path_output = Global.BasePath + $"{Global.SeparatorChar}output";
+                Global.Path_logo = Global.BasePath + $"{Global.SeparatorChar}logo";
 
                 InitLogoes();
 
-                var delPath = binpath + "\\temp";
-                DirectoryInfo directory = new DirectoryInfo(delPath);
+                DirectoryInfo directory = new DirectoryInfo(Global.Path_temp);
                 if(directory.Exists)
                     directory.Delete(true);
             }
@@ -70,8 +66,8 @@ namespace JointWatermark
         {
             if (sender is MaterialDesignThemes.Wpf.Card card && card.Tag is string tag)
             {
-                logo = path + "\\logo\\" + tag + ".png";
-                if(MultiImages.Any() && !string.IsNullOrEmpty(logo))
+                Global.logo = Global.Path_logo + Global.SeparatorChar + tag + ".png";
+                if(MultiImages.Any() && !string.IsNullOrEmpty(Global.logo))
                     SetPreviewImg(false);
             }
         }
@@ -87,7 +83,7 @@ namespace JointWatermark
             }
             if (!vm.Images.Any())
             {
-                vm.Images.Add(new ImageInstance(MultiImages[0], MultiImages[0].Substring(MultiImages[0].LastIndexOf('\\') + 1)));
+                vm.Images.Add(new ImageInstance(MultiImages[0], MultiImages[0].Substring(MultiImages[0].LastIndexOf(Global.SeparatorChar) + 1)));
             }
             foreach (var url in vm.Images)
             {
@@ -115,10 +111,10 @@ namespace JointWatermark
                     var watermakPath = await CreateImage.CreatePic(Width, Height);
                     var c = Tuple.Create(Width, Height);
                     var dFileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}{cc++}.jpg";
-                    await CreateImage.AddWaterMarkImg(watermakPath, dFileName, $@"{logo}", datetime, deviceName.Text, sourceImage, c, false, mount.Text, xy.Text, 1, 1);
-                    var output = binpath + "\\output\\" + dFileName;
+                    await CreateImage.AddWaterMarkImg(watermakPath, dFileName, $@"{Global.logo}", datetime, deviceName.Text, sourceImage, c, false, mount.Text, xy.Text, 1, 1);
+                    var output = Global.Path_output + Global.SeparatorChar + dFileName;
                     
-                    var previewUrl = binpath + "\\temp\\temp_" + dFileName;
+                    var previewUrl = Global.Path_temp + $"{Global.SeparatorChar}temp_" + dFileName;
                     BitmapImage previwMap = new BitmapImage(new Uri(previewUrl, UriKind.Absolute));
                     preveiew.Source = previwMap;
 
@@ -158,31 +154,17 @@ namespace JointWatermark
 
         private void downloadClick(object sender, RoutedEventArgs e)
         {
-            var p = binpath + "\\output";
-            if (Directory.Exists(p))
+            if (Directory.Exists(Global.Path_output))
             {
-                System.Diagnostics.Process.Start(p);
+                System.Diagnostics.Process.Start(Global.Path_output);
             }
-
-            //var dlg = new SaveFileDialog()
-            //{
-            //    Title = "另存为",
-            //    DefaultExt = "jpg",
-            //    Filter = "Jpg files (*.jpg)|*.jpg|All files|*.*",
-            //};
-            //if (dlg.ShowDialog() == true)
-            //{
-
-            //    Bitmap sourceImage = new Bitmap(lastUrl);
-            //    sourceImage.Save(dlg.FileName);
-            //}
         }
 
         private async void SetPreviewImg(bool f = true)
         {
             try
             {
-                var url = MultiImages.Any() ? MultiImages[0] : sourceImgUrl;
+                var url = MultiImages.Any() ? MultiImages[0] : Global.sourceImgUrl;
                 if (string.IsNullOrEmpty(url))
                     return;
 
@@ -190,7 +172,7 @@ namespace JointWatermark
                 {
                     await Task.Delay(5000);
                 }
-                if ((DateTime.Now - LastDate).TotalSeconds < 5) return;
+                if ((DateTime.Now - LastDate).TotalSeconds < 5 && f) return;
                 Bitmap sourceImage = new Bitmap(url);
                 var img = Image.FromFile(url);
                 try
@@ -210,7 +192,7 @@ namespace JointWatermark
                 var watermarkPath = await CreateImage.CreatePic(Width, Height);
                 var c = Tuple.Create(Width, Height);
                 var dFileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.jpg";
-                var previewUrl = await CreateImage.CreateWatermark(watermarkPath, dFileName, $@"{logo}", datetime, deviceName.Text, sourceImage, c, true, mount.Text, xy.Text, 1, 1);
+                var previewUrl = await CreateImage.CreateWatermark(watermarkPath, dFileName, $@"{Global.logo}", datetime, deviceName.Text, sourceImage, c, true, mount.Text, xy.Text, 1, 1);
                 BitmapImage previwMap = new BitmapImage(new Uri(previewUrl, UriKind.Absolute));
                 preveiew.Source = previwMap;
             }
@@ -244,14 +226,14 @@ namespace JointWatermark
                 selfmade.Source = bitmap;// ; // 获取选择的文件名
                 selfmade.Visibility = Visibility.Visible;
                 plus.Visibility = Visibility.Collapsed;
-                logo = dialog.FileName;
+                Global.logo = dialog.FileName;
             }
         }
 
         private void deviceName_TextChanged(object sender, TextChangedEventArgs e)
         {
             LastDate = DateTime.Now;
-            if(MultiImages.Any() && !string.IsNullOrEmpty(logo) && !IsBreak)
+            if(MultiImages.Any() && !string.IsNullOrEmpty(Global.logo) && !IsBreak)
                 SetPreviewImg();
         }
 
@@ -272,7 +254,7 @@ namespace JointWatermark
                 {
                     BitmapImage bitmap = new BitmapImage(new Uri(dialog.FileName, UriKind.Absolute));
                     sourceImg.Source = bitmap;// ; // 获取选择的文件名
-                    sourceImgUrl = dialog.FileName;
+                    Global.sourceImgUrl = dialog.FileName;
                     sourceImg.Visibility = Visibility.Visible;
                     plus1.Visibility = Visibility.Collapsed;
                     listbox.Visibility = Visibility.Collapsed;
@@ -281,7 +263,7 @@ namespace JointWatermark
                 {
                     foreach(var item in dialog.FileNames)
                     {
-                        var i = new ImageInstance(item, item.Substring(item.LastIndexOf('\\') + 1));
+                        var i = new ImageInstance(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
                         vm.Images.Add(i);
                     }
                     sourceImg.Visibility = Visibility.Collapsed;
@@ -298,12 +280,11 @@ namespace JointWatermark
 
         private void InitLogoes()
         {
-            var path = binpath + "\\logo";
-            if (!Directory.Exists(path))
+            if (!Directory.Exists(Global.Path_logo))
             {
-                Directory.CreateDirectory(path);
+                Directory.CreateDirectory(Global.Path_logo);
             }
-            DirectoryInfo directory = new DirectoryInfo(path);
+            DirectoryInfo directory = new DirectoryInfo(Global.Path_logo);
             var files = directory.GetFiles();
             logoes.Children.Clear();
             foreach(var file in files)
@@ -378,6 +359,15 @@ namespace JointWatermark
                 IsBreak = false;
             }
         }
+
+        private void CheckShowProducer(object sender, RoutedEventArgs e)
+        {
+            if (MultiImages.Any() && !string.IsNullOrEmpty(Global.logo))
+            {
+                InitExifInfo(MultiImages[0]);
+                SetPreviewImg(false);
+            }
+        }
     }
 
     public class VM : INotifyPropertyChanged
@@ -404,6 +394,53 @@ namespace JointWatermark
                 NotifyPropertyChanged(nameof(Loading));
             }
         }
+
+        private string mount;
+        public string Mount 
+        {
+            get => mount;
+            set
+            {
+                mount = value;
+                NotifyPropertyChanged(nameof(Mount));
+            }
+        }
+
+        private string xy;
+        public string XY
+        {
+            get => xy;
+            set
+            {
+                xy = value;
+                NotifyPropertyChanged(nameof(XY));
+            }
+        }
+
+        private string date;
+        public string Date
+        {
+            get => date;
+            set
+            {
+                date = value;
+                NotifyPropertyChanged(nameof(Date));
+            }
+        }
+
+        private string deviceName;
+        public string DeviceName
+        {
+            get => deviceName;
+            set
+            {
+                deviceName = value;
+                NotifyPropertyChanged(nameof(Mount));
+            }
+        }
+
+
+
 
         private ObservableCollection<ImageInstance> images;
         public ObservableCollection<ImageInstance> Images
