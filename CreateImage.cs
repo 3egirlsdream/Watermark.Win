@@ -102,8 +102,8 @@ namespace JointWatermark
                 if (fontxs < 1) fontxs = 1;
                 if (tuple.Item1 < tuple.Item2)
                 {
-                    fontxs *= 0.6f;
-                    xs *= 0.6;
+                    fontxs *= 0.8f;
+                    xs *= 0.8;
                 }
 
                 //下面定义一个矩形区域      
