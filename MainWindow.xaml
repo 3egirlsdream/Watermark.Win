@@ -45,8 +45,11 @@
                     <Separator Grid.Row="1" Style="{StaticResource MaterialDesignDarkSeparator}" />
                     <StackPanel Grid.Row="2" Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="LightbulbQuestion"  Grid.Row="2"  VerticalAlignment="Center" Margin="2"/>
-                        <Label Content="网页端地址：" VerticalAlignment="Center" />
-                        <TextBox IsReadOnly="True" Text="http://thankful.top:1000/" VerticalAlignment="Center"/>
+                        <Label Content="网页:" VerticalAlignment="Center" />
+                        <TextBox IsReadOnly="True" Text="http://thankful.top:1000" VerticalAlignment="Center"/>
+
+                        <Label Content="交流群:" VerticalAlignment="Center" />
+                        <TextBox IsReadOnly="True" Text="866034817" VerticalAlignment="Center"/>
                     </StackPanel>
                    
                     <Button
@@ -159,7 +162,7 @@
                     <Image x:Name="preveiew"/>
                 </materialDesign:Card>
             </GroupBox>
-
+            <materialDesign:PackIcon Kind="QuestionMark" Height="20" Width="20" Margin="0" VerticalAlignment="Bottom" HorizontalAlignment="Right" Grid.Row="2"/>
         </Grid>
         <materialDesign:Snackbar Grid.ColumnSpan="3" x:Name="SnackbarThree" Message="出错了，请重试"/>
     </Grid>

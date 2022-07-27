@@ -111,12 +111,10 @@ namespace JointWatermark
                     var watermakPath = await CreateImage.CreatePic(Width, Height);
                     var c = Tuple.Create(Width, Height);
                     var dFileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}{cc++}.jpg";
-                    await CreateImage.AddWaterMarkImg(watermakPath, dFileName, $@"{Global.logo}", datetime, deviceName.Text, sourceImage, c, false, mount.Text, xy.Text, 1, 1);
+                    var watermark = await CreateImage.CreateWatermark(watermakPath, $@"{Global.logo}", datetime, deviceName.Text, c, mount.Text, xy.Text, 1, 1);
+                    await CreateImage.AddWaterMarkImg(watermark, dFileName, sourceImage, c);
                     var output = Global.Path_output + Global.SeparatorChar + dFileName;
-                    
-                    var previewUrl = Global.Path_temp + $"{Global.SeparatorChar}temp_" + dFileName;
-                    BitmapImage previwMap = new BitmapImage(new Uri(previewUrl, UriKind.Absolute));
-                    preveiew.Source = previwMap;
+                    preveiew.Source = watermark;
 
                     var i = new ImageInstance(output, url.Name);
                     vm.OutputImages.Add(i);
@@ -124,6 +122,8 @@ namespace JointWatermark
 
                     listbox2.Visibility = Visibility.Visible;
                     createdImg.Visibility = Visibility.Collapsed;
+                    watermakPath.Dispose();
+                    sourceImage.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -172,7 +172,7 @@ namespace JointWatermark
                 {
                     await Task.Delay(5000);
                 }
-                if ((DateTime.Now - LastDate).TotalSeconds < 5 && f) return;
+                if ((DateTime.Now - LastDate).TotalSeconds < 2 && f) return;
                 Bitmap sourceImage = new Bitmap(url);
                 var img = Image.FromFile(url);
                 try
@@ -189,12 +189,13 @@ namespace JointWatermark
                 var Width = sourceImage.Width;
                 var Height = sourceImage.Height;
 
-                var watermarkPath = await CreateImage.CreatePic(Width, Height);
+                var emptyWatermark = await CreateImage.CreatePic(Width, Height);
                 var c = Tuple.Create(Width, Height);
                 var dFileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.jpg";
-                var previewUrl = await CreateImage.CreateWatermark(watermarkPath, dFileName, $@"{Global.logo}", datetime, deviceName.Text, sourceImage, c, true, mount.Text, xy.Text, 1, 1);
-                BitmapImage previwMap = new BitmapImage(new Uri(previewUrl, UriKind.Absolute));
-                preveiew.Source = previwMap;
+                var previewUrl = await CreateImage.CreateWatermark(emptyWatermark, $@"{Global.logo}", datetime, deviceName.Text, c, mount.Text, xy.Text, 1, 1);
+                preveiew.Source = previewUrl;
+                emptyWatermark.Dispose();
+                sourceImage.Dispose();
             }
             catch (Exception ex)
             {

@@ -6,12 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace JointWatermark
 {
     internal class CreateImage
     {
-        public static Task<string> CreatePic(int width, int height)
+        public static Task<Bitmap> CreatePic(int width, int height)
         {
             return  Task.Run(() =>
             {
@@ -21,46 +22,42 @@ namespace JointWatermark
                     hei = height * 0.13 * 0.5;
                 }
                 Bitmap bmp = new Bitmap(width, (int)hei);                      //改图只显示最近输入的700个点的数据曲线。
-                                                                               //  Graphics graphics = Graphics.FromImage(bmp);
-                                                                               //   SolidBrush brush1 = new SolidBrush(Color.FromArgb(255, 0, 0));
-                                                                               //   graphics.FillRectangle(brush1, 0, 0, 700, 550);//Brushes.Sienna
+                                                                                //   graphics.FillRectangle(brush1, 0, 0, 700, 550);//Brushes.Sienna
                 for (int i = 0; i < bmp.Width; i++)
+                {
                     for (int j = 0; j < bmp.Height; j++)
                     {
                         Color c = Color.FromArgb(255, 255, 255);
                         bmp.SetPixel(i, j, c);
                     }
-
-                if (!Directory.Exists(Global.Path_temp))
-                {
-                    Directory.CreateDirectory(Global.Path_temp);
                 }
-
-                var rtlPath = Global.Path_temp + $"{Global.SeparatorChar}{Guid.NewGuid().ToString("N")}.jpg";
-
-                bmp.Save(rtlPath, System.Drawing.Imaging.ImageFormat.Jpeg);//指定图片格式   
-                bmp.Dispose();
-                return rtlPath;
+                return bmp;
             });
             
         }
 
 
-        public static Task AddWaterMarkImg(string sFile, string dFile, string waterFile, string datetime, string deviceName, Bitmap map1, Tuple<int, int> tuple, bool preview, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
+        public static Task AddWaterMarkImg(BitmapImage sourceImage, string dFile, Bitmap map1, Tuple<int, int> tuple)
         {
 
-            return CreateWatermark(sFile, dFile, waterFile, datetime, deviceName, map1, tuple, preview, mount, xy, 1, 0.8, -1, -1).ContinueWith(c =>
+            return Task.Run(() =>
             {
-                Bitmap sourceImage = new Bitmap(sFile);
-                Bitmap waterImage = new Bitmap(c.Result);
+                Bitmap waterImage;
+                using (MemoryStream outStream = new MemoryStream())
+                {
+                    BitmapEncoder enc = new BmpBitmapEncoder();
+                    enc.Frames.Add(BitmapFrame.Create(sourceImage));
+                    enc.Save(outStream);
+                    waterImage = new Bitmap(outStream);
+                }
 
                 double xs = (double)(sourceImage.Height / 2) / waterImage.Height;
                 float waterWidth = (float)(waterImage.Width * xs);
 
 
-               //拼接图片
+                //拼接图片
                 var w = tuple.Item1;
-                var h = tuple.Item2 + sourceImage.Height;
+                var h = tuple.Item2 + (int)sourceImage.Height;
                 RectangleF area = new RectangleF(0, 0, waterWidth, h);
                 var _bitmap = new Bitmap(w, h, PixelFormat.Format24bppRgb);
                 _bitmap.SetResolution(96.0F, 96.0F); // 重点
@@ -77,20 +74,23 @@ namespace JointWatermark
                 }
 
                 dFile = $@"{Global.Path_output}{Global.SeparatorChar}{dFile}";
-               //保存图片
+                //保存图片
                 _bitmap.Save(dFile, System.Drawing.Imaging.ImageFormat.Jpeg);
+
+                _bitmap.Dispose();
+                waterImage.Dispose();
+                _g.Dispose();
             });
 
         }
 
 
-        public static Task<string> CreateWatermark(string emptyWatermark, string dFile, string logoFile, string datetime, string deviceName, Bitmap map1, Tuple<int, int> tuple, bool preview, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
+        public static Task<BitmapImage> CreateWatermark(Bitmap emptyWmMap, string logoFile, string datetime, string deviceName, Tuple<int, int> tuple, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
         {
             return Task.Run(() =>
             {
                 Node Producer, Date, Params, XY;
 
-                Bitmap emptyWmMap = new Bitmap(emptyWatermark);
                 Bitmap logoMap = new Bitmap(logoFile);
 
                 Bitmap bitmap = new Bitmap(emptyWmMap, emptyWmMap.Width, emptyWmMap.Height);
@@ -149,7 +149,9 @@ namespace JointWatermark
                 var font28 = (28 * fontxs);
                 font = new Font(Global.FontFamily, (int)font28, FontStyle.Bold);
                 brush = new SolidBrush(Color.Black);
-                Producer = new Node((int)(100 * xs), Params.Y);
+                //左边距系数
+                var leftWidth = (double)1 / 25 * bitmap.Width;// 100 * fontxs * 100 / 156;
+                Producer = new Node((int)(leftWidth), Params.Y);
                 point = new Point(Producer.X, Producer.Y);
                 g.DrawString(deviceName, font, brush, point);
 
@@ -157,7 +159,7 @@ namespace JointWatermark
                 font = new Font(Global.FontFamilyLight, (int)font20, FontStyle.Regular);
                 c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);
-                Date = new Node((int)(100 * xs), XY.Y);
+                Date = new Node(Producer.X, XY.Y);
                 point = new Point(Date.X, Date.Y);
                 g.DrawString(datetime, font, brush, point);
 
@@ -166,15 +168,25 @@ namespace JointWatermark
                 {
                     Directory.CreateDirectory(Global.Path_temp);
                 }
-                var resultPath = Global.Path_temp + $"{Global.SeparatorChar}temp_" + dFile;
-                bitmap.Save(resultPath, ImageFormat.Jpeg);
 
-                logoMap.Dispose();
-                w_bitmap.Dispose();
-                bitmap.Dispose();
-                g.Dispose();
-                emptyWmMap.Dispose();
-                return resultPath;
+                BitmapImage bitmapImage = new BitmapImage();
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                {
+                    bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    bitmapImage.BeginInit();
+                    bitmapImage.StreamSource = ms;
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.EndInit();
+                    bitmapImage.Freeze();
+                    logoMap.Dispose();
+                    w_bitmap.Dispose();
+                    bitmap.Dispose();
+                    g.Dispose();
+                    //emptyWmMap.Dispose();
+                }
+                
+                return bitmapImage;
             });
         }
 
