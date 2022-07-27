@@ -369,6 +369,12 @@ namespace JointWatermark
                 SetPreviewImg(false);
             }
         }
+
+        private void colorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            popup.IsOpen = true;
+        }
+
     }
 
     public class VM : INotifyPropertyChanged
@@ -437,6 +443,19 @@ namespace JointWatermark
             {
                 deviceName = value;
                 NotifyPropertyChanged(nameof(Mount));
+            }
+        }
+
+
+        private System.Windows.Media.Color color;
+        public System.Windows.Media.Color Color
+        {
+            get => color;
+            set
+            {
+                color = value;
+                NotifyPropertyChanged(nameof(Color));
+                Global.color =  System.Drawing.Color.FromArgb(value.R, value.G, value.B);
             }
         }
 

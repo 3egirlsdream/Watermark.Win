@@ -95,6 +95,8 @@ namespace JointWatermark
 
                 Bitmap bitmap = new Bitmap(emptyWmMap, emptyWmMap.Width, emptyWmMap.Height);
                 Graphics g = Graphics.FromImage(bitmap);
+                var brush = new SolidBrush(Global.color);
+                g.FillRectangle(brush, new Rectangle(0, 0, emptyWmMap.Width, emptyWmMap.Height));
                 //logo比例系数
                 double xs = (double)(emptyWmMap.Height / 2) / logoMap.Height;
                 //字体比例系数
@@ -116,7 +118,7 @@ namespace JointWatermark
                 var size = GetFontSize(g, mount + 'F', fontSize);
                 var oneSize = GetFontSize(g, "F", fontSize);
                 var padding_right = GetFontSize(g, "23mm", fontSize);
-                var brush = new SolidBrush(Color.Black);
+                brush = new SolidBrush(Color.Black);
                 Params = new Node(emptyWmMap.Width - (int)size.Width - (int)padding_right.Width, (int)(0.3 * emptyWmMap.Height));
                 var point = new Point(Params.X, Params.Y);
                 g.DrawString(mount, font, brush, point);

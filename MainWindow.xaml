@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:JointWatermark" xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="水印小工具" Height="500" Width="800">
+        Title="水印小工具" Height="520" Width="820">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -16,7 +16,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" MinHeight="177"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="140"/>
+                <RowDefinition Height="160"/>
             </Grid.RowDefinitions>
             <materialDesign:Card
                 Grid.Row="0"
@@ -47,7 +47,6 @@
                         <materialDesign:PackIcon Kind="LightbulbQuestion"  Grid.Row="2"  VerticalAlignment="Center" Margin="2"/>
                         <Label Content="网页:" VerticalAlignment="Center" />
                         <TextBox IsReadOnly="True" Text="http://thankful.top:1000" VerticalAlignment="Center"/>
-
                         <Label Content="交流群:" VerticalAlignment="Center" />
                         <TextBox IsReadOnly="True" Text="866034817" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -98,6 +97,17 @@
                
                 <TextBox x:Name="xy" materialDesign:HintAssist.Hint="坐标"  Margin="10 5" TextChanged="deviceName_TextChanged"/>
                 <TextBox x:Name="mount" materialDesign:HintAssist.Hint="镜头参数" Text="f/1.8 1/40 ISO 400"  Margin="10 5" TextChanged="deviceName_TextChanged"/>
+                <StackPanel Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
+                    <TextBox materialDesign:HintAssist.Hint="底色" TextChanged="deviceName_TextChanged" Text="{Binding ElementName=colorpicker, Path=Color}" IsReadOnly="True"/>
+                    <Button x:Name="colorBtn" Click="colorBtn_Click" Margin="10 0" Cursor="Hand">
+                        <materialDesign:PackIcon Kind="Palette" />
+                    </Button>
+                    <Popup x:Name="popup" Width="300" Height="250" IsOpen="False" Placement="Top" PlacementTarget="{Binding ElementName=colorBtn}" StaysOpen="False">
+                        <materialDesign:ColorPicker x:Name="colorpicker" Color="{Binding Color, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Popup>
+                </StackPanel>
+                
+                
             </StackPanel>
         </Grid>
         <Grid Grid.Column="1">
@@ -117,7 +127,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="40"/>
-                <RowDefinition Height="140"/>
+                <RowDefinition Height="160"/>
             </Grid.RowDefinitions>
             <GroupBox x:Name="group" Grid.Row="0"
                   Header="输出"

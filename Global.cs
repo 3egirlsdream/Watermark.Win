@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace JointWatermark
         public static string Path_temp;
         public static string Path_output;
         public static string Path_logo;
+        public static Color color = Color.White;
 
 
         public static string mount { get; set; }
