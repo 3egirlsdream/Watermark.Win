@@ -1,4 +1,5 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using JointWatermark.Class;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -39,11 +40,11 @@ namespace JointWatermark
             {
                 InitializeComponent();
                 MultiImages = new List<string>();
-                vm = new MainVM();
+                vm = new MainVM(this);
                 this.DataContext = vm;
                 Global.BasePath = AppDomain.CurrentDomain.BaseDirectory;
                 xy.Text = "44°29′12\"E 33°23′46\"W";
-                vm.Images = new ObservableCollection<ImageInstance>();
+                vm.Images = new ObservableCollection<ImageProperties>();
                 Global.Path_temp = Global.BasePath + $"{Global.SeparatorChar}temp";
                 Global.Path_output = Global.BasePath + $"{Global.SeparatorChar}output";
                 Global.Path_logo = Global.BasePath + $"{Global.SeparatorChar}logo";
@@ -76,20 +77,20 @@ namespace JointWatermark
         {
             vm.Loading = true;
             int cc = 0;
-            vm.OutputImages = new ObservableCollection<ImageInstance>();
+            vm.OutputImages = new ObservableCollection<ImageProperties>();
             if (!MultiImages.Any())
             {
                 return;
             }
             if (!vm.Images.Any())
             {
-                vm.Images.Add(new ImageInstance(MultiImages[0], MultiImages[0].Substring(MultiImages[0].LastIndexOf(Global.SeparatorChar) + 1)));
+                vm.Images.Add(new ImageProperties(MultiImages[0], MultiImages[0].Substring(MultiImages[0].LastIndexOf(Global.SeparatorChar) + 1)));
             }
             foreach (var url in vm.Images)
             {
 
-                Bitmap sourceImage = new Bitmap(url.Url);
-                var img = Image.FromFile(url.Url);
+                Bitmap sourceImage = new Bitmap(url.Path);
+                var img = Image.FromFile(url.Path);
                 try
                 {
                     var dt = img.GetPropertyItem(0x0132).Value;
@@ -102,7 +103,7 @@ namespace JointWatermark
                 }
 
                 if (vm.Images.Count > 1)
-                    InitExifInfo(url.Url);
+                    InitExifInfo(url.Path);
 
                 var Width = sourceImage.Width;
                 var Height = sourceImage.Height;
@@ -116,7 +117,7 @@ namespace JointWatermark
                     var output = Global.Path_output + Global.SeparatorChar + dFileName;
                     preveiew.Source = watermark;
 
-                    var i = new ImageInstance(output, url.Name);
+                    var i = new ImageProperties(output, url.Name);
                     vm.OutputImages.Add(i);
 
 
@@ -140,7 +141,7 @@ namespace JointWatermark
 
                 if (vm.OutputImages.Count == 1)
                 {
-                    BitmapImage bitmap2 = new BitmapImage(new Uri(vm.OutputImages[0].Url, UriKind.Absolute));
+                    BitmapImage bitmap2 = new BitmapImage(new Uri(vm.OutputImages[0].Path, UriKind.Absolute));
                     createdImg.Source = bitmap2;
                     listbox2.Visibility = Visibility.Collapsed;
                     createdImg.Visibility = Visibility.Visible;
@@ -244,33 +245,21 @@ namespace JointWatermark
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".png";  // 设置默认类型
             dialog.Multiselect = true;                             // 设置可选格式
-            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png
-      |JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
+            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
             {
-                vm.Images = new ObservableCollection<ImageInstance>();
-                if (dialog.FileNames.Length == 1)
+                vm.Images = new ObservableCollection<ImageProperties>();
+
+                foreach (var item in dialog.FileNames)
                 {
-                    BitmapImage bitmap = new BitmapImage(new Uri(dialog.FileName, UriKind.Absolute));
-                    sourceImg.Source = bitmap;// ; // 获取选择的文件名
-                    Global.sourceImgUrl = dialog.FileName;
-                    sourceImg.Visibility = Visibility.Visible;
-                    plus1.Visibility = Visibility.Collapsed;
-                    listbox.Visibility = Visibility.Collapsed;
+                    var i = new ImageProperties(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
+                    vm.Images.Add(i);
                 }
-                else
-                {
-                    foreach (var item in dialog.FileNames)
-                    {
-                        var i = new ImageInstance(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
-                        vm.Images.Add(i);
-                    }
-                    sourceImg.Visibility = Visibility.Collapsed;
-                    plus1.Visibility = Visibility.Collapsed;
-                    listbox.Visibility = Visibility.Visible;
-                }
+                plus1.Visibility = Visibility.Collapsed;
+                listbox.Visibility = Visibility.Visible;
+
                 MultiImages = new List<string>(dialog.FileNames);
                 if (MultiImages.Any())
                 {
@@ -385,10 +374,10 @@ namespace JointWatermark
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-
-        public MainVM()
+        MainPage mainPage;
+        public MainVM(Page page)
         {
-
+            mainPage = page as MainPage;
         }
 
         private bool loading = false;
@@ -462,8 +451,8 @@ namespace JointWatermark
 
 
 
-        private ObservableCollection<ImageInstance> images;
-        public ObservableCollection<ImageInstance> Images
+        private ObservableCollection<ImageProperties> images;
+        public ObservableCollection<ImageProperties> Images
         {
             get => images;
             set
@@ -473,8 +462,22 @@ namespace JointWatermark
             }
         }
 
-        private ObservableCollection<ImageInstance> outputImages;
-        public ObservableCollection<ImageInstance> OutputImages
+
+        private ImageProperties selectedImage;
+        public ImageProperties SelectedImage
+        {
+            get => selectedImage;
+            set
+            {
+                selectedImage = value;
+                NotifyPropertyChanged(nameof(SelectedImage));
+            }
+        }
+
+
+
+        private ObservableCollection<ImageProperties> outputImages;
+        public ObservableCollection<ImageProperties> OutputImages
         {
             get => outputImages;
             set
