@@ -23,7 +23,7 @@ namespace JointWatermark.Class
         }
 
 
-        private string leftPosition1;
+        private string leftPosition1 = "A7C";
         /// <summary>
         /// 左侧第一行文字
         /// </summary>

@@ -139,6 +139,7 @@
     </Compile>
     <Compile Include="Class\ImageConfig.cs" />
     <Compile Include="Class\ImageProperties.cs" />
+    <Compile Include="Class\SimpleCommand.cs" />
     <Compile Include="Class\ValidationBase.cs" />
     <Compile Include="Views\CheckUpdate.xaml.cs">
       <DependentUpon>CheckUpdate.xaml</DependentUpon>

@@ -102,8 +102,7 @@ namespace JointWatermark
                     datetime = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss");
                 }
 
-                if (vm.Images.Count > 1)
-                    InitExifInfo(url.Path);
+                var rs = InitExifInfo(url.Path);
 
                 var Width = sourceImage.Width;
                 var Height = sourceImage.Height;
@@ -118,6 +117,11 @@ namespace JointWatermark
                     preveiew.Source = watermark;
 
                     var i = new ImageProperties(output, url.Name);
+                    i.Config.LeftPosition1 = rs.left1;
+                    i.Config.LeftPosition2 = rs.left2;
+                    i.Config.RightPosition1 = rs.right1;
+                    i.Config.RightPosition2 = rs.right2;
+                    i.Config.ShowBrandName = true;
                     vm.OutputImages.Add(i);
 
 
@@ -254,7 +258,14 @@ namespace JointWatermark
 
                 foreach (var item in dialog.FileNames)
                 {
+                    var rs = InitExifInfo(item);
                     var i = new ImageProperties(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
+                    i.Config.LeftPosition1 = rs.left1;
+                    i.Config.LeftPosition2 = rs.left2;
+                    i.Config.RightPosition1 = rs.right1;
+                    i.Config.RightPosition2 = rs.right2;
+                    i.Config.ShowBrandName = true;
+                    i.Config.BackgroundColor = "#fff";
                     vm.Images.Add(i);
                 }
                 plus1.Visibility = Visibility.Collapsed;
@@ -305,48 +316,63 @@ namespace JointWatermark
             SelectPictureClick(null, null);
         }
 
-        private void InitExifInfo(string filePath)
+        private dynamic InitExifInfo(string filePath)
         {
             try
             {
                 IsBreak = true;
-                mount.Text = "f/1.8 1/40 ISO 400";
-                xy.Text = "44°29′12\"E 33°23′46\"W";
-
+                var right1 = "f/1.8 1/40 ISO 400";
+                var right2 = "44°29′12\"E 33°23′46\"W";
+                var left1 = "A7C";
+                var left2 = "";
                 var ex = new ExifInfo2();
                 var rs = ex.GetImageInfo(Image.FromFile(filePath));
 
                 if (!rs.ContainsKey("f") || !rs.ContainsKey("exposure")|| !rs.ContainsKey("ISO")|| !rs.ContainsKey("mm"))
                 {
                     IsBreak = false;
-                    return;
+                    return new
+                    {
+                        left1,
+                        left2,
+                        right1,
+                        right2
+                    };
                 }
 
-                mount.Text = $"F/{rs["f"]} {rs["exposure"]} ISO{rs["ISO"]} {rs["mm"]}";
+                right1 = $"F/{rs["f"]} {rs["exposure"]} ISO{rs["ISO"]} {rs["mm"]}";
                 if (showCor.IsChecked == true)
                 {
-                    deviceName.Text = $"{rs["producer"]} {rs["model"]}";
+                    left1 = $"{rs["producer"]} {rs["model"]}";
                 }
                 else
                 {
-                    deviceName.Text = $"{rs["model"]}";
+                    left1 = $"{rs["model"]}";
                 }
 
                 if (rs.TryGetValue("mount", out string val) && !string.IsNullOrEmpty(val))
                 {
-                    xy.Text = val;
+                    right2 = val;
                 }
 
                 if (rs.TryGetValue("date", out string d) && !string.IsNullOrEmpty(d))
                 {
-                    datetime = d;
+                    left2 = d;
                 }
 
                 IsBreak = false;
+                return new
+                {
+                    left1,
+                    left2,
+                    right1,
+                    right2
+                };
             }
             catch (Exception ex)
             {
                 IsBreak = false;
+                throw ex;
             }
         }
 
@@ -486,6 +512,19 @@ namespace JointWatermark
                 NotifyPropertyChanged(nameof(OutputImages));
             }
         }
+
+        public SimpleCommand CmdClickItem => new SimpleCommand()
+        {
+            ExecuteDelegate=x =>
+            {
+                var item = Images.FirstOrDefault(c => c.ID == x);
+                if(item != null)
+                {
+                    SelectedImage = item;
+                }
+            },
+            CanExecuteDelegate=o => true
+        };
     }
 
     public class ImageInstance
