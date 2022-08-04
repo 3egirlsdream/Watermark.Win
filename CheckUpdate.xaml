@@ -1,0 +1,74 @@
+﻿<Window x:Class="JointWatermark.CheckUpdate"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:local="clr-namespace:JointWatermark"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        Title="CheckUpdate" Height="300" Width="400">
+    <Window.Resources>
+        <Style TargetType="Border" x:Key="BorderStyle">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="#FFF" Opacity="1"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#000000" ShadowDepth="1" BlurRadius="10" Opacity="0.2" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CornerRadius" Value="5"></Setter>
+        </Style>
+    </Window.Resources>
+    <Window.Background>
+        <SolidColorBrush Opacity="0.5" Color="Transparent"/>
+    </Window.Background>
+    <Border Style="{StaticResource BorderStyle}" Margin="10">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Background="#e8e8e8" CornerRadius="5" MouseLeftButtonDown="MoveWindow" Grid.ColumnSpan="2">
+                <Border.Clip>
+                    <RectangleGeometry RadiusX="5" RadiusY="5"  
+                                       Rect="0,0,400,30" />
+                </Border.Clip>
+                <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="0 0" Click="TabItem_GotFocus">
+                    <materialDesign:PackIcon Kind="WindowClose" />
+                </Button>
+            </Border>
+
+            <TextBlock FontSize="14" FontFamily="微软雅黑" Margin="0 20" HorizontalAlignment="Right" Grid.Row="1">
+                                     <Run Text="版本信息   "/>
+            </TextBlock>
+
+            <StackPanel  Margin="0 20" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
+                <TextBlock x:Name="version" HorizontalAlignment="Center" FontSize="14" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <materialDesign:Badged x:Name="check" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center">
+                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand"/>
+                </materialDesign:Badged>
+                <Button x:Name="newVersion" Visibility="Collapsed" Margin="0 10"
+                                          Style="{StaticResource MaterialDesignFlatLightButton}"
+                                          materialDesign:ButtonProgressAssist.Value="-1"
+                                          materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding DownloadLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          materialDesign:ButtonProgressAssist.IsIndeterminate="True"
+                                          Click="newVersionClick"
+                                          ToolTip="MaterialDesignFlatLightButton"
+                                          Content="有新版本点击下载"
+                                          Width="auto"
+                                          HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

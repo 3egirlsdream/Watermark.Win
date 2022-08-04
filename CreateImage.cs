@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JointWatermark.Properties;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -127,7 +128,7 @@ namespace JointWatermark
                 var font20 = (20 * fontxs);
                 XY = new Node(Params.X, (int)(1.04 * size.Height +  Params.Y));
                 var font20Size = GetFontSize(g, "F", font20);
-                font = new Font(Global.FontFamilyLight, (int)font20, FontStyle.Regular);
+                font = new Font(Global.FontFamily, (int)font20, FontStyle.Regular);
                 var c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);
                 point = new Point(XY.X, XY.Y);
@@ -158,7 +159,7 @@ namespace JointWatermark
                 g.DrawString(deviceName, font, brush, point);
 
                 //画时间
-                font = new Font(Global.FontFamilyLight, (int)font20, FontStyle.Regular);
+                font = new Font(Global.FontFamily, (int)font20, FontStyle.Regular);
                 c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);
                 Date = new Node(Producer.X, XY.Y);
@@ -235,7 +236,7 @@ namespace JointWatermark
 
         private static SizeF GetFontSize(System.Drawing.Graphics g, string str, float _size)
         {
-            System.Drawing.Font font = new System.Drawing.Font(new System.Drawing.FontFamily(Global.FontFamily), _size);
+            System.Drawing.Font font = new System.Drawing.Font("FZXiJinLJW", _size);
             System.Drawing.SizeF size = g.MeasureString(str, font);
             return size;
         }

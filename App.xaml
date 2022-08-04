@@ -10,7 +10,15 @@
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.DeepPurple.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.Lime.xaml" />
+                
+                <!--#加字体名，不是字体文件名。字体名打开字体文件可得-->
             </ResourceDictionary.MergedDictionaries>
+            <FontFamily x:Key="FZXiJinLJW">
+                pack://application:,,,/JointWatermark;component/Resources/#FZJinLS-L-GB
+            </FontFamily>
+            <FontFamily x:Key="FZCuJinLJW">
+                pack://application:,,,/JointWatermark;component/Resources/#FZJinLS-B-GB
+            </FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

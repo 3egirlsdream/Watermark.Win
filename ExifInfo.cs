@@ -711,5 +711,10 @@ namespace JointWatermark
             double temp = (double)fm / fz;
             return (temp).ToString();
         }
+
+        internal object GetImageInfo(object value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
