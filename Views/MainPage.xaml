@@ -46,7 +46,7 @@
                                     <RowDefinition Height="30"/>
                                 </Grid.RowDefinitions>
                                 <materialDesign:PackIcon x:Name="plus1" Kind="Plus" Height="auto" Width="auto" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30"/>
-                                <ListBox HorizontalContentAlignment="Stretch" x:Name="listbox" ItemsSource="{Binding Images, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                <ListBox HorizontalContentAlignment="Stretch" x:Name="listbox" ItemsSource="{Binding Images, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border Background="Transparent">

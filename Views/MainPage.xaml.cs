@@ -277,11 +277,14 @@ namespace JointWatermark
 
         public void Export()
         {
-            var action = new Action<CancellationToken, Loading>(async (token, loading) =>
+            var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
                 foreach (var url in vm.Images)
                 {
-                    var bit = await vm.GenerateImage(url);
+                    var percent = (vm.Images.IndexOf(url) + 1)  * 100.0 / vm.Images.Count;
+                    loading.ISetPosition((int)percent, $"正在生成图片：{url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1)}");
+                    token.ThrowIfCancellationRequested();
+                    var bit = vm.GenerateImage(url).Result;
                     var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
                     Dispatcher.Invoke(() =>
                     {
@@ -289,9 +292,9 @@ namespace JointWatermark
                     });
                 }
             });
-            
-
-
+            var ld = new Loading(action);
+            ld.Owner = App.Current.MainWindow;
+            ld.ShowDialog();
 
         }
 
