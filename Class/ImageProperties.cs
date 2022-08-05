@@ -13,7 +13,7 @@ namespace JointWatermark.Class
         {
             Path = _path;
             Name = _name;
-            Config = new ImageConfig();
+            Config = new ImageConfig(this);
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
 
@@ -27,6 +27,20 @@ namespace JointWatermark.Class
             {
                 path = value;
                 NotifyPropertyChanged(nameof(Path));
+            }
+        }
+
+        private string thumbnailPath;
+        /// <summary>
+        /// 缩略图路径
+        /// </summary>
+        public string ThumbnailPath
+        {
+            get { return thumbnailPath; }
+            set
+            {
+                thumbnailPath = value;
+                NotifyPropertyChanged(nameof(ThumbnailPath));
             }
         }
 

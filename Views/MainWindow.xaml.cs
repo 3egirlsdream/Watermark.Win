@@ -77,6 +77,16 @@ namespace JointWatermark
                 main.InitLogoes();
             }
         }
+
+        private void ImportImagesClick(object sender, RoutedEventArgs e)
+        {
+            main.SelectPictureClick(sender, null);
+        }
+
+        private void ExportImageClick(object sender, RoutedEventArgs e)
+        {
+            main.Export();
+        }
     }
 
     public class VM : INotifyPropertyChanged

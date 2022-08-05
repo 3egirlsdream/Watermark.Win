@@ -1,4 +1,5 @@
-﻿using JointWatermark.Properties;
+﻿using JointWatermark.Class;
+using JointWatermark.Properties;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -38,7 +39,7 @@ namespace JointWatermark
         }
 
 
-        public static Task AddWaterMarkImg(BitmapImage sourceImage, string dFile, Bitmap map1, Tuple<int, int> tuple)
+        public static Task<Bitmap> AddWaterMarkImg(BitmapImage sourceImage, Bitmap map1, Tuple<int, int> tuple)
         {
 
             return Task.Run(() =>
@@ -74,25 +75,30 @@ namespace JointWatermark
                     Directory.CreateDirectory(Global.Path_output);
                 }
 
-                dFile = $@"{Global.Path_output}{Global.SeparatorChar}{dFile}";
-                //保存图片
-                _bitmap.Save(dFile, System.Drawing.Imaging.ImageFormat.Jpeg);
-
-                _bitmap.Dispose();
                 waterImage.Dispose();
                 _g.Dispose();
+                return _bitmap;
             });
 
         }
 
 
-        public static Task<BitmapImage> CreateWatermark(Bitmap emptyWmMap, string logoFile, string datetime, string deviceName, Tuple<int, int> tuple, string mount, string xy, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
+        public static Task<BitmapImage> CreateWatermark(Bitmap emptyWmMap, ImageConfig config, Tuple<int, int> tuple, double scale = 1, double opacity = 0.8, int locationX = -1, int locationY = -1)
         {
             return Task.Run(() =>
             {
                 Node Producer, Date, Params, XY;
-
-                Bitmap logoMap = new Bitmap(logoFile);
+                var logoPath = Global.Path_logo + Global.SeparatorChar + config.LogoName;
+                FileInfo fileInfo = new FileInfo(logoPath);
+                Bitmap logoMap;
+                if (!fileInfo.Exists)
+                {
+                    logoMap = new Bitmap(24, 24);
+                }
+                else
+                {
+                    logoMap = new Bitmap(logoPath);
+                }
 
                 Bitmap bitmap = new Bitmap(emptyWmMap, emptyWmMap.Width, emptyWmMap.Height);
                 Graphics g = Graphics.FromImage(bitmap);
@@ -116,13 +122,13 @@ namespace JointWatermark
                 //绘制右侧镜头参数
                 float fontSize = 25 * fontxs;
                 var font = new Font(Global.FontFamily, (int)fontSize, FontStyle.Bold);
-                var size = GetFontSize(g, mount + 'F', fontSize);
+                var size = GetFontSize(g, config.RightPosition1 + 'F', fontSize);
                 var oneSize = GetFontSize(g, "F", fontSize);
                 var padding_right = GetFontSize(g, "23mm", fontSize);
                 brush = new SolidBrush(Color.Black);
                 Params = new Node(emptyWmMap.Width - (int)size.Width - (int)padding_right.Width, (int)(0.3 * emptyWmMap.Height));
                 var point = new Point(Params.X, Params.Y);
-                g.DrawString(mount, font, brush, point);
+                g.DrawString(config.RightPosition1, font, brush, point);
 
                 //绘制右侧坐标（镜头型号）
                 var font20 = (20 * fontxs);
@@ -132,7 +138,7 @@ namespace JointWatermark
                 var c = ColorTranslator.FromHtml("#919191");
                 brush = new SolidBrush(c);
                 point = new Point(XY.X, XY.Y);
-                g.DrawString(xy, font, brush, point);
+                g.DrawString(config.RightPosition2, font, brush, point);
 
                 //绘制分界划线
                 var lStart = new Point(Params.X - (int)(oneSize.Width * 0.6), Params.Y);
@@ -156,7 +162,7 @@ namespace JointWatermark
                 var leftWidth = (double)1 / 25 * bitmap.Width;// 100 * fontxs * 100 / 156;
                 Producer = new Node((int)(leftWidth), Params.Y);
                 point = new Point(Producer.X, Producer.Y);
-                g.DrawString(deviceName, font, brush, point);
+                g.DrawString(config.LeftPosition1, font, brush, point);
 
                 //画时间
                 font = new Font(Global.FontFamily, (int)font20, FontStyle.Regular);
@@ -164,7 +170,7 @@ namespace JointWatermark
                 brush = new SolidBrush(c);
                 Date = new Node(Producer.X, XY.Y);
                 point = new Point(Date.X, Date.Y);
-                g.DrawString(datetime, font, brush, point);
+                g.DrawString(config.LeftPosition2, font, brush, point);
 
 
                 if (!Directory.Exists(Global.Path_temp))

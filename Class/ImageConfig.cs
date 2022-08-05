@@ -8,7 +8,17 @@ namespace JointWatermark.Class
 {
     public class ImageConfig : ValidationBase
     {
-        private bool showBrandName;
+        ImageProperties parent;
+        public ImageConfig(ImageProperties _parent)
+        {
+            parent = _parent;
+        }
+
+        public ImageConfig()
+        {
+        }
+
+        private bool showBrandName = true;
         /// <summary>
         /// 是否显示品牌名
         /// </summary>
@@ -19,6 +29,11 @@ namespace JointWatermark.Class
             {
                 showBrandName = value;
                 NotifyPropertyChanged(nameof(ShowBrandName));
+                if (parent != null)
+                {
+                    var rs = Global.InitExifInfo(parent.Path, value);
+                    LeftPosition1 = rs.left1;
+                }
             }
         }
 
