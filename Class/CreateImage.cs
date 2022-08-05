@@ -29,8 +29,8 @@ namespace JointWatermark
                 {
                     for (int j = 0; j < bmp.Height; j++)
                     {
-                        Color c = Color.FromArgb(255, 255, 255);
-                        bmp.SetPixel(i, j, c);
+                        //Color c = Color.FromArgb(255, 255, 255);
+                        bmp.SetPixel(i, j, Color.Transparent);
                     }
                 }
                 return bmp;
@@ -39,7 +39,7 @@ namespace JointWatermark
         }
 
 
-        public static Task<Bitmap> AddWaterMarkImg(BitmapImage sourceImage, Bitmap map1, Tuple<int, int> tuple)
+        public static Task<Bitmap> AddWaterMarkImg(BitmapImage sourceImage, Bitmap map1, Tuple<int, int> tuple, ImageConfig config)
         {
 
             return Task.Run(() =>
@@ -53,22 +53,22 @@ namespace JointWatermark
                     waterImage = new Bitmap(outStream);
                 }
 
-                double xs = (double)(sourceImage.Height / 2) / waterImage.Height;
-                float waterWidth = (float)(waterImage.Width * xs);
-
 
                 //拼接图片
                 var w = tuple.Item1;
                 var h = tuple.Item2 + (int)sourceImage.Height;
-                RectangleF area = new RectangleF(0, 0, waterWidth, h);
-                var _bitmap = new Bitmap(w, h, PixelFormat.Format24bppRgb);
-                _bitmap.SetResolution(96.0F, 96.0F); // 重点
-                                                     //_bitmap.SetResolution(300, 300);
+                var borderWidth = (int)(config.BorderWidth * w / 100.0);
+
+                var _bitmap = new Bitmap(w + 2*borderWidth, h + borderWidth, PixelFormat.Format24bppRgb);
+                _bitmap.SetResolution(300.0F, 300.0F); // 重点
+                var cc = _bitmap.VerticalResolution;                   //_bitmap.SetResolution(300, 300);
                 Graphics _g = Graphics.FromImage(_bitmap);
-                _g.FillRectangle(Brushes.White, new Rectangle(0, 0, w, h));
-                _g.DrawImage(map1, 0, 0, w, map1.Height);
-                map1.SetResolution(72, 72);
-                _g.DrawImage(waterImage, 0, map1.Height, w, waterImage.Height);
+                var brush = new SolidBrush(ColorTranslator.FromHtml(config.BackgroundColor));
+                _g.FillRectangle(brush, new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+
+                _g.DrawImage(map1, borderWidth, borderWidth, w, map1.Height);
+
+                _g.DrawImage(waterImage, borderWidth, map1.Height + borderWidth, w, waterImage.Height);
 
                 if (!Directory.Exists(Global.Path_output))
                 {
@@ -102,7 +102,7 @@ namespace JointWatermark
 
                 Bitmap bitmap = new Bitmap(emptyWmMap, emptyWmMap.Width, emptyWmMap.Height);
                 Graphics g = Graphics.FromImage(bitmap);
-                var brush = new SolidBrush(Global.color);
+                var brush = new SolidBrush(ColorTranslator.FromHtml(config.BackgroundColor));
                 g.FillRectangle(brush, new Rectangle(0, 0, emptyWmMap.Width, emptyWmMap.Height));
                 //logo比例系数
                 double xs = (double)(emptyWmMap.Height / 2) / logoMap.Height;
@@ -125,7 +125,7 @@ namespace JointWatermark
                 var size = GetFontSize(g, config.RightPosition1 + 'F', fontSize);
                 var oneSize = GetFontSize(g, "F", fontSize);
                 var padding_right = GetFontSize(g, "23mm", fontSize);
-                brush = new SolidBrush(Color.Black);
+                brush = new SolidBrush(ColorTranslator.FromHtml(config.Row1FontColor));
                 Params = new Node(emptyWmMap.Width - (int)size.Width - (int)padding_right.Width, (int)(0.3 * emptyWmMap.Height));
                 var point = new Point(Params.X, Params.Y);
                 g.DrawString(config.RightPosition1, font, brush, point);
@@ -157,7 +157,7 @@ namespace JointWatermark
                 //绘制设备信息
                 var font28 = (28 * fontxs);
                 font = new Font(Global.FontFamily, (int)font28, FontStyle.Bold);
-                brush = new SolidBrush(Color.Black);
+                brush = new SolidBrush(ColorTranslator.FromHtml(config.Row1FontColor));
                 //左边距系数
                 var leftWidth = (double)1 / 25 * bitmap.Width;// 100 * fontxs * 100 / 156;
                 Producer = new Node((int)(leftWidth), Params.Y);

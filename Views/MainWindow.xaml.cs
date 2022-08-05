@@ -17,6 +17,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -86,6 +87,44 @@ namespace JointWatermark
         private void ExportImageClick(object sender, RoutedEventArgs e)
         {
             main.Export();
+        }
+
+        private void btn_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
+        Action action;
+
+        private void OK_Click(object sender, RoutedEventArgs e)
+        {
+            msg.Visibility = Visibility.Collapsed;
+            action?.Invoke();
+        }
+
+        public void SetAction(Action _action)
+        {
+            action = _action;   
+        }
+
+        public void ShowMsgBox(string message)
+        {
+            msg_label.Content = message;
+            DoubleAnimation yd5 = new DoubleAnimation(200, 0, new Duration(TimeSpan.FromSeconds(0.1)));//浮点动画定义了开始值和起始值
+            msg.RenderTransform = new TranslateTransform();//在二维x-y坐标系统内平移(移动)对象
+            //yd5.RepeatBehavior = RepeatBehavior.;//设置循环播放
+            yd5.AutoReverse = false;//设置可以进行反转
+            Storyboard.SetTarget(yd5, msg);//绑定动画为这个按钮执行的浮点动画
+            Storyboard.SetTargetProperty(yd5, new PropertyPath("RenderTransform.X"));//依赖的属性
+            Storyboard sb = new Storyboard();//首先实例化一个故事板
+            sb.Children.Add(yd5);//向故事板中加入此浮点动画
+            msg.Visibility = Visibility.Visible;
+            sb.Begin();//播放此动画
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            msg.Visibility = Visibility.Collapsed;
         }
     }
 

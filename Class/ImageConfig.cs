@@ -111,7 +111,7 @@ namespace JointWatermark.Class
         }
 
 
-        private int borderWidth;
+        private int borderWidth = 0;
         /// <summary>
         /// 边框宽度 (%)
         /// </summary>
@@ -137,6 +137,20 @@ namespace JointWatermark.Class
             {
                 backgroundColor = value;
                 NotifyPropertyChanged(nameof(BackgroundColor));
+            }
+        }
+
+        private string row1FontColor = "#000000";
+        /// <summary>
+        /// 第一行字体颜色
+        /// </summary>
+        public string Row1FontColor
+        {
+            get => row1FontColor;
+            set
+            {
+                row1FontColor = value;
+                NotifyPropertyChanged(nameof(Row1FontColor));
             }
         }
 

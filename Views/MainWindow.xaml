@@ -36,14 +36,32 @@
                 <MenuItem Header="Exit" Icon="{materialDesign:PackIcon Kind=ExitToApp}" />
                
             </MenuItem>
-            <MenuItem Header="检查更新" Click="CheckUpdateClick"/>
+            <MenuItem Header="关于" >
+                <MenuItem Header="检查更新"  Icon="{materialDesign:PackIcon Kind=Update}" Click="CheckUpdateClick"/>
+            </MenuItem>
             <MenuItem Header="更多">
                 <MenuItem Header="866034817"  Icon="{materialDesign:PackIcon Kind=Qqchat}" />
                 <MenuItem Header="thankful.top:1000" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" />
             </MenuItem>
         </Menu>
-        <Button Grid.Row="1" x:Name="btn"/>
-        <Frame x:Name="cc" Visibility="Collapsed" Grid.Row="1">
+        <Border x:Name="msg" Visibility="Collapsed" Style="{StaticResource BorderStyle}" Width="250" Height="70" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" CornerRadius="5" Panel.ZIndex="9">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Label x:Name="msg_label" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="打开文件夹？" FontFamily="{StaticResource MaterialDesignFont}" FontSize="16"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Viewbox Height="25">
+                        <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="确定"  Width="auto" Margin="20 0" Click="OK_Click"/>
+                    </Viewbox>
+                    <Viewbox Height="25" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource MaterialDesignFlatLightButton}" Content="取消"  Width="auto" Margin="20 0" Click="Cancel_Click"/>
+                    </Viewbox>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Frame x:Name="cc" Grid.Row="1">
             <Frame.Content>
                 <local:MainPage x:Name="main"/>
             </Frame.Content>

@@ -294,8 +294,19 @@ namespace JointWatermark
             });
             var ld = new Loading(action);
             ld.Owner = App.Current.MainWindow;
-            ld.ShowDialog();
-
+            var rst = ld.ShowDialog();
+            if(rst == true)
+            {
+                var win = App.Current.MainWindow as  MainWindow;
+                win.ShowMsgBox("打开输出目录？");
+                win.SetAction(() =>
+                {
+                    if (Directory.Exists(Global.Path_output))
+                    {
+                        System.Diagnostics.Process.Start(Global.Path_output);
+                    }
+                });
+            }
         }
 
     }
@@ -482,6 +493,7 @@ namespace JointWatermark
 
         public async void RefreshSelectedImage(ImageProperties item)
         {
+            if (item == null) return;
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
             var bitmap = await GenerateImage(item, true);
             var bitmapImage = new BitmapImage();
@@ -515,6 +527,8 @@ namespace JointWatermark
                         case "3": item.Config.RightPosition1 = GlobalConfig.RightPosition1; break;
                         case "4": item.Config.RightPosition2 = GlobalConfig.RightPosition2; break;
                         case "5": item.Config.BackgroundColor = GlobalConfig.BackgroundColor; break;
+                        case "6": item.Config.BorderWidth = GlobalConfig.BorderWidth; break;
+                        case "7": item.Config.Row1FontColor = GlobalConfig.Row1FontColor; break;
                         default:break;
                     }
                 }
@@ -558,7 +572,7 @@ namespace JointWatermark
                 var c = Tuple.Create(Width, Height);
 
                 var watermark = await CreateImage.CreateWatermark(bitmap_Watermak, url.Config, c, 1, 1);
-                var bitmap_output = await CreateImage.AddWaterMarkImg(watermark, bitmap_Source, c);
+                var bitmap_output = await CreateImage.AddWaterMarkImg(watermark, bitmap_Source, c, url.Config);
                 bitmap_Watermak.Dispose();
                 bitmap_Source.Dispose();
                 return bitmap_output;

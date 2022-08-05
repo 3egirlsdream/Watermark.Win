@@ -75,17 +75,22 @@
                         materialDesign:RippleAssist.IsCentered="True" Cursor="Hand">
                                     <materialDesign:PackIcon Kind="FolderOpen" />
                                 </Button>
-                                <Button  Grid.Row="2" HorizontalAlignment="Right"
-                                    Margin="40 0"
-                        Style="{StaticResource MaterialDesignToolForegroundButton}"
-                        Width="30"
-                        Padding="2 0 2 0"
-                        materialDesign:RippleAssist.IsCentered="True" Cursor="Hand">
-                                    <materialDesign:PackIcon Kind="TestTube" />
-                                </Button>
                             </Grid>
 
                         </Grid>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Width="auto" Height="auto">
+                                <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="Watermark" />
+                                <TextBlock  HorizontalAlignment="Center" Text="LOGO" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <WrapPanel>
+                            <WrapPanel x:Name="logoes">
+
+                            </WrapPanel>
+                        </WrapPanel>
                     </TabItem>
                     <TabItem>
                         <TabItem.Header>
@@ -132,7 +137,19 @@
                                     <materialDesign:ColorPicker x:Name="colorpicker" Color="{Binding GlobalConfig.BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </Popup>
                             </StackPanel>
-                            
+                            <Slider x:Name="slider" Grid.Row="6" Margin="10 5" Value="{Binding GlobalConfig.BorderWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="10" Style="{StaticResource MaterialDesignDiscreteSlider}" TickFrequency="{Binding DiscreteHorizontal.TickFrequency}" TickPlacement="BottomRight" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Row="7" Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
+                                <TextBox materialDesign:HintAssist.Hint="第一行字体颜色" Text="{Binding ElementName=colorpicker2, Path=Color}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True"/>
+                                <ToggleButton x:Name="togle2" Margin="10 0" Cursor="Hand" Height="30" Width="30" VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                                          Content="{materialDesign:PackIcon Kind=Palette, Size=30}"
+                                          Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
+                                          ToolTip="取色器"
+                                          IsChecked="False" />
+                                <Popup Width="300" Height="250" IsOpen="{Binding ElementName=togle2, Path=IsChecked}" Placement="Top" PlacementTarget="{Binding ElementName=togle2}" StaysOpen="False">
+                                    <materialDesign:ColorPicker x:Name="colorpicker2" Color="{Binding GlobalConfig.Row1FontColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </Popup>
+                            </StackPanel>
+
                             <!--保存按钮-->
                             <Button Grid.Row="0" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="0" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                                 <materialDesign:PackIcon Kind="ContentSave" />
@@ -152,21 +169,15 @@
                             <Button Grid.Row="5" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="5" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                                 <materialDesign:PackIcon Kind="ContentSave" />
                             </Button>
+                            <Button Grid.Row="6" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="6" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                                <materialDesign:PackIcon Kind="ContentSave" />
+                            </Button>
+                            <Button Grid.Row="7" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                                <materialDesign:PackIcon Kind="ContentSave" />
+                            </Button>
                         </Grid>
                     </TabItem>
-                    <TabItem>
-                        <TabItem.Header>
-                            <StackPanel Width="auto" Height="auto">
-                                <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="Watermark" />
-                                <TextBlock  HorizontalAlignment="Center" Text="LOGO" />
-                            </StackPanel>
-                        </TabItem.Header>
-                        <WrapPanel>
-                            <WrapPanel x:Name="logoes">
-
-                            </WrapPanel>
-                        </WrapPanel>
-                    </TabItem>
+                   
                 </TabControl>
             </Border>
            
@@ -220,7 +231,7 @@
                         <TextBox Width="200" materialDesign:HintAssist.Hint="右侧第二行" Text="{Binding SelectedImage.Config.RightPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
                         <StackPanel Width="200" Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
                             <TextBox materialDesign:HintAssist.Hint="底色" TextChanged="deviceName_TextChanged" Text="{Binding ElementName=colorpicker1, Path=Color}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True"/>
-                            
+
                             <ToggleButton x:Name="togle" Margin="10 0" Cursor="Hand" Height="30" Width="30" VerticalAlignment="Center" VerticalContentAlignment="Center" 
                                           Content="{materialDesign:PackIcon Kind=Palette, Size=30}"
                                           Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"

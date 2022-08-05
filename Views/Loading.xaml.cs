@@ -58,7 +58,7 @@ namespace JointWatermark.Views
         {
             this.Dispatcher.Invoke(new Action(() =>
             {
-                this.Close();
+                this.DialogResult = true;
             }));
         }
 
