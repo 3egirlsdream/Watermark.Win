@@ -38,6 +38,10 @@ namespace JointWatermark
                 InitializeComponent();
                 vm = new VM();
                 this.DataContext = vm;
+                //Global.FontFamily1 = App.Current.Resources["A021-Sounso Sagacity"] as System.Windows.Media.FontFamily;
+                //label.FontFamily= Global.FontFamily1;
+                //var f = System.Windows.Media.Fonts.GetFontFamilies(@"C:\Users\xulez\source\repos\JointWatermark2\Resources\font\");
+                Global.FontFamily = new System.Drawing.FontFamily(new Uri(@"dada"), "");
             }
             catch (Exception ex)
             {

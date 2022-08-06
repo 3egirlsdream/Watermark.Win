@@ -14,10 +14,18 @@
                 <!--#加字体名，不是字体文件名。字体名打开字体文件可得-->
             </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="FZXiJinLJW">
-                pack://application:,,,/JointWatermark;component/Resources/#FZJinLS-L-GB
+                pack://application:,,,/JointWatermark;component/Resources/font/#FZJinLS-L-GB
             </FontFamily>
             <FontFamily x:Key="FZCuJinLJW">
-                pack://application:,,,/JointWatermark;component/Resources/#FZJinLS-B-GB
+                pack://application:,,,/JointWatermark;component/Resources/font/#FZJinLS-B-GB
+            </FontFamily>
+
+            <FontFamily x:Key="A021-Sounso Sagacity">
+                pack://application:,,,/JointWatermark;component/Resources/font/#A021-Sounso Sagacity
+            </FontFamily>
+
+            <FontFamily x:Key="Coldiac Free">
+                pack://application:,,,/JointWatermark;component/Resources/font/#Coldiac Free
             </FontFamily>
         </ResourceDictionary>
     </Application.Resources>

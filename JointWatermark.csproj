@@ -187,10 +187,10 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="Resources\Coldiac.otf" />
-    <None Include="Resources\FZCuJinLJW.TTF" />
-    <None Include="Resources\FZXiJinLJW.TTF" />
-    <EmbeddedResource Include="Resources\font\No.021-Sounso-Sagacity-2.ttf" />
+    <Resource Include="Resources\font\Coldiac.otf" />
+    <Resource Include="Resources\font\FZCuJinLJW.TTF" />
+    <Resource Include="Resources\font\FZXiJinLJW.TTF" />
+    <Resource Include="Resources\font\No.021-Sounso-Sagacity-2.ttf" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
