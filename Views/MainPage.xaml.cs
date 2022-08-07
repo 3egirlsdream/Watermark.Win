@@ -130,6 +130,11 @@ namespace JointWatermark
                         i.Config.RightPosition2 = meta.right2;
                         i.Config.BackgroundColor = "#fff";
                         i.Path = item;
+
+                        if (vm.IconList != null && vm.IconList.Any())
+                        {
+                            i.Config.LogoName = vm.IconList[0].Substring(vm.IconList[0].LastIndexOf(Global.SeparatorChar) + 1);
+                        }
                         Dispatcher.Invoke(() =>
                         {
                             vm.Images.Add(i);
