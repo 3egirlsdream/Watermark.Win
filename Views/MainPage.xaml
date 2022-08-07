@@ -45,7 +45,6 @@
                                     <RowDefinition Height="auto"/>
                                     <RowDefinition Height="30"/>
                                 </Grid.RowDefinitions>
-                                <materialDesign:PackIcon x:Name="plus1" Kind="Plus" Height="auto" Width="auto" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30"/>
                                 <ListBox HorizontalContentAlignment="Stretch" x:Name="listbox" ItemsSource="{Binding Images, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
@@ -109,19 +108,12 @@
                                 <RowDefinition Height="auto"/>
                                 <RowDefinition Height="auto"/>
                                 <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="40"/>
                             </Grid.ColumnDefinitions>
-                            <Grid Margin="10 5" Grid.Row="0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="70"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="显示品牌名" VerticalAlignment="Center"/>
-                                <ToggleButton x:Name="showCor" Grid.Column="1" Style="{StaticResource MaterialDesignSwitchToggleButton}" VerticalAlignment="Center" DockPanel.Dock="Right" IsChecked="{Binding GlobalConfig.ShowBrandName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                            </Grid>
                             <TextBox Grid.Row="1" materialDesign:HintAssist.Hint="左侧第一行(设备名)" Text="{Binding GlobalConfig.LeftPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="Arrow" x:Name="deviceName" Margin="10 5" materialDesign:HintAssist.IsFloating="True"/>
                             <TextBox Grid.Row="2" x:Name="xy" Text="{Binding GlobalConfig.LeftPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" materialDesign:HintAssist.Hint="左侧第二行"  Margin="10 5" materialDesign:HintAssist.IsFloating="True"/>
                             <TextBox Grid.Row="3" x:Name="mount" materialDesign:HintAssist.Hint="右侧第一行" Text="{Binding GlobalConfig.RightPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" materialDesign:HintAssist.IsFloating="True"/>
@@ -150,10 +142,12 @@
                                 </Popup>
                             </StackPanel>
 
+                            <ComboBox Grid.Row="8" Margin="10 5"  materialDesign:HintAssist.Hint="字体" materialDesign:HintAssist.IsFloating="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged">
+                                <ComboBoxItem Content="微软雅黑" />
+                                <ComboBoxItem Content="金陵宋体" />
+                            </ComboBox>
+
                             <!--保存按钮-->
-                            <Button Grid.Row="0" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="0" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                <materialDesign:PackIcon Kind="ContentSave" />
-                            </Button>
                             <Button Grid.Row="1" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="1" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                                 <materialDesign:PackIcon Kind="ContentSave" />
                             </Button>
@@ -175,30 +169,14 @@
                             <Button Grid.Row="7" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                                 <materialDesign:PackIcon Kind="ContentSave" />
                             </Button>
+                            <Button Grid.Row="8" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                                <materialDesign:PackIcon Kind="ContentSave" />
+                            </Button>
                         </Grid>
                     </TabItem>
-                   
+
                 </TabControl>
             </Border>
-           
-            <!--<Button Grid.Row="1" Width="120" Height="30" Content="选择本地图片" Click="SelectPictureClick"/>-->
-           
-
-           
-        </Grid>
-        <Grid Grid.Column="1">
-            <Button Click="Button_Click"
-              Style="{StaticResource MaterialDesignFloatingActionSecondaryDarkButton}"
-              ToolTip="合成图片"
-              materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding Loading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-              materialDesign:ButtonProgressAssist.Value="-1"
-              materialDesign:ButtonProgressAssist.IndicatorForeground="#408400"
-              materialDesign:ButtonProgressAssist.IsIndeterminate="True">
-                <materialDesign:PackIcon
-                    Kind="Play"
-                    Height="40"
-                    Width="40" />
-            </Button>
         </Grid>
         <Border Grid.Column="1" Style="{StaticResource BorderStyle}" Margin="5 0">
             <Grid >
@@ -206,7 +184,11 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="150"/>
                 </Grid.RowDefinitions>
-                <Grid Background="#e6e6e6">
+                <Grid>
+                    <Grid.Background>
+                        <ImageBrush ImageSource="../Resources/back.png" TileMode="Tile"  Viewport="0,0,0.1,0.2"/>
+                    </Grid.Background>
+                    
                     <Viewbox Margin="50">
                         <Image x:Name="createdImg" Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" Source="{Binding OuputImageUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     </Viewbox>
@@ -217,14 +199,6 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <WrapPanel Grid.Column="0">
-                        <Grid Margin="10 5" Width="200">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="显示品牌名" VerticalAlignment="Center"/>
-                            <ToggleButton Grid.Column="1" Style="{StaticResource MaterialDesignSwitchToggleButton}" VerticalAlignment="Center" DockPanel.Dock="Right" IsChecked="{Binding SelectedImage.Config.ShowBrandName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Checked="CheckShowProducer" Unchecked="CheckShowProducer"/>
-                        </Grid>
                         <TextBox Width="190" materialDesign:HintAssist.Hint="左侧第一行(设备名)" Text="{Binding SelectedImage.Config.LeftPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="Arrow" Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
                         <TextBox Width="190" Text="{Binding SelectedImage.Config.LeftPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" materialDesign:HintAssist.Hint="左侧第二行"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
                         <TextBox Width="190" materialDesign:HintAssist.Hint="右侧第一行" Text="{Binding SelectedImage.Config.RightPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
@@ -267,14 +241,7 @@
                     </ListBox>
                 </Grid>
                 <ProgressBar Grid.Row="1" Visibility="{Binding BottomProcess.Visibility, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsIndeterminate="{Binding BottomProcess.IsLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Bottom"/>
-               
-                <Button Grid.Row="1" Width="100" Height="30" Click="downloadClick" Visibility="Collapsed">
-                    <materialDesign:PackIcon Kind="FolderOpen"/>
-                </Button>
-
             </Grid>
         </Border>
-       
-        <materialDesign:Snackbar Grid.ColumnSpan="3" x:Name="SnackbarThree" Message="出错了，请重试"/>
     </Grid>
 </Page>

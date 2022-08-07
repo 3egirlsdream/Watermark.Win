@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:JointWatermark" 
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
         Title="水印小工具" Height="600" Width="890">
     <Window.Resources>
         <Style TargetType="Border" x:Key="BorderStyle">
@@ -33,10 +34,11 @@
                 <MenuItem Header="导出变体" Click="ExportImageClick" Icon="{materialDesign:PackIcon Kind=Upload}"></MenuItem>
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>
                 <Separator />
-                <MenuItem Header="Exit" Icon="{materialDesign:PackIcon Kind=ExitToApp}" />
+                <MenuItem Header="Exit" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                
             </MenuItem>
             <MenuItem Header="关于" >
+                <MenuItem Header="设置"  Icon="{materialDesign:PackIcon Kind=Settings}" Click="SettingsClick"/>
                 <MenuItem Header="检查更新"  Icon="{materialDesign:PackIcon Kind=Update}" Click="CheckUpdateClick"/>
             </MenuItem>
             <MenuItem Header="更多">
@@ -66,5 +68,6 @@
                 <local:MainPage x:Name="main"/>
             </Frame.Content>
         </Frame>
+        <materialDesign:Snackbar x:Name="SnackbarThree"  MessageQueue="{materialDesign:MessageQueue}" Grid.Row="1"/>
     </Grid>
 </Window>

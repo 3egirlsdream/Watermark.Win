@@ -1,6 +1,11 @@
-﻿using System;
+﻿using JointWatermark.Views;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,14 +15,14 @@ namespace JointWatermark
     public class Global
     {
         public static string logo = "";
-        public static string BasePath;
+        public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
         public static string sourceImgUrl;
         public static string lastUrl;
         public static char SeparatorChar = System.IO.Path.DirectorySeparatorChar;
         public static string Path_temp;
         public static string Path_output;
         public static string Path_logo;
-        public static Color color = Color.White;
+        public static System.Drawing.Color color = System.Drawing.Color.White;
 
 
         public static string mount { get; set; }
@@ -30,62 +35,152 @@ namespace JointWatermark
 
         public static string Http { get; set; } = "http://thankful.top:4396";
 
-        public static dynamic InitExifInfo(string filePath, bool showBrand)
+        public static dynamic GetThumbnailPath(string sourceImg, bool showBrand = true)
         {
-            try
+            using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
             {
-                var right1 = "f/1.8 1/40 ISO 400";
-                var right2 = "44°29′12\"E 33°23′46\"W";
-                var left1 = "A7C";
-                var left2 = "";
-                var ex = new ExifInfo2();
-                var rs = ex.GetImageInfo(Image.FromFile(filePath));
+                var profile = bp.Metadata.ExifProfile?.Values;
+                var meta = new Dictionary<string, object>();
+                if (profile != null)
+                {
+                    var meta_origin = profile.Select(x => new
+                    {
+                        Key = x.Tag.ToString(),
+                        Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
+                    });
+                   
+                    foreach(var item in meta_origin)
+                    {
+                        meta[item.Key] = item.Value;  
+                    }
+                    if (meta.ContainsKey("ExposureProgram"))
+                    {
+                        meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
+                    }
+                }
 
-                if (!rs.ContainsKey("f") || !rs.ContainsKey("exposure")|| !rs.ContainsKey("ISO")|| !rs.ContainsKey("mm"))
+                var config = GetDefaultExifConfig(meta);
+
+                var right1 = config[2];
+                var right2 = config[3];
+                var left1 = config[0];
+                var left2 = config[1];
+
+                if (bp.Width <= 1920 || bp.Height <= 1080)
                 {
                     return new
                     {
-                        left1,
-                        left2,
+                        path = sourceImg,
                         right1,
-                        right2
-                    };
+                        left1,
+                        right2,
+                        left2,
+                    }; ;
                 }
+                var xs = bp.Width / 1920M;
 
-                right1 = $"F/{rs["f"]} {rs["exposure"]} ISO{rs["ISO"]} {rs["mm"]}";
-                if (showBrand)
+                var w = (int)(bp.Width / xs);
+                var h = (int)(bp.Height / xs);
+                var p = Global.Path_temp + Global.SeparatorChar + sourceImg.Substring(sourceImg.LastIndexOf('\\') + 1);
+                bp.Mutate(x => x.Resize(w, h));
+                try
                 {
-                    left1 = $"{rs["producer"]} {rs["model"]}";
+                    bp.SaveAsJpeg(p);
                 }
-                else
-                {
-                    left1 = $"{rs["model"]}";
-                }
-
-                if (rs.TryGetValue("mount", out string val) && !string.IsNullOrEmpty(val))
-                {
-                    right2 = val;
-                }
-
-                if (rs.TryGetValue("date", out string d) && !string.IsNullOrEmpty(d))
-                {
-                    left2 = d;
-                }
-
+                catch { }
                 return new
                 {
-                    left1,
-                    left2,
+                    path = p,
                     right1,
-                    right2
+                    left1,
+                    right2,
+                    left2,
                 };
-            }
-            catch (Exception ex)
-            {
-                throw ex;
             }
         }
 
+        public static dynamic GetMetaInfo(string sourceImg)
+        {
+            using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
+            {
+                var profile = bp.Metadata.ExifProfile?.Values;
+                var meta = new Dictionary<string, object>();
+                if (profile != null)
+                {
+                    var meta_origin = profile.Select(x => new
+                    {
+                        Key = x.Tag.ToString(),
+                        Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
+                    });
+
+                    foreach (var item in meta_origin)
+                    {
+                        meta[item.Key] = item.Value;
+                    }
+                }
+
+
+                var config = GetDefaultExifConfig(meta);
+
+                var right1 = config[2];
+                var right2 = config[3];
+                var left1 = config[0];
+                var left2 = config[1];
+
+                return new
+                {
+                    right1,
+                    left1,
+                    right2,
+                    left2,
+                };
+            }
+        }
+
+        public static Dictionary<int, string> ExposureProgram = new Dictionary<int, string>()
+        {
+            {0, "未知" },
+            {1, "手动" },
+            {2, "正常" },
+            {3, "光圈优先" },
+            {4, "快门优先" },
+            {5, "创作程序(偏重使用视野深度)" },
+            {6, "操作程序(偏重使用快门速度)" },
+            {7, "纵向模式" },
+            {8, "横向模式" },
+        };
+
+        public static List<string> GetDefaultExifConfig(Dictionary<string, object> meta)
+        {
+            var txt = File.ReadAllText(BasePath + SeparatorChar + "Resources/ExifConfig.json");
+            if (txt == null) return new List<string>();
+            var model = Newtonsoft.Json.JsonConvert.DeserializeObject<MainModel>(txt);
+            if (model == null) return new List<string>();
+            var ls = new List<string>();
+
+            foreach (var parent in model.Config)
+            {
+                var cs = new List<string>();
+                foreach(var child in parent.Config)
+                {
+                    if (meta.TryGetValue(child.Key, out object rtl))
+                    {
+                        var c = child.Front + rtl + child.Behind;
+                        cs.Add(c);
+                    }
+                    else
+                    {
+                        var c = child.Front + child.Value + child.Behind;
+                        cs.Add(c);
+                    }
+                }
+
+                var p = string.Join(" ", cs);
+                ls.Add(p);
+            }
+
+            return ls;
+        }
 
     }
 }

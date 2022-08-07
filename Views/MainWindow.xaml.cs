@@ -1,4 +1,5 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using JointWatermark.Views;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -60,8 +61,7 @@ namespace JointWatermark
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".png";  // 设置默认类型
             dialog.Multiselect = true;                             // 设置可选格式
-            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png
-      |JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
+            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
@@ -71,7 +71,7 @@ namespace JointWatermark
                     var file = new FileInfo(f);
                     if (file.Exists)
                     {
-                        var p = Global.Path_logo + f.Substring(f.LastIndexOf('\\') + 1);
+                        var p = Global.Path_logo + Global.SeparatorChar + f.Substring(f.LastIndexOf('\\') + 1);
                         file.CopyTo(p, true);
                     }
                 }
@@ -86,6 +86,11 @@ namespace JointWatermark
 
         private void ExportImageClick(object sender, RoutedEventArgs e)
         {
+            var director = new DirectoryInfo(Global.Path_output);
+            if (!director.Exists)
+            {
+                director.Create();
+            }
             main.Export();
         }
 
@@ -126,6 +131,24 @@ namespace JointWatermark
         {
             msg.Visibility = Visibility.Collapsed;
         }
+
+        private void SettingsClick(object sender, RoutedEventArgs e)
+        {
+            var win = new ConfigExif();
+            win.Owner = this;
+            win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            win.ShowDialog();
+        }
+
+        public void SendMsg(string msg)
+        {
+            SnackbarThree.MessageQueue.Enqueue(msg);
+        }
+
+        private void ExitClick(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 
     public class VM : INotifyPropertyChanged
@@ -135,7 +158,6 @@ namespace JointWatermark
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
 
         public VM()
         {

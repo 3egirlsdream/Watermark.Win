@@ -18,25 +18,6 @@ namespace JointWatermark.Class
         {
         }
 
-        private bool showBrandName = true;
-        /// <summary>
-        /// 是否显示品牌名
-        /// </summary>
-        public bool ShowBrandName
-        {
-            get => showBrandName;
-            set 
-            {
-                showBrandName = value;
-                NotifyPropertyChanged(nameof(ShowBrandName));
-                if (parent != null)
-                {
-                    var rs = Global.InitExifInfo(parent.Path, value);
-                    LeftPosition1 = rs.left1;
-                }
-            }
-        }
-
 
         private string leftPosition1 = "A7C";
         /// <summary>
@@ -150,7 +131,23 @@ namespace JointWatermark.Class
             set
             {
                 row1FontColor = value;
+                if (value[2] == value[1] && value[1] == 'F')
+                {
+                    row1FontColor = "#" + row1FontColor.Substring(3);
+                }
                 NotifyPropertyChanged(nameof(Row1FontColor));
+            }
+        }
+
+
+        private string fontFamily = "Microsoft YaHei";
+        public string FontFamily
+        {
+            get => fontFamily;
+            set
+            {
+                fontFamily = value;
+                NotifyPropertyChanged(nameof(FontFamily));
             }
         }
 

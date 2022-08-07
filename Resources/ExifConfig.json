@@ -1,0 +1,151 @@
+{
+  "Exifs": [
+    {
+      "Key": "ResolutionUnit",
+      "Name": "分辨率单位",
+      "Value": "2"
+    },
+    {
+      "Key": "ExposureProgram",
+      "Name": "拍摄模式",
+      "Value": "光圈优先模式"
+    },
+    {
+      "Key": "ISOSpeedRatings",
+      "Name": "ISO",
+      "Value": 2500
+    },
+    {
+      "Key": "RecommendedExposureIndex",
+      "Name": "推荐曝光指数",
+      "Value": 2500
+    },
+    {
+      "Key": "SubsecTimeOriginal",
+      "Name": "相机原始的时间点",
+      "Value": "875"
+    },
+    {
+      "Key": "FocalLengthIn35mmFilm",
+      "Name": "焦距",
+      "Value": 105
+    },
+    {
+      "Key": "Make",
+      "Name": "制造商",
+      "Value": "SONY"
+    },
+    {
+      "Key": "Model",
+      "Name": "型号",
+      "Value": "ILCE-7C"
+    },
+    {
+      "Key": "Software",
+      "Name": "处理软件",
+      "Value": "Capture One 22 Windows"
+    },
+    {
+      "Key": "ExposureTime",
+      "Name": "曝光时间",
+      "Value": "1/125"
+    },
+    {
+      "Key": "FNumber",
+      "Name": "光圈值",
+      "Value": 4
+    },
+    {
+      "Key": "DateTimeOriginal",
+      "Name": "拍摄时间",
+      "Value": "2022:08:04 20:03:28"
+    },
+    {
+      "Key": "LensModel",
+      "Name": "镜头型号",
+      "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+    }
+  ],
+  "Config": [
+    {
+      "Text": "左侧第一行",
+      "Config": [
+        {
+          "SEQ": 1,
+          "Front": null,
+          "Behind": null,
+          "Key": "Make",
+          "Value": "SONY"
+        },
+        {
+          "SEQ": 2,
+          "Front": null,
+          "Behind": null,
+          "Key": "Model",
+          "Value": "ILCE-7C"
+        }
+      ],
+      "Error": ""
+    },
+    {
+      "Text": "左侧第二行",
+      "Config": [
+        {
+          "SEQ": 2,
+          "Front": null,
+          "Behind": null,
+          "Key": "DateTimeOriginal",
+          "Value": "2022:08:04 20:03:28"
+        }
+      ],
+      "Error": ""
+    },
+    {
+      "Text": "右侧第一行",
+      "Config": [
+        {
+          "SEQ": 1,
+          "Front": "F",
+          "Behind": null,
+          "Key": "FNumber",
+          "Value": "4"
+        },
+        {
+          "SEQ": 2,
+          "Front": "ISO",
+          "Behind": null,
+          "Key": "ISOSpeedRatings",
+          "Value": "2500"
+        },
+        {
+          "SEQ": 3,
+          "Front": null,
+          "Behind": "S",
+          "Key": "ExposureTime",
+          "Value": "1/125"
+        },
+        {
+          "SEQ": 4,
+          "Front": null,
+          "Behind": "mm",
+          "Key": "FocalLengthIn35mmFilm",
+          "Value": "105"
+        }
+      ],
+      "Error": ""
+    },
+    {
+      "Text": "右侧第二行",
+      "Config": [
+        {
+          "SEQ": 1,
+          "Front": null,
+          "Behind": null,
+          "Key": "LensModel",
+          "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+        }
+      ],
+      "Error": ""
+    }
+  ]
+}

@@ -44,6 +44,13 @@ namespace JointWatermark.Views
             }).ContinueWith(c =>
             {
                 Thread.Sleep(200);
+                Dispatcher.Invoke(() =>
+                {
+                    if (c.Exception != null)
+                    {
+                        ((MainWindow)(App.Current.MainWindow)).SendMsg(c.Exception.Message);
+                    }
+                });
                 IClose();
             });
         }

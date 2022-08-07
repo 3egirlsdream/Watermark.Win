@@ -2,6 +2,8 @@
 using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -70,7 +72,7 @@ namespace JointWatermark
             if (sender is MaterialDesignThemes.Wpf.Card card && card.Tag is string tag)
             {
                 var name = tag + ".png";
-                foreach(var item in vm.Images)
+                foreach (var item in vm.Images)
                 {
                     item.Config.LogoName = name;
                 }
@@ -81,13 +83,6 @@ namespace JointWatermark
             }
         }
 
-
-        string datetime;
-        private async void Button_Click(object sender, RoutedEventArgs e)
-        {
-            
-        }
-
         private void downloadClick(object sender, RoutedEventArgs e)
         {
             if (Directory.Exists(Global.Path_output))
@@ -96,60 +91,10 @@ namespace JointWatermark
             }
         }
 
-        private async void SetPreviewImg(bool f = true)
-        {
-            try
-            {
-                var url = MultiImages.Any() ? MultiImages[0] : Global.sourceImgUrl;
-                if (string.IsNullOrEmpty(url))
-                    return;
-
-                if (f)
-                {
-                    await Task.Delay(5000);
-                }
-                if ((DateTime.Now - LastDate).TotalSeconds < 2 && f) return;
-                Bitmap sourceImage = new Bitmap(url);
-                var img = Image.FromFile(url);
-                try
-                {
-                    var dt = img.GetPropertyItem(0x0132).Value;
-                    var dateTimeStr = System.Text.Encoding.ASCII.GetString(dt).Trim('\0');
-                    datetime = DateTime.ParseExact(dateTimeStr, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy.MM.dd HH:mm:ss");
-                }
-                catch (Exception ex)
-                {
-                    datetime = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss");
-                }
-
-                var Width = sourceImage.Width;
-                var Height = sourceImage.Height;
-
-                var emptyWatermark = await CreateImage.CreatePic(Width, Height);
-                var c = Tuple.Create(Width, Height);
-                var dFileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.jpg";
-                //var previewUrl = await CreateImage.CreateWatermark(emptyWatermark, url, c, mount.Text, xy.Text, 1, 1);
-                //preveiew.Source = previewUrl;
-                emptyWatermark.Dispose();
-                sourceImage.Dispose();
-            }
-            catch (Exception ex)
-            {
-                SnackbarThree.IsActive = true;
-                Task.Run(() =>
-                {
-                    Thread.Sleep(2000);
-                    Dispatcher.Invoke(() =>
-                    {
-                        SnackbarThree.IsActive = false;
-                    });
-                });
-            }
-        }
 
         private void deviceName_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if(vm.SelectedImage != null)
+            if (vm.SelectedImage != null)
             {
                 vm.RefreshSelectedImage(vm.SelectedImage);
             }
@@ -167,6 +112,7 @@ namespace JointWatermark
             if (result == true)
             {
                 vm.Images = new ObservableCollection<ImageProperties>();
+                createdImg.Source = null;
                 var action = new Action<CancellationToken, Loading>((token, loading) =>
                 {
                     for (int ii = 0; ii < dialog.FileNames.Length; ii++)
@@ -175,15 +121,15 @@ namespace JointWatermark
                         var percent = (ii+1)* 100.0 / dialog.FileNames.Length;
                         token.ThrowIfCancellationRequested();
                         loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
-                        var rs = Global.InitExifInfo(item, true);
                         var i = new ImageProperties(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
-                        i.Config.LeftPosition1 = rs.left1;
-                        i.Config.LeftPosition2 = rs.left2;
-                        i.Config.RightPosition1 = rs.right1;
-                        i.Config.RightPosition2 = rs.right2;
+                        var meta = Global.GetThumbnailPath(i.Path);
+                        i.ThumbnailPath = meta.path;
+                        i.Config.LeftPosition1 = meta.left1;
+                        i.Config.LeftPosition2 = meta.left2;
+                        i.Config.RightPosition1 = meta.right1;
+                        i.Config.RightPosition2 = meta.right2;
                         i.Config.BackgroundColor = "#fff";
                         i.Path = item;
-                        i.ThumbnailPath = GetThumbnailPath(i.Path);
                         Dispatcher.Invoke(() =>
                         {
                             vm.Images.Add(i);
@@ -194,40 +140,45 @@ namespace JointWatermark
                 var ld = new Loading(action);
                 ld.Owner = App.Current.MainWindow;
                 ld.ShowDialog();
-
-                plus1.Visibility = Visibility.Collapsed;
             }
         }
 
         public void InitLogoes()
         {
-            if (!Directory.Exists(Global.Path_logo))
+            try
             {
-                Directory.CreateDirectory(Global.Path_logo);
-            }
-            DirectoryInfo directory = new DirectoryInfo(Global.Path_logo);
-            var files = directory.GetFiles();
-            logoes.Children.Clear();
-            vm.IconList.Clear();
-            foreach (var file in files)
-            {
-                var card = new Card();
-                card.Tag = file.Name.Split('.')[0];
-                card.Margin = new Thickness(12, 0, 16, 12);
-                card.Width = 60;
-                card.Height = 60;
+                if (!Directory.Exists(Global.Path_logo))
+                {
+                    Directory.CreateDirectory(Global.Path_logo);
+                }
+                DirectoryInfo directory = new DirectoryInfo(Global.Path_logo);
+                var files = directory.GetFiles();
+                logoes.Children.Clear();
+                vm.IconList.Clear();
+                foreach (var file in files)
+                {
+                    var card = new Card();
+                    card.Tag = file.Name.Split('.')[0];
+                    card.Margin = new Thickness(12, 0, 16, 12);
+                    card.Width = 60;
+                    card.Height = 60;
 
-                var img = new System.Windows.Controls.Image();
-                img.Width = 40;
-                img.Height = 40;
-                BitmapImage map = new BitmapImage(new Uri(file.FullName, UriKind.Absolute));
-                img.Source = map;
-                card.Content = img;
-                card.Cursor = Cursors.Hand;
-                ShadowAssist.SetShadowDepth(card, ShadowDepth.Depth1);
-                card.MouseLeftButtonDown += Card_MouseLeftButtonDown;
-                logoes.Children.Add(card);
-                vm.IconList.Add(file.FullName);
+                    var img = new System.Windows.Controls.Image();
+                    img.Width = 40;
+                    img.Height = 40;
+                    BitmapImage map = new BitmapImage(new Uri(file.FullName, UriKind.Absolute));
+                    img.Source = map;
+                    card.Content = img;
+                    card.Cursor = Cursors.Hand;
+                    ShadowAssist.SetShadowDepth(card, ShadowDepth.Depth1);
+                    card.MouseLeftButtonDown += Card_MouseLeftButtonDown;
+                    logoes.Children.Add(card);
+                    vm.IconList.Add(file.FullName);
+                }
+            }
+            catch (Exception ex)
+            {
+                ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
             }
         }
 
@@ -236,43 +187,7 @@ namespace JointWatermark
             SelectPictureClick(null, null);
         }
 
-      
-        private void CheckShowProducer(object sender, RoutedEventArgs e)
-        {
-        //    if (MultiImages.Any() && !string.IsNullOrEmpty(Global.logo))
-        //    {
-        //        InitExifInfo(MultiImages[0]);
-        //        SetPreviewImg(false);
-        //    }
-        }
 
-        private string GetThumbnailPath(string sourceImg)
-        {
-            using (var bitmap = new Bitmap(sourceImg))
-            {
-
-                if (bitmap.Width <= 1920 || bitmap.Height <= 1080)
-                {
-                    return sourceImg;
-                }
-                var xs = bitmap.Width / 1920M;
-
-                var w = (int)(bitmap.Width / xs);
-                var h = (int)(bitmap.Height / xs);
-                using (var bp = new Bitmap(w, h))
-                {
-                    using (var g = Graphics.FromImage(bp))
-                    {
-                        g.DrawImage(bitmap, 0, 0, w, h);
-                        var p = Global.Path_temp + Global.SeparatorChar + sourceImg.Substring(sourceImg.LastIndexOf('\\') + 1);
-                        bp.Save(p, ImageFormat.Jpeg);
-                        return p;
-                    }
-
-                }
-            }
-
-        }
 
 
         public void Export()
@@ -284,31 +199,48 @@ namespace JointWatermark
                     var percent = (vm.Images.IndexOf(url) + 1)  * 100.0 / vm.Images.Count;
                     loading.ISetPosition((int)percent, $"正在生成图片：{url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1)}");
                     token.ThrowIfCancellationRequested();
-                    var bit = vm.GenerateImage(url).Result;
                     var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
-                    Dispatcher.Invoke(() =>
-                    {
-                        bit.Save(p, ImageFormat.Jpeg);
-                    });
+                    var bit = MyImages.Create(url).Result;
+                    bit.SaveAsJpeg(p);
+                    bit.Dispose();
                 }
             });
             var ld = new Loading(action);
             ld.Owner = App.Current.MainWindow;
             var rst = ld.ShowDialog();
-            if(rst == true)
+            if (rst == true)
             {
-                var win = App.Current.MainWindow as  MainWindow;
+                var win = App.Current.MainWindow as MainWindow;
                 win.ShowMsgBox("打开输出目录？");
                 win.SetAction(() =>
                 {
                     if (Directory.Exists(Global.Path_output))
                     {
-                        System.Diagnostics.Process.Start(Global.Path_output);
+                        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = Global.Path_output, UseShellExecute = true };
+
+                        System.Diagnostics.Process.Start(psi);
                     }
                 });
             }
         }
 
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox combo && vm != null && vm.Images != null)
+            {
+                foreach (var img in vm.Images)
+                {
+                    if (combo.SelectedIndex == 0)
+                    {
+                        img.Config.FontFamily = "Microsoft YaHei";
+                    }
+                    else
+                    {
+                        img.Config.FontFamily = "FZXiJinLJW";
+                    }
+                }
+            }
+        }
     }
 
     public class MainVM : INotifyPropertyChanged
@@ -393,7 +325,7 @@ namespace JointWatermark
             }
         }
 
-        private string ouputImageUrl = "../Resources/github.png";
+        private string ouputImageUrl = "Resources/github.png";
         public string OuputImageUrl
         {
             get => ouputImageUrl;
@@ -464,7 +396,7 @@ namespace JointWatermark
             }
         }
 
-        private BottomProcessInstance bottomProcess = new BottomProcessInstance(Visibility.Collapsed, false);
+        private BottomProcessInstance bottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
         public BottomProcessInstance BottomProcess
         {
             get => bottomProcess;
@@ -495,22 +427,18 @@ namespace JointWatermark
         {
             if (item == null) return;
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
-            var bitmap = await GenerateImage(item, true);
-            var bitmapImage = new BitmapImage();
-            using (var ms = new MemoryStream())
+            try
             {
-                bitmap.Save(ms, ImageFormat.Jpeg);
-                ms.Seek(0, SeekOrigin.Begin);
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = ms;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze();
-                bitmap.Dispose();
+                var bit = await MyImages.Create(item, true);
+                var bmp = MyImages.ImageSharpToImageSource(bit);
+                mainPage.createdImg.Source = bmp;
+                bit.Dispose();
             }
-
-            mainPage.createdImg.Source = bitmapImage;
-            BottomProcess = new BottomProcessInstance(Visibility.Collapsed, false);
+            catch (Exception ex)
+            {
+                ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+            }
+            BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
         } 
 
         public SimpleCommand CmdSaveGlobal => new SimpleCommand()
@@ -521,7 +449,6 @@ namespace JointWatermark
                 {
                     switch (x)
                     {
-                        case "0": item.Config.ShowBrandName = GlobalConfig.ShowBrandName; break;
                         case "1": item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;break;
                         case "2": item.Config.LeftPosition2 = GlobalConfig.LeftPosition2; break;
                         case "3": item.Config.RightPosition1 = GlobalConfig.RightPosition1; break;
@@ -551,37 +478,6 @@ namespace JointWatermark
             CanExecuteDelegate=o => true
         };
 
-
-        public async Task<Bitmap> GenerateImage(ImageProperties url, bool isPreview = false)
-        {
-            Bitmap bitmap_Source;
-            if (!isPreview)
-            {
-                bitmap_Source = new Bitmap(url.Path);
-            }
-            else
-            {
-                bitmap_Source = new Bitmap(url.ThumbnailPath);
-            }
-
-            var Width = bitmap_Source.Width;
-            var Height = bitmap_Source.Height;
-            try
-            {
-                var bitmap_Watermak = await CreateImage.CreatePic(Width, Height);
-                var c = Tuple.Create(Width, Height);
-
-                var watermark = await CreateImage.CreateWatermark(bitmap_Watermak, url.Config, c, 1, 1);
-                var bitmap_output = await CreateImage.AddWaterMarkImg(watermark, bitmap_Source, c, url.Config);
-                bitmap_Watermak.Dispose();
-                bitmap_Source.Dispose();
-                return bitmap_output;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
     }
 
     public class ImageInstance
