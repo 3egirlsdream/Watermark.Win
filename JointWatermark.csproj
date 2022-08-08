@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>leica.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.0.301</AssemblyVersion>
+    <AssemblyVersion>1.0.0.302</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -85,11 +85,11 @@
                                 <TextBlock  HorizontalAlignment="Center" Text="LOGO" />
                             </StackPanel>
                         </TabItem.Header>
-                        <WrapPanel>
+                        <Border Padding="5">
                             <WrapPanel x:Name="logoes">
 
                             </WrapPanel>
-                        </WrapPanel>
+                        </Border>
                     </TabItem>
                     <TabItem>
                         <TabItem.Header>
@@ -184,9 +184,21 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="150"/>
                 </Grid.RowDefinitions>
-                <Grid>
+                <Grid Margin="10 5">
                     <Grid.Background>
-                        <ImageBrush ImageSource="../Resources/back.png" TileMode="Tile"  Viewport="0,0,0.1,0.2"/>
+                        <!--<ImageBrush ImageSource="../Resources/back.png" TileMode="Tile"  Viewport="0,0,0.1,0.2"/>-->
+                        <DrawingBrush Viewport="0,0,50,50" ViewportUnits ="Absolute" TileMode="Tile">
+                            <DrawingBrush.Drawing>
+                                <DrawingGroup>
+                                    <DrawingGroup.Children>
+                                        <!--画横线-->
+                                        <GeometryDrawing Geometry="M0,0 L1,0 1,0.02, 0,0.02Z" Brush="#e3e3e3" />
+                                        <!--画竖线-->
+                                        <GeometryDrawing Geometry="M0,0 L0,1 0.02,1, 0.02,0Z" Brush="#e3e3e3" />
+                                    </DrawingGroup.Children>
+                                </DrawingGroup>
+                            </DrawingBrush.Drawing>
+                        </DrawingBrush>
                     </Grid.Background>
                     
                     <Viewbox Margin="50">

@@ -39,10 +39,10 @@
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Background="#e8e8e8" CornerRadius="5" MouseLeftButtonDown="MoveWindow" Grid.ColumnSpan="2">
+            <Border Background="#e8e8e8" CornerRadius="0" MouseLeftButtonDown="MoveWindow" Grid.ColumnSpan="2">
                 <Border.Clip>
                     <RectangleGeometry RadiusX="5" RadiusY="5"  
-                                       Rect="0,0,400,30" />
+                                       Rect="0,0,380,40" />
                 </Border.Clip>
                 <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="0 0" Click="TabItem_GotFocus">
                     <materialDesign:PackIcon Kind="WindowClose" />

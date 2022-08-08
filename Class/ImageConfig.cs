@@ -107,7 +107,7 @@ namespace JointWatermark.Class
         }
 
 
-        private string backgroundColor;
+        private string backgroundColor = "#FFF";
         /// <summary>
         /// 背景底色
         /// </summary>

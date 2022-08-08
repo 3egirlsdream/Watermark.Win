@@ -37,10 +37,10 @@
                 <ColumnDefinition Width="3*"/>
             </Grid.ColumnDefinitions>
             <Border Style="{StaticResource BorderStyle}" Margin="6">
-                <ListBox ItemsSource="{Binding ItemsSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Stretch" Background="#e3e3e3" >
+                <ListBox ItemsSource="{Binding ItemsSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Stretch" Style="{StaticResource MaterialDesignNavigationPrimaryListBox}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Text}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Text}" HorizontalAlignment="Center" FontSize="14" FontFamily="微软雅黑"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -81,8 +81,7 @@
                     </ListBox.Template>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <materialDesign:Card x:Name="add" Cursor="Hand" materialDesign:ShadowAssist.ShadowDepth="Depth1">
-                                <Border x:Name="Border" Padding="8">
+                            <Border x:Name="Border" Padding="8" Style="{StaticResource BorderStyle}" CornerRadius="5">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition SharedSizeGroup="Checkerz" />
@@ -95,7 +94,6 @@
                                         </StackPanel>
                                     </Grid>
                                 </Border>
-                            </materialDesign:Card>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

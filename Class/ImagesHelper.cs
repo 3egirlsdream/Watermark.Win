@@ -21,9 +21,9 @@ using SixLabors.ImageSharp.Drawing;
 
 namespace JointWatermark.Class
 {
-    internal class MyImages
+    internal class ImagesHelper
     {
-        public static Task<Image<Rgba32>> Create(ImageProperties properties, bool isPreview = false)
+        public static Task<Image<Rgba32>> MergeWatermark(ImageProperties properties, bool isPreview = false)
         {
             return Task.Run(() =>
             {
@@ -59,8 +59,6 @@ namespace JointWatermark.Class
                         xs *= 0.8;
                     }
 
-                    //绘制右侧镜头参数
-                    float fontSize = 31 * fontxs;
 
                     //下面定义一个矩形区域      
                     var waterWidth = (int)(logo.Width * xs);
@@ -82,14 +80,16 @@ namespace JointWatermark.Class
                         }
                         //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
+                        //右侧F ISO MM字体参数
+                        float fontSize = 31 * fontxs;
                         Font font = family.CreateFont(fontSize, SixLabors.Fonts.FontStyle.Bold);
-
                         var TextSize = TextMeasurer.Measure(properties.Config.RightPosition1, new SixLabors.Fonts.TextOptions(font));
                         var oneSize = TextMeasurer.Measure("A", new SixLabors.Fonts.TextOptions(font));
                         var padding_right = TextMeasurer.Measure("23mmmm", new SixLabors.Fonts.TextOptions(font));
+
+                        //绘制第右侧一行文字
                         var start = w - TextSize.Width - padding_right.Width;
                         var Params = new PointF(start, (int)(0.3 * h));
-                        //绘制第右侧一行文字
                         wm.Mutate(x => x.DrawText(properties.Config.RightPosition1, font, SixLabors.ImageSharp.Color.ParseHex(properties.Config.Row1FontColor), Params));
 
                         //绘制右侧第二行文字
@@ -108,25 +108,25 @@ namespace JointWatermark.Class
                         //绘制LOGO
                         var line = new SixLabors.ImageSharp.Point((int)(lStart.X - (int)(oneSize.Width * 0.6) - logo.Width), (int)(0.5*(wm.Height - logo.Height)));
                         wm.Mutate(x => x.DrawImage(logo, line, 1));
+                        logo.Dispose();
 
+                        //左边距系数
+                        var leftWidth = (double)1 / 25 * wm.Width;// 100 * fontxs * 100 / 156;
 
                         //绘制设备信息
                         var font28 = (34 * fontxs);
                         font = family.CreateFont(font28, SixLabors.Fonts.FontStyle.Bold);
-                        //左边距系数
-                        var leftWidth = (double)1 / 25 * wm.Width;// 100 * fontxs * 100 / 156;
                         var Producer = new PointF((int)(leftWidth), Params.Y);
                         wm.Mutate(x => x.DrawText(properties.Config.LeftPosition1, font, SixLabors.ImageSharp.Color.ParseHex(properties.Config.Row1FontColor), Producer));
 
-                        //画时间
+                        //绘制时间
                         font = family.CreateFont(font20, SixLabors.Fonts.FontStyle.Regular);
                         var Date = new PointF(Producer.X, XY.Y);
                         wm.Mutate(x => x.DrawText(properties.Config.LeftPosition2, font, SixLabors.ImageSharp.Color.FromRgb(145, 145, 145), Date));
 
                         //拼接图片
                         var borderWidth = (int)(properties.Config.BorderWidth * w / 100.0);
-                        Image<Rgba32> resultImage = new(w + 2*borderWidth, (int)(h + img.Height + borderWidth));
-
+                        Image<Rgba32> resultImage = new(w + 2 * borderWidth, (int)(h + img.Height + borderWidth));
 
                         yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, 10000);
                         resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
@@ -134,13 +134,12 @@ namespace JointWatermark.Class
                         resultImage.Mutate(x => x.DrawImage(img, border, 1));
                         border.Y += img.Height;
                         resultImage.Mutate(x => x.DrawImage(wm, border, 1));
-                        logo.Dispose();
+                       
                         return resultImage;
                     }
                 }
             });
         }
-
 
         public static ImageSource ImageSharpToImageSource(SixLabors.ImageSharp.Image<Rgba32> image)
         {

@@ -112,17 +112,17 @@
         },
         {
           "SEQ": 2,
-          "Front": "ISO",
-          "Behind": null,
-          "Key": "ISOSpeedRatings",
-          "Value": "2500"
-        },
-        {
-          "SEQ": 3,
           "Front": null,
           "Behind": "S",
           "Key": "ExposureTime",
           "Value": "1/125"
+        },
+        {
+          "SEQ": 3,
+          "Front": "ISO",
+          "Behind": null,
+          "Key": "ISOSpeedRatings",
+          "Value": "2500"
         },
         {
           "SEQ": 4,

@@ -205,7 +205,7 @@ namespace JointWatermark
                     loading.ISetPosition((int)percent, $"正在生成图片：{url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1)}");
                     token.ThrowIfCancellationRequested();
                     var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
-                    var bit = MyImages.Create(url).Result;
+                    var bit = ImagesHelper.MergeWatermark(url).Result;
                     bit.SaveAsJpeg(p);
                     bit.Dispose();
                 }
@@ -434,8 +434,8 @@ namespace JointWatermark
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
             try
             {
-                var bit = await MyImages.Create(item, true);
-                var bmp = MyImages.ImageSharpToImageSource(bit);
+                var bit = await ImagesHelper.MergeWatermark(item, true);
+                var bmp = ImagesHelper.ImageSharpToImageSource(bit);
                 mainPage.createdImg.Source = bmp;
                 bit.Dispose();
             }
