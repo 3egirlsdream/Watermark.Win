@@ -188,14 +188,6 @@ namespace JointWatermark.Views
             };
             var json = JsonConvert.SerializeObject(model);
             File.WriteAllText(Global.BasePath + Global.SeparatorChar + "Resources/ExifConfig.json", json);
-            //using (var fs = new FileStream(Global.BasePath + Global.SeparatorChar + "Resources/ExifConfig.json", FileMode.OpenOrCreate))
-            //{
-            //    using (var writer = new StreamWriter(fs))
-            //    {
-                    
-            //        writer.Write(json);
-            //    }
-            //}
         }
 
 
@@ -208,7 +200,7 @@ namespace JointWatermark.Views
                 LeftPosition2 = p[1],
                 RightPosition1 = p[2],
                 RightPosition2= p[3],
-                BackgroundColor = "#FFF",
+                BackgroundColor = "#FFFFF",
                 Row1FontColor = "#000000"
             };
             var c = Tuple.Create(1920, 1080);
