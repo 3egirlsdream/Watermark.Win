@@ -85,7 +85,7 @@
                                 <TextBlock  HorizontalAlignment="Center" Text="LOGO" />
                             </StackPanel>
                         </TabItem.Header>
-                        <Border Padding="5">
+                        <Border Padding="0 5">
                             <WrapPanel x:Name="logoes">
 
                             </WrapPanel>

@@ -206,7 +206,7 @@ namespace JointWatermark
                     token.ThrowIfCancellationRequested();
                     var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
                     var bit = ImagesHelper.MergeWatermark(url).Result;
-                    bit.SaveAsJpeg(p);
+                    bit.Save(p);
                     bit.Dispose();
                 }
             });

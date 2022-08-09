@@ -18,6 +18,12 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Metadata;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.InteropServices;
 
 namespace JointWatermark.Class
 {
@@ -47,7 +53,7 @@ namespace JointWatermark.Class
                     {
                         logo = Image.Load(p);
                     }
-                    
+
                     //logo比例系数
                     double xs = (double)(h / 2) / logo.Height;
                     //字体比例系数
@@ -68,9 +74,10 @@ namespace JointWatermark.Class
                     using (Image<Rgba32> wm = new(w, (int)h))
                     {
                         IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, 10000);
-                        wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
+                        //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                         SixLabors.Fonts.FontFamily family;
-                        if (properties.Config.FontFamily == "Microsoft YaHei") {
+                        if (properties.Config.FontFamily == "Microsoft YaHei")
+                        {
                             family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
                         }
                         else
@@ -128,13 +135,18 @@ namespace JointWatermark.Class
                         var borderWidth = (int)(properties.Config.BorderWidth * w / 100.0);
                         Image<Rgba32> resultImage = new(w + 2 * borderWidth, (int)(h + img.Height + borderWidth));
 
+                        var by = img.Metadata.ExifProfile.ToByteArray();
+                        resultImage.Metadata.ExifProfile = new ExifProfile(by);
+
+                        resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
+                        resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
                         yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, 10000);
+                        resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), yourPolygon));
                         resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                         var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
                         resultImage.Mutate(x => x.DrawImage(img, border, 1));
                         border.Y += img.Height;
                         resultImage.Mutate(x => x.DrawImage(wm, border, 1));
-                       
                         return resultImage;
                     }
                 }
