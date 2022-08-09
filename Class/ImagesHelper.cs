@@ -29,10 +29,13 @@ namespace JointWatermark.Class
 {
     internal class ImagesHelper
     {
+        public static DateTime LastDate = DateTime.Now;
         public static Task<Image<Rgba32>> MergeWatermark(ImageProperties properties, bool isPreview = false)
         {
+            System.Diagnostics.Debug.WriteLine(1);
             return Task.Run(() =>
             {
+                LastDate = DateTime.Now;
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
                 using (var img = Image.Load(path, out IImageFormat format))
                 {
@@ -135,8 +138,11 @@ namespace JointWatermark.Class
                         var borderWidth = (int)(properties.Config.BorderWidth * w / 100.0);
                         Image<Rgba32> resultImage = new(w + 2 * borderWidth, (int)(h + img.Height + borderWidth));
 
-                        var by = img.Metadata.ExifProfile.ToByteArray();
-                        resultImage.Metadata.ExifProfile = new ExifProfile(by);
+                        if (img.Metadata.ExifProfile!= null)
+                        {
+                            var by = img.Metadata.ExifProfile.ToByteArray();
+                            resultImage.Metadata.ExifProfile = new ExifProfile(by);
+                        }
 
                         resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
                         resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;

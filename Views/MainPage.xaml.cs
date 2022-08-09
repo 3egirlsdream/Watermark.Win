@@ -434,6 +434,10 @@ namespace JointWatermark
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
             try
             {
+                if((DateTime.Now - ImagesHelper.LastDate).TotalSeconds < 1.0)
+                {
+                    return;
+                }
                 var bit = await ImagesHelper.MergeWatermark(item, true);
                 var bmp = ImagesHelper.ImageSharpToImageSource(bit);
                 mainPage.createdImg.Source = bmp;
@@ -443,7 +447,10 @@ namespace JointWatermark
             {
                 ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
             }
-            BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+            finally
+            {
+                BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+            }
         } 
 
         public SimpleCommand CmdSaveGlobal => new SimpleCommand()
