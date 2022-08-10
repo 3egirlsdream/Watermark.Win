@@ -79,14 +79,18 @@ namespace JointWatermark.Class
                         IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, 10000);
                         //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                         SixLabors.Fonts.FontFamily family;
-                        if (properties.Config.FontFamily == "Microsoft YaHei")
+                        if (properties.Config.FontFamily == "微软雅黑")
                         {
                             family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
                         }
                         else
                         {
-                            FontCollection collection = new();
-                            family = collection.Add("Resources/font/FZXiJinLJW.ttf");
+                            byte[] bt = Global.FontResourrce[properties.Config.FontFamily];
+                            using (var ms = new MemoryStream(bt))
+                            {
+                                var collection = new FontCollection();
+                                family = collection.Add(ms);
+                            }
                         }
                         //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 

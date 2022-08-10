@@ -76,11 +76,11 @@ namespace JointWatermark.Views
 
     public class ConfigExifVM : ValidationBase
     {
-        ConfigExif window;
+        ConfigExif? window;
         public ConfigExifVM(Window _window)
         {
             window = _window as ConfigExif;
-            var model = InitConfig();
+            var model = Global.InitConfig();
             ExifInfoList = new ObservableCollection<ExifInfo>(model.Exifs);
             ItemsSource = new ObservableCollection<LeftTextList>(model.Config);
             SelectedItem = ItemsSource[0];
@@ -104,7 +104,7 @@ namespace JointWatermark.Views
             InitPreviewImage(ls[0], ls[1], ls[2], ls[3]);
         }
 
-        private ObservableCollection<LeftTextList> itemsSource;
+        private ObservableCollection<LeftTextList> itemsSource = new ObservableCollection<LeftTextList>();
         public ObservableCollection<LeftTextList> ItemsSource
         {
             get => itemsSource;
@@ -135,7 +135,7 @@ namespace JointWatermark.Views
         }
 
 
-        private ObservableCollection<ExifInfo> exifInfoList;
+        private ObservableCollection<ExifInfo> exifInfoList = new ObservableCollection<ExifInfo>();
         /// <summary>
         /// 全部的的EXIF配置信息
         /// </summary>
@@ -149,7 +149,7 @@ namespace JointWatermark.Views
             }
         }
 
-        private ObservableCollection<ExifConfigInfo> configedInfo;
+        private ObservableCollection<ExifConfigInfo> configedInfo = new ObservableCollection<ExifConfigInfo>();
         /// <summary>
         /// 选中的配置信息
         /// </summary>
@@ -167,18 +167,6 @@ namespace JointWatermark.Views
 
         #region function
 
-        public MainModel InitConfig()
-        {
-            using (var fs = new FileStream(Global.BasePath + Global.SeparatorChar + "Resources/ExifConfig.json", FileMode.Open))
-            {
-                using(var reader = new StreamReader(fs))
-                {
-                    var c = reader.ReadToEnd();
-                    return JsonConvert.DeserializeObject<MainModel>(c);
-                }
-            }
-        }
-
         public void SaveConfig()
         {
             var model = new MainModel()
@@ -187,7 +175,7 @@ namespace JointWatermark.Views
                 Config = ItemsSource.ToList()
             };
             var json = JsonConvert.SerializeObject(model);
-            File.WriteAllText(Global.BasePath + Global.SeparatorChar + "Resources/ExifConfig.json", json);
+            File.WriteAllText(Global.BasePath + Global.SeparatorChar + "ExifConfig.json", json);
         }
 
 
@@ -216,9 +204,9 @@ namespace JointWatermark.Views
 
     public class MainModel
     {
-        public List<ExifInfo> Exifs { get; set; }
+        public List<ExifInfo> Exifs { get; set; } = new List<ExifInfo>();
 
-        public List<LeftTextList> Config { get; set; }
+        public List<LeftTextList> Config { get; set; } = new List<LeftTextList>();
     }
 
     public class ExifInfo : ValidationBase
@@ -234,9 +222,9 @@ namespace JointWatermark.Views
             }
         }
 
-        public string Key { get; set; }
+        public string Key { get; set; } = "";
 
-        private string name;
+        private string name = "";
         public string Name
         {
             get => name;
@@ -247,7 +235,7 @@ namespace JointWatermark.Views
             }
         }
 
-        private string _value;
+        private string _value = "";
         public string Value
         {
             get => _value;
@@ -265,10 +253,10 @@ namespace JointWatermark.Views
     public class ExifConfigInfo
     {
         public int SEQ { get; set; }
-        public string Front { get; set; }
-        public string Behind { get; set; }
-        public string Key { get; set; }
-        public string Value { get; set; }
+        public string? Front { get; set; }
+        public string? Behind { get; set; }
+        public string? Key { get; set; }
+        public string? Value { get; set; }
     }
 
     public class LeftTextList : ValidationBase
@@ -284,7 +272,7 @@ namespace JointWatermark.Views
             Config=config;  
         }
 
-        public string Text { get; set; }
+        public string Text { get; set; } = "";
 
         private ObservableCollection<ExifConfigInfo> config = new ObservableCollection<ExifConfigInfo>();
         public ObservableCollection<ExifConfigInfo> Config

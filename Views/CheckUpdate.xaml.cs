@@ -33,12 +33,12 @@ namespace JointWatermark
             DataContext = vm;
         }
 
-        private string newPath;
+        private string? newPath;
         private async void CheckVersion(object sender, RoutedEventArgs e)
         {
             checkUpdateBtn.IsEnabled = false;
             var version = await Connections.HttpGetAsync<CLIENT_VERSION>(Global.Http + "/api/CloudSync/GetVersion?Client=Watermark", Encoding.Default);
-            if (version != null && version.success && version.data != null)
+            if (version != null && version.success && version.data != null && version.data.VERSION != null)
             {
                 newPath = version.data.PATH;
                 var v1 = new Version(this.version.Text);
@@ -111,7 +111,7 @@ namespace JointWatermark
         }
 
 
-        private string text;
+        private string text = "";
         public string Text
         {
             get => text;
@@ -146,7 +146,7 @@ namespace JointWatermark
         }
 
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged = null;
         protected virtual void NotifyPropertyChanged(string propertyName)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -157,10 +157,10 @@ namespace JointWatermark
 
     public class CLIENT_VERSION
     {
-        public string ID { get; set; }
+        public string? ID { get; set; }
         public DateTime DATETIME { get; set; }
-        public string CLIENT { get; set; }
-        public string VERSION { get; set; }
-        public string PATH { get; set; }
+        public string? CLIENT { get; set; }
+        public string? VERSION { get; set; }
+        public string? PATH { get; set; }
     }
 }

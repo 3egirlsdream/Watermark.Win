@@ -1,4 +1,5 @@
 ﻿using JointWatermark.Views;
+using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using System;
@@ -152,9 +153,7 @@ namespace JointWatermark
 
         public static List<string> GetDefaultExifConfig(Dictionary<string, object> meta)
         {
-            var txt = File.ReadAllText(BasePath + SeparatorChar + "Resources/ExifConfig.json");
-            if (txt == null) return new List<string>();
-            var model = Newtonsoft.Json.JsonConvert.DeserializeObject<MainModel>(txt);
+            var model = InitConfig();
             if (model == null) return new List<string>();
             var ls = new List<string>();
 
@@ -181,6 +180,35 @@ namespace JointWatermark
 
             return ls;
         }
+
+        public static MainModel? InitConfig()
+        {
+            Stream ms;
+            var path = Global.BasePath + Global.SeparatorChar + "ExifConfig.json";
+            if (File.Exists(path))
+            {
+                ms = new FileStream(path, FileMode.Open);
+            }
+            else
+            {
+                ms = new MemoryStream(Properties.Resources.ExifConfig);
+            }
+            using (var reader = new StreamReader(ms))
+            {
+                var c = reader.ReadToEnd();
+                ms.Dispose();
+                return JsonConvert.DeserializeObject<MainModel>(c);
+            }
+        }
+
+
+        public static Dictionary<string, byte[]> FontResourrce = new Dictionary<string, byte[]>
+        {
+            { "金陵宋体", Properties.Resources.FZXiJinLJW },
+            { "Pamega", Properties.Resources.Pamega_demo_2 },
+            { "Hey-November", Properties.Resources.Hey_November_2},
+            { "Facon", Properties.Resources.Facon_2 }
+        };
 
     }
 }

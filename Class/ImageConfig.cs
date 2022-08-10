@@ -8,7 +8,7 @@ namespace JointWatermark.Class
 {
     public class ImageConfig : ValidationBase
     {
-        ImageProperties parent;
+        ImageProperties? parent = null;
         public ImageConfig(ImageProperties _parent)
         {
             parent = _parent;
@@ -34,7 +34,7 @@ namespace JointWatermark.Class
         }
 
 
-        private string leftPosition2;
+        private string leftPosition2 = "";
         /// <summary>
         /// 左侧第二行文字
         /// </summary>
@@ -48,7 +48,7 @@ namespace JointWatermark.Class
             }
         }
 
-        private string logoName;
+        private string logoName = "";
         /// <summary>
         /// LOGO名
         /// </summary>
@@ -63,7 +63,7 @@ namespace JointWatermark.Class
         }
 
 
-        private string rightPosition1;
+        private string rightPosition1 = "";
         /// <summary>
         /// 右侧第一行文字
         /// </summary>
@@ -77,7 +77,7 @@ namespace JointWatermark.Class
             }
         }
 
-        private string rightPosition2;
+        private string rightPosition2 = "";
         /// <summary>
         /// 右侧第二行文字
         /// </summary>
@@ -144,7 +144,7 @@ namespace JointWatermark.Class
         }
 
 
-        private string fontFamily = "Microsoft YaHei";
+        private string fontFamily = "微软雅黑";
         public string FontFamily
         {
             get => fontFamily;

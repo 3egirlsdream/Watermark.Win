@@ -142,9 +142,7 @@
                                 </Popup>
                             </StackPanel>
 
-                            <ComboBox Grid.Row="8" Margin="10 5"  materialDesign:HintAssist.Hint="字体" materialDesign:HintAssist.IsFloating="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged">
-                                <ComboBoxItem Content="微软雅黑" />
-                                <ComboBoxItem Content="金陵宋体" />
+                            <ComboBox x:Name="fontlist" Grid.Row="8" Margin="10 5"  materialDesign:HintAssist.Hint="字体" materialDesign:HintAssist.IsFloating="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged">
                             </ComboBox>
 
                             <!--保存按钮-->

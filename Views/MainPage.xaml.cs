@@ -58,6 +58,8 @@ namespace JointWatermark
                 DirectoryInfo directory = new DirectoryInfo(Global.Path_temp);
                 if (!directory.Exists)
                     directory.Create();
+
+                InitFontList();
             }
             catch (Exception ex)
             {
@@ -229,20 +231,21 @@ namespace JointWatermark
             }
         }
 
+        private void InitFontList()
+        {
+            var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
+            fonts.Insert(0, "微软雅黑");
+            fontlist.ItemsSource = fonts;
+        }
+
+
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ComboBox combo && vm != null && vm.Images != null)
             {
                 foreach (var img in vm.Images)
                 {
-                    if (combo.SelectedIndex == 0)
-                    {
-                        img.Config.FontFamily = "Microsoft YaHei";
-                    }
-                    else
-                    {
-                        img.Config.FontFamily = "FZXiJinLJW";
-                    }
+                    img.Config.FontFamily = combo.SelectedItem.ToString();
                 }
             }
         }
