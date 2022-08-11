@@ -58,7 +58,11 @@ namespace JointWatermark.Views
         public void ISetPosition(int count, string msg = "")
         {
             vm.Text = msg;
-            vm.Process = count;
+            while (vm.Process < count)
+            {
+                vm.Process++;
+                Thread.Sleep(10);
+            }
         }
 
         public void IClose()

@@ -25,7 +25,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Image = System.Drawing.Image;
 
 namespace JointWatermark
 {
@@ -35,9 +34,7 @@ namespace JointWatermark
     public partial class MainPage : Page
     {
         public MainVM vm;
-        private DateTime LastDate = DateTime.Now;
         public List<string> MultiImages = new List<string>();
-        private bool IsBreak = false;
         public MainPage()
         {
             try
@@ -85,15 +82,6 @@ namespace JointWatermark
             }
         }
 
-        private void downloadClick(object sender, RoutedEventArgs e)
-        {
-            if (Directory.Exists(Global.Path_output))
-            {
-                System.Diagnostics.Process.Start(Global.Path_output);
-            }
-        }
-
-
         private void deviceName_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (vm.SelectedImage != null)
@@ -123,16 +111,7 @@ namespace JointWatermark
                         var percent = (ii+1)* 100.0 / dialog.FileNames.Length;
                         token.ThrowIfCancellationRequested();
                         loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
-                        var i = new ImageProperties(item, item.Substring(item.LastIndexOf(Global.SeparatorChar) + 1));
-                        var meta = Global.GetThumbnailPath(i.Path);
-                        i.ThumbnailPath = meta.path;
-                        i.Config.LeftPosition1 = meta.left1;
-                        i.Config.LeftPosition2 = meta.left2;
-                        i.Config.RightPosition1 = meta.right1;
-                        i.Config.RightPosition2 = meta.right2;
-                        i.Config.BackgroundColor = "#fff";
-                        i.Path = item;
-
+                        var i = ImagesHelper.Current.ReadImage(item, "");
                         if (vm.IconList != null && vm.IconList.Any())
                         {
                             i.Config.LogoName = vm.IconList[0].Substring(vm.IconList[0].LastIndexOf(Global.SeparatorChar) + 1);
@@ -177,7 +156,7 @@ namespace JointWatermark
                     img.Source = map;
                     card.Content = img;
                     card.Cursor = Cursors.Hand;
-                    ShadowAssist.SetShadowDepth(card, ShadowDepth.Depth1);
+                    ElevationAssist.SetElevation(card, Elevation.Dp2);
                     card.MouseLeftButtonDown += Card_MouseLeftButtonDown;
                     logoes.Children.Add(card);
                     vm.IconList.Add(file.FullName);
@@ -207,7 +186,7 @@ namespace JointWatermark
                     loading.ISetPosition((int)percent, $"正在生成图片：{url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1)}");
                     token.ThrowIfCancellationRequested();
                     var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
-                    var bit = ImagesHelper.MergeWatermark(url).Result;
+                    var bit = ImagesHelper.Current.MergeWatermark(url).Result;
                     bit.Save(p);
                     bit.Dispose();
                 }
@@ -427,7 +406,7 @@ namespace JointWatermark
                     RefreshSelectedImage(item);
                 }
             },
-            CanExecuteDelegate=o => true
+            CanExecuteDelegate= o => true
         };
 
 
@@ -437,12 +416,12 @@ namespace JointWatermark
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
             try
             {
-                if((DateTime.Now - ImagesHelper.LastDate).TotalSeconds < 1.0)
+                if((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
                 {
                     return;
                 }
-                var bit = await ImagesHelper.MergeWatermark(item, true);
-                var bmp = ImagesHelper.ImageSharpToImageSource(bit);
+                var bit = await ImagesHelper.Current.MergeWatermark(item, true);
+                var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
                 mainPage.createdImg.Source = bmp;
                 bit.Dispose();
             }

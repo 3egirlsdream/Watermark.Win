@@ -181,7 +181,6 @@ namespace JointWatermark.Views
 
         public async void InitPreviewImage(params string[] p)
         {
-            var water = await CreateImage.CreatePic(1920, 1080);
             var con = new ImageConfig()
             {
                 LeftPosition1 = p[0],
@@ -189,11 +188,13 @@ namespace JointWatermark.Views
                 RightPosition1 = p[2],
                 RightPosition2= p[3],
                 BackgroundColor = "#FFFFF",
-                Row1FontColor = "#000000"
+                Row1FontColor = "#000000",
+                FontFamily = "微软雅黑"
             };
-            var c = Tuple.Create(1920, 1080);
-            var img = await CreateImage.CreateWatermark(water, con, c);
-            window.previewImg.Source = img;
+            var img = await ImagesHelper.Current.CreateWatermark(con);
+            var imgs = ImagesHelper.Current.ImageSharpToImageSource(img);
+            img.Dispose();
+            window.previewImg.Source = imgs;
         }
 
 

@@ -130,6 +130,9 @@
   <data name="Hey_November_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\font\Hey-November-2.otf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="leica" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\leica.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="Pamega_demo_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\font\Pamega-demo-2.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

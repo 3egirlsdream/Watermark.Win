@@ -103,6 +103,16 @@ namespace JointWatermark.Properties {
         /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
+        internal static byte[] leica {
+            get {
+                object obj = ResourceManager.GetObject("leica", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
         internal static byte[] Pamega_demo_2 {
             get {
                 object obj = ResourceManager.GetObject("Pamega_demo_2", resourceCulture);
