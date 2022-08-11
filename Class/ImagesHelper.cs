@@ -223,10 +223,7 @@ namespace JointWatermark.Class
                     logo.Mutate(x => x.Resize(waterWidth, waterHeight));
 
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
-
-
                     IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, 10000);
-                    //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
                     if (config.FontFamily == "微软雅黑")
                     {
@@ -241,7 +238,6 @@ namespace JointWatermark.Class
                             family = collection.Add(ms);
                         }
                     }
-                    //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
                     //右侧F ISO MM字体参数
                     float fontSize = 31 * fontxs;
