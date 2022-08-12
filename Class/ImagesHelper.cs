@@ -25,6 +25,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.InteropServices;
 using System.Collections.ObjectModel;
+using System.Net;
 
 namespace JointWatermark.Class
 {
@@ -43,7 +44,7 @@ namespace JointWatermark.Class
                     var borderWidth = (int)(properties.Config.BorderWidth * img.Width / 100.0);
                     Image<Rgba32> resultImage = new Image<Rgba32>(img.Width + 2 * borderWidth, (int)(t.Result.Height + img.Height + borderWidth));
 
-                    if (img.Metadata.ExifProfile!= null)
+                    if (img.Metadata.ExifProfile != null)
                     {
                         var by = img.Metadata.ExifProfile.ToByteArray();
                         resultImage.Metadata.ExifProfile = new ExifProfile(by);
@@ -80,7 +81,6 @@ namespace JointWatermark.Class
                     {
                         h = img.Height * 0.13 * 0.4;
                     }
-                    var p = Global.Path_logo + Global.SeparatorChar + properties.Config.LogoName;
                     Image logo;
                     if (string.IsNullOrEmpty(properties.Config.LogoName))
                     {
@@ -88,7 +88,19 @@ namespace JointWatermark.Class
                     }
                     else
                     {
-                        logo = Image.Load(p);
+                        var p = Global.Path_logo + Global.SeparatorChar + properties.Config.LogoName;
+                        if (properties.Config.IsCloudIcon)
+                        {
+                            using (WebClient mywebclient = new WebClient())
+                            {
+                                byte[] Bytes = mywebclient.DownloadData(properties.Config.LogoName);
+                                logo = Image.Load(Bytes);
+                            }
+                        }
+                        else
+                        {
+                            logo = Image.Load(p);
+                        }
                     }
 
                     //logo比例系数
@@ -333,6 +345,29 @@ namespace JointWatermark.Class
             i.Path = filenames;
             i.Config.LogoName = logoName;
             return i;
+        }
+
+        public static byte[] BitmapImageToByteArray(BitmapImage bmp)
+        {
+            byte[] bytearray = null;
+            try
+            {
+                Stream smarket = bmp.StreamSource; ;
+                if (smarket != null && smarket.Length > 0)
+                {
+                    //设置当前位置
+                    smarket.Position = 0;
+                    using (BinaryReader br = new BinaryReader(smarket))
+                    {
+                        bytearray = br.ReadBytes((int)smarket.Length);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return bytearray;
         }
     }
 }

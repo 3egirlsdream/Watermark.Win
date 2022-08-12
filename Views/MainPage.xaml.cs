@@ -2,6 +2,7 @@
 using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using System;
@@ -64,7 +65,21 @@ namespace JointWatermark
             }
         }
 
-
+        private void CloudIconCard_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is MaterialDesignThemes.Wpf.Card card && card.Tag is string tag)
+            {
+                foreach (var item in vm.Images)
+                {
+                    item.Config.LogoName = tag;
+                    item.Config.IsCloudIcon = true;
+                }
+                if (vm.SelectedImage != null)
+                {
+                    vm.RefreshSelectedImage(vm.SelectedImage);
+                }
+            }
+        }
 
         private void Card_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -161,6 +176,48 @@ namespace JointWatermark
                     logoes.Children.Add(card);
                     vm.IconList.Add(file.FullName);
                 }
+                var cloudIcons = Global.InitConfig().Icons;
+
+                foreach(var icon in cloudIcons)
+                {
+                    try
+                    {
+                        var card = new Card();
+                        card.Tag = icon;
+                        card.Margin = new Thickness(12, 0, 16, 12);
+                        card.Width = 60;
+                        card.Height = 60;
+
+                        var img = new System.Windows.Controls.Image();
+                        img.Width = 40;
+                        img.Height = 40;
+                        BitmapImage map = new BitmapImage(new Uri(icon, UriKind.Absolute));
+                        img.Source = map;
+                        card.Content = img;
+                        card.Cursor = Cursors.Hand;
+                        ElevationAssist.SetElevation(card, Elevation.Dp2);
+                        card.MouseLeftButtonDown += CloudIconCard_MouseLeftButtonDown;
+                        card.ContextMenu = new ContextMenu();
+                        var menuDel = new MenuItem();
+                        menuDel.Header = "删除";
+                        menuDel.Click += (ss, es) => 
+                        {
+                            var model = Global.InitConfig();
+                            model.Icons.Remove(icon);
+                            var js = JsonConvert.SerializeObject(model);
+                            Global.SaveConfig(js);
+                            InitLogoes();
+                        };
+                        card.ContextMenu.Items.Add(menuDel);
+
+                        logoes.Children.Add(card);
+                        vm.IconList.Add(icon);
+                    }
+                    catch (Exception ex)
+                    {
+                        ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -172,8 +229,6 @@ namespace JointWatermark
         {
             SelectPictureClick(null, null);
         }
-
-
 
 
         public void Export()
@@ -465,7 +520,16 @@ namespace JointWatermark
             {
                 if(SelectedImage != null && x is string c && !string.IsNullOrEmpty(c))
                 {
-                    SelectedImage.Config.LogoName = c.Substring(c.LastIndexOf(Global.SeparatorChar) + 1);
+                    if (c.StartsWith("http"))
+                    {
+                        SelectedImage.Config.IsCloudIcon = true;
+                        SelectedImage.Config.LogoName = c;
+                    }
+                    else
+                    {
+                        SelectedImage.Config.LogoName = c.Substring(c.LastIndexOf(Global.SeparatorChar) + 1);
+                        SelectedImage.Config.IsCloudIcon = false;
+                    }
                     RefreshSelectedImage(SelectedImage);
                 }
             },

@@ -175,7 +175,7 @@ namespace JointWatermark.Views
                 Config = ItemsSource.ToList()
             };
             var json = JsonConvert.SerializeObject(model);
-            File.WriteAllText(Global.BasePath + Global.SeparatorChar + "ExifConfig.json", json);
+            Global.SaveConfig(json);
         }
 
 
@@ -208,6 +208,8 @@ namespace JointWatermark.Views
         public List<ExifInfo> Exifs { get; set; } = new List<ExifInfo>();
 
         public List<LeftTextList> Config { get; set; } = new List<LeftTextList>();
+
+        public List<string> Icons { get; set; } = new List<string>();
     }
 
     public class ExifInfo : ValidationBase

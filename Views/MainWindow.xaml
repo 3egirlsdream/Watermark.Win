@@ -33,6 +33,7 @@
                 <MenuItem Header="导入图片" Click="ImportImagesClick" Icon="{materialDesign:PackIcon Kind=Download}"></MenuItem>
                 <MenuItem Header="导出变体" Click="ExportImageClick" Icon="{materialDesign:PackIcon Kind=Upload}"></MenuItem>
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>
+                <MenuItem Header="导入云图标" Click="ImportCloudIconClick" Icon="{materialDesign:PackIcon Kind=CloudDownload}"></MenuItem>
                 <Separator />
                 <MenuItem Header="Exit" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                

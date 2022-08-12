@@ -48,6 +48,8 @@ namespace JointWatermark.Class
             }
         }
 
+        public bool IsCloudIcon { get; set; } = false;
+
         private string logoName = "";
         /// <summary>
         /// LOGO名

@@ -1,6 +1,7 @@
 ﻿using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -147,6 +148,25 @@ namespace JointWatermark
         private void ExitClick(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void ImportCloudIconClick(object sender, RoutedEventArgs e)
+        {
+            var win = new ImportCloudIcon();
+            win.Owner = this;
+            win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            win.ShowInTaskbar = false;
+            if (win.ShowDialog() == true)
+            {
+                var model = Global.InitConfig();
+                if (model != null)
+                {
+                    model.Icons.Add((string)win.Data);
+                    var json = JsonConvert.SerializeObject(model);
+                    Global.SaveConfig(json);
+                }
+                main.InitLogoes();
+            }
         }
     }
 

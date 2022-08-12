@@ -181,7 +181,7 @@ namespace JointWatermark
             return ls;
         }
 
-        public static MainModel? InitConfig()
+        public static MainModel InitConfig()
         {
             Stream ms;
             var path = Global.BasePath + Global.SeparatorChar + "ExifConfig.json";
@@ -197,7 +197,8 @@ namespace JointWatermark
             {
                 var c = reader.ReadToEnd();
                 ms.Dispose();
-                return JsonConvert.DeserializeObject<MainModel>(c);
+                var result = JsonConvert.DeserializeObject<MainModel>(c);
+                return result ?? new MainModel();
             }
         }
 
@@ -209,6 +210,19 @@ namespace JointWatermark
             { "Hey-November", Properties.Resources.Hey_November_2},
             { "Facon", Properties.Resources.Facon_2 }
         };
+
+        public static bool SaveConfig(string json)
+        {
+            try
+            {
+                File.WriteAllText(Global.BasePath + Global.SeparatorChar + "ExifConfig.json", json);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
 
     }
 }
