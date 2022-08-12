@@ -129,7 +129,17 @@ namespace JointWatermark
                         var i = ImagesHelper.Current.ReadImage(item, "");
                         if (vm.IconList != null && vm.IconList.Any())
                         {
-                            i.Config.LogoName = vm.IconList[0].Substring(vm.IconList[0].LastIndexOf(Global.SeparatorChar) + 1);
+                            var logoname = vm.IconList[0];
+                            if (logoname.StartsWith("http"))
+                            {
+                                i.Config.LogoName = logoname;
+                                i.Config.IsCloudIcon = true;
+                            }
+                            else
+                            {
+                                i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
+                                i.Config.IsCloudIcon = false;
+                            }
                         }
                         Dispatcher.Invoke(() =>
                         {
