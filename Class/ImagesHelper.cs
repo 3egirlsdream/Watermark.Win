@@ -33,7 +33,41 @@ namespace JointWatermark.Class
     {
         public static ImagesHelper Current = new ImagesHelper();
         public DateTime LastDate = DateTime.Now.AddSeconds(-1.1);
-        public Task<Image<Rgba32>> MergeWatermark(ImageProperties properties, bool isPreview = false)
+
+        public Task<Image> MergeWatermark(ImageProperties properties, bool isPreview = false)
+        {
+            return CreateWatermark(properties, isPreview).ContinueWith(t =>
+            {
+                var path = isPreview ? properties.ThumbnailPath : properties.Path;
+                using (var img = Image.Load(path))
+                {
+                    //拼接图片
+                    var borderWidth = (int)(properties.Config.BorderWidth * img.Width / 100.0);
+                    var resultImage = img.Clone(c => c.Resize(img.Width + 2 * borderWidth, (int)(t.Result.Height + img.Height + borderWidth)));
+
+                    if (img.Metadata.ExifProfile != null)
+                    {
+                        var by = img.Metadata.ExifProfile.ToByteArray();
+                        resultImage.Metadata.ExifProfile = new ExifProfile(by);
+                    }
+
+                    resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
+                    resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
+                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, 10000);
+                    resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
+                    resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), polygon));
+                    var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
+                    resultImage.Mutate(x => x.DrawImage(img, border, 1));
+                    border.Y += img.Height;
+                    resultImage.Mutate(x => x.DrawImage(t.Result, border, 1));
+                    t.Result.Dispose();
+                    return resultImage;
+                }
+            });
+        }
+
+
+        public Task<Image<Rgba32>> MergeWatermarkPreview(ImageProperties properties, bool isPreview = false)
         {
             return CreateWatermark(properties, isPreview).ContinueWith(t =>
             {

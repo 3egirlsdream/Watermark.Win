@@ -485,7 +485,7 @@ namespace JointWatermark
                 {
                     return;
                 }
-                var bit = await ImagesHelper.Current.MergeWatermark(item, true);
+                var bit = await ImagesHelper.Current.MergeWatermarkPreview(item, true);
                 var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
                 mainPage.createdImg.Source = bmp;
                 bit.Dispose();
