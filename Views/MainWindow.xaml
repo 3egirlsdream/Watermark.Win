@@ -35,12 +35,15 @@
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>
                 <MenuItem Header="导入云图标" Click="ImportCloudIconClick" Icon="{materialDesign:PackIcon Kind=CloudDownload}"></MenuItem>
                 <Separator />
-                <MenuItem Header="Exit" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
+                <MenuItem Header="退出" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                
             </MenuItem>
             <MenuItem Header="关于" >
                 <MenuItem Header="设置"  Icon="{materialDesign:PackIcon Kind=Settings}" Click="SettingsClick"/>
                 <MenuItem Header="检查更新"  Icon="{materialDesign:PackIcon Kind=Update}" Click="CheckUpdateClick"/>
+            </MenuItem>
+            <MenuItem Header="帮助" >
+                <MenuItem Header="打开向导"  Icon="{materialDesign:PackIcon Kind=AccountQuestion}" Click="OpenGuideClick"/>
             </MenuItem>
             <MenuItem Header="更多">
                 <MenuItem Header="866034817"  Icon="{materialDesign:PackIcon Kind=Qqchat}" />

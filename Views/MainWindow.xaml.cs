@@ -39,10 +39,23 @@ namespace JointWatermark
                 InitializeComponent();
                 vm = new VM();
                 this.DataContext = vm;
+                Loaded += MainWindow_Loaded;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            var model = Global.InitConfig();
+            if (model.ShowGuide)
+            {
+                var win = new UserGuide();
+                win.Owner = this;
+                win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                win.ShowDialog();
             }
         }
 
@@ -167,6 +180,14 @@ namespace JointWatermark
                 }
                 main.InitLogoes();
             }
+        }
+
+        private void OpenGuideClick(object sender, RoutedEventArgs e)
+        {
+            var win = new UserGuide();
+            win.Owner = this;
+            win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            win.ShowDialog();
         }
     }
 

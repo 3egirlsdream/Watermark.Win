@@ -210,6 +210,7 @@ namespace JointWatermark.Views
         public List<LeftTextList> Config { get; set; } = new List<LeftTextList>();
 
         public List<string> Icons { get; set; } = new List<string>();
+        public bool ShowGuide { get; set; }
     }
 
     public class ExifInfo : ValidationBase
