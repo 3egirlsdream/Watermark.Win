@@ -47,6 +47,7 @@ namespace JointWatermark
                 {
                     check.Badge = new PackIcon() { Kind = PackIconKind.Update };
                     newVersion.Visibility = Visibility.Visible;
+                    newVersion.Content = $"有新版本V{version.data.VERSION}点击下载";
                 }
                 else
                 {
@@ -79,9 +80,15 @@ namespace JointWatermark
                     string path = pSaveFileDialog.FileName;
                     vm.DownloadLoading = true;
                     newVersion.IsEnabled = false;
+                    wc.DownloadProgressChanged += (ss, e) =>
+                    {
+                        vm.DownLoadProgress = e.ProgressPercentage;
+                    };
+                    checkUpdateBtn.IsEnabled = false;
                     await wc.DownloadFileTaskAsync(new Uri(newPath), path);
                     vm.DownloadLoading = false;
                     newVersion.IsEnabled = true;
+                    checkUpdateBtn.IsEnabled = true;
                 }
 
             }
@@ -99,6 +106,11 @@ namespace JointWatermark
         private void TabItem_GotFocus(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void WindowMininizeClick(object sender, RoutedEventArgs e)
+        {
+            this.Visibility = Visibility.Hidden;
         }
     }
 
@@ -144,6 +156,18 @@ namespace JointWatermark
                 NotifyPropertyChanged(nameof(DownloadLoading));
             }
         }
+
+        private int downLoadProgress = 0;
+        public int DownLoadProgress
+        {
+            get => downLoadProgress;
+            set
+            {
+                downLoadProgress = value;
+                NotifyPropertyChanged(nameof(DownLoadProgress));
+            }
+        }
+        
 
 
         public event PropertyChangedEventHandler? PropertyChanged = null;

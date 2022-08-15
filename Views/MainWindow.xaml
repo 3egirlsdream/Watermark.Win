@@ -46,8 +46,18 @@
                 <MenuItem Header="打开向导"  Icon="{materialDesign:PackIcon Kind=AccountQuestion}" Click="OpenGuideClick"/>
             </MenuItem>
             <MenuItem Header="更多">
-                <MenuItem Header="866034817"  Icon="{materialDesign:PackIcon Kind=Qqchat}" />
-                <MenuItem Header="thankful.top:1000" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" />
+                <MenuItem Header="交流群" Icon="{materialDesign:PackIcon Kind=Qqchat}" >
+                    <MenuItem Header="866034817" Icon="{materialDesign:PackIcon Kind=Qqchat}"/>
+                </MenuItem>
+                <MenuItem Header="网页端" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" >
+                    <MenuItem Header="www.thankful.top:1000" Click="OpenLink" Tag="http://www.thankful.top:1000/" Icon="{materialDesign:PackIcon Kind=Link}"/>
+                </MenuItem>
+                <MenuItem Header="Give ★" Icon="{materialDesign:PackIcon Kind=MicrosoftGithub}" >
+                    <MenuItem Header="https://github.com/3egirlsdream" Click="OpenLink" Tag="https://github.com/3egirlsdream/JointWatermark" Icon="{materialDesign:PackIcon Kind=Link}"/>
+                </MenuItem>
+                <MenuItem Header="提交BUG" Icon="{materialDesign:PackIcon Kind=Bug}" >
+                    <MenuItem Header="issues" Click="OpenLink" Tag="https://github.com/3egirlsdream/JointWatermark/issues" Icon="{materialDesign:PackIcon Kind=Link}"/>
+                </MenuItem>
             </MenuItem>
         </Menu>
         <Border x:Name="msg" Visibility="Collapsed" Style="{StaticResource BorderStyle}" Width="250" Height="70" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" CornerRadius="5" Panel.ZIndex="9">

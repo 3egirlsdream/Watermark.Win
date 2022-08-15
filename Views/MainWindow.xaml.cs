@@ -59,13 +59,22 @@ namespace JointWatermark
             }
         }
 
+        CheckUpdate checkUpdate = null;
         private void CheckUpdateClick(object sender, RoutedEventArgs e)
         {
-            var win = new CheckUpdate();
-            win.Owner = this;
-            win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            win.ShowInTaskbar = false;
-            win.ShowDialog();
+            if(checkUpdate != null)
+            {
+                checkUpdate.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                checkUpdate = new CheckUpdate();
+                checkUpdate.Owner = this;
+                checkUpdate.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                checkUpdate.ShowInTaskbar = false;
+                checkUpdate.ShowDialog();
+            }
+            
         }
 
         private void ImportIconClick(object sender, RoutedEventArgs e)
@@ -188,6 +197,15 @@ namespace JointWatermark
             win.Owner = this;
             win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             win.ShowDialog();
+        }
+
+        private void OpenLink(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is string tag && !string.IsNullOrEmpty(tag))
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo() { FileName = tag, UseShellExecute = true };
+                System.Diagnostics.Process.Start(psi);
+            }
         }
     }
 

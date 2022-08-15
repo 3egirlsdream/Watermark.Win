@@ -50,6 +50,9 @@
                     <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="0 0" Click="TabItem_GotFocus">
                         <materialDesign:PackIcon Kind="WindowClose" />
                     </Button>
+                    <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="35 0" Click="WindowMininizeClick" ToolTip="最小化后台下载">
+                        <materialDesign:PackIcon Kind="Minimize" />
+                    </Button>
                 </Grid>
             </Border>
 
@@ -64,11 +67,10 @@
                 </materialDesign:Badged>
                 <Button x:Name="newVersion" Visibility="Collapsed" Margin="0 10"
                                           Style="{StaticResource MaterialDesignFlatLightButton}"
-                                          materialDesign:ButtonProgressAssist.Value="-1"
+                                          materialDesign:ButtonProgressAssist.Value="{Binding DownLoadProgress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding DownloadLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          materialDesign:ButtonProgressAssist.IsIndeterminate="True"
                                           Click="newVersionClick"
-                                          ToolTip="MaterialDesignFlatLightButton"
+                                          ToolTip="点击下载"
                                           Content="有新版本点击下载"
                                           Width="auto"
                                           HorizontalAlignment="Center" />

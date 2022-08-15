@@ -209,6 +209,7 @@ namespace JointWatermark
                         card.MouseLeftButtonDown += CloudIconCard_MouseLeftButtonDown;
                         card.ContextMenu = new ContextMenu();
                         var menuDel = new MenuItem();
+                        menuDel.Icon = new PackIcon() { Kind = PackIconKind.Delete };
                         menuDel.Header = "删除";
                         menuDel.Click += (ss, es) => 
                         {

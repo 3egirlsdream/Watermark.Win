@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>leica.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.0.405</AssemblyVersion>
+    <AssemblyVersion>1.0.0.605</AssemblyVersion>
     <Authors>3egirlsdream@github.com</Authors>
     <Company>github.com/3egirlsdream/JointWatermark</Company>
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
