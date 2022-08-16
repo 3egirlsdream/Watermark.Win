@@ -8,12 +8,6 @@ namespace JointWatermark.Class
 {
     public class ImageConfig : ValidationBase
     {
-        ImageProperties? parent = null;
-        public ImageConfig(ImageProperties _parent)
-        {
-            parent = _parent;
-        }
-
         public ImageConfig()
         {
         }

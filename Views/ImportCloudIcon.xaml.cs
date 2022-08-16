@@ -80,7 +80,7 @@ namespace JointWatermark
             }
             catch (Exception ex)
             {
-                ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                Global.SendMsg(ex.Message);
                 return false;
             }
 

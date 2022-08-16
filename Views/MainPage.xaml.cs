@@ -226,13 +226,13 @@ namespace JointWatermark
                     }
                     catch (Exception ex)
                     {
-                        ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                        Global.SendMsg(ex.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                Global.SendMsg(ex.Message);
             }
         }
 
@@ -296,14 +296,8 @@ namespace JointWatermark
         }
     }
 
-    public class MainVM : INotifyPropertyChanged
+    public class MainVM : ValidationBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void NotifyPropertyChanged(string propertyName)
-        {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         MainPage mainPage;
         public MainVM(Page page)
         {
@@ -374,7 +368,6 @@ namespace JointWatermark
             {
                 color = value;
                 NotifyPropertyChanged(nameof(Color));
-                Global.color =  System.Drawing.Color.FromArgb(value.R, value.G, value.B);
             }
         }
 
@@ -493,7 +486,7 @@ namespace JointWatermark
             }
             catch (Exception ex)
             {
-                ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                Global.SendMsg(ex.Message);
             }
             finally
             {

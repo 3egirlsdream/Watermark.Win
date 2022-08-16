@@ -13,7 +13,7 @@ namespace JointWatermark.Class
         {
             Path = _path;
             Name = _name;
-            Config = new ImageConfig(this);
+            Config = new ImageConfig();
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
 

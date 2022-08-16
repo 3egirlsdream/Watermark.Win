@@ -1,4 +1,5 @@
-﻿using JointWatermark.Views;
+﻿using JointWatermark.Class;
+using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -209,14 +210,8 @@ namespace JointWatermark
         }
     }
 
-    public class VM : INotifyPropertyChanged
+    public class VM : ValidationBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void NotifyPropertyChanged(string propertyName)
-        {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         public VM()
         {
 

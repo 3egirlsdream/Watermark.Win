@@ -33,11 +33,18 @@ namespace JointWatermark.Class
     {
         public static ImagesHelper Current = new ImagesHelper();
         public DateTime LastDate = DateTime.Now.AddSeconds(-1.1);
-        Func<int, int, int> diagonal => new Func<int, int, int>((int a, int b) =>
+        /// <summary>
+        /// 对角线
+        /// </summary>
+        Func<int, int, int> Diagonal => new Func<int, int, int>((int a, int b) =>
         {
             return (int)Math.Sqrt(a * a + b * b) + 1000;
         });
 
+        /// <summary>
+        /// 生成图片
+        /// </summary>
+        /// <returns></returns>
         public Task<Image> MergeWatermark(ImageProperties properties, bool isPreview = false)
         {
             return CreateWatermark(properties, isPreview).ContinueWith(t =>
@@ -57,7 +64,7 @@ namespace JointWatermark.Class
 
                     resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
                     resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
-                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, diagonal(resultImage.Height, resultImage.Width));
+                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, Diagonal(resultImage.Height, resultImage.Width));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), polygon));
                     var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
@@ -70,7 +77,10 @@ namespace JointWatermark.Class
             });
         }
 
-
+        /// <summary>
+        /// 生成预览图片
+        /// </summary>
+        /// <returns></returns>
         public Task<Image<Rgba32>> MergeWatermarkPreview(ImageProperties properties, bool isPreview = false)
         {
             return CreateWatermark(properties, isPreview).ContinueWith(t =>
@@ -90,7 +100,7 @@ namespace JointWatermark.Class
 
                     resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
                     resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
-                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, diagonal(resultImage.Height, resultImage.Width));
+                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, Diagonal(resultImage.Height, resultImage.Width));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), polygon));
                     var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
@@ -104,6 +114,10 @@ namespace JointWatermark.Class
         }
 
 
+        /// <summary>
+        /// 创建水印
+        /// </summary>
+        /// <returns></returns>
         public Task<Image<Rgba32>> CreateWatermark(ImageProperties properties, bool isPreview = false)
         {
             return Task.Run(() =>
@@ -129,7 +143,7 @@ namespace JointWatermark.Class
                         var p = Global.Path_logo + Global.SeparatorChar + properties.Config.LogoName;
                         if (properties.Config.IsCloudIcon)
                         {
-                            using (WebClient mywebclient = new WebClient())
+                            using (var mywebclient = new WebClient())
                             {
                                 byte[] Bytes = mywebclient.DownloadData(properties.Config.LogoName);
                                 logo = Image.Load(Bytes);
@@ -161,7 +175,7 @@ namespace JointWatermark.Class
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
 
 
-                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, diagonal(img.Height, img.Width));
+                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
                     //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
                     if (properties.Config.FontFamily == "微软雅黑")
@@ -230,6 +244,10 @@ namespace JointWatermark.Class
         }
 
 
+        /// <summary>
+        /// 创建水印
+        /// </summary>
+        /// <returns></returns>
         public Task<Image<Rgba32>> CreateWatermark(ImageConfig config)
         {
             return Task.Run(() =>
@@ -273,7 +291,7 @@ namespace JointWatermark.Class
                     logo.Mutate(x => x.Resize(waterWidth, waterHeight));
 
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
-                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, diagonal(img.Height, img.Width));
+                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
                     SixLabors.Fonts.FontFamily family;
                     if (config.FontFamily == "微软雅黑")
                     {
@@ -339,6 +357,11 @@ namespace JointWatermark.Class
             });
         }
 
+        /// <summary>
+        /// 转为WPF Image组件可以识别的类型
+        /// </summary>
+        /// <param name="image"></param>
+        /// <returns></returns>
         public ImageSource ImageSharpToImageSource(SixLabors.ImageSharp.Image<Rgba32> image)
         {
             var bmp = new WriteableBitmap(image.Width, image.Height, image.Metadata.HorizontalResolution, image.Metadata.VerticalResolution, PixelFormats.Bgra32, null);
@@ -370,6 +393,12 @@ namespace JointWatermark.Class
         }
 
 
+        /// <summary>
+        /// 读取Exif信息
+        /// </summary>
+        /// <param name="filenames"></param>
+        /// <param name="logoName"></param>
+        /// <returns></returns>
         public ImageProperties ReadImage(string filenames, string logoName)
         {
             var i = new ImageProperties(filenames, filenames.Substring(filenames.LastIndexOf(Global.SeparatorChar) + 1));
@@ -383,29 +412,6 @@ namespace JointWatermark.Class
             i.Path = filenames;
             i.Config.LogoName = logoName;
             return i;
-        }
-
-        public static byte[] BitmapImageToByteArray(BitmapImage bmp)
-        {
-            byte[] bytearray = null;
-            try
-            {
-                Stream smarket = bmp.StreamSource; ;
-                if (smarket != null && smarket.Length > 0)
-                {
-                    //设置当前位置
-                    smarket.Position = 0;
-                    using (BinaryReader br = new BinaryReader(smarket))
-                    {
-                        bytearray = br.ReadBytes((int)smarket.Length);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            return bytearray;
         }
     }
 }

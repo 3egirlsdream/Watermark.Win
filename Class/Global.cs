@@ -15,26 +15,14 @@ namespace JointWatermark
 {
     public class Global
     {
-        public static string logo = "";
-        public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
-        public static string sourceImgUrl;
-        public static string lastUrl;
-        public static char SeparatorChar = System.IO.Path.DirectorySeparatorChar;
-        public static string Path_temp;
-        public static string Path_output;
-        public static string Path_logo;
-        public static System.Drawing.Color color = System.Drawing.Color.White;
-
-
-        public static string mount { get; set; }
-        public static string xy { get; set; }
-        public static string date { get; set; }
-        public static string deviceName { get; set; }
-
-        public static string FontFamily { get; set; } = "FZXiJinLJW";
-        public static string FontFamilyLight { get; set; } = "微软雅黑Light";
-
+        public static string BasePath { get; set; } = AppDomain.CurrentDomain.BaseDirectory;
+        public static char SeparatorChar { get; set; } = System.IO.Path.DirectorySeparatorChar;
+        public static string Path_temp { get; set; }
+        public static string Path_output { get; set; }
+        public static string Path_logo { get; set; }
         public static string Http { get; set; } = "http://thankful.top:4396";
+
+
 
         public static dynamic GetThumbnailPath(string sourceImg, bool showBrand = true)
         {
@@ -100,45 +88,7 @@ namespace JointWatermark
             }
         }
 
-        public static dynamic GetMetaInfo(string sourceImg)
-        {
-            using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
-            {
-                var profile = bp.Metadata.ExifProfile?.Values;
-                var meta = new Dictionary<string, object>();
-                if (profile != null)
-                {
-                    var meta_origin = profile.Select(x => new
-                    {
-                        Key = x.Tag.ToString(),
-                        Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
-                    });
-
-                    foreach (var item in meta_origin)
-                    {
-                        meta[item.Key] = item.Value;
-                    }
-                }
-
-
-                var config = GetDefaultExifConfig(meta);
-
-                var right1 = config[2];
-                var right2 = config[3];
-                var left1 = config[0];
-                var left2 = config[1];
-
-                return new
-                {
-                    right1,
-                    left1,
-                    right2,
-                    left2,
-                };
-            }
-        }
-
-        public static Dictionary<int, string> ExposureProgram = new Dictionary<int, string>()
+        public static Dictionary<int, string> ExposureProgram { get; set; } = new Dictionary<int, string>()
         {
             {0, "未知" },
             {1, "手动" },
@@ -202,8 +152,7 @@ namespace JointWatermark
             }
         }
 
-
-        public static Dictionary<string, byte[]> FontResourrce = new Dictionary<string, byte[]>
+        public static Dictionary<string, byte[]> FontResourrce { get; set; } = new Dictionary<string, byte[]>
         {
             { "金陵宋体", Properties.Resources.FZXiJinLJW },
             { "Pamega", Properties.Resources.Pamega_demo_2 },
@@ -222,6 +171,11 @@ namespace JointWatermark
                 return false;
             }
             return true;
+        }
+
+        public static void SendMsg(string msg)
+        {
+            ((MainWindow)App.Current.MainWindow).SendMsg(msg);
         }
 
     }
