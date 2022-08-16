@@ -33,6 +33,10 @@ namespace JointWatermark.Class
     {
         public static ImagesHelper Current = new ImagesHelper();
         public DateTime LastDate = DateTime.Now.AddSeconds(-1.1);
+        Func<int, int, int> diagonal => new Func<int, int, int>((int a, int b) =>
+        {
+            return (int)Math.Sqrt(a * a + b * b) + 1000;
+        });
 
         public Task<Image> MergeWatermark(ImageProperties properties, bool isPreview = false)
         {
@@ -53,7 +57,7 @@ namespace JointWatermark.Class
 
                     resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
                     resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
-                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, 10000);
+                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, diagonal(resultImage.Height, resultImage.Width));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), polygon));
                     var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
@@ -86,7 +90,7 @@ namespace JointWatermark.Class
 
                     resultImage.Metadata.HorizontalResolution = img.Metadata.HorizontalResolution;
                     resultImage.Metadata.VerticalResolution = img.Metadata.VerticalResolution;
-                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, 10000);
+                    var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, resultImage.Width, diagonal(resultImage.Height, resultImage.Width));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                     resultImage.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), polygon));
                     var border = new SixLabors.ImageSharp.Point(borderWidth, borderWidth);
@@ -157,7 +161,7 @@ namespace JointWatermark.Class
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
 
 
-                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, 10000);
+                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, diagonal(img.Height, img.Width));
                     //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
                     if (properties.Config.FontFamily == "微软雅黑")
@@ -269,7 +273,7 @@ namespace JointWatermark.Class
                     logo.Mutate(x => x.Resize(waterWidth, waterHeight));
 
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
-                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, 10000);
+                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, diagonal(img.Height, img.Width));
                     SixLabors.Fonts.FontFamily family;
                     if (config.FontFamily == "微软雅黑")
                     {
