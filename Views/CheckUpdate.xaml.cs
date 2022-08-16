@@ -80,15 +80,25 @@ namespace JointWatermark
                     string path = pSaveFileDialog.FileName;
                     vm.DownloadLoading = true;
                     newVersion.IsEnabled = false;
-                    wc.DownloadProgressChanged += (ss, e) =>
+                    try
                     {
-                        vm.DownLoadProgress = e.ProgressPercentage;
-                    };
-                    checkUpdateBtn.IsEnabled = false;
-                    await wc.DownloadFileTaskAsync(new Uri(newPath), path);
-                    vm.DownloadLoading = false;
-                    newVersion.IsEnabled = true;
-                    checkUpdateBtn.IsEnabled = true;
+                        wc.DownloadProgressChanged += (ss, e) =>
+                        {
+                            vm.DownLoadProgress = e.ProgressPercentage;
+                        };
+                        checkUpdateBtn.IsEnabled = false;
+                        await wc.DownloadFileTaskAsync(new Uri(newPath), path);
+                    }
+                    catch (Exception ex)
+                    {
+                        ((MainWindow)App.Current.MainWindow).SendMsg(ex.Message);
+                    }
+                    finally
+                    {
+                        vm.DownloadLoading = false;
+                        newVersion.IsEnabled = true;
+                        checkUpdateBtn.IsEnabled = true;
+                    }
                 }
 
             }

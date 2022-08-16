@@ -62,7 +62,7 @@ namespace JointWatermark
         CheckUpdate checkUpdate = null;
         private void CheckUpdateClick(object sender, RoutedEventArgs e)
         {
-            if(checkUpdate != null)
+            if(checkUpdate != null && checkUpdate.Activate())
             {
                 checkUpdate.Visibility = Visibility.Visible;
             }
