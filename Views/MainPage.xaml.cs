@@ -490,6 +490,7 @@ namespace JointWatermark
             }
             finally
             {
+                await Task.Delay(1000);
                 BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
             }
         } 

@@ -16,7 +16,7 @@ namespace JointWatermark.Class
         public bool CanExecute(object parameter)
         {
             if (CanExecuteDelegate != null)
-                return CanExecuteDelegate((object)parameter);
+                return CanExecuteDelegate(parameter);
             return true;// if there is no can execute default to true
         }
 
@@ -28,8 +28,7 @@ namespace JointWatermark.Class
 
         public void Execute(object parameter)
         {
-            if (ExecuteDelegate != null)
-                ExecuteDelegate((object)parameter);
+            ExecuteDelegate?.Invoke(parameter);
         }
 
         #endregion
