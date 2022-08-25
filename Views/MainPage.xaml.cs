@@ -295,6 +295,61 @@ namespace JointWatermark
             }
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            foreach(UIElement item in canvas.Children)
+            {
+                var left = Canvas.GetLeft(item);
+            }
+           
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            var label = new Label()
+            {
+                Content = "测试测试测试测试",
+                FontSize = 100
+            };
+            label.MouseLeftButtonDown += Label_MouseLeftButtonDown;
+            label.MouseMove +=Label_MouseMove;
+            label.MouseLeftButtonUp += Label_MouseLeftButtonUp;
+            Canvas.SetLeft(label, 200);
+            canvas.Children.Add(label);
+        }
+
+        private void Label_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Label tmp = (Label)sender;
+            ////MessageBox.Show(xx + " " + yy);
+            tmp.ReleaseMouseCapture();
+        }
+
+        private void Label_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                Label tmp = (Label)sender;
+                double dx = e.GetPosition(null).X - pos.X + tmp.Margin.Left;
+                double dy = e.GetPosition(null).Y - pos.Y + tmp.Margin.Top;
+                Canvas.SetLeft(tmp, dx);
+                Canvas.SetTop(tmp, dy);
+                tmp.Margin = new Thickness(dx, dy, 0, 0);
+                pos = e.GetPosition(null);
+            }
+        }
+
+        System.Windows.Point pos = new System.Windows.Point();
+
+        private void Label_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Label tmp = (Label)sender;
+            pos = e.GetPosition(null);
+            tmp.CaptureMouse();
+            tmp.Cursor = Cursors.Hand;
+        }
+   
+
         private void RotateImageClick(object sender, RoutedEventArgs e)
         {
             if (vm.SelectedImage != null)

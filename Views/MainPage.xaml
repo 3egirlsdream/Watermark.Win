@@ -198,9 +198,18 @@
                             </DrawingBrush.Drawing>
                         </DrawingBrush>
                     </Grid.Background>
-                    
+
                     <Viewbox Margin="50">
-                        <Image x:Name="createdImg" Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" Source="{Binding OuputImageUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Grid Background="Gray">
+                            <Image x:Name="createdImg" Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" Source="{Binding OuputImageUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Canvas x:Name="canvas">
+                                <Label Content="dasdsad" Cursor="Arrow" Foreground="White" FontSize="100" Canvas.Left="100"/>
+                            </Canvas>
+                            <StackPanel>
+                                <Button Content="按钮1" Width="100" Height="30" Click="Button_Click_1"/>
+                                <Button Content="按钮" Width="100" Height="30" Click="Button_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </Viewbox>
                 </Grid>
                 <Grid Background="#f3f3f3" Grid.Row="1">
