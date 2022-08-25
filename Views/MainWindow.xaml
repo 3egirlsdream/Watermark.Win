@@ -38,7 +38,7 @@
                 <MenuItem Header="退出" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                
             </MenuItem>
-            <MenuItem Header="关于" >
+            <MenuItem Header="关于">
                 <MenuItem Header="设置"  Icon="{materialDesign:PackIcon Kind=Settings}" Click="SettingsClick"/>
                 <MenuItem Header="检查更新"  Icon="{materialDesign:PackIcon Kind=Update}" Click="CheckUpdateClick"/>
             </MenuItem>
@@ -47,7 +47,11 @@
             </MenuItem>
             <MenuItem Header="更多">
                 <MenuItem Header="交流群" Icon="{materialDesign:PackIcon Kind=Qqchat}" >
-                    <MenuItem Header="866034817" Icon="{materialDesign:PackIcon Kind=Qqchat}"/>
+                    <MenuItem Header="866034817" Icon="{materialDesign:PackIcon Kind=Qqchat}">
+                        <MenuItem.ToolTip>
+                            <Image Source="../Resources/qqgroup.jpg" Height="250" Width="200"/>
+                        </MenuItem.ToolTip>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="网页端" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" >
                     <MenuItem Header="www.thankful.top:1000" Click="OpenLink" Tag="http://www.thankful.top:1000/" Icon="{materialDesign:PackIcon Kind=Link}"/>

@@ -24,7 +24,7 @@ namespace JointWatermark
 
 
 
-        public static dynamic GetThumbnailPath(string sourceImg, bool showBrand = true)
+        public static dynamic GetThumbnailPath(string sourceImg)
         {
             using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
             {
@@ -35,7 +35,7 @@ namespace JointWatermark
                     var meta_origin = profile.Select(x => new
                     {
                         Key = x.Tag.ToString(),
-                        Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
+                        Value = x.GetValue() is ushort[] ? ((ushort[])x.GetValue())[0] : x.GetValue()
                     });
                    
                     foreach(var item in meta_origin)
@@ -45,6 +45,11 @@ namespace JointWatermark
                     if (meta.ContainsKey("ExposureProgram"))
                     {
                         meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
+                    }
+
+                    if (meta.ContainsKey("FNumber") && meta["FNumber"] is SixLabors.ImageSharp.Rational rational && rational.Denominator != 0)
+                    {
+                        meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
                     }
                 }
 

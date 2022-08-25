@@ -151,5 +151,16 @@ namespace JointWatermark.Class
             }
         }
 
+        private int rorateCount = 0;
+        public int RotateCount
+        {
+            get => rorateCount;
+            set
+            {
+                rorateCount = value % 4;
+                NotifyPropertyChanged(nameof(RotateCount));
+            }
+        }
+
     }
 }

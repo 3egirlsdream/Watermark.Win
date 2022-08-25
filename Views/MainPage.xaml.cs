@@ -294,6 +294,16 @@ namespace JointWatermark
                 }
             }
         }
+
+        private void RotateImageClick(object sender, RoutedEventArgs e)
+        {
+            if (vm.SelectedImage != null)
+            {
+                btnRotate.IsEnabled = false;
+                vm.SelectedImage.Config.RotateCount++;
+                vm.RefreshSelectedImage(vm.SelectedImage);
+            }
+        }
     }
 
     public class MainVM : ValidationBase
@@ -492,6 +502,7 @@ namespace JointWatermark
             {
                 await Task.Delay(1000);
                 BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+                mainPage.btnRotate.IsEnabled = true;
             }
         } 
 
@@ -538,7 +549,7 @@ namespace JointWatermark
                     RefreshSelectedImage(SelectedImage);
                 }
             },
-            CanExecuteDelegate=o => true
+            CanExecuteDelegate = o => true
         };
 
     }

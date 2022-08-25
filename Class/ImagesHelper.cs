@@ -52,6 +52,12 @@ namespace JointWatermark.Class
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
                 using (var img = Image.Load(path))
                 {
+                    //旋转图片
+                    for (int i = 0; i < properties.Config.RotateCount; i++)
+                    {
+                        img.Mutate(x => x.Rotate(RotateMode.Rotate90));
+                    }
+                    
                     //拼接图片
                     var borderWidth = (int)(properties.Config.BorderWidth * img.Width / 100.0);
                     var resultImage = img.Clone(c => c.Resize(img.Width + 2 * borderWidth, (int)(t.Result.Height + img.Height + borderWidth)));
@@ -88,6 +94,12 @@ namespace JointWatermark.Class
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
                 using (var img = Image.Load(path))
                 {
+                    //旋转图片
+                    for (int i = 0; i < properties.Config.RotateCount; i++)
+                    {
+                        img.Mutate(x => x.Rotate(RotateMode.Rotate90));
+                    }
+
                     //拼接图片
                     var borderWidth = (int)(properties.Config.BorderWidth * img.Width / 100.0);
                     Image<Rgba32> resultImage = new Image<Rgba32>(img.Width + 2 * borderWidth, (int)(t.Result.Height + img.Height + borderWidth));
@@ -126,6 +138,12 @@ namespace JointWatermark.Class
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
                 using (var img = Image.Load(path, out IImageFormat format))
                 {
+                    //旋转图片
+                    for (int i = 0; i < properties.Config.RotateCount; i++)
+                    {
+                        img.Mutate(x => x.Rotate(RotateMode.Rotate90));
+                    }
+
                     var imageMetaData = img.Metadata;
                     var w = img.Width;
                     var h = img.Height * 0.13;

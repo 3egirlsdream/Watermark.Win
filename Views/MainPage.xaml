@@ -212,7 +212,7 @@
                         <TextBox Width="190" materialDesign:HintAssist.Hint="左侧第一行(设备名)" Text="{Binding SelectedImage.Config.LeftPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="Arrow" Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
                         <TextBox Width="190" Text="{Binding SelectedImage.Config.LeftPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" materialDesign:HintAssist.Hint="左侧第二行"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
                         <TextBox Width="190" materialDesign:HintAssist.Hint="右侧第一行" Text="{Binding SelectedImage.Config.RightPosition1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
-                        <TextBox Width="190" materialDesign:HintAssist.Hint="右侧第二行" Text="{Binding SelectedImage.Config.RightPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True"/>
+                        <TextBox Width="190" materialDesign:HintAssist.Hint="右侧第二行" Text="{Binding SelectedImage.Config.RightPosition2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Margin="10 5" TextChanged="deviceName_TextChanged"  materialDesign:HintAssist.IsFloating="True" Cursor="Arrow"/>
                         <StackPanel Width="190" Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
                             <TextBox materialDesign:HintAssist.Hint="底色" TextChanged="deviceName_TextChanged" Text="{Binding ElementName=colorpicker1, Path=Color}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True"/>
 
@@ -224,6 +224,13 @@
                             <Popup Width="300" Height="250" IsOpen="{Binding ElementName=togle, Path=IsChecked}" Placement="Top" PlacementTarget="{Binding ElementName=togle}" StaysOpen="False">
                                 <materialDesign:ColorPicker x:Name="colorpicker1" Color="{Binding SelectedImage.Config.BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </Popup>
+                        </StackPanel>
+
+                        <StackPanel Width="190" Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
+                            <Label Content="旋转图片" VerticalAlignment="Center"/>
+                            <Button x:Name="btnRotate" Style="{StaticResource MaterialDesignIconButton}" ToolTip="顺时针旋转90°" Click="RotateImageClick">
+                                <materialDesign:PackIcon Kind="FileRotateRight" />
+                            </Button>
                         </StackPanel>
 
 
