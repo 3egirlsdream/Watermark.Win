@@ -118,40 +118,45 @@ namespace JointWatermark
             {
                 vm.Images = new ObservableCollection<ImageProperties>();
                 createdImg.Source = null;
-                var action = new Action<CancellationToken, Loading>((token, loading) =>
-                {
-                    for (int ii = 0; ii < dialog.FileNames.Length; ii++)
-                    {
-                        var item = dialog.FileNames[ii];
-                        var percent = (ii+1)* 100.0 / dialog.FileNames.Length;
-                        token.ThrowIfCancellationRequested();
-                        loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
-                        var i = ImagesHelper.Current.ReadImage(item, "");
-                        if (vm.IconList != null && vm.IconList.Any())
-                        {
-                            var logoname = vm.IconList[0];
-                            if (logoname.StartsWith("http"))
-                            {
-                                i.Config.LogoName = logoname;
-                                i.Config.IsCloudIcon = true;
-                            }
-                            else
-                            {
-                                i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
-                                i.Config.IsCloudIcon = false;
-                            }
-                        }
-                        Dispatcher.Invoke(() =>
-                        {
-                            vm.Images.Add(i);
-                        });
-                    }
-                });
-
-                var ld = new Loading(action);
-                ld.Owner = App.Current.MainWindow;
-                ld.ShowDialog();
+                ImportImages(dialog.FileNames);
             }
+        }
+
+        private void ImportImages(string[] filenames)
+        {
+            var action = new Action<CancellationToken, Loading>((token, loading) =>
+            {
+                for (int ii = 0; ii < filenames.Length; ii++)
+                {
+                    var item = filenames[ii];
+                    var percent = (ii+1)* 100.0 / filenames.Length;
+                    token.ThrowIfCancellationRequested();
+                    loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
+                    var i = ImagesHelper.Current.ReadImage(item, "");
+                    if (vm.IconList != null && vm.IconList.Any())
+                    {
+                        var logoname = vm.IconList[0];
+                        if (logoname.StartsWith("http"))
+                        {
+                            i.Config.LogoName = logoname;
+                            i.Config.IsCloudIcon = true;
+                        }
+                        else
+                        {
+                            i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
+                            i.Config.IsCloudIcon = false;
+                        }
+                    }
+                    Dispatcher.Invoke(() =>
+                    {
+                        vm.Images.Add(i);
+                    });
+                }
+            });
+
+            var ld = new Loading(action);
+            ld.Owner = App.Current.MainWindow;
+            ld.ShowDialog();
         }
 
         public void InitLogoes()
@@ -359,6 +364,32 @@ namespace JointWatermark
                 vm.RefreshSelectedImage(vm.SelectedImage);
             }
         }
+
+        private void Grid_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Link;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+        }
+
+        private void Grid_Drop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                string[] fileName = (string[])e.Data.GetData(DataFormats.FileDrop);
+                fileName = fileName.Where(c => c.EndsWith("g", StringComparison.OrdinalIgnoreCase)).ToArray();
+                ImportImages(fileName);
+            }
+            catch (Exception ex)
+            {
+                ((MainWindow)(App.Current.MainWindow)).SendMsg(ex.Message);
+            }
+        }
     }
 
     public class MainVM : ValidationBase
@@ -435,18 +466,6 @@ namespace JointWatermark
                 NotifyPropertyChanged(nameof(Color));
             }
         }
-
-        private string ouputImageUrl = "Resources/github.png";
-        public string OuputImageUrl
-        {
-            get => ouputImageUrl;
-            set
-            {
-                ouputImageUrl = value;
-                NotifyPropertyChanged(nameof(OuputImageUrl));
-            }
-        }
-
 
         private ObservableCollection<ImageProperties> images;
         public ObservableCollection<ImageProperties> Images

@@ -211,20 +211,27 @@ namespace JointWatermark.Class
                     }
                     //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
+
                     //右侧F ISO MM字体参数
                     float fontSize = 31 * fontxs;
                     Font font = family.CreateFont(fontSize, SixLabors.Fonts.FontStyle.Bold);
+                    var font20 = (24 * fontxs);
                     var TextSize = TextMeasurer.Measure(properties.Config.RightPosition1, new SixLabors.Fonts.TextOptions(font));
                     var oneSize = TextMeasurer.Measure("A", new SixLabors.Fonts.TextOptions(font));
                     var padding_right = TextMeasurer.Measure("23mmmm", new SixLabors.Fonts.TextOptions(font));
 
+                    //计算水印2行文字的总体高度
+                    var _font = family.CreateFont(font20, SixLabors.Fonts.FontStyle.Regular);
+                    var _fontSize = TextMeasurer.Measure("A", new SixLabors.Fonts.TextOptions(_font));
+                    var twoLineWordTotalHeight = 1.04 * TextSize.Height + _fontSize.Height;
+
                     //绘制第右侧一行文字
                     var start = w - TextSize.Width - padding_right.Width;
-                    var Params = new PointF(start, (int)(0.3 * h));
+                    var startHeight = (h - twoLineWordTotalHeight) / 2;
+                    var Params = new PointF(start, (int)startHeight);
                     wm.Mutate(x => x.DrawText(properties.Config.RightPosition1, font, SixLabors.ImageSharp.Color.ParseHex(properties.Config.Row1FontColor), Params));
 
                     //绘制右侧第二行文字
-                    var font20 = (24 * fontxs);
                     font = family.CreateFont(font20, SixLabors.Fonts.FontStyle.Regular);
 
                     var XY = new PointF(Params.X, (int)(Params.Y + 1.04 * TextSize.Height));
