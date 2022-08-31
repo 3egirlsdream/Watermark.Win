@@ -203,18 +203,37 @@
                         <RowDefinition Height="7*"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Style="{StaticResource BorderStyle}" Margin="30 10">
-                        <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                            <Viewbox>
+                        <Viewbox HorizontalAlignment="Left">
+                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                            
                                 <Button x:Name="btnRotate" Style="{StaticResource MaterialDesignIconButton}" ToolTip="顺时针旋转90°" Click="RotateImageClick">
                                     <materialDesign:PackIcon Kind="FileRotateRight" />
                                 </Button>
-                            </Viewbox>
-                        </StackPanel>
+                                <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="重置图片位置" Click="ResetImagePositionClick">
+                                    <materialDesign:PackIcon Kind="Refresh" />
+                                </Button>
+
+                            </StackPanel>
+                        </Viewbox>
                     </Border>
 
                     <Viewbox Grid.Row="1" Margin="30">
                         <Grid Background="Gray">
-                            <Image x:Name="createdImg" Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill"/>
+                            <Grid.Resources>
+                                <TransformGroup x:Key="TfGroup">
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                    <TranslateTransform X="0" Y="0"/>
+                                </TransformGroup>
+                            </Grid.Resources>
+                            <ScrollViewer x:Name="mainScrollv" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" Cursor="SizeAll" Margin="0" Focusable="False">
+                                <ContentControl MouseLeftButtonDown="ContentControl_MouseLeftButtonDown"
+                                    MouseLeftButtonUp="ContentControl_MouseLeftButtonUp"
+                                    MouseMove="ContentControl_MouseMove"
+                                    MouseWheel="ContentControl_MouseWheel"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Image x:Name="createdImg" Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" RenderTransform="{StaticResource TfGroup}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                </ContentControl>
+                            </ScrollViewer>
                             <Canvas x:Name="canvas" Visibility="Collapsed">
                                 <Label Content="dasdsad" Cursor="Arrow" Foreground="White" FontSize="100" Canvas.Left="100"/>
                             </Canvas>
