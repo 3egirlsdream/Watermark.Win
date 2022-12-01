@@ -173,7 +173,7 @@ namespace JointWatermark.Class
                     var h = img.Height * 0.13;
                     if (img.Width < img.Height)
                     {
-                        h = img.Height * 0.13 * 0.4;
+                        h = img.Height * 0.13 * 0.8;
                     }
                     Image logo;
                     if (string.IsNullOrEmpty(properties.Config.LogoName))

@@ -62,6 +62,10 @@ namespace JointWatermark.Class
             set
             {
                 color = value;
+                if (value[2] == value[1] && value[1] == 'F')
+                {
+                    color = "#" + color.Substring(3);
+                }
                 NotifyPropertyChanged(nameof(Color));
             }
         }

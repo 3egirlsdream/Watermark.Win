@@ -478,7 +478,7 @@ namespace JointWatermark
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (vm.SelectedImage != null)
+            if (vm != null && vm.SelectedImage != null)
             {
                 vm.RefreshSelectedImage(vm.SelectedImage);
             }
@@ -489,6 +489,10 @@ namespace JointWatermark
             if (sender is ComboBox combo && vm != null && vm.FocusCharacterWatermarks != null)
             {
                 vm.FocusCharacterWatermarks.FontFamily = combo.SelectedItem.ToString();
+                if (vm.SelectedImage != null)
+                {
+                    vm.RefreshSelectedImage(vm.SelectedImage);
+                }
             }
         }
 
@@ -506,6 +510,22 @@ namespace JointWatermark
             vm.SelectedImage.Config.CharacterWatermarks = new ObservableCollection<CharacterWatermarkProperty>(vm.SelectedImage.Config.CharacterWatermarks.Where(c => c.ID != vm.FocusCharacterWatermarks.ID));
             vm.SelectedImage.Config.CharacterWatermarks = null;
             vm.ShowCharacterConfig = Visibility.Collapsed;
+        }
+
+        private void colorpicker22_ColorChanged(object sender, RoutedPropertyChangedEventArgs<System.Windows.Media.Color> e)
+        {
+            if (vm != null && vm.SelectedImage != null)
+            {
+                vm.RefreshSelectedImage(vm.SelectedImage);
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (vm != null && vm.SelectedImage != null)
+            {
+                vm.RefreshSelectedImage(vm.SelectedImage);
+            }
         }
 
         private void DowheelZoom(TransformGroup group, System.Windows.Point point, double delta)
