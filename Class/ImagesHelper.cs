@@ -26,6 +26,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.InteropServices;
 using System.Collections.ObjectModel;
 using System.Net;
+using System.Windows.Media.TextFormatting;
 
 namespace JointWatermark.Class
 {
@@ -33,6 +34,7 @@ namespace JointWatermark.Class
     {
         public static ImagesHelper Current = new ImagesHelper();
         public DateTime LastDate = DateTime.Now.AddSeconds(-1.1);
+        public float FontXS { get; set; }
         /// <summary>
         /// 对角线
         /// </summary>
@@ -47,7 +49,7 @@ namespace JointWatermark.Class
         /// <returns></returns>
         public Task<Image> MergeWatermark(ImageProperties properties, bool isPreview = false)
         {
-            return CreateWatermark(properties, isPreview).ContinueWith(t =>
+            return CreateWatermark(properties, isPreview).ContinueWith<Image>(t =>
             {
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
                 using (var img = Image.Load(path))
@@ -57,7 +59,12 @@ namespace JointWatermark.Class
                     {
                         img.Mutate(x => x.Rotate(RotateMode.Rotate90));
                     }
-                    
+                    //添加文字水印
+                    foreach(var word in properties.Config.CharacterWatermarks)
+                    {
+                        DrawCharacterWord(properties, img, word);
+                    }
+
                     //拼接图片
                     var borderWidth = (int)(properties.Config.BorderWidth * img.Width / 100.0);
                     var resultImage = img.Clone(c => c.Resize(img.Width + 2 * borderWidth, (int)(t.Result.Height + img.Height + borderWidth)));
@@ -83,6 +90,17 @@ namespace JointWatermark.Class
             });
         }
 
+        private void DrawCharacterWord(ImageProperties properties, Image img, CharacterWatermarkProperty word)
+        {
+            var family = SetFamily(word.FontFamily);
+            var fontStyle = word.FontStyle;
+            Font font = family.CreateFont(word.FontSize * FontXS, SixLabors.Fonts.FontStyle.Regular);
+            var start = word.X == 0 ? 0 : img.Width * word.X / 100;
+            var startHeight = word.Y == 0 ? 0 : img.Height * word.Y / 100;
+            var Params = new PointF(start, (int)startHeight);
+            img.Mutate(x => x.DrawText(word.Content, font, SixLabors.ImageSharp.Color.ParseHex(word.Color), Params));
+        }
+
         /// <summary>
         /// 生成预览图片
         /// </summary>
@@ -98,6 +116,12 @@ namespace JointWatermark.Class
                     for (int i = 0; i < properties.Config.RotateCount; i++)
                     {
                         img.Mutate(x => x.Rotate(RotateMode.Rotate90));
+                    }
+
+                    //添加文字水印
+                    foreach (var word in properties.Config.CharacterWatermarks)
+                    {
+                        DrawCharacterWord(properties, img, word);
                     }
 
                     //拼接图片
@@ -132,7 +156,7 @@ namespace JointWatermark.Class
         /// <returns></returns>
         public Task<Image<Rgba32>> CreateWatermark(ImageProperties properties, bool isPreview = false)
         {
-            return Task.Run(() =>
+            return Task.Run<Image<Rgba32>>(() =>
             {
                 LastDate = DateTime.Now;
                 var path = isPreview ? properties.ThumbnailPath : properties.Path;
@@ -183,7 +207,7 @@ namespace JointWatermark.Class
                         fontxs *= 0.8f;
                         xs *= 0.8;
                     }
-
+                    FontXS = fontxs;
 
                     //下面定义一个矩形区域      
                     var waterWidth = (int)(logo.Width * xs);
@@ -196,19 +220,7 @@ namespace JointWatermark.Class
                     IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
                     //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
-                    if (properties.Config.FontFamily == "微软雅黑")
-                    {
-                        family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
-                    }
-                    else
-                    {
-                        byte[] bt = Global.FontResourrce[properties.Config.FontFamily];
-                        using (var ms = new MemoryStream(bt))
-                        {
-                            var collection = new FontCollection();
-                            family = collection.Add(ms);
-                        }
-                    }
+                    family = SetFamily(properties.Config.FontFamily);
                     //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
 
@@ -266,6 +278,26 @@ namespace JointWatermark.Class
 
                 }
             });
+        }
+
+        private static SixLabors.Fonts.FontFamily SetFamily(string FontFamily)
+        {
+            SixLabors.Fonts.FontFamily family;
+            if (FontFamily == "微软雅黑")
+            {
+                family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
+            }
+            else
+            {
+                byte[] bt = Global.FontResourrce[FontFamily];
+                using (var ms = new MemoryStream(bt))
+                {
+                    var collection = new FontCollection();
+                    family = collection.Add(ms);
+                }
+            }
+
+            return family;
         }
 
 

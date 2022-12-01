@@ -286,6 +286,7 @@ namespace JointWatermark
             var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
             fonts.Insert(0, "微软雅黑");
             fontlist.ItemsSource = fonts;
+            fontlist2.ItemsSource = fonts;
         }
 
 
@@ -470,6 +471,43 @@ namespace JointWatermark
             transform2.ScaleY = 1;
         }
 
+        private void CloseCharacterWatermarksConfig(object sender, RoutedEventArgs e)
+        {
+            vm.ShowCharacterConfig = Visibility.Collapsed;
+        }
+
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (vm.SelectedImage != null)
+            {
+                vm.RefreshSelectedImage(vm.SelectedImage);
+            }
+        }
+
+        private void fontlist2_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox combo && vm != null && vm.FocusCharacterWatermarks != null)
+            {
+                vm.FocusCharacterWatermarks.FontFamily = combo.SelectedItem.ToString();
+            }
+        }
+
+        private void AddCharacterWatermarksConfig(object sender, RoutedEventArgs e)
+        {
+            if (vm.SelectedImage == null) return;
+            var item = new CharacterWatermarkProperty();
+            vm.SelectedImage.Config.CharacterWatermarks.Add(item);
+            vm.FocusCharacterWatermarks = item; 
+        }
+
+        private void DeleteCharacterWatermarksConfig(object sender, RoutedEventArgs e)
+        {
+            if (vm.SelectedImage == null) return;
+            vm.SelectedImage.Config.CharacterWatermarks = new ObservableCollection<CharacterWatermarkProperty>(vm.SelectedImage.Config.CharacterWatermarks.Where(c => c.ID != vm.FocusCharacterWatermarks.ID));
+            vm.SelectedImage.Config.CharacterWatermarks = null;
+            vm.ShowCharacterConfig = Visibility.Collapsed;
+        }
+
         private void DowheelZoom(TransformGroup group, System.Windows.Point point, double delta)
         {
             var pointToContent = group.Inverse.Transform(point);
@@ -630,6 +668,31 @@ namespace JointWatermark
             }
         }
 
+        private CharacterWatermarkProperty focusCharacterWatermarks;
+        /// <summary>
+        /// 文字水印
+        /// </summary>
+        public CharacterWatermarkProperty FocusCharacterWatermarks
+        {
+            get => focusCharacterWatermarks;
+            set
+            {
+                focusCharacterWatermarks = value;
+                NotifyPropertyChanged(nameof(FocusCharacterWatermarks));
+            }
+        }
+
+        private Visibility showCharacterConfig = Visibility.Collapsed;
+        public Visibility ShowCharacterConfig
+        {
+            get=> showCharacterConfig;
+            set
+            {
+                showCharacterConfig = value;
+                NotifyPropertyChanged(nameof(ShowCharacterConfig));
+            }
+        }
+
 
         public SimpleCommand CmdClickItem => new SimpleCommand()
         {
@@ -714,6 +777,25 @@ namespace JointWatermark
                         SelectedImage.Config.IsCloudIcon = false;
                     }
                     RefreshSelectedImage(SelectedImage);
+                }
+            },
+            CanExecuteDelegate = o => true
+        };
+
+
+        public SimpleCommand CmdEditCharacterWatermark => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                if (SelectedImage == null || SelectedImage.Config == null || SelectedImage.Config.CharacterWatermarks == null ||  SelectedImage.Config.CharacterWatermarks.Count == 0) return;
+                FocusCharacterWatermarks = SelectedImage.Config.CharacterWatermarks.FirstOrDefault(c => c.ID == x.ToString());
+                if(FocusCharacterWatermarks != null)
+                {
+                    ShowCharacterConfig = Visibility.Visible;
+                }
+                else
+                {
+                    ShowCharacterConfig = Visibility.Collapsed;
                 }
             },
             CanExecuteDelegate = o => true

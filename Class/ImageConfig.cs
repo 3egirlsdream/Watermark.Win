@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -135,7 +136,7 @@ namespace JointWatermark.Class
                 {
                     row1FontColor = "#" + row1FontColor.Substring(3);
                 }
-                NotifyPropertyChanged(nameof(Row1FontColor));
+                NotifyPropertyChanged(nameof(Row1FontColor));                                                             
             }
         }
 
@@ -159,6 +160,21 @@ namespace JointWatermark.Class
             {
                 rorateCount = value % 4;
                 NotifyPropertyChanged(nameof(RotateCount));
+            }
+        }
+
+
+        private ObservableCollection<CharacterWatermarkProperty> characterWatermarks = new ObservableCollection<CharacterWatermarkProperty>();
+        /// <summary>
+        /// 文字水印
+        /// </summary>
+        public ObservableCollection<CharacterWatermarkProperty> CharacterWatermarks
+        {
+            get => characterWatermarks;
+            set
+            {
+                characterWatermarks = value;
+                NotifyPropertyChanged(nameof(CharacterWatermarks));
             }
         }
 
