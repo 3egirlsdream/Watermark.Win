@@ -84,6 +84,18 @@ namespace JointWatermark.Class
                     resultImage.Mutate(x => x.DrawImage(img, border, 1));
                     border.Y += img.Height;
                     resultImage.Mutate(x => x.DrawImage(t.Result, border, 1));
+
+                    //缩图
+                    var ros = Global.Resolution == "1080" ? 1080 : 2160;
+                    if (Global.Resolution != "default" && resultImage.Width > ros && resultImage.Height > ros)
+                    {
+                        int minSide = Math.Min(resultImage.Width, resultImage.Height);
+                        decimal resolition = (decimal)minSide / ros;
+                        var w = resultImage.Width < resultImage.Height ? ros : (int)(resultImage.Width / resolition);
+                        var h = resultImage.Height < resultImage.Width ? ros : (int)(resultImage.Height / resolition);
+                        resultImage.Mutate(x => x.Resize(w, h));
+                    }
+
                     t.Result.Dispose();
                     return resultImage;
                 }

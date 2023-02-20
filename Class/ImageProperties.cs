@@ -65,5 +65,16 @@ namespace JointWatermark.Class
                 NotifyPropertyChanged(nameof(Config));
             }
         }
+
+        private bool isChecked;
+        public bool IsChecked
+        {
+            get => isChecked;
+            set
+            {
+                isChecked= value;
+                NotifyPropertyChanged(nameof(IsChecked));
+            }
+        }
     }
 }

@@ -114,7 +114,25 @@ namespace JointWatermark
             {
                 director.Create();
             }
-            main.Export();
+            Export export = new Export(main.vm.Images);
+            export.Owner = this;
+            export.ShowInTaskbar = false;
+            export.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            if (export.ShowDialog() == true)
+            {
+                main.Export(main.vm.Images.Where(c=>c.IsChecked));
+            }
+        }
+
+        private void ExportAllImageClick(object sender, RoutedEventArgs e)
+        {
+
+            var director = new DirectoryInfo(Global.Path_output);
+            if (!director.Exists)
+            {
+                director.Create();
+            }
+            main.Export(main.vm.Images);
         }
 
         private void btn_Click(object sender, RoutedEventArgs e)
@@ -208,6 +226,7 @@ namespace JointWatermark
                 System.Diagnostics.Process.Start(psi);
             }
         }
+
     }
 
     public class VM : ValidationBase
