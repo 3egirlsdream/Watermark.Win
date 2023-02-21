@@ -3,12 +3,14 @@ using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -284,10 +286,23 @@ namespace JointWatermark
             }
         }
 
-        private void InitFontList()
+        public void InitFontList()
         {
             var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
             fonts.Insert(0, "微软雅黑");
+            var path = Global.BasePath + Global.SeparatorChar + "fonts";
+            if (Directory.Exists(path))
+            {
+                var files = new DirectoryInfo(path);
+                foreach(var item in files.GetFiles())
+                {
+                    if (!item.Name.ToLower().Contains("bold"))
+                    {
+                        var ls  = item.Name.Split('/').Last().Split('.')[0];
+                        fonts.Add(ls);
+                    }
+                }
+            }
             fontlist.ItemsSource = fonts;
             fontlist2.ItemsSource = fonts;
         }
@@ -854,17 +869,20 @@ namespace JointWatermark
             {
                 try
                 {
-                    first.IsLoading = true;
+                    first.IsLoading = false;
                     var path = Global.BasePath + Global.SeparatorChar + "fonts" + Global.SeparatorChar;
+                    if(!Directory.Exists(path)) 
+                    { 
+                        Directory.CreateDirectory(path);
+                    }
                     wc.DownloadProgressChanged += (ss, e) =>
                     {
                         first.Progress = e.ProgressPercentage;
                     };
                     var n1 = first.URL.Split(new string[] {"\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
                     var n2 = first.URL_B.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
-                    var task1 = wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
-                    var task2 = wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());
-                    Task.WaitAll(task1, task2);
+                    await wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
+                    await wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());
                 }
                 catch (Exception ex)
                 {
@@ -872,7 +890,8 @@ namespace JointWatermark
                 }
                 finally
                 {
-                    first.IsLoading = false;
+                    first.IsLoading = true;
+                    mainPage.InitFontList();
                 }
             }
 
@@ -884,6 +903,19 @@ namespace JointWatermark
             if (version != null && version.success && version.data != null && version.data.Count > 0)
             {
                 FontsList = version.data;
+                var path = Global.BasePath + Global.SeparatorChar + "fonts";
+                if (Directory.Exists(path))
+                {
+                    var files = new DirectoryInfo(path);
+                    foreach (var item in files.GetFiles())
+                    {
+                        var f = FontsList.FirstOrDefault(c => item.Name.Contains(c.NAME));
+                        if (f != null)
+                        {
+                            f.IsLoading = false;
+                        }
+                    }
+                }
             }
         }
 

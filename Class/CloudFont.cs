@@ -12,8 +12,17 @@ namespace JointWatermark.Class
         public string NAME { get; set; }
         public string URL { get; set; }
         public string URL_B { get; set; }
-        public int Progress { get; set; }
-        private bool isLoading = false;
+        private int progress;
+        public int Progress
+        {
+            get { return progress; }
+            set
+            {
+                progress = value;
+                NotifyPropertyChanged(nameof(Progress));
+            }
+        }
+        private bool isLoading = true;
         public bool IsLoading
         {
             get => isLoading; 
