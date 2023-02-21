@@ -57,7 +57,7 @@
                     <RowDefinition Height="40"/>
                     <RowDefinition Height="10"/>
                 </Grid.RowDefinitions>
-                <TextBox Style="{StaticResource MaterialDesignFilledTextBox}" Margin="10 20" Text="{Binding Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Bottom" FontSize="14" Cursor="Arrow"/>
+                <TextBox  Margin="10 20" Text="{Binding Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Bottom" FontSize="14" Cursor="Arrow"/>
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button  Width="100" Margin=" 10 0" Content="确定" Command="{Binding CmdOK}"/>
                     <Button  Width="100" Style="{StaticResource MaterialDesignRaisedLightButton}" IsCancel="True" Content="取消"/>

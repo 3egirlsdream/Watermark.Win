@@ -9,11 +9,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +28,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using WeakToys.Class;
 
 namespace JointWatermark
 {
@@ -549,6 +552,7 @@ namespace JointWatermark
         public MainVM(Page page)
         {
             mainPage = page as MainPage;
+            InitFontsList();
         }
 
         private bool loading = false;
@@ -638,6 +642,17 @@ namespace JointWatermark
             {
                 selectedImage = value;
                 NotifyPropertyChanged(nameof(SelectedImage));
+            }
+        }
+
+        private ObservableCollection<CloudFont> fontsList;
+        public ObservableCollection<CloudFont> FontsList
+        {
+            get=> fontsList;
+            set
+            {
+                fontsList = value;
+                NotifyPropertyChanged(nameof(FontsList));
             }
         }
 
@@ -762,17 +777,13 @@ namespace JointWatermark
             {
                 foreach (var item in Images)
                 {
-                    switch (x)
-                    {
-                        case "1": item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;break;
-                        case "2": item.Config.LeftPosition2 = GlobalConfig.LeftPosition2; break;
-                        case "3": item.Config.RightPosition1 = GlobalConfig.RightPosition1; break;
-                        case "4": item.Config.RightPosition2 = GlobalConfig.RightPosition2; break;
-                        case "5": item.Config.BackgroundColor = GlobalConfig.BackgroundColor; break;
-                        case "6": item.Config.BorderWidth = GlobalConfig.BorderWidth; break;
-                        case "7": item.Config.Row1FontColor = GlobalConfig.Row1FontColor; break;
-                        default:break;
-                    }
+                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition1)) item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;
+                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition2)) item.Config.LeftPosition2 = GlobalConfig.LeftPosition2;
+                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition1)) item.Config.RightPosition1 = GlobalConfig.RightPosition1;
+                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition2)) item.Config.RightPosition2 = GlobalConfig.RightPosition2;
+                    if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
+                    item.Config.BorderWidth = GlobalConfig.BorderWidth;
+                    if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
                 }
 
                 RefreshSelectedImage(SelectedImage);
@@ -820,6 +831,61 @@ namespace JointWatermark
             },
             CanExecuteDelegate = o => true
         };
+
+        public SimpleCommand CmdDownloadFont => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                if(x is string xx && !string.IsNullOrEmpty(xx))
+                {
+                    var first = FontsList.FirstOrDefault(c => c.ID == xx);
+                    if(first != null)
+                    {
+                        downloadFont(first);
+                    }
+                }
+            },
+            CanExecuteDelegate = o => true
+        };
+
+        private async void downloadFont(CloudFont first)
+        {
+            using (var wc = new WebClient())
+            {
+                try
+                {
+                    first.IsLoading = true;
+                    var path = Global.BasePath + Global.SeparatorChar + "fonts" + Global.SeparatorChar;
+                    wc.DownloadProgressChanged += (ss, e) =>
+                    {
+                        first.Progress = e.ProgressPercentage;
+                    };
+                    var n1 = first.URL.Split(new string[] {"\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                    var n2 = first.URL_B.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                    var task1 = wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
+                    var task2 = wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());
+                    Task.WaitAll(task1, task2);
+                }
+                catch (Exception ex)
+                {
+                    Global.SendMsg(ex.Message);
+                }
+                finally
+                {
+                    first.IsLoading = false;
+                }
+            }
+
+        }
+
+        private async void InitFontsList()
+        {
+            var version = await Connections.HttpGetAsync<ObservableCollection<CloudFont>>(Global.Http + "/api/CloudSync/GetFontsList", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.Count > 0)
+            {
+                FontsList = version.data;
+            }
+        }
 
     }
 

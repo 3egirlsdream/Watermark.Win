@@ -104,7 +104,7 @@ namespace JointWatermark.Class
 
         private void DrawCharacterWord(ImageProperties properties, Image img, CharacterWatermarkProperty word)
         {
-            var family = SetFamily(word.FontFamily);
+            var family = SetFamily(word.FontFamily).Item1.Value;
             var fontStyle = word.FontStyle;
             Font font = family.CreateFont(word.FontSize * FontXS, SixLabors.Fonts.FontStyle.Regular);
             var start = word.X == 0 ? 0 : img.Width * word.X / 100;
@@ -232,13 +232,17 @@ namespace JointWatermark.Class
                     IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
                     //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
-                    family = SetFamily(properties.Config.FontFamily);
+                    var collection = new FontCollection();
+                    var f2 = SetFamily(properties.Config.FontFamily);
+                    family = f2.Item1.Value;
+                    var familyBold = f2.Item1.Value;
+                    if(f2.Item2 != null) familyBold = f2.Item2.Value;
                     //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
 
                     //右侧F ISO MM字体参数
                     float fontSize = 31 * fontxs;
-                    Font font = family.CreateFont(fontSize, SixLabors.Fonts.FontStyle.Bold);
+                    Font font = familyBold.CreateFont(fontSize, SixLabors.Fonts.FontStyle.Bold);
                     var font20 = (24 * fontxs);
                     var TextSize = TextMeasurer.Measure(properties.Config.RightPosition1, new SixLabors.Fonts.TextOptions(font));
                     var oneSize = TextMeasurer.Measure("A", new SixLabors.Fonts.TextOptions(font));
@@ -277,7 +281,7 @@ namespace JointWatermark.Class
 
                     //绘制设备信息
                     var font28 = (34 * fontxs);
-                    font = family.CreateFont(font28, SixLabors.Fonts.FontStyle.Bold);
+                    font = familyBold.CreateFont(font28, SixLabors.Fonts.FontStyle.Bold);
                     var Producer = new PointF((int)(leftWidth), Params.Y);
                     wm.Mutate(x => x.DrawText(properties.Config.LeftPosition1, font, SixLabors.ImageSharp.Color.ParseHex(properties.Config.Row1FontColor), Producer));
 
@@ -292,24 +296,41 @@ namespace JointWatermark.Class
             });
         }
 
-        private static SixLabors.Fonts.FontFamily SetFamily(string FontFamily)
+        private static Tuple<SixLabors.Fonts.FontFamily?, SixLabors.Fonts.FontFamily?> SetFamily(string FontFamily)
         {
-            SixLabors.Fonts.FontFamily family;
+            SixLabors.Fonts.FontFamily? family = null;
+            SixLabors.Fonts.FontFamily? familyBold = null;
             if (FontFamily == "微软雅黑")
             {
                 family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
             }
             else
             {
-                byte[] bt = Global.FontResourrce[FontFamily];
-                using (var ms = new MemoryStream(bt))
+                if(Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
+                {
+                    using (var ms = new MemoryStream(bt))
+                    {
+                        var collection = new FontCollection();
+                        family = collection.Add(ms);
+                    }
+                }
+                else
                 {
                     var collection = new FontCollection();
-                    family = collection.Add(ms);
+                    if (File.Exists("./fonts/" + FontFamily + ".ttf"))
+                    {
+                        family = collection.Add($"./fonts/{FontFamily}.ttf");
+                    }
+                    if (File.Exists("./fonts/" + FontFamily + "-Bold.ttf"))
+                    {
+                        familyBold = collection.Add($"./fonts/{FontFamily}-Bold.ttf");
+                    }
                 }
+                //byte[] bt = Global.FontResourrce[FontFamily];
+                
             }
 
-            return family;
+            return Tuple.Create(family, familyBold);
         }
 
 
