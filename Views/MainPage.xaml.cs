@@ -40,7 +40,7 @@ namespace JointWatermark
     public partial class MainPage : Page
     {
         public MainVM vm;
-        public List<string> MultiImages = new List<string>();
+        public List<string> MultiImages = new();
         public MainPage()
         {
             try
@@ -58,7 +58,7 @@ namespace JointWatermark
 
                 InitLogoes();
 
-                DirectoryInfo directory = new DirectoryInfo(Global.Path_temp);
+                DirectoryInfo directory = new(Global.Path_temp);
                 if (!directory.Exists)
                     directory.Create();
 
@@ -113,10 +113,12 @@ namespace JointWatermark
         public void SelectPictureClick(object sender, MouseButtonEventArgs e)
         {
             // 实例化一个文件选择对象
-            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
-            dialog.DefaultExt = ".png";  // 设置默认类型
-            dialog.Multiselect = true;                             // 设置可选格式
-            dialog.Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png";
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = true,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
@@ -172,7 +174,7 @@ namespace JointWatermark
                 {
                     Directory.CreateDirectory(Global.Path_logo);
                 }
-                DirectoryInfo directory = new DirectoryInfo(Global.Path_logo);
+                DirectoryInfo directory = new(Global.Path_logo);
                 var files = directory.GetFiles();
                 logoes.Children.Clear();
                 vm.IconList.Clear();
@@ -187,7 +189,7 @@ namespace JointWatermark
                     var img = new System.Windows.Controls.Image();
                     img.Width = 40;
                     img.Height = 40;
-                    BitmapImage map = new BitmapImage(new Uri(file.FullName, UriKind.Absolute));
+                    BitmapImage map = new(new Uri(file.FullName, UriKind.Absolute));
                     img.Source = map;
                     card.Content = img;
                     card.Cursor = Cursors.Hand;
@@ -363,7 +365,7 @@ namespace JointWatermark
             }
         }
 
-        System.Windows.Point pos = new System.Windows.Point();
+        System.Windows.Point pos = new();
 
         private void Label_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -672,7 +674,7 @@ namespace JointWatermark
         }
 
 
-        private ImageConfig globalConfig = new ImageConfig();
+        private ImageConfig globalConfig = new();
         public ImageConfig GlobalConfig
         {
             get => globalConfig;
@@ -685,7 +687,7 @@ namespace JointWatermark
 
 
 
-        private ObservableCollection<string> iconList = new ObservableCollection<string>();
+        private ObservableCollection<string> iconList = new();
         public ObservableCollection<string> IconList
         {
             get => iconList;
@@ -707,7 +709,7 @@ namespace JointWatermark
             }
         }
 
-        private BottomProcessInstance bottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+        private BottomProcessInstance bottomProcess = new(Visibility.Hidden, false);
         public BottomProcessInstance BottomProcess
         {
             get => bottomProcess;
@@ -744,7 +746,7 @@ namespace JointWatermark
         }
 
 
-        public SimpleCommand CmdClickItem => new SimpleCommand()
+        public SimpleCommand CmdClickItem => new()
         {
             ExecuteDelegate = x =>
             {
@@ -786,7 +788,7 @@ namespace JointWatermark
             }
         } 
 
-        public SimpleCommand CmdSaveGlobal => new SimpleCommand()
+        public SimpleCommand CmdSaveGlobal => new()
         {
             ExecuteDelegate = x =>
             {
@@ -806,7 +808,7 @@ namespace JointWatermark
             CanExecuteDelegate = o => true
         };
 
-        public SimpleCommand CmdSetIcon => new SimpleCommand()
+        public SimpleCommand CmdSetIcon => new()
         {
             ExecuteDelegate = x =>
             {
@@ -829,7 +831,7 @@ namespace JointWatermark
         };
 
 
-        public SimpleCommand CmdEditCharacterWatermark => new SimpleCommand()
+        public SimpleCommand CmdEditCharacterWatermark => new()
         {
             ExecuteDelegate = x =>
             {
@@ -847,7 +849,7 @@ namespace JointWatermark
             CanExecuteDelegate = o => true
         };
 
-        public SimpleCommand CmdDownloadFont => new SimpleCommand()
+        public SimpleCommand CmdDownloadFont => new()
         {
             ExecuteDelegate = x =>
             {

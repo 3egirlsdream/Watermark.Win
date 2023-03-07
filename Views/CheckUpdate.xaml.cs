@@ -122,6 +122,11 @@ namespace JointWatermark
         {
             this.Visibility = Visibility.Hidden;
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Process.Start(Global.BasePath + Global.SeparatorChar + "JointWatermark.Update.exe");
+        }
     }
 
     public class CheckUpdateVM : INotifyPropertyChanged

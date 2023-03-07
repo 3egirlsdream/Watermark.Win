@@ -35,7 +35,7 @@ namespace JointWatermark.Views
         {
             if(sender is CheckBox check && check.DataContext is ExifInfo exif)
             {
-                ExifConfigInfo item = new ExifConfigInfo()
+                ExifConfigInfo item = new()
                 {
                     SEQ = vm.SelectedItem.Config.Count + 1,
                     Key = exif.Key,
@@ -89,7 +89,7 @@ namespace JointWatermark.Views
 
         public void RefreshPreviewImage()
         {
-            List<string> ls = new List<string>();
+            List<string> ls = new();
             foreach(var item in ItemsSource)
             {
                 var ps = new List<string>();
@@ -104,7 +104,7 @@ namespace JointWatermark.Views
             InitPreviewImage(ls[0], ls[1], ls[2], ls[3]);
         }
 
-        private ObservableCollection<LeftTextList> itemsSource = new ObservableCollection<LeftTextList>();
+        private ObservableCollection<LeftTextList> itemsSource = new();
         public ObservableCollection<LeftTextList> ItemsSource
         {
             get => itemsSource;
@@ -116,7 +116,7 @@ namespace JointWatermark.Views
         }
 
 
-        private LeftTextList selectedItem = new LeftTextList();
+        private LeftTextList selectedItem = new();
         public LeftTextList SelectedItem
         {
             get => selectedItem;
@@ -135,7 +135,7 @@ namespace JointWatermark.Views
         }
 
 
-        private ObservableCollection<ExifInfo> exifInfoList = new ObservableCollection<ExifInfo>();
+        private ObservableCollection<ExifInfo> exifInfoList = new();
         /// <summary>
         /// 全部的的EXIF配置信息
         /// </summary>
@@ -149,7 +149,7 @@ namespace JointWatermark.Views
             }
         }
 
-        private ObservableCollection<ExifConfigInfo> configedInfo = new ObservableCollection<ExifConfigInfo>();
+        private ObservableCollection<ExifConfigInfo> configedInfo = new();
         /// <summary>
         /// 选中的配置信息
         /// </summary>
@@ -278,7 +278,7 @@ namespace JointWatermark.Views
 
         public string Text { get; set; } = "";
 
-        private ObservableCollection<ExifConfigInfo> config = new ObservableCollection<ExifConfigInfo>();
+        private ObservableCollection<ExifConfigInfo> config = new();
         public ObservableCollection<ExifConfigInfo> Config
         {
             get => config;

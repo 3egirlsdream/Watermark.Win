@@ -74,6 +74,9 @@
                                           Content="有新版本点击下载"
                                           Width="auto"
                                           HorizontalAlignment="Center" />
+                <materialDesign:Badged BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" Margin="0 5">
+                    <Button Content="自动更新" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Click="Button_Click"/>
+                </materialDesign:Badged>
             </StackPanel>
         </Grid>
     </Border>
