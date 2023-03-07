@@ -5,8 +5,6 @@ VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JointWatermark", "JointWatermark.csproj", "{75ED1C57-8839-4033-BA00-300ED6825B4A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JointWatermark.Update", "JointWatermark.Update\JointWatermark.Update.csproj", "{7FD965D5-6124-40B8-BA5C-0FB6A8DD0747}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{75ED1C57-8839-4033-BA00-300ED6825B4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75ED1C57-8839-4033-BA00-300ED6825B4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75ED1C57-8839-4033-BA00-300ED6825B4A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7FD965D5-6124-40B8-BA5C-0FB6A8DD0747}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7FD965D5-6124-40B8-BA5C-0FB6A8DD0747}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7FD965D5-6124-40B8-BA5C-0FB6A8DD0747}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7FD965D5-6124-40B8-BA5C-0FB6A8DD0747}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
