@@ -40,7 +40,7 @@ namespace JointWatermark.Class
         /// </summary>
         Func<int, int, int> Diagonal => new Func<int, int, int>((int a, int b) =>
         {
-            return (int)Math.Sqrt(a * a + b * b) + 1000;
+            return (int)Math.Sqrt((double)a * a + (double)b * b) + 1000;
         });
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace JointWatermark.Class
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
 
 
-                    IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
+                    //IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
                     //wm.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex(properties.Config.BackgroundColor), yourPolygon));
                     SixLabors.Fonts.FontFamily family;
                     var collection = new FontCollection();
