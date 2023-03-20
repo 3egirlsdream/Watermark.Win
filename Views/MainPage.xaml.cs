@@ -63,6 +63,7 @@ namespace JointWatermark
                     directory.Create();
 
                 InitFontList();
+                ComputeUserCount();
             }
             catch (Exception ex)
             {
@@ -561,6 +562,17 @@ namespace JointWatermark
             transform1.Y = -1 * ((pointToContent.Y * transform.ScaleY) - point.Y);
         }
 
+        private async void ComputeUserCount()
+        {
+            try
+            {
+                var key = Global.Key();
+                Debug.WriteLine(key);
+                var c = await Connections.HttpGetAsync<bool>(Global.Http + "/api/CloudSync/ComputeUserCount?ID=" + key, Encoding.Default);
+            }
+            catch { }
+        }
+       
     }
 
     public class MainVM : ValidationBase
