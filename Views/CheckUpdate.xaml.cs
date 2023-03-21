@@ -31,6 +31,7 @@ namespace JointWatermark
             InitializeComponent();
             vm = new CheckUpdateVM();
             DataContext = vm;
+            CheckVersion(null, null);
         }
 
         private string? newPath;
@@ -52,6 +53,7 @@ namespace JointWatermark
                 else
                 {
                     check.Badge = "";
+                    checkUpdateBtn.Content = "已是最新";
                     newVersion.Visibility = Visibility.Collapsed;
                 }
             }
@@ -123,9 +125,19 @@ namespace JointWatermark
             this.Visibility = Visibility.Hidden;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start(Global.BasePath + Global.SeparatorChar + "JointWatermark.Update.exe");
+            var version = await Connections.HttpGetAsync<CLIENT_VERSION>(Global.Http + "/api/CloudSync/GetVersion?Client=Watermark", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.VERSION != null)
+            {
+                newPath = version.data.PATH;
+                var v1 = new Version(this.version.Text);
+                var v2 = new Version(version.data.VERSION);
+                if (v2 > v1)
+                {
+                    System.Diagnostics.Process.Start(Global.BasePath + Global.SeparatorChar + "JointWatermark.Update.exe");
+                }
+            }
         }
     }
 
