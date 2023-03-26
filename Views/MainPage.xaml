@@ -113,6 +113,7 @@
                                                 <RowDefinition Height="auto"/>
                                                 <RowDefinition Height="auto"/>
                                                 <RowDefinition Height="auto"/>
+                                                <RowDefinition Height="50"/>
                                                 <RowDefinition Height="auto"/>
                                             </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
@@ -133,7 +134,8 @@
                                                     <materialDesign:ColorPicker x:Name="colorpicker" Color="{Binding GlobalConfig.BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                 </Popup>
                                             </StackPanel>
-                                            <Slider x:Name="slider" Grid.Row="6" Margin="10 5" Value="{Binding GlobalConfig.BorderWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="10" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center"/>
+                                            <Label Grid.Row="6" Margin="5 5" Content="边框" />
+                                            <Slider x:Name="slider" Grid.Row="6" Margin="50 5 10 0" Value="{Binding GlobalConfig.BorderWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="10" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center" />
                                             <StackPanel Grid.Row="7" Margin="10 5" HorizontalAlignment="Left" Orientation="Horizontal">
                                                 <TextBox materialDesign:HintAssist.Hint="第一行字体颜色" Text="{Binding ElementName=colorpicker2, Path=Color}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True"/>
                                                 <ToggleButton x:Name="togle2" Margin="10 0" Cursor="Hand" Height="30" Width="30" VerticalAlignment="Center" VerticalContentAlignment="Center" 
@@ -148,6 +150,9 @@
 
                                             <ComboBox x:Name="fontlist" Grid.Row="8" Margin="10 5"  materialDesign:HintAssist.Hint="字体" materialDesign:HintAssist.IsFloating="True" SelectedIndex="0" SelectionChanged="ComboBox_SelectionChanged">
                                             </ComboBox>
+                                            <Label Grid.Row="9" Margin="5 5" Content="字体缩放" VerticalAlignment="Center"/>
+                                            <Label Grid.Row="9" Margin="70 5" Content="{Binding ElementName=xs, Path=Value}" VerticalAlignment="Top"/>
+                                            <Slider x:Name="xs" Grid.Row="9" Margin="70 5 10 0" Value="{Binding GlobalConfig.FontXS, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="2" TickPlacement="BottomRight" VerticalAlignment="Bottom" />
 
 
                                             <!--保存按钮-->
@@ -175,7 +180,7 @@
                                             <Button Grid.Row="8" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                                                 <materialDesign:PackIcon Kind="ContentSave" />
                                             </Button>-->
-                                            <Button Grid.Row="9"  Margin="10 5" Command="{Binding CmdSaveGlobal}">
+                                            <Button Grid.Row="10"  Margin="10 5" Command="{Binding CmdSaveGlobal}">
                                                 <materialDesign:PackIcon Kind="Refresh"/>
                                             </Button>
                                         </Grid>
@@ -217,7 +222,8 @@
                             <ToolBarTray>
                                 <ToolBar ClipToBounds="False" Style="{StaticResource MaterialDesignToolBar}">
                                     <Button
-                                        Click="ImportFilesClick"
+                                        Click="SelectPictureClick"
+                                        Tag="split"
                                         HorizontalAlignment="Right"
                                         Style="{StaticResource MaterialDesignToolForegroundButton}"
                                         Width="30"

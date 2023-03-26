@@ -214,7 +214,7 @@ namespace JointWatermark.Class
                     //logo比例系数
                     double xs = (double)(h / 2) / logo.Height;
                     //字体比例系数
-                    float fontxs = ((float)h / 156);
+                    float fontxs = ((float)h / 156) * properties.Config.FontXS;
                     if (fontxs < 1) fontxs = 1;
                     if (img.Width < img.Height)
                     {

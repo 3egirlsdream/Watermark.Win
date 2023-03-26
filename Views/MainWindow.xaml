@@ -30,7 +30,7 @@
         </Grid.RowDefinitions>
         <Menu Grid.Row="0">
             <MenuItem Header="文件">
-                <MenuItem Header="导入图片" Click="ImportImagesClick" Icon="{materialDesign:PackIcon Kind=Download}"></MenuItem>
+                <MenuItem Header="导入图片" Click="ImportImagesClick" Tag="watermark" Icon="{materialDesign:PackIcon Kind=Download}"></MenuItem>
                 <MenuItem Header="导出" Click="ExportImageClick" Icon="{materialDesign:PackIcon Kind=Upload}"></MenuItem>
                 <MenuItem Header="全部导出" Click="ExportAllImageClick" Icon="{materialDesign:PackIcon Kind=Export}"></MenuItem>
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>

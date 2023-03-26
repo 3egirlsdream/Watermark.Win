@@ -162,8 +162,9 @@ namespace JointWatermark
             }
         }
 
-        public void SelectPictureClick(object sender, MouseButtonEventArgs e)
+        public void SelectPictureClick(object sender, RoutedEventArgs e)
         {
+            var tag = sender is Button button ? button.Tag : "";
             // 实例化一个文件选择对象
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -175,13 +176,20 @@ namespace JointWatermark
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
             {
-                vm.Images = new ObservableCollection<ImageProperties>();
+                if ("split".Equals(tag))
+                {
+                    vm.SplitImages = new ObservableCollection<ImageProperties>();
+                }
+                else
+                {
+                    vm.Images = new ObservableCollection<ImageProperties>();
+                }
                 createdImg.Source = null;
-                ImportImages(dialog.FileNames);
+                ImportImages(dialog.FileNames, tag.ToString());
             }
         }
 
-        private void ImportImages(string[] filenames)
+        private void ImportImages(string[] filenames, string tag)
         {
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
@@ -208,7 +216,14 @@ namespace JointWatermark
                     }
                     Dispatcher.Invoke(() =>
                     {
-                        vm.Images.Add(i);
+                        if ("split".Equals(tag))
+                        {
+                            vm.SplitImages.Add(i);
+                        }
+                        else
+                        {
+                            vm.Images.Add(i);
+                        }
                     });
                 }
             });
@@ -302,7 +317,7 @@ namespace JointWatermark
 
         private void ListBox_SelectionChanged(object sender, RoutedEventArgs e)
         {
-            SelectPictureClick(null, null);
+            SelectPictureClick(new Button() { Tag = "watermark"}, null);
         }
 
 
@@ -456,7 +471,7 @@ namespace JointWatermark
             {
                 string[] fileName = (string[])e.Data.GetData(DataFormats.FileDrop);
                 fileName = fileName.Where(c => c.EndsWith("g", StringComparison.OrdinalIgnoreCase)).ToArray();
-                ImportImages(fileName);
+                ImportImages(fileName, "watermark");
             }
             catch (Exception ex)
             {
@@ -611,59 +626,6 @@ namespace JointWatermark
             var transform1 = group.Children[1] as TranslateTransform;
             transform1.X = -1 * ((pointToContent.X * transform.ScaleX) - point.X);
             transform1.Y = -1 * ((pointToContent.Y * transform.ScaleY) - point.Y);
-        }
-
-        private void ImportFilesClick(object sender, RoutedEventArgs e)
-        {
-
-            // 实例化一个文件选择对象
-            Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
-            // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-            if (result == true)
-            {
-                vm.SplitImages = new ObservableCollection<ImageProperties>();
-                createdImg.Source = null;
-                var filenames = dialog.FileNames;
-                var action = new Action<CancellationToken, Loading>((token, loading) =>
-                {
-                    for (int ii = 0; ii < filenames.Length; ii++)
-                    {
-                        var item = filenames[ii];
-                        var percent = (ii+1)* 100.0 / filenames.Length;
-                        token.ThrowIfCancellationRequested();
-                        loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
-                        var i = ImagesHelper.Current.ReadImage(item, "");
-                        if (vm.IconList != null && vm.IconList.Any())
-                        {
-                            var logoname = vm.IconList[0];
-                            if (logoname.StartsWith("http"))
-                            {
-                                i.Config.LogoName = logoname;
-                                i.Config.IsCloudIcon = true;
-                            }
-                            else
-                            {
-                                i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
-                                i.Config.IsCloudIcon = false;
-                            }
-                        }
-                        Dispatcher.Invoke(() =>
-                        {
-                            vm.SplitImages.Add(i);
-                        });
-                    }
-                });
-
-                var ld = new Loading(action);
-                ld.Owner = App.Current.MainWindow;
-                ld.ShowDialog();
-            }
         }
 
         private async void ExportSplitImageClick(object sender, RoutedEventArgs e)
@@ -964,6 +926,7 @@ namespace JointWatermark
                     if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
                     item.Config.BorderWidth = GlobalConfig.BorderWidth;
                     if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
+                    if (GlobalConfig.FontXS != 1) item.Config.FontXS = GlobalConfig.FontXS;
                 }
 
                 RefreshSelectedImage(SelectedImage);

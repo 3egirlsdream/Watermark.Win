@@ -140,6 +140,17 @@ namespace JointWatermark.Class
             }
         }
 
+        private float fontXS = 1;
+        public float FontXS
+        {
+            get => fontXS;
+            set
+            {
+                fontXS = value;
+                NotifyPropertyChanged(nameof(FontXS));
+            }
+        }
+
 
         private string fontFamily = "微软雅黑";
         public string FontFamily
