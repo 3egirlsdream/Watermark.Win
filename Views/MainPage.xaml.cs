@@ -18,6 +18,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WeakToys.Class;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace JointWatermark
 {
@@ -69,6 +71,55 @@ namespace JointWatermark
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void LBoxSort_OnPreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var pos = e.GetPosition(LBoxSort);
+                HitTestResult result = VisualTreeHelper.HitTest(LBoxSort, pos);
+                if (result == null)
+                {
+                    return;
+                }
+                var listBoxItem = Utils.FindVisualParent<ListBoxItem>(result.VisualHit);
+                if (listBoxItem == null || listBoxItem.Content != LBoxSort.SelectedItem)
+                {
+                    return;
+                }
+                DataObject dataObj = new DataObject(listBoxItem.Content as ImageProperties);
+                DragDrop.DoDragDrop(LBoxSort, dataObj, DragDropEffects.Move);
+            }
+        }
+
+        private void LBoxSort_OnDrop(object sender, DragEventArgs e)
+        {
+            var pos = e.GetPosition(LBoxSort);
+            var result = VisualTreeHelper.HitTest(LBoxSort, pos);
+            if (result == null)
+            {
+                return;
+            }
+            //查找元数据
+            var sourcePerson = e.Data.GetData(typeof(ImageProperties)) as ImageProperties;
+            if (sourcePerson == null)
+            {
+                return;
+            }
+            //查找目标数据
+            var listBoxItem = Utils.FindVisualParent<ListBoxItem>(result.VisualHit);
+            if (listBoxItem == null)
+            {
+                return;
+            }
+            var targetPerson = listBoxItem.Content as ImageProperties;
+            if (ReferenceEquals(targetPerson, sourcePerson))
+            {
+                return;
+            }
+            vm.SplitImages.Remove(sourcePerson);
+            vm.SplitImages.Insert(LBoxSort.Items.IndexOf(targetPerson), sourcePerson);
         }
 
         private void CloudIconCard_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -562,6 +613,95 @@ namespace JointWatermark
             transform1.Y = -1 * ((pointToContent.Y * transform.ScaleY) - point.Y);
         }
 
+        private void ImportFilesClick(object sender, RoutedEventArgs e)
+        {
+
+            // 实例化一个文件选择对象
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = true,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                vm.SplitImages = new ObservableCollection<ImageProperties>();
+                createdImg.Source = null;
+                var filenames = dialog.FileNames;
+                var action = new Action<CancellationToken, Loading>((token, loading) =>
+                {
+                    for (int ii = 0; ii < filenames.Length; ii++)
+                    {
+                        var item = filenames[ii];
+                        var percent = (ii+1)* 100.0 / filenames.Length;
+                        token.ThrowIfCancellationRequested();
+                        loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
+                        var i = ImagesHelper.Current.ReadImage(item, "");
+                        if (vm.IconList != null && vm.IconList.Any())
+                        {
+                            var logoname = vm.IconList[0];
+                            if (logoname.StartsWith("http"))
+                            {
+                                i.Config.LogoName = logoname;
+                                i.Config.IsCloudIcon = true;
+                            }
+                            else
+                            {
+                                i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
+                                i.Config.IsCloudIcon = false;
+                            }
+                        }
+                        Dispatcher.Invoke(() =>
+                        {
+                            vm.SplitImages.Add(i);
+                        });
+                    }
+                });
+
+                var ld = new Loading(action);
+                ld.Owner = App.Current.MainWindow;
+                ld.ShowDialog();
+            }
+        }
+
+        private async void ExportSplitImageClick(object sender, RoutedEventArgs e)
+        {
+            var horizon = splitDirection.IsChecked == true;
+            if (vm.SplitImages == null ||  vm.SplitImages.Count == 0) return;
+            foreach (var im in vm.SplitImages)
+            {
+                im.Config.BorderWidth = (int)split_border.Value;
+            }
+            var action = new Action<CancellationToken, Loading>((token, loading) =>
+            {
+                loading.ISetPosition(0, "已完成：0%");
+                var p = Global.Path_output + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                var bit = ImagesHelper.Current.SplitImages(vm.SplitImages, horizon, token, loading).Result;
+                bit.Save(p);
+                loading.ISetPosition(100, "已完成：100%");
+                bit.Dispose();
+            });
+            var ld = new Loading(action);
+            ld.Owner = App.Current.MainWindow;
+            var rst = ld.ShowDialog();
+            if (rst == true)
+            {
+                var win = App.Current.MainWindow as MainWindow;
+                win.ShowMsgBox("打开输出目录？");
+                win.SetAction(() =>
+                {
+                    if (Directory.Exists(Global.Path_output))
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = Global.Path_output, UseShellExecute = true };
+
+                        System.Diagnostics.Process.Start(psi);
+                    }
+                });
+            }
+        }
+
         private async void ComputeUserCount()
         {
             try
@@ -662,6 +802,17 @@ namespace JointWatermark
             }
         }
 
+
+        private ObservableCollection<ImageProperties> splitImages;
+        public ObservableCollection<ImageProperties> SplitImages
+        {
+            get => splitImages;
+            set
+            {
+                splitImages = value;
+                NotifyPropertyChanged(nameof(SplitImages));
+            }
+        }
 
         private ImageProperties selectedImage;
         public ImageProperties SelectedImage
@@ -976,6 +1127,22 @@ namespace JointWatermark
                 isLoading = value;
                 NotifyPropertyChanged(nameof(IsLoading));
             }
+        }
+    }
+
+    internal static class Utils
+    {
+        //根据子元素查找父元素
+        public static T FindVisualParent<T>(DependencyObject obj) where T : class
+        {
+            while (obj != null)
+            {
+                if (obj is T)
+                    return obj as T;
+
+                obj = VisualTreeHelper.GetParent(obj);
+            }
+            return null;
         }
     }
 }

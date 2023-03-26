@@ -7,13 +7,12 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>leica.ico</ApplicationIcon>
-    <AssemblyVersion>1.9.2.0</AssemblyVersion>
+    <AssemblyVersion>1.9.3.0</AssemblyVersion>
     <Authors>3egirlsdream@github.com</Authors>
     <Company>github.com/3egirlsdream/JointWatermark</Company>
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
     <Product>水印合成</Product>
     <Description>为图片添加水印</Description>
-    <PackageLicenseFile>C:\Users\kingdee\source\repos\JointWatermark\LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -38,6 +37,7 @@
 
   <ItemGroup>
     <None Remove="Resources\back.png" />
+    <None Remove="Resources\leica.png" />
     <None Remove="Resources\qqgroup.jpg" />
     <None Remove="Resources\yaofan.jpg" />
   </ItemGroup>
@@ -59,6 +59,7 @@
 
   <ItemGroup>
     <Resource Include="Resources\back.png" />
+    <Resource Include="Resources\leica.png" />
     <Resource Include="Resources\qqgroup.jpg" />
     <Resource Include="Resources\yaofan.jpg" />
   </ItemGroup>

@@ -206,7 +206,58 @@
                             </materialDesign:Card>
                         </StackPanel>
                     </TabItem>
-
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Width="auto" Height="auto">
+                                <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="Image" />
+                                <TextBlock  HorizontalAlignment="Center" Text="拼图" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <StackPanel>
+                            <ToolBarTray>
+                                <ToolBar ClipToBounds="False" Style="{StaticResource MaterialDesignToolBar}">
+                                    <Button
+                                        Click="ImportFilesClick"
+                                        HorizontalAlignment="Right"
+                                        Style="{StaticResource MaterialDesignToolForegroundButton}"
+                                        Width="30"
+                                        Height="40" Padding="2 0 2 0" materialDesign:RippleAssist.IsCentered="True" Cursor="Hand">
+                                        <materialDesign:PackIcon Kind="FolderOpen" />
+                                    </Button>
+                                    <Separator />
+                                    <CheckBox Content="左右拼接" VerticalAlignment="Center" HorizontalAlignment="Left" x:Name="splitDirection"/>
+                                    <ToggleButton x:Name="bu" VerticalAlignment="Center" Style="{StaticResource MaterialDesignToolForegroundButton}" Content="{materialDesign:PackIcon Kind=BorderAll}" Width="40" ToolTip="边框"/>
+                                    <Popup Height="200" Placement="Bottom" PlacementTarget="{Binding ElementName=bu}" StaysOpen="False" IsOpen="{Binding ElementName=bu, Path=IsChecked}">
+                                        <Border Style="{StaticResource BorderStyle}" Padding="40,10,0,10">
+                                            <Slider x:Name="split_border" Minimum="0" Maximum="10" Orientation="Vertical" TickFrequency="1" Margin="10" TickPlacement="BottomRight" Style="{StaticResource MaterialDesignDiscreteSlider}" Value="0"/>
+                                        </Border>
+                                        </Popup>
+                                    <Separator />
+                                    <Button HorizontalAlignment="Right" Style="{StaticResource MaterialDesignToolForegroundButton}" Content="{materialDesign:PackIcon Kind=Export}"  Cursor="Hand" Click="ExportSplitImageClick" ToolTip="导出"/>
+                                </ToolBar>
+                            </ToolBarTray>
+                            <ListBox Name="LBoxSort" ItemsSource="{Binding SplitImages, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewMouseMove="LBoxSort_OnPreviewMouseMove" Drop="LBoxSort_OnDrop" AllowDrop="True">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="40"/>
+                                                    <ColumnDefinition Width="40"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <materialDesign:PackIcon Background="Transparent" Width="40" Height="40" HorizontalAlignment="Center" Kind="Drag" VerticalAlignment="Center" Cursor="ScrollNS"/>
+                                                <Image Grid.Column="1" Source="{Binding ThumbnailPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="40" Width="40" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                               
+                            </ListBox>
+                        </StackPanel>
+                        
+                    </TabItem>
                 </TabControl>
             </Border>
         </Grid>

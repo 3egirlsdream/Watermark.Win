@@ -27,6 +27,8 @@ using System.Runtime.InteropServices;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Windows.Media.TextFormatting;
+using System.Threading;
+using JointWatermark.Views;
 
 namespace JointWatermark.Class
 {
@@ -502,6 +504,75 @@ namespace JointWatermark.Class
             i.Path = filenames;
             i.Config.LogoName = logoName;
             return i;
+        }
+
+
+        public Task<Image> SplitImages(ObservableCollection<ImageProperties> images, bool horizon, CancellationToken token, Loading loading)
+        {
+            return Task.Run(() =>
+            {
+                List<SixLabors.ImageSharp.Image> list = new List<SixLabors.ImageSharp.Image>();
+
+                foreach(var image in images)
+                {
+                    list.Add(SixLabors.ImageSharp.Image.Load(image.Path));
+                }
+
+                var maxWidth = list.Max(c => c.Width);
+                var maxHeight = list.Max(c => c.Height);
+                foreach(var ls in list)
+                {
+                    if(horizon)
+                    {
+                        if (ls.Height !=  maxHeight)
+                        {
+                            var xs = (double)maxHeight / (double)ls.Height;
+                            ls.Mutate(c => c.Resize((int)(ls.Width * xs), maxHeight));
+                        }
+                    }
+                    else
+                    {
+                        if (ls.Width !=  maxWidth)
+                        {
+                            var xs = (double)maxWidth / (double)ls.Width;
+                            ls.Mutate(c => c.Resize(maxWidth, (int)(ls.Height * xs)));
+                        }
+                    }
+                    
+                }
+                double borderWidth = 0;
+                double w = 0; double h = 0;
+                var firstImage = images.FirstOrDefault();
+                if (horizon)
+                {
+                    borderWidth = firstImage.Config.BorderWidth * maxHeight / 100.0;
+                    w = 2 * borderWidth + list.Sum(c => c.Width);
+                    h = 2 * borderWidth + maxHeight;
+                }
+                else
+                {
+                    borderWidth = firstImage.Config.BorderWidth * maxWidth / 100.0;
+                    w = 2 * borderWidth + maxWidth;
+                    h = 2 * borderWidth + list.Sum(c => c.Height);
+                }
+                var result = list[0].Clone(c => c.Resize((int)w, (int)h));
+                var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, result.Width, Diagonal(result.Height, result.Width));
+                result.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
+                var start = new SixLabors.ImageSharp.Point((int)borderWidth, (int)borderWidth);
+                loading.ISetPosition(10, $"已完成：10%");
+                foreach (var item in list)
+                {
+                    token.ThrowIfCancellationRequested();
+                    result.Mutate(x => x.DrawImage(item, start, 1));
+                    if (horizon)
+                        start.X += item.Width;
+                    else 
+                        start.Y += item.Height;
+                    var c = (int)(10 + list.IndexOf(item) + 1 * 80 / (double)list.Count);
+                    loading.ISetPosition(c, $"已完成：{c}%");
+                }
+                return result;
+            });
         }
     }
 }
