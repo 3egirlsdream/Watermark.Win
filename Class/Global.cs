@@ -185,7 +185,7 @@ namespace JointWatermark
             ((MainWindow)App.Current.MainWindow).SendMsg(msg);
         }
 
-        public static string Resolution { get; set; }
+        public static string Resolution { get; set; } = "default";
 
         private static string UUID()
         {
