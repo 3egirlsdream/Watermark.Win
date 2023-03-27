@@ -62,7 +62,7 @@ namespace JointWatermark.Class
                         img.Mutate(x => x.Rotate(RotateMode.Rotate90));
                     }
                     //添加文字水印
-                    foreach(var word in properties.Config.CharacterWatermarks)
+                    foreach (var word in properties.Config.CharacterWatermarks)
                     {
                         DrawCharacterWord(properties, img, word);
                     }
@@ -238,7 +238,7 @@ namespace JointWatermark.Class
                     var f2 = SetFamily(properties.Config.FontFamily);
                     family = f2.Item1.Value;
                     var familyBold = f2.Item1.Value;
-                    if(f2.Item2 != null) familyBold = f2.Item2.Value;
+                    if (f2.Item2 != null) familyBold = f2.Item2.Value;
                     //var font = new Font(fo, 1350, SixLabors.Fonts.FontStyle.Regular);
 
 
@@ -308,7 +308,7 @@ namespace JointWatermark.Class
             }
             else
             {
-                if(Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
+                if (Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
                 {
                     using (var ms = new MemoryStream(bt))
                     {
@@ -329,7 +329,7 @@ namespace JointWatermark.Class
                     }
                 }
                 //byte[] bt = Global.FontResourrce[FontFamily];
-                
+
             }
 
             return Tuple.Create(family, familyBold);
@@ -511,18 +511,20 @@ namespace JointWatermark.Class
         {
             return Task.Run(() =>
             {
+
+                loading.ISetPosition(1, $"已完成：1%");
                 List<SixLabors.ImageSharp.Image> list = new List<SixLabors.ImageSharp.Image>();
 
-                foreach(var image in images)
+                foreach (var image in images)
                 {
                     list.Add(SixLabors.ImageSharp.Image.Load(image.Path));
                 }
 
                 var maxWidth = list.Max(c => c.Width);
                 var maxHeight = list.Max(c => c.Height);
-                foreach(var ls in list)
+                foreach (var ls in list)
                 {
-                    if(horizon)
+                    if (horizon)
                     {
                         if (ls.Height !=  maxHeight)
                         {
@@ -538,8 +540,10 @@ namespace JointWatermark.Class
                             ls.Mutate(c => c.Resize(maxWidth, (int)(ls.Height * xs)));
                         }
                     }
-                    
+
                 }
+
+                loading.ISetPosition(5, $"已完成：5%");
                 double borderWidth = 0;
                 double w = 0; double h = 0;
                 var firstImage = images.FirstOrDefault();
@@ -566,11 +570,12 @@ namespace JointWatermark.Class
                     result.Mutate(x => x.DrawImage(item, start, 1));
                     if (horizon)
                         start.X += item.Width;
-                    else 
+                    else
                         start.Y += item.Height;
                     var c = (int)(10 + list.IndexOf(item) + 1 * 80 / (double)list.Count);
                     loading.ISetPosition(c, $"已完成：{c}%");
                 }
+                list.ForEach(c => c.Dispose());
                 return result;
             });
         }

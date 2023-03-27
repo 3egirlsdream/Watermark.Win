@@ -628,7 +628,7 @@ namespace JointWatermark
             transform1.Y = -1 * ((pointToContent.Y * transform.ScaleY) - point.Y);
         }
 
-        private async void ExportSplitImageClick(object sender, RoutedEventArgs e)
+        private void ExportSplitImageClick(object sender, RoutedEventArgs e)
         {
             var horizon = splitDirection.IsChecked == true;
             if (vm.SplitImages == null ||  vm.SplitImages.Count == 0) return;
