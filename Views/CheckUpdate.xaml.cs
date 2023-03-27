@@ -4,6 +4,7 @@ using System;
 using System.ComponentModel;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using WeakToys.Class;
@@ -22,6 +23,20 @@ namespace JointWatermark
             vm = new CheckUpdateVM();
             DataContext = vm;
             CheckVersion(null, null);
+
+        }
+
+        async void TEst()
+        {
+            vm.DownloadLoading = true;
+            int t = 1;
+            while (t++<100)
+            {
+                await Task.Delay(100);
+                vm.DownLoadProgress = t;
+            }
+
+            vm.DownloadLoading = false;
         }
 
         private string? newPath;
@@ -38,7 +53,7 @@ namespace JointWatermark
                 {
                     check.Badge = new PackIcon() { Kind = PackIconKind.Update };
                     newVersion.Visibility = Visibility.Visible;
-                    newVersion.Content = $"有新版本V{version.data.VERSION}点击下载";
+                    //newVersion.Content = $"有新版本V{version.data.VERSION}点击下载";
                 }
                 else
                 {

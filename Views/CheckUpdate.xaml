@@ -60,24 +60,34 @@
                                      <Run Text="版本信息   "/>
             </TextBlock>
 
-            <StackPanel  Margin="0 20" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
-                <TextBlock x:Name="version" HorizontalAlignment="Center" FontSize="14" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <materialDesign:Badged x:Name="check" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center">
+            <Grid  Margin="0 20" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="version" Grid.Row="0" HorizontalAlignment="Center" FontSize="14" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <materialDesign:Badged x:Name="check" Grid.Row="1" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand"/>
                 </materialDesign:Badged>
-                <Button x:Name="newVersion" Visibility="Collapsed" Margin="0 10"
-                                          Style="{StaticResource MaterialDesignFlatLightButton}"
+                <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" Margin="10 0" Height="35" Width="35"
+                                          Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}"
                                           materialDesign:ButtonProgressAssist.Value="{Binding DownLoadProgress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding DownloadLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          materialDesign:ButtonProgressAssist.IndicatorForeground="#e65100"
                                           Click="newVersionClick"
                                           ToolTip="点击下载"
-                                          Content="有新版本点击下载"
-                                          Width="auto"
-                                          HorizontalAlignment="Center" />
-                <materialDesign:Badged BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" Margin="0 5">
+                                          HorizontalAlignment="Center" >
+                    <materialDesign:PackIcon Kind="Download"/>
+                </Button>
+                <materialDesign:Badged Grid.Row="2" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" Margin="0 5">
                     <Button Content="自动更新" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Click="Button_Click"/>
                 </materialDesign:Badged>
-            </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>
