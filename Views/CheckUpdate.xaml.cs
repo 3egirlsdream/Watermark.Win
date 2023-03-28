@@ -23,20 +23,6 @@ namespace JointWatermark
             vm = new CheckUpdateVM();
             DataContext = vm;
             CheckVersion(null, null);
-
-        }
-
-        async void TEst()
-        {
-            vm.DownloadLoading = true;
-            int t = 1;
-            while (t++<100)
-            {
-                await Task.Delay(100);
-                vm.DownLoadProgress = t;
-            }
-
-            vm.DownloadLoading = false;
         }
 
         private string? newPath;
@@ -75,6 +61,10 @@ namespace JointWatermark
             using (var wc = new WebClient())
             {
                 var fileName = newPath.Substring(newPath.LastIndexOf('/') + 1);
+                if (!fileName.ToLower().Contains(".zip"))
+                {
+                    fileName += ".zip";
+                }
                 SaveFileDialog pSaveFileDialog = new SaveFileDialog
                 {
                     Title = "保存为:",
@@ -107,7 +97,6 @@ namespace JointWatermark
                         checkUpdateBtn.IsEnabled = true;
                     }
                 }
-
             }
         }
 
