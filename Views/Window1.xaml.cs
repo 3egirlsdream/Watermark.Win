@@ -28,11 +28,23 @@ namespace JointWatermark.Views
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             var image = new GeneralWatermarkProperty();
-            image.PhotoPath = "C:\\Users\\kingdee\\Desktop\\watermark\\a.png";
+            image.PhotoPath = "C:\\Users\\Jiang\\Desktop\\屏幕截图 2022-05-29 193136.png";
             image.StartPosition = new SixLabors.ImageSharp.Point(10, 10);
             image.PecentOfHeight = 80;
             image.PecentOfWidth = 80;
             image.EnableFixedPercent = true;
+            image.Properties = new List<GeneralWatermarkRowProperty>
+            {
+                new GeneralWatermarkRowProperty()
+                {
+                    X = PositionBase.Left,
+                    Y = PositionBase.Bottom,
+                    EdgeDistanceType = EdgeDistanceType.Character,
+                    EdgeDistanceCharacterX = "ABCD",
+                    EdgeDistanceCharacterY = "ABCDE",
+                    Content = "cesiumcesium测试"
+                }
+            };
             ImagesHelper.Current.Generation(image);
         }
     }

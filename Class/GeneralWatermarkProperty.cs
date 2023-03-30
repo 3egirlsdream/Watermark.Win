@@ -85,6 +85,11 @@ namespace JointWatermark.Class
         /// </summary>
         public string FontFamily { set; get; } = "微软雅黑";
         public bool IsBlod { get; set; } = false;
+
+        public int StartX { get; set; }
+        public int EndX { get; set; }
+        public int StartY { get; set; }
+        public int EndY { get; set; }
     }
 
     public enum RelativePositionMode

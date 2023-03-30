@@ -620,15 +620,16 @@ namespace JointWatermark.Class
 
                 foreach (GeneralWatermarkRowProperty row in image.Properties)
                 {
-                    double x, y, xW, yW;
+                    double x, y, xW = 0, yW = 0;
                     if (row.EdgeDistanceType == EdgeDistanceType.Character)
                     {
                         double fontSize = basicFontSize * fontxs;
-                        var f = SetFamily(row.FontFamily).Item1.Value;
-                        var fb = SetFamily(row.FontFamily).Item2.Value;
-                        var font = f.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
+                        var f = SetFamily(row.FontFamily);
+                        var fr = f.Item1.Value;
+                        var font = fr.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
                         if (row.IsBlod)
                         {
+                            var fb = f.Item2 ?? f.Item1.Value;
                             font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
                         }
                         //测量宽度像素
@@ -643,6 +644,9 @@ namespace JointWatermark.Class
                         else if (row.Y == PositionBase.Center) yW = (resultHeight - YTextSize) / 2;
 
                         //计算起始位置
+                        var t = "";
+                        var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
+                        resultImage.Mutate(x => x.DrawText(row.Content, font, SixLabors.ImageSharp.Color.ParseHex("#000000"), Params));
                     }
                 }
 
