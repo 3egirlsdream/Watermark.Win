@@ -579,5 +579,71 @@ namespace JointWatermark.Class
                 return result;
             });
         }
+
+
+        #region 2.0
+
+        public void Generation(GeneralWatermarkProperty image)
+        {
+            int resultWidth, resultHeight, shortLine;
+            double shortLineBorderPercent;
+            using(var img = Image.Load(image.PhotoPath))
+            {
+                shortLine = Math.Min(img.Height, img.Width);
+                shortLineBorderPercent = (100 - Math.Min(image.PecentOfWidth, image.PecentOfHeight)) / 100.0;
+                if (image.EnableFixedPercent)
+                {
+                    resultHeight = (int)(img.Height + shortLine * shortLineBorderPercent);
+                    resultWidth = (int)(img.Width + shortLine * shortLineBorderPercent);
+                }
+                else
+                {
+                    resultHeight = (int)(img.Height / (double)image.PecentOfWidth) * 100;
+                    resultWidth = (int)(img.Width / (double)image.PecentOfWidth) * 100;
+                }
+
+
+                var resultImage = img.Clone(x => x.Resize(resultWidth, resultHeight));
+                var polygon = new RegularPolygon(0, 0, resultWidth, Diagonal(resultHeight, resultWidth));
+                //填充背景色
+                resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
+                //绘制图片
+                var start = new SixLabors.ImageSharp.Point(image.StartPosition.X * shortLine / 100, image.StartPosition.Y * shortLine / 100);
+                resultImage.Mutate(x => x.DrawImage(img, start, 1));
+
+
+                //基础字体系数
+                var fontxs = (resultImage.Height * 0.13 / 156);
+                double basicFontSize = 30;
+
+                //绘制文字
+
+                foreach (GeneralWatermarkRowProperty row in image.Properties)
+                {
+                    double x, y, xW, yW;
+                    if (row.EdgeDistanceType == EdgeDistanceType.Character)
+                    {
+                        double fontSize = basicFontSize * fontxs;
+                        var f = SetFamily(row.FontFamily).Item1.Value;
+                        var fb = SetFamily(row.FontFamily).Item2.Value;
+                        var font = f.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
+                        if (row.IsBlod)
+                        {
+                            font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
+                        }
+                        //测量宽度像素
+                        var XTextSize = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(font));
+                        var YTextSize = XTextSize.Y * row.EdgeDistanceCharacterY.Length;
+                    }
+                }
+
+
+                var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                resultImage.Save(path);
+            }
+        }
+
+
+        #endregion
     }
 }
