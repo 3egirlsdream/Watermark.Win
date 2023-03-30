@@ -633,7 +633,16 @@ namespace JointWatermark.Class
                         }
                         //测量宽度像素
                         var XTextSize = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(font));
-                        var YTextSize = XTextSize.Y * row.EdgeDistanceCharacterY.Length;
+                        var YTextSize = XTextSize.Height * row.EdgeDistanceCharacterY.Length;
+                        if (row.X == PositionBase.Left) xW = XTextSize.Width;
+                        else if (row.X == PositionBase.Right) xW = resultWidth - XTextSize.Width;
+                        else if(row.X  == PositionBase.Center) xW = (resultWidth - XTextSize.Width) / 2;
+
+                        if (row.Y == PositionBase.Top) yW = YTextSize;
+                        else if (row.Y == PositionBase.Bottom) yW = resultHeight - YTextSize;
+                        else if (row.Y == PositionBase.Center) yW = (resultHeight - YTextSize) / 2;
+
+                        //计算起始位置
                     }
                 }
 
