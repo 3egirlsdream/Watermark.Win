@@ -27,14 +27,14 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
-                <RowDefinition Height="36"/>
-                <RowDefinition Height="22"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Button Grid.Row="0" Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Right" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                <materialDesign:PackIcon Kind="WindowClose" />
+            <Button Grid.Row="0" Style="{StaticResource MaterialDesignIconButton}" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Right" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                <materialDesign:PackIcon Kind="WindowClose" Height="15" Width="15"/>
             </Button>
-            <TextBlock x:Name="txt" Grid.Row="2" Height="auto" Margin="50 8 0 0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="10.5" Text="{Binding Text, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#212121" Panel.ZIndex="9"/>
-            <ProgressBar Grid.Row="1" Value="{Binding Process, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="10"  Margin="50 8 50 0"  materialDesign:TransitionAssist.DisableTransitions="True"/>
+            <TextBlock x:Name="txt" Grid.Row="2" Height="auto" Margin="50 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="10.5" Text="{Binding Text, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#212121" Panel.ZIndex="9"/>
+            <ProgressBar Grid.Row="0" Grid.RowSpan="3" Value="{Binding Process, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="10"  Margin="50 0 50 0"  materialDesign:TransitionAssist.DisableTransitions="True" VerticalAlignment="Center"/>
         </Grid>
 
     </Border>

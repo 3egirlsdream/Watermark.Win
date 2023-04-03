@@ -177,6 +177,7 @@ namespace JointWatermark
 
         private void ImportImages(string[] filenames, string tag)
         {
+            var fontFamily = fontlist.SelectedItem.ToString();
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
                 for (int ii = 0; ii < filenames.Length; ii++)
@@ -199,6 +200,11 @@ namespace JointWatermark
                             i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
                             i.Config.IsCloudIcon = false;
                         }
+                    }
+                    vm.GlobalConfigSetting(i);
+                    if (fontFamily != "微软雅黑")
+                    {
+                        i.Config.FontFamily =  fontFamily;
                     }
                     Dispatcher.Invoke(() =>
                     {
@@ -905,20 +911,25 @@ namespace JointWatermark
             {
                 foreach (var item in Images)
                 {
-                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition1)) item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;
-                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition2)) item.Config.LeftPosition2 = GlobalConfig.LeftPosition2;
-                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition1)) item.Config.RightPosition1 = GlobalConfig.RightPosition1;
-                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition2)) item.Config.RightPosition2 = GlobalConfig.RightPosition2;
-                    if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
-                    item.Config.BorderWidth = GlobalConfig.BorderWidth;
-                    if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
-                    if (GlobalConfig.FontXS != 1) item.Config.FontXS = GlobalConfig.FontXS;
+                    GlobalConfigSetting(item);
                 }
 
                 RefreshSelectedImage(SelectedImage);
             },
             CanExecuteDelegate = o => true
         };
+
+        public void GlobalConfigSetting(ImageProperties item)
+        {
+            if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition1)) item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;
+            if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition2)) item.Config.LeftPosition2 = GlobalConfig.LeftPosition2;
+            if (!string.IsNullOrEmpty(GlobalConfig.RightPosition1)) item.Config.RightPosition1 = GlobalConfig.RightPosition1;
+            if (!string.IsNullOrEmpty(GlobalConfig.RightPosition2)) item.Config.RightPosition2 = GlobalConfig.RightPosition2;
+            if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
+            item.Config.BorderWidth = GlobalConfig.BorderWidth;
+            if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
+            if (GlobalConfig.FontXS != 1) item.Config.FontXS = GlobalConfig.FontXS;
+        }
 
         public SimpleCommand CmdSetIcon => new()
         {

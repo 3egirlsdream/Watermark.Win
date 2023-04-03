@@ -20,6 +20,21 @@ namespace JointWatermark.Views
             DataContext = vm;
         }
 
+        private bool mini = false;
+        public bool Mini 
+        { 
+            get => mini; 
+            set
+            {
+                mini = value;
+                if(value)
+                {
+                    Height = 90;
+                    Width = 300;
+                }
+            }
+        }
+
         public Loading(Action<CancellationToken, Loading> action)
         {
             tokenSource = new CancellationTokenSource();
