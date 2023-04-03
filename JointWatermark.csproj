@@ -11,7 +11,7 @@
     <Authors>3egirlsdream@github.com</Authors>
     <Company>github.com/3egirlsdream/JointWatermark</Company>
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
-    <Product>水印合成</Product>
+    <Product>水印相框</Product>
     <Description>为图片添加水印</Description>
     <AssemblyName>JointWatermark</AssemblyName>
   </PropertyGroup>

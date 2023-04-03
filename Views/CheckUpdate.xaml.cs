@@ -1,4 +1,5 @@
 ﻿using JointWatermark.Class;
+using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -136,8 +138,54 @@ namespace JointWatermark
                 var v2 = new Version(version.data.VERSION);
                 if (v2 > v1)
                 {
-                    System.Diagnostics.Process.Start(Global.BasePath + Global.SeparatorChar + "JointWatermark.Update.exe");
+                    var filePath = Global.BasePath + Global.SeparatorChar + "JointWatermark.Update.exe";
+                    var file = File.Exists(filePath);
+                    if (file)
+                    {
+                        File.Delete(filePath);
+                    }
+                    var result = ExcuteUpdateProgram();
+                    file = File.Exists(filePath);
+                    if (result == true && file)
+                    {
+                        System.Diagnostics.Process.Start(filePath);
+                    }
                 }
+            }
+        }
+
+        private bool? ExcuteUpdateProgram()
+        {
+            using (var wc = new WebClient())
+            {
+                var updatePath = "http://thankful.top:2038/api/public/dl/wzXaErGP";
+                var fileName = "JointWatermark.Update.exe";
+                string path = Global.BasePath + Global.SeparatorChar + fileName;
+                var action = new Action<CancellationToken, Loading>((token, loading) =>
+                {
+                    try
+                    {
+                        wc.DownloadProgressChanged += (ss, e) =>
+                        {
+                            loading.ISetPosition(e.ProgressPercentage, $"更新程序已下载{e.ProgressPercentage}%");
+                        };
+                        wc.DownloadFileTaskAsync(new Uri(updatePath), path).Wait();
+                    }
+                    catch(Exception ex)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            Global.SendMsg(ex.Message);
+                        });
+                        File.Delete(path);
+                    }
+                });
+                var ld = new Loading(action);
+                ld.Owner = this;
+                ld.Mini = true;
+                ld.ShowInTaskbar = false;
+                ld.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                return ld.ShowDialog();
             }
         }
 
