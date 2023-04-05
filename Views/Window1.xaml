@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:JointWatermark.Views"
         mc:Ignorable="d"
         Title="Window1" Height="450" Width="800">
-    <Grid>
+    <Grid Background="LightGray">
         <Button  Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" Click="Button_Click"/>
+        <Image x:Name="img" Margin="10"/>
     </Grid>
 </Window>

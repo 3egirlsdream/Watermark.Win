@@ -29,6 +29,7 @@ using System.Net;
 using System.Windows.Media.TextFormatting;
 using System.Threading;
 using JointWatermark.Views;
+using System.Reflection;
 
 namespace JointWatermark.Class
 {
@@ -583,22 +584,33 @@ namespace JointWatermark.Class
 
         #region 2.0
 
-        public void Generation(GeneralWatermarkProperty image)
+        public void Generation(GeneralWatermarkProperty image, Window1 window)
         {
             int resultWidth, resultHeight, shortLine;
             double shortLineBorderPercent;
-            using(var img = Image.Load(image.PhotoPath))
+            using(var img = Image.Load<Rgba32>(image.PhotoPath))
             {
                 shortLine = Math.Min(img.Height, img.Width);
                 shortLineBorderPercent = (100 - Math.Min(image.PecentOfWidth, image.PecentOfHeight)) / 100.0;
+                //根据边框的起始位置计算边框宽度
+                var XBorderWidth =  image.StartPosition.X * shortLine / 100.0;
+                var YBorderWidth = image.StartPosition.Y * shortLine / 100.0;
                 if (image.EnableFixedPercent)
                 {
-                    resultHeight = (int)(img.Height + shortLine * shortLineBorderPercent);
-                    resultWidth = (int)(img.Width + shortLine * shortLineBorderPercent);
+                    if(image.PecentOfWidth > image.PecentOfHeight)
+                    {
+                        resultHeight = (int)(img.Height + shortLine * shortLineBorderPercent);
+                        resultWidth = (int)(img.Width + XBorderWidth * 2);
+                    }
+                    else
+                    {
+                        resultHeight = (int)(img.Height + YBorderWidth * 2);
+                        resultWidth = (int)(img.Width + shortLine * shortLineBorderPercent);
+                    }
                 }
                 else
                 {
-                    resultHeight = (int)(img.Height / (double)image.PecentOfWidth) * 100;
+                    resultHeight = (int)(img.Height / (double)image.PecentOfHeight) * 100;
                     resultWidth = (int)(img.Width / (double)image.PecentOfWidth) * 100;
                 }
 
@@ -608,52 +620,276 @@ namespace JointWatermark.Class
                 //填充背景色
                 resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                 //绘制图片
-                var start = new SixLabors.ImageSharp.Point(image.StartPosition.X * shortLine / 100, image.StartPosition.Y * shortLine / 100);
+                var start = new SixLabors.ImageSharp.Point((int)XBorderWidth, (int)YBorderWidth);
+                if (!image.EnableFixedPercent)
+                {
+                    start = new SixLabors.ImageSharp.Point((int)XBorderWidth, image.StartPosition.Y * img.Height / 100);
+                }
                 resultImage.Mutate(x => x.DrawImage(img, start, 1));
 
 
                 //基础字体系数
-                var fontxs = (resultImage.Height * 0.13 / 156);
+                var fontxs = (img.Height * 0.13 / 156);
                 double basicFontSize = 30;
 
                 //绘制文字
-
-                foreach (GeneralWatermarkRowProperty row in image.Properties)
+                var connectedIds = new List<string>();
+                image.ConnectionModes.ForEach(c =>
                 {
-                    double x, y, xW = 0, yW = 0;
+                    connectedIds.AddRange(c.Ids);
+                });
+                foreach (GeneralWatermarkRowProperty row in image.Properties.Where(c=> connectedIds.All(x=> c.ID != x )))
+                {
+                    double xW = 0, yW = 0;
                     if (row.EdgeDistanceType == EdgeDistanceType.Character)
                     {
                         double fontSize = basicFontSize * fontxs;
-                        var f = SetFamily(row.FontFamily);
-                        var fr = f.Item1.Value;
-                        var font = fr.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
-                        if (row.IsBlod)
-                        {
-                            var fb = f.Item2 ?? f.Item1.Value;
-                            font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
-                        }
+                        Font font = GetFont(row.FontFamily, row.IsBlod, fontSize);
                         //测量宽度像素
                         var XTextSize = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(font));
+                        var ContentTextSize = TextMeasurer.Measure(row.Content, new SixLabors.Fonts.TextOptions(font));
                         var YTextSize = XTextSize.Height * row.EdgeDistanceCharacterY.Length;
-                        if (row.X == PositionBase.Left) xW = XTextSize.Width;
-                        else if (row.X == PositionBase.Right) xW = resultWidth - XTextSize.Width;
-                        else if(row.X  == PositionBase.Center) xW = (resultWidth - XTextSize.Width) / 2;
 
-                        if (row.Y == PositionBase.Top) yW = YTextSize;
-                        else if (row.Y == PositionBase.Bottom) yW = resultHeight - YTextSize;
-                        else if (row.Y == PositionBase.Center) yW = (resultHeight - YTextSize) / 2;
+                        ConnectionMode lastRow = null;// index > 1 ? image.ConnectionModes[index - 1] : null;
+                        GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, YTextSize, XTextSize.Width, ContentTextSize.Height, ContentTextSize.Width, lastRow);
 
-                        //计算起始位置
                         var t = "";
                         var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
                         resultImage.Mutate(x => x.DrawText(row.Content, font, SixLabors.ImageSharp.Color.ParseHex("#000000"), Params));
                     }
                 }
 
+                for(var i = 0; i < image.ConnectionModes.Count;i++)
+                {
+                    var row = image.ConnectionModes[i];
+                    DrawText(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
+                    //if (row.ContentType == ContentType.Image)
+                    //{
+                    //    //取出水印组合
+                    //    var group = image.Properties.Where(c => row.Ids.Any(x => x == c.ID)).ToList();
+                    //    if(row.RelativePositionMode == RelativePositionMode.LastRow)
+                    //    {
+                    //        //打开图片
+                    //    }
+                    //}
+                    //else
+                    //{
+                        
+                    //}
+                }
 
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
-                resultImage.Save(path);
+                var source = ImageSharpToImageSource(resultImage);
+                window.img.Source = source;
+                //var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                //resultImage.Save(path);
             }
+        }
+
+        private void DrawText(GeneralWatermarkProperty image, int resultWidth, int resultHeight, Image<Rgba32> img, Image<Rgba32> resultImage, SixLabors.ImageSharp.Point start, double fontxs, ConnectionMode row, int index)
+        {
+            //取出水印组合
+            var group = image.Properties.Where(c => row.Ids.Any(x => x == c.ID)).ToList();
+            double totalHeight = 0, rowHeight = 0;
+            /**计算组合的整体高度
+             *
+             * 首先判断行高
+             */
+            if (row.RowHeightMinFontPercent != null)
+            {
+                //找出最小字体
+                var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault();
+                if (minFontSizeRow != null)
+                {
+                    var fONT = GetFont(row.FontFamily, row.IsBlod, row.FontSize * fontxs);
+                    rowHeight = TextMeasurer.Measure(minFontSizeRow.Content, new SixLabors.Fonts.TextOptions(fONT)).Height * row.RowHeightMinFontPercent.Value / 100;
+                }
+                //算出整体高度
+                foreach (var r in group)
+                {
+                    if (r.ContentType == ContentType.Text)
+                    {
+                        var fONT = GetFont(r.FontFamily, r.IsBlod, r.FontSize * fontxs);
+                        var rHeight = TextMeasurer.Measure(r.Content, new SixLabors.Fonts.TextOptions(fONT)).Height;
+                        totalHeight += rHeight;
+                    }
+                    else if(r.ContentType == ContentType.Image)
+                    {
+                        var rHeight = (resultHeight - start.Y - img.Height) * r.ImagePercentOfRange / 100;
+                        totalHeight += rHeight;
+                    }
+                }
+                //加上行高
+                if (group.Count > 1)
+                {
+                    totalHeight += rowHeight * (group.Count - 1);
+                }
+            }
+            double xW = 0, yW = 0;
+            //计算边距
+            var borderFont = GetFont(row.FontFamily, false, row.FontSize * fontxs);
+            var border = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(borderFont));
+            var borderHeight = border.Height * row.EdgeDistanceCharacterY.Length;
+            //计算整体宽度，按最长的文字行计算
+            var longestRow = group.OrderByDescending(c => c.Content.Length).FirstOrDefault();
+            var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBlod, longestRow.FontSize * fontxs);
+            var totalWidth = TextMeasurer.Measure(longestRow.Content, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
+            if(group.All(c=>c.ContentType == ContentType.Image))
+            {
+                var g = group[0];
+                var logo = Image.Load(g.ImagePath);
+                //resultHeight - start.Y - img.Height 为白边的高度
+                var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
+                totalWidth = (int)(logo.Width * xs);
+                totalHeight = (int)(logo.Height * xs);
+            }
+            else if(group.Any(c => c.ContentType == ContentType.Image)&& group.Any(c => c.ContentType == ContentType.Text))
+            {
+                var g = group.FirstOrDefault(c => c.ContentType == ContentType.Image);
+                var logo = Image.Load(g.ImagePath);
+                //resultHeight - start.Y - img.Height 为白边的高度
+                var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
+                var _w = (int)(logo.Width * xs);
+                var _h = (int)(logo.Height * xs);
+                if(_w > totalWidth) totalWidth = _w;
+                if(_h > totalHeight) totalHeight = _h;
+            } 
+            else if(group.All(c=>c.ContentType == ContentType.Line))
+            {
+                var g = group[0];
+                var font = GetFont(g.FontFamily, g.IsBlod, g.FontSize * fontxs);
+                var fontWidth = TextMeasurer.Measure(g.Content, new SixLabors.Fonts.TextOptions(font)).Width;
+                totalWidth = (float)(g.LinePixel * fontxs + fontWidth);
+                totalHeight = (resultHeight - start.Y - img.Height) / 100.0 * g.LinePercentOfRange;
+
+            }
+            ConnectionMode lastRow = index >= 1 ? image.ConnectionModes[index - 1] : null;
+            GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, borderHeight, border.Width, totalHeight, totalWidth, lastRow);
+            row.TotalHeight = totalHeight;
+            row.TotalWidth = totalWidth;
+
+
+            /*
+             * 根据row.RelativePositionMode判断是组件定位模式
+             * 
+             */
+
+            if (row.RelativePositionMode == RelativePositionMode.LastRow)
+            {
+                
+            }
+            else
+            {
+
+            }
+
+
+            row.StartPoint = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
+
+
+
+
+            //开始绘制
+            var row1 = row.StartPoint; 
+            //这里还要考虑组件中每行的相对位置，现在默认只有竖直
+            foreach (var item in group)
+            {
+                if (item.ContentType == ContentType.Text)
+                {
+                    var font = GetFont(item.FontFamily, item.IsBlod, item.FontSize * fontxs);
+                    var fontHeight = TextMeasurer.Measure(item.Content, new SixLabors.Fonts.TextOptions(font)).Height;
+                    resultImage.Mutate(x => x.DrawText(item.Content, font, SixLabors.ImageSharp.Color.ParseHex(item.Color), row1));
+                    row1.Y += (int)(rowHeight + fontHeight);
+                }
+                else if(item.ContentType == ContentType.Image) 
+                {
+                    var logo = Image.Load(item.ImagePath);
+                    //resultHeight - start.Y - img.Height 为白边的高度
+                    var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
+                    int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
+                    logo.Mutate(x => x.Resize(_w, _h));
+                    resultImage.Mutate(x => x.DrawImage(logo, row1, 1));
+                    row1.Y += (int)(rowHeight + logo.Height);
+                }
+                else if (item.ContentType == ContentType.Line) 
+                {
+                    var _s = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
+                    var _e  = new SixLabors.ImageSharp.Point(row1.X , row1.Y + (int)totalHeight);
+                    resultImage.Mutate(x => x.DrawLines(SixLabors.ImageSharp.Color.ParseHex(item.Color), (int)(item.LinePixel * fontxs), _s, _e));
+                    row1.Y += (int)(totalHeight);
+                }
+            }
+        }
+
+        private static void GetWatermarkStartPosition(int resultWidth
+            , int resultHeight
+            , Image<Rgba32> img
+            , SixLabors.ImageSharp.Point start
+            , GeneralWatermarkRowProperty row
+            , ref double xW
+            , ref double yW
+            , double borderHeight
+            , double borderWidth
+            , double contentHeight
+            , double contentWidth
+            , ConnectionMode lastRow)
+        {
+            double x = 0, y = 0;
+            //计算起始位置
+            if (row.Start != WatermarkRange.None)
+            {
+                if (row.Start == WatermarkRange.BottomOfPhoto)
+                {
+                    y = start.Y + img.Height;
+                }
+                else if (row.Start == WatermarkRange.RightOfPhoto)
+                {
+                    x = start.X + img.Width;
+                }
+                else if (row.Start == WatermarkRange.LeftOfPhoto)
+                {
+                    x = start.X;
+                }
+                else if (row.Start == WatermarkRange.TopOfPhoto)
+                {
+                    y = start.Y;
+                }
+            }
+            if(row.RelativePositionMode == RelativePositionMode.LastRow)
+            {
+                //以上一个组件计算位置的应该不用x y
+                if (lastRow == null) return;
+                if (row.X == PositionBase.Left) xW = lastRow.TotalWidth + borderWidth;
+                else if (row.X == PositionBase.Right) xW = resultWidth - borderWidth - contentWidth - (resultWidth - lastRow.StartPoint.X); //减去固定边距和文字本身的宽度
+                else if (row.X  == PositionBase.Center) xW = (resultWidth - contentWidth) / 2;
+
+                if (row.Y == PositionBase.Top) yW = y + borderHeight + lastRow.TotalHeight;
+                else if (row.Y == PositionBase.Bottom) yW = resultHeight - borderHeight - lastRow.TotalHeight;
+                else if (row.Y == PositionBase.Center) yW = (resultHeight - y - contentHeight) / 2 + y;
+            }
+            else
+            {
+                if (row.X == PositionBase.Left) xW = x + borderWidth;
+                else if (row.X == PositionBase.Right) xW = resultWidth - borderWidth - contentWidth - x; //减去固定边距和文字本身的宽度
+                else if (row.X  == PositionBase.Center) xW = (resultWidth - contentWidth) / 2;
+
+                if (row.Y == PositionBase.Top) yW = y + borderHeight;
+                else if (row.Y == PositionBase.Bottom) yW = resultHeight - borderHeight;
+                else if (row.Y == PositionBase.Center) yW = (resultHeight - y - contentHeight) / 2 + y;
+            }
+        }
+
+        private Font GetFont(string fontFamily, bool isBold, double fontSize)
+        {
+            var f = SetFamily(fontFamily);
+            var fr = f.Item1.Value;
+            var font = fr.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
+            if (isBold)
+            {
+                var fb = f.Item2 ?? f.Item1.Value;
+                font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
+            }
+
+            return font;
         }
 
 

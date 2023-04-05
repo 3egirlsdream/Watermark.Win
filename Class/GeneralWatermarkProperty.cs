@@ -10,7 +10,7 @@ namespace JointWatermark.Class
     public class GeneralWatermarkProperty : ValidationBase
     {
         /// <summary>
-        /// 固定百分比，根据短边
+        /// 固定百分比，根据短边 // 主要是为了白色边框一样宽
         /// </summary>
         public bool EnableFixedPercent { get; set; }
         public string PhotoPath { get; set; }
@@ -41,6 +41,8 @@ namespace JointWatermark.Class
         public string FontFamily { get; set; }
 
         public List<GeneralWatermarkRowProperty> Properties { get; set; }
+
+        public List<ConnectionMode> ConnectionModes { get; set; }
         
     }
 
@@ -49,8 +51,16 @@ namespace JointWatermark.Class
     /// </summary>
     public class GeneralWatermarkRowProperty : ValidationBase
     {
+        public GeneralWatermarkRowProperty() 
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+        public string ID { get; set; }
+        public WatermarkRange Start { get; set; }
+        public WatermarkRange End { get; set; }
 
         //每个水印位置的偏移量->支持百分比和像素2种
+        
 
         /// <summary>
         /// 水印的定位基准
@@ -68,17 +78,36 @@ namespace JointWatermark.Class
         /// <summary>
         /// 固定字符计数
         /// </summary>
-        public string EdgeDistanceCharacterX { get; set; }
-        public string EdgeDistanceCharacterY { get; set; }
+        public string EdgeDistanceCharacterX { get; set; } = "";
+        public string EdgeDistanceCharacterY { get; set; } = "";
         /// <summary>
         /// 相对定位方式，根据上一行或者全局
         /// </summary>
-        public RelativePositionMode RelativePositionMode { get; set; }
+        public RelativePositionMode RelativePositionMode { get; set; } = RelativePositionMode.Global;
 
         /// <summary>
         /// 水印内容
         /// </summary>
-        public string Content { get; set; }
+        public string Content { get; set; } = "";
+        /// <summary>
+        /// 图片路径
+        /// </summary>
+        public string ImagePath { get; set; }
+
+        public ContentType ContentType { get; set; } = ContentType.Text;
+
+        /// <summary>
+        /// 图片占范围的比例（按短边缩放）
+        /// </summary>
+        public int ImagePercentOfRange { get; set; }
+        /// <summary>
+        /// 线占的百分比
+        /// </summary>
+        public int LinePercentOfRange { get; set; }
+        /// <summary>
+        /// 线占用的像素
+        /// </summary>
+        public int LinePixel { get; set; }
 
         /// <summary>
         /// 字体
@@ -90,6 +119,45 @@ namespace JointWatermark.Class
         public int EndX { get; set; }
         public int StartY { get; set; }
         public int EndY { get; set; }
+        public int FontSize { get; set; } = 30;
+        public string Color { get; set; } = "#000000";
+
+        /**
+         * 记录当前组件计算完后的值
+         * 
+         */
+
+        /// <summary>
+        /// 记录当前组件计算完后的值
+        /// </summary>
+        public double TotalWidth { get; set; }
+        /// <summary>
+        /// 记录当前组件计算完后的值
+        /// </summary>
+        public double TotalHeight { get; set; }
+        /// <summary>
+        /// 记录当前组件计算完后的值
+        /// </summary>
+        public Point StartPoint { get; set; }
+
+    }
+
+
+    /// <summary>
+    /// 关联模式
+    /// </summary>
+    public class ConnectionMode : GeneralWatermarkRowProperty
+    {
+        public List<string> Ids { get; set; }
+        /// <summary>
+        /// 按整体图片百分比计数
+        /// </summary>
+        public double? RowHeightPercent { get; set; } = null;
+        /// <summary>
+        /// 按水印组的最小字体高度百分比计数
+        /// </summary>
+        public double? RowHeightMinFontPercent { get; set; } = null;
+
     }
 
     public enum RelativePositionMode
@@ -125,5 +193,22 @@ namespace JointWatermark.Class
         Bottom,
         Right,
         Left,
+    }
+
+    public enum WatermarkRange
+    {
+        BottomOfPhoto,
+        TopOfPhoto,
+        LeftOfPhoto,
+        RightOfPhoto,
+        End,
+        None
+    }
+
+    public enum ContentType
+    {
+        Image,
+        Text,
+        Line
     }
 }
