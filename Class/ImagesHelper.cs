@@ -30,6 +30,7 @@ using System.Windows.Media.TextFormatting;
 using System.Threading;
 using JointWatermark.Views;
 using System.Reflection;
+using SixLabors.ImageSharp.Processing.Processors;
 
 namespace JointWatermark.Class
 {
@@ -588,8 +589,9 @@ namespace JointWatermark.Class
         {
             int resultWidth, resultHeight, shortLine;
             double shortLineBorderPercent;
-            using(var img = Image.Load<Rgba32>(image.PhotoPath))
+            using(var orientImg = Image.Load<Rgba32>(image.PhotoPath))
             {
+                var img = orientImg.Clone(x => x.AutoOrient());
                 shortLine = Math.Min(img.Height, img.Width);
                 shortLineBorderPercent = (100 - Math.Min(image.PecentOfWidth, image.PecentOfHeight)) / 100.0;
                 //根据边框的起始位置计算边框宽度
@@ -613,7 +615,9 @@ namespace JointWatermark.Class
                     resultHeight = (int)(img.Height / (double)image.PecentOfHeight) * 100;
                     resultWidth = (int)(img.Width / (double)image.PecentOfWidth) * 100;
                 }
-
+                //基础字体系数
+                var fontxs = (img.Height * 0.13 / 156);
+                double basicFontSize = 30;
 
                 var resultImage = img.Clone(x => x.Resize(resultWidth, resultHeight));
                 var polygon = new RegularPolygon(0, 0, resultWidth, Diagonal(resultHeight, resultWidth));
@@ -625,12 +629,16 @@ namespace JointWatermark.Class
                 {
                     start = new SixLabors.ImageSharp.Point((int)XBorderWidth, image.StartPosition.Y * img.Height / 100);
                 }
+                var rec = new SixLabors.ImageSharp.Rectangle(start.X - (int)(200*fontxs), start.Y - (int)(200*fontxs), img.Width + (int)(400*fontxs), img.Height + (int)(400*fontxs));
+                //resultImage.Mutate(x => x.DrawImage(img, start, 1).BoxBlur(img.Width / 2, rec));
+                //resultImage.Mutate(x => x.DrawImage(img, start, 1));
+                var c = new GraphicsOptions { AlphaCompositionMode = PixelAlphaCompositionMode.DestOut };
+                var blackImg = resultImage.Clone(cc => cc.Resize(img.Width, img.Height));
+                blackImg.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#444444"), polygon));
+                resultImage.Mutate(x => x.DrawImage(blackImg, start, 1).BoxBlur((int)(50*fontxs), rec)
+                );
                 resultImage.Mutate(x => x.DrawImage(img, start, 1));
-
-
-                //基础字体系数
-                var fontxs = (img.Height * 0.13 / 156);
-                double basicFontSize = 30;
+                
 
                 //绘制文字
                 var connectedIds = new List<string>();
@@ -680,8 +688,8 @@ namespace JointWatermark.Class
 
                 var source = ImageSharpToImageSource(resultImage);
                 window.img.Source = source;
-                //var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
-                //resultImage.Save(path);
+                var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                resultImage.Save(path);
             }
         }
 
@@ -807,6 +815,7 @@ namespace JointWatermark.Class
                     var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
                     int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
                     logo.Mutate(x => x.Resize(_w, _h));
+                    var rec = new SixLabors.ImageSharp.Rectangle(row1.X, row1.Y, logo.Width, logo.Height);
                     resultImage.Mutate(x => x.DrawImage(logo, row1, 1));
                     row1.Y += (int)(rowHeight + logo.Height);
                 }

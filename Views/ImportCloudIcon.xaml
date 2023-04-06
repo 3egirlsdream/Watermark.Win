@@ -38,7 +38,7 @@
             <Border Background="#e8e8e8" CornerRadius="0" MouseLeftButtonDown="MoveWindow">
                 <Border.Clip>
                     <RectangleGeometry RadiusX="5" RadiusY="5"  
-                                       Rect="0,0,580,40" />
+                                       Rect="0,0,480,40" />
                 </Border.Clip>
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">

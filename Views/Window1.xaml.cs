@@ -28,10 +28,10 @@ namespace JointWatermark.Views
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             var image = new GeneralWatermarkProperty();
-            image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\DSC03011.jpg";
-            image.StartPosition = new SixLabors.ImageSharp.Point(2, 2);
-            image.PecentOfHeight = 83;
-            image.PecentOfWidth = 96;
+            image.PhotoPath = "C:\\Users\\kingdee\\Downloads\\DSC00001.JPG";
+            image.StartPosition = new SixLabors.ImageSharp.Point(5, 5);
+            image.PecentOfHeight = 77;
+            image.PecentOfWidth = 90;
             image.EnableFixedPercent = true;
             image.Properties = new List<GeneralWatermarkRowProperty>
             {
@@ -73,7 +73,7 @@ namespace JointWatermark.Views
                     End = WatermarkRange.End,
                     IsBlod = true,
                     FontSize = 35,
-                    ImagePath = "C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png",
+                    ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png",
                     ImagePercentOfRange = 50,
                     ContentType = ContentType.Image
                 },
