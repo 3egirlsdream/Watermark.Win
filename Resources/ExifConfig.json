@@ -1,4 +1,5 @@
 {
+  "version": 2.0,
   "Exifs": [
     {
       "Key": "ResolutionUnit",
@@ -149,5 +150,12 @@
     }
   ],
   "Icons": [],
-  "ShowGuide": true
+  "ShowGuide": true,
+  "Templates": [
+    {
+      "WatermarkPhotoFrame": {
+
+      }
+    }
+  ]
 }

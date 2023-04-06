@@ -40,10 +40,23 @@ namespace JointWatermark.Class
         /// </summary>
         public string FontFamily { get; set; }
 
+        public ImageShadow Shadow { get; set; }
+
         public List<GeneralWatermarkRowProperty> Properties { get; set; }
 
         public List<ConnectionMode> ConnectionModes { get; set; }
         
+    }
+
+    public class ImageShadow
+    {
+        public ImageShadow(bool enabled, int width) 
+        { 
+            Enabled = enabled;
+            Width = width;
+        }
+        public bool Enabled { get; set; }
+        public int Width { get; set; } = 200;
     }
 
     /// <summary>
@@ -56,6 +69,7 @@ namespace JointWatermark.Class
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
         public string ID { get; set; }
+        public string Name { get; set; }
         public WatermarkRange Start { get; set; }
         public WatermarkRange End { get; set; }
 

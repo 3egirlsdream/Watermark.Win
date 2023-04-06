@@ -28,15 +28,17 @@ namespace JointWatermark.Views
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             var image = new GeneralWatermarkProperty();
-            image.PhotoPath = "C:\\Users\\kingdee\\Downloads\\DSC00001.JPG";
-            image.StartPosition = new SixLabors.ImageSharp.Point(5, 5);
+            image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\bb.jpg";
+            image.StartPosition = new SixLabors.ImageSharp.Point(10, 5);
             image.PecentOfHeight = 77;
-            image.PecentOfWidth = 90;
+            image.PecentOfWidth = 80;
             image.EnableFixedPercent = true;
+            image.Shadow = new ImageShadow(true, 200);
             image.Properties = new List<GeneralWatermarkRowProperty>
             {
                 new GeneralWatermarkRowProperty()
                 {
+                    Name = "右侧第一行",
                     X = PositionBase.Right,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
@@ -50,6 +52,7 @@ namespace JointWatermark.Views
                 },
                 new GeneralWatermarkRowProperty()
                 {
+                    Name = "右侧第二行",
                     X = PositionBase.Right,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
@@ -73,12 +76,13 @@ namespace JointWatermark.Views
                     End = WatermarkRange.End,
                     IsBlod = true,
                     FontSize = 35,
-                    ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png",
+                    ImagePath = "C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png",
                     ImagePercentOfRange = 50,
                     ContentType = ContentType.Image
                 },
                 new GeneralWatermarkRowProperty()
                 {
+                    Name = "左侧第一行",
                     X = PositionBase.Left,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
@@ -91,6 +95,7 @@ namespace JointWatermark.Views
                 },
                 new GeneralWatermarkRowProperty()
                 {
+                    Name = "右侧第二行",
                     X = PositionBase.Left,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
@@ -173,7 +178,9 @@ namespace JointWatermark.Views
                     RelativePositionMode = RelativePositionMode.Global
                 }
             };
-            ImagesHelper.Current.Generation(image, this);
+            TemplateConfig templateConfig = new TemplateConfig(image);
+            templateConfig.ShowDialog();
+            //ImagesHelper.Current.Generation(image, this);
         }
     }
 }
