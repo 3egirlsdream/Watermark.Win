@@ -20,14 +20,17 @@ namespace JointWatermark.Views
     /// </summary>
     public partial class Window1 : Window
     {
+        GeneralWatermarkProperty image;
         public Window1()
         {
             InitializeComponent();
+            var c = DateTime.Now.ToString("yyyy.MM.dd HH.mm.ss");
+            Init();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Init()
         {
-            var image = new GeneralWatermarkProperty();
+            image = new GeneralWatermarkProperty();
             image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\bb.jpg";
             image.StartPosition = new SixLabors.ImageSharp.Point(10, 5);
             image.PecentOfHeight = 77;
@@ -47,7 +50,7 @@ namespace JointWatermark.Views
                     Content = "cesiumcesium测试",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    IsBlod = true,
+                    IsBold = true,
                     FontSize = 35
                 },
                 new GeneralWatermarkRowProperty()
@@ -61,7 +64,7 @@ namespace JointWatermark.Views
                     Content = "cesiumcesium测试",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    IsBlod = false,
+                    IsBold = false,
                     Color = "#cbb795"
                 },
                 new GeneralWatermarkRowProperty()
@@ -74,7 +77,7 @@ namespace JointWatermark.Views
                     Content = "右侧cesiumcesium测试",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    IsBlod = true,
+                    IsBold = true,
                     FontSize = 35,
                     ImagePath = "C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png",
                     ImagePercentOfRange = 50,
@@ -91,7 +94,7 @@ namespace JointWatermark.Views
                     Content = "右侧cesiumcesium测试右侧cesiumcesium",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    IsBlod = true
+                    IsBold = true
                 },
                 new GeneralWatermarkRowProperty()
                 {
@@ -178,9 +181,22 @@ namespace JointWatermark.Views
                     RelativePositionMode = RelativePositionMode.Global
                 }
             };
-            TemplateConfig templateConfig = new TemplateConfig(image);
+
+            image = Global.InitConfig().Templates.PhotoFrame;
+            image.PhotoPath = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg";
+            image.Properties[2].ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png";
+
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ImagesHelper.Current.Generation(image, this);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            var templateConfig = new TemplateConfig(image);
             templateConfig.ShowDialog();
-            //ImagesHelper.Current.Generation(image, this);
         }
     }
 }

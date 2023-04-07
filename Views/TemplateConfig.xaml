@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:JointWatermark.Views"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
         Title="模板设置" Height="450" Width="800">
     <Grid Margin="5">
         <Grid.RowDefinitions>
@@ -16,8 +17,8 @@
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
-            <RowDefinition Height="35"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150"/>
@@ -49,13 +50,13 @@
         <TextBox Grid.Row="1" Grid.Column="0" Text="{Binding PercentOfHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片纵向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
         <TextBox Grid.Row="2" Grid.Column="0" Text="{Binding PercentOfWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片横向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
         <CheckBox Grid.Row="3" Grid.Column="0" Content="启用阴影" IsChecked="{Binding EnabledShadow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
         <ListBox Grid.Column="1" Grid.RowSpan="2" ItemsSource="{Binding WaterItems1}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal" Height="30" HorizontalAlignment="Stretch">
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="150"/>
-                        <Button Style="{StaticResource MaterialDesignIconButton}"  Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ToggleButton Style="{StaticResource MaterialDesignActionAccentToggleButton}" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Content="{materialDesign:PackIcon Kind=Cancel}" materialDesign:ToggleButtonAssist.OnContent="{materialDesign:PackIcon Kind=Check}" Height="30" Width="30"/>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="100" Margin="10,0"/>
+                        <Button Style="{StaticResource MaterialDesignIconButton}"  Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding DataContext.CmdOpenConfig, RelativeSource={ RelativeSource AncestorType=Window}}" CommandParameter="{Binding ID}">
                             <materialDesign:PackIcon Kind="ArrangeBringForward" Height="20" Width="20"/>
                         </Button>
                     </StackPanel>
@@ -68,6 +69,11 @@
         
         <Label Grid.Row="1" Grid.Column="0" Content="下边距" VerticalAlignment="Center" HorizontalAlignment="Right"/>
         <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding BorderWidthOfBottom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>-->
-       
+        <Grid Grid.Row="8" Grid.ColumnSpan="4" Background="#f3f3f3" >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存"  Width="auto" Margin="20 0" Click="OK_Click"/>
+                <Button Style="{StaticResource MaterialDesignFlatLightButton}" Content="取消"  Width="auto" Margin="20 0" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

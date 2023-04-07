@@ -1,5 +1,6 @@
 ﻿using JointWatermark.Class;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -201,7 +202,14 @@ namespace JointWatermark.Views
 
         public List<string> Icons { get; set; } = new List<string>();
         public bool ShowGuide { get; set; }
+        public WatermarkTemplates Templates { get; set; }
     }
+
+    public class WatermarkTemplates
+    {
+        public GeneralWatermarkProperty PhotoFrame { get; set; }
+    }
+
 
     public class ExifInfo : ValidationBase
     {

@@ -1,6 +1,8 @@
-﻿using JointWatermark.Views;
+﻿using JointWatermark.Class;
+using JointWatermark.Views;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections;
@@ -31,29 +33,7 @@ namespace JointWatermark
             using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
             {
                 var profile = bp.Metadata.ExifProfile?.Values;
-                var meta = new Dictionary<string, object>();
-                if (profile != null)
-                {
-                    var meta_origin = profile.Select(x => new
-                    {
-                        Key = x.Tag.ToString(),
-                        Value = x.GetValue() is ushort[] ? ((ushort[])x.GetValue())[0] : x.GetValue()
-                    });
-                   
-                    foreach(var item in meta_origin)
-                    {
-                        meta[item.Key] = item.Value;  
-                    }
-                    if (meta.ContainsKey("ExposureProgram"))
-                    {
-                        meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
-                    }
-
-                    if (meta.ContainsKey("FNumber") && meta["FNumber"] is SixLabors.ImageSharp.Rational rational && rational.Denominator != 0)
-                    {
-                        meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
-                    }
-                }
+                Dictionary<string, object> meta = GetMeta(profile);
 
                 var config = GetDefaultExifConfig(meta);
 
@@ -70,7 +50,7 @@ namespace JointWatermark
                         right1,
                         left1,
                         right2,
-                        left2,
+                        left2
                     }; ;
                 }
                 var xs = bp.Width / 1920M;
@@ -90,9 +70,38 @@ namespace JointWatermark
                     right1,
                     left1,
                     right2,
-                    left2,
+                    left2
                 };
             }
+        }
+
+        public static Dictionary<string, object> GetMeta(IReadOnlyList<IExifValue> profile)
+        {
+            var meta = new Dictionary<string, object>();
+            if (profile != null)
+            {
+                var meta_origin = profile.Select(x => new
+                {
+                    Key = x.Tag.ToString(),
+                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
+                });
+
+                foreach (var item in meta_origin)
+                {
+                    meta[item.Key] = item.Value;
+                }
+                if (meta.ContainsKey("ExposureProgram"))
+                {
+                    meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
+                }
+
+                if (meta.ContainsKey("FNumber") && meta["FNumber"] is SixLabors.ImageSharp.Rational rational && rational.Denominator != 0)
+                {
+                    meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
+                }
+            }
+
+            return meta;
         }
 
         public static Dictionary<int, string> ExposureProgram { get; set; } = new Dictionary<int, string>()
@@ -117,7 +126,7 @@ namespace JointWatermark
             foreach (var parent in model.Config)
             {
                 var cs = new List<string>();
-                foreach(var child in parent.Config)
+                foreach (var child in parent.Config)
                 {
                     if (meta.TryGetValue(child.Key, out object rtl))
                     {
@@ -136,6 +145,28 @@ namespace JointWatermark
             }
 
             return ls;
+        }
+
+        public static string GetExifInfo(Dictionary<string, object> meta, List<ExifConfigInfo> info)
+        {
+            var cs = new List<string>();
+            foreach (var child in info)
+            {
+                if (meta.TryGetValue(child.Key, out object rtl))
+                {
+                    var c = child.Front + rtl + child.Behind;
+                    cs.Add(c);
+                }
+                else
+                {
+                    var c = child.Front + child.Value + child.Behind;
+                    cs.Add(c);
+                }
+            }
+
+            var p = string.Join(" ", cs);
+
+            return p;
         }
 
         public static MainModel InitConfig()
@@ -209,6 +240,37 @@ namespace JointWatermark
                 string result3 = strResult.Replace("-", "");
                 return result3;
             }
+        }
+
+
+        public static List<string> InitFontList()
+        {
+            var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
+            fonts.Insert(0, "微软雅黑");
+            var path = Global.BasePath + Global.SeparatorChar + "fonts";
+            if (Directory.Exists(path))
+            {
+                var files = new DirectoryInfo(path);
+                foreach (var item in files.GetFiles())
+                {
+                    if (!item.Name.ToLower().Contains("bold"))
+                    {
+                        var ls = item.Name.Split('/').Last().Split('.')[0];
+                        fonts.Add(ls);
+                    }
+                }
+            }
+            return fonts;
+        }
+
+        public static string GetContent(GeneralWatermarkRowProperty row, Dictionary<string, object> meta)
+        {
+            if (row.DataSource.From == DataSourceFrom.Exif)
+            {
+                var rst = GetExifInfo(meta, row.DataSource.Exifs);
+                return rst;
+            }
+            else return row.Content;
         }
 
     }

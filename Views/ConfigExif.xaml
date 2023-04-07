@@ -71,7 +71,7 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Border>
-                <ListBox Grid.Row="1" ItemsSource="{Binding ExifInfoList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Stretch" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False" materialDesign:ListBoxItemAssist.ShowSelection="False">
+                <ListBox Margin="6 0" Grid.Row="1" ItemsSource="{Binding ExifInfoList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Stretch" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False" materialDesign:ListBoxItemAssist.ShowSelection="False">
                     <ListBox.Template>
                         <ControlTemplate TargetType="ListBox">
                             <ScrollViewer>

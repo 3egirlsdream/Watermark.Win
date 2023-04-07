@@ -1,4 +1,5 @@
-﻿using SixLabors.ImageSharp;
+﻿using JointWatermark.Views;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,6 +46,7 @@ namespace JointWatermark.Class
         public List<GeneralWatermarkRowProperty> Properties { get; set; }
 
         public List<ConnectionMode> ConnectionModes { get; set; }
+        public Dictionary<string, object> Meta { get; set; }
         
     }
 
@@ -67,6 +69,18 @@ namespace JointWatermark.Class
         public GeneralWatermarkRowProperty() 
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            DataSource = new WatermarkDataSource();
+        }
+
+        private bool isChecked = true;
+        public bool IsChecked
+        {
+            get => isChecked;
+            set
+            {
+                isChecked = value;
+                NotifyPropertyChanged(nameof(IsChecked));
+            }
         }
         public string ID { get; set; }
         public string Name { get; set; }
@@ -103,6 +117,9 @@ namespace JointWatermark.Class
         /// 水印内容
         /// </summary>
         public string Content { get; set; } = "";
+
+        public WatermarkDataSource DataSource { get; set; }
+
         /// <summary>
         /// 图片路径
         /// </summary>
@@ -127,14 +144,11 @@ namespace JointWatermark.Class
         /// 字体
         /// </summary>
         public string FontFamily { set; get; } = "微软雅黑";
-        public bool IsBlod { get; set; } = false;
-
-        public int StartX { get; set; }
-        public int EndX { get; set; }
-        public int StartY { get; set; }
-        public int EndY { get; set; }
+        public bool IsBold { get; set; } = false;
         public int FontSize { get; set; } = 30;
         public string Color { get; set; } = "#000000";
+        public List<string> DateFormat { get; set; } = new List<string> { ".", ".", ":", ":" };
+        public double FontXS { get; set; } = 1;
 
         /**
          * 记录当前组件计算完后的值
