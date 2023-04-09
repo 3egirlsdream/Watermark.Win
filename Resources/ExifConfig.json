@@ -162,7 +162,7 @@
   "Templates": {
     "PhotoFrame": {
       "EnableFixedPercent": true,
-      "PhotoPath": "C:\\Users\\Jiang\\Pictures\\bb.jpg",
+      "PhotoPath": "",
       "PhotoRatio": 0,
       "StartPosition": {
         "X": 5,
@@ -240,7 +240,7 @@
             ":",
             ":"
           ],
-          "FontXS": 1.0186915887850467,
+          "FontXS": 1,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
@@ -302,7 +302,7 @@
         {
           "IsChecked": true,
           "ID": "93C12A9E3A2B49E4A8446CE2EC1C192B",
-          "Name": null,
+          "Name": "水印",
           "Start": 0,
           "End": 4,
           "X": 2,
@@ -317,7 +317,7 @@
             "From": 0,
             "Exifs": null
           },
-          "ImagePath": "C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png",
+          "ImagePath": null,
           "ContentType": 0,
           "ImagePercentOfRange": 50,
           "LinePercentOfRange": 0,
@@ -451,7 +451,7 @@
         {
           "IsChecked": true,
           "ID": "8E3C8BE917AE40E7A187F908C5C43D15",
-          "Name": null,
+          "Name": "竖线",
           "Start": 0,
           "End": 4,
           "X": 2,

@@ -23,11 +23,15 @@ namespace JointWatermark.Views
     public partial class TemplateConfig : Page
     {
         TemplateConfigVM vm;
+        public MainPage parent { get; private set; }
         public GeneralWatermarkProperty property { get; private set; }
-        public TemplateConfig(GeneralWatermarkProperty _property)
+        public TemplateConfig(GeneralWatermarkProperty _property, MainPage mainPage)
         {
             InitializeComponent();
             property = _property;
+            parent = mainPage;
+            BitmapImage map = new BitmapImage(new Uri(_property.PhotoPath, UriKind.Absolute));
+            yaofan.Source = map;
             vm = new TemplateConfigVM(this);
             this.DataContext = vm;
         }
@@ -50,6 +54,10 @@ namespace JointWatermark.Views
             this.window = window;
             var ids = new List<string>();
             WaterItems1 = new ObservableCollection<GeneralWatermarkRowProperty>(window.property.Properties.Where(c => c.ContentType == ContentType.Text));
+            foreach (GeneralWatermarkRowProperty property in window.property.Properties.Where(c => c.ContentType != ContentType.Text))
+            {
+                WaterItems1.Add(property);
+            }
             ConnectionItems1 = new ObservableCollection<ConnectionMode>(window.property.ConnectionModes);
             for(var i = 0; i < ConnectionItems1.Count; i++)
             {
@@ -103,6 +111,7 @@ namespace JointWatermark.Views
             {
                 borderWidthOfBottom = value;
                 NotifyPropertyChanged(nameof(BorderWidthOfBottom));
+                ComputePercent(borderWidth);
             }
         }
 
@@ -126,6 +135,28 @@ namespace JointWatermark.Views
                 borderWidthOfRight = value;
                 NotifyPropertyChanged(nameof(BorderWidthOfRight));
             }
+        }
+
+        private int borderWidth;
+        public int BorderWidth
+        {
+            get => borderWidth;
+            set
+            {
+                borderWidth = value;
+                NotifyPropertyChanged(nameof(BorderWidth));
+                window.property.StartPosition = new SixLabors.ImageSharp.Point(value, value);
+                ComputePercent(value);
+            }
+        }
+
+        private void ComputePercent(int value)
+        {
+            BorderWidthOfTop = value;
+            BorderWidthOfLeft = value;
+            BorderWidthOfRight = value;
+            window.property.PecentOfHeight = 100 - value - BorderWidthOfBottom;
+            window.property.PecentOfWidth = 100 - value * 2;
         }
 
         private int percentOfHeight;
@@ -161,6 +192,25 @@ namespace JointWatermark.Views
             }
         }
 
+        private string backgroundColor = "#FFFFFF";
+        public string BackgroundColor
+        {
+            get => backgroundColor;
+            set
+            {
+                if (backgroundColor.Length >= 9)
+                {
+                    backgroundColor = value.Remove(1, 2);
+                }
+                else
+                {
+                    backgroundColor = value;
+                }
+                NotifyPropertyChanged(nameof(BackgroundColor));
+                window.property.BackgroundColor = backgroundColor;
+            }
+        }
+
         #region function
         public void InitData()
         {
@@ -168,10 +218,18 @@ namespace JointWatermark.Views
             BorderWidthOfLeft = window.property.StartPosition.X;
             PercentOfHeight = window.property.PecentOfHeight;
             PercentOfWidth = window.property.PecentOfWidth;
+            borderWidth = Math.Min(BorderWidthOfTop, BorderWidthOfLeft);
             BorderWidthOfBottom = 100 - PercentOfHeight - BorderWidthOfTop;
-            BorderWidthOfRight = 100 - PercentOfWidth - BorderWidthOfLeft;
+            BorderWidthOfRight = /*100 - PercentOfWidth -*/ BorderWidthOfLeft;
+            //BorderWidth = Math.Min(BorderWidthOfTop, BorderWidthOfLeft);
             EnabledShadow = window.property.Shadow.Enabled;
+            window.logoPage.GetPath = new Action<Photo>((photo) =>
+            {
+                window.property.Properties[2].ImagePath = photo;
+            });
+            BackgroundColor = window.property.BackgroundColor;
         }
+
         #endregion
 
         public SimpleCommand CmdOpenConfig => new SimpleCommand()
@@ -184,7 +242,7 @@ namespace JointWatermark.Views
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 page.ShowDialog();
             },
-            CanExecuteDelegate=o => true
+            CanExecuteDelegate = o => true
         };
 
         public SimpleCommand CmdOpenGroupConfig => new SimpleCommand()
@@ -198,6 +256,15 @@ namespace JointWatermark.Views
                 page.ShowDialog();
             },
             CanExecuteDelegate=o => true
+        };
+
+        public SimpleCommand CmdRefresh => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                window.parent.vm.RefreshSelectedImage(window.property);
+            },
+            CanExecuteDelegate = o => true
         };
     }
 }

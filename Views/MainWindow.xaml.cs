@@ -98,14 +98,14 @@ namespace JointWatermark
             {
                 director.Create();
             }
-            Export export = new Export(main.vm.Images);
-            export.Owner = this;
-            export.ShowInTaskbar = false;
-            export.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            if (export.ShowDialog() == true)
-            {
-                main.Export(main.vm.Images.Where(c=>c.IsChecked));
-            }
+            //Export export = new Export(main.vm.Images);
+            //export.Owner = this;
+            //export.ShowInTaskbar = false;
+            //export.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            //if (export.ShowDialog() == true)
+            //{
+            //    main.Export(main.vm.Images.Where(c=>c.IsChecked));
+            //}
         }
 
         private void ExportAllImageClick(object sender, RoutedEventArgs e)
@@ -116,7 +116,7 @@ namespace JointWatermark
             {
                 director.Create();
             }
-            main.Export(main.vm.Images);
+            //main.Export(main.vm.Images);
         }
 
         private void btn_Click(object sender, RoutedEventArgs e)

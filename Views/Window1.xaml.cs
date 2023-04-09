@@ -29,16 +29,16 @@ namespace JointWatermark.Views
         }
 
       
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            var resultImage = ImagesHelper.Current.Generation(image);
+            var resultImage = await ImagesHelper.Current.Generation(image);
             var source = ImagesHelper.Current.ImageSharpToImageSource(resultImage);
             img.Source = source;
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            var templateConfig = new TemplateConfig(image);
+           
         }
     }
 }

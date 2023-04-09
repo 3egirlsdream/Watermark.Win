@@ -58,40 +58,69 @@
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Grid.Row="0" Background="#f3f3f3" >
+            <Button Command="{Binding CmdRefresh}" Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" Background="LightGray" ToolTip="应用" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="2 0" Width="30" Height="30" materialDesign:ElevationAssist.Elevation="Dp0">
+                <materialDesign:PackIcon Kind="Check" Foreground="Black"/>
+            </Button>
+            <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存到全局"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Right"/>
+        </Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Hidden" Grid.Row="1" >
             <StackPanel  Background="#fff">
-            <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="边距设置" Margin="0 0 0 2">
-                <Border>
-                    <Grid Background="#FFF">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="2*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid Grid.Row="1" Grid.Column="1" Background="#e3e3e3">
-                            <Image Source="../Resources/yaofan.jpg"/>
+                <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="边距设置" Margin="0 0 0 2">
+                    <Border>
+                        <Grid Background="#FFF">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="2*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="40"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Row="1" Grid.Column="1" Background="#e3e3e3">
+                                <Image x:Name="yaofan" Source="../Resources/yaofan.jpg"/>
+                            </Grid>
+                            <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="True" Text="{Binding BorderWidthOfTop, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="上边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BorderWidthOfBottom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="下边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
+                            <TextBox Grid.Row="1" Grid.Column="0" IsReadOnly="True" Text="{Binding BorderWidthOfLeft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="左边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
+                            <TextBox Grid.Row="1" Grid.Column="2" IsReadOnly="True" Text="{Binding BorderWidthOfRight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="右边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
+                            <Label Grid.Row="3" Margin="5 5" Content="边距" />
+                            <Slider Grid.Row="4" Grid.Column="1" Margin="5 0" Value="{Binding BorderWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="10" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center" />
                         </Grid>
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BorderWidthOfTop, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="上边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BorderWidthOfBottom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="下边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
-                        <TextBox Grid.Row="1" Grid.Column="0" Text="{Binding BorderWidthOfLeft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="左边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
-                        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding BorderWidthOfRight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="右边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
-                    </Grid>
-                </Border>
-            </GroupBox>
+                    </Border>
+                </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="图片设置" Margin="0 0 0 2">
                     <StackPanel Background="#fff">
-                        <TextBox Text="{Binding PercentOfHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片纵向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>
-                        <TextBox Text="{Binding PercentOfWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片横向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>
+                        <!--<TextBox Text="{Binding PercentOfHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片纵向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>
+                        <TextBox Text="{Binding PercentOfWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片横向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>-->
+                        <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Margin="10 0">
+                            <TextBox materialDesign:HintAssist.Hint="底色" Text="{Binding ElementName=colorpicker, Path=Color}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True" Width="100"/>
+                            <ToggleButton x:Name="togle1" Margin="10 0" Cursor="Hand" Height="30" Width="30" VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                                          Content="{materialDesign:PackIcon Kind=Palette, Size=30}"
+                                          Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
+                                          ToolTip="取色器"
+                                          IsChecked="False" />
+                            <Popup Width="300" Height="250" IsOpen="{Binding ElementName=togle1, Path=IsChecked}" Placement="Top" PlacementTarget="{Binding ElementName=togle1}" StaysOpen="False">
+                                <materialDesign:ColorPicker x:Name="colorpicker" Color="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Popup>
+                        </StackPanel>
                         <CheckBox Content="启用阴影" IsChecked="{Binding EnabledShadow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="5 10"/>
                     </StackPanel>
+                </GroupBox>
+                <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="LOGO设置" Margin="0 0 0 2">
+                    <ContentControl>
+                        <Frame>
+                            <Frame.Content>
+                                <local:LogoPage x:Name="logoPage"/>
+                            </Frame.Content>
+                        </Frame>
+                    </ContentControl>
                 </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="文字设置" Margin="0 0 0 2">
                     <ListBox Grid.Column="0" Grid.RowSpan="2" ItemsSource="{Binding WaterItems1}" Background="#fff">
@@ -100,12 +129,11 @@
                                 <Grid Height="30" Width="270">
                                     <ToggleButton Style="{StaticResource MaterialDesignActionAccentToggleButton}" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Content="{materialDesign:PackIcon Kind=Cancel}" materialDesign:ToggleButtonAssist.OnContent="{materialDesign:PackIcon Kind=Check}" Height="30" Width="30" HorizontalAlignment="Left"/>
                                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="100" Margin="40 0 0 0"/>
-                                    <Button Style="{StaticResource MaterialDesignIconButton}" Margin="20 0" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding DataContext.CmdOpenConfig, RelativeSource={ RelativeSource AncestorType=Page}}" CommandParameter="{Binding ID}">
+                                    <Button Visibility="{Binding Visibility}" Style="{StaticResource MaterialDesignIconButton}" Margin="20 0" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding DataContext.CmdOpenConfig, RelativeSource={ RelativeSource AncestorType=Page}}" CommandParameter="{Binding ID}">
                                         <materialDesign:PackIcon Kind="ArrangeBringForward" Height="20" Width="20"/>
                                     </Button>
                                 </Grid>
                             </DataTemplate>
-
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </GroupBox>
@@ -133,9 +161,6 @@
         
         <Label Grid.Row="1" Grid.Column="0" Content="下边距" VerticalAlignment="Center" HorizontalAlignment="Right"/>
         <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding BorderWidthOfBottom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>-->
-        <Grid Grid.Row="1" Grid.ColumnSpan="4" Background="#f3f3f3" >
-            <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Left"/>
-            <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存到全局"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Right"/>
-        </Grid>
+       
     </Grid>
 </Page>

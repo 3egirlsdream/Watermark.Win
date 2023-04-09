@@ -10,11 +10,21 @@ namespace JointWatermark.Class
 {
     public class GeneralWatermarkProperty : ValidationBase
     {
+        public GeneralWatermarkProperty() 
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+
+        public string ID { get; set; }
         /// <summary>
         /// 固定百分比，根据短边 // 主要是为了白色边框一样宽
         /// </summary>
         public bool EnableFixedPercent { get; set; }
         public string PhotoPath { get; set; }
+        /// <summary>
+        /// 缩略图
+        /// </summary>
+        public string ThumbnailPath { get; set; }
         /// <summary>
         /// 图片比例：-1不限制。169，219 43 43 11
         /// </summary>
@@ -35,7 +45,10 @@ namespace JointWatermark.Class
         /// <summary>
         /// 图片方向
         /// </summary>
-        public PhotoAlignment PhotoAlignment { get; set; }  
+        public PhotoAlignment PhotoAlignment { get; set; }
+
+        public string BackgroundColor { get; set; } = "#FFFFFF";
+
         /// <summary>
         /// 字体
         /// </summary>
@@ -71,6 +84,7 @@ namespace JointWatermark.Class
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
             DataSource = new WatermarkDataSource();
+            ImagePath = new Photo();
         }
 
         private bool isChecked = true;
@@ -124,7 +138,7 @@ namespace JointWatermark.Class
         /// <summary>
         /// 图片路径
         /// </summary>
-        public string ImagePath { get; set; }
+        public Photo ImagePath { get; set; }
 
         public ContentType ContentType { get; set; } = ContentType.Text;
 
@@ -169,6 +183,16 @@ namespace JointWatermark.Class
         /// </summary>
         public Point StartPoint { get; set; }
 
+
+
+        /**
+         * 
+         */
+        public System.Windows.Visibility Visibility
+        {
+            get => ContentType == ContentType.Text ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            set { }
+        }
     }
 
 
@@ -187,6 +211,19 @@ namespace JointWatermark.Class
         /// </summary>
         public double? RowHeightMinFontPercent { get; set; } = null;
 
+    }
+
+
+    public class Photo
+    {
+        public Photo() { }
+        public Photo(string path , bool isCloud) 
+        { 
+            Path = path;
+            IsCloud = isCloud;
+        }
+        public string Path { get; set; }
+        public bool IsCloud { get; set; }
     }
 
     public enum RelativePositionMode

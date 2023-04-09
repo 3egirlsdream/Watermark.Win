@@ -1,0 +1,34 @@
+﻿<Page x:Class="JointWatermark.Views.LogoPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:JointWatermark.Views" xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      mc:Ignorable="d" 
+      d:DesignHeight="100" d:DesignWidth="150"
+      Title="LogoPage">
+
+    <Grid>
+        <ListBox Grid.Column="2" ItemsSource="{Binding IconList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Stretch" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
+            <ListBox.Template>
+                <ControlTemplate TargetType="ListBox">
+                    <ScrollViewer>
+                        <WrapPanel IsItemsHost="True"></WrapPanel>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <materialDesign:Card x:Name="add" Cursor="Hand" Width="55" Height="55" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                        <materialDesign:Card.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.CmdSetIcon, RelativeSource={ RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"/>
+                        </materialDesign:Card.InputBindings>
+                        <Grid>
+                            <Image Source="{Binding}" Height="40" Width="40"/>
+                        </Grid>
+                    </materialDesign:Card>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</Page>

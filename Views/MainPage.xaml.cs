@@ -41,7 +41,7 @@ namespace JointWatermark
                 this.DataContext = vm;
                 Global.BasePath = AppDomain.CurrentDomain.BaseDirectory;
                 xy.Text = "44°29′12\"E 33°23′46\"W";
-                vm.Images = new ObservableCollection<ImageProperties>();
+                vm.Images = new ObservableCollection<GeneralWatermarkProperty>();
                 Global.Path_temp = Global.BasePath + $"{Global.SeparatorChar}temp";
                 Global.Path_output = Global.BasePath + $"{Global.SeparatorChar}output";
                 Global.Path_logo = Global.BasePath + $"{Global.SeparatorChar}logo";
@@ -116,8 +116,8 @@ namespace JointWatermark
             {
                 foreach (var item in vm.Images)
                 {
-                    item.Config.LogoName = tag;
-                    item.Config.IsCloudIcon = true;
+                    item.Properties[2].ImagePath.Path = tag;
+                    item.Properties[2].ImagePath.IsCloud = true;
                 }
                 if (vm.SelectedImage != null)
                 {
@@ -133,7 +133,7 @@ namespace JointWatermark
                 var name = tag + ".png";
                 foreach (var item in vm.Images)
                 {
-                    item.Config.LogoName = name;
+                    item.Properties[2].ImagePath.Path = name;
                 }
                 if (vm.SelectedImage != null)
                 {
@@ -170,7 +170,7 @@ namespace JointWatermark
                 }
                 else
                 {
-                    vm.Images = new ObservableCollection<ImageProperties>();
+                    vm.Images = new ObservableCollection<GeneralWatermarkProperty>();
                 }
                 createdImg.Source = null;
                 ImportImages(dialog.FileNames, tag.ToString());
@@ -179,8 +179,11 @@ namespace JointWatermark
 
         private void ImportImages(string[] filenames, string tag)
         {
+            configFrame.Width = 0;
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
+                var template = Global.InitConfig()?.Templates?.PhotoFrame;
+                if(template == null) { template = Global.Init(); }
                 for (int ii = 0; ii < filenames.Length; ii++)
                 {
                     var item = filenames[ii];
@@ -188,6 +191,14 @@ namespace JointWatermark
                     token.ThrowIfCancellationRequested();
                     loading.ISetPosition((int)percent, $"正在加载图片: {item.Substring(item.LastIndexOf('\\') + 1)}");
                     var i = ImagesHelper.Current.ReadImage(item, "");
+                    var _i = JsonConvert.DeserializeObject<GeneralWatermarkProperty>(JsonConvert.SerializeObject(template));
+                    _i.ID = Guid.NewGuid().ToString("N").ToUpper();
+                    _i.Meta = Global.GetMeta(item);
+                    if(_i.Meta.TryGetValue("thumbnail", out object thumbnail))
+                    {
+                        _i.ThumbnailPath = thumbnail.ToString();
+                    }
+                    _i.PhotoPath = item;
                     if (vm.IconList != null && vm.IconList.Any())
                     {
                         var logoname = vm.IconList[0];
@@ -195,11 +206,16 @@ namespace JointWatermark
                         {
                             i.Config.LogoName = logoname;
                             i.Config.IsCloudIcon = true;
+                            _i.Properties[2].ImagePath.Path = logoname;
+                            _i.Properties[2].ImagePath.IsCloud = true;
                         }
                         else
                         {
                             i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
                             i.Config.IsCloudIcon = false;
+                            if (_i.Properties[2].ImagePath == null) _i.Properties[2].ImagePath = new Photo();
+                            _i.Properties[2].ImagePath.Path = i.Config.LogoName;
+                            _i.Properties[2].ImagePath.IsCloud = false;
                         }
                     }
                     Dispatcher.Invoke(() =>
@@ -210,7 +226,7 @@ namespace JointWatermark
                         }
                         else
                         {
-                            vm.Images.Add(i);
+                            vm.Images.Add(_i);
                         }
                     });
                 }
@@ -367,13 +383,13 @@ namespace JointWatermark
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox combo && vm != null && vm.Images != null)
-            {
-                foreach (var img in vm.Images)
-                {
-                    img.Config.FontFamily = combo.SelectedItem.ToString();
-                }
-            }
+            //if (sender is ComboBox combo && vm != null && vm.Images != null)
+            //{
+            //    foreach (var img in vm.Images)
+            //    {
+            //        img.Config.FontFamily = combo.SelectedItem.ToString();
+            //    }
+            //}
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -656,18 +672,8 @@ namespace JointWatermark
         {
             if(sender is Button btn && btn.Tag.Equals("PhotoFrame")) 
             {
-                var mainModel = Global.InitConfig();
-                GeneralWatermarkProperty image;
-                if (mainModel.Templates != null && mainModel.Templates.PhotoFrame != null)
-                {
-                    image = mainModel.Templates.PhotoFrame;
-                }
-                else
-                {
-                    image = Global.Init();
-                }
-                configFrame.Width = 300;
-                configFrame.Content = new Frame() { Content = new TemplateConfig(image) };
+                CurrentTemplate = btn.Tag.ToString();
+                tabImg.Focus();
             }
         }
 
@@ -760,8 +766,8 @@ namespace JointWatermark
             }
         }
 
-        private ObservableCollection<ImageProperties> images;
-        public ObservableCollection<ImageProperties> Images
+        private ObservableCollection<GeneralWatermarkProperty> images;
+        public ObservableCollection<GeneralWatermarkProperty> Images
         {
             get => images;
             set
@@ -883,28 +889,18 @@ namespace JointWatermark
             ExecuteDelegate = x =>
             {
                 var item = Images.FirstOrDefault(c => c.ID.Equals(x));
-                var mainModel = Global.InitConfig();
-                GeneralWatermarkProperty config;
-                if (mainModel.Templates != null && mainModel.Templates.PhotoFrame != null)
-                {
-                    config = mainModel.Templates.PhotoFrame;
-                }
-                else
-                {
-                    config = Global.Init();
-                }
+                
                 if(item != null)
                 {
-                    config.PhotoPath = item.Path;
-                    var p = Global.Path_logo + Global.SeparatorChar + item.Config.LogoName;
-                    config.Properties[2].ImagePath = p;
-                    RefreshSelectedImage(config);
+                    mainPage.configFrame.Width = 300;
+                    mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(item, this.mainPage) };
+                    RefreshSelectedImage(item);
                 }
             },
             CanExecuteDelegate= o => true
         };
 
-        public void RefreshSelectedImage(GeneralWatermarkProperty item)
+        public async void RefreshSelectedImage(GeneralWatermarkProperty item)
         {
             if (item == null) return;
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
@@ -914,7 +910,7 @@ namespace JointWatermark
                 {
                     return;
                 }
-                var bit = ImagesHelper.Current.Generation(item);
+                var bit = await ImagesHelper.Current.Generation(item, true);
                 var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
                 mainPage.createdImg.Source = bmp;
                 bit.Dispose();
@@ -962,19 +958,19 @@ namespace JointWatermark
         {
             ExecuteDelegate = x =>
             {
-                foreach (var item in Images)
-                {
-                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition1)) item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;
-                    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition2)) item.Config.LeftPosition2 = GlobalConfig.LeftPosition2;
-                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition1)) item.Config.RightPosition1 = GlobalConfig.RightPosition1;
-                    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition2)) item.Config.RightPosition2 = GlobalConfig.RightPosition2;
-                    if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
-                    item.Config.BorderWidth = GlobalConfig.BorderWidth;
-                    if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
-                    if (GlobalConfig.FontXS != 1) item.Config.FontXS = GlobalConfig.FontXS;
-                }
+                //foreach (var item in Images)
+                //{
+                //    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition1)) item.Config.LeftPosition1 = GlobalConfig.LeftPosition1;
+                //    if (!string.IsNullOrEmpty(GlobalConfig.LeftPosition2)) item.Config.LeftPosition2 = GlobalConfig.LeftPosition2;
+                //    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition1)) item.Config.RightPosition1 = GlobalConfig.RightPosition1;
+                //    if (!string.IsNullOrEmpty(GlobalConfig.RightPosition2)) item.Config.RightPosition2 = GlobalConfig.RightPosition2;
+                //    if (!string.IsNullOrEmpty(GlobalConfig.BackgroundColor)) item.Config.BackgroundColor = GlobalConfig.BackgroundColor;
+                //    item.Config.BorderWidth = GlobalConfig.BorderWidth;
+                //    if (!string.IsNullOrEmpty(GlobalConfig.Row1FontColor)) item.Config.Row1FontColor = GlobalConfig.Row1FontColor;
+                //    if (GlobalConfig.FontXS != 1) item.Config.FontXS = GlobalConfig.FontXS;
+                //}
 
-                RefreshSelectedImage(SelectedImage);
+                //RefreshSelectedImage(SelectedImage);
             },
             CanExecuteDelegate = o => true
         };

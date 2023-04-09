@@ -23,7 +23,7 @@ namespace JointWatermark
         public static char SeparatorChar { get; set; } = System.IO.Path.DirectorySeparatorChar;
         public static string Path_temp { get; set; }
         public static string Path_output { get; set; }
-        public static string Path_logo { get; set; }
+        public static string Path_logo { get; set; } = BasePath + $"{SeparatorChar}logo";
         public static string Http { get; set; } = "http://thankful.top:4396";
 
 
@@ -73,6 +73,33 @@ namespace JointWatermark
                     left2
                 };
             }
+        }
+
+        public static Dictionary<string, object> GetMeta(string path)
+        {
+            var meta = new Dictionary<string, object>();
+            using(var img = Image.Load(path))
+            {
+                if (img.Metadata != null && img.Metadata.ExifProfile != null && img.Metadata.ExifProfile.Values != null)
+                {
+                    meta = GetMeta(img.Metadata.ExifProfile.Values);
+
+
+                    var xs = img.Width / 1920M;
+
+                    var w = (int)(img.Width / xs);
+                    var h = (int)(img.Height / xs);
+                    var p = Global.Path_temp + Global.SeparatorChar + path.Substring(path.LastIndexOf('\\') + 1);
+                    img.Mutate(x => x.Resize(w, h));
+                    try
+                    {
+                        meta["thumbnail"] = p;
+                        img.SaveAsJpeg(p);
+                    }
+                    catch { }
+                }
+            }
+            return meta;
         }
 
         public static Dictionary<string, object> GetMeta(IReadOnlyList<IExifValue> profile)
@@ -330,7 +357,7 @@ namespace JointWatermark
                     End = WatermarkRange.End,
                     IsBold = true,
                     FontSize = 35,
-                    ImagePath = "C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png",
+                    ImagePath = new Photo("C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png", false),
                     ImagePercentOfRange = 50,
                     ContentType = ContentType.Image
                 },
