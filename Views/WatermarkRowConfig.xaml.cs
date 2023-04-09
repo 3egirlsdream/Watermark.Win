@@ -128,6 +128,18 @@ namespace JointWatermark.Views
             }
         }
 
+
+        private int rowHeight;
+        public int RowHeight
+        {
+            get => rowHeight;
+            set
+            {
+                rowHeight = value;
+                NotifyPropertyChanged(nameof(RowHeight));
+            }
+        }
+
         private string fontFamily;
         public string FontFamily
         {
@@ -179,6 +191,11 @@ namespace JointWatermark.Views
         {
             FontColor = window.row.Color;
             FontZoom = window.row.FontXS;
+            if(window.row is ConnectionMode connection)
+            {
+                RowHeight = (int)(connection.RowHeightMinFontPercent ?? 100);
+            }
+            
             FontFamily = window.row.FontFamily;
             IsBold = window.row.IsBold;
             window.edgeComputeMode.SelectedIndex = window.row.EdgeDistanceType == EdgeDistanceType.Character ? 0 : 1;
@@ -189,7 +206,7 @@ namespace JointWatermark.Views
             window.monDay.Text = window.row.DateFormat[1];
             window.hourMin.Text = window.row.DateFormat[2];
             window.minSec.Text = window.row.DateFormat[3];
-            if(window.row.DataSource != null)
+            if(window.row.DataSource != null && window.row.DataSource.Exifs != null)
             Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
         }
 
@@ -205,7 +222,11 @@ namespace JointWatermark.Views
             window.row.FontXS = FontZoom;
             window.row.FontFamily = FontFamily;
             window.row.IsBold = IsBold;
-            if(window.edgeComputeMode.SelectedIndex == 0)
+            if(window.row is ConnectionMode connection)
+            {
+                connection.RowHeightMinFontPercent = RowHeight;
+            }
+            if (window.edgeComputeMode.SelectedIndex == 0)
             {
                 window.row.EdgeDistanceType = EdgeDistanceType.Character;
                 window.row.EdgeDistanceCharacterX = EdgeWidth;

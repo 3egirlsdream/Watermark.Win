@@ -27,6 +27,7 @@ namespace JointWatermark
     /// </summary>
     public partial class MainPage : Page
     {
+        public string CurrentTemplate { get; set; } 
         public MainVM vm;
         public List<string> MultiImages = new();
         public MainPage()
@@ -34,6 +35,7 @@ namespace JointWatermark
             try
             {
                 InitializeComponent();
+                CurrentTemplate = "default";
                 MultiImages = new List<string>();
                 vm = new MainVM(this);
                 this.DataContext = vm;
@@ -650,6 +652,25 @@ namespace JointWatermark
             }
         }
 
+        private void OpenTemplateConfigClick(object sender, RoutedEventArgs e)
+        {
+            if(sender is Button btn && btn.Tag.Equals("PhotoFrame")) 
+            {
+                var mainModel = Global.InitConfig();
+                GeneralWatermarkProperty image;
+                if (mainModel.Templates != null && mainModel.Templates.PhotoFrame != null)
+                {
+                    image = mainModel.Templates.PhotoFrame;
+                }
+                else
+                {
+                    image = Global.Init();
+                }
+                configFrame.Width = 300;
+                configFrame.Content = new Frame() { Content = new TemplateConfig(image) };
+            }
+        }
+
         private async void ComputeUserCount()
         {
             try
@@ -862,14 +883,52 @@ namespace JointWatermark
             ExecuteDelegate = x =>
             {
                 var item = Images.FirstOrDefault(c => c.ID.Equals(x));
+                var mainModel = Global.InitConfig();
+                GeneralWatermarkProperty config;
+                if (mainModel.Templates != null && mainModel.Templates.PhotoFrame != null)
+                {
+                    config = mainModel.Templates.PhotoFrame;
+                }
+                else
+                {
+                    config = Global.Init();
+                }
                 if(item != null)
                 {
-                    SelectedImage = item;
-                    RefreshSelectedImage(item);
+                    config.PhotoPath = item.Path;
+                    var p = Global.Path_logo + Global.SeparatorChar + item.Config.LogoName;
+                    config.Properties[2].ImagePath = p;
+                    RefreshSelectedImage(config);
                 }
             },
             CanExecuteDelegate= o => true
         };
+
+        public void RefreshSelectedImage(GeneralWatermarkProperty item)
+        {
+            if (item == null) return;
+            BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
+            try
+            {
+                if ((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
+                {
+                    return;
+                }
+                var bit = ImagesHelper.Current.Generation(item);
+                var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
+                mainPage.createdImg.Source = bmp;
+                bit.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Global.SendMsg(ex.Message);
+            }
+            finally
+            {
+                BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+                mainPage.btnRotate.IsEnabled = true;
+            }
+        }
 
 
         public async void RefreshSelectedImage(ImageProperties item)

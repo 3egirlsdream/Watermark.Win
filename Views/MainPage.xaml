@@ -27,10 +27,24 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MaxWidth="350"/>
             <ColumnDefinition Width="2.5*"/>
+            <ColumnDefinition Width="auto" MaxWidth="300"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
             <Border Style="{StaticResource BorderStyle}">
                 <TabControl  VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard"  materialDesign:ShadowAssist.ShadowDepth="Depth1" Style="{StaticResource MaterialDesignNavigationRailTabControl}">
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Width="auto" Height="auto">
+                                <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="ViewModule" />
+                                <TextBlock  HorizontalAlignment="Center" Text="模板" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <StackPanel>
+                            <Button Content="水印边框" Margin="10 5" Click="OpenTemplateConfigClick" Tag="PhotoFrame"/>
+                            <Button Content="悬浮照片" Margin="10 5"/>
+                            <Button Content="古风边框" Margin="10 5"/>
+                        </StackPanel>
+                    </TabItem>
                     <TabItem>
                         <TabItem.Header>
                             <StackPanel Width="auto" Height="auto">
@@ -153,33 +167,6 @@
                                             <Label Grid.Row="9" Margin="5 5" Content="字体缩放" VerticalAlignment="Center"/>
                                             <Label Grid.Row="9" Margin="70 5" Content="{Binding ElementName=xs, Path=Value}" VerticalAlignment="Top"/>
                                             <Slider x:Name="xs" Grid.Row="9" Margin="70 5 10 0" Value="{Binding GlobalConfig.FontXS, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="2" TickPlacement="BottomRight" VerticalAlignment="Bottom" />
-
-
-                                            <!--保存按钮-->
-                                            <!--<Button Grid.Row="1" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="1" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="2" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="2" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="3" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="3" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="4" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="4" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="5" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="5" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="6" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="6" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="7" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>
-                                            <Button Grid.Row="8" Grid.Column="1" Command="{Binding CmdSaveGlobal}" CommandParameter="7" Style="{StaticResource MaterialDesignIconButton}" ToolTip="保存" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
-                                                <materialDesign:PackIcon Kind="ContentSave" />
-                                            </Button>-->
                                             <Button Grid.Row="10"  Margin="10 5" Command="{Binding CmdSaveGlobal}">
                                                 <materialDesign:PackIcon Kind="Refresh"/>
                                             </Button>
@@ -476,5 +463,7 @@
                 <ProgressBar Grid.Row="1" Visibility="{Binding BottomProcess.Visibility, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsIndeterminate="{Binding BottomProcess.IsLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Bottom"/>
             </Grid>
         </Border>
+        <ContentControl x:Name="configFrame" Grid.Column="2" Width="0">
+        </ContentControl>
     </Grid>
 </Page>

@@ -20,7 +20,7 @@ namespace JointWatermark.Views
     /// <summary>
     /// TemplateConfig.xaml 的交互逻辑
     /// </summary>
-    public partial class TemplateConfig : Window
+    public partial class TemplateConfig : Page
     {
         TemplateConfigVM vm;
         public GeneralWatermarkProperty property { get; private set; }
@@ -37,6 +37,7 @@ namespace JointWatermark.Views
             var model = Global.InitConfig();
             if (model.Templates == null) model.Templates = new WatermarkTemplates();
             model.Templates.PhotoFrame = property;
+            model.Templates.PhotoFrame.Shadow.Enabled = vm.EnabledShadow;
             Global.SaveConfig(JsonConvert.SerializeObject(model));
         }
     }
@@ -47,7 +48,14 @@ namespace JointWatermark.Views
         public TemplateConfigVM(TemplateConfig window)
         {
             this.window = window;
+            var ids = new List<string>();
             WaterItems1 = new ObservableCollection<GeneralWatermarkRowProperty>(window.property.Properties.Where(c => c.ContentType == ContentType.Text));
+            ConnectionItems1 = new ObservableCollection<ConnectionMode>(window.property.ConnectionModes);
+            for(var i = 0; i < ConnectionItems1.Count; i++)
+            {
+                var g = window.property.Properties.Where(c => ConnectionItems1[i].Ids.Contains(c.ID)).Select(c => c.Name);
+                ConnectionItems1[i].Name = "组合:" + string.Join("\r\n", g);
+            }
             InitData();
         }
 
@@ -60,6 +68,20 @@ namespace JointWatermark.Views
             {
                 waterItems1 = value;
                 NotifyPropertyChanged(nameof(WaterItems1));
+            }
+        }
+
+        private ObservableCollection<ConnectionMode> connectionItems1
+;
+        public ObservableCollection<ConnectionMode> ConnectionItems1
+
+        {
+            get => connectionItems1;
+            set
+            {
+                connectionItems1 = value;
+                NotifyPropertyChanged(nameof(ConnectionItems1
+));
             }
         }
 
@@ -159,7 +181,19 @@ namespace JointWatermark.Views
                 var row = WaterItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;
                 var page = new WatermarkRowConfig(row);
-                page.Owner = this.window;
+                page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                page.ShowDialog();
+            },
+            CanExecuteDelegate=o => true
+        };
+
+        public SimpleCommand CmdOpenGroupConfig => new SimpleCommand()
+        {
+            ExecuteDelegate=x =>
+            {
+                var row = ConnectionItems1.FirstOrDefault(c => c.ID.Equals(x));
+                if (row == null) return;
+                var page = new WatermarkRowConfig(row);
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 page.ShowDialog();
             },

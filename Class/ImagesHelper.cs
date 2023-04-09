@@ -585,10 +585,17 @@ namespace JointWatermark.Class
 
         #region 2.0
 
-        public void Generation(GeneralWatermarkProperty image, Window1 window)
+        public Image<Rgba32> Generation(GeneralWatermarkProperty image)
         {
-            image.Properties = image.Properties.Where(c => c.IsChecked).ToList();
-            image.ConnectionModes = image.ConnectionModes.Where(c => c.IsChecked).ToList();
+            var Properties = image.Properties.Where(c => c.IsChecked).ToList();
+            var ConnectionModes = image.ConnectionModes.Where(c => c.IsChecked).ToList();
+            foreach(var _u in ConnectionModes)
+            {
+                if(image.Properties.Where(c=>_u.Ids.Contains(c.ID)).All(c => !c.IsChecked))
+                {
+                    ConnectionModes.Remove(_u);
+                }
+            }
             int resultWidth, resultHeight, shortLine;
             double shortLineBorderPercent;
             using (var orientImg = Image.Load<Rgba32>(image.PhotoPath))
@@ -646,11 +653,11 @@ namespace JointWatermark.Class
 
                 //绘制文字
                 var connectedIds = new List<string>();
-                image.ConnectionModes.ForEach(c =>
+                ConnectionModes.ForEach(c =>
                 {
                     connectedIds.AddRange(c.Ids);
                 });
-                foreach (GeneralWatermarkRowProperty row in image.Properties.Where(c => connectedIds.All(x => c.ID != x)))
+                foreach (GeneralWatermarkRowProperty row in Properties.Where(c => connectedIds.All(x => c.ID != x)))
                 {
                     double xW = 0, yW = 0;
                     if (row.EdgeDistanceType == EdgeDistanceType.Character)
@@ -659,7 +666,8 @@ namespace JointWatermark.Class
                         Font font = GetFont(row.FontFamily, row.IsBold, fontSize);
                         //测量宽度像素
                         var XTextSize = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(font));
-                        var ContentTextSize = TextMeasurer.Measure(row.Content, new SixLabors.Fonts.TextOptions(font));
+                        var content = Global.GetContent(row, image.Meta);
+                        var ContentTextSize = TextMeasurer.Measure(content, new SixLabors.Fonts.TextOptions(font));
                         var YTextSize = XTextSize.Height * row.EdgeDistanceCharacterY.Length;
 
                         ConnectionMode lastRow = null;// index > 1 ? image.ConnectionModes[index - 1] : null;
@@ -667,13 +675,13 @@ namespace JointWatermark.Class
 
                         var t = "";
                         var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
-                        resultImage.Mutate(x => x.DrawText(row.Content, font, SixLabors.ImageSharp.Color.ParseHex("#000000"), Params));
+                        resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex("#000000"), Params));
                     }
                 }
 
-                for (var i = 0; i < image.ConnectionModes.Count; i++)
+                for (var i = 0; i < ConnectionModes.Count; i++)
                 {
-                    var row = image.ConnectionModes[i];
+                    var row = ConnectionModes[i];
                     DrawText(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
                     //if (row.ContentType == ContentType.Image)
                     //{
@@ -689,18 +697,16 @@ namespace JointWatermark.Class
 
                     //}
                 }
-
-                var source = ImageSharpToImageSource(resultImage);
-                window.img.Source = source;
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
-                resultImage.Save(path);
+                return resultImage;
+                //var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                //resultImage.Save(path);
             }
         }
 
         private void DrawText(GeneralWatermarkProperty image, int resultWidth, int resultHeight, Image<Rgba32> img, Image<Rgba32> resultImage, SixLabors.ImageSharp.Point start, double fontxs, ConnectionMode row, int index)
         {
             //取出水印组合
-            var group = image.Properties.Where(c => row.Ids.Any(x => x == c.ID)).ToList();
+            var group = image.Properties.Where(c => row.Ids.Any(x => x == c.ID) && c.IsChecked).ToList();
             double totalHeight = 0, rowHeight = 0;
             /**计算组合的整体高度
              *
@@ -742,9 +748,10 @@ namespace JointWatermark.Class
             var border = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(borderFont));
             var borderHeight = border.Height * row.EdgeDistanceCharacterY.Length;
             //计算整体宽度，按最长的文字行计算
-            var longestRow = group.OrderByDescending(c => c.Content.Length).FirstOrDefault();
+            var longestRow = group.OrderByDescending(c => Global.GetContent(c, image.Meta).Length).FirstOrDefault();
             var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBold, longestRow.FontSize * fontxs);
-            var totalWidth = TextMeasurer.Measure(longestRow.Content, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
+            var longestContent = Global.GetContent(longestRow, image.Meta);
+            var totalWidth = TextMeasurer.Measure(longestContent, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
             if (group.All(c => c.ContentType == ContentType.Image))
             {
                 var g = group[0];
@@ -854,6 +861,7 @@ namespace JointWatermark.Class
                 if (row.Start == WatermarkRange.BottomOfPhoto)
                 {
                     y = start.Y + img.Height;
+                    x = start.X;
                 }
                 else if (row.Start == WatermarkRange.RightOfPhoto)
                 {
@@ -866,6 +874,7 @@ namespace JointWatermark.Class
                 else if (row.Start == WatermarkRange.TopOfPhoto)
                 {
                     y = start.Y;
+                    x = start.X;
                 }
             }
             if (row.RelativePositionMode == RelativePositionMode.LastRow)

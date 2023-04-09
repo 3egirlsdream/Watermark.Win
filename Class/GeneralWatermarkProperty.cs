@@ -52,6 +52,7 @@ namespace JointWatermark.Class
 
     public class ImageShadow
     {
+        public ImageShadow() { }
         public ImageShadow(bool enabled, int width) 
         { 
             Enabled = enabled;
