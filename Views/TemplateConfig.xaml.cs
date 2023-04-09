@@ -44,6 +44,16 @@ namespace JointWatermark.Views
             model.Templates.PhotoFrame.Shadow.Enabled = vm.EnabledShadow;
             Global.SaveConfig(JsonConvert.SerializeObject(model));
         }
+
+        private void togle1_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out Color color,  ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
+            if(dialog == true)
+            {
+                vm.BackgroundColor = color.ToString();
+                vm.CmdRefresh.Execute(null);
+            }
+        }
     }
 
     public class TemplateConfigVM : ValidationBase
@@ -59,7 +69,7 @@ namespace JointWatermark.Views
                 WaterItems1.Add(property);
             }
             ConnectionItems1 = new ObservableCollection<ConnectionMode>(window.property.ConnectionModes);
-            for(var i = 0; i < ConnectionItems1.Count; i++)
+            for (var i = 0; i < ConnectionItems1.Count; i++)
             {
                 var g = window.property.Properties.Where(c => ConnectionItems1[i].Ids.Contains(c.ID)).Select(c => c.Name);
                 ConnectionItems1[i].Name = "组合:" + string.Join("\r\n", g);
@@ -226,6 +236,7 @@ namespace JointWatermark.Views
             window.logoPage.GetPath = new Action<Photo>((photo) =>
             {
                 window.property.Properties[2].ImagePath = photo;
+                window.parent.vm.RefreshSelectedImage(window.property);
             });
             BackgroundColor = window.property.BackgroundColor;
         }
@@ -263,6 +274,28 @@ namespace JointWatermark.Views
             ExecuteDelegate = x =>
             {
                 window.parent.vm.RefreshSelectedImage(window.property);
+            },
+            CanExecuteDelegate = o => true
+        };
+
+        public SimpleCommand CmdSaveAs => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                var win = new ImportCloudIcon();
+                win.SetTitle("另存为");
+                win.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                if(win.ShowDialog() == true)
+                {
+                    var component = new CustomizationComponent();
+                    component.Name = win.Data;
+                    component.Property = window.property;
+                    var model = Global.InitConfig();
+                    if (model.Templates == null) model.Templates = new WatermarkTemplates();
+                    if(model.Templates.CustomizationComponents == null)  model.Templates.CustomizationComponents = new List<CustomizationComponent>() { component };
+                    Global.SaveConfig(JsonConvert.SerializeObject(model));
+                    window.parent.InitTemplates();
+                }
             },
             CanExecuteDelegate = o => true
         };

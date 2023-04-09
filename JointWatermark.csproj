@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ColorPickerWPF" Version="1.0.9" />
     <PackageReference Include="MaterialDesignColors" Version="2.0.7-ci259" />
     <PackageReference Include="MaterialDesignThemes" Version="4.6.0-ci259" />
     <PackageReference Include="MaterialDesignThemes.Wpf" Version="1.0.1" />

@@ -208,8 +208,14 @@ namespace JointWatermark.Views
     public class WatermarkTemplates
     {
         public GeneralWatermarkProperty PhotoFrame { get; set; }
+        public List<CustomizationComponent> CustomizationComponents { get; set; } 
     }
 
+    public class CustomizationComponent
+    {
+        public GeneralWatermarkProperty Property { get; set; }
+        public string Name { get; set; }
+    }
 
     public class ExifInfo : ValidationBase
     {

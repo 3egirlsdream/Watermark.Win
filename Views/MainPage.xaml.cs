@@ -53,6 +53,7 @@ namespace JointWatermark
                     directory.Create();
 
                 InitFontList();
+                InitTemplates();
                 ComputeUserCount();
             }
             catch (Exception ex)
@@ -182,7 +183,14 @@ namespace JointWatermark
             configFrame.Width = 0;
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
-                var template = Global.InitConfig()?.Templates?.PhotoFrame;
+                GeneralWatermarkProperty template = null;
+                if (CurrentTemplate == "PhotoFrame") {
+                    template = Global.InitConfig()?.Templates?.PhotoFrame;
+                }
+                else
+                {
+                    template = Global.InitConfig()?.Templates?.CustomizationComponents.FirstOrDefault(c => c.Name == CurrentTemplate).Property;
+                }
                 if(template == null) { template = Global.Init(); }
                 for (int ii = 0; ii < filenames.Length; ii++)
                 {
@@ -378,6 +386,24 @@ namespace JointWatermark
             }
             fontlist.ItemsSource = fonts;
             fontlist2.ItemsSource = fonts;
+        }
+
+        public void InitTemplates()
+        {
+            var model = Global.InitConfig();
+            if(model != null && model.Templates != null && model.Templates.CustomizationComponents != null && model.Templates.CustomizationComponents.Count > 0)
+            {
+                templateList.Children.Clear();
+                foreach (var item in model.Templates.CustomizationComponents)
+                {
+                    var btn = new Button();
+                    btn.Content = item.Name;
+                    btn.Tag = item.Name;
+                    btn.Click += OpenTemplateConfigClick;
+                    btn.Margin = new Thickness(10, 0, 10, 0);
+                    templateList.Children.Add(btn);
+                }
+            }
         }
 
 
@@ -670,7 +696,7 @@ namespace JointWatermark
 
         private void OpenTemplateConfigClick(object sender, RoutedEventArgs e)
         {
-            if(sender is Button btn && btn.Tag.Equals("PhotoFrame")) 
+            if(sender is Button btn) 
             {
                 CurrentTemplate = btn.Tag.ToString();
                 tabImg.Focus();
