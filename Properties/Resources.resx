@@ -136,4 +136,10 @@
   <data name="Pamega_demo_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\font\Pamega-demo-2.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="system_b" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\system_b.jpg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="system_t" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\system_t.jpg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

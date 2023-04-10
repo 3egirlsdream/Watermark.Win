@@ -1,10 +1,12 @@
 ﻿using JointWatermark.Views;
+using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WeakToys.Class;
 
 namespace JointWatermark.Class
 {
@@ -13,6 +15,18 @@ namespace JointWatermark.Class
         public GeneralWatermarkProperty() 
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+
+        private bool isChecked;
+        [JsonIgnore]
+        public bool IsChecked
+        {
+            get => isChecked; 
+            set
+            {
+                isChecked = value;
+                NotifyPropertyChanged(nameof(IsChecked));
+            }
         }
 
         public string ID { get; set; }
@@ -48,6 +62,10 @@ namespace JointWatermark.Class
         public PhotoAlignment PhotoAlignment { get; set; }
 
         public string BackgroundColor { get; set; } = "#FFFFFF";
+
+        public ImageBackgroud ImageBackgroud { get; set; }
+
+        public bool Auto08 { get; set; } = true;
 
         /// <summary>
         /// 字体
@@ -235,6 +253,22 @@ namespace JointWatermark.Class
         public string Path { get; set; }
         public bool IsCloud { get; set; }
         public bool IsLogo { get; set; }
+    }
+
+    public class ImageBackgroud
+    {
+        public ImageBackgroudType Type { get; set; }
+        public string Top { get; set; }
+        public string Bottom { get; set; }
+        public string Left { get; set; }
+        public string Right { get; set; }
+
+    }
+
+    public enum ImageBackgroudType
+    {
+        Color,
+        Image
     }
 
     public enum RelativePositionMode

@@ -231,6 +231,13 @@ namespace JointWatermark
             { "Facon", Properties.Resources.Facon_2 }
         };
 
+        public static Dictionary<string, byte[]> SystemImage { get; set; } = new Dictionary<string, byte[]>
+        {
+            { "system_t", Properties.Resources.system_t },
+            { "system_b", Properties.Resources.system_b }
+        };
+
+
         public static bool SaveConfig(string json)
         {
             try
@@ -310,107 +317,20 @@ namespace JointWatermark
             GeneralWatermarkProperty image;
             image = new GeneralWatermarkProperty();
             image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\bb.jpg";
-            image.StartPosition = new SixLabors.ImageSharp.Point(5, 5);
-            image.PecentOfHeight = 82;
-            image.PecentOfWidth = 90;
+            image.StartPosition = new SixLabors.ImageSharp.Point(0, 15);
+            image.PecentOfHeight = 70;
+            image.PecentOfWidth = 100;
             image.EnableFixedPercent = true;
             image.Shadow = new ImageShadow(false, 200);
-            image.Properties = new List<GeneralWatermarkRowProperty>
+            image.ImageBackgroud = new ImageBackgroud()
             {
-                new GeneralWatermarkRowProperty()
-                {
-                    X = PositionBase.Center,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
-                    Content = "右侧cesiumcesium测试",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    IsBold = true,
-                    FontSize = 24,
-                    ImagePath = new Photo("C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png", false, true),
-                    ImagePercentOfRange = 50,
-                    ContentType = ContentType.Image
-                },
-                new GeneralWatermarkRowProperty()
-                {
-                    Name = "右侧第一行",
-                    X = PositionBase.Center,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
-                    Content = "cesiumcesium测试",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    IsBold = true,
-                    FontSize = 24,
-                    DataSource = new WatermarkDataSource() 
-                    {
-                        From = DataSourceFrom.Exif,
-                        Exifs = new List<ExifConfigInfo>() 
-                        {
-                          new ExifConfigInfo() 
-                          {
-                            SEQ = 1,
-                            Front= null,
-                            Behind= null,
-                            Key= "LensModel",
-                            Value= "Sony FE 24-105mm F4 G OSS (SEL24105G)"
-                          }
-                        }
-                    }
-                },
-                new GeneralWatermarkRowProperty()
-                {
-                    Name = "右侧第二行",
-                    X = PositionBase.Center,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
-                    Content = "cesiumcesium测试",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    IsBold = false,
-                    Color = "#cbb795",
-                    FontSize = 24,
-                    DataSource = new WatermarkDataSource()
-                    {
-                        From = DataSourceFrom.Exif,
-                        Exifs = new List<ExifConfigInfo>()
-                        {
-                          new ExifConfigInfo()
-                          {
-                            SEQ = 1,
-                            Front= null,
-                            Behind= null,
-                            Key= "LensModel",
-                            Value= "Sony FE 24-105mm F4 G OSS (SEL24105G)"
-                          }
-                        }
-                    }
-                }
+                Type = ImageBackgroudType.Image,
+                Top = "system_t",
+                Bottom = "system_b"
             };
-
-            image.ConnectionModes = new List<ConnectionMode>()
-            {
-                new ConnectionMode
-                {
-                    Ids = new List<string>(image.Properties.Select(c=>c.ID).Take(3)),
-                    RowHeightMinFontPercent = 30,
-                    X = PositionBase.Center,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Pixel,
-                    EdgeDistanceCharacterX = "....",
-                    EdgeDistanceFixedPixel = 10,
-                    EdgeDistanceCharacterY = ".",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End
-                }
-            };
-
+            image.Properties = new List<GeneralWatermarkRowProperty>();
+            image.ConnectionModes = new List<ConnectionMode>();
+            image.Auto08 = false;
             //image = Global.InitConfig().Templates?.PhotoFrame;
             //image.PhotoPath = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg";
             //image.Properties[2].ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png";

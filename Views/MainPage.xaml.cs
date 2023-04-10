@@ -27,7 +27,7 @@ namespace JointWatermark
     /// </summary>
     public partial class MainPage : Page
     {
-        public string CurrentTemplate { get; set; } 
+        public string CurrentTemplate { get; set; } = "PhotoFrame";
         public MainVM vm;
         public List<string> MultiImages = new();
         public MainPage()
@@ -346,17 +346,17 @@ namespace JointWatermark
         }
 
 
-        public void Export(IEnumerable<ImageProperties> images)
+        public void Export(IEnumerable<GeneralWatermarkProperty> images)
         {
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
                 foreach (var url in images)
                 {
                     var percent = (images.ToList().IndexOf(url) + 1)  * 100.0 / images.Count();
-                    loading.ISetPosition((int)percent, $"正在生成图片：{url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1)}");
+                    loading.ISetPosition((int)percent, $"正在生成图片：{url.PhotoPath.Substring(url.PhotoPath.LastIndexOf(Global.SeparatorChar) + 1)}");
                     token.ThrowIfCancellationRequested();
-                    var p = Global.Path_output + Global.SeparatorChar + url.Path.Substring(url.Path.LastIndexOf(Global.SeparatorChar) + 1);
-                    var bit = ImagesHelper.Current.MergeWatermark(url).Result;
+                    var p = Global.Path_output + Global.SeparatorChar + url.PhotoPath.Substring(url.PhotoPath.LastIndexOf(Global.SeparatorChar) + 1);
+                    var bit = ImagesHelper.Current.Generation(url).Result;
                     bit.Save(p);
                     bit.Dispose();
                 }
@@ -713,6 +713,7 @@ namespace JointWatermark
             {
                 CurrentTemplate = btn.Tag.ToString();
                 tabImg.Focus();
+                vm.Images.Clear();
             }
         }
 
@@ -931,8 +932,11 @@ namespace JointWatermark
                 
                 if(item != null)
                 {
-                    mainPage.configFrame.Width = 300;
-                    mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(item, this.mainPage) };
+                    if (mainPage.CurrentTemplate != "Ancientry")
+                    {
+                        mainPage.configFrame.Width = 300;
+                        mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(item, this.mainPage) };
+                    }
                     RefreshSelectedImage(item);
                 }
             },

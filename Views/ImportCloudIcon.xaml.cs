@@ -81,11 +81,11 @@ namespace JointWatermark
         {
             ExecuteDelegate = o =>
             {
-                if (CheckUrl(Url) || !string.IsNullOrEmpty(window.Title))
-                {
+                //if (CheckUrl(Url) || !string.IsNullOrEmpty(window.Title))
+                //{
                     window.Data = Url;
                     window.DialogResult = true;
-                }
+                //}
             },
             CanExecuteDelegate = x => !string.IsNullOrEmpty(Url)
         };

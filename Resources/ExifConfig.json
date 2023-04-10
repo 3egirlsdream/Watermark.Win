@@ -184,7 +184,7 @@
           "Name": "右侧第一行",
           "Start": 0,
           "End": 4,
-          "X": 2,
+          "X": 0,
           "Y": 4,
           "EdgeDistanceType": 1,
           "EdgeDistancePercent": 0,
@@ -255,7 +255,7 @@
           "Name": "右侧第二行",
           "Start": 0,
           "End": 4,
-          "X": 2,
+          "X": 0,
           "Y": 4,
           "EdgeDistanceType": 1,
           "EdgeDistancePercent": 0,
@@ -690,10 +690,10 @@
     "CustomizationComponents": [
       {
         "Property": {
-          "ID": "42BD653EB1FC40E594F9F7901F9492A9",
+          "ID": "162FB73F00B04B8AB22905C9062284A9",
           "EnableFixedPercent": true,
-          "PhotoPath": "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg",
-          "ThumbnailPath": "C:\\Users\\kingdee\\source\\repos\\JointWatermark\\bin\\Debug\\net6.0-windows\\\\temp\\Windows10.jpg",
+          "PhotoPath": "",
+          "ThumbnailPath": "",
           "PhotoRatio": 0,
           "StartPosition": {
             "X": 5,
@@ -701,7 +701,7 @@
             "IsEmpty": false
           },
           "PecentOfWidth": 90,
-          "PecentOfHeight": 82,
+          "PecentOfHeight": 80,
           "PhotoAlignment": 0,
           "BackgroundColor": "#FFFFFF",
           "FontFamily": null,
@@ -724,7 +724,7 @@
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
               "RelativePositionMode": 1,
-              "Content": "右侧cesiumcesium测试",
+              "Content": "",
               "DataSource": {
                 "From": 0,
                 "Exifs": null
@@ -742,7 +742,16 @@
               "IsBold": true,
               "FontSize": 24,
               "Color": "#000000",
-              "DateFormat": [],
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":",
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
               "FontXS": 1.0,
               "TotalWidth": 0.0,
               "TotalHeight": 0.0,
@@ -756,7 +765,7 @@
             {
               "IsChecked": true,
               "ID": "7E4A1DCCAA194B9E896C9B196B408886",
-              "Name": "右侧第一行",
+              "Name": "第二行文字",
               "Start": 0,
               "End": 4,
               "X": 4,
@@ -767,7 +776,7 @@
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
               "RelativePositionMode": 1,
-              "Content": "cesiumcesium测试",
+              "Content": "",
               "DataSource": {
                 "From": 0,
                 "Exifs": [
@@ -775,24 +784,65 @@
                     "SEQ": 1,
                     "Front": null,
                     "Behind": null,
-                    "Key": "LensModel",
-                    "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                    "Key": "Make",
+                    "Value": "SONY"
+                  },
+                  {
+                    "SEQ": 2,
+                    "Front": null,
+                    "Behind": " | ",
+                    "Key": "Model",
+                    "Value": "ILCE-7C"
+                  },
+                  {
+                    "SEQ": 3,
+                    "Front": null,
+                    "Behind": "mm",
+                    "Key": "FocalLengthIn35mmFilm",
+                    "Value": "105"
+                  },
+                  {
+                    "SEQ": 4,
+                    "Front": "F",
+                    "Behind": null,
+                    "Key": "FNumber",
+                    "Value": "4"
+                  },
+                  {
+                    "SEQ": 5,
+                    "Front": null,
+                    "Behind": "S",
+                    "Key": "ExposureTime",
+                    "Value": "1/125"
+                  },
+                  {
+                    "SEQ": 6,
+                    "Front": "ISO",
+                    "Behind": null,
+                    "Key": "ISOSpeedRatings",
+                    "Value": "2500"
                   }
                 ]
               },
               "ImagePath": {
                 "Path": null,
-                "IsCloud": false
+                "IsCloud": false,
+                "IsLogo": false
               },
               "ContentType": 1,
               "ImagePercentOfRange": 0,
               "LinePercentOfRange": 0,
               "LinePixel": 0,
-              "FontFamily": "微软雅黑",
-              "IsBold": true,
+              "FontFamily": "金陵宋体",
+              "IsBold": false,
               "FontSize": 24,
               "Color": "#000000",
-              "DateFormat": [],
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
               "FontXS": 1.0,
               "TotalWidth": 0.0,
               "TotalHeight": 0.0,
@@ -804,9 +854,9 @@
               "Visibility": 0
             },
             {
-              "IsChecked": true,
+              "IsChecked": false,
               "ID": "6C250CAD774541BCA19267EF275CF837",
-              "Name": "右侧第二行",
+              "Name": "第三行文字",
               "Start": 0,
               "End": 4,
               "X": 4,
@@ -817,22 +867,23 @@
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
               "RelativePositionMode": 1,
-              "Content": "cesiumcesium测试",
+              "Content": "",
               "DataSource": {
                 "From": 0,
                 "Exifs": [
                   {
-                    "SEQ": 1,
+                    "SEQ": 3,
                     "Front": null,
                     "Behind": null,
-                    "Key": "LensModel",
-                    "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                    "Key": "DateTimeOriginal",
+                    "Value": "2022:08:04 20:03:28"
                   }
                 ]
               },
               "ImagePath": {
                 "Path": null,
-                "IsCloud": false
+                "IsCloud": false,
+                "IsLogo": false
               },
               "ContentType": 1,
               "ImagePercentOfRange": 0,
@@ -841,8 +892,13 @@
               "FontFamily": "微软雅黑",
               "IsBold": false,
               "FontSize": 24,
-              "Color": "#cbb795",
-              "DateFormat": [],
+              "Color": "#AFAFAF",
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
               "FontXS": 1.0,
               "TotalWidth": 0.0,
               "TotalHeight": 0.0,
@@ -862,10 +918,10 @@
                 "6C250CAD774541BCA19267EF275CF837"
               ],
               "RowHeightPercent": null,
-              "RowHeightMinFontPercent": 30.0,
+              "RowHeightMinFontPercent": 10.0,
               "IsChecked": true,
               "ID": "55535B023D064DC985B0431B8BFC4DA7",
-              "Name": "组合:\r\n右侧第一行\r\n右侧第二行",
+              "Name": "组合:水印图片\r\n右侧第一行\r\n右侧第二行",
               "Start": 0,
               "End": 4,
               "X": 4,
@@ -883,7 +939,8 @@
               },
               "ImagePath": {
                 "Path": null,
-                "IsCloud": false
+                "IsCloud": false,
+                "IsLogo": false
               },
               "ContentType": 1,
               "ImagePercentOfRange": 0,
@@ -895,19 +952,54 @@
               "Color": "#000000",
               "DateFormat": [],
               "FontXS": 1.0,
-              "TotalWidth": 509.0,
-              "TotalHeight": 166.0,
+              "TotalWidth": 630.0,
+              "TotalHeight": 152.8,
               "StartPoint": {
-                "X": 765,
-                "Y": 1255,
+                "X": 709,
+                "Y": 1350,
                 "IsEmpty": false
               },
               "Visibility": 0
             }
           ],
-          "Meta": {}
+          "Meta": null
         },
         "Name": "悬浮边框"
+      },
+      {
+        "Property": {
+          "ID": "2C7AB4A32A3947499B512D0C12FFFA88",
+          "EnableFixedPercent": true,
+          "PhotoPath": "",
+          "ThumbnailPath": "",
+          "PhotoRatio": 0,
+          "StartPosition": {
+            "X": 0,
+            "Y": 15,
+            "IsEmpty": false
+          },
+          "PecentOfWidth": 100,
+          "PecentOfHeight": 70,
+          "PhotoAlignment": 0,
+          "BackgroundColor": "#FFFFFF",
+          "ImageBackgroud": {
+            "Type": 1,
+            "Top": "system_t",
+            "Bottom": "system_b",
+            "Left": null,
+            "Right": null
+          },
+          "Auto08": false,
+          "FontFamily": null,
+          "Shadow": {
+            "Enabled": false,
+            "Width": 200
+          },
+          "Properties": [],
+          "ConnectionModes": [],
+          "Meta": null
+        },
+        "Name": "Ancientry"
       }
     ]
   }

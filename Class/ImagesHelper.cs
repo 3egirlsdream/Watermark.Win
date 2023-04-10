@@ -610,7 +610,7 @@ namespace JointWatermark.Class
                     shortLine = Math.Min(img.Height, img.Width);
                     double pw = image.PecentOfWidth;
                     double ph = image.PecentOfHeight;
-                    if(img.Height > img.Width)
+                    if(image.Auto08 && img.Height > img.Width)
                     {
                         ph += (100 - image.StartPosition.Y - ph) * 0.2;
                     }
@@ -663,6 +663,49 @@ namespace JointWatermark.Class
                     //绘制图片
                     resultImage.Mutate(x => x.DrawImage(img, start, 1));
 
+                    //绘制边框图片
+                    if(image.ImageBackgroud != null && image.ImageBackgroud.Type == ImageBackgroudType.Image)
+                    {
+                        Image bakTop, bakBot;
+                        if (image.ImageBackgroud.Top.StartsWith("system"))
+                        {
+                            bakTop = Image.Load(Global.SystemImage["system_t"]);
+                        }
+                        else bakTop = Image.Load(image.ImageBackgroud.Top);
+                        if (image.ImageBackgroud.Top.StartsWith("system"))
+                        {
+                            bakBot = Image.Load(Global.SystemImage["system_b"]);
+                        }
+                        else bakBot = Image.Load(image.ImageBackgroud.Bottom);
+
+                        var borderBakTop = resultHeight * (image.StartPosition.Y / 100.0);
+                        var borderBakBot = resultHeight * (100 - image.PecentOfHeight - image.StartPosition.Y) / 100.0;// img.Height - borderBakTop;
+                        var topXs = borderBakTop  * 1.0 /  bakTop.Height;
+                        var botXs = borderBakBot * 1.0 / bakBot.Height;
+
+                        var bakTopWidth = (int)(topXs * bakTop.Width);
+                        var bakBotWidth = (int)(botXs * bakBot.Width);
+                        bakTop.Mutate(c => c.Resize(bakTopWidth, (int)borderBakTop));
+                        bakBot.Mutate(c => c.Resize(bakBotWidth, (int)borderBakBot));
+
+
+                        var bakImgStart = new SixLabors.ImageSharp.Point(0, 0);
+                        for (int i = 0; i < resultWidth;)
+                        {
+                            resultImage.Mutate(x => x.DrawImage(bakTop, bakImgStart, 1));
+                            i += bakTop.Width;
+                            bakImgStart.X = i;
+                        }
+                        bakImgStart.Y = resultHeight - bakBot.Height;
+                        bakImgStart.X = 0;
+                        for (int i = 0; i < resultWidth;)
+                        {
+                            resultImage.Mutate(x => x.DrawImage(bakBot, bakImgStart, 1));
+                            i += bakBot.Width;
+                            bakImgStart.X = i;
+                        }
+
+                    }
 
                     //绘制文字
                     var connectedIds = new List<string>();
@@ -718,11 +761,12 @@ namespace JointWatermark.Class
             if (row.RowHeightMinFontPercent != null)
             {
                 //找出最小字体
-                var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault();
+                var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault(c=>c.ContentType == ContentType.Text);
                 if (minFontSizeRow != null)
                 {
                     var fONT = GetFont(row.FontFamily, row.IsBold, row.FontSize * fontxs);
-                    rowHeight = TextMeasurer.Measure(minFontSizeRow.Content, new SixLabors.Fonts.TextOptions(fONT)).Height * row.RowHeightMinFontPercent.Value / 100;
+                    var cnt = Global.GetContent(minFontSizeRow, image.Meta);
+                    rowHeight = TextMeasurer.Measure(cnt, new SixLabors.Fonts.TextOptions(fONT)).Height * row.RowHeightMinFontPercent.Value / 100;
                 }
                 //算出整体高度
                 foreach (var r in group)
@@ -730,7 +774,8 @@ namespace JointWatermark.Class
                     if (r.ContentType == ContentType.Text)
                     {
                         var fONT = GetFont(r.FontFamily, r.IsBold, r.FontSize * fontxs);
-                        var rHeight = TextMeasurer.Measure(r.Content, new SixLabors.Fonts.TextOptions(fONT)).Height;
+                        var cnt = Global.GetContent(r, image.Meta);
+                        var rHeight = TextMeasurer.Measure(cnt, new SixLabors.Fonts.TextOptions(fONT)).Height;
                         totalHeight += rHeight;
                     }
                     else if (r.ContentType == ContentType.Image)

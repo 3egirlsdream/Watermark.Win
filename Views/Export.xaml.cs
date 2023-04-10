@@ -11,7 +11,7 @@ namespace JointWatermark.Views
     public partial class Export : Window
     {
         ExportVM vm;
-        public Export(ObservableCollection<ImageProperties> _images)
+        public Export(ObservableCollection<GeneralWatermarkProperty> _images)
         {
             InitializeComponent();
             vm = new ExportVM(_images);
@@ -28,13 +28,13 @@ namespace JointWatermark.Views
     public class ExportVM : ValidationBase
     {
 
-        public ExportVM(ObservableCollection<ImageProperties> _images)
+        public ExportVM(ObservableCollection<GeneralWatermarkProperty> _images)
         {
             this.Images = _images;
         }
 
-        private ObservableCollection<ImageProperties> images;
-        public ObservableCollection<ImageProperties> Images
+        private ObservableCollection<GeneralWatermarkProperty> images;
+        public ObservableCollection<GeneralWatermarkProperty> Images
         {
             get => images;
             set

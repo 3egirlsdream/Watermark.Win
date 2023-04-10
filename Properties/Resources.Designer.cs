@@ -119,5 +119,25 @@ namespace JointWatermark.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
+        internal static byte[] system_b {
+            get {
+                object obj = ResourceManager.GetObject("system_b", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
+        internal static byte[] system_t {
+            get {
+                object obj = ResourceManager.GetObject("system_t", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -67,6 +68,16 @@ namespace JointWatermark.Views
             if (sender is ComboBox combo && vm != null)
             {
                 vm.FontFamily = combo.SelectedItem.ToString();
+            }
+        }
+
+        private void togle1_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out System.Windows.Media.Color color, ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
+            if (dialog == true)
+            {
+                System.Drawing.Color _c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
+                vm.FontColor = ColorTranslator.ToHtml(_c);
             }
         }
     }
@@ -210,10 +221,13 @@ namespace JointWatermark.Views
             EdgeWidth = window.row.EdgeDistanceType == EdgeDistanceType.Character ? window.row.EdgeDistanceCharacterX : window.row.EdgeDistancePercent + "";
             var fontList = Global.InitFontList();
             window.fontlist.ItemsSource = fontList;
-            window.yearMon.Text = window.row.DateFormat[0];
-            window.monDay.Text = window.row.DateFormat[1];
-            window.hourMin.Text = window.row.DateFormat[2];
-            window.minSec.Text = window.row.DateFormat[3];
+            if (window.row is GeneralWatermarkRowProperty row && row.DateFormat.Count >= 4)
+            {
+                window.yearMon.Text = window.row.DateFormat[0];
+                window.monDay.Text = window.row.DateFormat[1];
+                window.hourMin.Text = window.row.DateFormat[2];
+                window.minSec.Text = window.row.DateFormat[3];
+            }
             if(window.row.DataSource != null && window.row.DataSource.Exifs != null)
             Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
         }

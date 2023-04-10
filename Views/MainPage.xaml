@@ -41,7 +41,6 @@
                         </TabItem.Header>
                         <StackPanel>
                             <Button Content="水印边框" Margin="10 5" Click="OpenTemplateConfigClick" Tag="PhotoFrame"/>
-                            <Button Content="古风边框" Margin="10 5"/>
                             <StackPanel x:Name="templateList">
                                 
                             </StackPanel>
