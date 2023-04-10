@@ -413,7 +413,7 @@ namespace JointWatermark
                     btn.Content = item.Name;
                     btn.Tag = item.Name;
                     btn.Click += OpenTemplateConfigClick;
-                    btn.Margin = new Thickness(10, 0, 10, 0);
+                    btn.Margin = new Thickness(10, 5, 10, 5);
                     templateList.Children.Add(btn);
                 }
             }
