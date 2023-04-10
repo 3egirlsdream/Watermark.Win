@@ -78,7 +78,7 @@ namespace JointWatermark
         public static Dictionary<string, object> GetMeta(string path)
         {
             var meta = new Dictionary<string, object>();
-            using(var img = Image.Load(path))
+            using (var img = Image.Load(path))
             {
                 if (img.Metadata != null && img.Metadata.ExifProfile != null && img.Metadata.ExifProfile.Values != null)
                 {
@@ -177,9 +177,9 @@ namespace JointWatermark
         public static string GetExifInfo(Dictionary<string, object> meta, List<ExifConfigInfo> info, List<string> dateFormat = null)
         {
             var cs = new List<string>();
-            if(dateFormat == null)
+            if (dateFormat == null)
             {
-                dateFormat = new List<string>() { ".", ".", ":", ":"};
+                dateFormat = new List<string>() { ".", ".", ":", ":" };
             }
             if (info == null) return "";
             foreach (var child in info)
@@ -314,40 +314,12 @@ namespace JointWatermark
             image.PecentOfHeight = 82;
             image.PecentOfWidth = 90;
             image.EnableFixedPercent = true;
-            image.Shadow = new ImageShadow(true, 200);
+            image.Shadow = new ImageShadow(false, 200);
             image.Properties = new List<GeneralWatermarkRowProperty>
             {
                 new GeneralWatermarkRowProperty()
                 {
-                    Name = "右侧第一行",
-                    X = PositionBase.Right,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
-                    Content = "cesiumcesium测试",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    IsBold = true,
-                    FontSize = 35
-                },
-                new GeneralWatermarkRowProperty()
-                {
-                    Name = "右侧第二行",
-                    X = PositionBase.Right,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
-                    Content = "cesiumcesium测试",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    IsBold = false,
-                    Color = "#cbb795"
-                },
-                new GeneralWatermarkRowProperty()
-                {
-                    X = PositionBase.Right,
+                    X = PositionBase.Center,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
                     EdgeDistanceCharacterX = "ABCD",
@@ -356,107 +328,86 @@ namespace JointWatermark
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
                     IsBold = true,
-                    FontSize = 35,
-                    ImagePath = new Photo("C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png", false),
+                    FontSize = 24,
+                    ImagePath = new Photo("C:\\Users\\Jiang\\Pictures\\t01a29dac4bb27f7e22.png", false, true),
                     ImagePercentOfRange = 50,
                     ContentType = ContentType.Image
                 },
                 new GeneralWatermarkRowProperty()
                 {
-                    Name = "左侧第一行",
-                    X = PositionBase.Left,
+                    Name = "右侧第一行",
+                    X = PositionBase.Center,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
                     EdgeDistanceCharacterX = "ABCD",
                     EdgeDistanceCharacterY = "AA",
-                    Content = "右侧cesiumcesium测试右侧cesiumcesium",
+                    Content = "cesiumcesium测试",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    IsBold = true
+                    IsBold = true,
+                    FontSize = 24,
+                    DataSource = new WatermarkDataSource() 
+                    {
+                        From = DataSourceFrom.Exif,
+                        Exifs = new List<ExifConfigInfo>() 
+                        {
+                          new ExifConfigInfo() 
+                          {
+                            SEQ = 1,
+                            Front= null,
+                            Behind= null,
+                            Key= "LensModel",
+                            Value= "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                          }
+                        }
+                    }
                 },
                 new GeneralWatermarkRowProperty()
                 {
-                    Name = "左侧第二行",
-                    X = PositionBase.Left,
+                    Name = "右侧第二行",
+                    X = PositionBase.Center,
                     Y = PositionBase.Center,
                     EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "AAA",
+                    EdgeDistanceCharacterX = "ABCD",
                     EdgeDistanceCharacterY = "AA",
-                    Content = "t01a29dac4bb27f7e22.png",
+                    Content = "cesiumcesium测试",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End,
-                    ContentType = ContentType.Text,
-                    RelativePositionMode = RelativePositionMode.LastRow,
-                    Color = "#cbb795"
-                },
-                new GeneralWatermarkRowProperty()
-                {
-                    X = PositionBase.Right,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    LinePercentOfRange = 60,
-                    LinePixel = 2,
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    ContentType = ContentType.Line,
-                    Color = "#e6e6e6",
-                    RelativePositionMode = RelativePositionMode.LastRow
-                },
-
+                    IsBold = false,
+                    Color = "#cbb795",
+                    FontSize = 24,
+                    DataSource = new WatermarkDataSource()
+                    {
+                        From = DataSourceFrom.Exif,
+                        Exifs = new List<ExifConfigInfo>()
+                        {
+                          new ExifConfigInfo()
+                          {
+                            SEQ = 1,
+                            Front= null,
+                            Behind= null,
+                            Key= "LensModel",
+                            Value= "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                          }
+                        }
+                    }
+                }
             };
 
             image.ConnectionModes = new List<ConnectionMode>()
             {
                 new ConnectionMode
                 {
-                    Ids = new List<string>(image.Properties.Select(c=>c.ID).Take(2)),
+                    Ids = new List<string>(image.Properties.Select(c=>c.ID).Take(3)),
                     RowHeightMinFontPercent = 30,
-                    X = PositionBase.Right,
+                    X = PositionBase.Center,
                     Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "ABCD",
-                    EdgeDistanceCharacterY = "AA",
+                    EdgeDistanceType = EdgeDistanceType.Pixel,
+                    EdgeDistanceCharacterX = "....",
+                    EdgeDistanceFixedPixel = 10,
+                    EdgeDistanceCharacterY = ".",
                     Start = WatermarkRange.BottomOfPhoto,
                     End = WatermarkRange.End
-                },
-                new ConnectionMode
-                {
-                    Ids = new List<string>(){image.Properties[5].ID },
-                    LinePixel = 2,
-                    X = PositionBase.Right,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "a",
-                    EdgeDistanceCharacterY = "a",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    RelativePositionMode = RelativePositionMode.LastRow
-                },
-                new ConnectionMode
-                {
-                    Ids = new List<string>(image.Properties.Select(c=>c.ID).Skip(2).Take(1)),
-                    RowHeightMinFontPercent = 30,
-                    X = PositionBase.Right,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "a",
-                    EdgeDistanceCharacterY = "AA",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    RelativePositionMode = RelativePositionMode.LastRow
-                },
-                new ConnectionMode
-                {
-                    Ids = new List<string>(){ image.Properties[3].ID, image.Properties[4].ID },
-                    RowHeightMinFontPercent = 30,
-                    X = PositionBase.Left,
-                    Y = PositionBase.Center,
-                    EdgeDistanceType = EdgeDistanceType.Character,
-                    EdgeDistanceCharacterX = "aAAA",
-                    EdgeDistanceCharacterY = "AA",
-                    Start = WatermarkRange.BottomOfPhoto,
-                    End = WatermarkRange.End,
-                    RelativePositionMode = RelativePositionMode.Global
                 }
             };
 

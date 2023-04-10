@@ -232,7 +232,7 @@
           "LinePixel": 0,
           "FontFamily": "微软雅黑",
           "IsBold": true,
-          "FontSize": 35,
+          "FontSize": 30,
           "Color": "#000000",
           "DateFormat": [
             ".",
@@ -317,14 +317,16 @@
             "From": 0,
             "Exifs": null
           },
-          "ImagePath": null,
+          "ImagePath": {
+            "IsLogo": true
+          },
           "ContentType": 0,
           "ImagePercentOfRange": 50,
           "LinePercentOfRange": 0,
           "LinePixel": 0,
           "FontFamily": "微软雅黑",
           "IsBold": true,
-          "FontSize": 35,
+          "FontSize": 30,
           "Color": "#000000",
           "DateFormat": [
             ".",
@@ -508,7 +510,7 @@
           "Y": 4,
           "EdgeDistanceType": 1,
           "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "ABCD",
+          "EdgeDistanceCharacterX": "23",
           "EdgeDistanceCharacterY": "AA",
           "RelativePositionMode": 1,
           "Content": "",
@@ -650,7 +652,7 @@
           "Y": 4,
           "EdgeDistanceType": 1,
           "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "aAAA",
+          "EdgeDistanceCharacterX": "aaa",
           "EdgeDistanceCharacterY": "AA",
           "RelativePositionMode": 1,
           "Content": "",
@@ -684,6 +686,229 @@
         }
       ],
       "Meta": null
-    }
+    },
+    "CustomizationComponents": [
+      {
+        "Property": {
+          "ID": "42BD653EB1FC40E594F9F7901F9492A9",
+          "EnableFixedPercent": true,
+          "PhotoPath": "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg",
+          "ThumbnailPath": "C:\\Users\\kingdee\\source\\repos\\JointWatermark\\bin\\Debug\\net6.0-windows\\\\temp\\Windows10.jpg",
+          "PhotoRatio": 0,
+          "StartPosition": {
+            "X": 5,
+            "Y": 5,
+            "IsEmpty": false
+          },
+          "PecentOfWidth": 90,
+          "PecentOfHeight": 82,
+          "PhotoAlignment": 0,
+          "BackgroundColor": "#FFFFFF",
+          "FontFamily": null,
+          "Shadow": {
+            "Enabled": true,
+            "Width": 200
+          },
+          "Properties": [
+            {
+              "IsChecked": true,
+              "ID": "16782101C32B4194A4E0F8DFEBBA0728",
+              "Name": "水印图片",
+              "Start": 0,
+              "End": 4,
+              "X": 4,
+              "Y": 4,
+              "EdgeDistanceType": 1,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "AA",
+              "RelativePositionMode": 1,
+              "Content": "右侧cesiumcesium测试",
+              "DataSource": {
+                "From": 0,
+                "Exifs": null
+              },
+              "ImagePath": {
+                "Path": "",
+                "IsCloud": false,
+                "IsLogo": true
+              },
+              "ContentType": 0,
+              "ImagePercentOfRange": 40,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "微软雅黑",
+              "IsBold": true,
+              "FontSize": 24,
+              "Color": "#000000",
+              "DateFormat": [],
+              "FontXS": 1.0,
+              "TotalWidth": 0.0,
+              "TotalHeight": 0.0,
+              "StartPoint": {
+                "X": 0,
+                "Y": 0,
+                "IsEmpty": true
+              },
+              "Visibility": 2
+            },
+            {
+              "IsChecked": true,
+              "ID": "7E4A1DCCAA194B9E896C9B196B408886",
+              "Name": "右侧第一行",
+              "Start": 0,
+              "End": 4,
+              "X": 4,
+              "Y": 4,
+              "EdgeDistanceType": 1,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "AA",
+              "RelativePositionMode": 1,
+              "Content": "cesiumcesium测试",
+              "DataSource": {
+                "From": 0,
+                "Exifs": [
+                  {
+                    "SEQ": 1,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "LensModel",
+                    "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                  }
+                ]
+              },
+              "ImagePath": {
+                "Path": null,
+                "IsCloud": false
+              },
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "微软雅黑",
+              "IsBold": true,
+              "FontSize": 24,
+              "Color": "#000000",
+              "DateFormat": [],
+              "FontXS": 1.0,
+              "TotalWidth": 0.0,
+              "TotalHeight": 0.0,
+              "StartPoint": {
+                "X": 0,
+                "Y": 0,
+                "IsEmpty": true
+              },
+              "Visibility": 0
+            },
+            {
+              "IsChecked": true,
+              "ID": "6C250CAD774541BCA19267EF275CF837",
+              "Name": "右侧第二行",
+              "Start": 0,
+              "End": 4,
+              "X": 4,
+              "Y": 4,
+              "EdgeDistanceType": 1,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "AA",
+              "RelativePositionMode": 1,
+              "Content": "cesiumcesium测试",
+              "DataSource": {
+                "From": 0,
+                "Exifs": [
+                  {
+                    "SEQ": 1,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "LensModel",
+                    "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
+                  }
+                ]
+              },
+              "ImagePath": {
+                "Path": null,
+                "IsCloud": false
+              },
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "微软雅黑",
+              "IsBold": false,
+              "FontSize": 24,
+              "Color": "#cbb795",
+              "DateFormat": [],
+              "FontXS": 1.0,
+              "TotalWidth": 0.0,
+              "TotalHeight": 0.0,
+              "StartPoint": {
+                "X": 0,
+                "Y": 0,
+                "IsEmpty": true
+              },
+              "Visibility": 0
+            }
+          ],
+          "ConnectionModes": [
+            {
+              "Ids": [
+                "16782101C32B4194A4E0F8DFEBBA0728",
+                "7E4A1DCCAA194B9E896C9B196B408886",
+                "6C250CAD774541BCA19267EF275CF837"
+              ],
+              "RowHeightPercent": null,
+              "RowHeightMinFontPercent": 30.0,
+              "IsChecked": true,
+              "ID": "55535B023D064DC985B0431B8BFC4DA7",
+              "Name": "组合:\r\n右侧第一行\r\n右侧第二行",
+              "Start": 0,
+              "End": 4,
+              "X": 4,
+              "Y": 4,
+              "EdgeDistanceType": 2,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceFixedPixel": 20,
+              "EdgeDistanceCharacterX": "....",
+              "EdgeDistanceCharacterY": ".",
+              "RelativePositionMode": 1,
+              "Content": "",
+              "DataSource": {
+                "From": 0,
+                "Exifs": null
+              },
+              "ImagePath": {
+                "Path": null,
+                "IsCloud": false
+              },
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "微软雅黑",
+              "IsBold": false,
+              "FontSize": 30,
+              "Color": "#000000",
+              "DateFormat": [],
+              "FontXS": 1.0,
+              "TotalWidth": 509.0,
+              "TotalHeight": 166.0,
+              "StartPoint": {
+                "X": 765,
+                "Y": 1255,
+                "IsEmpty": false
+              },
+              "Visibility": 0
+            }
+          ],
+          "Meta": {}
+        },
+        "Name": "悬浮边框"
+      }
+    ]
   }
 }

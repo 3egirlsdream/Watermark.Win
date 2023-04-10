@@ -85,6 +85,7 @@ namespace JointWatermark.Class
             ID = Guid.NewGuid().ToString("N").ToUpper();
             DataSource = new WatermarkDataSource();
             ImagePath = new Photo();
+            DateFormat = new List<string> { ".", ".", ":", ":" };
         }
 
         private bool isChecked = true;
@@ -119,6 +120,10 @@ namespace JointWatermark.Class
         /// </summary>
         public int EdgeDistancePercent { get; set; }
         /// <summary>
+        /// 固定像素
+        /// </summary>
+        public int EdgeDistanceFixedPixel { get; set; } 
+        /// <summary>
         /// 固定字符计数
         /// </summary>
         public string EdgeDistanceCharacterX { get; set; } = "";
@@ -142,7 +147,7 @@ namespace JointWatermark.Class
 
         public ContentType ContentType { get; set; } = ContentType.Text;
 
-        /// <summary>
+        /// <summary>   
         /// 图片占范围的比例（按短边缩放）
         /// </summary>
         public int ImagePercentOfRange { get; set; }
@@ -162,7 +167,7 @@ namespace JointWatermark.Class
         public bool IsBold { get; set; } = false;
         public int FontSize { get; set; } = 30;
         public string Color { get; set; } = "#000000";
-        public List<string> DateFormat { get; set; } = new List<string> { ".", ".", ":", ":" };
+        public List<string> DateFormat { get; set; }
         public double FontXS { get; set; } = 1;
 
         /**
@@ -201,6 +206,10 @@ namespace JointWatermark.Class
     /// </summary>
     public class ConnectionMode : GeneralWatermarkRowProperty
     {
+        public ConnectionMode() 
+        {
+            DateFormat = new List<string>();
+        }
         public List<string> Ids { get; set; }
         /// <summary>
         /// 按整体图片百分比计数
@@ -217,13 +226,15 @@ namespace JointWatermark.Class
     public class Photo
     {
         public Photo() { }
-        public Photo(string path , bool isCloud) 
+        public Photo(string path , bool isCloud, bool isLogo) 
         { 
             Path = path;
             IsCloud = isCloud;
+            IsLogo = isLogo;
         }
         public string Path { get; set; }
         public bool IsCloud { get; set; }
+        public bool IsLogo { get; set; }
     }
 
     public enum RelativePositionMode
@@ -235,7 +246,8 @@ namespace JointWatermark.Class
     public enum EdgeDistanceType
     {
         Percent,
-        Character
+        Character,
+        Pixel
     }
 
     public enum PositionBase

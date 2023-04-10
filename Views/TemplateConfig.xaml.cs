@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,10 +48,11 @@ namespace JointWatermark.Views
 
         private void togle1_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out Color color,  ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
+            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out System.Windows.Media.Color color,  ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
             if(dialog == true)
             {
-                vm.BackgroundColor = color.ToString();
+                System.Drawing.Color _c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
+                vm.BackgroundColor = ColorTranslator.ToHtml(_c);
                 vm.CmdRefresh.Execute(null);
             }
         }
@@ -98,8 +100,7 @@ namespace JointWatermark.Views
             set
             {
                 connectionItems1 = value;
-                NotifyPropertyChanged(nameof(ConnectionItems1
-));
+                NotifyPropertyChanged(nameof(ConnectionItems1));
             }
         }
 
@@ -113,6 +114,7 @@ namespace JointWatermark.Views
                 NotifyPropertyChanged(nameof(BorderWidthOfTop));
             }
         }
+
         private int borderWidthOfBottom;
         public int BorderWidthOfBottom
         {
@@ -199,6 +201,8 @@ namespace JointWatermark.Views
             {
                 enabledShadow = value;
                 NotifyPropertyChanged(nameof(EnabledShadow));
+                if(window.property.Shadow != null)
+                    window.property.Shadow.Enabled = enabledShadow;
             }
         }
 
@@ -208,14 +212,14 @@ namespace JointWatermark.Views
             get => backgroundColor;
             set
             {
-                if (backgroundColor.Length >= 9)
-                {
-                    backgroundColor = value.Remove(1, 2);
-                }
-                else
-                {
+                //if (backgroundColor.Length >= 9)
+                //{
+                //    backgroundColor = value.Remove(1, 2);
+                //}
+                //else
+                //{
                     backgroundColor = value;
-                }
+                //}
                 NotifyPropertyChanged(nameof(BackgroundColor));
                 window.property.BackgroundColor = backgroundColor;
             }
@@ -251,7 +255,10 @@ namespace JointWatermark.Views
                 if (row == null) return;
                 var page = new WatermarkRowConfig(row);
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                page.ShowDialog();
+                if(page.ShowDialog() == true)
+                {
+                    window.parent.vm.RefreshSelectedImage(window.property);
+                }
             },
             CanExecuteDelegate = o => true
         };

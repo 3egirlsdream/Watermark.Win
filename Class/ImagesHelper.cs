@@ -302,13 +302,10 @@ namespace JointWatermark.Class
 
         private static Tuple<SixLabors.Fonts.FontFamily?, SixLabors.Fonts.FontFamily?> SetFamily(string FontFamily)
         {
-            SixLabors.Fonts.FontFamily? family = null;
+            SixLabors.Fonts.FontFamily? family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
             SixLabors.Fonts.FontFamily? familyBold = null;
-            if (FontFamily == "微软雅黑")
-            {
-                family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
-            }
-            else
+            
+            if (FontFamily != "微软雅黑")
             {
                 if (Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
                 {
@@ -587,10 +584,9 @@ namespace JointWatermark.Class
 
         public Task<Image<Rgba32>> Generation(GeneralWatermarkProperty image, bool isPreview = false)
         {
+            LastDate = DateTime.Now;
             return Task.Run(() =>
             {
-
-
                 var Properties = image.Properties.Where(c => c.IsChecked).ToList();
                 var ConnectionModes = image.ConnectionModes.Where(c => c.IsChecked).ToList();
                 var _uids = ConnectionModes.Select(c => new { c.Ids, c.ID }).ToList();
@@ -612,13 +608,20 @@ namespace JointWatermark.Class
                     image.Meta = Global.GetMeta(orientImg.Metadata.ExifProfile?.Values);
                     var img = orientImg.Clone(x => x.AutoOrient());
                     shortLine = Math.Min(img.Height, img.Width);
-                    shortLineBorderPercent = (100 - Math.Min(image.PecentOfWidth, image.PecentOfHeight)) / 100.0;
+                    double pw = image.PecentOfWidth;
+                    double ph = image.PecentOfHeight;
+                    if(img.Height > img.Width)
+                    {
+                        ph += (100 - image.StartPosition.Y - ph) * 0.2;
+                    }
+
+                    shortLineBorderPercent = (100 - Math.Min(pw, ph)) / 100.0;
                     //根据边框的起始位置计算边框宽度
                     var XBorderWidth = image.StartPosition.X * shortLine / 100.0;
                     var YBorderWidth = image.StartPosition.Y * shortLine / 100.0;
                     if (image.EnableFixedPercent)
                     {
-                        if (image.PecentOfWidth > image.PecentOfHeight)
+                        if (pw > ph)
                         {
                             resultHeight = (int)(img.Height + shortLine * shortLineBorderPercent);
                             resultWidth = (int)(img.Width + XBorderWidth * 2);
@@ -631,11 +634,12 @@ namespace JointWatermark.Class
                     }
                     else
                     {
-                        resultHeight = (int)(img.Height / (double)image.PecentOfHeight) * 100;
-                        resultWidth = (int)(img.Width / (double)image.PecentOfWidth) * 100;
+                        resultHeight = (int)(img.Height / (double)ph) * 100;
+                        resultWidth = (int)(img.Width / (double)pw) * 100;
                     }
                     //基础字体系数
                     var fontxs = (img.Height * 0.13 / 156);
+                    if (img.Height > img.Width) fontxs *= 0.8;
                     double basicFontSize = 30;
 
                     var resultImage = img.Clone(x => x.Resize(resultWidth, resultHeight));
@@ -653,7 +657,7 @@ namespace JointWatermark.Class
                         var shadowWidth = (int)(image.Shadow.Width * fontxs);
                         var rec = new SixLabors.ImageSharp.Rectangle(start.X - shadowWidth, start.Y - shadowWidth, img.Width + 2 * shadowWidth, img.Height + 2 * shadowWidth);
                         var blackImg = resultImage.Clone(cc => cc.Resize(img.Width, img.Height));
-                        blackImg.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#444444"), polygon));
+                        blackImg.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#696969"), polygon));
                         resultImage.Mutate(x => x.DrawImage(blackImg, start, 1).BoxBlur((int)(50 * fontxs), rec));
                     }
                     //绘制图片
@@ -681,9 +685,9 @@ namespace JointWatermark.Class
                             var YTextSize = XTextSize.Height * row.EdgeDistanceCharacterY.Length;
 
                             ConnectionMode lastRow = null;
-                            GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, YTextSize, XTextSize.Width, ContentTextSize.Height, ContentTextSize.Width, lastRow);
+                            double contentHeight = ContentTextSize.Height;
+                            GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, YTextSize, XTextSize.Width, ref contentHeight, ContentTextSize.Width, lastRow);
 
-                            var t = "";
                             var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
                             resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex(row.Color), Params));
                         }
@@ -742,10 +746,22 @@ namespace JointWatermark.Class
                 }
             }
             double xW = 0, yW = 0;
+
             //计算边距
-            var borderFont = GetFont(row.FontFamily, false, row.FontSize * fontxs);
-            var border = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(borderFont));
-            var borderHeight = border.Height * row.EdgeDistanceCharacterY.Length;
+            double borderHeight, borderWidth;
+            if(row.EdgeDistanceType == EdgeDistanceType.Character)
+            {
+                var borderFont = GetFont(row.FontFamily, false, row.FontSize * fontxs);
+                var border = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(borderFont));
+                borderHeight = border.Height * row.EdgeDistanceCharacterY.Length;
+                borderWidth = border.Width;
+            }
+            else
+            {
+                borderHeight = row.EdgeDistanceFixedPixel * fontxs;
+                borderWidth = row.EdgeDistanceFixedPixel * fontxs;
+            }
+
             //计算整体宽度，按最长的文字行计算
             var longestRow = group.OrderByDescending(c => Global.GetContent(c, image.Meta).Length).FirstOrDefault();
             var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBold, longestRow.FontSize * fontxs);
@@ -766,8 +782,10 @@ namespace JointWatermark.Class
                 var g = group.FirstOrDefault(c => c.ContentType == ContentType.Image);
                 var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
                 var logo = Image.Load(logoPath);
+                //设计的图片高度
+                var designHeight = (resultHeight - start.Y - img.Height) * 1.0 * g.ImagePercentOfRange / 100.0;
                 //resultHeight - start.Y - img.Height 为白边的高度
-                var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
+                var xs = designHeight / logo.Height;
                 var _w = (int)(logo.Width * xs);
                 var _h = (int)(logo.Height * xs);
                 if (_w > totalWidth) totalWidth = _w;
@@ -783,7 +801,7 @@ namespace JointWatermark.Class
 
             }
             ConnectionMode lastRow = index >= 1 ? image.ConnectionModes[index - 1] : null;
-            GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, borderHeight, border.Width, totalHeight, totalWidth, lastRow);
+            GetWatermarkStartPosition(resultWidth, resultHeight, img, start, row, ref xW, ref yW, borderHeight, borderWidth, ref totalHeight, totalWidth, lastRow);
             row.TotalHeight = totalHeight;
             row.TotalWidth = totalWidth;
 
@@ -815,10 +833,20 @@ namespace JointWatermark.Class
             {
                 if (item.ContentType == ContentType.Text)
                 {
+                    var _row = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
                     var font = GetFont(item.FontFamily, item.IsBold, item.FontSize * fontxs);
                     var content = Global.GetContent(item, image.Meta);
-                    var fontHeight = TextMeasurer.Measure(content, new SixLabors.Fonts.TextOptions(font)).Height;
-                    resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex(item.Color), row1));
+                    var _font = TextMeasurer.Measure(content, new SixLabors.Fonts.TextOptions(font));
+                    var fontHeight = _font.Height;
+                    if(item.X == PositionBase.Center)
+                    {
+                        _row.X += (int)((totalWidth - _font.Width) / 2.0);
+                    }
+                    else if (item.X == PositionBase.Right)
+                    {
+                        _row.X += (int)(totalWidth - _font.Width);
+                    }
+                    resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex(item.Color), _row));
                     row1.Y += (int)(rowHeight + fontHeight);
                 }
                 else if (item.ContentType == ContentType.Image)
@@ -829,8 +857,19 @@ namespace JointWatermark.Class
                     var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
                     int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
                     logo.Mutate(x => x.Resize(_w, _h));
-                    var rec = new SixLabors.ImageSharp.Rectangle(row1.X, row1.Y, logo.Width, logo.Height);
-                    resultImage.Mutate(x => x.DrawImage(logo, row1, 1));
+
+                    var _row = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
+                    if (item.X == PositionBase.Center)
+                    {
+                        _row.X += (int)((totalWidth - logo.Width) / 2.0);
+                    }
+                    else if (item.X == PositionBase.Right)
+                    {
+                        _row.X += (int)(totalWidth - logo.Width);
+                    }
+
+                    var rec = new SixLabors.ImageSharp.Rectangle(_row.X, _row.Y, logo.Width, logo.Height);
+                    resultImage.Mutate(x => x.DrawImage(logo, _row, 1));
                     row1.Y += (int)(rowHeight + logo.Height);
                 }
                 else if (item.ContentType == ContentType.Line)
@@ -852,7 +891,7 @@ namespace JointWatermark.Class
             , ref double yW
             , double borderHeight
             , double borderWidth
-            , double contentHeight
+            , ref double contentHeight
             , double contentWidth
             , ConnectionMode lastRow)
         {
@@ -888,7 +927,10 @@ namespace JointWatermark.Class
                 else if (row.X  == PositionBase.Center) xW = (resultWidth - contentWidth) / 2;
 
                 if (row.Y == PositionBase.Top) yW = y + borderHeight + lastRow.TotalHeight;
-                else if (row.Y == PositionBase.Bottom) yW = resultHeight - borderHeight - lastRow.TotalHeight;
+                else if (row.Y == PositionBase.Bottom)
+                {
+                    yW = resultHeight - borderHeight - lastRow.TotalHeight - contentHeight;
+                }
                 else if (row.Y == PositionBase.Center) yW = (resultHeight - y - contentHeight) / 2 + y;
             }
             else
@@ -898,7 +940,11 @@ namespace JointWatermark.Class
                 else if (row.X  == PositionBase.Center) xW = (resultWidth - contentWidth) / 2;
 
                 if (row.Y == PositionBase.Top) yW = y + borderHeight;
-                else if (row.Y == PositionBase.Bottom) yW = resultHeight - borderHeight;
+                else if (row.Y == PositionBase.Bottom)
+                {
+                    yW = resultHeight - borderHeight - contentHeight;
+                    contentHeight += borderHeight;
+                }
                 else if (row.Y == PositionBase.Center) yW = (resultHeight - y - contentHeight) / 2 + y;
             }
         }

@@ -184,14 +184,15 @@ namespace JointWatermark
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
                 GeneralWatermarkProperty template = null;
-                if (CurrentTemplate == "PhotoFrame") {
+                if (CurrentTemplate == "PhotoFrame")
+                {
                     template = Global.InitConfig()?.Templates?.PhotoFrame;
                 }
                 else
                 {
                     template = Global.InitConfig()?.Templates?.CustomizationComponents.FirstOrDefault(c => c.Name == CurrentTemplate).Property;
                 }
-                if(template == null) { template = Global.Init(); }
+                if (template == null) { template = Global.Init(); }
                 for (int ii = 0; ii < filenames.Length; ii++)
                 {
                     var item = filenames[ii];
@@ -214,16 +215,28 @@ namespace JointWatermark
                         {
                             i.Config.LogoName = logoname;
                             i.Config.IsCloudIcon = true;
-                            _i.Properties[2].ImagePath.Path = logoname;
-                            _i.Properties[2].ImagePath.IsCloud = true;
+                            _i.Properties.ForEach(p =>
+                            {
+                                if (p != null && p.ImagePath != null && p.ImagePath.IsLogo)
+                                {
+                                    p.ImagePath.Path = logoname;
+                                    p.ImagePath.IsCloud = true;
+                                }
+                            });
                         }
                         else
                         {
                             i.Config.LogoName = logoname.Substring(logoname.LastIndexOf(Global.SeparatorChar) + 1);
                             i.Config.IsCloudIcon = false;
-                            if (_i.Properties[2].ImagePath == null) _i.Properties[2].ImagePath = new Photo();
-                            _i.Properties[2].ImagePath.Path = i.Config.LogoName;
-                            _i.Properties[2].ImagePath.IsCloud = false;
+
+                            _i.Properties.ForEach(p =>
+                            {
+                                if (p != null && p.ImagePath != null && p.ImagePath.IsLogo)
+                                {
+                                    p.ImagePath.Path = i.Config.LogoName;
+                                    p.ImagePath.IsCloud = false;
+                                }
+                            });
                         }
                     }
                     Dispatcher.Invoke(() =>

@@ -61,6 +61,14 @@ namespace JointWatermark.Views
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
         }
+
+        private void fontlist_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox combo && vm != null)
+            {
+                vm.FontFamily = combo.SelectedItem.ToString();
+            }
+        }
     }
 
     public class WatermarkRowConfigVM : ValidationBase
