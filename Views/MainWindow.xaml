@@ -40,8 +40,7 @@
                
             </MenuItem>
             <MenuItem Header="关于">
-                <MenuItem Header="设置"  Icon="{materialDesign:PackIcon Kind=Settings}" Click="SettingsClick"/>
-                <MenuItem Header="检查更新"  Icon="{materialDesign:PackIcon Kind=Update}" Click="CheckUpdateClick"/>
+                <MenuItem Header="设置"  Icon="{materialDesign:PackIcon Kind=Settings}" Click="CheckUpdateClick"/>
             </MenuItem>
             <MenuItem Header="帮助" >
                 <MenuItem Header="打开向导"  Icon="{materialDesign:PackIcon Kind=AccountQuestion}" Click="OpenGuideClick"/>

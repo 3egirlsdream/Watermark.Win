@@ -214,6 +214,8 @@ namespace JointWatermark.Views
             EdgeWidth = window.row.EdgeDistanceType == EdgeDistanceType.Character ? window.row.EdgeDistanceCharacterX : window.row.EdgeDistancePercent + "";
             var fontList = Global.InitFontList();
             window.fontlist.ItemsSource = fontList;
+            var fontIdx = fontList.IndexOf(window.row.FontFamily);
+            window.fontlist.SelectedIndex = fontIdx;
             window.yearMon.Text = window.row.DateFormat[0];
             window.monDay.Text = window.row.DateFormat[1];
             window.hourMin.Text = window.row.DateFormat[2];

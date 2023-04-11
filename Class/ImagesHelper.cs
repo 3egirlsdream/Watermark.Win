@@ -826,26 +826,32 @@ namespace JointWatermark.Class
             if (group.All(c => c.ContentType == ContentType.Image))
             {
                 var g = group[0];
-                var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
-                var logo = Image.Load(logoPath);
-                //resultHeight - start.Y - img.Height 为白边的高度
-                var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
-                totalWidth = (int)(logo.Width * xs);
-                totalHeight = (int)(logo.Height * xs);
+                if (!string.IsNullOrEmpty(g.ImagePath.Path))
+                {
+                    var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
+                    var logo = Image.Load(logoPath);
+                    //resultHeight - start.Y - img.Height 为白边的高度
+                    var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
+                    totalWidth = (int)(logo.Width * xs);
+                    totalHeight = (int)(logo.Height * xs);
+                }
             }
             else if (group.Any(c => c.ContentType == ContentType.Image)&& group.Any(c => c.ContentType == ContentType.Text))
             {
                 var g = group.FirstOrDefault(c => c.ContentType == ContentType.Image);
-                var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
-                var logo = Image.Load(logoPath);
-                //设计的图片高度
-                var designHeight = (resultHeight - start.Y - img.Height) * 1.0 * g.ImagePercentOfRange / 100.0;
-                //resultHeight - start.Y - img.Height 为白边的高度
-                var xs = designHeight / logo.Height;
-                var _w = (int)(logo.Width * xs);
-                var _h = (int)(logo.Height * xs);
-                if (_w > totalWidth) totalWidth = _w;
-                if (_h > totalHeight) totalHeight = _h;
+                if (!string.IsNullOrEmpty(g.ImagePath.Path))
+                {
+                    var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
+                    var logo = Image.Load(logoPath);
+                    //设计的图片高度
+                    var designHeight = (resultHeight - start.Y - img.Height) * 1.0 * g.ImagePercentOfRange / 100.0;
+                    //resultHeight - start.Y - img.Height 为白边的高度
+                    var xs = designHeight / logo.Height;
+                    var _w = (int)(logo.Width * xs);
+                    var _h = (int)(logo.Height * xs);
+                    if (_w > totalWidth) totalWidth = _w;
+                    if (_h > totalHeight) totalHeight = _h;
+                }
             }
             else if (group.All(c => c.ContentType == ContentType.Line))
             {
@@ -907,26 +913,29 @@ namespace JointWatermark.Class
                 }
                 else if (item.ContentType == ContentType.Image)
                 {
-                    var logoPath = Global.Path_logo + Global.SeparatorChar + item.ImagePath.Path;
-                    var logo = Image.Load(logoPath);
-                    //resultHeight - start.Y - img.Height 为白边的高度
-                    var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
-                    int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
-                    logo.Mutate(x => x.Resize(_w, _h));
-
-                    var _row = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
-                    if (item.X == PositionBase.Center)
+                    if (!string.IsNullOrEmpty(item.ImagePath.Path))
                     {
-                        _row.X += (int)((totalWidth - logo.Width) / 2.0);
-                    }
-                    else if (item.X == PositionBase.Right)
-                    {
-                        _row.X += (int)(totalWidth - logo.Width);
-                    }
+                        var logoPath = Global.Path_logo + Global.SeparatorChar + item.ImagePath.Path;
+                        var logo = Image.Load(logoPath);
+                        //resultHeight - start.Y - img.Height 为白边的高度
+                        var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
+                        int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
+                        logo.Mutate(x => x.Resize(_w, _h));
 
-                    var rec = new SixLabors.ImageSharp.Rectangle(_row.X, _row.Y, logo.Width, logo.Height);
-                    resultImage.Mutate(x => x.DrawImage(logo, _row, 1));
-                    row1.Y += (int)(rowHeight + logo.Height);
+                        var _row = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
+                        if (item.X == PositionBase.Center)
+                        {
+                            _row.X += (int)((totalWidth - logo.Width) / 2.0);
+                        }
+                        else if (item.X == PositionBase.Right)
+                        {
+                            _row.X += (int)(totalWidth - logo.Width);
+                        }
+
+                        var rec = new SixLabors.ImageSharp.Rectangle(_row.X, _row.Y, logo.Width, logo.Height);
+                        resultImage.Mutate(x => x.DrawImage(logo, _row, 1));
+                        row1.Y += (int)(rowHeight + logo.Height);
+                    }
                 }
                 else if (item.ContentType == ContentType.Line)
                 {

@@ -25,7 +25,7 @@ namespace JointWatermark
         public CheckUpdate()
         {
             InitializeComponent();
-            vm = new CheckUpdateVM();
+            vm = new CheckUpdateVM(this);
             DataContext = vm;
             CheckVersion(null, null);
         }
@@ -49,7 +49,7 @@ namespace JointWatermark
                 else
                 {
                     check.Badge = "";
-                    Latest.Text = "已是最新";
+                    Latest.Text = "你使用的是最新版本!";
                     newVersion.Visibility = Visibility.Collapsed;
                 }
             }
@@ -158,9 +158,11 @@ namespace JointWatermark
 
     public class CheckUpdateVM : INotifyPropertyChanged
     {
-       
-        public CheckUpdateVM()
+
+        CheckUpdate window;
+        public CheckUpdateVM(CheckUpdate check)
         {
+            window = check;
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             InitFontsList();
         }
@@ -251,6 +253,147 @@ namespace JointWatermark
                 }
             }
         }
+
+        public SimpleCommand CmdImportFont => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                // 实例化一个文件选择对象
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+                dialog.DefaultExt = ".ttf";  // 设置默认类型
+                dialog.Multiselect = false;                             // 设置可选格式
+                dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
+                // 打开选择框选择
+                Nullable<bool> result = dialog.ShowDialog();
+                if (result == true)
+                {
+                    var f = dialog.FileName;
+
+                    var file = new FileInfo(f);
+                    if (file.Exists)
+                    {
+                        if ("normal" == x.ToString())
+                        {
+                            window.normalText.Text = f;
+                        }
+                        else
+                        {
+                            if (!f.Contains("-Bold"))
+                            {
+                                Global.SendMsg("字体名称格式不正确！");
+                                return;
+                            }
+                            window.boldText.Text = f;
+                        }
+
+                    }
+
+                }
+            },
+            CanExecuteDelegate = o => true
+        };
+
+        public SimpleCommand CmdSaveFont => new SimpleCommand()
+        {
+            ExecuteDelegate = x =>
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(window.normalText.Text) || string.IsNullOrEmpty(window.boldText.Text)) { return; }
+
+                    if (!window.boldText.Text.Contains("-Bold"))
+                    {
+                        Global.SendMsg("字体名称格式不正确！");
+                        return;
+                    }
+                    var f = window.normalText.Text;
+                    var filename = f.Substring(f.LastIndexOf('\\') + 1);
+                    var prex = Global.BasePath + Global.SeparatorChar + "fonts" + Global.SeparatorChar;
+                    var path = prex + filename;
+                    var file = new FileInfo(f);
+                    if (file.Exists)
+                        file.CopyTo(path, true);
+                    f = window.boldText.Text;
+                    filename = f.Substring(f.LastIndexOf('\\') + 1);
+                    path = prex + filename;
+                    file = new FileInfo(f);
+                    if (file.Exists)
+                        file.CopyTo(path, true);
+
+                    window.save.Content = "保存成功";
+                    window.boldText.Text = "";
+                    window.normalText.Text = "";
+
+
+                }
+                catch (Exception ex)
+                {
+                    Global.SendMsg(ex.Message);
+                }
+                finally
+                {
+                    Task.Delay(2000).ContinueWith((t) =>
+                    {
+                        window.Dispatcher.Invoke(() =>
+                        {
+                            window.save.Content = "保存";
+                        });
+                    });
+                }
+            },
+            CanExecuteDelegate = o => true
+        };
+
+        public SimpleCommand CmdDownloadFont => new()
+        {
+            ExecuteDelegate = x =>
+            {
+                if (x is string xx && !string.IsNullOrEmpty(xx))
+                {
+                    var first = FontsList.FirstOrDefault(c => c.ID == xx);
+                    if (first != null)
+                    {
+                        downloadFont(first);
+                    }
+                }
+            },
+            CanExecuteDelegate = o => true
+        };
+
+        private async void downloadFont(CloudFont first)
+        {
+            using (var wc = new WebClient())
+            {
+                try
+                {
+                    first.IsLoading = false;
+                    var path = Global.BasePath + Global.SeparatorChar + "fonts" + Global.SeparatorChar;
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    wc.DownloadProgressChanged += (ss, e) =>
+                    {
+                        first.Progress = e.ProgressPercentage;
+                    };
+                    var n1 = first.URL.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                    var n2 = first.URL_B.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                    await wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
+                    await wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());
+                }
+                catch (Exception ex)
+                {
+                    Global.SendMsg(ex.Message);
+                }
+                finally
+                {
+                    first.IsLoading = true;
+                    InitFontsList();
+                }
+            }
+
+        }
+
 
     }
 }

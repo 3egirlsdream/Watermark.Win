@@ -40,7 +40,6 @@ namespace JointWatermark
                 vm = new MainVM(this);
                 this.DataContext = vm;
                 Global.BasePath = AppDomain.CurrentDomain.BaseDirectory;
-                xy.Text = "44°29′12\"E 33°23′46\"W";
                 vm.Images = new ObservableCollection<GeneralWatermarkProperty>();
                 Global.Path_temp = Global.BasePath + $"{Global.SeparatorChar}temp";
                 Global.Path_output = Global.BasePath + $"{Global.SeparatorChar}output";
@@ -268,7 +267,6 @@ namespace JointWatermark
                 }
                 DirectoryInfo directory = new(Global.Path_logo);
                 var files = directory.GetFiles();
-                logoes.Children.Clear();
                 vm.IconList.Clear();
                 foreach (var file in files)
                 {
@@ -287,7 +285,6 @@ namespace JointWatermark
                     card.Cursor = Cursors.Hand;
                     ElevationAssist.SetElevation(card, Elevation.Dp2);
                     card.MouseLeftButtonDown += Card_MouseLeftButtonDown;
-                    logoes.Children.Add(card);
                     vm.IconList.Add(file.FullName);
                 }
                 var cloudIcons = Global.InitConfig().Icons;
@@ -324,8 +321,6 @@ namespace JointWatermark
                             InitLogoes();
                         };
                         card.ContextMenu.Items.Add(menuDel);
-
-                        logoes.Children.Add(card);
                         vm.IconList.Add(icon);
                     }
                     catch (Exception ex)
@@ -397,7 +392,6 @@ namespace JointWatermark
                     }
                 }
             }
-            fontlist.ItemsSource = fonts;
             fontlist2.ItemsSource = fonts;
         }
 
