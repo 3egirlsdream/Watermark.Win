@@ -37,7 +37,7 @@
                                 <RowDefinition Height="30"/>
                             </Grid.RowDefinitions>
                             <Viewbox Grid.Row="0">
-                                <Image Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" Source="{Binding PhotoPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Image Height="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelHeight}" Width="{Binding RelativeSource={RelativeSource Self}, Path=Source.PixelWidth}" Stretch="UniformToFill" Source="{Binding ThumbnailPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </Viewbox>
                             <CheckBox Grid.Row="1" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>

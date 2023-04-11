@@ -1,4 +1,5 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using JointWatermark.Class;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
@@ -197,15 +198,5 @@ namespace JointWatermark
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-    }
-
-
-    public class CLIENT_VERSION
-    {
-        public string? ID { get; set; }
-        public DateTime DATETIME { get; set; }
-        public string? CLIENT { get; set; }
-        public string? VERSION { get; set; }
-        public string? PATH { get; set; }
     }
 }

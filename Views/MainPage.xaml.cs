@@ -27,7 +27,7 @@ namespace JointWatermark
     /// </summary>
     public partial class MainPage : Page
     {
-        public string CurrentTemplate { get; set; } = "PhotoFrame";
+        public string CurrentTemplate { get; set; }
         public MainVM vm;
         public List<string> MultiImages = new();
         public MainPage()
@@ -35,7 +35,7 @@ namespace JointWatermark
             try
             {
                 InitializeComponent();
-                CurrentTemplate = "default";
+                CurrentTemplate = "PhotoFrame";
                 MultiImages = new List<string>();
                 vm = new MainVM(this);
                 this.DataContext = vm;
@@ -1131,50 +1131,6 @@ namespace JointWatermark
             }
         }
 
-    }
-
-    public class ImageInstance
-    {
-        public ImageInstance(string url, string name)
-        {
-            Url = url;
-            Name = name;
-        }
-        public string Url { get; set; }
-        public string Name { get; set; }
-    }
-
-    public class BottomProcessInstance : ValidationBase
-    {
-        public BottomProcessInstance(Visibility v, bool s)
-        {
-            Visibility = v;
-            IsLoading = s;
-        }
-
-
-        private Visibility visibility;
-        public Visibility Visibility
-        {
-            get => visibility;
-            set
-            {
-                visibility = value;
-                NotifyPropertyChanged(nameof(Visibility));
-            }
-        }
-
-
-        private bool isLoading;
-        public bool IsLoading
-        {
-            get => isLoading;
-            set
-            {
-                isLoading = value;
-                NotifyPropertyChanged(nameof(IsLoading));
-            }
-        }
     }
 
     internal static class Utils

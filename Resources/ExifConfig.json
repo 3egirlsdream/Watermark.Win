@@ -158,11 +158,14 @@
     }
   ],
   "Icons": [],
-  "ShowGuide": true,
+  "ShowGuide": false,
   "Templates": {
     "PhotoFrame": {
+      "Name": null,
+      "ID": "97809DB1A1D842188B97D75C4E5730FD",
       "EnableFixedPercent": true,
       "PhotoPath": "",
+      "ThumbnailPath": null,
       "PhotoRatio": 0,
       "StartPosition": {
         "X": 5,
@@ -172,6 +175,9 @@
       "PecentOfWidth": 90,
       "PecentOfHeight": 82,
       "PhotoAlignment": 0,
+      "BackgroundColor": "#FFFFFF",
+      "ImageBackgroud": null,
+      "Auto08": true,
       "FontFamily": null,
       "Shadow": {
         "Enabled": false,
@@ -179,18 +185,6 @@
       },
       "Properties": [
         {
-          "IsChecked": true,
-          "ID": "3C434BE68AA442CE891D57381BE29495",
-          "Name": "右侧第一行",
-          "Start": 0,
-          "End": 4,
-          "X": 0,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "ABCD",
-          "EdgeDistanceCharacterY": "AA",
-          "RelativePositionMode": 1,
           "Content": "cesiumcesium测试",
           "DataSource": {
             "From": 0,
@@ -238,30 +232,28 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
-          "FontXS": 1,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
-        },
-        {
-          "IsChecked": true,
-          "ID": "4FADB72A5BD64BB9967C54D8B0272C0A",
-          "Name": "右侧第二行",
-          "Start": 0,
-          "End": 4,
-          "X": 0,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
+          "FontXS": 1.0,
           "EdgeDistanceCharacterX": "ABCD",
           "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
           "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 0,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "3C434BE68AA442CE891D57381BE29495",
+          "Name": "右侧第一行"
+        },
+        {
           "Content": "cesiumcesium测试",
           "DataSource": {
             "From": 0,
@@ -288,36 +280,36 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
-          "FontXS": 1,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
-        },
-        {
-          "IsChecked": true,
-          "ID": "93C12A9E3A2B49E4A8446CE2EC1C192B",
-          "Name": "水印",
-          "Start": 0,
-          "End": 4,
-          "X": 2,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
+          "FontXS": 1.0,
           "EdgeDistanceCharacterX": "ABCD",
           "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
           "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 0,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "4FADB72A5BD64BB9967C54D8B0272C0A",
+          "Name": "右侧第二行"
+        },
+        {
           "Content": "右侧cesiumcesium测试",
           "DataSource": {
             "From": 0,
             "Exifs": null
           },
           "ImagePath": {
+            "Path": null,
+            "IsCloud": false,
             "IsLogo": true
           },
           "ContentType": 0,
@@ -332,30 +324,28 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
-        },
-        {
-          "IsChecked": true,
-          "ID": "2872F7DC263543A5962751E35F008DB6",
-          "Name": "左侧第一行",
-          "Start": 0,
-          "End": 4,
-          "X": 0,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
           "EdgeDistanceCharacterX": "ABCD",
           "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
           "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 2,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "93C12A9E3A2B49E4A8446CE2EC1C192B",
+          "Name": "水印"
+        },
+        {
           "Content": "右侧cesiumcesium测试右侧cesiumcesium",
           "DataSource": {
             "From": 0,
@@ -389,30 +379,28 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
-        },
-        {
-          "IsChecked": true,
-          "ID": "B2BA4B9C43FB4517ACCA2C86A3688E15",
-          "Name": "左侧第二行",
-          "Start": 0,
+          "EdgeDistanceCharacterX": "ABCD",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
           "End": 4,
+          "RelativePositionMode": 1,
+          "Start": 0,
           "X": 0,
           "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "AAA",
-          "EdgeDistanceCharacterY": "AA",
-          "RelativePositionMode": 0,
+          "IsChecked": true,
+          "ID": "2872F7DC263543A5962751E35F008DB6",
+          "Name": "左侧第一行"
+        },
+        {
           "Content": "t01a29dac4bb27f7e22.png",
           "DataSource": {
             "From": 0,
@@ -439,30 +427,28 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
+          "EdgeDistanceCharacterX": "AAA",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 0,
+          "Start": 0,
+          "X": 0,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "B2BA4B9C43FB4517ACCA2C86A3688E15",
+          "Name": "左侧第二行"
         },
         {
-          "IsChecked": true,
-          "ID": "8E3C8BE917AE40E7A187F908C5C43D15",
-          "Name": "竖线",
-          "Start": 0,
-          "End": 4,
-          "X": 2,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "",
-          "EdgeDistanceCharacterY": "",
-          "RelativePositionMode": 0,
           "Content": "",
           "DataSource": {
             "From": 0,
@@ -481,16 +467,26 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
-          "TotalWidth": 0.0,
-          "TotalHeight": 0.0,
-          "StartPoint": {
-            "X": 0,
-            "Y": 0,
-            "IsEmpty": true
-          }
+          "EdgeDistanceCharacterX": "",
+          "EdgeDistanceCharacterY": "",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 0,
+          "Start": 0,
+          "X": 2,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "8E3C8BE917AE40E7A187F908C5C43D15",
+          "Name": "竖线"
         }
       ],
       "ConnectionModes": [
@@ -501,46 +497,26 @@
           ],
           "RowHeightPercent": null,
           "RowHeightMinFontPercent": 30.0,
-          "IsChecked": true,
-          "ID": "C5A03824E07F4771B859E7EB14B01CFC",
-          "Name": "组合:右侧第一行\r\n右侧第二行",
-          "Start": 0,
-          "End": 4,
-          "X": 2,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "23",
-          "EdgeDistanceCharacterY": "AA",
-          "RelativePositionMode": 1,
-          "Content": "",
-          "DataSource": {
-            "From": 0,
-            "Exifs": null
-          },
-          "ImagePath": null,
-          "ContentType": 1,
-          "ImagePercentOfRange": 0,
-          "LinePercentOfRange": 0,
-          "LinePixel": 0,
-          "FontFamily": "微软雅黑",
-          "IsBold": false,
-          "FontSize": 30,
-          "Color": "#000000",
-          "DateFormat": [
-            ".",
-            ".",
-            ":",
-            ":"
-          ],
-          "FontXS": 1.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
             "X": 0,
             "Y": 0,
             "IsEmpty": true
-          }
+          },
+          "EdgeDistanceCharacterX": "23",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 2,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "C5A03824E07F4771B859E7EB14B01CFC",
+          "Name": "组合:右侧第一行\r\n右侧第二行"
         },
         {
           "Ids": [
@@ -548,46 +524,26 @@
           ],
           "RowHeightPercent": null,
           "RowHeightMinFontPercent": null,
-          "IsChecked": true,
-          "ID": "F2E52FB0B309460CA0DDF71AF758E21E",
-          "Name": "组合:",
-          "Start": 0,
-          "End": 4,
-          "X": 2,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "a",
-          "EdgeDistanceCharacterY": "a",
-          "RelativePositionMode": 0,
-          "Content": "",
-          "DataSource": {
-            "From": 0,
-            "Exifs": null
-          },
-          "ImagePath": null,
-          "ContentType": 1,
-          "ImagePercentOfRange": 0,
-          "LinePercentOfRange": 0,
-          "LinePixel": 2,
-          "FontFamily": "微软雅黑",
-          "IsBold": false,
-          "FontSize": 30,
-          "Color": "#000000",
-          "DateFormat": [
-            ".",
-            ".",
-            ":",
-            ":"
-          ],
-          "FontXS": 1.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
             "X": 0,
             "Y": 0,
             "IsEmpty": true
-          }
+          },
+          "EdgeDistanceCharacterX": "a",
+          "EdgeDistanceCharacterY": "a",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 0,
+          "Start": 0,
+          "X": 2,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "F2E52FB0B309460CA0DDF71AF758E21E",
+          "Name": "组合:"
         },
         {
           "Ids": [
@@ -595,46 +551,26 @@
           ],
           "RowHeightPercent": null,
           "RowHeightMinFontPercent": 30.0,
-          "IsChecked": true,
-          "ID": "5013C13B44BC49E1B5A40D342E1D4569",
-          "Name": "组合:",
-          "Start": 0,
-          "End": 4,
-          "X": 2,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "a",
-          "EdgeDistanceCharacterY": "AA",
-          "RelativePositionMode": 0,
-          "Content": "",
-          "DataSource": {
-            "From": 0,
-            "Exifs": null
-          },
-          "ImagePath": null,
-          "ContentType": 1,
-          "ImagePercentOfRange": 0,
-          "LinePercentOfRange": 0,
-          "LinePixel": 0,
-          "FontFamily": "微软雅黑",
-          "IsBold": false,
-          "FontSize": 30,
-          "Color": "#000000",
-          "DateFormat": [
-            ".",
-            ".",
-            ":",
-            ":"
-          ],
-          "FontXS": 1.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
             "X": 0,
             "Y": 0,
             "IsEmpty": true
-          }
+          },
+          "EdgeDistanceCharacterX": "a",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 0,
+          "Start": 0,
+          "X": 2,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "5013C13B44BC49E1B5A40D342E1D4569",
+          "Name": "组合:"
         },
         {
           "Ids": [
@@ -643,53 +579,33 @@
           ],
           "RowHeightPercent": null,
           "RowHeightMinFontPercent": 30.0,
-          "IsChecked": true,
-          "ID": "38D8A01FE46041D1B6B55D9498B74B47",
-          "Name": "组合:左侧第一行\r\n左侧第二行",
-          "Start": 0,
-          "End": 4,
-          "X": 0,
-          "Y": 4,
-          "EdgeDistanceType": 1,
-          "EdgeDistancePercent": 0,
-          "EdgeDistanceCharacterX": "aaa",
-          "EdgeDistanceCharacterY": "AA",
-          "RelativePositionMode": 1,
-          "Content": "",
-          "DataSource": {
-            "From": 0,
-            "Exifs": null
-          },
-          "ImagePath": null,
-          "ContentType": 1,
-          "ImagePercentOfRange": 0,
-          "LinePercentOfRange": 0,
-          "LinePixel": 0,
-          "FontFamily": "微软雅黑",
-          "IsBold": false,
-          "FontSize": 30,
-          "Color": "#000000",
-          "DateFormat": [
-            ".",
-            ".",
-            ":",
-            ":"
-          ],
-          "FontXS": 1.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
             "X": 0,
             "Y": 0,
             "IsEmpty": true
-          }
+          },
+          "EdgeDistanceCharacterX": "aaa",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 0,
+          "Y": 4,
+          "IsChecked": true,
+          "ID": "38D8A01FE46041D1B6B55D9498B74B47",
+          "Name": "组合:左侧第一行\r\n左侧第二行"
         }
-      ],
-      "Meta": null
+      ]
     },
     "CustomizationComponents": [
       {
         "Property": {
+          "Name": null,
           "ID": "162FB73F00B04B8AB22905C9062284A9",
           "EnableFixedPercent": true,
           "PhotoPath": "",
@@ -704,6 +620,8 @@
           "PecentOfHeight": 80,
           "PhotoAlignment": 0,
           "BackgroundColor": "#FFFFFF",
+          "ImageBackgroud": null,
+          "Auto08": true,
           "FontFamily": null,
           "Shadow": {
             "Enabled": true,
@@ -711,19 +629,6 @@
           },
           "Properties": [
             {
-              "IsChecked": true,
-              "ID": "16782101C32B4194A4E0F8DFEBBA0728",
-              "Name": "水印图片",
-              "Start": 0,
-              "End": 4,
-              "X": 4,
-              "Y": 4,
-              "EdgeDistanceType": 1,
-              "EdgeDistancePercent": 0,
-              "EdgeDistanceFixedPixel": 0,
-              "EdgeDistanceCharacterX": "ABCD",
-              "EdgeDistanceCharacterY": "AA",
-              "RelativePositionMode": 1,
               "Content": "",
               "DataSource": {
                 "From": 0,
@@ -750,32 +655,28 @@
                 ".",
                 ".",
                 ":",
+                ":",
+                ".",
+                ".",
+                ":",
                 ":"
               ],
               "FontXS": 1.0,
-              "TotalWidth": 0.0,
-              "TotalHeight": 0.0,
-              "StartPoint": {
-                "X": 0,
-                "Y": 0,
-                "IsEmpty": true
-              },
-              "Visibility": 2
-            },
-            {
-              "IsChecked": true,
-              "ID": "7E4A1DCCAA194B9E896C9B196B408886",
-              "Name": "第二行文字",
-              "Start": 0,
-              "End": 4,
-              "X": 4,
-              "Y": 4,
-              "EdgeDistanceType": 1,
-              "EdgeDistancePercent": 0,
-              "EdgeDistanceFixedPixel": 0,
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
               "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 4,
+              "IsChecked": true,
+              "ID": "16782101C32B4194A4E0F8DFEBBA0728",
+              "Name": "水印图片"
+            },
+            {
               "Content": "",
               "DataSource": {
                 "From": 0,
@@ -841,32 +742,28 @@
                 ".",
                 ".",
                 ":",
+                ":",
+                ".",
+                ".",
+                ":",
                 ":"
               ],
               "FontXS": 1.0,
-              "TotalWidth": 0.0,
-              "TotalHeight": 0.0,
-              "StartPoint": {
-                "X": 0,
-                "Y": 0,
-                "IsEmpty": true
-              },
-              "Visibility": 0
-            },
-            {
-              "IsChecked": false,
-              "ID": "6C250CAD774541BCA19267EF275CF837",
-              "Name": "第三行文字",
-              "Start": 0,
-              "End": 4,
-              "X": 4,
-              "Y": 4,
-              "EdgeDistanceType": 1,
-              "EdgeDistancePercent": 0,
-              "EdgeDistanceFixedPixel": 0,
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
               "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 4,
+              "IsChecked": true,
+              "ID": "7E4A1DCCAA194B9E896C9B196B408886",
+              "Name": "第二行文字"
+            },
+            {
               "Content": "",
               "DataSource": {
                 "From": 0,
@@ -897,17 +794,26 @@
                 ".",
                 ".",
                 ":",
+                ":",
+                ".",
+                ".",
+                ":",
                 ":"
               ],
               "FontXS": 1.0,
-              "TotalWidth": 0.0,
-              "TotalHeight": 0.0,
-              "StartPoint": {
-                "X": 0,
-                "Y": 0,
-                "IsEmpty": true
-              },
-              "Visibility": 0
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "AA",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
+              "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 4,
+              "IsChecked": false,
+              "ID": "6C250CAD774541BCA19267EF275CF837",
+              "Name": "第三行文字"
             }
           ],
           "ConnectionModes": [
@@ -919,39 +825,6 @@
               ],
               "RowHeightPercent": null,
               "RowHeightMinFontPercent": 10.0,
-              "IsChecked": true,
-              "ID": "55535B023D064DC985B0431B8BFC4DA7",
-              "Name": "组合:水印图片\r\n右侧第一行\r\n右侧第二行",
-              "Start": 0,
-              "End": 4,
-              "X": 4,
-              "Y": 4,
-              "EdgeDistanceType": 2,
-              "EdgeDistancePercent": 0,
-              "EdgeDistanceFixedPixel": 20,
-              "EdgeDistanceCharacterX": "....",
-              "EdgeDistanceCharacterY": ".",
-              "RelativePositionMode": 1,
-              "Content": "",
-              "DataSource": {
-                "From": 0,
-                "Exifs": null
-              },
-              "ImagePath": {
-                "Path": null,
-                "IsCloud": false,
-                "IsLogo": false
-              },
-              "ContentType": 1,
-              "ImagePercentOfRange": 0,
-              "LinePercentOfRange": 0,
-              "LinePixel": 0,
-              "FontFamily": "微软雅黑",
-              "IsBold": false,
-              "FontSize": 30,
-              "Color": "#000000",
-              "DateFormat": [],
-              "FontXS": 1.0,
               "TotalWidth": 630.0,
               "TotalHeight": 152.8,
               "StartPoint": {
@@ -959,15 +832,27 @@
                 "Y": 1350,
                 "IsEmpty": false
               },
-              "Visibility": 0
+              "EdgeDistanceCharacterX": "....",
+              "EdgeDistanceCharacterY": ".",
+              "EdgeDistanceFixedPixel": 20,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 2,
+              "End": 4,
+              "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 4,
+              "IsChecked": true,
+              "ID": "55535B023D064DC985B0431B8BFC4DA7",
+              "Name": "组合:水印图片\r\n右侧第一行\r\n右侧第二行"
             }
-          ],
-          "Meta": null
+          ]
         },
         "Name": "悬浮边框"
       },
       {
         "Property": {
+          "Name": null,
           "ID": "2C7AB4A32A3947499B512D0C12FFFA88",
           "EnableFixedPercent": true,
           "PhotoPath": "",
@@ -996,8 +881,7 @@
             "Width": 200
           },
           "Properties": [],
-          "ConnectionModes": [],
-          "Meta": null
+          "ConnectionModes": []
         },
         "Name": "Ancientry"
       }

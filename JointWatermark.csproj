@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <Compile Remove="Class\CreateImage.cs" />
-    <Compile Remove="Class\ExifInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>

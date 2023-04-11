@@ -3,7 +3,6 @@ using JointWatermark.Enums;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,17 +10,17 @@ using System.Windows.Controls;
 namespace JointWatermark.Views
 {
     /// <summary>
-    /// WatermarkRowConfig.xaml 的交互逻辑
+    /// WatermarkConnectionConfig.xaml 的交互逻辑
     /// </summary>
-    public partial class WatermarkRowConfig : Window
+    public partial class WatermarkConnectionConfig : Window
     {
-        WatermarkRowConfigVM vm;
-        public GeneralWatermarkRowProperty row { get; set; }
-        public WatermarkRowConfig(GeneralWatermarkRowProperty _row)
+        WatermarkConnectionConfigVM vm;
+        public ConnectionMode row { get; set; }
+        public WatermarkConnectionConfig(ConnectionMode _row)
         {
             InitializeComponent();
             row = _row;
-            vm = new WatermarkRowConfigVM(this);
+            vm = new WatermarkConnectionConfigVM(this);
             DataContext = vm;
         }
 
@@ -60,6 +59,9 @@ namespace JointWatermark.Views
             this.DialogResult = true;
         }
 
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+        }
 
         private void fontlist_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -71,21 +73,16 @@ namespace JointWatermark.Views
 
         private void togle1_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out System.Windows.Media.Color color, ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
-            if (dialog == true)
-            {
-                System.Drawing.Color _c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
-                vm.FontColor = ColorTranslator.ToHtml(_c);
-            }
+
         }
     }
 
-    public class WatermarkRowConfigVM : ValidationBase
+    public class WatermarkConnectionConfigVM : ValidationBase
     {
-        WatermarkRowConfig? window;
-        public WatermarkRowConfigVM(Window _window)
+        WatermarkConnectionConfig? window;
+        public WatermarkConnectionConfigVM(Window _window)
         {
-            window = _window as WatermarkRowConfig;
+            window = _window as WatermarkConnectionConfig;
             var model = Global.InitConfig();
             ExifInfoList = new ObservableCollection<ExifInfo>(model.Exifs);
             InitData();
@@ -206,34 +203,15 @@ namespace JointWatermark.Views
 
         private void InitData()
         {
-            FontColor = window.row.Color;
-            FontZoom = window.row.FontXS;
-            FontFamily = window.row.FontFamily;
-            IsBold = window.row.IsBold;
+            RowHeight = (int)(window.row.RowHeightMinFontPercent ?? 100);
             window.edgeComputeMode.SelectedIndex = window.row.EdgeDistanceType == EdgeDistanceType.Character ? 0 : 1;
             EdgeWidth = window.row.EdgeDistanceType == EdgeDistanceType.Character ? window.row.EdgeDistanceCharacterX : window.row.EdgeDistancePercent + "";
-            var fontList = Global.InitFontList();
-            window.fontlist.ItemsSource = fontList;
-            window.yearMon.Text = window.row.DateFormat[0];
-            window.monDay.Text = window.row.DateFormat[1];
-            window.hourMin.Text = window.row.DateFormat[2];
-            window.minSec.Text = window.row.DateFormat[3];
-            if(window.row.DataSource != null && window.row.DataSource.Exifs != null)
-            Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
         }
 
         public void SaveConfig()
         {
-            window.row.DataSource = new WatermarkDataSource
-            {
-                From = DataSourceFrom.Exif,
-                Exifs = Config.ToList(),
-            };
-            window.row.Color = FontColor;
-            window.row.DateFormat = new List<string> { window.yearMon.Text, window.monDay.Text, window.hourMin.Text, window.minSec.Text };
-            window.row.FontXS = FontZoom;
-            window.row.FontFamily = FontFamily;
-            window.row.IsBold = IsBold;
+            window.row.RowHeightMinFontPercent = RowHeight;
+            
             if (window.edgeComputeMode.SelectedIndex == 0)
             {
                 window.row.EdgeDistanceType = EdgeDistanceType.Character;

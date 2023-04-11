@@ -1,5 +1,5 @@
 ﻿using JointWatermark.Class;
-using JointWatermark.Views;
+using JointWatermark.Enums;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
@@ -337,6 +337,8 @@ namespace JointWatermark
             return image;
         }
 
+        public delegate void RefreshLogoDel();
+        public static RefreshLogoDel RefreshLogoAction { get; set; }
 
 
     }

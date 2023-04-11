@@ -1,4 +1,5 @@
 ﻿using JointWatermark.Class;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -52,7 +53,7 @@ namespace JointWatermark.Views
             {
                 isCheckedAll = value;
                 NotifyPropertyChanged(nameof(IsCheckedAll));
-                foreach(var image in Images) 
+                foreach (var image in Images)
                 {
                     image.IsChecked = value;
                 }
@@ -61,7 +62,7 @@ namespace JointWatermark.Views
 
 
 
-        
+
 
         public SimpleCommand CmdClickItem => new SimpleCommand()
         {
@@ -73,7 +74,8 @@ namespace JointWatermark.Views
                     item.IsChecked = !item.IsChecked;
                 }
             },
-            CanExecuteDelegate= o => true
+            CanExecuteDelegate = o => true
         };
     }
+
 }

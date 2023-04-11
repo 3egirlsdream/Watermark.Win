@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static JointWatermark.Global;
 
 namespace JointWatermark.Views
 {
@@ -43,7 +44,9 @@ namespace JointWatermark.Views
         {
             this.page = page;
             InitLogoes();
+            Global.RefreshLogoAction += InitLogoes;
         }
+
         private ObservableCollection<string> iconList = new();
         public ObservableCollection<string> IconList
         {
@@ -54,7 +57,6 @@ namespace JointWatermark.Views
                 NotifyPropertyChanged(nameof(IconList));
             }
         }
-
 
         public void InitLogoes()
         {

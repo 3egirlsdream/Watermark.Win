@@ -83,6 +83,7 @@ namespace JointWatermark
                     }
                 }
                 main.InitLogoes();
+                Global.RefreshLogoAction?.Invoke();
             }
         }
 

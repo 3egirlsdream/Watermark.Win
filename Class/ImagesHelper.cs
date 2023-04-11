@@ -31,6 +31,7 @@ using System.Threading;
 using JointWatermark.Views;
 using System.Reflection;
 using SixLabors.ImageSharp.Processing.Processors;
+using JointWatermark.Enums;
 
 namespace JointWatermark.Class
 {
@@ -764,7 +765,7 @@ namespace JointWatermark.Class
                 var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault(c=>c.ContentType == ContentType.Text);
                 if (minFontSizeRow != null)
                 {
-                    var fONT = GetFont(row.FontFamily, row.IsBold, row.FontSize * fontxs);
+                    var fONT = GetFont(minFontSizeRow.FontFamily, minFontSizeRow.IsBold, minFontSizeRow.FontSize * fontxs);
                     var cnt = Global.GetContent(minFontSizeRow, image.Meta);
                     rowHeight = TextMeasurer.Measure(cnt, new SixLabors.Fonts.TextOptions(fONT)).Height * row.RowHeightMinFontPercent.Value / 100;
                 }
@@ -792,11 +793,17 @@ namespace JointWatermark.Class
             }
             double xW = 0, yW = 0;
 
+            //计算整体宽度，按最长的文字行计算
+            var longestRow = group.OrderByDescending(c => Global.GetContent(c, image.Meta).Length).FirstOrDefault();
+            var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBold, longestRow.FontSize * fontxs);
+            var longestContent = Global.GetContent(longestRow, image.Meta);
+            var totalWidth = TextMeasurer.Measure(longestContent, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
+
             //计算边距
             double borderHeight, borderWidth;
-            if(row.EdgeDistanceType == EdgeDistanceType.Character)
+            if (row.EdgeDistanceType == EdgeDistanceType.Character)
             {
-                var borderFont = GetFont(row.FontFamily, false, row.FontSize * fontxs);
+                var borderFont = GetFont(longestRow.FontFamily, false, longestRow.FontSize * fontxs);
                 var border = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(borderFont));
                 borderHeight = border.Height * row.EdgeDistanceCharacterY.Length;
                 borderWidth = border.Width;
@@ -806,12 +813,7 @@ namespace JointWatermark.Class
                 borderHeight = row.EdgeDistanceFixedPixel * fontxs;
                 borderWidth = row.EdgeDistanceFixedPixel * fontxs;
             }
-
-            //计算整体宽度，按最长的文字行计算
-            var longestRow = group.OrderByDescending(c => Global.GetContent(c, image.Meta).Length).FirstOrDefault();
-            var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBold, longestRow.FontSize * fontxs);
-            var longestContent = Global.GetContent(longestRow, image.Meta);
-            var totalWidth = TextMeasurer.Measure(longestContent, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
+            //计算整体宽高
             if (group.All(c => c.ContentType == ContentType.Image))
             {
                 var g = group[0];
@@ -931,7 +933,7 @@ namespace JointWatermark.Class
             , int resultHeight
             , Image<Rgba32> img
             , SixLabors.ImageSharp.Point start
-            , GeneralWatermarkRowProperty row
+            , WatermarkProperty row
             , ref double xW
             , ref double yW
             , double borderHeight

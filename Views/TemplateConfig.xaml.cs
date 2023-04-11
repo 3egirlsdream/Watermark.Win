@@ -1,4 +1,5 @@
 ﻿using JointWatermark.Class;
+using JointWatermark.Enums;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -239,14 +240,7 @@ namespace JointWatermark.Views
             EnabledShadow = window.property.Shadow.Enabled;
             window.logoPage.GetPath = new Action<Photo>((photo) =>
             {
-                window.property.Properties.ForEach(c =>
-                {
-                    if(c.ImagePath != null && c.ImagePath.IsLogo) 
-                    {
-                        c.ImagePath.Path = photo.Path;
-                        c.ImagePath.IsCloud = photo.IsCloud;
-                    }
-                });
+                window.property.Properties[2].ImagePath = photo;
                 window.parent.vm.RefreshSelectedImage(window.property);
             });
             BackgroundColor = window.property.BackgroundColor;
@@ -272,11 +266,11 @@ namespace JointWatermark.Views
 
         public SimpleCommand CmdOpenGroupConfig => new SimpleCommand()
         {
-            ExecuteDelegate=x =>
+            ExecuteDelegate =x =>
             {
                 var row = ConnectionItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;
-                var page = new WatermarkRowConfig(row);
+                var page = new WatermarkConnectionConfig(row);
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 page.ShowDialog();
             },
@@ -304,11 +298,9 @@ namespace JointWatermark.Views
                     var component = new CustomizationComponent();
                     component.Name = win.Data;
                     component.Property = window.property;
-                    component.Property.Meta = null;
                     var model = Global.InitConfig();
                     if (model.Templates == null) model.Templates = new WatermarkTemplates();
                     if(model.Templates.CustomizationComponents == null)  model.Templates.CustomizationComponents = new List<CustomizationComponent>() { component };
-                    else model.Templates.CustomizationComponents.Add(component);
                     Global.SaveConfig(JsonConvert.SerializeObject(model));
                     window.parent.InitTemplates();
                 }
