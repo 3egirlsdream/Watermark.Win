@@ -2,11 +2,15 @@
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using WeakToys.Class;
 
@@ -40,12 +44,12 @@ namespace JointWatermark
                 {
                     check.Badge = new PackIcon() { Kind = PackIconKind.Update };
                     newVersion.Visibility = Visibility.Visible;
-                    //newVersion.Content = $"有新版本V{version.data.VERSION}点击下载";
+                    Latest.Text = $"有新版本V{version.data.VERSION}点击下载";
                 }
                 else
                 {
                     check.Badge = "";
-                    checkUpdateBtn.Content = "已是最新";
+                    Latest.Text = "已是最新";
                     newVersion.Visibility = Visibility.Collapsed;
                 }
             }
@@ -117,7 +121,7 @@ namespace JointWatermark
 
         private void WindowMininizeClick(object sender, RoutedEventArgs e)
         {
-            this.Visibility = Visibility.Hidden;
+            this.Close();
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
@@ -134,6 +138,22 @@ namespace JointWatermark
                 }
             }
         }
+
+        private void ListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if(sender is ListBox box)
+            {
+                if (box.SelectedIndex == 0)
+                {
+                    t1?.Focus();
+                }
+                else if (box.SelectedIndex == 1)
+                {
+                    t2?.Focus();
+                }
+            }
+        }
+
     }
 
     public class CheckUpdateVM : INotifyPropertyChanged
@@ -142,6 +162,7 @@ namespace JointWatermark
         public CheckUpdateVM()
         {
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            InitFontsList();
         }
 
 
@@ -189,13 +210,46 @@ namespace JointWatermark
                 NotifyPropertyChanged(nameof(DownLoadProgress));
             }
         }
-        
+
+
+        private ObservableCollection<CloudFont> fontsList;
+        public ObservableCollection<CloudFont> FontsList
+        {
+            get => fontsList;
+            set
+            {
+                fontsList = value;
+                NotifyPropertyChanged(nameof(FontsList));
+            }
+        }
 
 
         public event PropertyChangedEventHandler? PropertyChanged = null;
         protected virtual void NotifyPropertyChanged(string propertyName)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private async void InitFontsList()
+        {
+            var version = await Connections.HttpGetAsync<ObservableCollection<CloudFont>>(Global.Http + "/api/CloudSync/GetFontsList", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.Count > 0)
+            {
+                FontsList = version.data;
+                var path = Global.BasePath + Global.SeparatorChar + "fonts";
+                if (Directory.Exists(path))
+                {
+                    var files = new DirectoryInfo(path);
+                    foreach (var item in files.GetFiles())
+                    {
+                        var f = FontsList.FirstOrDefault(c => item.Name.Contains(c.NAME));
+                        if (f != null)
+                        {
+                            f.IsLoading = false;
+                        }
+                    }
+                }
+            }
         }
 
     }

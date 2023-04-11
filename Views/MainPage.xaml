@@ -93,7 +93,7 @@
 
                         </Grid>
                     </TabItem>
-                    <TabItem>
+                    <TabItem Visibility="Collapsed">
                         <TabItem.Header>
                             <StackPanel Width="auto" Height="auto">
                                 <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="Watermark" />

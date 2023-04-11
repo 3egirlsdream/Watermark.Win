@@ -10,7 +10,7 @@
         AllowsTransparency="True"
         WindowStyle="None"
         x:Name="w"
-        Title="检查更新" Height="300" Width="400">
+        Title="检查更新" Height="500" Width="800">
     <Window.Resources>
         <Style TargetType="Border" x:Key="BorderStyle">
             <Setter Property="Background">
@@ -29,65 +29,137 @@
     <Window.Background>
         <SolidColorBrush Opacity="0.5" Color="Transparent"/>
     </Window.Background>
-    <Border Style="{StaticResource BorderStyle}" Margin="10">
+    <Border Style="{StaticResource BorderStyle}" Margin="10" MouseLeftButtonDown="MoveWindow">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" MaxWidth="200"/>
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
+            <Border Grid.RowSpan="2" Background="#f6f6f6" Panel.ZIndex="2" Padding="10 20">
 
-            <Border Background="#e8e8e8" CornerRadius="0" MouseLeftButtonDown="MoveWindow" Grid.ColumnSpan="2">
                 <Border.Clip>
                     <RectangleGeometry RadiusX="5" RadiusY="5"  
-                                       Rect="0,0,380,40" />
+                                       Rect="0,0,780,480" />
                 </Border.Clip>
-                <Grid>
-                    <TextBlock Text="{Binding ElementName=w, Path=Title}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10 0" />
-                    <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="0 0" Click="TabItem_GotFocus">
-                        <materialDesign:PackIcon Kind="WindowClose" />
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right" Margin="35 0" Click="WindowMininizeClick" ToolTip="最小化后台下载">
-                        <materialDesign:PackIcon Kind="Minimize" />
-                    </Button>
-                </Grid>
+                <StackPanel>
+                    <Label Content="选项" FontSize="12" Grid.Row="0" Panel.ZIndex="2" VerticalAlignment="Bottom" Margin="10 0" FontWeight="ExtraBold" Foreground="#acacac"/>
+                    <ListBox SelectedIndex="0" SelectionChanged="ListBox_SelectionChanged" HorizontalContentAlignment="Stretch" Style="{StaticResource MaterialDesignNavigationPrimaryListBox}">
+                        <TextBlock Text="关于" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
+                        <TextBlock Text="字体" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
+                    </ListBox>
+                </StackPanel>
+                
             </Border>
+            <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right"  Grid.ColumnSpan="2" Click="WindowMininizeClick" Panel.ZIndex="2">
+                <materialDesign:PackIcon Kind="WindowClose" Height="15" Width="15"/>
+            </Button>
 
-            <TextBlock FontSize="14" FontFamily="微软雅黑" Margin="0 20" HorizontalAlignment="Right" Grid.Row="1">
-                                     <Run Text="版本信息   "/>
-            </TextBlock>
+            <Border Grid.Column="1" Grid.RowSpan="2" >
+                <Border.Clip>
+                    <RectangleGeometry RadiusX="5" RadiusY="5"  
+                                       Rect="0,0,580,480" />
+                </Border.Clip>
+                <TabControl VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard" Style="{StaticResource MaterialDesignNavigationRailTabControl}" Padding="20">
+                    <TabItem Width="0" x:Name="t1">
+                        <TabItem.Header>
+                            <TextBlock/>
+                        </TabItem.Header>
+                        <Grid Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel HorizontalAlignment="Stretch" x:Name="sp">
+                                <Label Content="App" FontWeight="Bold" FontSize="14"/>
+                                <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
 
-            <Grid  Margin="0 20" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition Height="auto"/>
-                </Grid.RowDefinitions>
-                <TextBlock x:Name="version" Grid.Row="0" HorizontalAlignment="Center" FontSize="14" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <materialDesign:Badged x:Name="check" Grid.Row="1" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand"/>
-                </materialDesign:Badged>
-                <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" Margin="10 0" Height="35" Width="35"
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock HorizontalAlignment="Left" Grid.Row="1" FontSize="17">
+                                     <Run Text="当前版本：v"/>
+                                    </TextBlock>
+                                    <TextBlock x:Name="version" Grid.Row="0" HorizontalAlignment="Center" FontSize="17" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <TextBlock x:Name="Latest" Text="你使用的是最新版本!" Foreground="Gray"/>
+
+                                <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" Margin="0 8" Height="35" Width="35"
                                           Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}"
                                           materialDesign:ButtonProgressAssist.Value="{Binding DownLoadProgress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding DownloadLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           materialDesign:ButtonProgressAssist.IndicatorForeground="#e65100"
                                           Click="newVersionClick"
                                           ToolTip="点击下载"
-                                          HorizontalAlignment="Center" >
-                    <materialDesign:PackIcon Kind="Download"/>
-                </Button>
-                <materialDesign:Badged Grid.Row="2" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Center" Margin="0 5">
-                    <Button Content="自动更新" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Click="Button_Click"/>
-                </materialDesign:Badged>
-            </Grid>
+                                          HorizontalAlignment="Left" >
+                                    <materialDesign:PackIcon Kind="Download"/>
+                                </Button>
+                                <materialDesign:Badged x:Name="check" BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Margin="0 -45 0 0"/>
+                                </materialDesign:Badged>
+                                <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
+                                <TextBlock Text="自动更新" FontSize="17"/>
+                                <TextBlock Text="点击自动开始更新程序" Foreground="Gray" Margin="0 8"/>
+                                <materialDesign:Badged BadgeColorZoneMode="SecondaryMid" HorizontalAlignment="Right" Margin="0 -40 0 0">
+                                    <Button Content="自动更新" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Click="Button_Click"/>
+                                </materialDesign:Badged>
+                                <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Width="0" x:Name="t2" >
+                        <TabItem.Header>
+                            <TextBlock/>
+                        </TabItem.Header>
+                        <StackPanel HorizontalAlignment="Stretch">
+                            <Label Content="下载字体" FontSize="14"/>
+                            <ListBox AllowDrop="True" HorizontalContentAlignment="Stretch" ItemsSource="{Binding FontsList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Background="Transparent">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="40"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Label Grid.Column="0" Content="{Binding NAME, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Command="{Binding DataContext.CmdDownloadFont, RelativeSource={ RelativeSource AncestorType=Page}}" CommandParameter="{Binding ID}" materialDesign:ButtonProgressAssist.IsIndicatorVisible="True" Height="30" Width="30"
+                                                          materialDesign:ButtonProgressAssist.Value="{Binding Progress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Content="{materialDesign:PackIcon Kind=Download}"
+                                                          IsEnabled="{Binding IsLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" />
+                                        </Grid>
+
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
+                            <Label Content="导入字体" FontSize="14"/>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Label HorizontalAlignment="Left" Content="普通字体" FontSize="12" Foreground="Gray"/>
+                                <TextBox Width="200" HorizontalAlignment="Right" Margin="50 0" IsReadOnly="True"/>
+                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right" Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" materialDesign:ElevationAssist.Elevation="Dp0">
+                                    <materialDesign:PackIcon Kind="Import" Height="20" Width="20"/>
+                                </Button>
+                            </Grid>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Label HorizontalAlignment="Left" Content="粗体" FontSize="12" Foreground="Gray"/>
+                                <TextBox Width="200" Margin="50 0" HorizontalAlignment="Right" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="-Bold" IsReadOnly="True"/>
+                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right" Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" materialDesign:ElevationAssist.Elevation="Dp0">
+                                    <materialDesign:PackIcon Kind="Import" Height="20" Width="20"/>
+                                </Button>
+                            </Grid>
+                            <Button Content="保存" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" HorizontalAlignment="Left"/>
+                            <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
+                        </StackPanel>
+                        
+                    </TabItem>
+                </TabControl>
+              
+
+            </Border>
+           
         </Grid>
     </Border>
 </Window>

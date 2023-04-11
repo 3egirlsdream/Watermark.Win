@@ -89,22 +89,30 @@ namespace JointWatermark.Class
                     resultImage.Mutate(x => x.DrawImage(img, border, 1));
                     border.Y += img.Height;
                     resultImage.Mutate(x => x.DrawImage(t.Result, border, 1));
-
-                    //缩图
-                    var ros = Global.Resolution == "1080" ? 1080 : 2160;
-                    if (Global.Resolution != "default" && resultImage.Width > ros && resultImage.Height > ros)
-                    {
-                        int minSide = Math.Min(resultImage.Width, resultImage.Height);
-                        decimal resolition = (decimal)minSide / ros;
-                        var w = resultImage.Width < resultImage.Height ? ros : (int)(resultImage.Width / resolition);
-                        var h = resultImage.Height < resultImage.Width ? ros : (int)(resultImage.Height / resolition);
-                        resultImage.Mutate(x => x.Resize(w, h));
-                    }
+                    ScalePicture(resultImage);
 
                     t.Result.Dispose();
                     return resultImage;
                 }
             });
+        }
+
+        /// <summary>
+        /// 缩图
+        /// </summary>
+        /// <param name="resultImage"></param>
+        private static void ScalePicture(Image resultImage)
+        {
+            //缩图
+            var ros = Global.Resolution == "1080" ? 1080 : 2160;
+            if (Global.Resolution != "default" && resultImage.Width > ros && resultImage.Height > ros)
+            {
+                int minSide = Math.Min(resultImage.Width, resultImage.Height);
+                decimal resolition = (decimal)minSide / ros;
+                var w = resultImage.Width < resultImage.Height ? ros : (int)(resultImage.Width / resolition);
+                var h = resultImage.Height < resultImage.Width ? ros : (int)(resultImage.Height / resolition);
+                resultImage.Mutate(x => x.Resize(w, h));
+            }
         }
 
         private void DrawCharacterWord(ImageProperties properties, Image img, CharacterWatermarkProperty word)
@@ -741,16 +749,17 @@ namespace JointWatermark.Class
                     for (var i = 0; i < ConnectionModes.Count; i++)
                     {
                         var row = ConnectionModes[i];
-                        DrawText(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
+                        DrawWatermark(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
                     }
+
+                    ScalePicture(resultImage);
+
                     return resultImage;
-                    //var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
-                    //resultImage.Save(path);
                 }
             });
         }
 
-        private void DrawText(GeneralWatermarkProperty image, int resultWidth, int resultHeight, Image<Rgba32> img, Image<Rgba32> resultImage, SixLabors.ImageSharp.Point start, double fontxs, ConnectionMode row, int index)
+        private void DrawWatermark(GeneralWatermarkProperty image, int resultWidth, int resultHeight, Image<Rgba32> img, Image<Rgba32> resultImage, SixLabors.ImageSharp.Point start, double fontxs, ConnectionMode row, int index)
         {
             //取出水印组合
             var group = image.Properties.Where(c => row.Ids.Any(x => x == c.ID) && c.IsChecked).ToList();
