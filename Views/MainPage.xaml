@@ -6,7 +6,7 @@
       xmlns:local="clr-namespace:JointWatermark"
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:views="clr-namespace:JointWatermark.Views"
       mc:Ignorable="d" 
-      d:DesignHeight="570" d:DesignWidth="890"
+      d:DesignHeight="850" d:DesignWidth="1200"
       Title="MainPage">
     <Page.Resources>
         <Style TargetType="Border" x:Key="BorderStyle">
@@ -40,10 +40,56 @@
                             </StackPanel>
                         </TabItem.Header>
                         <StackPanel>
-                            <Button Content="水印边框" Margin="10 5" Click="OpenTemplateConfigClick" Tag="PhotoFrame"/>
-                            <StackPanel x:Name="templateList">
-                                
-                            </StackPanel>
+                            <Border Style="{StaticResource BorderStyle}" Height="150" Margin="30 10">
+                                <StackPanel HorizontalAlignment="Stretch">
+                                    <Grid Height="20">
+                                        <TextBlock Text="水印边框" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
+                                    </Grid>
+                                    <Grid Height="110">
+
+                                    </Grid>
+                                    <Grid Height="20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="1"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                        <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding CmdOpenTemplateConfig}" CommandParameter="PhotoFrame"/>
+                                        <GridSplitter Grid.Column="1" Width="1" Height="20"/>
+                                        <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <ListBox x:Name="templateList" HorizontalAlignment="Stretch"  HorizontalContentAlignment="Stretch">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource BorderStyle}" Height="150" Margin="20 2">
+                                            <StackPanel HorizontalAlignment="Stretch">
+                                                <Grid Height="20">
+                                                    <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
+                                                </Grid>
+                                                <Grid Height="110">
+                                                    <Image Source="../Resources/yaofan.jpg" HorizontalAlignment="Stretch" Stretch="Fill"/>
+                                                </Grid>
+                                                <Grid Height="20">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                                    <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding DataContext.CmdOpenTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" Tag="{Binding Name}" CommandParameter="{Binding Name}"/>
+                                                    <GridSplitter Grid.Column="1" Width="1" Height="20"/>
+                                                    <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </StackPanel>
                     </TabItem>
                     <TabItem Name="tabImg">
