@@ -25,7 +25,7 @@
     </Page.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MaxWidth="350"/>
+            <ColumnDefinition Width="*" MaxWidth="350" MinWidth="300"/>
             <ColumnDefinition Width="2.5*"/>
             <ColumnDefinition Width="auto" MaxWidth="300"/>
         </Grid.ColumnDefinitions>
@@ -40,14 +40,14 @@
                             </StackPanel>
                         </TabItem.Header>
                         <StackPanel>
-                            <Border Style="{StaticResource BorderStyle}" Height="150" Margin="30 10">
+                            <Border Style="{StaticResource BorderStyle}" Height="160" Margin="40 10">
                                 <StackPanel HorizontalAlignment="Stretch">
                                     <Grid Height="20">
                                         <TextBlock Text="水印边框" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
                                     </Grid>
-                                    <Grid Height="110">
-
+                                    <Grid Height="120">
+                                        <Image Source="../Resources/nm.png" HorizontalAlignment="Stretch" Stretch="Fill"/>
                                     </Grid>
                                     <Grid Height="20">
                                         <Grid.ColumnDefinitions>
@@ -65,14 +65,14 @@
                             <ListBox x:Name="templateList" HorizontalAlignment="Stretch"  HorizontalContentAlignment="Stretch">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource BorderStyle}" Height="150" Margin="20 2">
+                                        <Border Style="{StaticResource BorderStyle}" Height="160" Margin="30 2">
                                             <StackPanel HorizontalAlignment="Stretch">
                                                 <Grid Height="20">
                                                     <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
                                                 </Grid>
-                                                <Grid Height="110">
-                                                    <Image Source="../Resources/yaofan.jpg" HorizontalAlignment="Stretch" Stretch="Fill"/>
+                                                <Grid Height="120">
+                                                    <Image Source="{Binding Url}" HorizontalAlignment="Stretch" Stretch="Fill"/>
                                                 </Grid>
                                                 <Grid Height="20">
                                                     <Grid.ColumnDefinitions>

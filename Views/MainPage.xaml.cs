@@ -400,6 +400,8 @@ namespace JointWatermark
             var model = Global.InitConfig();
             if(model != null && model.Templates != null && model.Templates.CustomizationComponents != null && model.Templates.CustomizationComponents.Count > 0)
             {
+                model.Templates.CustomizationComponents[0].Url = "../Resources/gy.png";
+                model.Templates.CustomizationComponents[1].Url = "../Resources/bb.png";
                 templateList.ItemsSource =  model.Templates.CustomizationComponents;
                 //foreach (var item in model.Templates.CustomizationComponents)
                 //{

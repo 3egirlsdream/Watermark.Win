@@ -37,7 +37,10 @@
 
   <ItemGroup>
     <None Remove="Resources\back.png" />
+    <None Remove="Resources\bb.png" />
+    <None Remove="Resources\gy.png" />
     <None Remove="Resources\leica.png" />
+    <None Remove="Resources\nm.png" />
     <None Remove="Resources\qqgroup.jpg" />
     <None Remove="Resources\yaofan.jpg" />
   </ItemGroup>
@@ -60,7 +63,10 @@
 
   <ItemGroup>
     <Resource Include="Resources\back.png" />
+    <Resource Include="Resources\bb.png" />
+    <Resource Include="Resources\gy.png" />
     <Resource Include="Resources\leica.png" />
+    <Resource Include="Resources\nm.png" />
     <Resource Include="Resources\qqgroup.jpg" />
     <Resource Include="Resources\yaofan.jpg" />
   </ItemGroup>
