@@ -330,7 +330,6 @@ namespace JointWatermark
             };
             image.Properties = new List<GeneralWatermarkRowProperty>();
             image.ConnectionModes = new List<ConnectionMode>();
-            image.Auto08 = false;
             //image = Global.InitConfig().Templates?.PhotoFrame;
             //image.PhotoPath = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg";
             //image.Properties[2].ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png";
@@ -340,6 +339,7 @@ namespace JointWatermark
         public delegate void RefreshLogoDel();
         public static RefreshLogoDel RefreshLogoAction { get; set; }
 
+        public static Action<Photo> ApplyAllImages;
 
     }
 }

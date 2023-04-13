@@ -19,12 +19,18 @@
             </ListBox.Template>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <materialDesign:Card x:Name="add" Cursor="Hand" Width="55" Height="55" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                    <materialDesign:Card x:Name="add" Cursor="Hand" Width="55" Height="55" materialDesign:ShadowAssist.ShadowDepth="Depth1" Tag="{Binding}">
                         <materialDesign:Card.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.CmdSetIcon, RelativeSource={ RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"/>
                         </materialDesign:Card.InputBindings>
+                        <materialDesign:Card.ContextMenu>
+                            <ContextMenu Name="应用到全部图片">
+                                <MenuItem Header="应用到全部图片" Click="MenuItem_Click" Tag="{Binding}"/>
+                                <MenuItem Header="删除" Click="DeleteClick" Tag="{Binding}"/>
+                            </ContextMenu>
+                        </materialDesign:Card.ContextMenu>
                         <Grid>
-                            <Image Source="{Binding}" Height="40" Width="40"/>
+                            <Image Source="{Binding}" Height="40" Width="40" />
                         </Grid>
                     </materialDesign:Card>
                 </DataTemplate>

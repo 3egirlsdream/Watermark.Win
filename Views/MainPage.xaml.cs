@@ -202,7 +202,7 @@ namespace JointWatermark
                     var _i = JsonConvert.DeserializeObject<GeneralWatermarkProperty>(JsonConvert.SerializeObject(template));
                     _i.ID = Guid.NewGuid().ToString("N").ToUpper();
                     _i.Meta = Global.GetMeta(item);
-                    if(_i.Meta.TryGetValue("thumbnail", out object thumbnail))
+                    if (_i.Meta.TryGetValue("thumbnail", out object thumbnail))
                     {
                         _i.ThumbnailPath = thumbnail.ToString();
                     }
@@ -289,7 +289,7 @@ namespace JointWatermark
                 }
                 var cloudIcons = Global.InitConfig().Icons;
 
-                foreach(var icon in cloudIcons)
+                foreach (var icon in cloudIcons)
                 {
                     try
                     {
@@ -312,7 +312,7 @@ namespace JointWatermark
                         var menuDel = new MenuItem();
                         menuDel.Icon = new PackIcon() { Kind = PackIconKind.Delete };
                         menuDel.Header = "删除";
-                        menuDel.Click += (ss, es) => 
+                        menuDel.Click += (ss, es) =>
                         {
                             var model = Global.InitConfig();
                             model.Icons.Remove(icon);
@@ -337,7 +337,7 @@ namespace JointWatermark
 
         private void ListBox_SelectionChanged(object sender, RoutedEventArgs e)
         {
-            SelectPictureClick(new Button() { Tag = "watermark"}, null);
+            SelectPictureClick(new Button() { Tag = "watermark" }, null);
         }
 
 
@@ -383,11 +383,11 @@ namespace JointWatermark
             if (Directory.Exists(path))
             {
                 var files = new DirectoryInfo(path);
-                foreach(var item in files.GetFiles())
+                foreach (var item in files.GetFiles())
                 {
                     if (!item.Name.ToLower().Contains("bold"))
                     {
-                        var ls  = item.Name.Split('/').Last().Split('.')[0];
+                        var ls = item.Name.Split('/').Last().Split('.')[0];
                         fonts.Add(ls);
                     }
                 }
@@ -398,7 +398,7 @@ namespace JointWatermark
         public void InitTemplates()
         {
             var model = Global.InitConfig();
-            if(model != null && model.Templates != null && model.Templates.CustomizationComponents != null && model.Templates.CustomizationComponents.Count > 0)
+            if (model != null && model.Templates != null && model.Templates.CustomizationComponents != null && model.Templates.CustomizationComponents.Count > 0)
             {
                 model.Templates.CustomizationComponents[0].Url = "../Resources/gy.png";
                 model.Templates.CustomizationComponents[1].Url = "../Resources/bb.png";
@@ -429,11 +429,11 @@ namespace JointWatermark
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            foreach(UIElement item in canvas.Children)
+            foreach (UIElement item in canvas.Children)
             {
                 var left = Canvas.GetLeft(item);
             }
-           
+
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -480,7 +480,7 @@ namespace JointWatermark
             tmp.CaptureMouse();
             tmp.Cursor = Cursors.Hand;
         }
-   
+
 
         private void RotateImageClick(object sender, RoutedEventArgs e)
         {
@@ -627,7 +627,7 @@ namespace JointWatermark
             if (vm.SelectedImage == null) return;
             var item = new CharacterWatermarkProperty();
             vm.SelectedImage.Config.CharacterWatermarks.Add(item);
-            vm.FocusCharacterWatermarks = item; 
+            vm.FocusCharacterWatermarks = item;
         }
 
         private void DeleteCharacterWatermarksConfig(object sender, RoutedEventArgs e)
@@ -705,7 +705,7 @@ namespace JointWatermark
 
         private void OpenTemplateConfigClick(object sender, RoutedEventArgs e)
         {
-            if(sender is Button btn) 
+            if (sender is Button btn)
             {
                 CurrentTemplate = btn.Tag.ToString();
                 tabImg.Focus();
@@ -723,7 +723,7 @@ namespace JointWatermark
             }
             catch { }
         }
-       
+
     }
 
     public class MainVM : ValidationBase
@@ -733,6 +733,25 @@ namespace JointWatermark
         {
             mainPage = page as MainPage;
             InitFontsList();
+            Global.ApplyAllImages = new Action<Photo>((photo) =>
+            {
+                foreach (var property in Images)
+                {
+                    if (property != null && property.Properties != null)
+                    {
+                        property.Properties.ForEach(c =>
+                        {
+                            if (c.ImagePath != null && c.ImagePath.IsLogo)
+                            {
+                                c.ImagePath.Path = photo.Path;
+                                c.ImagePath.IsCloud = photo.IsCloud;
+                            }
+                        });
+
+                    }
+                }
+
+            });
         }
 
         private bool loading = false;
@@ -839,7 +858,7 @@ namespace JointWatermark
         private ObservableCollection<CloudFont> fontsList;
         public ObservableCollection<CloudFont> FontsList
         {
-            get=> fontsList;
+            get => fontsList;
             set
             {
                 fontsList = value;
@@ -911,7 +930,7 @@ namespace JointWatermark
         private Visibility showCharacterConfig = Visibility.Collapsed;
         public Visibility ShowCharacterConfig
         {
-            get=> showCharacterConfig;
+            get => showCharacterConfig;
             set
             {
                 showCharacterConfig = value;
@@ -925,8 +944,8 @@ namespace JointWatermark
             ExecuteDelegate = x =>
             {
                 var item = Images.FirstOrDefault(c => c.ID.Equals(x));
-                
-                if(item != null)
+
+                if (item != null)
                 {
                     if (mainPage.CurrentTemplate != "Ancientry")
                     {
@@ -972,7 +991,7 @@ namespace JointWatermark
             BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
             try
             {
-                if((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
+                if ((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
                 {
                     return;
                 }
@@ -991,7 +1010,7 @@ namespace JointWatermark
                 BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
                 mainPage.btnRotate.IsEnabled = true;
             }
-        } 
+        }
 
         public SimpleCommand CmdSaveGlobal => new()
         {
@@ -1018,7 +1037,7 @@ namespace JointWatermark
         {
             ExecuteDelegate = x =>
             {
-                if(SelectedImage != null && x is string c && !string.IsNullOrEmpty(c))
+                if (SelectedImage != null && x is string c && !string.IsNullOrEmpty(c))
                 {
                     if (c.StartsWith("http"))
                     {
@@ -1043,7 +1062,7 @@ namespace JointWatermark
             {
                 if (SelectedImage == null || SelectedImage.Config == null || SelectedImage.Config.CharacterWatermarks == null ||  SelectedImage.Config.CharacterWatermarks.Count == 0) return;
                 FocusCharacterWatermarks = SelectedImage.Config.CharacterWatermarks.FirstOrDefault(c => c.ID == x.ToString());
-                if(FocusCharacterWatermarks != null)
+                if (FocusCharacterWatermarks != null)
                 {
                     ShowCharacterConfig = Visibility.Visible;
                 }
@@ -1059,10 +1078,10 @@ namespace JointWatermark
         {
             ExecuteDelegate = x =>
             {
-                if(x is string xx && !string.IsNullOrEmpty(xx))
+                if (x is string xx && !string.IsNullOrEmpty(xx))
                 {
                     var first = FontsList.FirstOrDefault(c => c.ID == xx);
-                    if(first != null)
+                    if (first != null)
                     {
                         downloadFont(first);
                     }
@@ -1090,15 +1109,15 @@ namespace JointWatermark
                 {
                     first.IsLoading = false;
                     var path = Global.BasePath + Global.SeparatorChar + "fonts" + Global.SeparatorChar;
-                    if(!Directory.Exists(path)) 
-                    { 
+                    if (!Directory.Exists(path))
+                    {
                         Directory.CreateDirectory(path);
                     }
                     wc.DownloadProgressChanged += (ss, e) =>
                     {
                         first.Progress = e.ProgressPercentage;
                     };
-                    var n1 = first.URL.Split(new string[] {"\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                    var n1 = first.URL.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
                     var n2 = first.URL_B.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
                     await wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
                     await wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());

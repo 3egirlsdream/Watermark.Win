@@ -75,7 +75,6 @@ namespace JointWatermark.Class
 
         public ImageBackgroud ImageBackgroud { get; set; }
 
-        public bool Auto08 { get; set; } = true;
 
         /// <summary>
         /// 字体

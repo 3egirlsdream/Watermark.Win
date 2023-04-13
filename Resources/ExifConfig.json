@@ -177,7 +177,6 @@
       "PhotoAlignment": 0,
       "BackgroundColor": "#FFFFFF",
       "ImageBackgroud": null,
-      "Auto08": true,
       "FontFamily": null,
       "Shadow": {
         "Enabled": false,
@@ -496,7 +495,7 @@
             "4FADB72A5BD64BB9967C54D8B0272C0A"
           ],
           "RowHeightPercent": null,
-          "RowHeightMinFontPercent": 30.0,
+          "RowHeightMinFontPercent": 10.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
@@ -578,7 +577,7 @@
             "B2BA4B9C43FB4517ACCA2C86A3688E15"
           ],
           "RowHeightPercent": null,
-          "RowHeightMinFontPercent": 30.0,
+          "RowHeightMinFontPercent": 10.0,
           "TotalWidth": 0.0,
           "TotalHeight": 0.0,
           "StartPoint": {
@@ -621,7 +620,6 @@
           "PhotoAlignment": 0,
           "BackgroundColor": "#FFFFFF",
           "ImageBackgroud": null,
-          "Auto08": true,
           "FontFamily": null,
           "Shadow": {
             "Enabled": true,
@@ -874,7 +872,6 @@
             "Left": null,
             "Right": null
           },
-          "Auto08": false,
           "FontFamily": null,
           "Shadow": {
             "Enabled": false,

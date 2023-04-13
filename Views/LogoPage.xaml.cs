@@ -35,6 +35,39 @@ namespace JointWatermark.Views
             vm = new LogoPageVM(this);
             DataContext = vm;
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi && mi.Tag is string c && !string.IsNullOrEmpty(c))
+            {
+                var photo = new Photo();
+                if (c.StartsWith("http"))
+                {
+                    photo.IsCloud = true;
+                    photo.Path = c;
+                }
+                else
+                {
+                    photo.Path = c.Substring(c.LastIndexOf(Global.SeparatorChar) + 1);
+                    photo.IsCloud = false;
+                }
+                Global.ApplyAllImages?.Invoke(photo);
+                GetPath?.Invoke(photo);
+            }
+        }
+
+        private void DeleteClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi && mi.Tag is string c && c.StartsWith("http"))
+            {
+                var model = Global.InitConfig();
+                model.Icons.Remove(c);
+                var js = JsonConvert.SerializeObject(model);
+                Global.SaveConfig(js);
+                vm.InitLogoes();
+
+            }
+        }
     }
 
     public class LogoPageVM : ValidationBase
@@ -100,7 +133,9 @@ namespace JointWatermark.Views
                             Global.SaveConfig(js);
                             InitLogoes();
                         };
-
+                        var cm = new ContextMenu();
+                        cm.Items.Add(menuDel);
+                        img.ContextMenu = cm;
                         IconList.Add(icon);
                     }
                     catch (Exception ex)
@@ -136,5 +171,6 @@ namespace JointWatermark.Views
             },
             CanExecuteDelegate = o => true
         };
+
     }
 }

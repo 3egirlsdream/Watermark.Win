@@ -619,10 +619,6 @@ namespace JointWatermark.Class
                     shortLine = Math.Min(img.Height, img.Width);
                     double pw = image.PecentOfWidth;
                     double ph = image.PecentOfHeight;
-                    if(image.Auto08 && img.Height > img.Width)
-                    {
-                        ph += (100 - image.StartPosition.Y - ph) * 0.2;
-                    }
 
                     shortLineBorderPercent = (100 - Math.Min(pw, ph)) / 100.0;
                     //根据边框的起始位置计算边框宽度
@@ -649,7 +645,6 @@ namespace JointWatermark.Class
                     //基础字体系数
                     var fontxs = (img.Height * 0.13 / 156);
                     if (img.Height > img.Width) fontxs *= 0.8;
-                    double basicFontSize = 30;
 
                     var resultImage = img.Clone(x => x.Resize(resultWidth, resultHeight));
                     var polygon = new RegularPolygon(0, 0, resultWidth, Diagonal(resultHeight, resultWidth));
@@ -728,8 +723,7 @@ namespace JointWatermark.Class
                         double xW = 0, yW = 0;
                         if (row.EdgeDistanceType == EdgeDistanceType.Character)
                         {
-                            double fontSize = basicFontSize * fontxs;
-                            Font font = GetFont(row.FontFamily, row.IsBold, fontSize);
+                            Font font = GetFont(row.FontFamily, row.IsBold, row.FontSize * fontxs);
                             //测量宽度像素
                             var XTextSize = TextMeasurer.Measure(row.EdgeDistanceCharacterX, new SixLabors.Fonts.TextOptions(font));
                             var content = Global.GetContent(row, image.Meta);
@@ -828,8 +822,8 @@ namespace JointWatermark.Class
                 var g = group[0];
                 if (!string.IsNullOrEmpty(g.ImagePath.Path))
                 {
-                    var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
-                    var logo = Image.Load(logoPath);
+                    Image logo = LoadLogo(g);
+
                     //resultHeight - start.Y - img.Height 为白边的高度
                     var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
                     totalWidth = (int)(logo.Width * xs);
@@ -841,8 +835,7 @@ namespace JointWatermark.Class
                 var g = group.FirstOrDefault(c => c.ContentType == ContentType.Image);
                 if (!string.IsNullOrEmpty(g.ImagePath.Path))
                 {
-                    var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
-                    var logo = Image.Load(logoPath);
+                    var logo = LoadLogo(g);
                     //设计的图片高度
                     var designHeight = (resultHeight - start.Y - img.Height) * 1.0 * g.ImagePercentOfRange / 100.0;
                     //resultHeight - start.Y - img.Height 为白边的高度
@@ -915,8 +908,7 @@ namespace JointWatermark.Class
                 {
                     if (!string.IsNullOrEmpty(item.ImagePath.Path))
                     {
-                        var logoPath = Global.Path_logo + Global.SeparatorChar + item.ImagePath.Path;
-                        var logo = Image.Load(logoPath);
+                        var logo = LoadLogo(item);
                         //resultHeight - start.Y - img.Height 为白边的高度
                         var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
                         int _w = (int)(logo.Width * xs), _h = (int)(logo.Height * xs);
@@ -945,6 +937,26 @@ namespace JointWatermark.Class
                     row1.Y += (int)(totalHeight);
                 }
             }
+        }
+
+        private static Image LoadLogo(GeneralWatermarkRowProperty g)
+        {
+            Image logo;
+            var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
+            if (g.ImagePath.IsCloud)
+            {
+                using (var mywebclient = new WebClient())
+                {
+                    byte[] Bytes = mywebclient.DownloadData(g.ImagePath.Path);
+                    logo = Image.Load(Bytes);
+                }
+            }
+            else
+            {
+                logo = Image.Load(logoPath);
+            }
+
+            return logo;
         }
 
         private static void GetWatermarkStartPosition(int resultWidth
