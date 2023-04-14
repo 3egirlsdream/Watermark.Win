@@ -797,7 +797,13 @@ namespace JointWatermark.Class
             double xW = 0, yW = 0;
 
             //计算整体宽度，按最长的文字行计算
-            var longestRow = group.OrderByDescending(c => Global.GetContent(c, image.Meta).Length).FirstOrDefault();
+            var longestRow = group.OrderByDescending(c =>
+            {
+                var content = Global.GetContent(c, image.Meta);
+                var _f = GetFont(c.FontFamily, c.IsBold, c.FontSize * fontxs);
+                var wth = TextMeasurer.Measure(content, new SixLabors.Fonts.TextOptions(_f));
+                return wth.Width;
+            }).FirstOrDefault();
             var longestRowFont = GetFont(longestRow.FontFamily, longestRow.IsBold, longestRow.FontSize * fontxs);
             var longestContent = Global.GetContent(longestRow, image.Meta);
             var totalWidth = TextMeasurer.Measure(longestContent, new SixLabors.Fonts.TextOptions(longestRowFont)).Width;
