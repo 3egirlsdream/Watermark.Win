@@ -614,7 +614,6 @@ namespace JointWatermark.Class
                 string PhotoPath = isPreview ? image.ThumbnailPath : image.PhotoPath;
                 using (var orientImg = Image.Load<Rgba32>(PhotoPath))
                 {
-                    image.Meta = Global.GetMeta(orientImg.Metadata.ExifProfile?.Values);
                     var img = orientImg.Clone(x => x.AutoOrient());
                     shortLine = Math.Min(img.Height, img.Width);
                     double pw = image.PecentOfWidth;
@@ -939,7 +938,8 @@ namespace JointWatermark.Class
                 {
                     var _s = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
                     var _e = new SixLabors.ImageSharp.Point(row1.X, row1.Y + (int)totalHeight);
-                    resultImage.Mutate(x => x.DrawLines(SixLabors.ImageSharp.Color.ParseHex(item.Color), (int)(item.LinePixel * fontxs), _s, _e));
+                    var lineWidth = (int)(item.LinePixel * fontxs);
+                    resultImage.Mutate(x => x.DrawLines(SixLabors.ImageSharp.Color.ParseHex(item.Color), lineWidth == 0 ? 1 : lineWidth , _s, _e));
                     row1.Y += (int)(totalHeight);
                 }
             }

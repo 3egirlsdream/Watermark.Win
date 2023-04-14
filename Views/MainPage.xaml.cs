@@ -206,6 +206,10 @@ namespace JointWatermark
                     {
                         _i.ThumbnailPath = thumbnail.ToString();
                     }
+                    else 
+                    { 
+                        _i.ThumbnailPath = item; 
+                    }
                     _i.PhotoPath = item;
                     if (vm.IconList != null && vm.IconList.Any())
                     {

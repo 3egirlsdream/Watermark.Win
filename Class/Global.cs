@@ -110,7 +110,7 @@ namespace JointWatermark
                 var meta_origin = profile.Select(x => new
                 {
                     Key = x.Tag.ToString(),
-                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : x.GetValue()
+                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : (x.Tag.ToString().Contains("DateTime") ? Convert.ToDateTime(ToDateTime((string)x.GetValue())) : x.GetValue())
                 });
 
                 foreach (var item in meta_origin)
@@ -129,6 +129,26 @@ namespace JointWatermark
             }
 
             return meta;
+        }
+        //2021:10:24 17:04:49
+        private static string ToDateTime(string s)
+        {
+            try
+            {
+                var ls = s.Split(new string[] {":", ".", "/", "\\", " "}, StringSplitOptions.RemoveEmptyEntries);
+                var year = Convert.ToInt16(ls[0]);
+                var month = Convert.ToInt16(ls[1]);
+                var day = Convert.ToInt16(ls[2]);
+                var hour = Convert.ToInt16(ls[3]);
+                var minute = Convert.ToInt16(ls[4]);
+                var second = Convert.ToInt16(ls[5]);
+                var dt = new DateTime(year, month, day, hour, minute, second);
+                return dt.ToString();
+            }
+            catch
+            {
+                return s;
+            }
         }
 
         public static Dictionary<int, string> ExposureProgram { get; set; } = new Dictionary<int, string>()
