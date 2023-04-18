@@ -402,10 +402,24 @@ namespace JointWatermark
         public void InitTemplates()
         {
             var model = Global.InitConfig();
-            if (model != null && model.Templates != null && model.Templates.CustomizationComponents != null && model.Templates.CustomizationComponents.Count > 0)
+            if (model != null && model.Templates != null && model.Templates.CustomizationComponents != null)
             {
-                model.Templates.CustomizationComponents[0].Url = "../Resources/gy.png";
-                model.Templates.CustomizationComponents[1].Url = "../Resources/bb.png";
+                var dic = new Dictionary<string, string>();
+                dic["光影边框"] = "../Resources/gy.png";
+                dic["Ancientry"] = "../Resources/bb.png";
+                for (var i = 0;  i < model.Templates.CustomizationComponents.Count;i++)
+                {
+                    var template = model.Templates.CustomizationComponents[i];
+                    if (dic.TryGetValue(template.Name, out string val))
+                    {
+                        template.Url = val;
+                    }
+                    else
+                    {
+                        template.Url = "../Resources/kabi.png";
+                    }
+                }
+               
                 templateList.ItemsSource =  model.Templates.CustomizationComponents;
                 //foreach (var item in model.Templates.CustomizationComponents)
                 //{
@@ -1101,6 +1115,25 @@ namespace JointWatermark
                 mainPage.CurrentTemplate = o.ToString();
                 mainPage.tabImg.Focus();
                 Images.Clear();
+            },
+            CanExecuteDelegate = x => true
+        };
+
+        public SimpleCommand CmdDelTemplateConfig => new SimpleCommand()
+        {
+            ExecuteDelegate = o =>
+            {
+                if (o is string xx && !string.IsNullOrEmpty(xx))
+                {
+                    var model = Global.InitConfig();
+                    var item = model.Templates.CustomizationComponents.FirstOrDefault(c => c.Name == xx);
+                    if(item != null)
+                    {
+                        model.Templates.CustomizationComponents.Remove(item);
+                        Global.SaveConfig(JsonConvert.SerializeObject(model));
+                        mainPage.InitTemplates();
+                    }
+                }
             },
             CanExecuteDelegate = x => true
         };

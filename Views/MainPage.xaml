@@ -39,6 +39,7 @@
                                 <TextBlock  HorizontalAlignment="Center" Text="模板" />
                             </StackPanel>
                         </TabItem.Header>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <Border Style="{StaticResource BorderStyle}" Height="160" Margin="40 10">
                                 <StackPanel HorizontalAlignment="Stretch">
@@ -72,7 +73,7 @@
                                                     <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
                                                 </Grid>
                                                 <Grid Height="120">
-                                                    <Image Source="{Binding Url}" HorizontalAlignment="Stretch" Stretch="Fill"/>
+                                                    <Image Source="{Binding Url}" HorizontalAlignment="Stretch" Stretch="Uniform"/>
                                                 </Grid>
                                                 <Grid Height="20">
                                                     <Grid.ColumnDefinitions>
@@ -83,7 +84,7 @@
                                                     <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
                                                     <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding DataContext.CmdOpenTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" Tag="{Binding Name}" CommandParameter="{Binding Name}"/>
                                                     <GridSplitter Grid.Column="1" Width="1" Height="20"/>
-                                                    <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray"/>
+                                                    <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray" Command="{Binding DataContext.CmdDelTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Name}"/>
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
@@ -91,6 +92,7 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </StackPanel>
+                        </ScrollViewer>
                     </TabItem>
                     <TabItem Name="tabImg">
                         <TabItem.Header>
