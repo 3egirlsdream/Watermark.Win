@@ -126,10 +126,44 @@ namespace JointWatermark
                 {
                     meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
                 }
+
+                if(meta.TryGetValue("GPSLatitude", out object val) && val is SixLabors.ImageSharp.Rational[] lr)
+                {
+                    var rtl = "";
+                    bool over0 = false;
+                    DealLatitudeLongitude(lr, ref rtl, ref over0);
+                    meta["GPSLatitude"] = rtl + (over0 ? "N" : "S");
+                }
+
+                if (meta.TryGetValue("GPSLongitude", out object val2) && val2 is SixLabors.ImageSharp.Rational[] lr2)
+                {
+                    var rtl = "";
+                    bool over0 = false;
+                    DealLatitudeLongitude(lr2, ref rtl, ref over0);
+                    meta["GPSLongitude"] = rtl + (over0 ? "E" : "W");
+                }
             }
 
             return meta;
         }
+
+        private static void DealLatitudeLongitude(Rational[] lr2, ref string rtl, ref bool over0)
+        {
+            for (var i = 0; i < lr2.Length; i++)
+            {
+                var item = lr2[i];
+                var r = item.Numerator / item.Denominator;
+                if (i == 0)
+                {
+                    over0 = r > 0;
+                }
+                rtl += r;
+                if (i == 0) rtl += "°";
+                else if (i == 1) rtl += "'";
+                else if (i == 2) rtl += "''";
+            }
+        }
+
         //2021:10:24 17:04:49
         private static string ToDateTime(string s)
         {

@@ -77,7 +77,26 @@
       "Key": "LensModel",
       "Name": "镜头型号",
       "Value": "Sony FE 24-105mm F4 G OSS (SEL24105G)"
-    }
+    },
+    {
+      "IsSelected": false,
+      "Key": "GPSLatitude",
+      "Name": "纬度",
+      "Value": "21°1'12.16''"
+    },
+    {
+      "IsSelected": false,
+      "Key": "GPSLongitude",
+      "Name": "经度",
+      "Value": "21°1'12.16''"
+    },
+    {
+      "IsSelected": false,
+      "Key": "GPSAltitude",
+      "Name": "海拔",
+      "Value": "500"
+    },
+    
   ],
   "Config": [
     {
