@@ -7,8 +7,8 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
         Title="模板设置"
-    xmlns:converters="clr-namespace:MaterialDesignThemes.Wpf.Converters;assembly=MaterialDesignThemes.Wpf"
-    xmlns:wpf="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf">
+        xmlns:converters="clr-namespace:MaterialDesignThemes.Wpf.Converters;assembly=MaterialDesignThemes.Wpf"
+        xmlns:wpf="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf">
     <Page.Resources>
         <Style TargetType="GroupBox" x:Key="eee">
             <Setter Property="HeaderTemplate">
@@ -87,7 +87,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid Grid.Row="1" Grid.Column="1" Background="#e3e3e3">
-                                <Image x:Name="yaofan" Source="../Resources/yaofan.jpg"/>
+                                <Image x:Name="yaofan"/>
                             </Grid>
                             <TextBox Grid.Row="0" Grid.Column="1" IsReadOnly="True" Text="{Binding BorderWidthOfTop, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="上边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>
                             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BorderWidthOfBottom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="下边距" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%"/>

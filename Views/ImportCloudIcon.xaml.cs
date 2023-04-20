@@ -28,12 +28,6 @@ namespace JointWatermark
             }
         }
 
-        public void SetTitle(string _title)
-        {
-            title.Text = _title;
-            Title = _title; 
-        }
-
         private void TabItem_GotFocus(object sender, RoutedEventArgs e)
         {
             Close();
@@ -81,11 +75,11 @@ namespace JointWatermark
         {
             ExecuteDelegate = o =>
             {
-                //if (CheckUrl(Url) || !string.IsNullOrEmpty(window.Title))
-                //{
+                if (CheckUrl(Url))
+                {
                     window.Data = Url;
                     window.DialogResult = true;
-                //}
+                }
             },
             CanExecuteDelegate = x => !string.IsNullOrEmpty(Url)
         };

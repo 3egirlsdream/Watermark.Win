@@ -44,7 +44,7 @@ namespace JointWatermark
             }
         }
 
-        CheckUpdate checkUpdate = null;
+        Setting checkUpdate = null;
         private void CheckUpdateClick(object sender, RoutedEventArgs e)
         {
             if(checkUpdate != null && checkUpdate.Activate())
@@ -53,7 +53,7 @@ namespace JointWatermark
             }
             else
             {
-                checkUpdate = new CheckUpdate();
+                checkUpdate = new Setting();
                 checkUpdate.Owner = this;
                 checkUpdate.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 checkUpdate.ShowInTaskbar = false;
@@ -156,14 +156,6 @@ namespace JointWatermark
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             msg.Visibility = Visibility.Collapsed;
-        }
-
-        private void SettingsClick(object sender, RoutedEventArgs e)
-        {
-            var win = new ConfigExif();
-            win.Owner = this;
-            win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            win.ShowDialog();
         }
 
         public void SendMsg(string msg)

@@ -107,6 +107,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Page Update="Views\MessageBox.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\ImportCloudIcon.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>

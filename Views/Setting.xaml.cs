@@ -22,13 +22,13 @@ namespace JointWatermark
     /// <summary>
     /// CheckUpdate.xaml 的交互逻辑
     /// </summary>
-    public partial class CheckUpdate : Window
+    public partial class Setting : Window
     {
-        CheckUpdateVM vm;
-        public CheckUpdate()
+        SettingVM vm;
+        public Setting()
         {
             InitializeComponent();
-            vm = new CheckUpdateVM(this);
+            vm = new SettingVM(this);
             DataContext = vm;
             CheckVersion(null, null);
             updatelog.Text = Global.GetUpdateLog();
@@ -205,11 +205,11 @@ namespace JointWatermark
         }
     }
 
-    public class CheckUpdateVM : INotifyPropertyChanged
+    public class SettingVM : INotifyPropertyChanged
     {
 
-        CheckUpdate window;
-        public CheckUpdateVM(CheckUpdate check)
+        Setting window;
+        public SettingVM(Setting check)
         {
             window = check;
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();

@@ -297,8 +297,7 @@ namespace JointWatermark.Views
         {
             ExecuteDelegate = x =>
             {
-                var win = new ImportCloudIcon();
-                win.SetTitle("另存为");
+                var win = new MessageBoxL(false, "另存为", "另存为模板");
                 win.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(win.ShowDialog() == true)
                 {

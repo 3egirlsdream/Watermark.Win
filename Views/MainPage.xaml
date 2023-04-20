@@ -31,7 +31,7 @@
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
             <Border Style="{StaticResource BorderStyle}">
-                <TabControl  VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard"  materialDesign:ShadowAssist.ShadowDepth="Depth1" Style="{StaticResource MaterialDesignNavigationRailTabControl}">
+                <TabControl  VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard" materialDesign:ElevationAssist.Elevation="Dp1" Style="{StaticResource MaterialDesignNavigationRailTabControl}">
                     <TabItem>
                         <TabItem.Header>
                             <StackPanel Width="auto" Height="auto">
@@ -40,58 +40,51 @@
                             </StackPanel>
                         </TabItem.Header>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <Border Style="{StaticResource BorderStyle}" Height="160" Margin="40 10">
-                                <StackPanel HorizontalAlignment="Stretch">
-                                    <Grid Height="20">
-                                        <TextBlock Text="水印边框" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
-                                    </Grid>
-                                    <Grid Height="120">
-                                        <Image Source="../Resources/nm.png" HorizontalAlignment="Stretch" Stretch="Fill"/>
-                                    </Grid>
-                                    <Grid Height="20">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="1"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
-                                        <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding CmdOpenTemplateConfig}" CommandParameter="PhotoFrame"/>
-                                        <GridSplitter Grid.Column="1" Width="1" Height="20"/>
-                                        <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                            <ListBox x:Name="templateList" HorizontalAlignment="Stretch"  HorizontalContentAlignment="Stretch">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Style="{StaticResource BorderStyle}" Height="160" Margin="30 2">
-                                            <StackPanel HorizontalAlignment="Stretch">
-                                                <Grid Height="20">
-                                                    <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
-                                                </Grid>
-                                                <Grid Height="120">
-                                                    <Image Source="{Binding Url}" HorizontalAlignment="Stretch" Stretch="Uniform"/>
-                                                </Grid>
-                                                <Grid Height="20">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="1"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
-                                                    <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding DataContext.CmdOpenTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" Tag="{Binding Name}" CommandParameter="{Binding Name}"/>
-                                                    <GridSplitter Grid.Column="1" Width="1" Height="20"/>
-                                                    <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray" Command="{Binding DataContext.CmdDelTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Name}"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </StackPanel>
+                            <StackPanel>
+                                <Border Style="{StaticResource BorderStyle}" Height="160" Margin="40 10">
+                                    <StackPanel HorizontalAlignment="Stretch">
+                                        <Grid Height="20">
+                                            <TextBlock Text="水印边框" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
+                                        </Grid>
+                                        <Grid Height="120">
+                                            <Image Source="../Resources/nm.png" HorizontalAlignment="Stretch" Stretch="Fill"/>
+                                        </Grid>
+                                        <Grid Height="20">
+                                            <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                            <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding CmdOpenTemplateConfig}" CommandParameter="PhotoFrame"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                                <ListBox x:Name="templateList" HorizontalAlignment="Stretch"  HorizontalContentAlignment="Stretch">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource BorderStyle}" Height="160" Margin="30 2">
+                                                <StackPanel HorizontalAlignment="Stretch">
+                                                    <Grid Height="20">
+                                                        <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        <GridSplitter Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
+                                                    </Grid>
+                                                    <Grid Height="120">
+                                                        <Image Source="{Binding Url}" HorizontalAlignment="Stretch" Stretch="Uniform"/>
+                                                    </Grid>
+                                                    <Grid Height="20">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="1"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <GridSplitter Grid.ColumnSpan="3" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                                        <Button Content="应用" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Command="{Binding DataContext.CmdOpenTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" Tag="{Binding Name}" CommandParameter="{Binding Name}"/>
+                                                        <GridSplitter Grid.Column="1" Width="1" Height="20"/>
+                                                        <Button BorderThickness="0" Grid.Column="2" Content="删除" Height="20" FontSize="9" Style="{StaticResource MaterialDesignFlatDarkButton}" Foreground="Gray" Command="{Binding DataContext.CmdDelTemplateConfig,RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Name}"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Name="tabImg">
@@ -101,7 +94,7 @@
                                 <TextBlock  HorizontalAlignment="Center" Text="图片" />
                             </StackPanel>
                         </TabItem.Header>
-                        <Grid Grid.Row="0" Width="auto" Height="auto" materialDesign:ShadowAssist.ShadowDepth="Depth1" >
+                        <Grid Grid.Row="0" Width="auto" Height="auto" materialDesign:ElevationAssist.Elevation="Dp1">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
@@ -167,7 +160,7 @@
                                         <Border Style="{StaticResource BorderStyle}" Padding="40,10,0,10">
                                             <Slider x:Name="split_border" Minimum="0" Maximum="10" Orientation="Vertical" TickFrequency="1" Margin="10" TickPlacement="BottomRight" Style="{StaticResource MaterialDesignDiscreteSlider}" Value="0"/>
                                         </Border>
-                                        </Popup>
+                                    </Popup>
                                     <Separator />
                                     <Button HorizontalAlignment="Right" Style="{StaticResource MaterialDesignToolForegroundButton}" Content="{materialDesign:PackIcon Kind=Export}"  Cursor="Hand" Click="ExportSplitImageClick" ToolTip="导出"/>
                                 </ToolBar>
@@ -189,10 +182,10 @@
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
-                               
+
                             </ListBox>
                         </StackPanel>
-                        
+
                     </TabItem>
                 </TabControl>
             </Border>
@@ -227,7 +220,7 @@
                     <Border Grid.Row="0" Style="{StaticResource BorderStyle}" Margin="30 10">
                         <Viewbox HorizontalAlignment="Left">
                             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
-                            
+
                                 <Button x:Name="btnRotate" Style="{StaticResource MaterialDesignIconButton}" ToolTip="顺时针旋转90°" Click="RotateImageClick">
                                     <materialDesign:PackIcon Kind="FileRotateRight" />
                                 </Button>
@@ -294,7 +287,7 @@
                             </ListBox.Template>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <materialDesign:Card x:Name="add" Cursor="Hand" Width="200" materialDesign:ShadowAssist.ShadowDepth="Depth1">
+                                    <materialDesign:Card x:Name="add" Cursor="Hand" Width="200" materialDesign:ElevationAssist.Elevation="Dp1">
                                         <Grid>
                                             <Grid.ColumnDefinitions >
                                                 <ColumnDefinition Width="*"/>
@@ -362,7 +355,7 @@
                     </ScrollViewer>
 
                 </Grid>
-               
+
             </Grid>
         </Border>
         <Border Style="{StaticResource BorderStyle}"  Grid.Column="2" Width="{Binding ElementName=configFrame, Path=Width}">
