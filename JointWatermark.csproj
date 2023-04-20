@@ -13,7 +13,7 @@
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
     <Product>水印合成</Product>
     <Description>为图片添加水印</Description>
-    <AssemblyName>水印相框</AssemblyName>
+    <AssemblyName>JointWatermark</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
