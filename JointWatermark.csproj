@@ -7,13 +7,13 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>leica.ico</ApplicationIcon>
-    <AssemblyVersion>2.0.0.2</AssemblyVersion>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
     <Authors>3egirlsdream@github.com</Authors>
     <Company>github.com/3egirlsdream/JointWatermark</Company>
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
     <Product>水印合成</Product>
     <Description>为图片添加水印</Description>
-    <AssemblyName>水印相框-BETA</AssemblyName>
+    <AssemblyName>水印相框</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

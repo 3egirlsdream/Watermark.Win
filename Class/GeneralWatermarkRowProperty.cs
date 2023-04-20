@@ -48,7 +48,7 @@ namespace JointWatermark.Class
         /// <summary>
         /// 字体
         /// </summary>
-        public string FontFamily { set; get; } = "微软雅黑";
+        public string FontFamily { set; get; } = "OpenSans";
         public bool IsBold { get; set; } = false;
         public int FontSize { get; set; } = 30;
         public string Color { get; set; } = "#000000";

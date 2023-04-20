@@ -311,33 +311,35 @@ namespace JointWatermark.Class
 
         private static Tuple<SixLabors.Fonts.FontFamily?, SixLabors.Fonts.FontFamily?> SetFamily(string FontFamily)
         {
-            SixLabors.Fonts.FontFamily? family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
+            SixLabors.Fonts.FontFamily? family = null;
             SixLabors.Fonts.FontFamily? familyBold = null;
-            
-            if (FontFamily != "微软雅黑")
+
+            if (Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
             {
-                if (Global.FontResourrce.TryGetValue(FontFamily, out byte[] bt))
-                {
-                    using (var ms = new MemoryStream(bt))
-                    {
-                        var collection = new FontCollection();
-                        family = collection.Add(ms);
-                    }
-                }
-                else
+                using (var ms = new MemoryStream(bt))
                 {
                     var collection = new FontCollection();
-                    if (File.Exists("./fonts/" + FontFamily + ".ttf"))
+                    family = collection.Add(ms);
+                    if(FontFamily == "OpenSans")
                     {
-                        family = collection.Add($"./fonts/{FontFamily}.ttf");
-                    }
-                    if (File.Exists("./fonts/" + FontFamily + "-Bold.ttf"))
-                    {
-                        familyBold = collection.Add($"./fonts/{FontFamily}-Bold.ttf");
+                        using (var ms2 = new MemoryStream(Properties.Resources.OpenSans_Bold))
+                        {
+                            familyBold = collection.Add(ms2);
+                        }
                     }
                 }
-                //byte[] bt = Global.FontResourrce[FontFamily];
-
+            }
+            else
+            {
+                var collection = new FontCollection();
+                if (File.Exists("./fonts/" + FontFamily + ".ttf"))
+                {
+                    family = collection.Add($"./fonts/{FontFamily}.ttf");
+                }
+                if (File.Exists("./fonts/" + FontFamily + "-Bold.ttf"))
+                {
+                    familyBold = collection.Add($"./fonts/{FontFamily}-Bold.ttf");
+                }
             }
 
             return Tuple.Create(family, familyBold);
@@ -392,20 +394,8 @@ namespace JointWatermark.Class
 
                     Image<Rgba32> wm = new Image<Rgba32>(w, (int)h);
                     IPath yourPolygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, w, Diagonal(img.Height, img.Width));
-                    SixLabors.Fonts.FontFamily family;
-                    if (config.FontFamily == "微软雅黑")
-                    {
-                        family = SixLabors.Fonts.SystemFonts.Get("Microsoft YaHei");
-                    }
-                    else
-                    {
-                        byte[] bt = Global.FontResourrce[config.FontFamily];
-                        using (var ms = new MemoryStream(bt))
-                        {
-                            var collection = new FontCollection();
-                            family = collection.Add(ms);
-                        }
-                    }
+                    var f = SetFamily(config.FontFamily);
+                    SixLabors.Fonts.FontFamily family = f.Item1.Value;
 
                     //右侧F ISO MM字体参数
                     float fontSize = 31 * fontxs;

@@ -277,8 +277,14 @@ namespace JointWatermark
             }
         }
 
+        public static string GetUpdateLog()
+        {
+            return Properties.Resources.UpdateLog;
+        }
+
         public static Dictionary<string, byte[]> FontResourrce { get; set; } = new Dictionary<string, byte[]>
         {
+            { "OpenSans", Properties.Resources.OpenSans },
             { "金陵宋体", Properties.Resources.FZXiJinLJW },
             { "Pamega", Properties.Resources.Pamega_demo_2 },
             { "Hey-November", Properties.Resources.Hey_November_2},
@@ -340,7 +346,6 @@ namespace JointWatermark
         public static List<string> InitFontList()
         {
             var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
-            fonts.Insert(0, "微软雅黑");
             var path = Global.BasePath + Global.SeparatorChar + "fonts";
             if (Directory.Exists(path))
             {

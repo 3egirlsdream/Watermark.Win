@@ -382,7 +382,6 @@ namespace JointWatermark
         public void InitFontList()
         {
             var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
-            fonts.Insert(0, "微软雅黑");
             var path = Global.BasePath + Global.SeparatorChar + "fonts";
             if (Directory.Exists(path))
             {

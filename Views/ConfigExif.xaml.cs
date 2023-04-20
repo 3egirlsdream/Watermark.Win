@@ -180,7 +180,7 @@ namespace JointWatermark.Views
                 RightPosition2= p[3],
                 BackgroundColor = "#FFFFF",
                 Row1FontColor = "#000000",
-                FontFamily = "微软雅黑"
+                FontFamily = "OpenSans"
             };
             var img = await ImagesHelper.Current.CreateWatermark(con);
             var imgs = ImagesHelper.Current.ImageSharpToImageSource(img);

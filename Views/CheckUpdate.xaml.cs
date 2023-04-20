@@ -2,6 +2,7 @@
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -28,6 +29,7 @@ namespace JointWatermark
             vm = new CheckUpdateVM(this);
             DataContext = vm;
             CheckVersion(null, null);
+            updatelog.Text = Global.GetUpdateLog();
         }
 
         private string? newPath;
@@ -153,7 +155,6 @@ namespace JointWatermark
                 }
             }
         }
-
     }
 
     public class CheckUpdateVM : INotifyPropertyChanged

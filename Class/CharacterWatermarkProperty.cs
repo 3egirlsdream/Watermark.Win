@@ -81,7 +81,7 @@ namespace JointWatermark.Class
             }
         }
 
-        private string fontFamily = "微软雅黑";
+        private string fontFamily = "OpenSans";
         public string FontFamily
         {
             get => fontFamily;

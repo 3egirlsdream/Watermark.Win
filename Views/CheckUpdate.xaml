@@ -52,7 +52,7 @@
                         <TextBlock Text="字体" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                     </ListBox>
                 </StackPanel>
-                
+
             </Border>
             <Button Style="{StaticResource MaterialDesignIconButton}" Height="30" Width="30"  HorizontalAlignment="Right"  Grid.ColumnSpan="2" Click="WindowMininizeClick" Panel.ZIndex="2">
                 <materialDesign:PackIcon Kind="WindowClose" Height="15" Width="15"/>
@@ -106,6 +106,11 @@
                                     <Button Content="自动更新" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" Click="Button_Click"/>
                                 </materialDesign:Badged>
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
+                                <TextBlock Text="更新日志" FontSize="17"/>
+                                <Border CornerRadius="5" Padding="5" Background="#f3f3f3" Margin="0 5" VerticalAlignment="Top">
+                                    <TextBlock x:Name="updatelog" TextWrapping="Wrap" VerticalAlignment="Top" Text=""/>
+                                </Border>
+                                
                             </StackPanel>
                         </Grid>
                     </TabItem>
@@ -154,13 +159,13 @@
                             <Button x:Name="save" Content="保存" Style="{StaticResource MaterialDesignOutlinedDarkButton}" Cursor="Hand" HorizontalAlignment="Left" Command="{Binding CmdSaveFont}"/>
                             <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                         </StackPanel>
-                        
+
                     </TabItem>
                 </TabControl>
-              
+
 
             </Border>
-           
+
         </Grid>
     </Border>
 </Window>

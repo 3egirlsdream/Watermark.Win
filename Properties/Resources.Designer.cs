@@ -113,6 +113,26 @@ namespace JointWatermark.Properties {
         /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
+        internal static byte[] OpenSans {
+            get {
+                object obj = ResourceManager.GetObject("OpenSans", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
+        internal static byte[] OpenSans_Bold {
+            get {
+                object obj = ResourceManager.GetObject("OpenSans_Bold", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Byte[] 类型的本地化资源。
+        /// </summary>
         internal static byte[] Pamega_demo_2 {
             get {
                 object obj = ResourceManager.GetObject("Pamega_demo_2", resourceCulture);
@@ -137,6 +157,21 @@ namespace JointWatermark.Properties {
             get {
                 object obj = ResourceManager.GetObject("system_t", resourceCulture);
                 return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 v2.0更新
+        ///1.基础模板全面更新，支持更多配置功能，支持启用禁用部分水印
+        ///2.新增全新光影模板
+        ///3.新增图片边框模板
+        ///4.支持导入本地字体
+        ///5.新增支持另存为自定义新模板
+        ///6.新增拼图功能 的本地化字符串。
+        /// </summary>
+        internal static string UpdateLog {
+            get {
+                return ResourceManager.GetString("UpdateLog", resourceCulture);
             }
         }
     }
