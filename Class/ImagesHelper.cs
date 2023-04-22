@@ -1024,16 +1024,27 @@ namespace JointWatermark.Class
 
         private Font GetFont(string fontFamily, bool isBold, double fontSize)
         {
-            var f = SetFamily(fontFamily);
-            var fr = f.Item1.Value;
-            var font = fr.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
-            if (isBold)
+            try
             {
-                var fb = f.Item2 ?? f.Item1.Value;
-                font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
-            }
+                var f = SetFamily(fontFamily);
+                if(f.Item1 == null)
+                {
+                    throw new Exception("字体不存在，请修改配置的字体");
+                }
+                var fr = f.Item1.Value;
+                var font = fr.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Regular);
+                if (isBold)
+                {
+                    var fb = f.Item2 ?? f.Item1.Value;
+                    font = fb.CreateFont((int)fontSize, SixLabors.Fonts.FontStyle.Bold);
+                }
 
-            return font;
+                return font;
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
         }
 
 

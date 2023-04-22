@@ -122,6 +122,14 @@ namespace JointWatermark
                     meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
                 }
 
+                if (meta.ContainsKey("ExposureTime") && meta["ExposureTime"] is Rational et && et.Denominator != 0 && et.Numerator != 0)
+                {
+                    if(et.Denominator % et.Numerator == 0)
+                    {
+                        meta["ExposureTime"] = "1/" + (int)(et.Denominator / et.Numerator);
+                    }
+                }
+
                 if (meta.ContainsKey("FNumber") && meta["FNumber"] is SixLabors.ImageSharp.Rational rational && rational.Denominator != 0)
                 {
                     meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
