@@ -33,8 +33,14 @@
     {
       "IsSelected": false,
       "Key": "FocalLengthIn35mmFilm",
-      "Name": "焦距",
+      "Name": "35mm焦距",
       "Value": "105"
+    },
+    {
+      "IsSelected": false,
+      "Key": "FocalLength",
+      "Name": "焦距",
+      "Value": "85"
     },
     {
       "IsSelected": false,
@@ -96,7 +102,12 @@
       "Name": "海拔",
       "Value": "500"
     },
-    
+    {
+      "IsSelected": false,
+      "Key": "Shoter",
+      "Name": "拍摄人",
+      "Value": ""
+    }
   ],
   "Config": [
     {
@@ -318,6 +329,57 @@
           "IsChecked": true,
           "ID": "4FADB72A5BD64BB9967C54D8B0272C0A",
           "Name": "右侧第二行"
+        },
+        {
+          "Content": "中间",
+          "DataSource": {
+            "From": 0,
+            "Exifs": [
+              {
+                "SEQ": 1,
+                "Front": null,
+                "Behind": "E",
+                "Key": "GPSLatitude",
+                "Value": "21°1'12.16''"
+              },
+              {
+                "SEQ": 2,
+                "Front": " ",
+                "Behind": "W",
+                "Key": "GPSLongitude",
+                "Value": "21°1'12.16''"
+              }
+            ]
+          },
+          "ImagePath": null,
+          "ContentType": 1,
+          "ImagePercentOfRange": 0,
+          "LinePercentOfRange": 0,
+          "LinePixel": 0,
+          "FontFamily": "OpenSans",
+          "IsBold": false,
+          "FontSize": 30,
+          "Color": "#000000",
+          "DateFormat": [
+            ".",
+            ".",
+            ":",
+            ":"
+          ],
+          "FontXS": 1.0,
+          "EdgeDistanceCharacterX": "ABCD",
+          "EdgeDistanceCharacterY": "AA",
+          "EdgeDistanceFixedPixel": 0,
+          "EdgeDistancePercent": 0,
+          "EdgeDistanceType": 1,
+          "End": 4,
+          "RelativePositionMode": 1,
+          "Start": 0,
+          "X": 4,
+          "Y": 4,
+          "IsChecked": false,
+          "ID": "2872F7DC263543A5962751E35F008CB6",
+          "Name": "中间"
         },
         {
           "Content": "右侧cesiumcesium测试",
