@@ -1,5 +1,6 @@
 ﻿using JointWatermark.Class;
 using JointWatermark.Enums;
+using JointWatermark.Views;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
@@ -32,15 +33,10 @@ namespace JointWatermark
         {
             using (var bp = SixLabors.ImageSharp.Image.Load(sourceImg))
             {
-                var profile = bp.Metadata.ExifProfile?.Values;
-                Dictionary<string, object> meta = GetMeta(profile);
-
-                var config = GetDefaultExifConfig(meta);
-
-                var right1 = config[2];
-                var right2 = config[3];
-                var left1 = config[0];
-                var left2 = config[1];
+                var right1 = "";// config[2];
+                var right2 = "";// config[3];
+                var left1 = "";// config[0];
+                var left2 = "";// config[1];
 
                 if (bp.Width <= 1920 || bp.Height <= 1080)
                 {
@@ -115,40 +111,41 @@ namespace JointWatermark
 
                 foreach (var item in meta_origin)
                 {
-                    meta[item.Key] = item.Value;
-                }
-                if (meta.ContainsKey("ExposureProgram"))
-                {
-                    meta["ExposureProgram"] = ExposureProgram[Convert.ToInt32(meta["ExposureProgram"])];
-                }
-
-                if (meta.ContainsKey("ExposureTime") && meta["ExposureTime"] is Rational et && et.Denominator != 0 && et.Numerator != 0)
-                {
-                    if(et.Denominator % et.Numerator == 0)
+                    var key = item.Key;
+                    var value = item.Value;
+                    if(value is Rational et && et.Denominator != 0 && et.Numerator != 0)
                     {
-                        meta["ExposureTime"] = "1/" + (int)(et.Denominator / et.Numerator);
+                        if (et.Denominator % et.Numerator == 0) 
+                        {
+                            value = "1/" + (int)(et.Denominator / et.Numerator);
+                        }
+                        else
+                        {
+                            value = et.Numerator * 1.0 / et.Denominator;
+                        }
                     }
-                }
+                    else if (value is Rational[] lr)
+                    {
+                        var rtl = "";
+                        bool over0 = false;
+                        if (key == "GPSLatitude")
+                        {
+                            DealLatitudeLongitude(lr, ref rtl, ref over0);
+                            rtl += (over0 ? "N" : "S");
+                        }
+                        else if(key == "GPSLongitude")
+                        {
+                            DealLatitudeLongitude(lr, ref rtl, ref over0);
+                            rtl += (over0 ? "E" : "W");
+                        }
+                        value = rtl;
+                    }
+                    else if (key == "ExposureProgram")
+                    {
+                        value = ExposureProgram[Convert.ToInt32(value)];
+                    }
 
-                if (meta.ContainsKey("FNumber") && meta["FNumber"] is SixLabors.ImageSharp.Rational rational && rational.Denominator != 0)
-                {
-                    meta["FNumber"] = rational.Numerator * 1.0 / rational.Denominator;
-                }
-
-                if(meta.TryGetValue("GPSLatitude", out object val) && val is SixLabors.ImageSharp.Rational[] lr)
-                {
-                    var rtl = "";
-                    bool over0 = false;
-                    DealLatitudeLongitude(lr, ref rtl, ref over0);
-                    meta["GPSLatitude"] = rtl + (over0 ? "N" : "S");
-                }
-
-                if (meta.TryGetValue("GPSLongitude", out object val2) && val2 is SixLabors.ImageSharp.Rational[] lr2)
-                {
-                    var rtl = "";
-                    bool over0 = false;
-                    DealLatitudeLongitude(lr2, ref rtl, ref over0);
-                    meta["GPSLongitude"] = rtl + (over0 ? "E" : "W");
+                    meta[key] = value;
                 }
             }
 
@@ -249,7 +246,7 @@ namespace JointWatermark
                 if (meta.TryGetValue(child.Key, out object rtl))
                 {
 
-                    var c = child.Front + (rtl is DateTime ? Convert.ToDateTime(rtl).ToString($"yyyy{dateFormat[0]}MM{dateFormat[1]}dd HH{dateFormat[2]}mm{dateFormat[3]}ss") : rtl) + child.Behind;
+                    var c = child.Front + GetDateTimeFormat(dateFormat, rtl) + child.Behind;
                     cs.Add(c);
                 }
                 else
@@ -262,6 +259,15 @@ namespace JointWatermark
             var p = string.Join(" ", cs);
 
             return p;
+        }
+
+        public static object GetDateTimeFormat(List<string> dateFormat, object rtl)
+        {
+            if (dateFormat == null)
+            {
+                dateFormat = new List<string>() { ".", ".", ":", ":" };
+            }
+            return (rtl is DateTime ? Convert.ToDateTime(rtl).ToString($"yyyy{dateFormat[0]}MM{dateFormat[1]}dd HH{dateFormat[2]}mm{dateFormat[3]}ss") : rtl);
         }
 
         public static MainModel InitConfig()
@@ -321,7 +327,13 @@ namespace JointWatermark
 
         public static void SendMsg(string msg)
         {
-            ((MainWindow)App.Current.MainWindow).SendMsg(msg);
+            var error = new Error(msg);
+            if (App.Current.MainWindow.Activate())
+            {
+                error.Owner = App.Current.MainWindow;
+            }
+            error.ShowInTaskbar = false;
+            error.ShowDialog();
         }
 
         public static string Resolution { get; set; } = "default";

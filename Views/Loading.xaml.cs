@@ -53,7 +53,7 @@ namespace JointWatermark.Views
                 {
                     if (c.Exception != null)
                     {
-                        ((MainWindow)(App.Current.MainWindow)).SendMsg(c.Exception.Message);
+                        Global.SendMsg(c.Exception.Message);
                     }
                 });
                 IClose();

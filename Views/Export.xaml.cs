@@ -1,5 +1,6 @@
 ﻿using JointWatermark.Class;
 using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -14,9 +15,16 @@ namespace JointWatermark.Views
         ExportVM vm;
         public Export(ObservableCollection<GeneralWatermarkProperty> _images)
         {
-            InitializeComponent();
-            vm = new ExportVM(_images);
-            DataContext = vm;
+            try
+            {
+                InitializeComponent();
+                vm = new ExportVM(_images);
+                DataContext = vm;
+            }
+            catch(Exception ex)
+            {
+                Global.SendMsg(ex.Message);
+            }
         }
 
         private void OK_Click(object sender, RoutedEventArgs e)

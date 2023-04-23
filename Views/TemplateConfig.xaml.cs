@@ -261,7 +261,7 @@ namespace JointWatermark.Views
             {
                 var row = WaterItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;
-                var page = new WatermarkRowConfig(row);
+                var page = new WatermarkRowConfig(row, window.property.Meta);
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(page.ShowDialog() == true)
                 {

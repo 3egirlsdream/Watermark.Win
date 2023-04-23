@@ -1,6 +1,7 @@
 ﻿using JointWatermark.Class;
 using JointWatermark.Enums;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
@@ -17,12 +18,21 @@ namespace JointWatermark.Views
     {
         WatermarkRowConfigVM vm;
         public GeneralWatermarkRowProperty row { get; set; }
-        public WatermarkRowConfig(GeneralWatermarkRowProperty _row)
+        public Dictionary<string, object> Meta {  get; private set; }
+        public WatermarkRowConfig(GeneralWatermarkRowProperty _row, Dictionary<string, object> meta)
         {
-            InitializeComponent();
-            row = _row;
-            vm = new WatermarkRowConfigVM(this);
-            DataContext = vm;
+            try
+            {
+                InitializeComponent();
+                row = _row;
+                Meta = meta;
+                vm = new WatermarkRowConfigVM(this);
+                DataContext = vm;
+            }
+            catch(Exception ex)
+            {
+                Global.SendMsg(ex.Message);
+            }
         }
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
@@ -86,9 +96,8 @@ namespace JointWatermark.Views
         public WatermarkRowConfigVM(Window _window)
         {
             window = _window as WatermarkRowConfig;
-            var model = Global.InitConfig();
-            ExifInfoList = new ObservableCollection<ExifInfo>(model.Exifs);
             InitData();
+            InitExif();
         }
 
         #region properties
@@ -203,6 +212,40 @@ namespace JointWatermark.Views
 
         #endregion
         #region function
+
+        private void InitExif()
+        {
+            var model = Global.InitConfig();
+            var meta = new List<ExifInfo>(model.Exifs);
+            foreach (var exif in meta)
+            {
+                if(window.Meta.TryGetValue(exif.Key, out object val))
+                {
+                    exif.Value = val is DateTime ? (string)Global.GetDateTimeFormat(window.row.DateFormat, val) : val.ToString();
+                }
+            }
+            foreach(var i in window.Meta.Where(c=> !meta.Select(x=>x.Key).Contains(c.Key)))
+            {
+                var ei = new ExifInfo
+                {
+                    IsSelected = false,
+                    Key = i.Key,
+                    Name = i.Key,
+                    Value = i.Value.ToString()
+                };
+                meta.Add(ei);
+            }
+            ExifInfoList = new ObservableCollection<ExifInfo>(meta);
+            foreach(var cfg in Config)
+            {
+                if(cfg == null) continue;
+                var item = meta.FirstOrDefault(c => c.Key == cfg.Key);
+                if(item != null)
+                {
+                    cfg.Value = item.Value;
+                }
+            }
+        }
 
         private void InitData()
         {

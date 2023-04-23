@@ -45,6 +45,19 @@
             <MenuItem Header="帮助" >
                 <MenuItem Header="打开向导"  Icon="{materialDesign:PackIcon Kind=AccountQuestion}" Click="OpenGuideClick"/>
             </MenuItem>
+            <MenuItem Header="不会用？">
+                <MenuItem Header="交流群" Icon="{materialDesign:PackIcon Kind=Qqchat}" >
+                    <MenuItem Header="866034817" Icon="{materialDesign:PackIcon Kind=Qqchat}">
+                        <MenuItem.ToolTip>
+                            <Image Source="../Resources/qqgroup.jpg" Height="250" Width="200"/>
+                        </MenuItem.ToolTip>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="v1.0 B站视频" Icon="{materialDesign:PackIcon Kind=Youtube}" Click="OpenLink" Tag="http://b23.tv/XTJtsHW">
+                </MenuItem>
+                <MenuItem Header="v2.0 B站视频" Icon="{materialDesign:PackIcon Kind=Youtube}" Click="OpenLink" Tag="http://b23.tv/3LQR4Vz">
+                </MenuItem>
+            </MenuItem>
             <MenuItem Header="更多">
                 <MenuItem Header="交流群" Icon="{materialDesign:PackIcon Kind=Qqchat}" >
                     <MenuItem Header="866034817" Icon="{materialDesign:PackIcon Kind=Qqchat}">
