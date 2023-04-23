@@ -42,7 +42,7 @@
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <TextBox Text="{Binding Front, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="20"/>
-                            <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"/>
+                            <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="20"/>
                             <TextBox Text="{Binding Behind, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="20"/>
                         </StackPanel>
                     </DataTemplate>
