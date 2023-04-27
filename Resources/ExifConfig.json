@@ -104,8 +104,8 @@
     },
     {
       "IsSelected": false,
-      "Key": "Shoter",
-      "Name": "拍摄人",
+      "Key": "Customer",
+      "Name": "自定义文字",
       "Value": ""
     }
   ],
@@ -265,6 +265,10 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
@@ -306,6 +310,10 @@
           "FontSize": 24,
           "Color": "#909090",
           "DateFormat": [
+            ".",
+            ".",
+            ":",
+            ":",
             ".",
             ".",
             ":",
@@ -364,6 +372,10 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
@@ -401,6 +413,10 @@
           "FontSize": 30,
           "Color": "#000000",
           "DateFormat": [
+            ".",
+            ".",
+            ":",
+            ":",
             ".",
             ".",
             ":",
@@ -463,6 +479,10 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
@@ -511,6 +531,10 @@
             ".",
             ".",
             ":",
+            ":",
+            ".",
+            ".",
+            ":",
             ":"
           ],
           "FontXS": 1.0,
@@ -544,6 +568,10 @@
           "FontSize": 30,
           "Color": "#e6e6e6",
           "DateFormat": [
+            ".",
+            ".",
+            ":",
+            ":",
             ".",
             ".",
             ":",
@@ -738,6 +766,10 @@
                 ".",
                 ".",
                 ":",
+                ":",
+                ".",
+                ".",
+                ":",
                 ":"
               ],
               "FontXS": 1.0,
@@ -825,6 +857,10 @@
                 ".",
                 ".",
                 ":",
+                ":",
+                ".",
+                ".",
+                ":",
                 ":"
               ],
               "FontXS": 1.0,
@@ -870,6 +906,10 @@
               "FontSize": 24,
               "Color": "#AFAFAF",
               "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":",
                 ".",
                 ".",
                 ":",
@@ -927,7 +967,8 @@
             }
           ]
         },
-        "Name": "光影边框"
+        "Name": "光影边框",
+        "Url": null
       },
       {
         "Property": {
@@ -961,7 +1002,170 @@
           "Properties": [],
           "ConnectionModes": []
         },
-        "Name": "Ancientry"
+        "Name": "Ancientry",
+        "Url": null
+      },
+      {
+        "Property": {
+          "Name": null,
+          "ID": "B19743A9D0F647BDB0DACB387925F96B",
+          "EnableFixedPercent": true,
+          "PhotoPath": "C:\\Users\\kingdee\\Pictures\\Camera Roll\\DSC09308.jpg",
+          "ThumbnailPath": "C:\\Users\\kingdee\\source\\repos\\JointWatermark\\bin\\Debug\\net6.0-windows\\\\temp\\DSC09308.jpg",
+          "PhotoRatio": 0,
+          "StartPosition": {
+            "X": 0,
+            "Y": 0,
+            "IsEmpty": true
+          },
+          "PecentOfWidth": 100,
+          "PecentOfHeight": 100,
+          "PhotoAlignment": 0,
+          "BackgroundColor": "#FFFFFF",
+          "ImageBackgroud": null,
+          "FontFamily": null,
+          "Shadow": {
+            "Enabled": false,
+            "Width": 200
+          },
+          "Properties": [
+            {
+              "Content": "中间",
+              "DataSource": {
+                "From": 0,
+                "Exifs": [
+                  {
+                    "SEQ": 1,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "Make",
+                    "Value": "SONY"
+                  }
+                ]
+              },
+              "ImagePath": null,
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "OpenSans",
+              "IsBold": true,
+              "FontSize": 30,
+              "Color": "#FFFFFF",
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
+              "FontXS": 2.0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "AA",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
+              "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 3,
+              "IsChecked": true,
+              "ID": "A872F7DC263543A5962751E35F008CB6",
+              "Name": "第一行字体"
+            },
+            {
+              "Content": "中间",
+              "DataSource": {
+                "From": 0,
+                "Exifs": [
+                  {
+                    "SEQ": 1,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "Make",
+                    "Value": "SONY"
+                  }
+                ]
+              },
+              "ImagePath": null,
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "OpenSans",
+              "IsBold": true,
+              "FontSize": 30,
+              "Color": "#FFFFFF",
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
+              "FontXS": 2.0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "A",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
+              "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 3,
+              "IsChecked": true,
+              "ID": "2872F7DC26D543A5962751E35F008CB6",
+              "Name": "第二行文字"
+            },
+            {
+              "Content": "中间",
+              "DataSource": {
+                "From": 0,
+                "Exifs": [
+                  {
+                    "SEQ": 1,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "Make",
+                    "Value": "SONY"
+                  }
+                ]
+              },
+              "ImagePath": null,
+              "ContentType": 1,
+              "ImagePercentOfRange": 0,
+              "LinePercentOfRange": 0,
+              "LinePixel": 0,
+              "FontFamily": "OpenSans",
+              "IsBold": true,
+              "FontSize": 30,
+              "Color": "#FFFFFF",
+              "DateFormat": [
+                ".",
+                ".",
+                ":",
+                ":"
+              ],
+              "FontXS": 2.0,
+              "EdgeDistanceCharacterX": "ABCD",
+              "EdgeDistanceCharacterY": "",
+              "EdgeDistanceFixedPixel": 0,
+              "EdgeDistancePercent": 0,
+              "EdgeDistanceType": 1,
+              "End": 4,
+              "RelativePositionMode": 1,
+              "Start": 0,
+              "X": 4,
+              "Y": 3,
+              "IsChecked": true,
+              "ID": "2872F7DC263543A596E751E35F008CB6",
+              "Name": "第三行文字"
+            }
+          ],
+          "ConnectionModes": []
+        },
+        "Name": "透明字体",
+        "Url": null
       }
     ]
   }

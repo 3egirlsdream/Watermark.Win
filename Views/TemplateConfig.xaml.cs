@@ -34,8 +34,15 @@ namespace JointWatermark.Views
             parent = mainPage;
             BitmapImage map = new BitmapImage(new Uri(_property.PhotoPath, UriKind.Absolute));
             yaofan.Source = map;
-            vm = new TemplateConfigVM(this);
-            this.DataContext = vm;
+            try
+            {
+                vm = new TemplateConfigVM(this);
+                this.DataContext = vm;
+            }
+            catch(Exception ex)
+            {
+                Global.SendMsg(ex.Message);
+            }
         }
 
         private void OK_Click(object sender, RoutedEventArgs e)

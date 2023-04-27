@@ -11,7 +11,7 @@ namespace JointWatermark.Class
         /// 固定字符计数
         /// </summary>
         public string EdgeDistanceCharacterX { get; set; } = "";
-        public string EdgeDistanceCharacterY { get; set; }
+        public string EdgeDistanceCharacterY { get; set; } = "";
 
         /// <summary>
         /// 固定像素

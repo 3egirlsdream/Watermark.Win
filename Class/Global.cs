@@ -393,23 +393,28 @@ namespace JointWatermark
         }
         public static GeneralWatermarkProperty Init()
         {
-            GeneralWatermarkProperty image;
-            image = new GeneralWatermarkProperty();
-            image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\bb.jpg";
-            image.StartPosition = new SixLabors.ImageSharp.Point(0, 15);
-            image.PecentOfHeight = 70;
+            //GeneralWatermarkProperty image;
+            //image = new GeneralWatermarkProperty();
+            //image.PhotoPath = "C:\\Users\\Jiang\\Pictures\\bb.jpg";
+            //image.StartPosition = new SixLabors.ImageSharp.Point(0, 15);
+            //image.PecentOfHeight = 70;
+            //image.PecentOfWidth = 100;
+            //image.EnableFixedPercent = true;
+            //image.Shadow = new ImageShadow(false, 200);
+            //image.ImageBackgroud = new ImageBackgroud()
+            //{
+            //    Type = ImageBackgroudType.Image,
+            //    Top = "system_t",
+            //    Bottom = "system_b"
+            //};
+            //image.Properties = new List<GeneralWatermarkRowProperty>();
+            //image.ConnectionModes = new List<ConnectionMode>();
+            var image = Global.InitConfig().Templates?.PhotoFrame;
+            image.PecentOfHeight = 100;
             image.PecentOfWidth = 100;
+            image.StartPosition = new SixLabors.ImageSharp.Point(0, 0);
             image.EnableFixedPercent = true;
             image.Shadow = new ImageShadow(false, 200);
-            image.ImageBackgroud = new ImageBackgroud()
-            {
-                Type = ImageBackgroudType.Image,
-                Top = "system_t",
-                Bottom = "system_b"
-            };
-            image.Properties = new List<GeneralWatermarkRowProperty>();
-            image.ConnectionModes = new List<ConnectionMode>();
-            //image = Global.InitConfig().Templates?.PhotoFrame;
             //image.PhotoPath = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\Windows10.jpg";
             //image.Properties[2].ImagePath = "C:\\Users\\kingdee\\Downloads\\苹果.png";
             return image;

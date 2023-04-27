@@ -210,6 +210,17 @@ namespace JointWatermark.Views
             }
         }
 
+        private string edgeHeight;
+        public string EdgeHeight
+        {
+            get => edgeHeight;
+            set
+            {
+                edgeHeight = value;
+                NotifyPropertyChanged(nameof(EdgeHeight));
+            }
+        }
+
         #endregion
         #region function
 
@@ -236,7 +247,9 @@ namespace JointWatermark.Views
                 meta.Add(ei);
             }
             ExifInfoList = new ObservableCollection<ExifInfo>(meta);
-            foreach(var cfg in Config)
+            if (window.row.DataSource != null && window.row.DataSource.Exifs != null)
+                Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
+            foreach (var cfg in Config)
             {
                 if(cfg == null) continue;
                 var item = meta.FirstOrDefault(c => c.Key == cfg.Key);
@@ -255,6 +268,7 @@ namespace JointWatermark.Views
             IsBold = window.row.IsBold;
             window.edgeComputeMode.SelectedIndex = window.row.EdgeDistanceType == EdgeDistanceType.Character ? 0 : 1;
             EdgeWidth = window.row.EdgeDistanceType == EdgeDistanceType.Character ? window.row.EdgeDistanceCharacterX : window.row.EdgeDistancePercent + "";
+            EdgeHeight = window.row.EdgeDistanceType == EdgeDistanceType.Character ? window.row.EdgeDistanceCharacterY : window.row.EdgeDistancePercent + "";
             var fontList = Global.InitFontList();
             window.fontlist.ItemsSource = fontList;
             var fontIdx = fontList.IndexOf(window.row.FontFamily);
@@ -263,8 +277,7 @@ namespace JointWatermark.Views
             window.monDay.Text = window.row.DateFormat[1];
             window.hourMin.Text = window.row.DateFormat[2];
             window.minSec.Text = window.row.DateFormat[3];
-            if(window.row.DataSource != null && window.row.DataSource.Exifs != null)
-            Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
+            window.xAlign.SelectedIndex = (int)window.row.X / 2;
         }
 
         public void SaveConfig()
@@ -279,10 +292,12 @@ namespace JointWatermark.Views
             window.row.FontXS = FontZoom;
             window.row.FontFamily = FontFamily;
             window.row.IsBold = IsBold;
+            window.row.X = (PositionBase)(window.xAlign.SelectedIndex * 2);
             if (window.edgeComputeMode.SelectedIndex == 0)
             {
                 window.row.EdgeDistanceType = EdgeDistanceType.Character;
                 window.row.EdgeDistanceCharacterX = EdgeWidth;
+                window.row.EdgeDistanceCharacterY = EdgeHeight;
             }
             else
             {
