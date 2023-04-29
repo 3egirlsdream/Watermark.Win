@@ -96,8 +96,8 @@
                     <RowDefinition Height="40"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Label Content="日期格式" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Label Content="日期格式" VerticalAlignment="Center" HorizontalAlignment="Right" Grid.Row="2" Grid.Column="3"/>
+                <StackPanel  Grid.Row="2" Grid.Column="4" Orientation="Horizontal" >
                     <TextBlock VerticalAlignment="Center" Text="2023" Margin="10 0 0 0"/>
                     <TextBox x:Name="yearMon" VerticalAlignment="Center" Text="."/>
                     <TextBlock VerticalAlignment="Center" Text="04"/>
@@ -109,6 +109,10 @@
                     <TextBox x:Name="minSec" VerticalAlignment="Center" Text=":"/>
                     <TextBlock VerticalAlignment="Center" Text="59"/>
                 </StackPanel>
+
+                <Label Grid.Row="0" Content="字体透明度" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <Label Grid.Row="0" Grid.Column="1" Margin="10 -5 0 10" Content="{Binding ElementName=opacity, Path=Value}" VerticalAlignment="Top"/>
+                <Slider x:Name="opacity" Grid.Column="1" Grid.Row="0" Margin="10 0 15 -3" Value="{Binding FontOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="1" TickFrequency="0.1" TickPlacement="BottomRight" VerticalAlignment="Bottom" Style="{StaticResource MaterialDesignDiscreteSlider}"/>
                 <Label Grid.Row="1" Content="字体颜色" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" Orientation="Horizontal" Margin="10 0 0 0">
                     <TextBox Width="80" Text="{Binding FontColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" VerticalAlignment="Center"  materialDesign:HintAssist.IsFloating="True"/>
@@ -135,8 +139,8 @@
                 </ComboBox>
                 <TextBox Grid.Row="1" Grid.Column="5" Text="{Binding EdgeHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Bottom"/>
 
-                <Label Grid.Row="2" Content="粗体" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                <ToggleButton Grid.Row="2" Grid.Column="4" Style="{StaticResource MaterialDesignSwitchToggleButton}"  IsChecked="{Binding IsBold, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="10 0"/>
+                <Label Grid.Row="1" Content="粗体" Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <ToggleButton Grid.Row="1" Grid.Column="7" Style="{StaticResource MaterialDesignSwitchToggleButton}"  IsChecked="{Binding IsBold, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="10 0"/>
                 <Label Grid.Row="3" Grid.Column="3" Content="行高" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 <StackPanel Grid.Row="3" Grid.Column="4" Margin="10 -5 0 10" Orientation="Horizontal">
                 <Label Content="{Binding ElementName=rh, Path=Value}" VerticalAlignment="Top"/>

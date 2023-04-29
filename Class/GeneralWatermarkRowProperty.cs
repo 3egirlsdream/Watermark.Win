@@ -54,6 +54,7 @@ namespace JointWatermark.Class
         public string Color { get; set; } = "#000000";
         public List<string> DateFormat { get; set; }
         public double FontXS { get; set; } = 1;
+        public float FontOpacity { get; set; } = 1f;
 
 
 

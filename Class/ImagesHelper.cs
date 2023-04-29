@@ -727,7 +727,7 @@ namespace JointWatermark.Class
                             var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
                             var color = SixLabors.ImageSharp.Color.ParseHex(row.Color);
                             
-                            resultImage.Mutate(x => x.DrawText(content, font, color.WithAlpha(0.3f), Params));
+                            resultImage.Mutate(x => x.DrawText(content, font, color.WithAlpha(row.FontOpacity), Params));
                         }
                     }
 
@@ -735,7 +735,7 @@ namespace JointWatermark.Class
                     for (var i = 0; i < ConnectionModes.Count; i++)
                     {
                         var row = ConnectionModes[i];
-                        //DrawWatermark(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
+                        DrawWatermark(image, resultWidth, resultHeight, img, resultImage, start, fontxs, row, i);
                     }
 
                     ScalePicture(resultImage);
@@ -899,7 +899,7 @@ namespace JointWatermark.Class
                     {
                         _row.X += (int)(totalWidth - _font.Width);
                     }
-                    resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex(item.Color), _row));
+                    resultImage.Mutate(x => x.DrawText(content, font, SixLabors.ImageSharp.Color.ParseHex(item.Color).WithAlpha(item.FontOpacity), _row));
                     row1.Y += (int)(rowHeight + fontHeight);
                 }
                 else if (item.ContentType == ContentType.Image)

@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>leica.ico</ApplicationIcon>
-    <AssemblyVersion>2.1.1.0</AssemblyVersion>
+    <AssemblyVersion>2.1.2.0</AssemblyVersion>
     <Authors>3egirlsdream@github.com</Authors>
     <Company>github.com/3egirlsdream/JointWatermark</Company>
     <PackageProjectUrl>https://github.com/3egirlsdream/JointWatermark</PackageProjectUrl>
@@ -42,6 +42,7 @@
     <None Remove="Resources\kabi.png" />
     <None Remove="Resources\leica.png" />
     <None Remove="Resources\nm.png" />
+    <None Remove="Resources\opacity.png" />
     <None Remove="Resources\qqgroup.jpg" />
     <None Remove="Resources\yaofan.jpg" />
   </ItemGroup>
@@ -69,6 +70,7 @@
     <Resource Include="Resources\kabi.png" />
     <Resource Include="Resources\leica.png" />
     <Resource Include="Resources\nm.png" />
+    <Resource Include="Resources\opacity.png" />
     <Resource Include="Resources\qqgroup.jpg" />
     <Resource Include="Resources\yaofan.jpg" />
   </ItemGroup>

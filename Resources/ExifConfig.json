@@ -1008,10 +1008,10 @@
       {
         "Property": {
           "Name": null,
-          "ID": "B19743A9D0F647BDB0DACB387925F96B",
+          "ID": "157F24520FD140D8A1EC25203E7BBD84",
           "EnableFixedPercent": true,
-          "PhotoPath": "C:\\Users\\kingdee\\Pictures\\Camera Roll\\DSC09308.jpg",
-          "ThumbnailPath": "C:\\Users\\kingdee\\source\\repos\\JointWatermark\\bin\\Debug\\net6.0-windows\\\\temp\\DSC09308.jpg",
+          "PhotoPath": "",
+          "ThumbnailPath": "",
           "PhotoRatio": 0,
           "StartPosition": {
             "X": 0,
@@ -1059,6 +1059,7 @@
                 ":"
               ],
               "FontXS": 2.0,
+              "FontOpacity": 0.3,
               "EdgeDistanceCharacterX": "ABCD",
               "EdgeDistanceCharacterY": "AA",
               "EdgeDistanceFixedPixel": 0,
@@ -1069,7 +1070,7 @@
               "Start": 0,
               "X": 4,
               "Y": 3,
-              "IsChecked": true,
+              "IsChecked": false,
               "ID": "A872F7DC263543A5962751E35F008CB6",
               "Name": "第一行字体"
             },
@@ -1082,8 +1083,8 @@
                     "SEQ": 1,
                     "Front": null,
                     "Behind": null,
-                    "Key": "Make",
-                    "Value": "SONY"
+                    "Key": "Customer",
+                    "Value": "SHOT ON"
                   }
                 ]
               },
@@ -1103,7 +1104,8 @@
                 ":"
               ],
               "FontXS": 2.0,
-              "EdgeDistanceCharacterX": "ABCD",
+              "FontOpacity": 0.3,
+              "EdgeDistanceCharacterX": ".",
               "EdgeDistanceCharacterY": "A",
               "EdgeDistanceFixedPixel": 0,
               "EdgeDistancePercent": 0,
@@ -1111,7 +1113,7 @@
               "End": 4,
               "RelativePositionMode": 1,
               "Start": 0,
-              "X": 4,
+              "X": 0,
               "Y": 3,
               "IsChecked": true,
               "ID": "2872F7DC26D543A5962751E35F008CB6",
@@ -1127,7 +1129,14 @@
                     "Front": null,
                     "Behind": null,
                     "Key": "Make",
-                    "Value": "SONY"
+                    "Value": "DJI"
+                  },
+                  {
+                    "SEQ": 2,
+                    "Front": null,
+                    "Behind": null,
+                    "Key": "Model",
+                    "Value": "FC7203"
                   }
                 ]
               },
@@ -1147,7 +1156,8 @@
                 ":"
               ],
               "FontXS": 2.0,
-              "EdgeDistanceCharacterX": "ABCD",
+              "FontOpacity": 0.3,
+              "EdgeDistanceCharacterX": ".SHOT ",
               "EdgeDistanceCharacterY": "",
               "EdgeDistanceFixedPixel": 0,
               "EdgeDistancePercent": 0,
@@ -1155,7 +1165,7 @@
               "End": 4,
               "RelativePositionMode": 1,
               "Start": 0,
-              "X": 4,
+              "X": 0,
               "Y": 3,
               "IsChecked": true,
               "ID": "2872F7DC263543A596E751E35F008CB6",
@@ -1164,7 +1174,7 @@
           ],
           "ConnectionModes": []
         },
-        "Name": "透明字体",
+        "Name": "透明文字",
         "Url": null
       }
     ]

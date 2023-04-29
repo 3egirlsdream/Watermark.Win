@@ -406,6 +406,7 @@ namespace JointWatermark
                 var dic = new Dictionary<string, string>();
                 dic["光影边框"] = "../Resources/gy.png";
                 dic["Ancientry"] = "../Resources/bb.png";
+                dic["透明文字"] = "../Resources/opacity.png";
                 for (var i = 0;  i < model.Templates.CustomizationComponents.Count;i++)
                 {
                     var template = model.Templates.CustomizationComponents[i];

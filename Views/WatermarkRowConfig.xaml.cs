@@ -154,6 +154,17 @@ namespace JointWatermark.Views
             }
         }
 
+        private double fontOpacity;
+        public double FontOpacity
+        {
+            get => fontOpacity;
+            set
+            {
+                fontOpacity = value;
+                NotifyPropertyChanged(nameof(FontOpacity));
+            }
+        }
+        
 
         private int rowHeight;
         public int RowHeight
@@ -249,7 +260,7 @@ namespace JointWatermark.Views
             ExifInfoList = new ObservableCollection<ExifInfo>(meta);
             if (window.row.DataSource != null && window.row.DataSource.Exifs != null)
                 Config = new ObservableCollection<ExifConfigInfo>(window.row.DataSource.Exifs);
-            foreach (var cfg in Config)
+            foreach (var cfg in Config.Where(c=>c.Key != "Customer"))
             {
                 if(cfg == null) continue;
                 var item = meta.FirstOrDefault(c => c.Key == cfg.Key);
@@ -264,6 +275,7 @@ namespace JointWatermark.Views
         {
             FontColor = window.row.Color;
             FontZoom = window.row.FontXS;
+            FontOpacity = window.row.FontOpacity;
             FontFamily = window.row.FontFamily;
             IsBold = window.row.IsBold;
             window.edgeComputeMode.SelectedIndex = window.row.EdgeDistanceType == EdgeDistanceType.Character ? 0 : 1;
@@ -290,6 +302,7 @@ namespace JointWatermark.Views
             window.row.Color = FontColor;
             window.row.DateFormat = new List<string> { window.yearMon.Text, window.monDay.Text, window.hourMin.Text, window.minSec.Text };
             window.row.FontXS = FontZoom;
+            window.row.FontOpacity = (float)FontOpacity;
             window.row.FontFamily = FontFamily;
             window.row.IsBold = IsBold;
             window.row.X = (PositionBase)(window.xAlign.SelectedIndex * 2);
