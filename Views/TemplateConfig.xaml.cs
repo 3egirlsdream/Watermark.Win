@@ -268,7 +268,15 @@ namespace JointWatermark.Views
             {
                 var row = WaterItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;
-                var page = new WatermarkRowConfig(row, window.property.Meta);
+                Window page;
+                if (row.ContentType == ContentType.Image)
+                {
+                    page = new WatermarkLogoConfig(row);
+                }
+                else
+                {
+                    page = new WatermarkRowConfig(row, window.property.Meta);
+                }
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(page.ShowDialog() == true)
                 {
@@ -280,7 +288,7 @@ namespace JointWatermark.Views
 
         public SimpleCommand CmdOpenGroupConfig => new SimpleCommand()
         {
-            ExecuteDelegate =x =>
+            ExecuteDelegate = x =>
             {
                 var row = ConnectionItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;

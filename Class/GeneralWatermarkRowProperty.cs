@@ -64,7 +64,7 @@ namespace JointWatermark.Class
         [JsonIgnore]
         public System.Windows.Visibility Visibility
         {
-            get => ContentType == ContentType.Text ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            get => ContentType == ContentType.Text || ContentType == ContentType.Image ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             set { }
         }
     }

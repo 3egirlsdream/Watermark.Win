@@ -21,7 +21,7 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="BorderThickness" Value="0"></Setter>
-            <Setter Property="ContentTemplate" >
+            <Setter Property="ContentTemplate">
                 <Setter.Value>
                     <DataTemplate>
                         <Border BorderBrush="#c3c3c3" BorderThickness="5">
@@ -70,7 +70,7 @@
             </Button>
             <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存到全局"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Right"/>
         </Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Hidden" Grid.Row="1" >
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="1" >
             <StackPanel  Background="#fff">
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="边距设置" Margin="0 0 0 2">
                     <Border>

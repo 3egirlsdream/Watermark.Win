@@ -106,7 +106,7 @@ namespace JointWatermark
                 var meta_origin = profile.Select(x => new
                 {
                     Key = x.Tag.ToString(),
-                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : (x.Tag.ToString().Contains("DateTime") ? Convert.ToDateTime(ToDateTime((string)x.GetValue())) : x.GetValue())
+                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : (x.Tag.ToString().Contains("DateTime") ? ToDateTime((string)x.GetValue()) : x.GetValue())
                 });
 
                 foreach (var item in meta_origin)
@@ -170,7 +170,7 @@ namespace JointWatermark
         }
 
         //2021:10:24 17:04:49
-        private static string ToDateTime(string s)
+        private static DateTime ToDateTime(string s)
         {
             try
             {
@@ -182,11 +182,11 @@ namespace JointWatermark
                 var minute = Convert.ToInt16(ls[4]);
                 var second = Convert.ToInt16(ls[5]);
                 var dt = new DateTime(year, month, day, hour, minute, second);
-                return dt.ToString();
+                return dt;
             }
             catch
             {
-                return s;
+                return DateTime.Now;
             }
         }
 
@@ -267,7 +267,7 @@ namespace JointWatermark
             {
                 dateFormat = new List<string>() { ".", ".", ":", ":" };
             }
-            return (rtl is DateTime ? Convert.ToDateTime(rtl).ToString($"yyyy{dateFormat[0]}MM{dateFormat[1]}dd HH{dateFormat[2]}mm{dateFormat[3]}ss") : rtl);
+            return rtl is DateTime time ? time.ToString($"yyyy{dateFormat[0]}MM{dateFormat[1]}dd HH{dateFormat[2]}mm{dateFormat[3]}ss") : rtl;
         }
 
         public static MainModel InitConfig()

@@ -214,6 +214,18 @@ namespace JointWatermark
                     if (vm.IconList != null && vm.IconList.Any())
                     {
                         var logoname = vm.IconList[0];
+                        if (_i.Meta.TryGetValue("Make", out object _make))
+                        {
+                            var make = _make?.ToString();
+                            if (!string.IsNullOrEmpty(make))
+                            {
+                                var first = vm.IconList.FirstOrDefault(c => c.ToLower().Contains(make.ToLower()));
+                                if (first != null)
+                                {
+                                    logoname = first;
+                                }
+                            }
+                        }
                         if (logoname.StartsWith("http"))
                         {
                             i.Config.LogoName = logoname;
