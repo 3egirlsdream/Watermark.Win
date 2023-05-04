@@ -221,8 +221,8 @@
                         <Viewbox HorizontalAlignment="Left">
                             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
 
-                                <Button x:Name="btnRotate" Style="{StaticResource MaterialDesignIconButton}" ToolTip="顺时针旋转90°" Click="RotateImageClick">
-                                    <materialDesign:PackIcon Kind="FileRotateRight" />
+                                <Button x:Name="btnRotate" Style="{StaticResource MaterialDesignIconButton}" ToolTip="覆盖元数据" Click="RepeatExifInfoClick">
+                                    <materialDesign:PackIcon Kind="DatabaseSync"/>
                                 </Button>
                                 <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="重置图片位置" Click="ResetImagePositionClick">
                                     <materialDesign:PackIcon Kind="Refresh" />

@@ -743,6 +743,37 @@ namespace JointWatermark
             }
         }
 
+        private void RepeatExifInfoClick(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                var action = new Action<CancellationToken, Loading>((token, loading) =>
+                {
+                    loading.ISetPosition(0);
+                    var meta = Global.GetMeta(dialog.FileName);
+                    if (meta != null && meta.Count > 0 && vm.FocusedItem != null)
+                    {
+                        vm.FocusedItem.Meta = meta;
+                    }
+                    loading.ISetPosition(100, "覆盖完成");
+                });
+                var ld = new Loading(action);
+                ld.ShowInTaskbar = false;
+                ld.Owner = App.Current.MainWindow;
+                ld.Mini = true;
+                ld.ShowDialog();
+                
+            }
+        }
+
         private async void ComputeUserCount()
         {
             try
@@ -759,6 +790,7 @@ namespace JointWatermark
     public class MainVM : ValidationBase
     {
         MainPage mainPage;
+        public GeneralWatermarkProperty FocusedItem { get; set; }
         public MainVM(Page page)
         {
             mainPage = page as MainPage;
@@ -973,16 +1005,16 @@ namespace JointWatermark
         {
             ExecuteDelegate = x =>
             {
-                var item = Images.FirstOrDefault(c => c.ID.Equals(x));
+                 FocusedItem = Images.FirstOrDefault(c => c.ID.Equals(x));
 
-                if (item != null)
+                if (FocusedItem != null)
                 {
                     if (mainPage.CurrentTemplate != "Ancientry")
                     {
                         mainPage.configFrame.Width = 300;
-                        mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(item, this.mainPage) };
+                        mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(FocusedItem, this.mainPage) };
                     }
-                    RefreshSelectedImage(item);
+                    RefreshSelectedImage(FocusedItem);
                 }
             },
             CanExecuteDelegate= o => true
