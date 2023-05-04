@@ -39,9 +39,10 @@
             <GridSplitter Height="1" Grid.Row="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="5 0" VerticalAlignment="Bottom"/>
             <TextBlock Grid.Row="2" Height="auto" Margin="10 0 0 0" Foreground="Gray" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="10.5" Text="出错了？加入QQ群发送出错原图给开发者：866034817"/>
             <GridSplitter Height="1"  Grid.Row="2" Background="LightGray" HorizontalAlignment="Stretch" Margin="5 0" VerticalAlignment="Bottom"/>
-            <Button Grid.Row="3" Height="30" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Click="Button_Click">
-                <Label Content="确定" FontSize="12" Foreground="white"/>
-            </Button>
+            <StackPanel  Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Click="Button_Click" Content="确定" FontSize="12" Foreground="white"/>
+                <Button VerticalAlignment="Center" Click="Fix_Click" Margin="10 0" Content="尝试修复" FontSize="12" Foreground="white"/>
+            </StackPanel>
         </Grid>
 
     </Border>
