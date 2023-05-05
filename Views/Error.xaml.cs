@@ -38,7 +38,7 @@ namespace JointWatermark.Views
                     foreach (var file in folder.GetFiles())
                     {
                         token.ThrowIfCancellationRequested();
-                        if (file.Exists && file.Extension != "exe")
+                        if (file.Exists && file.Extension != "exe" && (file.Name == "ExifConfig.json" || file.Extension == "dll"))
                         {
                             try
                             {

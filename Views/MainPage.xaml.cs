@@ -763,6 +763,7 @@ namespace JointWatermark
                     {
                         vm.FocusedItem.Meta = meta;
                     }
+                    Dispatcher.Invoke(()=> vm.RefreshSelectedImage());
                     loading.ISetPosition(100, "覆盖完成");
                 });
                 var ld = new Loading(action);
@@ -791,6 +792,7 @@ namespace JointWatermark
     {
         MainPage mainPage;
         public GeneralWatermarkProperty FocusedItem { get; set; }
+        Action refreshAction;
         public MainVM(Page page)
         {
             mainPage = page as MainPage;
@@ -1014,36 +1016,39 @@ namespace JointWatermark
                         mainPage.configFrame.Width = 300;
                         mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(FocusedItem, this.mainPage) };
                     }
-                    RefreshSelectedImage(FocusedItem);
+                    refreshAction = new Action( async () =>
+                    {
+                        if (FocusedItem == null) return;
+                        BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
+                        try
+                        {
+                            if ((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
+                            {
+                                return;
+                            }
+                            var bit = await ImagesHelper.Current.Generation(FocusedItem, true);
+                            var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
+                            mainPage.createdImg.Source = bmp;
+                            bit.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Global.SendMsg(ex.Message);
+                        }
+                        finally
+                        {
+                            BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
+                        }
+                    });
+                    RefreshSelectedImage();
                 }
             },
             CanExecuteDelegate= o => true
         };
 
-        public async void RefreshSelectedImage(GeneralWatermarkProperty item)
+        public void RefreshSelectedImage()
         {
-            if (item == null) return;
-            BottomProcess = new BottomProcessInstance(Visibility.Visible, true);
-            try
-            {
-                if ((DateTime.Now - ImagesHelper.Current.LastDate).TotalSeconds < 1.0)
-                {
-                    return;
-                }
-                var bit = await ImagesHelper.Current.Generation(item, true);
-                var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
-                mainPage.createdImg.Source = bmp;
-                bit.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Global.SendMsg(ex.Message);
-            }
-            finally
-            {
-                BottomProcess = new BottomProcessInstance(Visibility.Hidden, false);
-                mainPage.btnRotate.IsEnabled = true;
-            }
+            refreshAction?.Invoke();
         }
 
 

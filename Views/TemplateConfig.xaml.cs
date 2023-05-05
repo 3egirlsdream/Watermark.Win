@@ -211,6 +211,7 @@ namespace JointWatermark.Views
                 NotifyPropertyChanged(nameof(EnabledShadow));
                 if(window.property.Shadow != null)
                     window.property.Shadow.Enabled = enabledShadow;
+                window.parent.vm.RefreshSelectedImage();
             }
         }
 
@@ -255,7 +256,7 @@ namespace JointWatermark.Views
                         c.ImagePath.IsCloud = photo.IsCloud;
                     }
                 });
-                window.parent.vm.RefreshSelectedImage(window.property);
+                window.parent.vm.RefreshSelectedImage();
             });
             BackgroundColor = window.property.BackgroundColor;
         }
@@ -280,7 +281,7 @@ namespace JointWatermark.Views
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(page.ShowDialog() == true)
                 {
-                    window.parent.vm.RefreshSelectedImage(window.property);
+                    window.parent.vm.RefreshSelectedImage();
                 }
             },
             CanExecuteDelegate = o => true
@@ -294,7 +295,10 @@ namespace JointWatermark.Views
                 if (row == null) return;
                 var page = new WatermarkConnectionConfig(row);
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                page.ShowDialog();
+                if (page.ShowDialog() == true)
+                {
+                    window.parent.vm.RefreshSelectedImage();
+                }
             },
             CanExecuteDelegate=o => true
         };
@@ -303,7 +307,7 @@ namespace JointWatermark.Views
         {
             ExecuteDelegate = x =>
             {
-                window.parent.vm.RefreshSelectedImage(window.property);
+                window.parent.vm.RefreshSelectedImage();
             },
             CanExecuteDelegate = o => true
         };
@@ -318,7 +322,7 @@ namespace JointWatermark.Views
                 {
                     var component = new CustomizationComponent();
                     component.Name = win.Data;
-                    component.Property = window.property;
+                    component.Property = JsonConvert.DeserializeObject<GeneralWatermarkProperty>(JsonConvert.SerializeObject(window.property));
                     component.Property.Meta = null;
                     var model = Global.InitConfig();
                     if (model.Templates == null) model.Templates = new WatermarkTemplates();
