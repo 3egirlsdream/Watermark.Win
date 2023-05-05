@@ -44,6 +44,7 @@
     <None Remove="Resources\nm.png" />
     <None Remove="Resources\opacity.png" />
     <None Remove="Resources\qqgroup.jpg" />
+    <None Remove="Resources\wx.jpg" />
     <None Remove="Resources\yaofan.jpg" />
   </ItemGroup>
 
@@ -72,6 +73,7 @@
     <Resource Include="Resources\nm.png" />
     <Resource Include="Resources\opacity.png" />
     <Resource Include="Resources\qqgroup.jpg" />
+    <Resource Include="Resources\wx.jpg" />
     <Resource Include="Resources\yaofan.jpg" />
   </ItemGroup>
 

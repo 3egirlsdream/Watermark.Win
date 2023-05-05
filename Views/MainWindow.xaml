@@ -36,6 +36,12 @@
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>
                 <MenuItem Header="导入云图标" Click="ImportCloudIconClick" Icon="{materialDesign:PackIcon Kind=CloudDownload}"></MenuItem>
                 <Separator />
+                <MenuItem Header="请开发者喝咖啡" Icon="{materialDesign:PackIcon Kind=Wechat}">
+                    <MenuItem.ToolTip>
+                        <Image Source="../Resources/wx.jpg" Height="250" Width="200"/>
+                    </MenuItem.ToolTip>
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="退出" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                
             </MenuItem>
@@ -66,7 +72,7 @@
                         </MenuItem.ToolTip>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem Header="网页端" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" >
+                <MenuItem Header="网页端" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" Visibility="Collapsed">
                     <MenuItem Header="www.thankful.top:1000" Click="OpenLink" Tag="http://www.thankful.top:1000/" Icon="{materialDesign:PackIcon Kind=Link}"/>
                 </MenuItem>
                 <MenuItem Header="Give ★" Icon="{materialDesign:PackIcon Kind=MicrosoftGithub}" >
