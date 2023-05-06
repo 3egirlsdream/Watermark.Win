@@ -38,7 +38,7 @@
                 </Grid.RowDefinitions>
                 <Label Content="LOGO占比" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 <Label Grid.Column="1" Margin="10 -5 0 10" Content="{Binding ElementName=logopercent, Path=Value}" VerticalAlignment="Top"/>
-                <Slider x:Name="logopercent" Grid.Column="1" Margin="10 0 15 -3" Value="{Binding ImagePercentOfRange, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="40" Maximum="100" TickPlacement="BottomRight" VerticalAlignment="Bottom" TickFrequency="5"/>
+                <Slider x:Name="logopercent" Grid.Column="1" Margin="10 0 15 -3" Value="{Binding ImagePercentOfRange, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="5" Maximum="100" TickPlacement="BottomRight" VerticalAlignment="Bottom" TickFrequency="5"/>
 
             </Grid>
         </Border>
