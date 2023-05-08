@@ -320,7 +320,7 @@ namespace JointWatermark.Class
                 {
                     var collection = new FontCollection();
                     family = collection.Add(ms);
-                    if(FontFamily == "OpenSans")
+                    if (FontFamily == "OpenSans")
                     {
                         using (var ms2 = new MemoryStream(Properties.Resources.OpenSans_Bold))
                         {
@@ -658,7 +658,7 @@ namespace JointWatermark.Class
                     resultImage.Mutate(x => x.DrawImage(img, start, 1));
 
                     //绘制边框图片
-                    if(image.ImageBackgroud != null && image.ImageBackgroud.Type == ImageBackgroudType.Image)
+                    if (image.ImageBackgroud != null && image.ImageBackgroud.Type == ImageBackgroudType.Image)
                     {
                         Image bakTop, bakBot;
                         if (image.ImageBackgroud.Top.StartsWith("system"))
@@ -726,7 +726,7 @@ namespace JointWatermark.Class
 
                             var Params = new SixLabors.ImageSharp.Point((int)xW, (int)yW);
                             var color = SixLabors.ImageSharp.Color.ParseHex(row.Color);
-                            
+
                             resultImage.Mutate(x => x.DrawText(content, font, color.WithAlpha(row.FontOpacity), Params));
                         }
                     }
@@ -757,7 +757,7 @@ namespace JointWatermark.Class
             if (row.RowHeightMinFontPercent != null)
             {
                 //找出最小字体
-                var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault(c=>c.ContentType == ContentType.Text);
+                var minFontSizeRow = group.OrderBy(c => c.FontSize).FirstOrDefault(c => c.ContentType == ContentType.Text);
                 if (minFontSizeRow != null)
                 {
                     var fONT = GetFont(minFontSizeRow.FontFamily, minFontSizeRow.IsBold, minFontSizeRow.FontSize * fontxs * minFontSizeRow.FontXS);
@@ -820,7 +820,7 @@ namespace JointWatermark.Class
                 var g = group[0];
                 if (!string.IsNullOrEmpty(g.ImagePath.Path))
                 {
-                    Image logo = LoadLogo(g);
+                    Image logo = LoadLogo(g, image.WhiteToTransparent);
 
                     //resultHeight - start.Y - img.Height 为白边的高度
                     var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
@@ -833,7 +833,7 @@ namespace JointWatermark.Class
                 var g = group.FirstOrDefault(c => c.ContentType == ContentType.Image);
                 if (!string.IsNullOrEmpty(g.ImagePath.Path))
                 {
-                    var logo = LoadLogo(g);
+                    var logo = LoadLogo(g, image.WhiteToTransparent);
                     //设计的图片高度
                     var designHeight = (resultHeight - start.Y - img.Height) * 1.0 * g.ImagePercentOfRange / 100.0;
                     //resultHeight - start.Y - img.Height 为白边的高度
@@ -891,7 +891,7 @@ namespace JointWatermark.Class
                     var content = Global.GetContent(item, image.Meta);
                     var _font = TextMeasurer.Measure(content, new SixLabors.Fonts.TextOptions(font));
                     var fontHeight = _font.Height;
-                    if(item.X == PositionBase.Center)
+                    if (item.X == PositionBase.Center)
                     {
                         _row.X += (int)((totalWidth - _font.Width) / 2.0);
                     }
@@ -906,7 +906,7 @@ namespace JointWatermark.Class
                 {
                     if (!string.IsNullOrEmpty(item.ImagePath.Path))
                     {
-                        var logo = LoadLogo(item);
+                        var logo = LoadLogo(item, image.WhiteToTransparent);
                         //resultHeight - start.Y - img.Height 为白边的高度
                         var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * item.ImagePercentOfRange / 100.0;
                         if (xs == 0) xs = 1;
@@ -933,30 +933,50 @@ namespace JointWatermark.Class
                     var _s = new SixLabors.ImageSharp.Point(row1.X, row1.Y);
                     var _e = new SixLabors.ImageSharp.Point(row1.X, row1.Y + (int)totalHeight);
                     var lineWidth = (int)(item.LinePixel * fontxs);
-                    resultImage.Mutate(x => x.DrawLines(SixLabors.ImageSharp.Color.ParseHex(item.Color), lineWidth == 0 ? 1 : lineWidth , _s, _e));
+                    resultImage.Mutate(x => x.DrawLines(SixLabors.ImageSharp.Color.ParseHex(item.Color), lineWidth == 0 ? 1 : lineWidth, _s, _e));
                     row1.Y += (int)(totalHeight);
                 }
             }
         }
 
-        private static Image LoadLogo(GeneralWatermarkRowProperty g)
+        private static Image LoadLogo(GeneralWatermarkRowProperty g, bool whiteToTransparent)
         {
-            Image logo;
+            Image<Rgba32> logo;
             var logoPath = Global.Path_logo + Global.SeparatorChar + g.ImagePath.Path;
             if (g.ImagePath.IsCloud)
             {
                 using (var mywebclient = new WebClient())
                 {
                     byte[] Bytes = mywebclient.DownloadData(g.ImagePath.Path);
-                    logo = Image.Load(Bytes);
+                    logo = Image.Load<Rgba32>(Bytes);
                 }
             }
             else
             {
-                logo = Image.Load(logoPath);
+                logo = Image.Load<Rgba32>(logoPath);
+            }
+
+            if(whiteToTransparent)
+            {
+                return ConvertWhiteToTransparent(logo);
             }
 
             return logo;
+        }
+
+        public static Image<Rgba32> ConvertWhiteToTransparent(Image<Rgba32> image)
+        {
+            for (int y = 0; y < image.Height; y++)
+            {
+                for (int x = 0; x < image.Width; x++)
+                { 
+                    if (image[x, y].R == 255 && image[x, y].G == 255 && image[x, y].B == 255) 
+                    { 
+                        image[x, y] = new Rgba32(0, 0, 0, 0); 
+                    } 
+                }
+            }
+            return image;
         }
 
         private static void GetWatermarkStartPosition(int resultWidth
@@ -1031,7 +1051,7 @@ namespace JointWatermark.Class
             try
             {
                 var f = SetFamily(fontFamily);
-                if(f.Item1 == null)
+                if (f.Item1 == null)
                 {
                     throw new Exception("字体不存在，请修改配置的字体");
                 }
@@ -1045,7 +1065,7 @@ namespace JointWatermark.Class
 
                 return font;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw ex;
             }

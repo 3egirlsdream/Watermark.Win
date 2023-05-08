@@ -215,6 +215,20 @@ namespace JointWatermark.Views
             }
         }
 
+        private bool whiteToTransparent;
+        public bool WhiteToTransparent
+        {
+            get => whiteToTransparent;
+            set
+            {
+                whiteToTransparent = value;
+                NotifyPropertyChanged(nameof(WhiteToTransparent));
+                window.property.WhiteToTransparent = value;
+                window.parent.vm.RefreshSelectedImage();
+            }
+        }
+        
+
         private string backgroundColor = "#FFFFFF";
         public string BackgroundColor
         {
@@ -246,6 +260,7 @@ namespace JointWatermark.Views
             BorderWidthOfRight = /*100 - PercentOfWidth -*/ BorderWidthOfLeft;
             //BorderWidth = Math.Min(BorderWidthOfTop, BorderWidthOfLeft);
             EnabledShadow = window.property.Shadow.Enabled;
+            WhiteToTransparent = window.property.WhiteToTransparent;
             window.logoPage.GetPath = new Action<Photo>((photo) =>
             {
                 window.property.Properties.ForEach(c =>

@@ -264,7 +264,7 @@ namespace JointWatermark.Views
             {
                 if(cfg == null) continue;
                 var item = meta.FirstOrDefault(c => c.Key == cfg.Key);
-                if(item != null)
+                if(item != null && !string.IsNullOrEmpty(item.Value))
                 {
                     cfg.Value = item.Value;
                 }
@@ -299,6 +299,10 @@ namespace JointWatermark.Views
                 From = DataSourceFrom.Exif,
                 Exifs = Config.ToList(),
             };
+            foreach(var item in  Config)
+            {
+                window.Meta[item.Key] = item.Value;
+            }
             window.row.Color = FontColor;
             window.row.DateFormat = new List<string> { window.yearMon.Text, window.monDay.Text, window.hourMin.Text, window.minSec.Text };
             window.row.FontXS = FontZoom;

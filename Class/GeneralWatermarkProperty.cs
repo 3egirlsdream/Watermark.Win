@@ -82,6 +82,7 @@ namespace JointWatermark.Class
         public string FontFamily { get; set; }
 
         public ImageShadow Shadow { get; set; }
+        public bool WhiteToTransparent { get; set; }
 
         public List<GeneralWatermarkRowProperty> Properties { get; set; }
 
