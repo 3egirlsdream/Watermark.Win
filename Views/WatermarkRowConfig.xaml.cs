@@ -19,13 +19,17 @@ namespace JointWatermark.Views
         WatermarkRowConfigVM vm;
         public GeneralWatermarkRowProperty row { get; set; }
         public Dictionary<string, object> Meta {  get; private set; }
-        public WatermarkRowConfig(GeneralWatermarkRowProperty _row, Dictionary<string, object> meta)
+        GeneralWatermarkProperty Property;
+        ObservableCollection<GeneralWatermarkProperty> Images;
+        public WatermarkRowConfig(GeneralWatermarkRowProperty _row, GeneralWatermarkProperty property, ObservableCollection<GeneralWatermarkProperty> images)
         {
             try
             {
                 InitializeComponent();
+                Images = images;    
                 row = _row;
-                Meta = meta;
+                Meta = property.Meta;
+                Property = property;
                 vm = new WatermarkRowConfigVM(this);
                 DataContext = vm;
             }
@@ -87,6 +91,41 @@ namespace JointWatermark.Views
                 System.Drawing.Color _c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
                 vm.FontColor = ColorTranslator.ToHtml(_c);
             }
+        }
+
+        private void ApplyAll_Click(object sender, RoutedEventArgs e)
+        {
+            vm.SaveConfig();
+            if (Images is null || Images.Count == 0) return;
+            foreach (var image in Images)
+            {
+                var item = image.Properties.FirstOrDefault(c => c.ID == row.ID);
+                if (item != null)
+                {
+                    item.DataSource = new WatermarkDataSource
+                    {
+                        From = DataSourceFrom.Exif,
+                        Exifs = vm.Config.ToList(),
+                    };
+                    foreach (var c in vm.Config)
+                    {
+                        if(c.IsChanged == true)
+                        {
+                            image.Meta[c.Key] = c.Value;
+                        }
+                    }
+                }
+            }
+            this.DialogResult = true;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            foreach(var c in vm.Config)
+            {
+                c.PropertyChanged -= vm.C_PropertyChanged;
+            }
+            base.OnClosed(e);
         }
     }
 
@@ -269,6 +308,19 @@ namespace JointWatermark.Views
                     cfg.Value = item.Value;
                 }
             }
+
+            foreach(var c in Config)
+            {
+                c.PropertyChanged += C_PropertyChanged;
+            }
+        }
+
+        public void C_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (sender is ExifConfigInfo exif)
+            {
+                exif.IsChanged = true;
+            }
         }
 
         private void InitData()
@@ -327,6 +379,7 @@ namespace JointWatermark.Views
                 
             }
         }
+
 
 
         #endregion

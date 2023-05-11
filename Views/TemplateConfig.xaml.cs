@@ -291,7 +291,7 @@ namespace JointWatermark.Views
                 }
                 else
                 {
-                    page = new WatermarkRowConfig(row, window.property.Meta);
+                    page = new WatermarkRowConfig(row, window.property, window.parent.vm.Images);
                 }
                 page.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(page.ShowDialog() == true)
