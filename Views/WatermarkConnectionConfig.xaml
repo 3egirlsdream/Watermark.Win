@@ -70,8 +70,8 @@
         </Border>
         <Grid Grid.Row="3" Background="#f3f3f3">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存"  Width="auto" Margin="20 0" Click="OK_Click"/>
-                <Button Style="{StaticResource MaterialDesignFlatLightButton}" Content="取消"  Width="auto" Margin="20 0" IsCancel="True"/>
+                <Button Content="保存"  Width="auto" Margin="10 0" Click="OK_Click"/>
+                <Button Style="{StaticResource MaterialDesignRaisedLightButton}" Content="取消"  Width="auto" Margin="10 0" IsCancel="True"/>
             </StackPanel>
         </Grid>
     </Grid>

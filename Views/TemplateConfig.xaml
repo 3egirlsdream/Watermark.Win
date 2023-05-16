@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:JointWatermark.Views"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
+        Width="300"
         Title="模板设置"
         xmlns:converters="clr-namespace:MaterialDesignThemes.Wpf.Converters;assembly=MaterialDesignThemes.Wpf"
         xmlns:wpf="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf">
@@ -62,13 +63,19 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Background="#f3f3f3" >
-            <Button Command="{Binding CmdRefresh}" Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" Background="LightGray" ToolTip="应用" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="2 0" Width="30" Height="30" materialDesign:ElevationAssist.Elevation="Dp0">
-                <materialDesign:PackIcon Kind="Check" Foreground="Black"/>
+            <Button Command="{Binding CmdRefresh}" Background="LightGray" ToolTip="应用" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="2 0" Padding="0" Width="60" Height="30" materialDesign:ElevationAssist.Elevation="Dp0">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="刷新" FontSize="12"/>
+                    <materialDesign:PackIcon Kind="Check" Foreground="Black" VerticalAlignment="Center"/>
+                </StackPanel>
             </Button>
-            <Button Command="{Binding CmdSaveAs}" Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}" Background="LightGray" ToolTip="另存为模板" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="40 0" Width="30" Height="30" materialDesign:ElevationAssist.Elevation="Dp0">
-                <materialDesign:PackIcon Kind="ContentSave" Foreground="Black"/>
+            <Button Command="{Binding CmdSaveAs}" Background="LightGray" ToolTip="另存为模板" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="70 0" Padding="0" Width="80" Height="30" materialDesign:ElevationAssist.Elevation="Dp0">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="另存为" FontSize="12"/>
+                    <materialDesign:PackIcon Kind="ContentSave" Foreground="Black" VerticalAlignment="Center"/>
+                </StackPanel>
             </Button>
-            <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存到全局"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Right"/>
+            <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="保存到全局"  Width="auto" Margin="5 0" Click="OK_Click" HorizontalAlignment="Right" Visibility="Collapsed"/>
         </Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="1" >
             <StackPanel  Background="#fff">

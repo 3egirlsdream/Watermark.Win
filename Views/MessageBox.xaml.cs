@@ -20,11 +20,12 @@ namespace JointWatermark
             DataContext = vm;
         }
 
-        public MessageBoxL(bool readOnly, string _title, string tooltip = "")
+        public MessageBoxL(bool readOnly, string _title, string text, string tooltip = "")
         {
             InitializeComponent();
             vm = new MessageBoxVM(this);
             DataContext = vm;
+            vm.Text = text;
             vm.IsReadOnly = readOnly;
             title.Text = _title;
             this.tooltip.ToolTip = tooltip;

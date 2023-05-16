@@ -1161,9 +1161,16 @@ namespace JointWatermark
         {
             ExecuteDelegate = o =>
             {
-                mainPage.CurrentTemplate = o.ToString();
-                mainPage.tabImg.Focus();
-                Images.Clear();
+                if (Images.Any())
+                {
+                    var dialog = new MessageBoxL(true, "提示", "切换模板将清空列表，继续？", "");
+                    if(dialog.ShowDialog() == true)
+                    {
+                        mainPage.CurrentTemplate = o.ToString();
+                        mainPage.tabImg.Focus();
+                        Images.Clear();
+                    }
+                }
             },
             CanExecuteDelegate = x => true
         };

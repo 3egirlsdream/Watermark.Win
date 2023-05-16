@@ -41,7 +41,7 @@
             <GridSplitter Height="1"  Grid.Row="2" Background="LightGray" HorizontalAlignment="Stretch" Margin="5 0" VerticalAlignment="Bottom"/>
             <StackPanel  Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
                 <Button VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Click="Button_Click" Content="确定" FontSize="12" Foreground="white"/>
-                <Button VerticalAlignment="Center" Click="Fix_Click" Margin="10 0" Content="尝试修复" FontSize="12" Foreground="white"/>
+                <Button VerticalAlignment="Center" Click="Fix_Click" Margin="10 0" Content="尝试修复" FontSize="12" Foreground="white" Style="{StaticResource MaterialDesignRaisedLightButton}"/>
             </StackPanel>
         </Grid>
 

@@ -12,7 +12,6 @@ namespace JointWatermark.Views
     /// </summary>
     public partial class Error : Window
     {
-        CancellationTokenSource tokenSource;
         ErrorVM vm;
         public Error(string error)
         {
@@ -50,11 +49,16 @@ namespace JointWatermark.Views
                     loading.ISetPosition(100, "修复完成");
                 }
             });
-            var ld = new Loading(action);
-            ld.Owner = this;
-            ld.ShowInTaskbar = false;
-            ld.Mini = true;
-            ld.ShowDialog();
+
+            var dialog = new MessageBoxL(true, "警告", "请确保程序在独立的文件夹中！否则可能会影响其他文件，继续修复？");
+            if (dialog.ShowDialog() == true)
+            {
+                var ld = new Loading(action);
+                ld.Owner = this;
+                ld.ShowInTaskbar = false;
+                ld.Mini = true;
+                ld.ShowDialog();
+            }
         }
     }
 

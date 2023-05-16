@@ -331,7 +331,7 @@ namespace JointWatermark.Views
         {
             ExecuteDelegate = x =>
             {
-                var win = new MessageBoxL(false, "另存为", "另存为模板");
+                var win = new MessageBoxL(false, "另存为", "", "另存为模板");
                 win.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 if(win.ShowDialog() == true)
                 {
