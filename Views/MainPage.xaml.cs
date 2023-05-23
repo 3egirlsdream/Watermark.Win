@@ -363,14 +363,18 @@ namespace JointWatermark
             {
                 foreach (var url in images)
                 {
-                    var percent = (images.ToList().IndexOf(url) + 1)  * 100.0 / images.Count();
-                    loading.ISetPosition((int)percent, $"正在生成图片：{url.PhotoPath.Substring(url.PhotoPath.LastIndexOf(Global.SeparatorChar) + 1)}");
+                    var filename = url.PhotoPath.Substring(url.PhotoPath.LastIndexOf(Global.SeparatorChar) + 1);
+                    var percent = (images.ToList().IndexOf(url) + 0.5)  * 100.0 / images.Count();
+                    loading.ISetPosition((int)percent, $"正在生成图片：{filename}");
                     token.ThrowIfCancellationRequested();
-                    var p = Global.Path_output + Global.SeparatorChar + url.PhotoPath.Substring(url.PhotoPath.LastIndexOf(Global.SeparatorChar) + 1);
+                    var p = Global.Path_output + Global.SeparatorChar + filename;
                     var bit = ImagesHelper.Current.Generation(url).Result;
+                    percent = (images.ToList().IndexOf(url) + 1)  * 100.0 / images.Count();
+                    loading.ISetPosition((int)percent, $"正在生成图片：{filename}");
                     bit.Save(p);
                     bit.Dispose();
                 }
+                loading.ISetPosition(100, $"生成完成");
             });
             var ld = new Loading(action);
             ld.Owner = App.Current.MainWindow;
@@ -1166,10 +1170,13 @@ namespace JointWatermark
                     var dialog = new MessageBoxL(true, "提示", "切换模板将清空列表，继续？", "");
                     if(dialog.ShowDialog() == true)
                     {
-                        mainPage.CurrentTemplate = o.ToString();
-                        mainPage.tabImg.Focus();
                         Images.Clear();
                     }
+                }
+                else
+                {
+                    mainPage.CurrentTemplate = o.ToString();
+                    mainPage.tabImg.Focus();
                 }
             },
             CanExecuteDelegate = x => true

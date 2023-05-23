@@ -95,28 +95,33 @@ namespace JointWatermark.Views
 
         private void ApplyAll_Click(object sender, RoutedEventArgs e)
         {
-            vm.SaveConfig();
-            if (Images is null || Images.Count == 0) return;
-            foreach (var image in Images)
+            var dialog = new MessageBoxL(true, "提示", "列表全部图片对应项的元数据将被替换，继续？");
+            if (dialog.ShowDialog() == true)
             {
-                var item = image.Properties.FirstOrDefault(c => c.ID == row.ID);
-                if (item != null)
+
+                vm.SaveConfig();
+                if (Images is null || Images.Count == 0) return;
+                foreach (var image in Images)
                 {
-                    item.DataSource = new WatermarkDataSource
+                    var item = image.Properties.FirstOrDefault(c => c.ID == row.ID);
+                    if (item != null)
                     {
-                        From = DataSourceFrom.Exif,
-                        Exifs = vm.Config.ToList(),
-                    };
-                    foreach (var c in vm.Config)
-                    {
-                        if(c.IsChanged == true)
+                        item.DataSource = new WatermarkDataSource
                         {
-                            image.Meta[c.Key] = c.Value;
+                            From = DataSourceFrom.Exif,
+                            Exifs = vm.Config.ToList(),
+                        };
+                        foreach (var c in vm.Config)
+                        {
+                            if (c.IsChanged == true)
+                            {
+                                image.Meta[c.Key] = c.Value;
+                            }
                         }
                     }
                 }
+                this.DialogResult = true;
             }
-            this.DialogResult = true;
         }
 
         protected override void OnClosed(EventArgs e)
