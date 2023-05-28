@@ -36,12 +36,6 @@
                 <MenuItem Header="导入图标" Click="ImportIconClick" Icon="{materialDesign:PackIcon Kind=ImportExport}"></MenuItem>
                 <MenuItem Header="导入云图标" Click="ImportCloudIconClick" Icon="{materialDesign:PackIcon Kind=CloudDownload}"></MenuItem>
                 <Separator />
-                <MenuItem Header="请开发者喝咖啡" Icon="{materialDesign:PackIcon Kind=Wechat}">
-                    <MenuItem.ToolTip>
-                        <Image Source="../Resources/wx.jpg" Height="250" Width="200"/>
-                    </MenuItem.ToolTip>
-                </MenuItem>
-                <Separator />
                 <MenuItem Header="退出" Icon="{materialDesign:PackIcon Kind=ExitToApp}"  Click="ExitClick"/>
                
             </MenuItem>
@@ -80,6 +74,12 @@
                 </MenuItem>
                 <MenuItem Header="提交BUG" Icon="{materialDesign:PackIcon Kind=Bug}" >
                     <MenuItem Header="issues" Click="OpenLink" Tag="https://github.com/3egirlsdream/JointWatermark/issues" Icon="{materialDesign:PackIcon Kind=Link}"/>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="请开发者喝咖啡" Icon="{materialDesign:PackIcon Kind=Wechat}">
+                    <MenuItem.ToolTip>
+                        <Image Source="../Resources/wx.jpg" Height="250" Width="200"/>
+                    </MenuItem.ToolTip>
                 </MenuItem>
             </MenuItem>
         </Menu>

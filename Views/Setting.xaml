@@ -108,7 +108,9 @@
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                                 <TextBlock Text="更新日志" FontSize="17"/>
                                 <Border CornerRadius="5" Padding="5" Background="#f3f3f3" Margin="0 5" VerticalAlignment="Top">
-                                    <TextBlock x:Name="updatelog" TextWrapping="Wrap" VerticalAlignment="Top" Text=""/>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Height="200">
+                                        <TextBlock x:Name="updatelog" TextWrapping="Wrap" VerticalAlignment="Top" Text=""/>
+                                    </ScrollViewer>
                                 </Border>
                                 
                             </StackPanel>

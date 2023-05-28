@@ -27,7 +27,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MaxWidth="350" MinWidth="300"/>
             <ColumnDefinition Width="2.5*"/>
-            <ColumnDefinition Width="auto" MaxWidth="300"/>
+            <ColumnDefinition Width="auto" MaxWidth="313"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
             <Border Style="{StaticResource BorderStyle}">

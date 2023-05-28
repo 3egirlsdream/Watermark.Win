@@ -1017,7 +1017,7 @@ namespace JointWatermark
                 {
                     if (mainPage.CurrentTemplate != "Ancientry")
                     {
-                        mainPage.configFrame.Width = 300;
+                        mainPage.configFrame.Width = 313;
                         mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(FocusedItem, this.mainPage) };
                     }
                     refreshAction = new Action( async () =>
