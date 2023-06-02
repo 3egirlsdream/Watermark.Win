@@ -227,6 +227,9 @@
                                 <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="重置图片位置" Click="ResetImagePositionClick">
                                     <materialDesign:PackIcon Kind="Refresh" />
                                 </Button>
+                                <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="裁剪图片" Click="ResetImagePositionClick">
+                                    <materialDesign:PackIcon Kind="ScissorsCutting" />
+                                </Button>
                             </StackPanel>
                         </Viewbox>
                     </Border>

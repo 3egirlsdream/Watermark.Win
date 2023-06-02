@@ -526,7 +526,7 @@ namespace JointWatermark.Class
                     {
                         if (ls.Height !=  maxHeight)
                         {
-                            var xs = (double)maxHeight / (double)ls.Height;
+                            var xs = maxHeight / (double)ls.Height;
                             ls.Mutate(c => c.Resize((int)(ls.Width * xs), maxHeight));
                         }
                     }
@@ -534,7 +534,7 @@ namespace JointWatermark.Class
                     {
                         if (ls.Width !=  maxWidth)
                         {
-                            var xs = (double)maxWidth / (double)ls.Width;
+                            var xs = maxWidth / (double)ls.Width;
                             ls.Mutate(c => c.Resize(maxWidth, (int)(ls.Height * xs)));
                         }
                     }
@@ -573,6 +573,7 @@ namespace JointWatermark.Class
                     var c = (int)(10 + list.IndexOf(item) + 1 * 80 / (double)list.Count);
                     loading.ISetPosition(c, $"已完成：{c}%");
                 }
+                loading.ISetPosition(100, "已完成");
                 list.ForEach(c => c.Dispose());
                 return result;
             });

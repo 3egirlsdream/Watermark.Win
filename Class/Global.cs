@@ -106,7 +106,7 @@ namespace JointWatermark
                 var meta_origin = profile.Select(x => new
                 {
                     Key = x.Tag.ToString(),
-                    Value = x.GetValue() is ushort[]? ((ushort[])x.GetValue())[0] : (x.Tag.ToString().Contains("DateTime") ? ToDateTime((string)x.GetValue()) : x.GetValue())
+                    Value = x.GetValue() is ushort[] v ? v[0] : (x.Tag.ToString().Contains("DateTime") ? ToDateTime((string)x.GetValue()) : x.GetValue())
                 });
 
                 foreach (var item in meta_origin)
@@ -236,10 +236,7 @@ namespace JointWatermark
         public static string GetExifInfo(Dictionary<string, object> meta, List<ExifConfigInfo> info, List<string> dateFormat = null)
         {
             var cs = new List<string>();
-            if (dateFormat == null)
-            {
-                dateFormat = new List<string>() { ".", ".", ":", ":" };
-            }
+            dateFormat ??= new List<string>() { ".", ".", ":", ":" };
             if (info == null) return "";
             foreach (var child in info)
             {
@@ -263,10 +260,7 @@ namespace JointWatermark
 
         public static object GetDateTimeFormat(List<string> dateFormat, object rtl)
         {
-            if (dateFormat == null)
-            {
-                dateFormat = new List<string>() { ".", ".", ":", ":" };
-            }
+            dateFormat ??= new List<string>() { ".", ".", ":", ":" };
             return rtl is DateTime time ? time.ToString($"yyyy{dateFormat[0]}MM{dateFormat[1]}dd HH{dateFormat[2]}mm{dateFormat[3]}ss") : rtl;
         }
 
