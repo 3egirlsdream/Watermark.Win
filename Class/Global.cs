@@ -157,7 +157,7 @@ namespace JointWatermark
             for (var i = 0; i < lr2.Length; i++)
             {
                 var item = lr2[i];
-                var r = item.Numerator / item.Denominator;
+                var r = item.Denominator == 0 ? 0 : item.Numerator / item.Denominator;
                 if (i == 0)
                 {
                     over0 = r > 0;

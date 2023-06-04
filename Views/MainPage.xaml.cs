@@ -174,6 +174,7 @@ namespace JointWatermark
                 }
                 createdImg.Source = null;
                 ImportImages(dialog.FileNames, tag.ToString());
+                tabImg.Focus();
             }
         }
 

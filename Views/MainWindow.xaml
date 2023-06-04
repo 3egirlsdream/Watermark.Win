@@ -83,6 +83,21 @@
                 </MenuItem>
             </MenuItem>
         </Menu>
+        <StackPanel Grid.Row="0" HorizontalAlignment="Right"  Orientation="Horizontal">
+            <StackPanel>
+                <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="导入图片" Tag="watermark" Height="40" Width="40" Click="ImportImagesClick">
+                    <materialDesign:PackIcon Kind="Download" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0" Height="35" Width="35"/>
+                </Button>
+                <TextBlock Text="导入" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 -5 0 0"/>
+            </StackPanel>
+            <StackPanel>
+                <Button Style="{StaticResource MaterialDesignIconButton}" ToolTip="导出图片" Height="40" Width="40" Margin="20,0" Click="ExportImageClick">
+                    <materialDesign:PackIcon Kind="Upload" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0" Height="35" Width="35"/>
+                </Button>
+                <TextBlock Text="导出" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 -5 0 0"/>
+            </StackPanel>
+            
+        </StackPanel>
         <Border x:Name="msg" Visibility="Collapsed" Style="{StaticResource BorderStyle}" Width="250" Height="70" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" CornerRadius="5" Panel.ZIndex="9">
             <Grid>
                 <Grid.RowDefinitions>
