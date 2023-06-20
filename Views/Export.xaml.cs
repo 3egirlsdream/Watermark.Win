@@ -30,6 +30,7 @@ namespace JointWatermark.Views
         private void OK_Click(object sender, RoutedEventArgs e)
         {
             Global.Resolution = r1.IsChecked == true ? "default" : (r2.IsChecked == true ? "1080" : "4K");
+            Global.ClearMeta = clearMeta.IsChecked == true;
             this.DialogResult = true;
         }
     }

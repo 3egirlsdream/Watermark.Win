@@ -331,6 +331,7 @@ namespace JointWatermark
         }
 
         public static string Resolution { get; set; } = "default";
+        public static bool ClearMeta { get;set; } = false;
 
         private static string UUID()
         {

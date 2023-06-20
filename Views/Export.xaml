@@ -50,7 +50,8 @@
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="40"/>
-                <RowDefinition Height="32"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -62,6 +63,10 @@
             <RadioButton GroupName="resolution" x:Name="r1" Grid.Column="1" Content="原图" IsChecked="True"  FontSize="14"/>
             <RadioButton GroupName="resolution" x:Name="r2" Grid.Column="2" Content="1080"  FontSize="14"/>
             <RadioButton GroupName="resolution" x:Name="r3" Grid.Column="3" Content="4K"  FontSize="14"/>
+
+
+            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="擦除元数据" VerticalAlignment="Center" FontSize="14"/>
+            <ToggleButton x:Name="clearMeta" Grid.Row="1" Grid.Column="3" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
             <!--<Label Content="路径" Grid.Row="1" VerticalAlignment="Center"/>
             <TextBox x:Name="exportPath" Text="hello" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" VerticalAlignment="Bottom"/>
             <Button Grid.Column="3" Grid.Row="1" Content="{materialDesign:PackIcon OpenInNew}" Width="47" Click="selecetExportFileClick">

@@ -638,6 +638,12 @@ namespace JointWatermark.Class
                     if (fontxs == 0) fontxs = 1;
 
                     var resultImage = img.Clone(x => x.Resize(resultWidth, resultHeight));
+
+                    if (Global.ClearMeta)
+                    {
+                        resultImage.Metadata.ExifProfile = null;
+                    }
+
                     var polygon = new RegularPolygon(0, 0, resultWidth, Diagonal(resultHeight, resultWidth));
                     //填充背景色
                     resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex(image.BackgroundColor), polygon));
@@ -740,7 +746,8 @@ namespace JointWatermark.Class
                     }
 
                     ScalePicture(resultImage);
-
+                    img.Dispose();
+                    orientImg.Dispose();
                     return resultImage;
                 }
             });
@@ -827,6 +834,7 @@ namespace JointWatermark.Class
                     var xs = (resultHeight - start.Y - img.Height) * 1.0 / logo.Height * g.ImagePercentOfRange / 100.0;
                     totalWidth = (int)(logo.Width * xs);
                     totalHeight = (int)(logo.Height * xs);
+                    logo.Dispose();
                 }
             }
             else if (group.Any(c => c.ContentType == ContentType.Image)&& group.Any(c => c.ContentType == ContentType.Text))
@@ -843,6 +851,7 @@ namespace JointWatermark.Class
                     var _h = (int)(logo.Height * xs);
                     if (_w > totalWidth) totalWidth = _w;
                     if (_h > totalHeight) totalHeight = _h;
+                    logo.Dispose();
                 }
             }
             else if (group.All(c => c.ContentType == ContentType.Line))
@@ -927,6 +936,7 @@ namespace JointWatermark.Class
                         var rec = new SixLabors.ImageSharp.Rectangle(_row.X, _row.Y, logo.Width, logo.Height);
                         resultImage.Mutate(x => x.DrawImage(logo, _row, 1));
                         row1.Y += (int)(rowHeight + logo.Height);
+                        logo.Dispose();
                     }
                 }
                 else if (item.ContentType == ContentType.Line)
