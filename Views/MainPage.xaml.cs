@@ -3,6 +3,7 @@ using JointWatermark.Views;
 using MaterialDesignThemes.Wpf;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,7 +28,6 @@ namespace JointWatermark
     /// </summary>
     public partial class MainPage : Page
     {
-        public string CurrentTemplate { get; set; }
         public MainVM vm;
         public List<string> MultiImages = new();
         public MainPage()
@@ -35,7 +35,7 @@ namespace JointWatermark
             try
             {
                 InitializeComponent();
-                CurrentTemplate = "PhotoFrame";
+                Global.CurrentTemplate = "PhotoFrame";
                 MultiImages = new List<string>();
                 vm = new MainVM(this);
                 this.DataContext = vm;
@@ -184,13 +184,13 @@ namespace JointWatermark
             var action = new Action<CancellationToken, Loading>((token, loading) =>
             {
                 GeneralWatermarkProperty template = null;
-                if (CurrentTemplate == "PhotoFrame")
+                if (Global.CurrentTemplate == "PhotoFrame")
                 {
                     template = Global.InitConfig()?.Templates?.PhotoFrame;
                 }
                 else
                 {
-                    template = Global.InitConfig()?.Templates?.CustomizationComponents.FirstOrDefault(c => c.Name == CurrentTemplate).Property;
+                    template = Global.InitConfig()?.Templates?.CustomizationComponents.FirstOrDefault(c => c.Name == Global.CurrentTemplate).Property;
                 }
                 if (template == null) { template = Global.Init(); }
                 for (int ii = 0; ii < filenames.Length; ii++)
@@ -202,14 +202,15 @@ namespace JointWatermark
                     var i = ImagesHelper.Current.ReadImage(item, "");
                     var _i = JsonConvert.DeserializeObject<GeneralWatermarkProperty>(JsonConvert.SerializeObject(template));
                     _i.ID = Guid.NewGuid().ToString("N").ToUpper();
-                    _i.Meta = Global.GetMeta(item);
+                    _i.Meta = Global.GetMeta(item, out bool empty);
+                    _i.MetaEmpty = empty;
                     if (_i.Meta.TryGetValue("thumbnail", out object thumbnail))
                     {
                         _i.ThumbnailPath = thumbnail.ToString();
                     }
-                    else 
-                    { 
-                        _i.ThumbnailPath = item; 
+                    else
+                    {
+                        _i.ThumbnailPath = item;
                     }
                     _i.PhotoPath = item;
                     if (vm.IconList != null && vm.IconList.Any())
@@ -372,7 +373,11 @@ namespace JointWatermark
                     var bit = ImagesHelper.Current.Generation(url).Result;
                     percent = (images.ToList().IndexOf(url) + 1)  * 100.0 / images.Count();
                     loading.ISetPosition((int)percent, $"正在生成图片：{filename}");
-                    bit.Save(p);
+                    var jpegEncoder = new JpegEncoder
+                    {
+                        Quality = Global.Quality
+                    };
+                    bit.Save(p, jpegEncoder);
                     bit.Dispose();
                 }
                 loading.ISetPosition(100, $"生成完成");
@@ -424,7 +429,7 @@ namespace JointWatermark
                 dic["光影边框"] = "../Resources/gy.png";
                 dic["Ancientry"] = "../Resources/bb.png";
                 dic["透明文字"] = "../Resources/opacity.png";
-                for (var i = 0;  i < model.Templates.CustomizationComponents.Count;i++)
+                for (var i = 0; i < model.Templates.CustomizationComponents.Count; i++)
                 {
                     var template = model.Templates.CustomizationComponents[i];
                     if (dic.TryGetValue(template.Name, out string val))
@@ -436,7 +441,7 @@ namespace JointWatermark
                         template.Url = "../Resources/kabi.png";
                     }
                 }
-               
+
                 templateList.ItemsSource =  model.Templates.CustomizationComponents;
                 //foreach (var item in model.Templates.CustomizationComponents)
                 //{
@@ -549,7 +554,7 @@ namespace JointWatermark
             }
             catch (Exception ex)
             {
-               Global.SendMsg(ex.Message);
+                Global.SendMsg(ex.Message);
             }
         }
 
@@ -742,13 +747,18 @@ namespace JointWatermark
         {
             if (sender is Button btn)
             {
-                CurrentTemplate = btn.Tag.ToString();
+                Global.CurrentTemplate = btn.Tag.ToString();
                 tabImg.Focus();
                 vm.Images.Clear();
             }
         }
 
         private void RepeatExifInfoClick(object sender, RoutedEventArgs e)
+        {
+            RepeatExifInfoClick();
+        }
+
+        public void RepeatExifInfoClick()
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -763,22 +773,29 @@ namespace JointWatermark
                 var action = new Action<CancellationToken, Loading>((token, loading) =>
                 {
                     loading.ISetPosition(0);
-                    var meta = Global.GetMeta(dialog.FileName);
-                    if (meta != null && meta.Count > 0 && vm.FocusedItem != null)
+                    var meta = Global.GetMeta(dialog.FileName, out bool empty);
+                    if (!empty && meta != null && meta.Count > 0 && vm.FocusedItem != null)
                     {
                         vm.FocusedItem.Meta = meta;
+                        Dispatcher.Invoke(() => vm.RefreshSelectedImage());
+                        loading.ISetPosition(100, "覆盖完成");
+                        vm.FocusedItem.MetaEmpty = false;
                     }
-                    Dispatcher.Invoke(()=> vm.RefreshSelectedImage());
-                    loading.ISetPosition(100, "覆盖完成");
+                    else
+                    {
+                        loading.ISetPosition(100, "覆盖失败，导入图片不包含元数据");
+                        vm.FocusedItem.MetaEmpty = true;
+                    }
                 });
                 var ld = new Loading(action);
                 ld.ShowInTaskbar = false;
                 ld.Owner = App.Current.MainWindow;
                 ld.Mini = true;
                 ld.ShowDialog();
-                
+
             }
         }
+
 
         private async void ComputeUserCount()
         {
@@ -1016,7 +1033,7 @@ namespace JointWatermark
 
                 if (FocusedItem != null)
                 {
-                    if (mainPage.CurrentTemplate != "Ancientry")
+                    if (Global.CurrentTemplate != "Ancientry")
                     {
                         mainPage.configFrame.Width = 313;
                         mainPage.configFrame.Content = new Frame() { Content = new TemplateConfig(FocusedItem, this.mainPage) };
@@ -1046,6 +1063,15 @@ namespace JointWatermark
                         }
                     });
                     RefreshSelectedImage();
+                    if (FocusedItem.MetaEmpty)
+                    {
+                        var action = new Action(() =>
+                        {
+                            mainPage.RepeatExifInfoClick();
+                        });
+                        var win = App.Current.MainWindow as MainWindow;
+                        win.ShowSuggestBox("图片没有包含元数据，尝试功能：元数据覆盖？", action);
+                    }
                 }
             },
             CanExecuteDelegate= o => true
@@ -1172,11 +1198,13 @@ namespace JointWatermark
                     if(dialog.ShowDialog() == true)
                     {
                         Images.Clear();
+                        Global.CurrentTemplate = o.ToString();
+                        mainPage.tabImg.Focus();
                     }
                 }
                 else
                 {
-                    mainPage.CurrentTemplate = o.ToString();
+                    Global.CurrentTemplate = o.ToString();
                     mainPage.tabImg.Focus();
                 }
             },

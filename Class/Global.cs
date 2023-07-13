@@ -15,6 +15,7 @@ using System.Management;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Image = SixLabors.ImageSharp.Image;
 
 namespace JointWatermark
 {
@@ -71,13 +72,14 @@ namespace JointWatermark
             }
         }
 
-        public static Dictionary<string, object> GetMeta(string path)
+        public static Dictionary<string, object> GetMeta(string path, out bool empty)
         {
             var meta = new Dictionary<string, object>();
             using (var img = Image.Load(path))
             {
                 if (img.Metadata != null && img.Metadata.ExifProfile != null && img.Metadata.ExifProfile.Values != null)
                 {
+                    empty = false;
                     meta = GetMeta(img.Metadata.ExifProfile.Values);
 
 
@@ -93,6 +95,10 @@ namespace JointWatermark
                         img.SaveAsJpeg(p);
                     }
                     catch { }
+                }
+                else
+                {
+                    empty = true;
                 }
             }
             return meta;
@@ -332,6 +338,7 @@ namespace JointWatermark
 
         public static string Resolution { get; set; } = "default";
         public static bool ClearMeta { get;set; } = false;
+        public static int Quality { get; set; } = 75;
 
         private static string UUID()
         {
@@ -419,6 +426,8 @@ namespace JointWatermark
         public static RefreshLogoDel RefreshLogoAction { get; set; }
 
         public static Action<Photo> ApplyAllImages;
+        public static Action SuggestAction;
+        public static string CurrentTemplate { get; set; }
 
     }
 }

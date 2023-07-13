@@ -51,6 +51,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="40"/>
                 <RowDefinition Height="40"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
@@ -67,10 +69,12 @@
 
             <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="擦除元数据" VerticalAlignment="Center" FontSize="14"/>
             <ToggleButton x:Name="clearMeta" Grid.Row="1" Grid.Column="3" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
-            <!--<Label Content="路径" Grid.Row="1" VerticalAlignment="Center"/>
-            <TextBox x:Name="exportPath" Text="hello" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" VerticalAlignment="Bottom"/>
-            <Button Grid.Column="3" Grid.Row="1" Content="{materialDesign:PackIcon OpenInNew}" Width="47" Click="selecetExportFileClick">
-            </Button>-->
+            <Label Grid.Column="0" Grid.Row="2" Content="质量" VerticalAlignment="Center" FontSize="14"/>
+            <Slider x:Name="quality" Grid.Row="2" Grid.ColumnSpan="3" Grid.Column="1" Margin="5 0" Minimum="1" Maximum="100" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center" />
+            <Label Content="路径" Grid.Row="3" VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" VerticalAlignment="Center" ItemsSource="{Binding SavePathes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <Button Grid.Column="3" Grid.Row="3" Content="{materialDesign:PackIcon Kind=DotsHorizontal}" Width="30" Height="30" Padding="0" Foreground="Black" BorderThickness="0" Background="White" Click="selecetExportFileClick">
+            </Button>
         </Grid>
         <CheckBox Grid.Row="1" Grid.ColumnSpan="2" IsChecked="{Binding IsCheckedAll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="选择全部" FontSize="14" Margin="5 0"/>
         <Grid  Grid.Row="2" Grid.ColumnSpan="3"  Background="#f3f3f3">

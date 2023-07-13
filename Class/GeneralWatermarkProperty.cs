@@ -34,7 +34,7 @@ namespace JointWatermark.Class
 {
     public partial class GeneralWatermarkProperty
     {
-        public GeneralWatermarkProperty() 
+        public GeneralWatermarkProperty()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
@@ -55,7 +55,7 @@ namespace JointWatermark.Class
         public int PhotoRatio { get; set; }
 
         //图片的高度占整个图片的比例，通过设置图片比例，加起始位置比例实现边框效果
-        
+
         /// <summary>
         /// 图片起始位置，按短边百分比计算
         /// </summary>
@@ -89,6 +89,8 @@ namespace JointWatermark.Class
         public List<ConnectionMode> ConnectionModes { get; set; }
         [JsonIgnore]
         public Dictionary<string, object> Meta { get; set; }
-        
+        [JsonIgnore]
+        public bool MetaEmpty { get; set; }
+
     }
 }

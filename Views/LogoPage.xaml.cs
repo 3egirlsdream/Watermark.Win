@@ -2,22 +2,12 @@
 using MaterialDesignThemes.Wpf;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static JointWatermark.Global;
 
 namespace JointWatermark.Views
 {
@@ -142,6 +132,20 @@ namespace JointWatermark.Views
                     {
                         Global.SendMsg(ex.Message);
                     }
+                }
+
+                if (!IconList.Any())
+                {
+                    var win = Application.Current.MainWindow as MainWindow;
+                    var action = new Action(() =>
+                    {
+                        page.Dispatcher.Invoke(() =>
+                        {
+                            win.ImportIconClick();
+                        });
+                        
+                    });
+                    win.ShowSuggestBox("当前未导入LOGO，尝试功能：导入图标？", action);
                 }
             }
             catch (Exception ex)

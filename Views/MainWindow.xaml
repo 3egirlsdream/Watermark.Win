@@ -69,7 +69,7 @@
                 <MenuItem Header="网页端" Icon="{materialDesign:PackIcon Kind=MicrosoftEdge}" Visibility="Collapsed">
                     <MenuItem Header="www.thankful.top:1000" Click="OpenLink" Tag="http://www.thankful.top:1000/" Icon="{materialDesign:PackIcon Kind=Link}"/>
                 </MenuItem>
-                <MenuItem Header="Give ★" Icon="{materialDesign:PackIcon Kind=MicrosoftGithub}" >
+                <MenuItem Header="点个★" Icon="{materialDesign:PackIcon Kind=MicrosoftGithub}" >
                     <MenuItem Header="https://github.com/3egirlsdream" Click="OpenLink" Tag="https://github.com/3egirlsdream/JointWatermark" Icon="{materialDesign:PackIcon Kind=Link}"/>
                 </MenuItem>
                 <MenuItem Header="提交BUG" Icon="{materialDesign:PackIcon Kind=Bug}" >
@@ -98,6 +98,24 @@
             </StackPanel>
             
         </StackPanel>
+        <Border x:Name="suggestion" Visibility="Collapsed" Style="{StaticResource BorderStyle}" Width="350" Height="70" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10 -40" CornerRadius="5" Panel.ZIndex="9">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Label  VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="建议" FontFamily="{StaticResource MaterialDesignFont}" FontSize="16"/>
+                <GridSplitter Grid.Row="0" VerticalAlignment="Bottom" Background="#e3e3e3" HorizontalAlignment="Stretch" Height="1" Margin="10 0"/>
+                <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                    <Viewbox Height="25" HorizontalAlignment="Left">
+                        <Label x:Name="suggestText" Content="" HorizontalAlignment="Left"/>
+                    </Viewbox>
+                    <Viewbox Height="25" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource MaterialDesignFlatDarkButton}" Content="好的"  Width="auto" Margin="20 0" Click="SuggestionClick"/>
+                    </Viewbox>
+                </Grid>
+            </Grid>
+        </Border>
         <Border x:Name="msg" Visibility="Collapsed" Style="{StaticResource BorderStyle}" Width="250" Height="70" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" CornerRadius="5" Panel.ZIndex="9">
             <Grid>
                 <Grid.RowDefinitions>

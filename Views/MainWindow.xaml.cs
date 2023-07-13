@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -64,6 +65,11 @@ namespace JointWatermark
 
         private void ImportIconClick(object sender, RoutedEventArgs e)
         {
+            ImportIconClick();
+        }
+
+        public void ImportIconClick()
+        {
             // 实例化一个文件选择对象
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".png";  // 设置默认类型
@@ -98,6 +104,15 @@ namespace JointWatermark
             if (!director.Exists)
             {
                 director.Create();
+            }
+            if (!main.vm.Images.Any())
+            {
+                var win = new MessageBoxL(true, "提示", "列表为空，请先导入图片");
+                win.Owner = this;
+                win.ShowInTaskbar = false;
+                win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                win.ShowDialog();
+                return;
             }
             Export export = new Export(main.vm.Images);
             export.Owner = this;
@@ -204,6 +219,35 @@ namespace JointWatermark
             }
         }
 
+        private void SuggestionClick(object sender, RoutedEventArgs e)
+        {
+            Global.SuggestAction?.Invoke();
+        }
+
+        public void ShowSuggestBox(string message, Action action)
+        {
+            if (suggestion.Visibility == Visibility.Visible) return;
+            Global.SuggestAction = action;
+            suggestText.Content = message;
+            DoubleAnimation yd5 = new DoubleAnimation(0, 20, new Duration(TimeSpan.FromSeconds(1)));//浮点动画定义了开始值和起始值
+            suggestion.RenderTransform = new TranslateTransform();//在二维x-y坐标系统内平移(移动)对象
+            //yd5.RepeatBehavior = RepeatBehavior.;//设置循环播放
+            yd5.AutoReverse = false;//设置可以进行反转
+            Storyboard.SetTarget(yd5, suggestion);//绑定动画为这个按钮执行的浮点动画
+            Storyboard.SetTargetProperty(yd5, new PropertyPath("RenderTransform.Y"));//依赖的属性
+            Storyboard sb = new Storyboard();//首先实例化一个故事板
+            sb.Children.Add(yd5);//向故事板中加入此浮点动画
+            suggestion.Visibility = Visibility.Visible;
+            sb.Begin();//播放此动画
+
+            Task.Delay(10000).ContinueWith(t =>
+            {
+                Dispatcher.Invoke(delegate
+                {
+                    suggestion.Visibility = Visibility.Collapsed;
+                });
+            });
+        }
     }
 
     public class VM : ValidationBase
