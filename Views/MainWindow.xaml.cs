@@ -43,6 +43,8 @@ namespace JointWatermark
                 win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 win.ShowDialog();
             }
+
+            CheckUpdate();
         }
 
         Setting checkUpdate = null;
@@ -247,6 +249,27 @@ namespace JointWatermark
                     suggestion.Visibility = Visibility.Collapsed;
                 });
             });
+        }
+
+        public void CheckUpdate()
+        {
+            var day = DateTime.Now.DayOfYear;
+            if(day % 3 == 0)
+            {
+                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                var action = new Action<string, string>((t, m) =>
+                {
+                    var win = new UpdateWin();
+                    win.updatelog.Text = m;
+                    win.msg.Content = t;
+                    win.ShowInTaskbar = false;
+                    win.Owner = this;
+                    win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    win.ShowDialog();
+                });
+
+                Global.CheckUpdate(v, action);
+            }
         }
     }
 

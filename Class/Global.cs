@@ -1,6 +1,7 @@
 ﻿using JointWatermark.Class;
 using JointWatermark.Enums;
 using JointWatermark.Views;
+using MaterialDesignThemes.Wpf;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
@@ -15,6 +16,8 @@ using System.Management;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using WeakToys.Class;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace JointWatermark
@@ -119,9 +122,9 @@ namespace JointWatermark
                 {
                     var key = item.Key;
                     var value = item.Value;
-                    if(value is Rational et && et.Denominator != 0 && et.Numerator != 0)
+                    if (value is Rational et && et.Denominator != 0 && et.Numerator != 0)
                     {
-                        if (et.Denominator % et.Numerator == 0) 
+                        if (et.Denominator % et.Numerator == 0)
                         {
                             value = "1/" + (int)(et.Denominator / et.Numerator);
                         }
@@ -139,7 +142,7 @@ namespace JointWatermark
                             DealLatitudeLongitude(lr, ref rtl, ref over0);
                             rtl += (over0 ? "N" : "S");
                         }
-                        else if(key == "GPSLongitude")
+                        else if (key == "GPSLongitude")
                         {
                             DealLatitudeLongitude(lr, ref rtl, ref over0);
                             rtl += (over0 ? "E" : "W");
@@ -180,7 +183,7 @@ namespace JointWatermark
         {
             try
             {
-                var ls = s.Split(new string[] {":", ".", "/", "\\", " "}, StringSplitOptions.RemoveEmptyEntries);
+                var ls = s.Split(new string[] { ":", ".", "/", "\\", " " }, StringSplitOptions.RemoveEmptyEntries);
                 var year = Convert.ToInt16(ls[0]);
                 var month = Convert.ToInt16(ls[1]);
                 var day = Convert.ToInt16(ls[2]);
@@ -337,7 +340,7 @@ namespace JointWatermark
         }
 
         public static string Resolution { get; set; } = "default";
-        public static bool ClearMeta { get;set; } = false;
+        public static bool ClearMeta { get; set; } = false;
         public static int Quality { get; set; } = 75;
 
         private static string UUID()
@@ -429,5 +432,18 @@ namespace JointWatermark
         public static Action SuggestAction;
         public static string CurrentTemplate { get; set; }
 
+        public static async void CheckUpdate(string nowv, Action<string, string> action)
+        {
+            var version = await Connections.HttpGetAsync<CLIENT_VERSION>(Global.Http + "/api/CloudSync/GetVersion?Client=Watermark", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.VERSION != null)
+            {
+                var v1 = new Version(nowv);
+                var v2 = new Version(version.data.VERSION);
+                if (v2 > v1)
+                    action.Invoke($"有新版本V{version.data.VERSION}可以下载", version.data.MEMO);
+            }
+        }
     }
+
 }
+

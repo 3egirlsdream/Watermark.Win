@@ -9,5 +9,6 @@ namespace JointWatermark.Class
         public string? CLIENT { get; set; }
         public string? VERSION { get; set; }
         public string? PATH { get; set; }
+        public string? MEMO { get; set; }
     }
 }

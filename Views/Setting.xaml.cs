@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using WeakToys.Class;
 
 namespace JointWatermark
@@ -45,9 +46,14 @@ namespace JointWatermark
                 var v2 = new Version(version.data.VERSION);
                 if (v2 > v1)
                 {
-                    check.Badge = new PackIcon() { Kind = PackIconKind.Update };
-                    newVersion.Visibility = Visibility.Visible;
                     Latest.Text = $"有新版本V{version.data.VERSION}点击下载";
+                    var win = new UpdateWin();
+                    win.updatelog.Text = version.data.MEMO;
+                    win.msg.Content = Latest.Text;
+                    win.ShowInTaskbar = false;
+                    win.Owner = this;
+                    win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    win.ShowDialog();
                 }
                 else
                 {
@@ -155,37 +161,7 @@ namespace JointWatermark
 
         private bool? ExcuteUpdateProgram()
         {
-            using (var wc = new WebClient())
-            {
-                var updatePath = "http://thankful.top:2038/api/public/dl/wzXaErGP";
-                var fileName = "JointWatermark.Update.exe";
-                string path = Global.BasePath + Global.SeparatorChar + fileName;
-                var action = new Action<CancellationToken, Loading>((token, loading) =>
-                {
-                    try
-                    {
-                        wc.DownloadProgressChanged += (ss, e) =>
-                        {
-                            loading.ISetPosition(e.ProgressPercentage, $"更新程序已下载{e.ProgressPercentage}%");
-                        };
-                        wc.DownloadFileTaskAsync(new Uri(updatePath), path).Wait();
-                    }
-                    catch(Exception ex)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            Global.SendMsg(ex.Message);
-                        });
-                        File.Delete(path);
-                    }
-                });
-                var ld = new Loading(action);
-                ld.Owner = this;
-                ld.Mini = true;
-                ld.ShowInTaskbar = false;
-                ld.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                return ld.ShowDialog();
-            }
+            return vm.DownloadUpdateProgram(this);
         }
 
         private void ListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -208,9 +184,9 @@ namespace JointWatermark
     {
 
         Setting window;
-        public SettingVM(Setting check)
+        public SettingVM(Window check)
         {
-            window = check;
+            window = check as Setting;
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             InitFontsList();
         }
@@ -440,6 +416,41 @@ namespace JointWatermark
                 }
             }
 
+        }
+
+        public bool? DownloadUpdateProgram(Window win)
+        {
+            using (var wc = new WebClient())
+            {
+                var updatePath = "http://thankful.top:2038/api/public/dl/wzXaErGP";
+                var fileName = "JointWatermark.Update.exe";
+                string path = Global.BasePath + Global.SeparatorChar + fileName;
+                var action = new Action<CancellationToken, Loading>((token, loading) =>
+                {
+                    try
+                    {
+                        wc.DownloadProgressChanged += (ss, e) =>
+                        {
+                            loading.ISetPosition(e.ProgressPercentage, $"更新程序已下载{e.ProgressPercentage}%");
+                        };
+                        wc.DownloadFileTaskAsync(new Uri(updatePath), path).Wait();
+                    }
+                    catch (Exception ex)
+                    {
+                        win.Dispatcher.Invoke(() =>
+                        {
+                            Global.SendMsg(ex.Message);
+                        });
+                        File.Delete(path);
+                    }
+                });
+                var ld = new Loading(action);
+                ld.Owner = win;
+                ld.Mini = true;
+                ld.ShowInTaskbar = false;
+                ld.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                return ld.ShowDialog();
+            }
         }
 
 
