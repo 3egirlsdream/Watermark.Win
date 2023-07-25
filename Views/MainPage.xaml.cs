@@ -216,7 +216,7 @@ namespace JointWatermark
                     if (vm.IconList != null && vm.IconList.Any())
                     {
                         var logoname = vm.IconList[0];
-                        if (_i.Meta.TryGetValue("Make", out object _make))
+                        if (_i.Meta.TryGetValue("Make", out object _make) && !string.IsNullOrEmpty(_make?.ToString()))
                         {
                             var make = _make?.ToString();
                             if (!string.IsNullOrEmpty(make))
@@ -227,6 +227,10 @@ namespace JointWatermark
                                     logoname = first;
                                 }
                             }
+                        }
+                        else
+                        {
+                            _i.MetaEmpty = true;
                         }
                         if (logoname.StartsWith("http"))
                         {
@@ -1051,7 +1055,7 @@ namespace JointWatermark
                             var bit = await ImagesHelper.Current.Generation(FocusedItem, true);
                             var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
                             mainPage.createdImg.Source = bmp;
-                            bit.Dispose();
+                            bit.Dispose(); 
                         }
                         catch (Exception ex)
                         {
@@ -1070,7 +1074,7 @@ namespace JointWatermark
                             mainPage.RepeatExifInfoClick();
                         });
                         var win = App.Current.MainWindow as MainWindow;
-                        win.ShowSuggestBox("图片没有包含元数据，尝试功能：元数据覆盖？", action);
+                        win.ShowSuggestBox("图片可能没有缺失元数据，尝试功能：元数据覆盖？", action);
                     }
                 }
             },

@@ -341,7 +341,7 @@ namespace JointWatermark
 
         public static string Resolution { get; set; } = "default";
         public static bool ClearMeta { get; set; } = false;
-        public static int Quality { get; set; } = 75;
+        public static int Quality { get; set; } = 100;
 
         private static string UUID()
         {

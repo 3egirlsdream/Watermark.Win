@@ -23,10 +23,11 @@ namespace JointWatermark.Views
             {
                 InitializeComponent();
                 vm = new ExportVM(_images);
-                savePath = Global.InitConfig().SavePath;
+                var m = Global.InitConfig();
+                savePath = m.SavePath;
                 InitSavePath(savePath);
                 vm.SelectedItem = Global.Path_output;
-                quality.Value = Global.Quality;
+                quality.Value = m.Quality;
                 DataContext = vm;
             }
             catch(Exception ex)
@@ -42,6 +43,7 @@ namespace JointWatermark.Views
             Global.Quality = (int)(quality.Value);
             var data = Global.InitConfig();
             data.SavePath = savePath;
+            data.Quality = Global.Quality;
             Global.SaveConfig(JsonConvert.SerializeObject(data));
             this.DialogResult = true;
         }
