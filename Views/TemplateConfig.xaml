@@ -105,6 +105,20 @@
                         </Grid>
                     </Border>
                 </GroupBox>
+                <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="横纵比例" Margin="0 0 0 2">
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox Width="100" x:Name="aspectRatio" HorizontalContentAlignment="Center" SelectionChanged="aspectRatio_SelectionChanged">
+                            <ComboBoxItem Content=""/>
+                            <ComboBoxItem Content="16:9"/>
+                            <ComboBoxItem Content="9:16"/>
+                            <ComboBoxItem Content="1:1"/>
+                            <ComboBoxItem Content="4:3"/>
+                            <ComboBoxItem Content="3:4"/>
+                            <ComboBoxItem Content="21:9"/>
+                            <ComboBoxItem Content="18:9"/>
+                        </ComboBox>
+                    </StackPanel>
+                </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="图片设置" Margin="0 0 0 2">
                     <StackPanel Background="#fff">
                         <!--<TextBox Text="{Binding PercentOfHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片纵向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>
@@ -121,6 +135,9 @@
                 </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="LOGO设置" Margin="0 0 0 2">
                     <StackPanel>
+                        <Button x:Name="importIcon" Cursor="Hand" Height="25" Width="25" Click="ImportIconClick" HorizontalAlignment="Right" Margin="0 -27 0 0" VerticalAlignment="Top" ToolTip="导入LOGO"  Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}">
+                            <materialDesign:PackIcon Kind="Add" Height="20" Width="20"/>
+                        </Button>
                         <CheckBox Content="白底转透明像素" IsChecked="{Binding WhiteToTransparent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="5 10"/>
                         <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="5 0"/>
                         <ContentControl>

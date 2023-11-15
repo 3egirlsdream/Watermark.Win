@@ -746,6 +746,37 @@ namespace JointWatermark.Class
                     }
 
                     ScalePicture(resultImage);
+                    //设置横纵比
+                    if (!string.IsNullOrEmpty(image.AspectRatio))
+                    {
+                        var horizon = Convert.ToInt32(image.AspectRatio.Split(':')[0]);
+                        var vertical = Convert.ToInt32(image.AspectRatio.Split(':')[1]);
+                        double imgAspectRatio = resultImage.Width * 1.0 / resultImage.Height;
+                        double aspectRatio = horizon * 1.0 / vertical;
+                        double arWidth, arHeight;
+                        SixLabors.ImageSharp.Point arStart;
+                        //图片过长，竖直居中，水平取原图宽
+                        if (imgAspectRatio > aspectRatio)
+                        {
+                            arWidth = resultImage.Width;
+                            arHeight = arWidth * vertical / horizon;
+                            var topDistance = (arHeight - resultImage.Height) / 2;
+                            arStart = new SixLabors.ImageSharp.Point(0, (int)topDistance);
+                        }
+                        else
+                        {
+                            arHeight = resultImage.Height;
+                            arWidth = arHeight * horizon / vertical;
+                            var leftDistance = (arWidth - resultImage.Width) / 2;
+                            arStart = new SixLabors.ImageSharp.Point((int)leftDistance, 0);
+                        }
+
+                        polygon = new RegularPolygon(0, 0, (int)arWidth, Diagonal((int)arHeight, (int)arWidth));
+                        var rst2 = resultImage.Clone();
+                        resultImage.Mutate(cc => cc.Resize((int)arWidth, (int)arHeight));
+                        resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex(image.BackgroundColor), polygon));
+                        resultImage.Mutate(x => x.DrawImage(rst2, arStart, 1));
+                    }
                     img.Dispose();
                     orientImg.Dispose();
                     return resultImage;

@@ -57,6 +57,21 @@ namespace JointWatermark.Views
                 vm.CmdRefresh.Execute(null);
             }
         }
+
+        private void ImportIconClick(object sender, RoutedEventArgs e)
+        {
+            var win = App.Current.MainWindow as MainWindow;
+            win.ImportIconClick();
+        }
+
+        private void aspectRatio_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (aspectRatio.SelectedItem is ComboBoxItem cbi && cbi != null)
+            {
+                property.AspectRatio = cbi.Content as string;
+            }
+            parent.vm.RefreshSelectedImage();
+        }
     }
 
     public class TemplateConfigVM : ValidationBase
@@ -267,6 +282,10 @@ namespace JointWatermark.Views
                 window.parent.vm.RefreshSelectedImage();
             });
             BackgroundColor = window.property.BackgroundColor;
+            if (!string.IsNullOrEmpty(window.property.AspectRatio))
+            {
+                window.aspectRatio.Text = window.property.AspectRatio;
+            }
         }
 
         #endregion

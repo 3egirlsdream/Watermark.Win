@@ -92,5 +92,12 @@ namespace JointWatermark.Class
         [JsonIgnore]
         public bool MetaEmpty { get; set; }
 
+
+
+        /// <summary>
+        /// 横纵比
+        /// </summary>
+        public string AspectRatio { get; set; } = "";
+
     }
 }
