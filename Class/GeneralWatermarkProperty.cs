@@ -72,6 +72,7 @@ namespace JointWatermark.Class
         public PhotoAlignment PhotoAlignment { get; set; }
 
         public string BackgroundColor { get; set; } = "#FFFFFF";
+        public string GlobalBkColor { get; set; }
 
         public ImageBackgroud ImageBackgroud { get; set; }
 
@@ -98,6 +99,8 @@ namespace JointWatermark.Class
         /// 横纵比
         /// </summary>
         public string AspectRatio { get; set; } = "";
+
+        public ImageCornerRound CornerRound { get; set; }
 
     }
 }

@@ -105,20 +105,6 @@
                         </Grid>
                     </Border>
                 </GroupBox>
-                <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="横纵比例" Margin="0 0 0 2">
-                    <StackPanel Orientation="Horizontal">
-                        <ComboBox Width="100" x:Name="aspectRatio" HorizontalContentAlignment="Center" SelectionChanged="aspectRatio_SelectionChanged">
-                            <ComboBoxItem Content=""/>
-                            <ComboBoxItem Content="16:9"/>
-                            <ComboBoxItem Content="9:16"/>
-                            <ComboBoxItem Content="1:1"/>
-                            <ComboBoxItem Content="4:3"/>
-                            <ComboBoxItem Content="3:4"/>
-                            <ComboBoxItem Content="21:9"/>
-                            <ComboBoxItem Content="18:9"/>
-                        </ComboBox>
-                    </StackPanel>
-                </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="图片设置" Margin="0 0 0 2">
                     <StackPanel Background="#fff">
                         <!--<TextBox Text="{Binding PercentOfHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"  materialDesign:HintAssist.Hint="图片纵向占比" Style="{StaticResource MaterialDesignFloatingHintTextBox}" materialDesign:TextFieldAssist.SuffixText="%" Padding="5"/>
@@ -131,6 +117,28 @@
                            
                         </StackPanel>
                         <CheckBox Content="启用阴影" IsChecked="{Binding EnabledShadow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="5 10"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                            <CheckBox Content="启用图片圆角" IsChecked="{Binding EnabledRound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="5 10"/>
+                            <Slider Margin="5 0" Value="{Binding CornerRadius, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="50" Maximum="400" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center" TickFrequency="10" Width="120"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="横纵比例" VerticalAlignment="Center"/>
+                            <ComboBox Width="100" x:Name="aspectRatio" HorizontalContentAlignment="Center" SelectionChanged="aspectRatio_SelectionChanged">
+                                <ComboBoxItem Content=""/>
+                                <ComboBoxItem Content="16:9"/>
+                                <ComboBoxItem Content="9:16"/>
+                                <ComboBoxItem Content="1:1"/>
+                                <ComboBoxItem Content="4:3"/>
+                                <ComboBoxItem Content="3:4"/>
+                                <ComboBoxItem Content="21:9"/>
+                                <ComboBoxItem Content="18:9"/>
+                            </ComboBox>
+                            <Label Content="背景颜色" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding GlobalBkColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True" Width="60"/>
+                            <Button Cursor="Hand" Height="25" Width="25" Click="backColorClick" VerticalAlignment="Bottom"  Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}">
+                                <materialDesign:PackIcon Kind="Edit" Height="20" Width="20"/>
+                            </Button>
+                        </StackPanel>
                     </StackPanel>
                 </GroupBox>
                 <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Grid.Row="0" Grid.Column="0" Header="LOGO设置" Margin="0 0 0 2">

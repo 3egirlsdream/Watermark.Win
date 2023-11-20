@@ -661,6 +661,11 @@ namespace JointWatermark.Class
                         blackImg.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex("#696969"), polygon));
                         resultImage.Mutate(x => x.DrawImage(blackImg, start, 1).BoxBlur((int)(50 * fontxs), rec));
                     }
+
+                    if (image.CornerRound.Enabled)
+                    {
+                        img.Mutate(x => x.ConvertToAvatar(new SixLabors.ImageSharp.Size(img.Width, img.Height), image.CornerRound.CornerRadius));
+                    }
                     //绘制图片
                     resultImage.Mutate(x => x.DrawImage(img, start, 1));
 
@@ -774,7 +779,8 @@ namespace JointWatermark.Class
                         polygon = new RegularPolygon(0, 0, (int)arWidth, Diagonal((int)arHeight, (int)arWidth));
                         var rst2 = resultImage.Clone();
                         resultImage.Mutate(cc => cc.Resize((int)arWidth, (int)arHeight));
-                        resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex(image.BackgroundColor), polygon));
+                        var color = !string.IsNullOrEmpty(image.GlobalBkColor) ? image.GlobalBkColor : image.BackgroundColor;
+                        resultImage.Mutate(x => x.Fill(SixLabors.ImageSharp.Color.ParseHex(color), polygon));
                         resultImage.Mutate(x => x.DrawImage(rst2, arStart, 1));
                     }
                     img.Dispose();

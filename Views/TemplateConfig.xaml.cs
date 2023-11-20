@@ -58,6 +58,8 @@ namespace JointWatermark.Views
             }
         }
 
+
+
         private void ImportIconClick(object sender, RoutedEventArgs e)
         {
             var win = App.Current.MainWindow as MainWindow;
@@ -71,6 +73,17 @@ namespace JointWatermark.Views
                 property.AspectRatio = cbi.Content as string;
             }
             parent.vm.RefreshSelectedImage();
+        }
+
+        private void backColorClick(object sender, RoutedEventArgs e)
+        {
+            var dialog = ColorPickerWPF.ColorPickerWindow.ShowDialog(out System.Windows.Media.Color color, ColorPickerWPF.Code.ColorPickerDialogOptions.SimpleView);
+            if (dialog == true)
+            {
+                System.Drawing.Color _c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
+                vm.GlobalBkColor = ColorTranslator.ToHtml(_c);
+                vm.CmdRefresh.Execute(null);
+            }
         }
     }
 
@@ -178,6 +191,21 @@ namespace JointWatermark.Views
             }
         }
 
+        private int cornerRadius;
+        /// <summary>
+        /// 图片圆角
+        /// </summary>
+        public int CornerRadius
+        {
+            get => cornerRadius;
+            set
+            {
+                cornerRadius = value;
+                NotifyPropertyChanged(nameof(CornerRadius));
+                window.property.CornerRound.CornerRadius = value;
+            }
+        }
+
         private void ComputePercent(int value)
         {
             BorderWidthOfTop = value;
@@ -223,6 +251,20 @@ namespace JointWatermark.Views
             }
         }
 
+        private bool enabledRound;
+        public bool EnabledRound
+        {
+            get => enabledRound;
+            set
+            {
+                enabledRound = value;
+                NotifyPropertyChanged(nameof(EnabledRound));
+                if (window.property.CornerRound != null)
+                    window.property.CornerRound.Enabled = enabledRound;
+                window.parent.vm.RefreshSelectedImage();
+            }
+        }
+
         private bool whiteToTransparent;
         public bool WhiteToTransparent
         {
@@ -243,16 +285,21 @@ namespace JointWatermark.Views
             get => backgroundColor;
             set
             {
-                //if (backgroundColor.Length >= 9)
-                //{
-                //    backgroundColor = value.Remove(1, 2);
-                //}
-                //else
-                //{
-                    backgroundColor = value;
-                //}
+                backgroundColor = value;
                 NotifyPropertyChanged(nameof(BackgroundColor));
                 window.property.BackgroundColor = backgroundColor;
+            }
+        }
+
+        private string globalBkColor;
+        public string GlobalBkColor
+        {
+            get => globalBkColor;
+            set
+            {
+                globalBkColor = value;
+                NotifyPropertyChanged(nameof(GlobalBkColor));
+                window.property.GlobalBkColor = value;
             }
         }
 
@@ -282,17 +329,22 @@ namespace JointWatermark.Views
                 window.parent.vm.RefreshSelectedImage();
             });
             BackgroundColor = window.property.BackgroundColor;
+            globalBkColor = window.property.GlobalBkColor;
             if (!string.IsNullOrEmpty(window.property.AspectRatio))
             {
                 window.aspectRatio.Text = window.property.AspectRatio;
             }
+
+            if (window.property.CornerRound == null) window.property.CornerRound = new ImageCornerRound(false, 100);
+            cornerRadius = window.property.CornerRound.CornerRadius;
+            enabledRound = window.property.CornerRound.Enabled;
         }
 
         #endregion
 
         public SimpleCommand CmdOpenConfig => new SimpleCommand()
         {
-            ExecuteDelegate=x =>
+            ExecuteDelegate = x =>
             {
                 var row = WaterItems1.FirstOrDefault(c => c.ID.Equals(x));
                 if (row == null) return;
