@@ -662,7 +662,7 @@ namespace JointWatermark.Class
                         resultImage.Mutate(x => x.DrawImage(blackImg, start, 1).BoxBlur((int)(50 * fontxs), rec));
                     }
 
-                    if (image.CornerRound.Enabled)
+                    if (image.CornerRound != null && image.CornerRound.Enabled)
                     {
                         img.Mutate(x => x.ConvertToAvatar(new SixLabors.ImageSharp.Size(img.Width, img.Height), image.CornerRound.CornerRadius));
                     }

@@ -37,6 +37,7 @@ namespace JointWatermark.Class
         public GeneralWatermarkProperty()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            CornerRound ??= new ImageCornerRound(false, 100);
         }
 
         public string ID { get; set; }

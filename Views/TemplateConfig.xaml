@@ -123,7 +123,7 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label Content="横纵比例" VerticalAlignment="Center"/>
-                            <ComboBox Width="100" x:Name="aspectRatio" HorizontalContentAlignment="Center" SelectionChanged="aspectRatio_SelectionChanged">
+                            <ComboBox Width="60" x:Name="aspectRatio" HorizontalContentAlignment="Center" SelectionChanged="aspectRatio_SelectionChanged">
                                 <ComboBoxItem Content=""/>
                                 <ComboBoxItem Content="16:9"/>
                                 <ComboBoxItem Content="9:16"/>
@@ -135,7 +135,7 @@
                             </ComboBox>
                             <Label Content="背景颜色" VerticalAlignment="Center"/>
                             <TextBox Text="{Binding GlobalBkColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"  materialDesign:HintAssist.IsFloating="True" Width="60"/>
-                            <Button Cursor="Hand" Height="25" Width="25" Click="backColorClick" VerticalAlignment="Bottom"  Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}">
+                            <Button Cursor="Hand" Height="25" Width="25" Click="backColorClick" VerticalAlignment="Center"  Style="{StaticResource MaterialDesignFloatingActionMiniDarkButton}">
                                 <materialDesign:PackIcon Kind="Edit" Height="20" Width="20"/>
                             </Button>
                         </StackPanel>
