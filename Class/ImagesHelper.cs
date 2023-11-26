@@ -32,6 +32,7 @@ using JointWatermark.Views;
 using System.Reflection;
 using SixLabors.ImageSharp.Processing.Processors;
 using JointWatermark.Enums;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace JointWatermark.Class
 {
@@ -505,17 +506,18 @@ namespace JointWatermark.Class
         }
 
 
-        public Task<Image> SplitImages(ObservableCollection<ImageProperties> images, bool horizon, CancellationToken token, Loading loading)
+        public Task<Image<Rgba32>> SplitImages(ObservableCollection<ImageProperties> images, bool horizon, CancellationToken? token, Loading? loading, bool preview)
         {
             return Task.Run(() =>
             {
 
-                loading.ISetPosition(1, $"已完成：1%");
-                List<SixLabors.ImageSharp.Image> list = new List<SixLabors.ImageSharp.Image>();
+                loading?.ISetPosition(1, $"已完成：1%");
+                List<SixLabors.ImageSharp.Image<Rgba32>> list = new List<SixLabors.ImageSharp.Image<Rgba32>>();
 
                 foreach (var image in images)
                 {
-                    list.Add(SixLabors.ImageSharp.Image.Load(image.Path));
+                    var p = preview ? image.ThumbnailPath : image.Path;
+                    list.Add(SixLabors.ImageSharp.Image.Load<Rgba32>(p));
                 }
 
                 var maxWidth = list.Max(c => c.Width);
@@ -541,7 +543,7 @@ namespace JointWatermark.Class
 
                 }
 
-                loading.ISetPosition(5, $"已完成：5%");
+                loading?.ISetPosition(5, $"已完成：5%");
                 double borderWidth = 0;
                 double w = 0; double h = 0;
                 var firstImage = images.FirstOrDefault();
@@ -561,19 +563,94 @@ namespace JointWatermark.Class
                 var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, result.Width, Diagonal(result.Height, result.Width));
                 result.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
                 var start = new SixLabors.ImageSharp.Point((int)borderWidth, (int)borderWidth);
-                loading.ISetPosition(10, $"已完成：10%");
+                loading?.ISetPosition(10, $"已完成：10%");
                 foreach (var item in list)
                 {
-                    token.ThrowIfCancellationRequested();
+                    token?.ThrowIfCancellationRequested();
                     result.Mutate(x => x.DrawImage(item, start, 1));
                     if (horizon)
                         start.X += item.Width;
                     else
                         start.Y += item.Height;
                     var c = (int)(10 + list.IndexOf(item) + 1 * 80 / (double)list.Count);
-                    loading.ISetPosition(c, $"已完成：{c}%");
+                    loading?.ISetPosition(c, $"已完成：{c}%");
                 }
-                loading.ISetPosition(100, "已完成");
+                loading?.ISetPosition(100, "已完成");
+                list.ForEach(c => c.Dispose());
+                return result;
+            });
+        }
+
+        public Task<Image<Rgba32>> SplitImages2(ObservableCollection<ImageProperties> images, CancellationToken? token, Loading? loading, int border, int columns, bool preview)
+        {
+            return Task.Run(() =>
+            {
+                loading?.ISetPosition(1, $"已完成：1%");
+                List<SixLabors.ImageSharp.Image<Rgba32>> list = new List<SixLabors.ImageSharp.Image<Rgba32>>();
+
+                foreach (var image in images)
+                {
+                    var p = preview ? image.ThumbnailPath : image.Path;
+                    list.Add(SixLabors.ImageSharp.Image.Load<Rgba32>(p));
+                }
+
+                var row = list.Count % columns == 0 ? (list.Count / columns) : (int)(list.Count / columns) + 1;
+
+                var maxWidth = list.Max(c => c.Width);
+                var maxHeight = list.Max(c => c.Height);
+                foreach (var ls in list)
+                {
+                    if (ls.Width != maxWidth)
+                    {
+                        var xs = maxWidth / (double)ls.Width;
+                        ls.Mutate(c => c.Resize(maxWidth, (int)(ls.Height * xs)));
+                        if(ls.Height > maxHeight)
+                        {
+                            xs = maxHeight / (double)ls.Height;
+                            ls.Mutate(c => c.Resize((int)(ls.Width * xs), maxHeight));
+                        }
+                    }
+                }
+
+                loading?.ISetPosition(5, $"已完成：5%");
+                double borderWidth = 0;
+                double w = 0; double h = 0;
+
+
+                borderWidth = border * maxHeight / 100.0;
+                w = (columns + 1) * borderWidth + maxWidth * columns;
+                h = (row + 1) * borderWidth + maxHeight * row;
+                
+
+                var result = list[0].Clone(c => c.Resize((int)w, (int)h));
+                var polygon = new SixLabors.ImageSharp.Drawing.RegularPolygon(0, 0, result.Width, Diagonal(result.Height, result.Width));
+                result.Mutate(c => c.Fill(SixLabors.ImageSharp.Color.ParseHex("#FFF"), polygon));
+                var start = new SixLabors.ImageSharp.Point((int)borderWidth, (int)borderWidth);
+                loading?.ISetPosition(10, $"已完成：10%");
+                int cot = 0;
+                for (var i = 0; i < row; i++)
+                {
+                    for(var j = 0; j < columns; j++)
+                    {
+                        if (cot >= list.Count) continue;
+                        var item = list[cot++];
+                        token?.ThrowIfCancellationRequested();
+
+                        var x = j == 0 ? borderWidth + (maxWidth - item.Width) / 2 : (borderWidth + maxWidth) * j + borderWidth + (maxWidth - item.Width) / 2;  //    (int)((borderWidth + maxWidth) * (j+1) + (maxWidth - item.Width) / 2);
+                        var y = i == 0 ? borderWidth + (maxHeight - item.Height) / 2 : (borderWidth + maxHeight) * i + borderWidth + (maxHeight- item.Height) / 2;//
+                        start.X = (int)x;
+                        start.Y = (int)y;
+
+                        result.Mutate(x => x.DrawImage(item, start, 1));
+                        //if(j < columns - 1) start.X += (int)borderWidth;
+
+                        var c = (int)((row * columns + j) * 80 / (double)list.Count);
+                        loading?.ISetPosition(c, $"已完成：{c}%");
+                    }
+                    //start.X = (int)borderWidth;
+                    //if (i < row - 1) start.Y += (int)borderWidth;
+                }
+                loading?.ISetPosition(100, "已完成");
                 list.ForEach(c => c.Dispose());
                 return result;
             });

@@ -31,7 +31,7 @@
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
             <Border Style="{StaticResource BorderStyle}">
-                <TabControl  VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard" materialDesign:ElevationAssist.Elevation="Dp1" Style="{StaticResource MaterialDesignNavigationRailTabControl}">
+                <TabControl x:Name="tab" VerticalContentAlignment="Top" materialDesign:ColorZoneAssist.Mode="Standard" materialDesign:ElevationAssist.Elevation="Dp1" Style="{StaticResource MaterialDesignNavigationRailTabControl}">
                     <TabItem>
                         <TabItem.Header>
                             <StackPanel Width="auto" Height="auto">
@@ -134,7 +134,7 @@
 
                         </Grid>
                     </TabItem>
-                    <TabItem>
+                    <TabItem Tag="split">
                         <TabItem.Header>
                             <StackPanel Width="auto" Height="auto">
                                 <materialDesign:PackIcon Width="16" Height="16" HorizontalAlignment="Center" Kind="Image" />
@@ -142,29 +142,6 @@
                             </StackPanel>
                         </TabItem.Header>
                         <StackPanel>
-                            <ToolBarTray>
-                                <ToolBar ClipToBounds="False" Style="{StaticResource MaterialDesignToolBar}">
-                                    <Button
-                                        Click="SelectPictureClick"
-                                        Tag="split"
-                                        HorizontalAlignment="Right"
-                                        Style="{StaticResource MaterialDesignToolForegroundButton}"
-                                        Width="30"
-                                        Height="40" Padding="2 0 2 0" materialDesign:RippleAssist.IsCentered="True" Cursor="Hand">
-                                        <materialDesign:PackIcon Kind="FolderOpen" />
-                                    </Button>
-                                    <Separator />
-                                    <CheckBox Content="左右拼接" VerticalAlignment="Center" HorizontalAlignment="Left" x:Name="splitDirection"/>
-                                    <ToggleButton x:Name="bu" VerticalAlignment="Center" Style="{StaticResource MaterialDesignToolForegroundButton}" Content="{materialDesign:PackIcon Kind=BorderAll}" Width="40" ToolTip="边框"/>
-                                    <Popup Height="200" Placement="Bottom" PlacementTarget="{Binding ElementName=bu}" StaysOpen="False" IsOpen="{Binding ElementName=bu, Path=IsChecked}">
-                                        <Border Style="{StaticResource BorderStyle}" Padding="40,10,0,10">
-                                            <Slider x:Name="split_border" Minimum="0" Maximum="10" Orientation="Vertical" TickFrequency="1" Margin="10" TickPlacement="BottomRight" Style="{StaticResource MaterialDesignDiscreteSlider}" Value="0"/>
-                                        </Border>
-                                    </Popup>
-                                    <Separator />
-                                    <Button HorizontalAlignment="Right" Style="{StaticResource MaterialDesignToolForegroundButton}" Content="{materialDesign:PackIcon Kind=Export}"  Cursor="Hand" Click="ExportSplitImageClick" ToolTip="导出"/>
-                                </ToolBar>
-                            </ToolBarTray>
                             <ListBox Name="LBoxSort" ItemsSource="{Binding SplitImages, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewMouseMove="LBoxSort_OnPreviewMouseMove" Drop="LBoxSort_OnDrop" AllowDrop="True">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>

@@ -4,6 +4,7 @@ using MaterialDesignThemes.Wpf;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +21,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WeakToys.Class;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace JointWatermark
 {
@@ -152,7 +154,7 @@ namespace JointWatermark
 
         public void SelectPictureClick(object sender, RoutedEventArgs e)
         {
-            var tag = sender is Button button ? button.Tag : "";
+            var tag = tab.SelectedItem is TabItem tb && "split".Equals(tb.Tag) ? "split" : "";
             // 实例化一个文件选择对象
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -174,7 +176,16 @@ namespace JointWatermark
                 }
                 createdImg.Source = null;
                 ImportImages(dialog.FileNames, tag.ToString());
-                tabImg.Focus();
+                if (tag.Equals("split"))
+                {
+
+                    configFrame.Width = 313;
+                    configFrame.Content = new Frame() { Content = new SplitImageConfig(vm.SplitImages, this) };
+                }
+                else
+                {
+                    tabImg.Focus();
+                }
             }
         }
 
@@ -404,7 +415,78 @@ namespace JointWatermark
                 });
             }
         }
+        public string GetTag()
+        {
+            var tag = tab.SelectedItem is TabItem tb && "split".Equals(tb.Tag) ? "split" : "";
+            return tag;
+        }
+        public void Export()
+        {
+            var c = configFrame.Content is Frame frame && frame.Content is SplitImageConfig config ? config : null;
+            if (c == null) return;
+            var cfg = c.GetConfig();
+            var properties = vm.SplitImages;
+            foreach (var im in vm.SplitImages)
+            {
+                im.Config.BorderWidth = (int)cfg.Border;
+            }
+            var action = new Action<CancellationToken, Loading>((token, loading) =>
+            {
 
+                loading.ISetPosition(0, "已完成：0%");
+                var p = Global.Path_output + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                if (cfg.Index == 0)
+                {
+                    int border = (int)cfg.Border;
+                    var col = (int)Math.Sqrt(properties.Count);
+                    var bit = ImagesHelper.Current.SplitImages2(properties, token, loading, border, col, false).Result;
+                    bit.Save(p);
+                    bit.Dispose();
+                }
+                else if (cfg.Index == 1)
+                {
+                    var bit = ImagesHelper.Current.SplitImages(properties, false, token, loading, false).Result;
+                    var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
+                    bit.Save(p);
+                    bit.Dispose();
+                }
+                else if (cfg.Index == 2)
+                {
+                    var bit = ImagesHelper.Current.SplitImages(properties, true, token, loading, false).Result;
+                    var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
+                    bit.Save(p);
+                    bit.Dispose();
+                }
+                else
+                {
+                    var index = cfg.Index;
+                    var bit = ImagesHelper.Current.SplitImages2(properties, token, loading, (int)cfg.Border, index, false).Result;
+                    var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
+                    bit.Save(p);
+                    bit.Dispose();
+                }
+
+                loading.ISetPosition(100, "已完成：100%");
+
+            });
+            var ld = new Loading(action);
+            ld.Owner = App.Current.MainWindow;
+            var rst = ld.ShowDialog();
+            if (rst == true)
+            {
+                var win = App.Current.MainWindow as MainWindow;
+                win.ShowMsgBox("打开输出目录？");
+                win.SetAction(() =>
+                {
+                    if (Directory.Exists(Global.Path_output))
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = Global.Path_output, UseShellExecute = true };
+
+                        System.Diagnostics.Process.Start(psi);
+                    }
+                });
+            }
+        }
         public void InitFontList()
         {
             var fonts = Global.FontResourrce.Select(c => c.Key).ToList();
@@ -709,42 +791,6 @@ namespace JointWatermark
             var transform1 = group.Children[1] as TranslateTransform;
             transform1.X = -1 * ((pointToContent.X * transform.ScaleX) - point.X);
             transform1.Y = -1 * ((pointToContent.Y * transform.ScaleY) - point.Y);
-        }
-
-        private void ExportSplitImageClick(object sender, RoutedEventArgs e)
-        {
-            var horizon = splitDirection.IsChecked == true;
-            if (vm.SplitImages == null ||  vm.SplitImages.Count == 0) return;
-            foreach (var im in vm.SplitImages)
-            {
-                im.Config.BorderWidth = (int)split_border.Value;
-            }
-            var action = new Action<CancellationToken, Loading>((token, loading) =>
-            {
-                loading.ISetPosition(0, "已完成：0%");
-                var p = Global.Path_output + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
-                var bit = ImagesHelper.Current.SplitImages(vm.SplitImages, horizon, token, loading).Result;
-                bit.Save(p);
-                loading.ISetPosition(100, "已完成：100%");
-                bit.Dispose();
-            });
-            var ld = new Loading(action);
-            ld.Owner = App.Current.MainWindow;
-            var rst = ld.ShowDialog();
-            if (rst == true)
-            {
-                var win = App.Current.MainWindow as MainWindow;
-                win.ShowMsgBox("打开输出目录？");
-                win.SetAction(() =>
-                {
-                    if (Directory.Exists(Global.Path_output))
-                    {
-                        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = Global.Path_output, UseShellExecute = true };
-
-                        System.Diagnostics.Process.Start(psi);
-                    }
-                });
-            }
         }
 
         private void OpenTemplateConfigClick(object sender, RoutedEventArgs e)

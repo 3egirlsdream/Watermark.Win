@@ -102,28 +102,37 @@ namespace JointWatermark
 
         private void ExportImageClick(object sender, RoutedEventArgs e)
         {
-            var director = new DirectoryInfo(Global.Path_output);
-            if (!director.Exists)
+            var tag = main.GetTag();
+            if ("split".Equals(tag))
             {
-                director.Create();
+                main.Export();
             }
-            if (!main.vm.Images.Any())
+            else
             {
-                var win = new MessageBoxL(true, "提示", "列表为空，请先导入图片");
-                win.Owner = this;
-                win.ShowInTaskbar = false;
-                win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                win.ShowDialog();
-                return;
+                var director = new DirectoryInfo(Global.Path_output);
+                if (!director.Exists)
+                {
+                    director.Create();
+                }
+                if (!main.vm.Images.Any())
+                {
+                    var win = new MessageBoxL(true, "提示", "列表为空，请先导入图片");
+                    win.Owner = this;
+                    win.ShowInTaskbar = false;
+                    win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    win.ShowDialog();
+                    return;
+                }
+                Export export = new Export(main.vm.Images);
+                export.Owner = this;
+                export.ShowInTaskbar = false;
+                export.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (export.ShowDialog() == true)
+                {
+                    main.Export(main.vm.Images.Where(c => c.IsChecked));
+                }
             }
-            Export export = new Export(main.vm.Images);
-            export.Owner = this;
-            export.ShowInTaskbar = false;
-            export.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            if (export.ShowDialog() == true)
-            {
-                main.Export(main.vm.Images.Where(c => c.IsChecked));
-            }
+           
         }
 
         private void ExportAllImageClick(object sender, RoutedEventArgs e)
