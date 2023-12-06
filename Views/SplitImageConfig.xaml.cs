@@ -38,7 +38,8 @@ namespace JointWatermark.Views
             return new
             {
                 Index = colCbx.SelectedIndex,
-                Border = split_border.Value
+                Border = split_border.Value,
+                Quality = quality.Value
             };
         }
 

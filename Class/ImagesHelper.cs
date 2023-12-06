@@ -33,6 +33,7 @@ using System.Reflection;
 using SixLabors.ImageSharp.Processing.Processors;
 using JointWatermark.Enums;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using System.Diagnostics;
 
 namespace JointWatermark.Class
 {
@@ -644,8 +645,8 @@ namespace JointWatermark.Class
                         result.Mutate(x => x.DrawImage(item, start, 1));
                         //if(j < columns - 1) start.X += (int)borderWidth;
 
-                        var c = (int)((row * columns + j) * 80 / (double)list.Count);
-                        loading?.ISetPosition(c, $"已完成：{c}%");
+                        var c = cot / (double)list.Count * 85 + 10;
+                        loading?.ISetPosition((int)c, $"已完成：{c.ToString("f2")}%");
                     }
                     //start.X = (int)borderWidth;
                     //if (i < row - 1) start.Y += (int)borderWidth;

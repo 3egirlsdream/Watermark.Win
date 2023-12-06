@@ -435,26 +435,34 @@ namespace JointWatermark
 
                 loading.ISetPosition(0, "已完成：0%");
                 var p = Global.Path_output + Global.SeparatorChar + DateTime.Now.ToString("yyyyMMddHHmmss") + ".jpg";
+                if(!Directory.Exists(Global.Path_output))
+                {
+                    Directory.CreateDirectory(Global.Path_output);
+                }
+                var jpegEncoder = new JpegEncoder
+                {
+                    Quality = (int)cfg.Quality
+                };
                 if (cfg.Index == 0)
                 {
                     int border = (int)cfg.Border;
                     var col = (int)Math.Sqrt(properties.Count);
                     var bit = ImagesHelper.Current.SplitImages2(properties, token, loading, border, col, false).Result;
-                    bit.Save(p);
+                    bit.Save(p, jpegEncoder);
                     bit.Dispose();
                 }
                 else if (cfg.Index == 1)
                 {
                     var bit = ImagesHelper.Current.SplitImages(properties, false, token, loading, false).Result;
                     var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
-                    bit.Save(p);
+                    bit.Save(p, jpegEncoder);
                     bit.Dispose();
                 }
                 else if (cfg.Index == 2)
                 {
                     var bit = ImagesHelper.Current.SplitImages(properties, true, token, loading, false).Result;
                     var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
-                    bit.Save(p);
+                    bit.Save(p, jpegEncoder);
                     bit.Dispose();
                 }
                 else
@@ -462,7 +470,7 @@ namespace JointWatermark
                     var index = cfg.Index;
                     var bit = ImagesHelper.Current.SplitImages2(properties, token, loading, (int)cfg.Border, index, false).Result;
                     var bmp = ImagesHelper.Current.ImageSharpToImageSource(bit);
-                    bit.Save(p);
+                    bit.Save(p, jpegEncoder);
                     bit.Dispose();
                 }
 
