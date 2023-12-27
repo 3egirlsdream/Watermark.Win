@@ -70,8 +70,8 @@
             <GroupBox Template="{DynamicResource GroupBoxTemplate}"  Style="{StaticResource eee}" Header="拼图设置" Margin="0 0 0 2" >
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="列数"/>
-                        <ComboBox x:Name="colCbx" Width="100" SelectedIndex="0" HorizontalContentAlignment="Center">
+                        <Label Content="列数" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="colCbx" Width="100" SelectedIndex="0" HorizontalContentAlignment="Center" Margin="10">
                             <ComboBoxItem Content="1:1"/>
                             <ComboBoxItem Content="全部一列"/>
                             <ComboBoxItem Content="全部一行"/>
@@ -86,8 +86,12 @@
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="边框"/>
+                        <Label Content="边框" VerticalAlignment="Center"/>
                         <Slider x:Name="split_border" Width="100" Minimum="0" Maximum="10" Orientation="Horizontal" TickFrequency="1" Margin="10" TickPlacement="BottomRight" Style="{StaticResource MaterialDesignDiscreteSlider}" Value="0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label  Content="质量" VerticalAlignment="Center" FontSize="14"/>
+                        <Slider x:Name="quality" Width="100" Margin="10" Minimum="50" Value="80" Maximum="100" TickFrequency="5" Style="{StaticResource MaterialDesignDiscreteSlider}" TickPlacement="BottomRight" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
