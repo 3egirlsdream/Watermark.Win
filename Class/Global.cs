@@ -75,6 +75,20 @@ namespace JointWatermark
             }
         }
 
+        public static Dictionary<string, object> GetMeta(byte[] path)
+        {
+            var meta = new Dictionary<string, object>();
+            using (var img = Image.Load(path))
+            {
+                    meta = GetMeta(img.Metadata.ExifProfile.Values);
+                    var xs = img.Width / 1920M;
+                    var w = (int)(img.Width / xs);
+                    var h = (int)(img.Height / xs);
+                    img.Mutate(x => x.Resize(w, h));
+            }
+            return meta;
+        }
+
         public static Dictionary<string, object> GetMeta(string path, out bool empty)
         {
             var meta = new Dictionary<string, object>();

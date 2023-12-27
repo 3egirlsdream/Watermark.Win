@@ -280,6 +280,12 @@ namespace JointWatermark
                 Global.CheckUpdate(v, action);
             }
         }
+
+        private void TemplatesMarketClick(object sender, RoutedEventArgs e)
+        {
+            var win = new TemplatesMarket();
+            win.ShowDialog();
+        }
     }
 
     public class VM : ValidationBase

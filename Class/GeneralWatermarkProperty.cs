@@ -27,6 +27,9 @@ namespace JointWatermark.Class
                 NotifyPropertyChanged(nameof(IsChecked));
             }
         }
+
+        [JsonIgnore]
+        public byte[] OriginalByte { get; set; }
     }
 }
 

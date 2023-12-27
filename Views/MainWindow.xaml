@@ -82,6 +82,8 @@
                     </MenuItem.ToolTip>
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="模板市场" Click="TemplatesMarketClick">
+            </MenuItem>
         </Menu>
         <StackPanel Grid.Row="0" HorizontalAlignment="Right"  Orientation="Horizontal">
             <StackPanel>
