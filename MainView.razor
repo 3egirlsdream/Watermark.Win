@@ -1,0 +1,17 @@
+﻿<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<h1>Counter</h1>
+<a href="/design">aaaa</a>
+<p>Current count: @currentCount</p>
+
+<MudButton class="btn btn-primary" Variant="Variant.Filled" Color="Color.Primary" @onclick="IncrementCount">Click me</MudButton>
+
+@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}
