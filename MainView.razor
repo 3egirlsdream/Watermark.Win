@@ -1,17 +1,83 @@
-﻿<MudThemeProvider />
+﻿@using Watermark.Win.Models
+<MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-<h1>Counter</h1>
-<a href="/design">aaaa</a>
-<p>Current count: @currentCount</p>
+<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="OnButtonClicked">Delete</MudButton>
 
-<MudButton class="btn btn-primary" Variant="Variant.Filled" Color="Color.Primary" @onclick="IncrementCount">Click me</MudButton>
+<MudChip>@state</MudChip>
+    @code {
+    [Inject] private IDialogService DialogService { get; set; }
 
-@code {
-    private int currentCount = 0;
+    string state = "Message box hasn't been opened yet";
 
-    private void IncrementCount()
+
+    private async void OnButtonClicked()
     {
-        currentCount++;
+        var logo = new WMLogo()
+            {
+                Margin = new System.Windows.Thickness(5),
+                Percent = 70,
+                Path = "C:\\Users\\kingdee\\Desktop\\QQ图片20231228174854.png"
+            };
+        var text = new WMText
+            {
+                Margin = new System.Windows.Thickness(5),
+                Percent = 70,
+                IsBold = true,
+                IsItalic = true,
+                FontSize = 32,
+                Text = "Hello World!@"
+            };
+
+        var line = new WMLine
+            {
+                Margin = new System.Windows.Thickness(5),
+                Percent = 70,
+                Thickness = 5,
+                Color = "#e3e3e3",
+                Orientation = System.Windows.Controls.Orientation.Vertical
+            };
+
+        var containers = new WMContainer();
+        containers.Height = 13;
+        containers.Width = 100;
+        containers.Controls.Add(logo);
+        containers.Controls.Add(line);
+        containers.Controls.Add(text);
+        containers.Orientation = System.Windows.Controls.Orientation.Horizontal;
+        containers.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+        containers.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+        containers.Margin = new System.Windows.Thickness(5, 5, 5, 0);
+        containers.ContainerAlignment = ContainerAlignment.Bottom;
+
+        var containers2 = new WMContainer();
+        containers2.Height = 100;
+        containers2.Width = 13;
+        containers2.Controls.Add(logo);
+        var line2 = new WMLine
+            {
+                Margin = new System.Windows.Thickness(5),
+                Percent = 70,
+                Thickness = 5,
+                Color = "#e3e3e3",
+                Orientation = System.Windows.Controls.Orientation.Horizontal
+            };
+        containers2.Controls.Add(line2);
+        containers2.Controls.Add(text);
+        containers2.Orientation = System.Windows.Controls.Orientation.Vertical;
+        containers2.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+        containers2.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+        containers2.Margin = new System.Windows.Thickness(0, 5, 5, 0);
+        containers2.ContainerAlignment = ContainerAlignment.Left;
+
+
+        var canvas = new WMCanvas()
+            {
+                BorderThickness = new System.Windows.Thickness(5, 5, 5, 13)
+            };
+        // canvas.Children.Add(containers);
+        canvas.Children.Add(containers2);
+        var helper = new WatermarkHelper();
+        helper.Generation(canvas);
     }
 }
