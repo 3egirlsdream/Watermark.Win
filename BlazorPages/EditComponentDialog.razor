@@ -5,45 +5,123 @@
 
 <MudDialog>
     <DialogContent>
+        @if (param.AddControl)
+        {
+            <MudStack>
+                <MudRadioGroup @bind-Value="param.CtrlType">
+                    <MudRadio Value="@CtrlEnum.Container" Color="Color.Primary" Dense="false">容器</MudRadio>
+                    <MudRadio Value="@CtrlEnum.Image" Color="Color.Primary" Dense="true">图片</MudRadio>
+                    <MudRadio Value="@CtrlEnum.Text" Color="Color.Primary" Dense="true">文本</MudRadio>
+                    <MudRadio Value="@CtrlEnum.Line" Color="Color.Primary" Dense="true">线</MudRadio>
+                </MudRadioGroup>
+                <MudTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudSelect @bind-Value="param.ParentContainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
+                    @foreach (var c in mContainers)
+                    {
+                        <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton FullWidth="true" OnClick="Add">确定</MudButton>
+            </MudStack>
+        }
+        else
+        {
+            <MudButton FullWidth="true" OnClick="(()=>param.AddControl = true)">新增组件</MudButton>
+        }
+        @if (MoveContainer)
+        {
+            <MudCard>
+                <MudSelect @bind-Value="MoveForwardConntainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
+                    @foreach (var c in MoveContainers)
+                    {
+                        <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
+                    }
+                </MudSelect>
 
-        <MudDropContainer T="IWMControl" @ref="_dropContainer" Items="@mContainers" Class="d-flex flex-row">
-            <ChildContent>
-                @foreach (var lv1Container in mCanvas.Children)
-                {
-                    <MudPaper Elevation="0" Width="224px" MinHeight="400px" Class="pa-4 ma-4 d-flex flex-column mud-background-gray rounded-lg">
-                        <MudToolBar DisableGutters="true">
-                            <MudText Typo="Typo.subtitle1"><b>容器 @mCanvas.Children.IndexOf(lv1Container)</b></MudText>
-                            <MudSpacer />
-                            <MudMenu Icon="@Icons.Material.Rounded.MoreHoriz" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2 d-flex flex-column" PopoverClass="mud-elevation-25">
-                                <MudButton Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Delete" OnClick="@( () => DeleteSection(lv1Container))">Delete Section</MudButton>
-                                <MudButton Size="Size.Small" Color="Color.Default" StartIcon="@Icons.Material.Rounded.Edit">Rename Section</MudButton>
-                            </MudMenu>
-                        </MudToolBar>
-                        <MudDropZone T="WMContainer" Identifier="lv1Container" Class="mud-height-full" />
-                        @if (false)
-                        {
-                            <MudPaper Elevation="25" Class="pa-2 rounded-lg">
-                                <MudButton Size="Size.Small" Color="Color.Primary" FullWidth="true">Add Task</MudButton>
-                            </MudPaper>
-                        }
-                        else
-                        {
-                            <MudButton StartIcon="@Icons.Material.Filled.Add" FullWidth="true" Class="rounded-lg py-2">Add Task</MudButton>
-                        }
-                    </MudPaper>
-                }
-            </ChildContent>
-            <ItemRenderer>
-                <MudPaper Elevation="25" Class="pa-4 rounded-lg my-3">@context.Percent</MudPaper>
-                </ItemRenderer>
-            </MudDropContainer>
-        </DialogContent>
-        <DialogActions>
-            <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
-        </DialogActions>
-    </MudDialog>
+                <MudButton FullWidth="true" OnClick="MoveOK">确定</MudButton>
+            </MudCard>
+        }
 
-    @code {
+
+        <MudTreeView T="string" Dense="true" Hover="true">
+            @foreach (var container in mCanvas.Children)
+            {
+                <MudTreeViewItem Value="@(container.Name)">
+                    <BodyContent>
+                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                            <MudText Style="justify-self: start;">@(container.Name)</MudText>
+                            <div style="justify-self: end;">
+                                @*<MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" />*@
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
+                            </div>
+                        </div>
+                    </BodyContent>
+                    <ChildContent>
+                        @foreach (var comp in container.Controls)
+                        {
+
+                            @if (comp is WMContainer wc)
+                            {
+                                <MudTreeViewItem Value="@(wc.Name)">
+                                    <BodyContent>
+                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                            <MudText Style="justify-self: start;">@(wc.Name)</MudText>
+                                            <div style="justify-self: end;">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(wc, '2')" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
+                                            </div>
+                                        </div>
+                                    </BodyContent>
+                                    <ChildContent>
+                                        @foreach (var cld_c in wc.Controls)
+                                        {
+                                            <MudTreeViewItem Value="@(cld_c.Name)">
+                                                <BodyContent>
+                                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                                        <MudText Style="justify-self: start;">@(cld_c.Name)</MudText>
+                                                        <div style="justify-self: end;">
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
+                                                        </div>
+                                                    </div>
+                                                </BodyContent>
+                                            </MudTreeViewItem>
+                                        }
+                                    </ChildContent>
+
+                                </MudTreeViewItem>
+                            }
+                            else
+                            {
+                                <MudTreeViewItem Value="@(comp.Name)">
+                                    <BodyContent>
+                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                            <MudText Style="justify-self: start;">@(comp.Name)</MudText>
+                                            <div style="justify-self: end;">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="() => Move(comp, '1')" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
+                                            </div>
+                                        </div>
+                                    </BodyContent>
+                                </MudTreeViewItem>
+                            }
+
+                        }
+                    </ChildContent>
+                </MudTreeViewItem>
+            }
+        </MudTreeView>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
     [Parameter]
@@ -52,21 +130,51 @@
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();
 
-    void Test()
+    AddParam param;
+
+    void Add()
     {
-        //MudDialog.Options;
+        var ct = mContainers.FirstOrDefault(c => c.ID == param.ParentContainerId);
+        if (ct != null)
+        {
+            IWMControl control;
+            if (param.CtrlType == CtrlEnum.Container)
+            {
+                control = new WMContainer();
+            }
+            else if (param.CtrlType == CtrlEnum.Image)
+            {
+                control = new WMLogo();
+            }
+            else if (param.CtrlType ==  CtrlEnum.Line)
+            {
+                control = new WMLine();
+            }
+            else
+            {
+                control = new WMText();
+            }
+            control.Name = param.CtrlName;
+            control.Margin = new Thickness(5);
+            control.Percent = 70;
+            ct.Controls.Add(control);
+            param.AddControl = false;
+        }
     }
 
-    List<WMContainer> mContainers;
+    HashSet<WMContainer> mContainers;
     List<IWMControl> controls;
 
     protected override void OnInitialized()
     {
-        mContainers = new List<WMContainer>(mCanvas.Children);
-        mCanvas.Children.Select(c => c.Controls.Where(x => x is WMContainer) as List<WMContainer>).ToList().ForEach(z =>
+        param = new AddParam();
+        mContainers = new HashSet<WMContainer>(mCanvas.Children);
+        mCanvas.Children.Select(c => c.Controls.Where(x => x is WMContainer)).ToList().ForEach(z =>
         {
-            if(z != null)
-                mContainers.AddRange(z);
+            if (z != null)
+                z.ToList().ForEach(v => mContainers.Add((WMContainer)v));
+
+
         });
 
         controls = new List<IWMControl>();
@@ -80,106 +188,199 @@
     }
 
 
-    private MudDropContainer<IWMControl> _dropContainer;
-
-    private bool _addSectionOpen;
-    /* handling board events */
-    private void TaskUpdated(MudItemDropInfo<KanbanTaskItem> info)
+    void Upward(string id)
     {
-        info.Item.Status = info.DropzoneIdentifier;
-    }
-
-    /* Setup for board  */
-    private List<KanBanSections> _sections = new()
+        foreach (var container in mCanvas.Children)
         {
-            new KanBanSections("To Do", false, String.Empty),
-            new KanBanSections("In Process", false, String.Empty),
-            new KanBanSections("Done", false, String.Empty),
-        };
-
-    public class KanBanSections
-    {
-        public string Name { get; init; }
-        public bool NewTaskOpen { get; set; }
-        public string NewTaskName { get; set; }
-
-        public KanBanSections(string name, bool newTaskOpen, string newTaskName)
-        {
-            Name = name;
-            NewTaskOpen = newTaskOpen;
-            NewTaskName = newTaskName;
+            if (container.ID == id)
+            {
+                var idx = mCanvas.Children.IndexOf(container);
+                if (idx > 0)
+                {
+                    Swap(mCanvas.Children, idx - 1, idx);
+                }
+                break;
+            }
+            foreach (var child in container.Controls)
+            {
+                if (child.ID == id)
+                {
+                    var wcIdx = container.Controls.IndexOf(child);
+                    if (wcIdx > 0)
+                    {
+                        Swap(container.Controls, wcIdx - 1, wcIdx);
+                    }
+                    break;
+                }
+                if (child is WMContainer wc)
+                {
+                    foreach (var cc in wc.Controls)
+                    {
+                        if (cc.ID == id)
+                        {
+                            var ccIdx = wc.Controls.IndexOf(cc);
+                            if (ccIdx > 0)
+                            {
+                                Swap(wc.Controls, ccIdx - 1, ccIdx);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
-    public class KanbanTaskItem
-    {
-        public string Name { get; init; }
-        public string Status { get; set; }
 
-        public KanbanTaskItem(string name, string status)
+    void Downward(string id)
+    {
+        foreach (var container in mCanvas.Children)
         {
-            Name = name;
-            Status = status;
+            if (container.ID == id)
+            {
+                var idx = mCanvas.Children.IndexOf(container);
+                if (idx < mCanvas.Children.Count - 1)
+                {
+                    Swap(mCanvas.Children, idx, idx + 1);
+                }
+                break;
+            }
+            foreach (var child in container.Controls)
+            {
+                if (child.ID == id)
+                {
+                    var wcIdx = container.Controls.IndexOf(child);
+                    if (wcIdx < container.Controls.Count - 1)
+                    {
+                        Swap(container.Controls, wcIdx, wcIdx + 1);
+                    }
+                    break;
+                }
+                if (child is WMContainer wc)
+                {
+                    foreach (var cc in wc.Controls)
+                    {
+                        if (cc.ID == id)
+                        {
+                            var ccIdx = wc.Controls.IndexOf(cc);
+                            if (ccIdx < wc.Controls.Count - 1)
+                            {
+                                Swap(wc.Controls, ccIdx, ccIdx + 1);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
-
-    private List<KanbanTaskItem> _tasks = new()
+    void Move(IWMControl ctrl, char lv)
+    {
+        MoveContainer = true;
+        MoveConntainerId = ctrl.ID;
+        MoveConntainerCtrl = ctrl;
+        MoveLv = lv;
+        if(lv == '2')
         {
-            new KanbanTaskItem("Write unit test", "To Do"),
-            new KanbanTaskItem("Some docu stuff", "To Do"),
-            new KanbanTaskItem("Walking the dog", "To Do"),
-        };
-
-    KanBanNewForm newSectionModel = new KanBanNewForm();
-
-    public class KanBanNewForm
+            MoveContainers = mCanvas.Children;
+        }
+        else
+        {
+            MoveContainers = new List<WMContainer>(mContainers);
+        }
+    }
+    void MoveOK()
     {
-        [Required]
-        [StringLength(10, ErrorMessage = "Name length can't be more than 10.")]
-        public string Name { get; set; }
+        MoveContainer = false;
+        if(MoveLv == '2') // container
+        {
+            WMContainer mContainer = null;
+            foreach(var c in mCanvas.Children)
+            {
+                foreach(var child in c.Controls)
+                {
+                    if (child.ID == MoveConntainerCtrl.ID)
+                    {
+                        mContainer = child as WMContainer;
+                        c.Controls.Remove(child);
+                        break;
+                    }
+                }
+            }
+
+            if(mContainer != null)
+            {
+                var c = mCanvas.Children.Find(c => c.ID == MoveForwardConntainerId);
+                if (c!=null)
+                {
+                    c.Controls.Add(mContainer);
+                }
+            }
+        }
+        else
+        {
+            IWMControl mCtrl = null;
+            foreach (var c in mCanvas.Children)
+            {
+                foreach (var child in c.Controls)
+                {
+                    if (child.ID == MoveConntainerCtrl.ID)
+                    {
+                        mCtrl = child;
+                        c.Controls.Remove(child);
+                        break;
+                    }
+                    if(child is WMContainer wc)
+                    {
+                        foreach(var cc in wc.Controls)
+                        {
+                            if(cc.ID == MoveConntainerCtrl.ID)
+                            {
+                                mCtrl = cc;
+                                wc.Controls.Remove(cc);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if(mCtrl != null)
+            {
+                var c = MoveContainers.FirstOrDefault(c=>c.ID == MoveForwardConntainerId);
+                if (c!=null)
+                {
+                    c.Controls.Add(mCtrl);
+                }
+            }
+        }
+    }
+    bool MoveContainer = false;
+    IWMControl MoveConntainerCtrl;
+    string MoveConntainerId;
+    string MoveForwardConntainerId;
+    char MoveLv;
+
+    List<WMContainer> MoveContainers;
+
+    public enum CtrlEnum
+    {
+        Container,
+        Line,
+        Text,
+        Image
     }
 
-    private void OnValidSectionSubmit(EditContext context)
+    public class AddParam
     {
-        _sections.Add(new KanBanSections(newSectionModel.Name, false, String.Empty));
-        newSectionModel.Name = string.Empty;
-        _addSectionOpen = false;
+        public bool AddControl { get; set; } = false;
+        public CtrlEnum CtrlType { get; set; }
+        public string CtrlName { get; set; }
+        public string ParentContainerId { get; set; }
     }
-
-    private void OpenAddNewSection()
+    public static List<T> Swap<T>(List<T> list, int index1, int index2)
     {
-        _addSectionOpen = true;
-    }
-
-    private void AddTask(KanBanSections section)
-    {
-        _tasks.Add(new KanbanTaskItem(section.NewTaskName, section.Name));
-        section.NewTaskName = string.Empty;
-        section.NewTaskOpen = false;
-        _dropContainer.Refresh();
-    }
-
-    private void DeleteSection(WMContainer section)
-    {
-        // if (mCanvas.Children.Count == 1)
-        // {
-        //     _tasks.Clear();
-        //     mCanvas.Children.Clear();
-        // }
-        // else
-        // {
-        //     int newIndex = mCanvas.Children.IndexOf(section) - 1;
-        //     if (newIndex < 0)
-        //     {
-        //         newIndex = 0;
-        //     }
-
-        //     mCanvas.Children.Remove(section);
-
-        //     var tasks = _tasks.Where(x => x.Status == section.Name);
-        //     foreach (var item in tasks)
-        //     {
-        //         item.Status = mCanvas.Children[newIndex].Name;
-        //     }
-        // }
+        var temp = list[index1];
+        list[index1] = list[index2];
+        list[index2] = temp;
+        return list;
     }
 }

@@ -15,7 +15,10 @@ namespace Watermark.Win.Models
         public WMContainer() 
         {
             Controls = [];
+            ID = Guid.NewGuid().ToString("N").ToUpper();
         }
+        public string Name { get; set; }
+        public string ID { get; set; }
         public Orientation Orientation { get; set; }    
         public HorizontalAlignment HorizontalAlignment {  get; set; }
         public VerticalAlignment VerticalAlignment { get; set; }
@@ -52,24 +55,39 @@ namespace Watermark.Win.Models
 
     public interface IWMControl
     {
+        public string Name { get; set; }
+        public string ID { get; set; }
         public Thickness Margin { get; set; }
         public double Percent {  get; set; }
         public double Width { get; set; }
         public double Height { get; set; }
     }
 
+
     public class WMLogo : IWMControl
     {
+        public WMLogo()
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+        public string Name { get; set; }
         public Thickness Margin { get ; set ; }
         public double Percent { get; set; }
         public string Path { get; set; }
         public bool White2Transparent { get; set; }
         public double Width { get; set; }
         public double Height { get; set; }
+        public string ID { get; set; }
     }
 
     public class WMText : IWMControl
     {
+        public WMText()
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+        public string Name { get; set; }
+        public string ID { get; set; }
         public Thickness Margin { get; set; }
         public double Percent { get; set; }
         public double Width { get; set; }
@@ -84,6 +102,12 @@ namespace Watermark.Win.Models
 
     public class WMLine: IWMControl
     {
+        public WMLine()
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+        public string Name { get; set; }
+        public string ID { get; set; }
         public Thickness Margin { get; set; }
         public double Percent { get; set; }
         public double Width { get; set; }
