@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace Watermark.Win.Models
 {
-    public class WMContainer
+    public class WMContainer:IWMControl
     {
         public WMContainer() 
         {
@@ -19,9 +21,13 @@ namespace Watermark.Win.Models
         public VerticalAlignment VerticalAlignment { get; set; }
         public ContainerAlignment ContainerAlignment { get; set; }
         public Thickness Margin { get; set; }
-        public int Height { get; set; }
-        public int Width { get; set; }
+        public int HeightPercent { get; set; }
+        public int WidthPercent { get; set; }
         public List<IWMControl> Controls { get; set; }
+        [JsonIgnore]
+        public double Percent { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
     }
 
 
@@ -95,7 +101,26 @@ namespace Watermark.Win.Models
         Right, 
         Bottom
     }
+    public class Thickness
+    {
+        public Thickness() { }
+        public Thickness(double v) 
+        {
+            Bottom = Left = Top = Right = v;
+        }
+        public Thickness(double left, double top, double right, double bottom)
+        {
+            Bottom = bottom;
+            Left = left;
+            Right = right;
+            Top = top;
+        }
 
-
+        public double Bottom { get; set; }
+        public double Left { get; set; }
+        public double Right { get; set; }
+        public double Top { get; set; }
+        
+    }
 
 }
