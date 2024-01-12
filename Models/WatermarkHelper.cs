@@ -12,7 +12,9 @@ namespace Watermark.Win.Models
     {
         public string Generation(WMCanvas mainCanvas)
         {
-            var originalBitmap = SKBitmap.Decode("C:\\Users\\Jiang\\Pictures\\DSC03112.jpg");
+            string path = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\DSC09308.jpg";
+            var originalBitmap = SKBitmap.Decode(path);
+            var meta = ExifHelper.ReadImage(path);
             // var originalImage = SKImage.FromBitmap(originalBitmap);
             var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980);
             //创建画布

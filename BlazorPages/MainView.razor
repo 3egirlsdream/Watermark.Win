@@ -1,0 +1,167 @@
+﻿@using System.IO
+@using Watermark.Win.BlazorPages
+@using Watermark.Win.Models
+@using Watermark.Win.Views
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
+    <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
+        <MudToolBar Style="height:40px;padding-left:2px">
+            <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+                <MudMenuItem Icon="@Icons.Material.Filled.Image">导入图片</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp">退出</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+                <MudMenuItem OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
+                <MudMenuItem>模板市场</MudMenuItem>
+            </MudMenu>
+            <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Class="mr-5" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Add" OnClick="OpenEditDialog" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Edit" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Remove" Color="Color.Inherit" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Settings" Color="Color.Inherit" />
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Outlined.Notifications" />
+            <MudIconButton Icon="@Icons.Material.Outlined.PushPin" />
+            <MudIconButton Icon="@Icons.Material.Outlined.PeopleAlt" />
+            <MudIconButton Icon="@Icons.Material.Outlined.MoreVert" Color="Color.Inherit" />
+        </MudToolBar>
+    </div>
+    <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
+        
+        <div style="width:300px;height:100%;padding:0px;background:#fff;">
+            <MudPaper Width="300px" Elevation="0">
+                <MudList Clickable="true">
+                    <MudListSubheader>
+                        Nested List Items
+                    </MudListSubheader>
+                    <MudListItem Icon="@Icons.Material.Filled.Send">
+                        Sent mail
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Drafts">
+                        Drafts
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Inbox" Text="Inbox" InitiallyExpanded="true">
+                        <NestedList>
+                            <MudListItem Icon="@Icons.Material.Filled.StarRate">
+                                Starred
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.WatchLater">
+                                Snoozed
+                            </MudListItem>
+                        </NestedList>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </div>
+        <div style="width:calc(100% - 300px);height:100%;position:fixed;margin-left:calc(100% - 300px);">
+            <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
+                @if (!string.IsNullOrEmpty(url))
+                {
+                    <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width:100%;" />
+                }
+                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="OnButtonClicked">Delete</MudButton>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
+    <DialogContent>
+        <MudForm>
+            <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton FullWidth="true" OnClick="CreateTemplate.OK">确定</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
+
+    Thickness BorderThickness = new Thickness();
+    WMCanvas canvas;
+    string url = "";
+    class CreateTemplate
+    {
+        public static bool DialogVisible { get; set; } = false;
+        public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+        public static string TemplateName { get; set; }
+        public static void OK()
+        {
+            if(string.IsNullOrEmpty(TemplateName)) return;
+            var canvas = new WMCanvas() { Name = TemplateName };
+            var basePath = AppDomain.CurrentDomain.BaseDirectory + System.IO.Path.DirectorySeparatorChar + canvas.ID;
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            DialogVisible = false;
+            var action = new Action(() =>
+            {
+                var win = new DesignWin(canvas);
+                win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                win.ShowDialog();
+            });
+            OpenWinHelper.Open(action);
+        }
+    };
+
+
+    protected override void OnInitialized()
+    {
+    }
+
+    private void OnButtonClicked()
+    {
+    }
+
+    async void OpenEditDialog()
+    {
+        var parameters = new DialogParameters<EditComponentDialog>();
+        parameters.Add(x => x.mCanvas, canvas);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+        var rst = DialogService.Show<EditComponentDialog>("编辑模板", parameters, option);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled)
+        {
+            StateHasChanged();
+        }
+    }
+
+}

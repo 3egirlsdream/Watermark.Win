@@ -10,6 +10,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MudBlazor.Services;
+using Watermark.Win.Models;
+using Watermark.Win.Views;
 
 namespace Watermark.Win
 {
@@ -20,12 +22,17 @@ namespace Watermark.Win
     {
         public MainWindow()
         {
+            Resources.SetIoc();
             InitializeComponent();
-            var serviceCollection = new ServiceCollection();
+            //Loaded += MainWindow_Loaded;
+        }
 
-            serviceCollection.AddMudServices();
-            serviceCollection.AddWpfBlazorWebView();
-            Resources.Add("services", serviceCollection.BuildServiceProvider());
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            var win = new DesignWin();
+            win.ShowInTaskbar = false;
+            win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
+            win.ShowDialog();
         }
     }
 }

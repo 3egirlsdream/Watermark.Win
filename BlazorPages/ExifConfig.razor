@@ -1,0 +1,132 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+
+<style>
+
+    .ddd {
+        border: 0;
+        outline: 0;
+        text-decoration: 2px solid underline;
+        line-height: 2;
+        text-underline-offset: 10px;
+        display: inline-block;
+        border-bottom: 1px solid;
+        width: 10px;
+    }
+
+    input {
+        width: fit-content;
+    }
+</style>
+
+<MudDialog Style="min-width:50%;">
+    <DialogContent>
+        <MudPaper Class="mx-2">
+            <MudStack Row>
+                @foreach (var exif in ExifList)
+                {
+                    <MudPaper Elevation="0" Class="pa-2">
+                        <MudStack Row>
+                             <MudTextField @bind-Value="exif.prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                             <MudTextField @bind-Value="exif.content" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                             <MudTextField @bind-Value="exif.suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudStack>
+        </MudPaper>
+        <MudPaper Elevation="2" Style="height:50vh;overflow-y:auto;">
+            @foreach (var exif in DefaultExifLists)
+            {
+                    <MudChip>
+                     <MudCheckBox @bind-Value="exif.IsChecked"> <strong>@exif.Key</strong> <br /> @exif.Value </MudCheckBox>
+                    </MudChip>
+            }
+            
+        </MudPaper>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" FullWidth="true" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+@code {
+
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+    string ex = "{\"ImageDescription\":\" \",\"Make\":\"SONY\",\"Model\":\"ILCE-7M2\",\"XResolution\":\"300\",\"YResolution\":\"300\",\"ResolutionUnit\":\"2\",\"Software\":\"Capture One Express (for Sony) 12.1.1 Windows\",\"ExposureTime\":\"0.0125\",\"FNumber\":\"8\",\"ExposureProgram\":\"3\",\"ISOSpeedRatings\":\"125\",\"PhotographicSensitivity\":\"125\",\"SensitivityType\":\"2\",\"RecommendedExposureIndex\":\"125\",\"ExifVersion\":\"System.Byte[]\",\"DateTimeOriginal\":\"2020:06:05 19:12:08\",\"DateTimeDigitized\":\"2020:06:05 19:12:08\",\"ShutterSpeedValue\":\"6.321928\",\"ApertureValue\":\"6\",\"BrightnessValue\":\"2.5953125\",\"ExposureBiasValue\":\"0.3\",\"MaxApertureValue\":\"4\",\"MeteringMode\":\"3\",\"LightSource\":\"0\",\"Flash\":\"16\",\"FocalLength\":\"63\",\"PixelXDimension\":\"3812\",\"PixelYDimension\":\"5718\",\"FileSource\":\"3\",\"SceneType\":\"1\",\"CustomRendered\":\"0\",\"ExposureMode\":\"0\",\"WhiteBalance\":\"0\",\"DigitalZoomRatio\":\"1\",\"FocalLengthIn35mmFilm\":\"63\",\"SceneCaptureType\":\"0\",\"Contrast\":\"2\",\"Saturation\":\"2\",\"Sharpness\":\"2\",\"LensSpecification\":\"System.Double[]\",\"LensModel\":\"Sony FE 24-105mm F4 G OSS (SEL24105G)\"}";
+    void Submit()
+    {
+        var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+    [Parameter]
+    public string Exifs { get; set; }
+    //"F##4##suffix;"
+
+
+
+    class ExifInfo
+    {
+        public string prefix { get; set; }
+        public string content { get; set; }
+        public string suffix { get; set; }
+    }
+
+    class DefaultExifs
+    {
+        public bool IsChecked { get; set; }
+        public string Key { get; set; }
+        public string Value { get; set; }
+    }
+
+    List<DefaultExifs> DefaultExifLists;
+
+    List<ExifInfo> ExifList;
+
+    protected override void OnInitialized()
+    {
+        DefaultExifLists = new List<DefaultExifs>();
+        var dic = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(ex);
+        foreach(var pair in dic)
+        {
+            var de = new DefaultExifs
+                {
+                    IsChecked = false,
+                    Key = pair.Key,
+                    Value = pair.Value
+                };
+                DefaultExifLists.Add(de);
+        }
+
+
+        ExifList = new List<ExifInfo>();
+        var ls = Exifs.Split(new string[] { ";" }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var l in ls)
+        {
+            var _ = l.Split(new string[] { "##" }, StringSplitOptions.None);
+            if (_.Length >= 3)
+            {
+                ExifInfo ei = new ExifInfo
+                    {
+                        prefix = _[0],
+                        content = _[1],
+                        suffix = _[2]
+                    };
+                ExifList.Add(ei);
+            }
+        }
+    }
+
+    private void oninput(ChangeEventArgs e)
+    {
+        //   exifInfo.prefix = e.Value?.ToString() ?? "";
+    }
+
+
+}

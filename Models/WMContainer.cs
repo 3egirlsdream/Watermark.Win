@@ -39,7 +39,10 @@ namespace Watermark.Win.Models
         public WMCanvas()
         {
             Children = [];
+            ID = Guid.NewGuid().ToString("N").ToUpper();
         }
+        public string ID { get; set; }
+        public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; } = "#FFF";
         public List<WMContainer> Children { get; set; }
@@ -98,6 +101,7 @@ namespace Watermark.Win.Models
         public bool IsItalic { get; set; }
         public string FontColor { get; set; } = "#000";
         public string FontFamily { get; set; } = "微软雅黑";
+        public string Exifs { get; set; } = "F##4##QQ;ISO##100##";
     }
 
     public class WMLine: IWMControl
