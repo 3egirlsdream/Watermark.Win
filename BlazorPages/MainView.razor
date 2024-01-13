@@ -10,20 +10,24 @@
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
         <MudToolBar Style="height:40px;padding-left:2px">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-                <MudMenuItem Icon="@Icons.Material.Filled.Image">导入图片</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp">退出</MudMenuItem>
             </MudMenu>
             <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-                <MudMenuItem OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
-                <MudMenuItem>模板市场</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Shop">模板市场</MudMenuItem>
             </MudMenu>
-            <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Class="mr-5" />
-            <MudIconButton Icon="@Icons.Material.Outlined.Add" OnClick="OpenEditDialog" />
-            <MudIconButton Icon="@Icons.Material.Outlined.Edit" />
-            <MudIconButton Icon="@Icons.Material.Outlined.Remove" Color="Color.Inherit" />
-            <MudIconButton Icon="@Icons.Material.Outlined.Settings" Color="Color.Inherit" />
+            <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings">设置</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+                <MudMenuItem>交流群</MudMenuItem>
+                <MudMenuItem>点个⭐</MudMenuItem>
+                <MudMenuItem>提交BUG</MudMenuItem>
+            </MudMenu>
             <MudSpacer />
             <MudIconButton Icon="@Icons.Material.Outlined.Notifications" />
             <MudIconButton Icon="@Icons.Material.Outlined.PushPin" />
@@ -31,42 +35,42 @@
             <MudIconButton Icon="@Icons.Material.Outlined.MoreVert" Color="Color.Inherit" />
         </MudToolBar>
     </div>
-    <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
-        
-        <div style="width:300px;height:100%;padding:0px;background:#fff;">
-            <MudPaper Width="300px" Elevation="0">
+    <div Style="height:100%;width:100vw;display: flex;">
+
+        <div style="width: 300px; height: 100%; padding: 0px; background: #f3f3f3;">
+            <MudPaper Width="300px" Elevation="0" Style="padding: 2px; margin-top: 40px; height: calc(100% - 40px);overflow-y:auto;overflow-x:hidden">
                 <MudList Clickable="true">
-                    <MudListSubheader>
-                        Nested List Items
-                    </MudListSubheader>
-                    <MudListItem Icon="@Icons.Material.Filled.Send">
-                        Sent mail
-                    </MudListItem>
-                    <MudListItem Icon="@Icons.Material.Filled.Drafts">
-                        Drafts
-                    </MudListItem>
-                    <MudListItem Icon="@Icons.Material.Filled.Inbox" Text="Inbox" InitiallyExpanded="true">
-                        <NestedList>
-                            <MudListItem Icon="@Icons.Material.Filled.StarRate">
-                                Starred
-                            </MudListItem>
-                            <MudListItem Icon="@Icons.Material.Filled.WatchLater">
-                                Snoozed
-                            </MudListItem>
-                        </NestedList>
-                    </MudListItem>
+                    @foreach (var pair in wMTemplates)
+                    {
+                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="min-height:160px;cursor:pointer; " Width="294" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
+                    }
                 </MudList>
             </MudPaper>
         </div>
-        <div style="width:calc(100% - 300px);height:100%;position:fixed;margin-left:calc(100% - 300px);">
-            <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
-                @if (!string.IsNullOrEmpty(url))
+        <div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
+            <div style="background: #f3f3f3; width: 100%; height: 100%;">
+                @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
-                    <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width:100%;" />
-                }
-                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="OnButtonClicked">Delete</MudButton>
+                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%;padding-left:5%;padding-right:5%;padding-top:100px;" />
 
+                }
+                @*<div style="background:#f6f6f6; width: 100%; height: 15%;min-height:160px; position:absolute;bottom:10px;padding:2px;overflow-x:auto;white-space:nowrap;overflow-y:hidden;">
+                    @foreach (var pair in wMTemplates)
+                    {
+                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="height:100%;min-height:160px;cursor:pointer;" Class="mx-1 pa-2" Width="200" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
+                    }
+
+                </div>*@
             </div>
+
+        </div>
+        <div style="width: 200px; height: calc(100% - 30px);  background: #fff;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
+                <MudList Clickable="true">
+                    @foreach (var file in Images)
+                    {
+                        <MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
+                    }
+                </MudList>
         </div>
     </div>
 </div>
@@ -82,26 +86,6 @@
         <MudButton FullWidth="true" OnClick="CreateTemplate.OK">确定</MudButton>
     </DialogActions>
 </MudDialog>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -126,7 +110,7 @@
         {
             if(string.IsNullOrEmpty(TemplateName)) return;
             var canvas = new WMCanvas() { Name = TemplateName };
-            var basePath = AppDomain.CurrentDomain.BaseDirectory + System.IO.Path.DirectorySeparatorChar + canvas.ID;
+            var basePath = Global.TemplatesFolder + canvas.ID;
             if (!Directory.Exists(basePath))
             {
                 Directory.CreateDirectory(basePath);
@@ -143,12 +127,23 @@
     };
 
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        InitTemplates();
     }
 
     private void OnButtonClicked()
     {
+    }
+
+
+    public void OpenMyTemplates()
+    {
+        var parameters = new DialogParameters<MyTemplates>();
+
+        var option = new DialogOptions() { NoHeader = true, FullScreen = true };
+        var rst = DialogService.Show<MyTemplates>("我的模板", parameters, option);
+
     }
 
     async void OpenEditDialog()
@@ -164,4 +159,121 @@
         }
     }
 
+    List<TemplateList> Images = new List<TemplateList>();
+    void SelectPictureClick()
+    {
+        // 实例化一个文件选择对象
+        Microsoft.Win32.OpenFileDialog dialog = new()
+        {
+            DefaultExt = ".png",  // 设置默认类型
+            Multiselect = true,                             // 设置可选格式
+            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+        };
+        // 打开选择框选择
+        Nullable<bool> result = dialog.ShowDialog();
+        if (result == true)
+        {
+            Images = new List<TemplateList>();
+            foreach (var file in dialog.FileNames)
+            {
+                Dictionary<string, string> dic = new Dictionary<string, string>();
+                WMCanvas canvas = new WMCanvas();
+                canvas.Path = file;
+                Global.ImageFile2Base64(dic , file, canvas.ID);
+                Images.Add(new TemplateList
+                {
+                    Canvas = canvas,
+                    Src = dic.First().Value,
+                    ID = canvas.ID,
+                    Path = file
+                });
+                StateHasChanged();
+            }
+
+
+        }
+    }
+
+    async void ClickImage(TemplateList image)
+    {
+        CurrentImage = image;
+        var t = Task.Run(() =>
+        {
+            CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
+            WatermarkHelper helper = new WatermarkHelper();
+            CurrentImage.Canvas.Path = CurrentImage.Path;
+            return helper.Generation(CurrentImage.Canvas);
+        });
+
+        CurrentImage.Src = await t;
+    }
+
+    List<TemplateList> wMTemplates;
+    TemplateList CurrentTemplate;
+    TemplateList CurrentImage;
+
+
+    class TemplateList
+    {
+        public string ID { get; set; }
+        public string Path { get; set; }
+        public WMCanvas Canvas { get; set; }
+        public string Src { get; set; }
+    }
+
+    async void InitTemplates()
+    {
+        if (!System.IO.Directory.Exists(Global.TemplatesFolder))
+        {
+            System.IO.Directory.CreateDirectory(Global.TemplatesFolder);
+        }
+
+        System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
+        wMTemplates = new List<TemplateList>();
+        foreach (var dirct in directoryInfo.GetDirectories())
+        {
+            var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+            System.IO.Stream stream;
+            if (System.IO.File.Exists(configPath))
+            {
+                stream = new System.IO.FileStream(configPath, System.IO.FileMode.Open);
+                using var reader = new System.IO.StreamReader(stream);
+                var content = reader.ReadToEnd();
+                var canvas = Global.ReadConfig(content);
+
+                WatermarkHelper helper = new WatermarkHelper();
+                var t = Task.Run(() =>
+                {
+                    var src = helper.Generation(canvas);
+                    return src;
+
+                });
+
+                wMTemplates.Add(new TemplateList
+                {
+                    ID = canvas.ID,
+                    Canvas = canvas,
+                    Src = await t
+                });
+                StateHasChanged();
+
+            }
+        }
+    }
+
+    async void ChangeTemplate(TemplateList template)
+    {
+        CurrentTemplate = template;
+        var t = Task.Run(() =>
+        {
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject());
+            CurrentImage.Canvas = cvs;
+            WatermarkHelper helper = new WatermarkHelper();
+            cvs.Path = CurrentImage.Path;
+            return helper.Generation(cvs);
+        });
+
+        CurrentImage.Src = await t;
+        StateHasChanged();
+    }
 }

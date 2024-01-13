@@ -17,6 +17,7 @@
                                 @*<MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" />*@
                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
                             </div>
                         </div>
                     </BodyContent>
@@ -34,6 +35,7 @@
                                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(wc, '2')" />
                                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
                                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
                                             </div>
                                         </div>
                                     </BodyContent>
@@ -44,11 +46,12 @@
                                                 <BodyContent>
                                                     <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
                                                 <MudText Style="justify-self: start;">@($"{cld_c.Name} ({cld_c.ID.Substring(27)})")</MudText>
-                                                        <div style="justify-self: end;">
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
-                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
-                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
-                                                        </div>
+                                                <div style="justify-self: end;">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>wc.Controls.Remove(cld_c) " />
+                                                </div>
                                                     </div>
                                                 </BodyContent>
                                             </MudTreeViewItem>
@@ -67,6 +70,7 @@
                                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="() => Move(comp, '1')" />
                                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
                                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
                                             </div>
                                         </div>
                                     </BodyContent>

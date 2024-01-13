@@ -10,32 +10,40 @@ using System.Windows.Controls;
 
 namespace Watermark.Win.Models
 {
-    public class WMContainer//:IWMControl
+    public class WMContainer : IWMControl
     {
-        public WMContainer() 
+        public WMContainer()
         {
             Controls = [];
             ID = Guid.NewGuid().ToString("N").ToUpper();
             HeightPercent = 1;
             WidthPercent = 1;
         }
-        public bool IsContainer { get; set; } = true;
-        public string Name { get; set; }
-        public string ID { get; set; }
-        public Orientation Orientation { get; set; }    
-        public HorizontalAlignment HorizontalAlignment {  get; set; }
+        public Orientation Orientation { get; set; }
+        public HorizontalAlignment HorizontalAlignment { get; set; }
         public VerticalAlignment VerticalAlignment { get; set; }
         public ContainerAlignment ContainerAlignment { get; set; }
-        public Thickness Margin { get; set; }
         public int HeightPercent { get; set; }
         public int WidthPercent { get; set; }
-        public List<object> Controls { get; set; }
-        [JsonIgnore]
-        public double Percent { get; set; }
-        [JsonIgnore]
-        public double Width { get; set; }
-        [JsonIgnore]
-        public double Height { get; set; }
+        public List<IWMControl> Controls { get; set; }
+    }
+
+    public class WMCanvasSerialize
+    {
+        public WMCanvasSerialize()
+        {
+        }
+
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public Thickness BorderThickness { get; set; }
+        public string BackgroundColor { get; set; }
+        public bool EnableMarginXS { get; set; }
+
+        public List<WMLine> Lines { get; set; }
+        public List<WMLogo> Logos { get; set; }
+        public List<WMText> Texts { get; set; }
+        public List<WMContainer> Containers { get; set; }
     }
 
 
@@ -46,6 +54,7 @@ namespace Watermark.Win.Models
             Children = [];
             ID = Guid.NewGuid().ToString("N").ToUpper();
             EnableMarginXS = false;
+            BorderThickness = new Thickness(0);
         }
         public string ID { get; set; }
         public string Name { get; set; }
@@ -54,8 +63,9 @@ namespace Watermark.Win.Models
         public List<WMContainer> Children { get; set; }
         [JsonIgnore]
         public Dictionary<string, string> Exif { get; set; }
-
         public bool EnableMarginXS { get; set; }
+        [JsonIgnore]
+        public string Path { get; set; }
     }
 
     public class WMImage
@@ -65,47 +75,24 @@ namespace Watermark.Win.Models
         public string Path { get; set; }
     }
 
-
-    //public interface IWMControl
-    //{
-    //    public string Name { get; set; }
-    //    public string ID { get; set; }
-    //    public Thickness Margin { get; set; }
-    //    public double Percent {  get; set; }
-    //    [JsonIgnore]
-    //    public double Width { get; set; }
-    //    [JsonIgnore]
-    //    public double Height { get; set; }
-    //}
-
-
-    public class WMLogo //: IWMControl
+    public class PNode
     {
-        public WMLogo()
-        {
-            ID = Guid.NewGuid().ToString("N").ToUpper();
+        public PNode(int seq, string id) 
+        { 
+            SEQ = seq;
+            PID = id;
         }
-        public bool IsLogo { get; set; } = true;
-        public string Name { get; set; }
-        public Thickness Margin { get ; set ; }
-        public double Percent { get; set; }
-        public string Path { get; set; }
-        public bool White2Transparent { get; set; }
-        [JsonIgnore]
-        public double Width { get; set; }
-        [JsonIgnore]
-        public double Height { get; set; }
-        public string ID { get; set; }
+        public int SEQ { get; set; }
+        public string PID {  get; set; }
     }
 
-    public class WMText //: IWMControl
+    public class IWMControl
     {
-        public WMText()
+        public IWMControl()
         {
-            ID = Guid.NewGuid().ToString("N").ToUpper();
-            Exifs = new List<ExifConfigInfo>();
+            Margin = new Thickness(0);
         }
-        public bool IsText { get; set; } = true;
+        public PNode PNode {  get; set; }
         public string Name { get; set; }
         public string ID { get; set; }
         public Thickness Margin { get; set; }
@@ -114,6 +101,26 @@ namespace Watermark.Win.Models
         public double Width { get; set; }
         [JsonIgnore]
         public double Height { get; set; }
+    }
+
+
+    public class WMLogo : IWMControl
+    {
+        public WMLogo()
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+        }
+        public string Path { get; set; }
+        public bool White2Transparent { get; set; }
+    }
+
+    public class WMText : IWMControl
+    {
+        public WMText()
+        {
+            ID = Guid.NewGuid().ToString("N").ToUpper();
+            Exifs = new List<ExifConfigInfo>();
+        }
         [JsonIgnore]
         public string Text { get; set; }
         public int FontSize { get; set; }
@@ -124,23 +131,14 @@ namespace Watermark.Win.Models
         public List<ExifConfigInfo> Exifs { get; set; }
     }
 
-    public class WMLine//: IWMControl
+    public class WMLine : IWMControl
     {
         public WMLine()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
-        public bool IsLine { get; set; } = true;
-        public string Name { get; set; }
-        public string ID { get; set; }
-        public Thickness Margin { get; set; }
-        public double Percent { get; set; }
-        [JsonIgnore]
-        public double Width { get; set; }
-        [JsonIgnore]
-        public double Height { get; set; }
         public Orientation Orientation { get; set; }
-        public int Thickness {  get; set; }
+        public int Thickness { get; set; }
         public string Color { get; set; }
     }
 
@@ -157,14 +155,14 @@ namespace Watermark.Win.Models
     public enum ContainerAlignment
     {
         Left,
-        Top, 
-        Right, 
+        Top,
+        Right,
         Bottom
     }
     public class Thickness
     {
         public Thickness() { }
-        public Thickness(double v) 
+        public Thickness(double v)
         {
             Bottom = Left = Top = Right = v;
         }
@@ -180,7 +178,7 @@ namespace Watermark.Win.Models
         public double Left { get; set; }
         public double Right { get; set; }
         public double Top { get; set; }
-        
+
     }
 
 }
