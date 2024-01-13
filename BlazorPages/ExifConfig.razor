@@ -23,28 +23,27 @@
 
 <MudDialog Style="min-width:50%;">
     <DialogContent>
-        <MudPaper Class="mx-2">
+        <MudPaper Class="my-2">
             <MudStack Row>
-                @foreach (var exif in ExifList)
+                @foreach (var exif in Exifs)
                 {
                     <MudPaper Elevation="0" Class="pa-2">
                         <MudStack Row>
-                             <MudTextField @bind-Value="exif.prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
-                             <MudTextField @bind-Value="exif.content" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
-                             <MudTextField @bind-Value="exif.suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                             <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
+                             <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                             <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
                         </MudStack>
                     </MudPaper>
                 }
             </MudStack>
         </MudPaper>
         <MudPaper Elevation="2" Style="height:50vh;overflow-y:auto;">
-            @foreach (var exif in DefaultExifLists)
-            {
-                    <MudChip>
-                     <MudCheckBox @bind-Value="exif.IsChecked"> <strong>@exif.Key</strong> <br /> @exif.Value </MudCheckBox>
-                    </MudChip>
-            }
-            
+            <MudChipSet MultiSelection="true" Filter="true">
+                @foreach (var exif in DefaultExifLists)
+                {
+                    <MudChip Label="true" Text="@(exif.Key + $"({exif.Value})")" Default="@exif.IsChecked" OnClick="(()=> Click(exif))"/>
+                }
+            </MudChipSet>
         </MudPaper>
     </DialogContent>
     <DialogActions>
@@ -62,21 +61,30 @@
     string ex = "{\"ImageDescription\":\" \",\"Make\":\"SONY\",\"Model\":\"ILCE-7M2\",\"XResolution\":\"300\",\"YResolution\":\"300\",\"ResolutionUnit\":\"2\",\"Software\":\"Capture One Express (for Sony) 12.1.1 Windows\",\"ExposureTime\":\"0.0125\",\"FNumber\":\"8\",\"ExposureProgram\":\"3\",\"ISOSpeedRatings\":\"125\",\"PhotographicSensitivity\":\"125\",\"SensitivityType\":\"2\",\"RecommendedExposureIndex\":\"125\",\"ExifVersion\":\"System.Byte[]\",\"DateTimeOriginal\":\"2020:06:05 19:12:08\",\"DateTimeDigitized\":\"2020:06:05 19:12:08\",\"ShutterSpeedValue\":\"6.321928\",\"ApertureValue\":\"6\",\"BrightnessValue\":\"2.5953125\",\"ExposureBiasValue\":\"0.3\",\"MaxApertureValue\":\"4\",\"MeteringMode\":\"3\",\"LightSource\":\"0\",\"Flash\":\"16\",\"FocalLength\":\"63\",\"PixelXDimension\":\"3812\",\"PixelYDimension\":\"5718\",\"FileSource\":\"3\",\"SceneType\":\"1\",\"CustomRendered\":\"0\",\"ExposureMode\":\"0\",\"WhiteBalance\":\"0\",\"DigitalZoomRatio\":\"1\",\"FocalLengthIn35mmFilm\":\"63\",\"SceneCaptureType\":\"0\",\"Contrast\":\"2\",\"Saturation\":\"2\",\"Sharpness\":\"2\",\"LensSpecification\":\"System.Double[]\",\"LensModel\":\"Sony FE 24-105mm F4 G OSS (SEL24105G)\"}";
     void Submit()
     {
-        var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
-        MudDialog.Close(DialogResult.Ok(result));
+        //var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
+        MudDialog.Close(DialogResult.Ok(Exifs));
     }
     [Parameter]
-    public string Exifs { get; set; }
+    public List<ExifConfigInfo> Exifs { get; set; }
     //"F##4##suffix;"
 
-
-
-    class ExifInfo
+    void Click(DefaultExifs exif)
     {
-        public string prefix { get; set; }
-        public string content { get; set; }
-        public string suffix { get; set; }
+        exif.IsChecked = !exif.IsChecked;
+        Exifs = new List<ExifConfigInfo>();
+        foreach (var ls in DefaultExifLists.Where(c => c.IsChecked))
+        {
+            ExifConfigInfo i = new ExifConfigInfo
+            {
+                Prefix = "",
+                Suffix = "",
+                Key = ls.Key,
+                Value = ls.Value
+            };
+            Exifs.Add(i);
+        }
     }
+
 
     class DefaultExifs
     {
@@ -87,7 +95,6 @@
 
     List<DefaultExifs> DefaultExifLists;
 
-    List<ExifInfo> ExifList;
 
     protected override void OnInitialized()
     {
@@ -96,37 +103,20 @@
         foreach(var pair in dic)
         {
             var de = new DefaultExifs
-                {
-                    IsChecked = false,
-                    Key = pair.Key,
-                    Value = pair.Value
-                };
-                DefaultExifLists.Add(de);
-        }
-
-
-        ExifList = new List<ExifInfo>();
-        var ls = Exifs.Split(new string[] { ";" }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (var l in ls)
-        {
-            var _ = l.Split(new string[] { "##" }, StringSplitOptions.None);
-            if (_.Length >= 3)
             {
-                ExifInfo ei = new ExifInfo
-                    {
-                        prefix = _[0],
-                        content = _[1],
-                        suffix = _[2]
-                    };
-                ExifList.Add(ei);
-            }
+                IsChecked = false,
+                Key = pair.Key,
+                Value = pair.Value
+            };
+            if (Exifs != null && Exifs.Any(c => c.Key == pair.Key)) de.IsChecked = true;
+            DefaultExifLists.Add(de);
         }
+
     }
 
     private void oninput(ChangeEventArgs e)
     {
         //   exifInfo.prefix = e.Value?.ToString() ?? "";
     }
-
 
 }

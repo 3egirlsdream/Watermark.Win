@@ -1,22 +1,25 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace Watermark.Win.Models
 {
-    public class WMContainer:IWMControl
+    public class WMContainer//:IWMControl
     {
         public WMContainer() 
         {
             Controls = [];
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            HeightPercent = 1;
+            WidthPercent = 1;
         }
+        public bool IsContainer { get; set; } = true;
         public string Name { get; set; }
         public string ID { get; set; }
         public Orientation Orientation { get; set; }    
@@ -26,10 +29,12 @@ namespace Watermark.Win.Models
         public Thickness Margin { get; set; }
         public int HeightPercent { get; set; }
         public int WidthPercent { get; set; }
-        public List<IWMControl> Controls { get; set; }
+        public List<object> Controls { get; set; }
         [JsonIgnore]
         public double Percent { get; set; }
+        [JsonIgnore]
         public double Width { get; set; }
+        [JsonIgnore]
         public double Height { get; set; }
     }
 
@@ -40,12 +45,17 @@ namespace Watermark.Win.Models
         {
             Children = [];
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            EnableMarginXS = false;
         }
         public string ID { get; set; }
         public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; } = "#FFF";
         public List<WMContainer> Children { get; set; }
+        [JsonIgnore]
+        public Dictionary<string, string> Exif { get; set; }
+
+        public bool EnableMarginXS { get; set; }
     }
 
     public class WMImage
@@ -56,69 +66,91 @@ namespace Watermark.Win.Models
     }
 
 
-    public interface IWMControl
-    {
-        public string Name { get; set; }
-        public string ID { get; set; }
-        public Thickness Margin { get; set; }
-        public double Percent {  get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
-    }
+    //public interface IWMControl
+    //{
+    //    public string Name { get; set; }
+    //    public string ID { get; set; }
+    //    public Thickness Margin { get; set; }
+    //    public double Percent {  get; set; }
+    //    [JsonIgnore]
+    //    public double Width { get; set; }
+    //    [JsonIgnore]
+    //    public double Height { get; set; }
+    //}
 
 
-    public class WMLogo : IWMControl
+    public class WMLogo //: IWMControl
     {
         public WMLogo()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
+        public bool IsLogo { get; set; } = true;
         public string Name { get; set; }
         public Thickness Margin { get ; set ; }
         public double Percent { get; set; }
         public string Path { get; set; }
         public bool White2Transparent { get; set; }
+        [JsonIgnore]
         public double Width { get; set; }
+        [JsonIgnore]
         public double Height { get; set; }
         public string ID { get; set; }
     }
 
-    public class WMText : IWMControl
+    public class WMText //: IWMControl
     {
         public WMText()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            Exifs = new List<ExifConfigInfo>();
         }
+        public bool IsText { get; set; } = true;
         public string Name { get; set; }
         public string ID { get; set; }
         public Thickness Margin { get; set; }
         public double Percent { get; set; }
+        [JsonIgnore]
         public double Width { get; set; }
+        [JsonIgnore]
         public double Height { get; set; }
+        [JsonIgnore]
         public string Text { get; set; }
         public int FontSize { get; set; }
         public bool IsBold { get; set; }
         public bool IsItalic { get; set; }
         public string FontColor { get; set; } = "#000";
         public string FontFamily { get; set; } = "微软雅黑";
-        public string Exifs { get; set; } = "F##4##QQ;ISO##100##";
+        public List<ExifConfigInfo> Exifs { get; set; }
     }
 
-    public class WMLine: IWMControl
+    public class WMLine//: IWMControl
     {
         public WMLine()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
         }
+        public bool IsLine { get; set; } = true;
         public string Name { get; set; }
         public string ID { get; set; }
         public Thickness Margin { get; set; }
         public double Percent { get; set; }
+        [JsonIgnore]
         public double Width { get; set; }
+        [JsonIgnore]
         public double Height { get; set; }
         public Orientation Orientation { get; set; }
         public int Thickness {  get; set; }
         public string Color { get; set; }
+    }
+
+    public class ExifConfigInfo
+    {
+        public string Prefix { get; set; }
+        public string Suffix { get; set; }
+        public string Key { get; set; }
+
+        public string Value { get; set; }
     }
 
 

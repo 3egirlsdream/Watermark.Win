@@ -12,17 +12,26 @@ namespace Watermark.Win.Models
     {
         public string Generation(WMCanvas mainCanvas)
         {
-            string path = "C:\\Users\\kingdee\\Pictures\\Camera Roll\\DSC09308.jpg";
+            string path = "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
             var originalBitmap = SKBitmap.Decode(path);
             var meta = ExifHelper.ReadImage(path);
+            mainCanvas.Exif = meta;
             // var originalImage = SKImage.FromBitmap(originalBitmap);
             var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980);
             //创建画布
-            var singeBorderWidth = originalBitmap.Height / 100.0;
-            var border_l = singeBorderWidth * mainCanvas.BorderThickness.Left;
-            var border_r = singeBorderWidth * mainCanvas.BorderThickness.Right;
-            var border_b = singeBorderWidth * mainCanvas.BorderThickness.Bottom;
-            var border_t = singeBorderWidth * mainCanvas.BorderThickness.Top;
+            var wh_xs = Math.Min(originalBitmap.Width, originalBitmap.Height) * 1.0 / Math.Max(originalBitmap.Width, originalBitmap.Height);
+            var singeBorderWidth = originalBitmap.Width / 100.0;
+            var singeBorderHeight = originalBitmap.Height / 100.0;
+            double sw = singeBorderWidth, sh = singeBorderHeight;
+            if (mainCanvas.EnableMarginXS)
+            {
+                if (sh > sw) sh *= wh_xs;
+                else sw *= wh_xs;
+            }
+            var border_l = sw * mainCanvas.BorderThickness.Left;
+            var border_r = sw * mainCanvas.BorderThickness.Right;
+            var border_b = sh * mainCanvas.BorderThickness.Bottom;
+            var border_t = sh * mainCanvas.BorderThickness.Top;
 
             var totalHeight = originalBitmap.Height + border_b + border_t;
             var totalWidth = originalBitmap.Width + border_l + border_r;
@@ -46,40 +55,41 @@ namespace Watermark.Win.Models
                 TextSize = 32,
                 Color = SKColors.Black
             };
-            var ph = paint.MeasureText("Hello World!");
-            var phh = paint.FontMetrics.Descent - paint.FontMetrics.Ascent;
-            canvas1.DrawText("Hello World!", new SKPoint(0, phh), paint);
+
+            //var phh = paint.FontMetrics.Descent - paint.FontMetrics.Ascent;
+            //canvas1.DrawText("Hello World!", new SKPoint(0, phh), paint);
 
 
             //绘制容器
             foreach (var container in mainCanvas.Children)
             {
-                SKBitmap bitmapc = DrawContainer(originalBitmap, xs, ref info, container);
+                SKBitmap bitmapc = DrawContainer(meta, originalBitmap, xs, ref info, container);
 
                 var container_point = new SKPoint(0, 0);
                 var cl = container.Margin.Left * singeBorderWidth;
                 var cr = container.Margin.Right * singeBorderWidth;
-                var ct = container.Margin.Top * singeBorderWidth;
-                var cb = container.Margin.Bottom * singeBorderWidth;
+                var ct = container.Margin.Top * singeBorderHeight;
+                var cb = container.Margin.Bottom * singeBorderHeight;
                 //绘制容器的位置
                 if (container.ContainerAlignment == ContainerAlignment.Top)
                 {
-                    container_point = new SKPoint((float)cl, (float)ct);
+                    container_point = new SKPoint((float)(cl+border_l), (float)ct);
                 }
                 else if (container.ContainerAlignment == ContainerAlignment.Left)
                 {
-                    container_point = new SKPoint((float)cl, (float)ct);
+                    container_point = new SKPoint((float)(cl), (float)(ct+border_t));
                 }
                 else if (container.ContainerAlignment == ContainerAlignment.Right)
                 {
-                    var r = (float)(totalWidth - cr - container.WidthPercent);
-                    container_point = new SKPoint(r, (float)ct);
+                    var cw = container.WidthPercent * singeBorderWidth;
+                    var r = (float)(totalWidth - cr - cw);
+                    container_point = new SKPoint(r, (float)(ct + border_t));
                 }
                 else if (container.ContainerAlignment == ContainerAlignment.Bottom)
                 {
-                    var ch = container.HeightPercent / 100.0 * originalBitmap.Height;
+                    var ch = container.HeightPercent  * singeBorderHeight;
                     var b = (totalHeight - ch - cb);
-                    container_point = new SKPoint((float)cl, (float)b);
+                    container_point = new SKPoint((float)(cl+border_l), (float)b);
                 }
                 canvas1.DrawBitmap(bitmapc, container_point);
             }
@@ -92,7 +102,7 @@ namespace Watermark.Win.Models
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
-        private SKBitmap DrawContainer(SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
@@ -102,7 +112,7 @@ namespace Watermark.Win.Models
             var imgc = SKImage.Create(info);
             var bitmapc = SKBitmap.FromImage(imgc);
             var canvasc = new SKCanvas(bitmapc);
-            canvasc.Clear(SKColors.Red);
+            canvasc.Clear(SKColors.White);
 
             void DrawLogo(double hc, double wc, IWMControl component, WMLogo mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, Action<SKBitmap> callback)
             {
@@ -143,7 +153,16 @@ namespace Watermark.Win.Models
                     TextSize = (int)(mText.FontSize * xs),
                     Typeface = typeface_cp
                 };
-                var fw = paint_cp.MeasureText(mText.Text);
+                var text = string.Join(" ",
+                            mText.Exifs.Select(x =>
+                            {
+                                if (meta.TryGetValue(x.Key, out var value))
+                                {
+                                    return x.Prefix + value + x.Suffix;
+                                }
+                                return x.Prefix + x.Suffix;
+                            }));
+                var fw = paint_cp.MeasureText(text);
                 var fh = paint_cp.FontMetrics.Descent - paint_cp.FontMetrics.Ascent;
                 mText.Height = fh;
                 mText.Width = fw;
@@ -178,9 +197,9 @@ namespace Watermark.Win.Models
                         mLine.Width = mLine.Thickness * xs;
                     }
                 }
-                else if(component is WMContainer mContainer)
+                else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(bitmapc, xs, ref info, mContainer);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -300,7 +319,16 @@ namespace Watermark.Win.Models
                     var action = new Action<SKPaint>((p) =>
                     {
                         var skp = new SKPoint((float)stdx, (float)(stdy + mText.Height));
-                        canvasc.DrawText(mText.Text, skp, p);
+                        var text = string.Join(" ",
+                            mText.Exifs.Select(x =>
+                            {
+                                if (meta.TryGetValue(x.Key, out var value))
+                                {
+                                    return x.Prefix + value + x.Suffix;
+                                }
+                                return x.Prefix + x.Suffix;
+                            }));
+                        canvasc.DrawText(text, skp, p);
                     });
                     DrawText(xs, mText, action);
                 }
@@ -328,7 +356,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(bitmapc, xs, ref info, mContainer);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }
