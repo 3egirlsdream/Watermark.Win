@@ -22,17 +22,16 @@ namespace Watermark.Win
     {
         public MainWindow()
         {
-            Resources.SetIoc();
-            InitializeComponent();
-            //Loaded += MainWindow_Loaded;
+            try
+            {
+                Resources.SetIoc();
+                InitializeComponent();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            var win = new DesignWin();
-            win.ShowInTaskbar = false;
-            win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
-            win.ShowDialog();
-        }
     }
 }

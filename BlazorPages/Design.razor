@@ -1,6 +1,7 @@
 ﻿@using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using  Newtonsoft.Json
+@inject ISnackbar Snackbar
 @inject WMCanvas CurrentCanvas
 <MudThemeProvider />
 <MudDialogProvider />
@@ -11,6 +12,10 @@
         <MudToolBar Style="height:40px;padding-left:5px;">
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
+            @if (SrcLoading)
+            {
+                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4"/>
+            }
             <MudSpacer />
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
         </MudToolBar>
@@ -41,6 +46,10 @@
                     <MudStack Row Class="mt-5">
                         <MudText Align="Align.Justify" Typo="Typo.button">启用边框宽高系数统一</MudText>
                         <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
+                    </MudStack>
+                    <MudStack Row Class="mt-5">
+                        <MudText Align="Align.Justify" Typo="Typo.button">启用阴影</MudText>
+                        <MudSwitch @bind-Value="@canvas.EnableShadow" Color="Color.Primary" />
                     </MudStack>
                 </MudExpansionPanel>
                 @foreach (var container in canvas.Children)
@@ -200,7 +209,10 @@
                                                         <div Class="mt-5" Style="line-height:40px;height:40px;">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
                                                             <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
-                                                            <MudImage Src="@ImagesBase64[mLogo.ID]" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+                                                            @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
+                                                            {
+                                                                <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+                                                            }
                                                         </div>
                                                     }
                                                     else if (c_comp is WMText mText)
@@ -230,69 +242,72 @@
                                 }
                                 else
                                 {
-                        <MudExpansionPanel Text="@ctrl.Name">
-                            <MudStack Row Class="mt-5">
-                                <MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                <MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                <MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                <MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            </MudStack>
-                            <MudStack Row class="mt-5">
-                                <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
-                                <MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            </MudStack>
-                            @if (ctrl is WMLine mLine)
-                            {
-                                <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
-                                <div class="d-flex justify-space-between mt-5">
-                                    <MudText Typo="Typo.button">线方向</MudText>
-                                    <MudToggleGroup @bind-Value="@mLine.Orientation" T="System.Windows.Controls.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                        <MudToggleItem Value="@(System.Windows.Controls.Orientation.Horizontal)">
-                                            <MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
-                                        </MudToggleItem>
-                                        <MudToggleItem Value="@(System.Windows.Controls.Orientation.Vertical)">
-                                            <MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
-                                        </MudToggleItem>
-                                    </MudToggleGroup>
-                                </div>
-                                <MudStack Row class="mt-5">
-                                    <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
-                                    <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                </MudStack>
-                            }
-                            else if (ctrl is WMLogo mLogo)
-                            {
-                                <MudStack Row class="mt-5">
-                                    <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-                                    <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
-                                </MudStack>
-                                <div Class="mt-5" Style="line-height:40px;height:40px;">
-                                    <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
-                                    <MudImage Src="@ImagesBase64[mLogo.ID]" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
-                                </div>
-                            }
-                            else if (ctrl is WMText mText)
-                            {
-                                <MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor" Class="mt-5" />
-                                <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
-                                    <MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatClear" Color="@Color.Error"
-                                                         ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
-                                    <MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatClear" Color="@Color.Error"
-                                                         ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
-                                </MudButtonGroup>
+                                    <MudExpansionPanel Text="@ctrl.Name">
+                                        <MudStack Row Class="mt-5">
+                                            <MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            <MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            <MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            <MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        </MudStack>
+                                        <MudStack Row class="mt-5">
+                                            <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
+                                            <MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        </MudStack>
+                                        @if (ctrl is WMLine mLine)
+                                        {
+                                            <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
+                                            <div class="d-flex justify-space-between mt-5">
+                                                <MudText Typo="Typo.button">线方向</MudText>
+                                                <MudToggleGroup @bind-Value="@mLine.Orientation" T="System.Windows.Controls.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                                    <MudToggleItem Value="@(System.Windows.Controls.Orientation.Horizontal)">
+                                                        <MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
+                                                    </MudToggleItem>
+                                                    <MudToggleItem Value="@(System.Windows.Controls.Orientation.Vertical)">
+                                                        <MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
+                                                    </MudToggleItem>
+                                                </MudToggleGroup>
+                                            </div>
+                                            <MudStack Row class="mt-5">
+                                                <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
+                                                <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </MudStack>
+                                        }
+                                        else if (ctrl is WMLogo mLogo)
+                                        {
+                                            <MudStack Row class="mt-5">
+                                                <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
+                                                <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
+                                            </MudStack>
+                                            <div Class="mt-5" Style="line-height:40px;height:40px;">
+                                                <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
+                                                @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
+                                                {
+                                                    <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+                                                }
+                                            </div>
+                                        }
+                                        else if (ctrl is WMText mText)
+                                        {
+                                            <MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor" Class="mt-5" />
+                                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
+                                                <MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatClear" Color="@Color.Error"
+                                                                     ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
+                                                <MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatClear" Color="@Color.Error"
+                                                                     ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
+                                            </MudButtonGroup>
 
-                                <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
-                                    <div style="width:calc(100% - 80px);float:left;">
-                                        @(string.Join(" ", mText.Exifs.Select(x=>x.Prefix + x.Value + x.Suffix)))
-                                    </div>
-                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
-                                </div>
+                                            <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
+                                                <div style="width:calc(100% - 80px);float:left;">
+                                                    @(string.Join(" ", mText.Exifs.Select(x=>x.Prefix + x.Value + x.Suffix)))
+                                                </div>
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
+                                            </div>
 
-                                <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-                                <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-                            }
-                        </MudExpansionPanel>
+                                            <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                            <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                        }
+                                    </MudExpansionPanel>
                                 }
                             }
                         </MudExpansionPanels>
@@ -339,6 +354,7 @@
     WMCanvas canvas;
     string url = "";
     string defaultImage = "";
+    bool SrcLoading = false;
     Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
 
     protected override void OnInitialized()
@@ -349,7 +365,7 @@
         {
             c.Controls.ForEach(x =>
             {
-                if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64,mLogo.Path, mLogo.ID);
+                if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, mLogo.Path, mLogo.ID);
                 else if (x is WMContainer mContainer)
                 {
                     mContainer.Controls.ForEach(z =>
@@ -363,10 +379,18 @@
         OnButtonClicked();
     }
 
-    private void OnButtonClicked()
+    private async void OnButtonClicked()
     {
-        var helper = new WatermarkHelper();
-        url = helper.Generation(canvas);
+        SrcLoading = true;
+        var t = Task.Run(() =>
+        {
+            var helper = new WatermarkHelper();
+            return helper.Generation(canvas);
+        });
+        url = await t;
+        SrcLoading = false;
+        StateHasChanged();
+
     }
 
     async void OpenExifDialog(WMText mText)
@@ -398,14 +422,29 @@
 
     void SaveTemplate()
     {
-        var path = Global.TemplatesFolder + CurrentCanvas.ID;
-        if (!System.IO.Directory.Exists(path))
+        try
         {
-            System.IO.Directory.CreateDirectory(path);
+            var path = Global.TemplatesFolder + CurrentCanvas.ID;
+            if (!System.IO.Directory.Exists(path))
+            {
+                System.IO.Directory.CreateDirectory(path);
+            }
+            var json = Global.CanvasSerialize(canvas);
+            System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", json);
         }
-        var json = Global.CanvasSerialize(canvas);
-        System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", json);
+        catch { }
+        finally
+        {
+            string message = "保存成功！";
+            Snackbar.Clear();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+            Snackbar.Add(message, Severity.Success, config =>
+            {
+                config.ShowCloseIcon = false;
+            });
+        }
     }
+
 
     void SelectImage(WMLogo mLogo)
     {
@@ -429,54 +468,13 @@
             var name = p.Substring(p.LastIndexOf('\\') + 1);
             var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
             System.IO.File.Copy(p, destFile, true);
-            mLogo.Path = destFile;
+            mLogo.Path = name;
             Global.ImageFile2Base64(ImagesBase64, destFile, mLogo.ID);
         }
     }
     void SelectDefaultImage()
     {
-        try
-        {
-            Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = false,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
-            // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-            if (result == true)
-            {
-                var p = dialog.FileName;
-                var destFolder = Global.TemplatesFolder + canvas.ID;
-                if (!System.IO.Directory.Exists(destFolder))
-                {
-                    System.IO.Directory.CreateDirectory(destFolder);
-                }
-
-                var name = p.Substring(p.LastIndexOf('\\') + 1);
-                var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-
-                Global.ImageFile2Base64(ImagesBase64, p, "default");
-                SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-                double w = bitmap.Width, h = bitmap.Height;
-                var xs = 1080.0 / h;
-                var resized = bitmap.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
-                using var data = resized.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100);
-                //using var sm = System.IO.File.OpenWrite(destFile);
-                using (var output = System.IO.File.Create(destFile))
-                {
-                    data.SaveTo(output);
-                }
-
-                //System.IO.File.Copy(p, destFile, true);
-                StateHasChanged();
-            }
-        }
-        catch(Exception ex)
-        {
-            throw ex;
-        }
+        Global.SelectDefaultImage(canvas.ID, ImagesBase64);
     }
 
 }

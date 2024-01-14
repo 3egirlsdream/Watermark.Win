@@ -5,7 +5,7 @@
 
 <MudDialog Style="min-width:50%;">
     <DialogContent>
-        <MudButton FullWidth="true" OnClick="(()=>param.AddControl = true)">新增组件</MudButton>
+        <MudButton FullWidth="true" OnClick="OpenAddControl">新增组件</MudButton>
         <MudTreeView T="string" Dense="true" Hover="true">
             @foreach (var container in mCanvas.Children)
             {
@@ -45,13 +45,13 @@
                                             <MudTreeViewItem Value="@(cld_c.Name)">
                                                 <BodyContent>
                                                     <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                                <MudText Style="justify-self: start;">@($"{cld_c.Name} ({cld_c.ID.Substring(27)})")</MudText>
-                                                <div style="justify-self: end;">
-                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
-                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
-                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
-                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>wc.Controls.Remove(cld_c) " />
-                                                </div>
+                                                        <MudText Style="justify-self: start;">@($"{cld_c.Name} ({cld_c.ID.Substring(27)})")</MudText>
+                                                        <div style="justify-self: end;">
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>wc.Controls.Remove(cld_c) " />
+                                                        </div>
                                                     </div>
                                                 </BodyContent>
                                             </MudTreeViewItem>
@@ -79,62 +79,63 @@
 
                         }
 
-                        <MudDialog @bind-IsVisible="MoveContainer" Options="dialogOptions">
-                            <TitleContent>
-                                <MudText Typo="Typo.h6">
-                                    选择父级容器
-                                </MudText>
-                            </TitleContent>
-                            <DialogContent>
-                                @if (MoveContainer)
-                                {
-                                        <MudSelect @bind-Value="MoveForwardConntainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
-                                            @foreach (var c in MoveContainers)
-                                            {
-                                                <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
-                                            }
-                                        </MudSelect>
-
-                                        
-                                }
-                            </DialogContent>
-                            <DialogActions>
-                                <MudButton FullWidth="true" OnClick="MoveOK">确定</MudButton>
-                            </DialogActions>
-                        </MudDialog>
-                        <MudDialog @bind-IsVisible="param.AddControl" Options="dialogOptions">
-                            <TitleContent>
-                                <MudText Typo="Typo.h6">
-                                    新增组件
-                                </MudText>
-                            </TitleContent>
-                            <DialogContent>
-                                @if (param.AddControl)
-                                {
-                                    <MudStack>
-                                        <MudRadioGroup @bind-Value="param.CtrlType">
-                                            <MudRadio Value="@CtrlEnum.Container" Color="Color.Primary" Dense="false">容器</MudRadio>
-                                            <MudRadio Value="@CtrlEnum.Image" Color="Color.Primary" Dense="true">图片</MudRadio>
-                                            <MudRadio Value="@CtrlEnum.Text" Color="Color.Primary" Dense="true">文本</MudRadio>
-                                            <MudRadio Value="@CtrlEnum.Line" Color="Color.Primary" Dense="true">线</MudRadio>
-                                        </MudRadioGroup>
-                                        <MudTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                        <MudSelect @bind-Value="param.ParentContainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter" Required>
-                                            @foreach (var c in mContainers)
-                                            {
-                                                <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
-                                            }
-                                        </MudSelect>
-                                    </MudStack>
-                                }
-                            </DialogContent>
-                            <DialogActions>
-                                <MudButton FullWidth="true" OnClick="Add">确定</MudButton>
-                            </DialogActions>
-                        </MudDialog>
                     </ChildContent>
                 </MudTreeViewItem>
             }
+
+            <MudDialog @bind-IsVisible="MoveContainer" Options="dialogOptions">
+                <TitleContent>
+                    <MudText Typo="Typo.h6">
+                        选择父级容器
+                    </MudText>
+                </TitleContent>
+                <DialogContent>
+                    @if (MoveContainer)
+                    {
+                        <MudSelect @bind-Value="MoveForwardConntainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
+                            @foreach (var c in MoveContainers)
+                            {
+                                <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
+                            }
+                        </MudSelect>
+
+
+                    }
+                </DialogContent>
+                <DialogActions>
+                    <MudButton FullWidth="true" OnClick="MoveOK">确定</MudButton>
+                </DialogActions>
+            </MudDialog>
+            <MudDialog @bind-IsVisible="param.AddControl" Options="dialogOptions">
+                <TitleContent>
+                    <MudText Typo="Typo.h6">
+                        新增组件
+                    </MudText>
+                </TitleContent>
+                <DialogContent>
+                    @if (param.AddControl)
+                    {
+                        <MudStack>
+                            <MudRadioGroup @bind-Value="param.CtrlType">
+                                <MudRadio Value="@CtrlEnum.Container" Color="Color.Primary" Dense="false">容器</MudRadio>
+                                <MudRadio Value="@CtrlEnum.Image" Color="Color.Primary" Dense="true">图片</MudRadio>
+                                <MudRadio Value="@CtrlEnum.Text" Color="Color.Primary" Dense="true">文本</MudRadio>
+                                <MudRadio Value="@CtrlEnum.Line" Color="Color.Primary" Dense="true">线</MudRadio>
+                            </MudRadioGroup>
+                            <MudTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudSelect @bind-Value="param.ParentContainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter" Required>
+                                @foreach (var c in mContainers)
+                                {
+                                    <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudStack>
+                    }
+                </DialogContent>
+                <DialogActions>
+                    <MudButton FullWidth="true" OnClick="Add">确定</MudButton>
+                </DialogActions>
+            </MudDialog>
         </MudTreeView>
     </DialogContent>
     <DialogActions>
@@ -404,7 +405,11 @@
     char MoveLv;
 
     List<WMContainer> MoveContainers;
-
+    void OpenAddControl()
+    {
+        param.AddControl = true; 
+        StateHasChanged();
+    }
     public enum CtrlEnum
     {
         Container,

@@ -2,31 +2,45 @@
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
-
-<MudDialog Style="min-width:50%;">
+<style>
+    .mud-card-actions {
+        position: relative;
+    }
+</style>
+<MudDialog Style="min-width:50%;min-height:50%;width:80%; height:80%;overflow-y:hidden">
     <DialogContent>
-        <MudGrid Spacing="2" Justify="Justify.FlexStart">
+        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(80vh - 120px);overflow-y:auto;padding:5px;">
             @foreach (var grid in wMTemplates)
             {
                 <MudItem>
                     <MudPaper Height="342px" Width="256px" Class="mt-2">
                         <MudCard Class="pa-2" Style="background:#e3e3e3;">
-                            <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain"/>
+                            <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
                             <MudCardContent Style="height:80px;">
                                 <MudText Typo="Typo.body2">This photo was taken in a small village in Istra Croatia.</MudText>
                             </MudCardContent>
                             <MudCardActions>
-                                <MudButton Variant="Variant.Text" Color="Color.Primary">上传</MudButton>
-                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="(()=>EditTemplate(grid))">编辑</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary">上传</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-2" OnClick="(()=>EditTemplate(grid))">编辑</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Error" Style="position:absolute;right:0" OnClick="()=>DeleteTemplate(grid.ID)">删除</MudButton>
                             </MudCardActions>
                         </MudCard>
                     </MudPaper>
                 </MudItem>
             }
+
+            <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
+                <MudStack Justify="Justify.Center">
+                    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
+                    <MudText Typo="Typo.subtitle1" Color="Color.Dark">
+                        <b>正在加载模板...</b>
+                    </MudText>
+                </MudStack>
+            </MudOverlay>
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Primary" FullWidth="true" OnClick="Submit">Ok</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" FullWidth="true" OnClick="Submit">Ok</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -35,16 +49,18 @@
 @code {
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
-
+    [Inject]
+    private IDialogService DialogService { get; set; }
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();
     private DialogOptions dialogOptions = new() { FullWidth = true };
-
+    bool loading = true;
     List<WMCanvas> wMTemplates { get; set; }
     Dictionary<string, string> pairs;
     async void InitTemplates()
     {
+        loading = true;
         pairs = new Dictionary<string, string>();
         if (!System.IO.Directory.Exists(Global.TemplatesFolder))
         {
@@ -78,6 +94,9 @@
 
             }
         }
+        loading = false;
+
+        StateHasChanged();
     }
 
     protected override void OnInitialized()
@@ -95,5 +114,27 @@
         });
         OpenWinHelper.Open(action);
     }
+    async void DeleteTemplate(string id)
+    {
 
+        bool? result = await DialogService.ShowMessageBox(
+        "删除",
+        (MarkupString)"确定删除模板？&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        yesText: "确定", cancelText: "取消");
+        if (result == true)
+        {
+            try
+            {
+                var path = Global.TemplatesFolder + id;
+                System.IO.Directory.Delete(path, true);
+                StateHasChanged();
+            }
+            catch { }
+            finally
+            {
+                InitTemplates();
+            }
+        }
+
+    }
 }

@@ -1,11 +1,15 @@
-﻿using SkiaSharp;
+﻿using MudBlazor;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 
 namespace Watermark.Win.Models
 {
@@ -23,6 +27,8 @@ namespace Watermark.Win.Models
             {
                 return "";
             }
+            originalBitmap = AutoOrient(path, originalBitmap);
+
             var meta = ExifHelper.ReadImage(path);
             mainCanvas.Exif = meta;
             // var originalImage = SKImage.FromBitmap(originalBitmap);
@@ -57,13 +63,12 @@ namespace Watermark.Win.Models
             SKCanvas canvas1 = new SKCanvas(bitmap1);
             canvas1.Clear(SKColor.Parse(mainCanvas.BackgroundColor));
             SKPoint p1 = new SKPoint((float)border_l, (float)border_t);
-            canvas1.DrawBitmap(originalBitmap, p1);
-
-            var paint = new SKPaint
+            if(mainCanvas.EnableShadow)
             {
-                TextSize = 32,
-                Color = SKColors.Black
-            };
+                DrawShadow(canvas1, p1, originalBitmap.Width, originalBitmap.Height, xs);
+            }
+            
+            canvas1.DrawBitmap(originalBitmap, p1);
 
             //var phh = paint.FontMetrics.Descent - paint.FontMetrics.Ascent;
             //canvas1.DrawText("Hello World!", new SKPoint(0, phh), paint);
@@ -72,7 +77,7 @@ namespace Watermark.Win.Models
             //绘制容器
             foreach (var container in mainCanvas.Children)
             {
-                SKBitmap bitmapc = DrawContainer(meta, originalBitmap, xs, ref info, container);
+                SKBitmap bitmapc = DrawContainer(meta, originalBitmap, xs, ref info, container, mainCanvas.ID);
 
                 var container_point = new SKPoint(0, 0);
                 var cl = container.Margin.Left * singeBorderWidth;
@@ -112,7 +117,7 @@ namespace Watermark.Win.Models
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
@@ -127,7 +132,22 @@ namespace Watermark.Win.Models
             {
                 //logo系数按窄边计算
                 var min = Math.Min(hc, wc);
-                bitmap_logo = SKBitmap.Decode(mLogo.Path);
+                if (File.Exists(mLogo.Path))
+                {
+                    bitmap_logo = SKBitmap.Decode(mLogo.Path);
+                }
+                else
+                {
+                    var path = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mLogo.Path;
+                    if (File.Exists(path))
+                    {
+                        bitmap_logo = SKBitmap.Decode(path);
+                    }
+                    else
+                    {
+                        bitmap_logo = new SKBitmap(100, 100);
+                    }
+                }
                 if (mLogo.White2Transparent)
                 {
                     bitmap_logo = ConvertWhiteToTransparent(bitmap_logo);
@@ -217,7 +237,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -377,7 +397,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }
@@ -389,8 +409,6 @@ namespace Watermark.Win.Models
         // 将白色像素转为透明像素
         static SKBitmap ConvertWhiteToTransparent(SKBitmap originalBitmap)
         {
-            var modifiedBitmap = new SKBitmap(originalBitmap.Width, originalBitmap.Height);
-
             for (int x = 0; x < originalBitmap.Width; x++)
             {
                 for (int y = 0; y < originalBitmap.Height; y++)
@@ -399,18 +417,80 @@ namespace Watermark.Win.Models
 
                     if (pixelColor.Red == 255 && pixelColor.Green == 255 && pixelColor.Blue == 255)
                     {
-                        //pixelColor.Alpha = 0;
                         var pc = new SKColor(255, 255, 255, 0);
-                        modifiedBitmap.SetPixel(x, y, pc);
+                        originalBitmap.SetPixel(x, y, pc);
                     }
-                    else
-                    {
-                        modifiedBitmap.SetPixel(x, y, pixelColor);
-                    }
+                   
                 }
             }
-            return modifiedBitmap;
+            return originalBitmap;
 
+        }
+
+        static SKBitmap AutoOrient(string path, SKBitmap sKBitmap)
+        {
+            var codec = SKCodec.Create(path);
+            // 根据EncodedOrigin信息自动调整图像方向
+            if (codec.EncodedOrigin != SKEncodedOrigin.TopLeft)
+            {
+                switch (codec.EncodedOrigin)
+                {
+                    case (SKEncodedOrigin)3: // 需要逆时针旋转180度
+                        return Rotate(sKBitmap, 180);
+                    case (SKEncodedOrigin)6: // 需要顺时针旋转90度
+                        return Rotate(sKBitmap, 90);
+                    case (SKEncodedOrigin)8: // 需要逆时针旋转90度
+                        return Rotate(sKBitmap, -90);
+                    default:
+                        return Rotate(sKBitmap, -90);
+                }
+            }
+            else return sKBitmap;
+        }
+
+        public static SKBitmap Rotate(SKBitmap bitmap, double angle)
+        {
+            double radians = Math.PI * angle / 180;
+            float sine = (float)Math.Abs(Math.Sin(radians));
+            float cosine = (float)Math.Abs(Math.Cos(radians));
+            int originalWidth = bitmap.Width;
+            int originalHeight = bitmap.Height;
+            int rotatedWidth = (int)(cosine * originalWidth + sine * originalHeight);
+            int rotatedHeight = (int)(cosine * originalHeight + sine * originalWidth);
+
+            var rotatedBitmap = new SKBitmap(rotatedWidth, rotatedHeight);
+
+            using (var surface = new SKCanvas(rotatedBitmap))
+            {
+                surface.Translate(rotatedWidth / 2, rotatedHeight / 2);
+                surface.RotateDegrees((float)angle);
+                surface.Translate(-originalWidth / 2, -originalHeight / 2);
+                surface.DrawBitmap(bitmap, new SKPoint());
+            }
+            return rotatedBitmap;
+        }
+
+        static void DrawShadow(SKCanvas canvas, SKPoint point, int w, int h, double xs)
+        {
+            SKRect rect = new SKRect(point.X, point.Y, point.X + w, point.Y + h);
+            float cornerRadius = 15;
+            using (var paint2 = new SKPaint())
+            {
+                paint2.IsAntialias = true;
+                paint2.Color = SKColors.White;
+
+                // 绘制阴影
+                paint2.ImageFilter = SKImageFilter.CreateDropShadow(
+                    dx: 0,
+                    dy: 0,
+                    sigmaX: (int)(10 * xs),
+                    sigmaY: (int)(10 * xs),
+                    color: SKColors.Gray,
+                    shadowMode: SKDropShadowImageFilterShadowMode.DrawShadowAndForeground
+                );
+
+                canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
+            }
         }
     }
 }

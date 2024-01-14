@@ -38,41 +38,48 @@
     <div Style="height:100%;width:100vw;display: flex;">
 
         <div style="width: 300px; height: 100%; padding: 0px; background: #f3f3f3;">
-            <MudPaper Width="300px" Elevation="0" Style="padding: 2px; margin-top: 40px; height: calc(100% - 40px);overflow-y:auto;overflow-x:hidden">
+            <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; margin-top: 40px; height: calc(100% - 40px);overflow-y:auto;overflow-x:hidden">
                 <MudList Clickable="true">
                     @foreach (var pair in wMTemplates)
                     {
-                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="min-height:160px;cursor:pointer; " Width="294" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
+                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="min-height:160px;cursor:pointer; " Width="280" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
                     }
                 </MudList>
             </MudPaper>
         </div>
         <div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
+            @if (SrcLoading)
+            {
+                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
+            }
             <div style="background: #f3f3f3; width: 100%; height: 100%;">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
-                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%;padding-left:5%;padding-right:5%;padding-top:100px;" />
+                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%; height:100%; padding-left:5%;padding-right:5%;padding-top:100px;padding-bottom:100px;" />
 
                 }
-                @*<div style="background:#f6f6f6; width: 100%; height: 15%;min-height:160px; position:absolute;bottom:10px;padding:2px;overflow-x:auto;white-space:nowrap;overflow-y:hidden;">
-                    @foreach (var pair in wMTemplates)
-                    {
-                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="height:100%;min-height:160px;cursor:pointer;" Class="mx-1 pa-2" Width="200" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
-                    }
-
-                </div>*@
             </div>
-
         </div>
         <div style="width: 200px; height: calc(100% - 30px);  background: #fff;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
-                <MudList Clickable="true">
-                    @foreach (var file in Images)
-                    {
-                        <MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
-                    }
-                </MudList>
+            <MudList Clickable="true">
+                @foreach (var file in Images)
+                {
+                    <MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
+                }
+            </MudList>
         </div>
     </div>
+
+    <MudOverlay Visible="MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
+        <MudPaper Style="width:520px;padding:10px;">
+            <MudStack>
+                <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="my-7" />
+                <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
+                    <b>@MainLoading.Message</b>
+                </MudText>
+            </MudStack>
+        </MudPaper>
+    </MudOverlay>
 </div>
 
 
@@ -80,10 +87,17 @@
     <DialogContent>
         <MudForm>
             <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
+            <MudStack Row Class="mt-5">
+                @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
+                {
+                    <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="CreateTemplate.SelectImage" Style="float:right;width:40px;height:40px;" />
+            </MudStack>
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <MudButton FullWidth="true" OnClick="CreateTemplate.OK">确定</MudButton>
+        <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="CreateTemplate.OK">确定</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -101,15 +115,26 @@
     Thickness BorderThickness = new Thickness();
     WMCanvas canvas;
     string url = "";
+    bool SrcLoading = false;
+
+    class MainLoading
+    {
+        public static bool Show { get; set; } = false;
+        public static double Value { get; set; }
+        public static string Message { get; set; }
+    }
+
     class CreateTemplate
     {
         public static bool DialogVisible { get; set; } = false;
         public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
         public static string TemplateName { get; set; }
+        public static string Base64Src { get; set; }
+        private static string ID = Guid.NewGuid().ToString("N").ToUpper();
         public static void OK()
         {
-            if(string.IsNullOrEmpty(TemplateName)) return;
-            var canvas = new WMCanvas() { Name = TemplateName };
+            if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
+            var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
             var basePath = Global.TemplatesFolder + canvas.ID;
             if (!Directory.Exists(basePath))
             {
@@ -124,6 +149,12 @@
             });
             OpenWinHelper.Open(action);
         }
+        public static void SelectImage()
+        {
+            var dic = new Dictionary<string, string>();
+            Global.SelectDefaultImage(ID, dic);
+            Base64Src = dic.First().Value;
+        }
     };
 
 
@@ -137,12 +168,18 @@
     }
 
 
-    public void OpenMyTemplates()
+    public async void OpenMyTemplates()
     {
         var parameters = new DialogParameters<MyTemplates>();
 
-        var option = new DialogOptions() { NoHeader = true, FullScreen = true };
+        var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
         var rst = DialogService.Show<MyTemplates>("我的模板", parameters, option);
+        var dialog = await rst.Result;
+        if (!dialog.Canceled)
+        {
+            StateHasChanged();
+            InitTemplates();
+        }
 
     }
 
@@ -160,7 +197,7 @@
     }
 
     List<TemplateList> Images = new List<TemplateList>();
-    void SelectPictureClick()
+    async void SelectPictureClick()
     {
         // 实例化一个文件选择对象
         Microsoft.Win32.OpenFileDialog dialog = new()
@@ -173,30 +210,51 @@
         Nullable<bool> result = dialog.ShowDialog();
         if (result == true)
         {
+            MainLoading.Show = true;
             Images = new List<TemplateList>();
+            MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
+            MainLoading.Value = 0;
             foreach (var file in dialog.FileNames)
             {
                 Dictionary<string, string> dic = new Dictionary<string, string>();
                 WMCanvas canvas = new WMCanvas();
                 canvas.Path = file;
-                Global.ImageFile2Base64(dic , file, canvas.ID);
+                var src = Task.Run(() =>
+                {
+                    Global.ImageFile2Base64(dic, file, canvas.ID);
+                    return dic.First().Value;
+                });
                 Images.Add(new TemplateList
                 {
                     Canvas = canvas,
-                    Src = dic.First().Value,
+                    Src = await src,
                     ID = canvas.ID,
                     Path = file
                 });
+                var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
+                MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
+                MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
                 StateHasChanged();
             }
 
 
+            MainLoading.Message = $"导入完成";
+            MainLoading.Value = 100;
+            await Task.Delay(200);
+            MainLoading.Show = false;
+            StateHasChanged();
         }
     }
 
     async void ClickImage(TemplateList image)
     {
-        CurrentImage = image;
+        CurrentImage = new TemplateList
+        {
+            ID = image.ID,
+            Canvas = image.Canvas,
+            Path = image.Path
+        };
+        SrcLoading = true;
         var t = Task.Run(() =>
         {
             CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
@@ -206,6 +264,8 @@
         });
 
         CurrentImage.Src = await t;
+        SrcLoading = false;
+        StateHasChanged();
     }
 
     List<TemplateList> wMTemplates;
@@ -223,47 +283,71 @@
 
     async void InitTemplates()
     {
+        MainLoading.Show = true;
         if (!System.IO.Directory.Exists(Global.TemplatesFolder))
         {
             System.IO.Directory.CreateDirectory(Global.TemplatesFolder);
         }
-
-        System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
-        wMTemplates = new List<TemplateList>();
-        foreach (var dirct in directoryInfo.GetDirectories())
+        try
         {
-            var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-            System.IO.Stream stream;
-            if (System.IO.File.Exists(configPath))
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
+            wMTemplates = new List<TemplateList>();
+            var directories = directoryInfo.GetDirectories();
+            MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
+            MainLoading.Value = 0;
+            foreach (var dirct in directories)
             {
-                stream = new System.IO.FileStream(configPath, System.IO.FileMode.Open);
-                using var reader = new System.IO.StreamReader(stream);
-                var content = reader.ReadToEnd();
-                var canvas = Global.ReadConfig(content);
-
-                WatermarkHelper helper = new WatermarkHelper();
-                var t = Task.Run(() =>
+                var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+                System.IO.Stream stream;
+                if (System.IO.File.Exists(configPath))
                 {
-                    var src = helper.Generation(canvas);
-                    return src;
+                    stream = new System.IO.FileStream(configPath, System.IO.FileMode.Open);
+                    using var reader = new System.IO.StreamReader(stream);
+                    var content = reader.ReadToEnd();
+                    var canvas = Global.ReadConfig(content);
 
-                });
+                    WatermarkHelper helper = new WatermarkHelper();
+                    var t = Task.Run(() =>
+                    {
+                        var src = helper.Generation(canvas);
+                        return src;
 
-                wMTemplates.Add(new TemplateList
-                {
-                    ID = canvas.ID,
-                    Canvas = canvas,
-                    Src = await t
-                });
+                    });
+
+                    wMTemplates.Add(new TemplateList
+                    {
+                        ID = canvas.ID,
+                        Canvas = canvas,
+                        Src = await t
+                    });
+                }
+
+
+                var idx = directories.ToList().IndexOf(dirct) + 1;
+                MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{idx}个...";
+                MainLoading.Value = idx * 100.0 / directories.Length;
                 StateHasChanged();
 
+
             }
+
+            MainLoading.Message = $"处理完成...";
+            MainLoading.Value = 100;
+            await Task.Delay(200);
+            MainLoading.Show = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message);
         }
     }
 
     async void ChangeTemplate(TemplateList template)
     {
         CurrentTemplate = template;
+        if (CurrentImage == null) return;
+        SrcLoading = true;
         var t = Task.Run(() =>
         {
             var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject());
@@ -274,6 +358,7 @@
         });
 
         CurrentImage.Src = await t;
+        SrcLoading = false;
         StateHasChanged();
     }
 }

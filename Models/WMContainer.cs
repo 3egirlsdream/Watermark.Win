@@ -38,6 +38,7 @@ namespace Watermark.Win.Models
         public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; }
+        public bool EnableShadow { get; set; }
         public bool EnableMarginXS { get; set; }
 
         public List<WMLine> Lines { get; set; }
@@ -60,6 +61,7 @@ namespace Watermark.Win.Models
         public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; } = "#FFF";
+        public bool EnableShadow { get; set; }
         public List<WMContainer> Children { get; set; }
         [JsonIgnore]
         public Dictionary<string, string> Exif { get; set; }

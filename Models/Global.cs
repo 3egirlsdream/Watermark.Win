@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,8 @@ namespace Watermark.Win.Models
                     ID = ls.ID,
                     Name = ls.Name,
                     BorderThickness = ls.BorderThickness,
-                    BackgroundColor=  ls.BackgroundColor,
+                    BackgroundColor =  ls.BackgroundColor,
+                    EnableShadow = ls.EnableShadow,
                     EnableMarginXS = ls.EnableMarginXS
                 };
                 //一级容器
@@ -117,6 +119,49 @@ namespace Watermark.Win.Models
             else
             {
                 ImagesBase64[id] = "";
+            }
+        }
+
+        public static void SelectDefaultImage(string id, Dictionary<string, string> dic)
+        {
+            try
+            {
+                Microsoft.Win32.OpenFileDialog dialog = new()
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = false,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
+                // 打开选择框选择
+                Nullable<bool> result = dialog.ShowDialog();
+                if (result == true)
+                {
+                    var p = dialog.FileName;
+                    var destFolder = Global.TemplatesFolder + id;
+                    if (!System.IO.Directory.Exists(destFolder))
+                    {
+                        System.IO.Directory.CreateDirectory(destFolder);
+                    }
+
+                    var name = p.Substring(p.LastIndexOf('\\') + 1);
+                    var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+
+                    Global.ImageFile2Base64(dic, p, "default");
+                    SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+                    double w = bitmap.Width, h = bitmap.Height;
+                    var xs = 1080.0 / h;
+                    var resized = bitmap.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
+                    using var data = resized.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100);
+                    //using var sm = System.IO.File.OpenWrite(destFile);
+                    using (var output = System.IO.File.Create(destFile))
+                    {
+                        data.SaveTo(output);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
     }
