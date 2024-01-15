@@ -19,7 +19,6 @@ namespace Watermark.Win.Models
     public class APIHelper
     {
         private string HOST = "https://localhost:44389";
-        private string CUR_ID = "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB";
         public APIHelper()
         {
             _client = new HttpClient() { BaseAddress =  new Uri(HOST) };
@@ -27,7 +26,7 @@ namespace Watermark.Win.Models
 
         HttpClient _client;
 
-        public async Task<bool> UploadWatermark(string watermarkId)
+        public async Task<API<bool?>> UploadWatermark(string watermarkId, string desc = "")
         {
             var path = Global.TemplatesFolder + watermarkId;
             if (Directory.Exists(path))
@@ -41,45 +40,66 @@ namespace Watermark.Win.Models
                     {
                         form.Add(new StreamContent(fileStream), "file", Path.GetFileName(target));
                         form.Add(new StringContent(watermarkId), "watermarkId");
-                        form.Add(new StringContent(""), "desc");
-                        form.Add(new StringContent(CUR_ID), "userId");
-                        using (var response = await _client.PostAsync("/api/Watermark/Upload", form))
+                        form.Add(new StringContent(desc), "desc");
+                        form.Add(new StringContent(Global.CurrentUser.ID), "userId");
+                        using var response = await _client.PostAsync("/api/Watermark/Upload", form);
+                        var bt = await response.Content.ReadAsByteArrayAsync();
+                        var str = Encoding.UTF8.GetString(bt);
+                        var result = JsonConvert.DeserializeObject<API<bool?>>(str);
+                        if (response.IsSuccessStatusCode)
                         {
-                            return response.IsSuccessStatusCode;
+                            return result;
                         }
+                        else return new API<bool?>() { success = false };
                     }
                 }
             }
-            else return false;
+            else return new API<bool?>() { success = false };
         }
 
-        public async Task<List<ZipedTemplate>> GetWatermarks(int start, int length)
+        public async Task<List<ZipedTemplate>> GetWatermarks(int start, int length, string desc = "countDesc")
         {
-            var userId = "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB";
-            using (HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?start=0&length=10"))
+            try
             {
-                response.EnsureSuccessStatusCode();
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
-
-                var total = responseObject.data.Total;
-
-                var fileResults = (JArray)responseObject.data.Files;
-                List<byte[]> filesData = new List<byte[]>();
-                foreach (var fileResult in fileResults)
+                using (HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={Global.CurrentUser.ID}&start={start}&length={length}&type={desc}"))
                 {
-                    var content = fileResult["FileContents"]?.ToString();
-                    var fileContents = Convert.FromBase64String(content);
-                    filesData.Add(fileContents);
-                }
+                    response.EnsureSuccessStatusCode();
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
 
-                List<ZipedTemplate> templates = new List<ZipedTemplate>();
-                foreach (var fileResult in filesData)
-                {
-                    var t = ExtractZip(fileResult);
-                    templates.Add(t);
+                    if (responseObject.success)
+                    {
+                        var total = responseObject.data.Total;
+
+                        var fileResults = (JArray)responseObject.data.Files;
+                        List<byte[]> filesData = new List<byte[]>();
+                        List<ZipedTemplate> templates = new List<ZipedTemplate>();
+                        foreach (var fileResult in fileResults)
+                        {
+                            var content = fileResult["File"]["FileContents"]?.ToString();
+                            var fileContents = Convert.FromBase64String(content);
+                            var t = ExtractZip(fileContents);
+                            t.WatermarkId = fileResult["File"]["ID"]?.ToString();
+                            t.Desc = fileResult["File"]["DESC"]?.ToString();
+                            t.DownloadTimes = Convert.ToInt32(fileResult["File"]["DOWNLOAD_TIMES"]?.ToString() ?? "0");
+                            templates.Add(t);
+                        }
+
+                        foreach (var fileResult in filesData)
+                        {
+                            
+                        }
+                        return templates;
+                    }
+                    else
+                    {
+                        return new List<ZipedTemplate>();
+                    }
                 }
-                return templates;
+            }
+            catch (Exception ex)
+            {
+                return new List<ZipedTemplate>();
             }
         }
 
@@ -123,34 +143,71 @@ namespace Watermark.Win.Models
         }
 
 
-        public async Task<API<bool>> Register(SysUser user)
+        public async Task<API<SysUser>> Register(SysUser user)
         {
             using (var client = new HttpClient())
             {
-                var bytes = MD5.HashData(Convert.FromBase64String(user.PASSWORD));
+                client.BaseAddress = new Uri(HOST);
+                var bytes = MD5.HashData(Encoding.UTF8.GetBytes(user.PASSWORD));
                 StringBuilder sb = new StringBuilder();
                 foreach (var b in bytes)
                 {
                     sb.Append(b.ToString("x2"));
                 }
                 var password = sb.ToString();
-                var formContent = new FormUrlEncodedContent(new[]
-                {
-                    new KeyValuePair<string, string>("username", user.USER_NAME),
-                    new KeyValuePair<string, string>("displayname", user.DISPLAY_NAME),
-                    new KeyValuePair<string, string>("password", password),
-                    new KeyValuePair<string, string>("pkid", user.PK_ID)
-                });
+                
+                var formContent = new {
+                    username = user.USER_NAME,
+                    displayname = user.DISPLAY_NAME,
+                    password = password,
+                    pkid = user.PK_ID
+                };
 
-                var response = await client.PostAsync("/api/Watermark/SignUp", formContent);
-                var result = await response.Content.ReadFromJsonAsync<API<bool>>();
+                var response = await client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
+                var bt = await response.Content.ReadAsByteArrayAsync();
+                var str = Encoding.UTF8.GetString(bt);
+                var result = JsonConvert.DeserializeObject<API<SysUser>>(str);
                 if (response.IsSuccessStatusCode)
                 {
                     return result;
                 }
-                else return new API<bool>() { success = false };
+                else return new API<SysUser>() { success = false };
             }
         }
+    
+        public async Task<API<LoginModel>> LoginIn(string user, string password)
+        {
+            try
+            {
+                var bytes = MD5.HashData(Encoding.UTF8.GetBytes(password));
+                StringBuilder sb = new StringBuilder();
+                foreach (var b in bytes)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                var pw = sb.ToString();
+                return await Connections.HttpGetAsync<LoginModel>(HOST + $"/api/Watermark/Login?user={user}&pwd={pw}", Encoding.UTF8);
+            }
+            catch(Exception ex)
+            {
+                return new API<LoginModel>() { data = new LoginModel { Message = ex.Message } };
+            }
+        }
+    
+    }
+
+    public class LoginModel
+    {
+        public string Message { get; set; }
+        public LoginChildModel data { get; set; }
+        public string token { get; set; }
+    }
+    public class LoginChildModel
+    {
+        public string ID { get; set; }
+        public string IMG { get; set; }
+        public string DISPLAY_NAME { get; set; }
+        public string USER_NAME { get; set; }
     }
 
     public class ZipedTemplate
@@ -163,10 +220,14 @@ namespace Watermark.Win.Models
         public Dictionary<string, SKBitmap> Images { get; set; }
         public SKBitmap Bitmap { get; set; }
         public string Src { get; set; }
+        public string Desc { get; set; }
+        public string WatermarkId { get; set; }
+        public int DownloadTimes { get; set; }
     }
 
     public class SysUser
     {
+        public string ID { get; set; }
         public string USER_NAME { get; set; }
         public string DISPLAY_NAME { get; set; }
         public string PASSWORD { get; set; }

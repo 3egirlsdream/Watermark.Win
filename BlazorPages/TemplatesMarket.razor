@@ -25,14 +25,14 @@
             {
                 @foreach (var t in ZipedTemplates)
                 {
-                    <MudItem xs="6">
+                    <MudItem xs="4">
                         <MudCard>
                             <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain"/>
                             <MudCardContent Style="height:80px;">
-                                <MudText Typo="Typo.body2">This photo was taken in a small village in Istra Croatia.</MudText>
+                                <MudText Typo="Typo.body2">@t.Desc</MudText>
                             </MudCardContent>
-                            <MudCardActions Style="position:relative">
-                                100<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
+                            <MudCardActions Style="position:relative;">
+                                @t.DownloadTimes<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Error" Style="cursor:pointer;" />
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Style="position:absolute;right:10px">下载</MudButton>
                             </MudCardActions>
                         </MudCard>

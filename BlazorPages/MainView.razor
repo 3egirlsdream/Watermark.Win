@@ -2,6 +2,7 @@
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
+@inject ISnackbar Snackbar
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -32,10 +33,39 @@
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo">
             </MudIcon>
 
-            <MudPopover OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
-                <MudText Typo="Typo.body2" Class="px-4 py-1">用户：蔡徐坤</MudText>
-                <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
-                <MudText Typo="Typo.body2" Class="px-4 py-1">用户：蔡徐坤</MudText>
+            <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
+                @if (IsLoginIn && Global.CurrentUser != null)
+                {
+                    <div style="height:50px">
+                        @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
+                        {
+                            <MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
+                        }
+
+                        <div style="float:left;">
+                            <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
+                            <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
+                        </div>
+                    </div>
+                    <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
+                    <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
+                    <MudText Typo="Typo.body2" Class="px-4 py-1">@DateTime.Now</MudText>
+                    <MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new LoginChildModel(); IsLoginIn = false; }">退出</MudButton>
+                }
+                else
+                {
+                    <MudSkeleton />
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
+                    <MudStack Row Style="margin-left:120px;" Class="mt-5">
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
+                        <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
+                    </MudStack>
+                }
             </MudPopover>
         </MudToolBar>
     </div>
@@ -116,8 +146,6 @@
 
 
 
-
-
 @code {
     [Inject]
     private IDialogService DialogService { get; set; }
@@ -127,6 +155,7 @@
     string url = "";
     bool SrcLoading = false;
     bool ShowUserInfo = false;
+    bool IsLoginIn = false;
     class MainLoading
     {
         public static bool Show { get; set; } = false;
@@ -378,5 +407,27 @@
         CurrentImage.Src = await t;
         SrcLoading = false;
         StateHasChanged();
+    }
+
+    async void OpenLoginDialog()
+    {
+        var rst = DialogService.Show<LoginDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            IsLoginIn = true;
+            StateHasChanged();
+        }
+    }
+
+    async void OpenSignUpDialog()
+    {
+        var rst = DialogService.Show<SignUpDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            IsLoginIn = true;
+            StateHasChanged();
+        }
     }
 }

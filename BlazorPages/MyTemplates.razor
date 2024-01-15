@@ -3,6 +3,7 @@
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
 <style>
     .mud-card-actions {
         position: relative;
@@ -17,9 +18,6 @@
                     <MudPaper Height="342px" Width="256px" Class="mt-2">
                         <MudCard Class="pa-2" Style="background:#e3e3e3;">
                             <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
-                            <MudCardContent Style="height:80px;">
-                                <MudText Typo="Typo.body2">This photo was taken in a small village in Istra Croatia.</MudText>
-                            </MudCardContent>
                             <MudCardActions>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>Upload(grid.ID)">上传</MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-2" OnClick="(()=>EditTemplate(grid))">编辑</MudButton>
@@ -141,8 +139,42 @@
 
     async void Upload(string id)
     {
-        var helper = new APIHelper();
-        var result = await helper.UploadWatermark(id);
-        if (!result) MessageBox.Show("Error");
+        Action action = new Action(async () =>
+        {
+            var helper = new APIHelper();
+            var result = await helper.UploadWatermark(id);
+            string message = "";
+            Severity severity = Severity.Success;
+            Snackbar.Clear();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+
+            if (result.success)
+            {
+                message = "上传成功";
+            }
+            else
+            {
+                severity = Severity.Error;
+                message = result.message.content;
+            }
+            Snackbar.Add(message, severity, config =>
+            {
+                config.ShowCloseIcon = false;
+            });
+        });
+
+        if (string.IsNullOrEmpty(Global.CurrentUser.ID))
+        {
+            var rst = DialogService.Show<LoginDialog>("");
+            var dialogResult = await rst.Result;
+            if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+            {
+                action.Invoke();
+            }
+        }
+        else
+        {
+            action.Invoke();
+        }
     }
 }
