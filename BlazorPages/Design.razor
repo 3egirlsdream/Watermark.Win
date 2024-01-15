@@ -1,6 +1,6 @@
 ﻿@using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
-@using  Newtonsoft.Json
+@using Newtonsoft.Json
 @inject ISnackbar Snackbar
 @inject WMCanvas CurrentCanvas
 <MudThemeProvider />
@@ -14,7 +14,7 @@
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
             @if (SrcLoading)
             {
-                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4"/>
+                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
@@ -38,21 +38,31 @@
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>
                     <MudStack Row Class="mt-5">
-                        <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudStack>
-                    <MudStack Row Class="mt-5">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用边框宽高系数统一</MudText>
-                        <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
-                    </MudStack>
-                    <MudStack Row Class="mt-5">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用阴影</MudText>
-                        <MudSwitch @bind-Value="@canvas.EnableShadow" Color="Color.Primary" />
-                    </MudStack>
-                </MudExpansionPanel>
-                @foreach (var container in canvas.Children)
+                         <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                         <MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                         <MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                         <MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                     </MudStack>
+                     <MudStack Row Class="mt-5" Style="position:relative">
+                         <MudText Align="Align.Justify" Typo="Typo.button">启用边框宽高系数统一</MudText>
+                         <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" Style="position:absolute;right:5px" />
+                     </MudStack>
+                     <MudStack Row Class="mt-5" Style="position:relative">
+                         <MudText Align="Align.Justify" Typo="Typo.button">启用阴影</MudText>
+                         <MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" Style="position:absolute;right:5px" />
+                     </MudStack>
+                     <MudColorPicker class="mt-5" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
+                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                     <MudStack Row Class="mt-5" Style="position:relative">
+                         <MudText Align="Align.Justify" Typo="Typo.button">启用图片圆角</MudText>
+                         <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" Style="position:absolute;right:5px" />
+                     </MudStack>
+                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+
+                 </MudExpansionPanel>
+                 @foreach (var container in canvas.Children)
                 {
                     <MudExpansionPanel Text="@container.Name">
                         <div class="d-flex justify-space-between mt-5">
@@ -112,18 +122,18 @@
                             </MudToggleGroup>
                         </div>
                         <MudStack Row Class=" mt-5">
-                            <MudTextField @bind-Value="@container.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudTextField @bind-Value="@container.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudTextField @bind-Value="@container.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudTextField @bind-Value="@container.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        </MudStack>
-                        <MudStack Row Class=" mt-5">
-                            <MudTextField @bind-Value="@container.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudTextField @bind-Value="@container.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        </MudStack>
+                             <MudTextField @bind-Value="@container.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                             <MudTextField @bind-Value="@container.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                             <MudTextField @bind-Value="@container.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                             <MudTextField @bind-Value="@container.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                         </MudStack>
+                         <MudStack Row Class=" mt-5">
+                             <MudTextField @bind-Value="@container.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                             <MudTextField @bind-Value="@container.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                         </MudStack>
 
-                        <MudExpansionPanels DisableBorders="true" Elevation="0">
-                            @foreach (var ctrl in container.Controls)
+                         <MudExpansionPanels DisableBorders="true" Elevation="0">
+                             @foreach (var ctrl in container.Controls)
                             {
                                 @if (ctrl is WMContainer mContainer)
                                 {
@@ -157,30 +167,30 @@
                                             </MudToggleGroup>
                                         </div>
                                         <MudStack Row Class=" mt-5">
-                                            <MudTextField @bind-Value="@mContainer.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@mContainer.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@mContainer.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@mContainer.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                        </MudStack>
-                                        <MudStack Row Class=" mt-5">
-                                            <MudTextField @bind-Value="@mContainer.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                        </MudStack>
-                                        <MudExpansionPanels DisableBorders="true" Elevation="0">
-                                            @foreach (var c_comp in mContainer.Controls)
+                                             <MudTextField @bind-Value="@mContainer.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@mContainer.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@mContainer.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@mContainer.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                         </MudStack>
+                                         <MudStack Row Class=" mt-5">
+                                             <MudTextField @bind-Value="@mContainer.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                         </MudStack>
+                                         <MudExpansionPanels DisableBorders="true" Elevation="0">
+                                             @foreach (var c_comp in mContainer.Controls)
                                             {
                                                 <MudExpansionPanel Text="@c_comp.Name">
                                                     <MudStack Row Class="mt-5">
-                                                        <MudTextField @bind-Value="@c_comp.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                        <MudTextField @bind-Value="@c_comp.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                        <MudTextField @bind-Value="@c_comp.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                        <MudTextField @bind-Value="@c_comp.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                    </MudStack>
-                                                    <MudStack Row class="mt-5">
-                                                        <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
-                                                        <MudTextField @bind-Value="@c_comp.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                    </MudStack>
-                                                    @if (c_comp is WMLine mLine)
+                                                         <MudTextField @bind-Value="@c_comp.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                         <MudTextField @bind-Value="@c_comp.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                         <MudTextField @bind-Value="@c_comp.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                         <MudTextField @bind-Value="@c_comp.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                     </MudStack>
+                                                     <MudStack Row class="mt-5">
+                                                         <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
+                                                         <MudTextField @bind-Value="@c_comp.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                     </MudStack>
+                                                     @if (c_comp is WMLine mLine)
                                                     {
                                                         <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
                                                         <div class="d-flex justify-space-between mt-5">
@@ -195,17 +205,17 @@
                                                             </MudToggleGroup>
                                                         </div>
                                                         <MudStack Row class="mt-5">
-                                                            <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
-                                                            <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                                        </MudStack>
+                                                             <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
+                                                             <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                         </MudStack>
                                                     }
                                                     else if (c_comp is WMLogo mLogo)
                                                     {
 
-                                                        <MudStack Row class="mt-5">
-                                                            <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-                                                            <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
-                                                        </MudStack>
+                                                        <MudStack Row class="mt-5" Style="position:relative">
+                                                             <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
+                                                             <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+                                                         </MudStack>
                                                         <div Class="mt-5" Style="line-height:40px;height:40px;">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
                                                             <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
@@ -226,7 +236,7 @@
                                                         </MudButtonGroup>
                                                         <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
                                                             <div style="width:calc(100% - 80px);float:left;">
-                                                                @(string.Join(" ", mText.Exifs.Select(x=>x.Prefix + x.Value + x.Suffix)))
+                                                                @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                             </div>
                                                             <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
                                                         </div>
@@ -244,16 +254,16 @@
                                 {
                                     <MudExpansionPanel Text="@ctrl.Name">
                                         <MudStack Row Class="mt-5">
-                                            <MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            <MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                        </MudStack>
-                                        <MudStack Row class="mt-5">
-                                            <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
-                                            <MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                        </MudStack>
-                                        @if (ctrl is WMLine mLine)
+                                             <MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                         </MudStack>
+                                         <MudStack Row class="mt-5">
+                                             <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
+                                             <MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                         </MudStack>
+                                         @if (ctrl is WMLine mLine)
                                         {
                                             <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
                                             <div class="d-flex justify-space-between mt-5">
@@ -268,16 +278,16 @@
                                                 </MudToggleGroup>
                                             </div>
                                             <MudStack Row class="mt-5">
-                                                <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
-                                                <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                            </MudStack>
+                                                 <MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
+                                                 <MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             </MudStack>
                                         }
                                         else if (ctrl is WMLogo mLogo)
                                         {
-                                            <MudStack Row class="mt-5">
-                                                <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-                                                <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
-                                            </MudStack>
+                                            <MudStack Row class="mt-5" Style="position:relative">
+                                                 <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
+                                                 <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+                                             </MudStack>
                                             <div Class="mt-5" Style="line-height:40px;height:40px;">
                                                 <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
                                                 <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
@@ -299,7 +309,7 @@
 
                                             <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
                                                 <div style="width:calc(100% - 80px);float:left;">
-                                                    @(string.Join(" ", mText.Exifs.Select(x=>x.Prefix + x.Value + x.Suffix)))
+                                                    @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                 </div>
                                                 <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
                                             </div>
@@ -385,7 +395,7 @@
         var t = Task.Run(() =>
         {
             var helper = new WatermarkHelper();
-            return helper.Generation(canvas);
+            return helper.Generation(canvas, null);
         });
         url = await t;
         SrcLoading = false;
@@ -449,11 +459,11 @@
     void SelectImage(WMLogo mLogo)
     {
         Microsoft.Win32.OpenFileDialog dialog = new()
-        {
-            DefaultExt = ".png",  // 设置默认类型
-            Multiselect = false,                             // 设置可选格式
-            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-        };
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
         // 打开选择框选择
         Nullable<bool> result = dialog.ShowDialog();
         if (result == true)

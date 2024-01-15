@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -38,7 +39,7 @@ namespace Watermark.Win.Models
         public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; }
-        public bool EnableShadow { get; set; }
+        public WMImage ImageProperties { get; set; }
         public bool EnableMarginXS { get; set; }
 
         public List<WMLine> Lines { get; set; }
@@ -56,12 +57,13 @@ namespace Watermark.Win.Models
             ID = Guid.NewGuid().ToString("N").ToUpper();
             EnableMarginXS = false;
             BorderThickness = new Thickness(0);
+            ImageProperties = new WMImage();
         }
         public string ID { get; set; }
         public string Name { get; set; }
         public Thickness BorderThickness { get; set; }
         public string BackgroundColor { get; set; } = "#FFF";
-        public bool EnableShadow { get; set; }
+        public WMImage ImageProperties { get; set; }
         public List<WMContainer> Children { get; set; }
         [JsonIgnore]
         public Dictionary<string, string> Exif { get; set; }
@@ -72,9 +74,19 @@ namespace Watermark.Win.Models
 
     public class WMImage
     {
+        public WMImage()
+        {
+            EnableRadius = false;
+            EnableShadow = false;
+            ShadowRange = 10;
+            ShadowColor = "#FF808080";
+            CornerRadius = 15;
+        }
         public bool EnableShadow { get; set; }
+        public int ShadowRange {  get; set; }
+        public string ShadowColor { get; set; }
         public bool EnableRadius { get; set; }
-        public string Path { get; set; }
+        public int CornerRadius { get; set; }
     }
 
     public class PNode

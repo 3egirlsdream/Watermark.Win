@@ -2,6 +2,8 @@
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +14,7 @@ namespace Watermark.Win.Models
     public static class Global
     {
         public static string TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + System.IO.Path.DirectorySeparatorChar;
+        public static string ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + System.IO.Path.DirectorySeparatorChar;
 
         public static WMCanvas ReadConfig(string s)
         {
@@ -24,7 +27,7 @@ namespace Watermark.Win.Models
                     Name = ls.Name,
                     BorderThickness = ls.BorderThickness,
                     BackgroundColor =  ls.BackgroundColor,
-                    EnableShadow = ls.EnableShadow,
+                    ImageProperties = ls.ImageProperties,
                     EnableMarginXS = ls.EnableMarginXS
                 };
                 //一级容器
@@ -148,21 +151,31 @@ namespace Watermark.Win.Models
 
                     Global.ImageFile2Base64(dic, p, "default");
                     SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-                    double w = bitmap.Width, h = bitmap.Height;
-                    var xs = 1080.0 / h;
-                    var resized = bitmap.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
-                    using var data = resized.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100);
-                    //using var sm = System.IO.File.OpenWrite(destFile);
-                    using (var output = System.IO.File.Create(destFile))
-                    {
-                        data.SaveTo(output);
-                    }
+                    WriteThumbnailImage(bitmap, destFile);
                 }
             }
             catch (Exception ex)
             {
                 throw ex;
             }
+        }
+        public static void WriteThumbnailImage(SKBitmap source, string target)
+        {
+            double w = source.Width, h = source.Height;
+            var xs = 1080.0 / h;
+            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
+            using var image = SKImage.FromBitmap(resized);
+            using var writeStream = File.OpenWrite(target);
+            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
+        }
+
+        public static Task WriteThumbnailImageAsync(SKBitmap source, string target)
+        {
+            return Task.Run(() =>
+            {
+                WriteThumbnailImage(source, target);
+                return Task.CompletedTask;
+            });
         }
     }
 }

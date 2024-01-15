@@ -33,5 +33,10 @@ namespace Watermark.Win.Models
                 return dic;
             }
         }
+
+        public static Task<Dictionary<string, string>> ReadImageAsync(string path)
+        {
+            return Task.Run(() => { return ReadImage(path); });
+        }
     }
 }

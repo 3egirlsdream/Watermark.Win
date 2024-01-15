@@ -8,7 +8,7 @@
 
 <div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
-        <MudToolBar Style="height:40px;padding-left:2px">
+        <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
@@ -18,7 +18,7 @@
             <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Shop">模板市场</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="()=> DialogService.Show<TemplatesMarket>(string.Empty,new DialogOptions(){ MaxWidth = MaxWidth.ExtraLarge})">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.Settings">设置</MudMenuItem>
@@ -29,10 +29,14 @@
                 <MudMenuItem>提交BUG</MudMenuItem>
             </MudMenu>
             <MudSpacer />
-            <MudIconButton Icon="@Icons.Material.Outlined.Notifications" />
-            <MudIconButton Icon="@Icons.Material.Outlined.PushPin" />
-            <MudIconButton Icon="@Icons.Material.Outlined.PeopleAlt" />
-            <MudIconButton Icon="@Icons.Material.Outlined.MoreVert" Color="Color.Inherit" />
+            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo">
+            </MudIcon>
+
+            <MudPopover OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
+                <MudText Typo="Typo.body2" Class="px-4 py-1">用户：蔡徐坤</MudText>
+                <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
+                <MudText Typo="Typo.body2" Class="px-4 py-1">用户：蔡徐坤</MudText>
+            </MudPopover>
         </MudToolBar>
     </div>
     <div Style="height:100%;width:100vw;display: flex;">
@@ -57,6 +61,12 @@
                 {
                     <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%; height:100%; padding-left:5%;padding-right:5%;padding-top:100px;padding-bottom:100px;" />
 
+                }
+                else
+                {
+                    <svg style="width: 100%; padding: calc(50% - 64px); height: 100%;" t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128">
+                        <path d="M256 298.666667a85.333333 85.333333 0 1 1 85.333333 85.333333 85.333333 85.333333 0 0 1-85.333333-85.333333z m674.133333 415.146666l-256-341.333333a32.426667 32.426667 0 0 0-51.2 0l-170.666666 220.586667a21.333333 21.333333 0 0 1-33.28 0l-93.44-113.493334a32 32 0 0 0-49.92 0l-181.333334 234.24a42.666667 42.666667 0 0 0-8.96 26.026667v38.826667a32.426667 32.426667 0 0 0 32 32h789.333334a32.426667 32.426667 0 0 0 32-32v-39.253334a42.666667 42.666667 0 0 0-8.533334-25.6z" p-id="3272" fill="#e9e9e9"></path>
+                    </svg>
                 }
             </div>
         </div>
@@ -116,7 +126,7 @@
     WMCanvas canvas;
     string url = "";
     bool SrcLoading = false;
-
+    bool ShowUserInfo = false;
     class MainLoading
     {
         public static bool Show { get; set; } = false;
@@ -161,10 +171,6 @@
     protected override async Task OnInitializedAsync()
     {
         InitTemplates();
-    }
-
-    private void OnButtonClicked()
-    {
     }
 
 
@@ -214,11 +220,23 @@
             Images = new List<TemplateList>();
             MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
             MainLoading.Value = 0;
+            if (!Directory.Exists(Global.ThumbnailFolder))
+            {
+                Directory.CreateDirectory(Global.ThumbnailFolder);
+            }
             foreach (var file in dialog.FileNames)
             {
                 Dictionary<string, string> dic = new Dictionary<string, string>();
                 WMCanvas canvas = new WMCanvas();
                 canvas.Path = file;
+                canvas.Exif = await ExifHelper.ReadImageAsync(file);
+                await Task.Run(() =>
+                {
+                    var thumbnail = Global.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
+                    var bitmap = SkiaSharp.SKBitmap.Decode(file);
+                    return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
+                });
+
                 var src = Task.Run(() =>
                 {
                     Global.ImageFile2Base64(dic, file, canvas.ID);
@@ -260,7 +278,7 @@
             CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
             WatermarkHelper helper = new WatermarkHelper();
             CurrentImage.Canvas.Path = CurrentImage.Path;
-            return helper.Generation(CurrentImage.Canvas);
+            return helper.Generation(CurrentImage.Canvas, null);
         });
 
         CurrentImage.Src = await t;
@@ -309,7 +327,7 @@
                     WatermarkHelper helper = new WatermarkHelper();
                     var t = Task.Run(() =>
                     {
-                        var src = helper.Generation(canvas);
+                        var src = helper.Generation(canvas, null);
                         return src;
 
                     });
@@ -354,7 +372,7 @@
             CurrentImage.Canvas = cvs;
             WatermarkHelper helper = new WatermarkHelper();
             cvs.Path = CurrentImage.Path;
-            return helper.Generation(cvs);
+            return helper.Generation(cvs, null);
         });
 
         CurrentImage.Src = await t;
