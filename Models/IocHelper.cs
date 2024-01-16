@@ -15,7 +15,7 @@ namespace Watermark.Win.Models
     {
         public const string IocKey = "services";
 
-        private static ServiceCollection? _services = null;
+        private static ServiceCollection _services = null;
 
         public static ServiceCollection GetIoc()
         {

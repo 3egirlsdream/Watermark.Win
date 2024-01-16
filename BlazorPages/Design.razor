@@ -60,6 +60,11 @@
                      </MudStack>
                      <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
+                     <MudStack Row Class="mt-5" Style="position:relative">
+                         <MudText Align="Align.Justify" Typo="Typo.button">启用背景高斯模糊</MudText>
+                         <MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" Style="position:absolute;right:5px" />
+                     </MudStack>
+                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
                  </MudExpansionPanel>
                  @foreach (var container in canvas.Children)
@@ -370,6 +375,7 @@
     protected override void OnInitialized()
     {
         canvas = CurrentCanvas;
+        if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
         Global.ImageFile2Base64(ImagesBase64, Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
         canvas.Children.ForEach(c =>
         {

@@ -1,4 +1,5 @@
-﻿@using Watermark.Win.Models
+﻿@using System.Diagnostics
+@using Watermark.Win.Models
 <MudDialog Style="width:80%; height:80%;overflow-y:hidden">
     <DialogContent>
         <div style="height:220px;width:100%;">
@@ -40,6 +41,14 @@
                 }
             }
         </MudGrid>
+        <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
+            <MudStack Justify="Justify.Center">
+                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
+                <MudText Typo="Typo.subtitle1" Color="Color.Dark">
+                    <b>正在加载模板...</b>
+                </MudText>
+            </MudStack>
+        </MudOverlay>
     </DialogContent>
 </MudDialog>
 
@@ -50,17 +59,27 @@
     MudDialogInstance MudDialog { get; set; }
     [Inject]
     private IDialogService DialogService { get; set; }
-
+    bool loading = false;
     List<ZipedTemplate> ZipedTemplates;
 
     protected override async Task OnInitializedAsync()
     {
+        loading = true;
         var helper = new APIHelper();
         ZipedTemplates = await helper.GetWatermarks(0, 10);
         var whelper = new WatermarkHelper();
+        List<Task> tasks = new List<Task>();
         foreach (var t in ZipedTemplates)
         {
-            t.Src = whelper.Generation(t.WMCanvas, t);
+            var c = Task.Run(() =>
+            {
+                t.Src = whelper.Generation(t.WMCanvas, t);
+                return t.Src;
+            });
+
+            tasks.Add(c);
         }
+        await Task.WhenAll(tasks);
+        loading = false;
     }
 }

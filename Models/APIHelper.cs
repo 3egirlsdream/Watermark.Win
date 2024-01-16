@@ -12,13 +12,14 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using static MudBlazor.Colors;
 
 namespace Watermark.Win.Models
 {
     public class APIHelper
     {
-        private string HOST = "https://localhost:44389";
+        public static string HOST = "http://thankful.top:4396";
         public APIHelper()
         {
             _client = new HttpClient() { BaseAddress =  new Uri(HOST) };
@@ -26,11 +27,21 @@ namespace Watermark.Win.Models
 
         HttpClient _client;
 
-        public async Task<API<bool?>> UploadWatermark(string watermarkId, string desc = "")
+        public async Task<API<bool?>> UploadWatermark(string watermarkId, string name, int coins, string desc = "")
         {
             var path = Global.TemplatesFolder + watermarkId;
             if (Directory.Exists(path))
             {
+                var config = path + Path.DirectorySeparatorChar + "config.json";
+                if (File.Exists(config))
+                {
+                    var wc = Global.ReadConfig(config);
+                    wc.Name = name;
+                    File.Delete(config);
+                    var json = Global.CanvasSerialize(wc);
+                    System.IO.File.WriteAllText(config, json);
+                }
+
                 var target = Global.TemplatesFolder + $"{watermarkId}.zip";
                 if (File.Exists(target)) File.Delete(target);
                 ZipFile.CreateFromDirectory(path, target);
@@ -40,6 +51,7 @@ namespace Watermark.Win.Models
                     {
                         form.Add(new StreamContent(fileStream), "file", Path.GetFileName(target));
                         form.Add(new StringContent(watermarkId), "watermarkId");
+                        form.Add(new StringContent(coins.ToString()), "coins");
                         form.Add(new StringContent(desc), "desc");
                         form.Add(new StringContent(Global.CurrentUser.ID), "userId");
                         using var response = await _client.PostAsync("/api/Watermark/Upload", form);
@@ -67,28 +79,24 @@ namespace Watermark.Win.Models
                     var responseContent = await response.Content.ReadAsStringAsync();
                     var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
 
-                    if (responseObject.success)
+                    if (responseObject != null && responseObject.success)
                     {
                         var total = responseObject.data.Total;
 
                         var fileResults = (JArray)responseObject.data.Files;
-                        List<byte[]> filesData = new List<byte[]>();
                         List<ZipedTemplate> templates = new List<ZipedTemplate>();
+                        List<Task> tasks = new List<Task>();    
                         foreach (var fileResult in fileResults)
                         {
-                            var content = fileResult["File"]["FileContents"]?.ToString();
+                            var content = fileResult?["File"]?["FileContents"]?.ToString() ?? "";
                             var fileContents = Convert.FromBase64String(content);
                             var t = ExtractZip(fileContents);
-                            t.WatermarkId = fileResult["File"]["ID"]?.ToString();
-                            t.Desc = fileResult["File"]["DESC"]?.ToString();
-                            t.DownloadTimes = Convert.ToInt32(fileResult["File"]["DOWNLOAD_TIMES"]?.ToString() ?? "0");
+                            t.WatermarkId = fileResult?["File"]?["ID"]?.ToString();
+                            t.Desc = fileResult?["File"]?["DESC"]?.ToString();
+                            t.DownloadTimes = Convert.ToInt32(fileResult?["File"]?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
                             templates.Add(t);
                         }
 
-                        foreach (var fileResult in filesData)
-                        {
-                            
-                        }
                         return templates;
                     }
                     else
@@ -175,25 +183,31 @@ namespace Watermark.Win.Models
             }
         }
     
-        public async Task<API<LoginModel>> LoginIn(string user, string password)
+        public async Task<API<LoginModel>> LoginIn(string user, string password, bool isMD5 = false)
         {
             try
             {
-                var bytes = MD5.HashData(Encoding.UTF8.GetBytes(password));
-                StringBuilder sb = new StringBuilder();
-                foreach (var b in bytes)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                var pw = sb.ToString();
+                string pw = GetMD5(password);
+                if (isMD5) pw = password;
                 return await Connections.HttpGetAsync<LoginModel>(HOST + $"/api/Watermark/Login?user={user}&pwd={pw}", Encoding.UTF8);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new API<LoginModel>() { data = new LoginModel { Message = ex.Message } };
             }
         }
-    
+
+        public string GetMD5(string password)
+        {
+            var bytes = MD5.HashData(Encoding.UTF8.GetBytes(password));
+            StringBuilder sb = new StringBuilder();
+            foreach (var b in bytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            var pw = sb.ToString();
+            return pw;
+        }
     }
 
     public class LoginModel

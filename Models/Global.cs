@@ -1,15 +1,20 @@
-﻿using Newtonsoft.Json;
+﻿
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Management;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
+using Watermark.Win.Views;
 
 namespace Watermark.Win.Models
 {
@@ -23,6 +28,7 @@ namespace Watermark.Win.Models
             try
             {
                 var ls = Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvasSerialize>(s);
+                if(ls == null) return new WMCanvas();
                 var newCanvas = new WMCanvas()
                 {
                     ID = ls.ID,
@@ -71,7 +77,7 @@ namespace Watermark.Win.Models
                 MissingMemberHandling = MissingMemberHandling.Ignore // 忽略缺少的字段
             };
             var nc = JsonConvert.DeserializeObject<WMCanvasSerialize>(JsonConvert.SerializeObject(canvas), settings);
-
+            if(nc == null) nc = new WMCanvasSerialize();
             nc.Containers = new List<WMContainer>();
             nc.Lines = new List<WMLine>();
             nc.Logos = new List<WMLogo>();
@@ -100,11 +106,13 @@ namespace Watermark.Win.Models
                             else if (child is WMText text) nc.Texts.Add(text);
                         }
                         var cld_copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(mContainer));
+                        if (cld_copy is null) cld_copy = new WMContainer();
                         cld_copy.Controls = [];
                         nc.Containers.Add(cld_copy);
                     }
                 }
                 var copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(ct));
+                if(copy is null) copy = new WMContainer();
                 copy.Controls = new List<IWMControl>();
                 nc.Containers.Add(copy);
             }
@@ -202,6 +210,58 @@ namespace Watermark.Win.Models
                 string result3 = strResult.Replace("-", "");
                 return result3;
             }
+        }
+
+        public static void WriteAccount2Local(string username, string password)
+        {
+            var path = AppDomain.CurrentDomain.BaseDirectory + $".sys";
+            if(!Directory.Exists(path)) Directory.CreateDirectory(path);
+            path += $"{Path.DirectorySeparatorChar}sys";
+            if(File.Exists(path)) File.Delete(path);
+            var str = new
+            {
+                username, password
+            };
+            File.WriteAllText(path, JsonConvert.SerializeObject(str));
+        }
+        public static Task WriteAccount2LocalAsync(string username, string password)
+        {
+            return Task.Run(() => WriteAccount2Local(username, password));
+        }
+
+        public static Tuple<string, string> ReadLocal()
+        {
+            var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}sys";
+            if(!File.Exists (path)) return Tuple.Create(string.Empty, string.Empty); 
+            using var fs = new FileStream(path, FileMode.Open);
+            using var sr = new StreamReader(fs);
+            var content = sr.ReadToEnd();
+            if (!string.IsNullOrEmpty(content))
+            {
+                var result = JsonConvert.DeserializeObject<dynamic>(content);
+                return Tuple.Create(Convert.ToString(result?.username ?? ""), Convert.ToString(result?.password ?? ""));
+            }
+            return Tuple.Create(string.Empty, string.Empty);
+        }
+
+        public static Task<Tuple<string, string>> ReadLocalAsync()
+        {
+            return Task.Run(() => ReadLocal());
+        }
+
+        public static void OpenSetting()
+        {
+            var action = new Action(() =>
+            {
+                var setting = new Setting();
+                setting.Owner = Application.Current.MainWindow;
+                setting.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                setting.ShowInTaskbar = false;
+                setting.ShowDialog();
+            });
+
+
+            OpenWinHelper.Open(action);
         }
     }
 }

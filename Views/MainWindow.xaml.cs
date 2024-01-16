@@ -12,6 +12,7 @@ using System.Windows.Shapes;
 using MudBlazor.Services;
 using Watermark.Win.Models;
 using Watermark.Win.Views;
+using System.IO;
 
 namespace Watermark.Win
 {
@@ -30,6 +31,15 @@ namespace Watermark.Win
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            var path = Global.ThumbnailFolder;
+            if(Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
             }
         }
 

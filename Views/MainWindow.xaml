@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:Watermark.Win.BlazorPages" 
         xmlns:blazor="http://schemas.microsoft.com/winfx/2006/xaml/presentation/blazor"
         mc:Ignorable="d"
-        Title="MainWindow" Height="750" Width="1200">
+        WindowStartupLocation="CenterScreen"
+        Title="文影" Height="850" Width="1280">
     <Grid>
         <blazor:BlazorWebView HostPage="wwwroot\index.html" Services="{DynamicResource services}">
             <blazor:BlazorWebView.RootComponents>

@@ -1,4 +1,5 @@
 ﻿@using System.IO
+@using System.Diagnostics
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
@@ -7,14 +8,14 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
-    <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
+<div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
+    <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FFF;">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
                 <MudDivider />
-                <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp">退出</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
             </MudMenu>
             <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
@@ -22,7 +23,7 @@
                 <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="()=> DialogService.Show<TemplatesMarket>(string.Empty,new DialogOptions(){ MaxWidth = MaxWidth.ExtraLarge})">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-                <MudMenuItem Icon="@Icons.Material.Filled.Settings">设置</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="Global.OpenSetting">设置</MudMenuItem>
             </MudMenu>
             <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem>交流群</MudMenuItem>
@@ -30,8 +31,11 @@
                 <MudMenuItem>提交BUG</MudMenuItem>
             </MudMenu>
             <MudSpacer />
-            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo">
-            </MudIcon>
+            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
+            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
+            {
+                <MudText Typo="Typo.overline" Style="margin: 7px 0px 5px 5px;">@Global.CurrentUser.DISPLAY_NAME</MudText>
+            }
 
             <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
                 @if (IsLoginIn && Global.CurrentUser != null)
@@ -48,9 +52,9 @@
 
                         <div style="float:left;">
                             <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
-                            <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
+                                <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
+                            </div>
                         </div>
-                    </div>
                     <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">@DateTime.Now</MudText>
@@ -62,22 +66,33 @@
                     <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
                     <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
                     <MudStack Row Style="margin-left:120px;" Class="mt-5">
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-                        <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
-                    </MudStack>
+                         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
+                         <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
+                     </MudStack>
                 }
             </MudPopover>
         </MudToolBar>
     </div>
     <div Style="height:100%;width:100vw;display: flex;">
 
-        <div style="width: 300px; height: 100%; padding: 0px; background: #f3f3f3;">
-            <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; margin-top: 40px; height: calc(100% - 40px);overflow-y:auto;overflow-x:hidden">
+        <div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
+            <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; margin-top: 40px; height: calc(100% - 40px);overflow-y:auto;overflow-x:hidden;">
                 <MudList Clickable="true">
-                    @foreach (var pair in wMTemplates)
-                    {
-                        <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="min-height:160px;cursor:pointer; " Width="280" Elevation="2" @onclick="()=>ChangeTemplate(pair)" />
-                    }
+                    <MudTreeView T="string" Hover="true">
+                        <MudTreeViewItem Value="@("模板列表")" Expanded="true">
+                            @foreach (var pair in wMTemplates)
+                            {
+                                @* <MudImage Src="@pair.Src" ObjectFit="ObjectFit.Fill" Style="min-height:160px;cursor:pointer; " Width="280" Elevation="2" @onclick="()=>ChangeTemplate(pair)" /> *@
+                                <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
+                                    <Content>
+                                        <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
+                                        <MudText Class="mx-5">@pair.Canvas.Name</MudText>
+                                        </Content>
+                                    </MudTreeViewItem>
+                            }
+                        </MudTreeViewItem>
+                    </MudTreeView>
+
                 </MudList>
             </MudPaper>
         </div>
@@ -86,7 +101,7 @@
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
             }
-            <div style="background: #f3f3f3; width: 100%; height: 100%;">
+            <div style="background: #F9FAFC; width: 100%; height: 100%; line-height: 100vh; text-align: center;">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
                     <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%; height:100%; padding-left:5%;padding-right:5%;padding-top:100px;padding-bottom:100px;" />
@@ -94,13 +109,13 @@
                 }
                 else
                 {
-                    <svg style="width: 100%; padding: calc(50% - 64px); height: 100%;" t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128">
+                    <svg t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128">
                         <path d="M256 298.666667a85.333333 85.333333 0 1 1 85.333333 85.333333 85.333333 85.333333 0 0 1-85.333333-85.333333z m674.133333 415.146666l-256-341.333333a32.426667 32.426667 0 0 0-51.2 0l-170.666666 220.586667a21.333333 21.333333 0 0 1-33.28 0l-93.44-113.493334a32 32 0 0 0-49.92 0l-181.333334 234.24a42.666667 42.666667 0 0 0-8.96 26.026667v38.826667a32.426667 32.426667 0 0 0 32 32h789.333334a32.426667 32.426667 0 0 0 32-32v-39.253334a42.666667 42.666667 0 0 0-8.533334-25.6z" p-id="3272" fill="#e9e9e9"></path>
                     </svg>
                 }
             </div>
         </div>
-        <div style="width: 200px; height: calc(100% - 30px);  background: #fff;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
+        <div style="width: 200px; height: calc(100% - 30px);  background: #F9FAFC;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
             <MudList Clickable="true">
                 @foreach (var file in Images)
                 {
@@ -111,9 +126,9 @@
     </div>
 
     <MudOverlay Visible="MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Style="width:520px;padding:10px;">
+        <MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
             <MudStack>
-                <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="my-7" />
+                <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
                 <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
                     <b>@MainLoading.Message</b>
                 </MudText>
@@ -128,7 +143,7 @@
         <MudForm>
             <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
             <MudStack Row Class="mt-5">
-                @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
+                 @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
                 {
                     <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                 }
@@ -151,7 +166,6 @@
     private IDialogService DialogService { get; set; }
 
     Thickness BorderThickness = new Thickness();
-    WMCanvas canvas;
     string url = "";
     bool SrcLoading = false;
     bool ShowUserInfo = false;
@@ -199,7 +213,26 @@
 
     protected override async Task OnInitializedAsync()
     {
-        InitTemplates();
+        await InitTemplates();
+        var result = await Global.ReadLocalAsync();
+        if (!string.IsNullOrEmpty(result.Item1))
+        {
+            APIHelper helper = new APIHelper();
+            var login = await helper.LoginIn(result.Item1, result.Item2, true);
+            if (login.success)
+            {
+                Global.CurrentUser = new LoginChildModel
+                    {
+                        ID = login.data.data.ID,
+                        IMG = login.data.data.IMG,
+                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+                        USER_NAME = login.data.data.USER_NAME
+                    };
+                IsLoginIn = true;
+                await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
+                StateHasChanged();
+            }
+        }
     }
 
 
@@ -213,22 +246,9 @@
         if (!dialog.Canceled)
         {
             StateHasChanged();
-            InitTemplates();
+            await InitTemplates();
         }
 
-    }
-
-    async void OpenEditDialog()
-    {
-        var parameters = new DialogParameters<EditComponentDialog>();
-        parameters.Add(x => x.mCanvas, canvas);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-        var rst = DialogService.Show<EditComponentDialog>("编辑模板", parameters, option);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled)
-        {
-            StateHasChanged();
-        }
     }
 
     List<TemplateList> Images = new List<TemplateList>();
@@ -236,11 +256,11 @@
     {
         // 实例化一个文件选择对象
         Microsoft.Win32.OpenFileDialog dialog = new()
-        {
-            DefaultExt = ".png",  // 设置默认类型
-            Multiselect = true,                             // 设置可选格式
-            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-        };
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = true,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
         // 打开选择框选择
         Nullable<bool> result = dialog.ShowDialog();
         if (result == true)
@@ -272,12 +292,12 @@
                     return dic.First().Value;
                 });
                 Images.Add(new TemplateList
-                {
-                    Canvas = canvas,
-                    Src = await src,
-                    ID = canvas.ID,
-                    Path = file
-                });
+                    {
+                        Canvas = canvas,
+                        Src = await src,
+                        ID = canvas.ID,
+                        Path = file
+                    });
                 var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
                 MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
                 MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
@@ -296,11 +316,11 @@
     async void ClickImage(TemplateList image)
     {
         CurrentImage = new TemplateList
-        {
-            ID = image.ID,
-            Canvas = image.Canvas,
-            Path = image.Path
-        };
+            {
+                ID = image.ID,
+                Canvas = image.Canvas,
+                Path = image.Path
+            };
         SrcLoading = true;
         var t = Task.Run(() =>
         {
@@ -328,7 +348,7 @@
         public string Src { get; set; }
     }
 
-    async void InitTemplates()
+    async Task InitTemplates()
     {
         MainLoading.Show = true;
         if (!System.IO.Directory.Exists(Global.TemplatesFolder))
@@ -342,6 +362,8 @@
             var directories = directoryInfo.GetDirectories();
             MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
             MainLoading.Value = 0;
+            List<Task> tasks = new List<Task>();
+            int cot = 1;
             foreach (var dirct in directories)
             {
                 var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
@@ -357,27 +379,24 @@
                     var t = Task.Run(() =>
                     {
                         var src = helper.Generation(canvas, null);
+                        var wh = new TemplateList
+                        {
+                            ID = canvas.ID,
+                            Canvas = canvas,
+                            Src = src
+                        };
+                        wMTemplates.Add(wh);
+                        var idx = directories.ToList().IndexOf(dirct) + 1;
+                        MainLoading.Value = cot * 100.0 / directories.Length;
+                        MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
+                        App.Current.Dispatcher.Invoke(() => StateHasChanged());
+                        
                         return src;
-
                     });
-
-                    wMTemplates.Add(new TemplateList
-                    {
-                        ID = canvas.ID,
-                        Canvas = canvas,
-                        Src = await t
-                    });
+                    tasks.Add(t);
                 }
-
-
-                var idx = directories.ToList().IndexOf(dirct) + 1;
-                MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{idx}个...";
-                MainLoading.Value = idx * 100.0 / directories.Length;
-                StateHasChanged();
-
-
             }
-
+            await Task.WhenAll(tasks);
             MainLoading.Message = $"处理完成...";
             MainLoading.Value = 100;
             await Task.Delay(200);

@@ -81,12 +81,17 @@ namespace Watermark.Win.Models
             ShadowRange = 10;
             ShadowColor = "#FF808080";
             CornerRadius = 15;
+            EnableGaussianBlur = false;
+            GaussianDeep = 10;
         }
         public bool EnableShadow { get; set; }
         public int ShadowRange {  get; set; }
         public string ShadowColor { get; set; }
         public bool EnableRadius { get; set; }
         public int CornerRadius { get; set; }
+
+        public bool EnableGaussianBlur { get; set; }
+        public int GaussianDeep { get; set; }
     }
 
     public class PNode

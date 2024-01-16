@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
@@ -15,6 +16,10 @@ namespace Watermark.Win.Models
 {
     public class WatermarkHelper
     {
+        public Task<string> GenerationAsync(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview = true)
+        {
+            return Task.Run(() => Generation(mainCanvas, ziped, isPreview));
+        }
         public string Generation(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview = true)
         {
             SKBitmap originalBitmap;
@@ -40,7 +45,7 @@ namespace Watermark.Win.Models
                 originalBitmap = ziped.Bitmap;
             }
 
-            if(mainCanvas.Exif == null || mainCanvas.Exif.Count == 0)
+            if (mainCanvas.Exif == null || mainCanvas.Exif.Count == 0)
             {
                 mainCanvas.Exif = ExifHelper.ReadImage(path);
             }
@@ -73,14 +78,18 @@ namespace Watermark.Win.Models
             };
             var targetImage = SKImage.Create(info);
             var targetBitmap = SKBitmap.FromImage(targetImage);
+            if(mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableGaussianBlur)
+            {
+                targetBitmap = GaussianBlur(targetBitmap, originalBitmap, mainCanvas.ImageProperties.GaussianDeep, (float)xs);
+            }
             SKCanvas targetCanvas = new SKCanvas(targetBitmap);
             targetCanvas.Clear(SKColor.Parse(mainCanvas.BackgroundColor));
             SKPoint p1 = new SKPoint((float)border_l, (float)border_t);
-            if(mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableShadow)
+            if (mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableShadow)
             {
                 DrawShadow(targetCanvas, p1, originalBitmap.Width, originalBitmap.Height, xs, mainCanvas.ImageProperties);
             }
-            
+
             targetCanvas.DrawBitmap(originalBitmap, p1);
 
 
@@ -123,7 +132,7 @@ namespace Watermark.Win.Models
             //using var sm = File.OpenWrite("output.jpg");
             //data.SaveTo(sm);
             var bytes = data.ToArray();
-            
+
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
@@ -205,7 +214,7 @@ namespace Watermark.Win.Models
 
 
                 var fontxs = Math.Min(hc, wc) / 156.0;
-                if(fontxs == 0) fontxs = 1;
+                if (fontxs == 0) fontxs = 1;
 
 
                 //字体乘以系数
@@ -444,7 +453,7 @@ namespace Watermark.Win.Models
                         var pc = new SKColor(255, 255, 255, 0);
                         originalBitmap.SetPixel(x, y, pc);
                     }
-                   
+
                 }
             }
             return originalBitmap;
@@ -515,5 +524,24 @@ namespace Watermark.Win.Models
                 canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
             }
         }
+
+        private SKBitmap GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)
+        {
+            var width = bitmap.Width;
+            var height = bitmap.Height;
+
+            var skSurface = SKSurface.Create(new SKImageInfo(width, height));
+            var skCanvas = skSurface.Canvas;
+
+            var paint = new SKPaint();
+            var imageFilter = SKImageFilter.CreateBlur(sigma * xs, sigma * xs);
+            paint.ImageFilter = imageFilter;
+
+            skCanvas.DrawBitmap(original, new SKRect(0, 0, width, height), paint);
+
+            var data = skSurface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
+            return SKBitmap.Decode(data);
+        }
+
     }
 }

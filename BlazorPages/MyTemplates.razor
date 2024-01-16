@@ -15,8 +15,8 @@
             @foreach (var grid in wMTemplates)
             {
                 <MudItem>
-                    <MudPaper Height="342px" Width="256px" Class="mt-2">
-                        <MudCard Class="pa-2" Style="background:#e3e3e3;">
+                    <MudPaper Width="256px" Class="mt-2">
+                        <MudCard Class="pa-2" Style="background:#F9FAFC;">
                             <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
                             <MudCardActions>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>Upload(grid.ID)">上传</MudButton>
@@ -139,42 +139,58 @@
 
     async void Upload(string id)
     {
-        Action action = new Action(async () =>
+        var parameters = new DialogParameters<UploadTemplateDialog>();
+        parameters.Add(x => x.Name, wMTemplates.FirstOrDefault()?.Name ?? "");
+        var dialog = DialogService.Show<UploadTemplateDialog>("", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
         {
-            var helper = new APIHelper();
-            var result = await helper.UploadWatermark(id);
-            string message = "";
-            Severity severity = Severity.Success;
-            Snackbar.Clear();
-            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-
-            if (result.success)
+            dynamic data = result.Data;
+            if(data == null)
             {
-                message = "上传成功";
+                return;
+            }
+
+
+            Action action = new Action(async () =>
+            {
+                var helper = new APIHelper();
+                var result = await helper.UploadWatermark(id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
+                string message = "";
+                Severity severity = Severity.Success;
+                Snackbar.Clear();
+                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+
+                if (result.success)
+                {
+                    message = "上传成功";
+                }
+                else
+                {
+                    severity = Severity.Error;
+                    message = result.message.content;
+                }
+                Snackbar.Add(message, severity, config =>
+                {
+                    config.ShowCloseIcon = false;
+                });
+            });
+
+            if (string.IsNullOrEmpty(Global.CurrentUser.ID))
+            {
+                var rst = DialogService.Show<LoginDialog>("");
+                var dialogResult = await rst.Result;
+                if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+                {
+                    action.Invoke();
+                }
             }
             else
-            {
-                severity = Severity.Error;
-                message = result.message.content;
-            }
-            Snackbar.Add(message, severity, config =>
-            {
-                config.ShowCloseIcon = false;
-            });
-        });
-
-        if (string.IsNullOrEmpty(Global.CurrentUser.ID))
-        {
-            var rst = DialogService.Show<LoginDialog>("");
-            var dialogResult = await rst.Result;
-            if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
             {
                 action.Invoke();
             }
         }
-        else
-        {
-            action.Invoke();
-        }
+
+
     }
 }

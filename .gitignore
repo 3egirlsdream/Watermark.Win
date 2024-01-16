@@ -7,3 +7,4 @@
 /bin/Debug/net8.0-windows/runtimes/win-arm64/native/WebView2Loader.dll
 /obj
 /bin/Release/net8.0-windows
+/Watermark.Win.csproj.user
