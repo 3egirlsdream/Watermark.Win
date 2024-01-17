@@ -11,25 +11,31 @@
 <div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FFF;">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-            <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+            <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="Export">导出全部</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
             </MudMenu>
-            <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+            <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="()=> DialogService.Show<TemplatesMarket>(string.Empty,new DialogOptions(){ MaxWidth = MaxWidth.ExtraLarge})">模板市场</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
             </MudMenu>
-            <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
+            <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="Global.OpenSetting">设置</MudMenuItem>
             </MudMenu>
-            <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-                <MudMenuItem>交流群</MudMenuItem>
-                <MudMenuItem>点个⭐</MudMenuItem>
-                <MudMenuItem>提交BUG</MudMenuItem>
+            <MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
+                <MudMenuItem> 交流群2：836325187 </MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="赞助开发" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                <MudMenuItem Icon="@Icons.Material.Filled.Star">点个⭐</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.BugReport">提交BUG</MudMenuItem>
             </MudMenu>
             <MudSpacer />
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
@@ -470,5 +476,12 @@
         });
         OpenWinHelper.OpenFolder(action);
 
+    }
+
+    async void OpenTemplateMarket()
+    {
+        var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge });
+        var result = await dialog.Result;
+        await InitTemplates();
     }
 }

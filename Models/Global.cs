@@ -23,11 +23,20 @@ namespace Watermark.Win.Models
         public static string TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + System.IO.Path.DirectorySeparatorChar;
         public static string ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + System.IO.Path.DirectorySeparatorChar;
         public static LoginChildModel CurrentUser = new LoginChildModel();
-        public static WMCanvas ReadConfig(string s)
+
+        public static WMCanvas ReadConfigFromPath(string path)
+        {
+            using var stream = new System.IO.FileStream(path, System.IO.FileMode.Open);
+            using var reader = new System.IO.StreamReader(stream);
+            var content = reader.ReadToEnd();
+            return ReadConfig(content);
+        }
+
+        public static WMCanvas ReadConfig(string json)
         {
             try
             {
-                var ls = Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvasSerialize>(s);
+                var ls = Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvasSerialize>(json);
                 if(ls == null) return new WMCanvas();
                 var newCanvas = new WMCanvas()
                 {

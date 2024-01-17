@@ -33,7 +33,7 @@
                 <MudStack Justify="Justify.Center">
                     <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
                     <MudText Typo="Typo.subtitle1" Color="Color.Dark">
-                        <b>正在加载模板...</b>
+                        <b>@loadingMessage</b>
                     </MudText>
                 </MudStack>
             </MudOverlay>
@@ -56,6 +56,7 @@
     void Cancel() => MudDialog.Cancel();
     private DialogOptions dialogOptions = new() { FullWidth = true };
     bool loading = true;
+    string loadingMessage = "正在加载模板...";
     List<WMCanvas> wMTemplates { get; set; }
     Dictionary<string, string> pairs;
     async void InitTemplates()
@@ -139,7 +140,7 @@
     async void Upload(string id)
     {
         var parameters = new DialogParameters<UploadTemplateDialog>();
-        parameters.Add(x => x.Name, wMTemplates.FirstOrDefault()?.Name ?? "");
+        parameters.Add(x => x.Name, wMTemplates.FirstOrDefault(c=>c.ID == id)?.Name ?? "");
         var dialog = DialogService.Show<UploadTemplateDialog>("", parameters);
         var result = await dialog.Result;
         if (!result.Canceled)
@@ -153,6 +154,9 @@
 
             Action action = new Action(async () =>
             {
+                loading = true;
+                StateHasChanged();
+                loadingMessage = "正在上传...";
                 var helper = new APIHelper();
                 var result = await helper.UploadWatermark(id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
                 string message = "";
@@ -167,7 +171,7 @@
                 else
                 {
                     severity = Severity.Error;
-                    message = result.message.content;
+                    message = result.message?.content;
                 }
 
                 var target = Global.TemplatesFolder + $"{id}.zip";
@@ -176,6 +180,8 @@
                 {
                     config.ShowCloseIcon = false;
                 });
+                loading = false;
+                StateHasChanged();
             });
 
             if (string.IsNullOrEmpty(Global.CurrentUser.ID))

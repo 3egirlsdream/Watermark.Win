@@ -1,6 +1,9 @@
 ﻿using MudBlazor.Charts.SVG.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Qiniu.Http;
+using Qiniu.Storage;
+using Qiniu.Util;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -9,10 +12,12 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Xml.Linq;
 using static MudBlazor.Colors;
 
 namespace Watermark.Win.Models
@@ -29,148 +34,143 @@ namespace Watermark.Win.Models
 
         public async Task<API<bool?>> UploadWatermark(string watermarkId, string name, int coins, string desc = "")
         {
+
+            var result1 = await UploadToQiniu(watermarkId, name);
+            if (result1.success)
+            {
+                using var form = new MultipartFormDataContent();
+                form.Add(new StringContent($"{watermarkId}.zip"), "path");
+                form.Add(new StringContent(watermarkId), "watermarkId");
+                form.Add(new StringContent(coins.ToString()), "coins");
+                form.Add(new StringContent(desc), "desc");
+                form.Add(new StringContent(Global.CurrentUser.ID), "userId");
+                using var response = await _client.PostAsync("/api/Watermark/Upload", form);
+                var bt = await response.Content.ReadAsByteArrayAsync();
+                var str = Encoding.UTF8.GetString(bt);
+                var result = JsonConvert.DeserializeObject<API<bool?>>(str);
+                if (response.IsSuccessStatusCode)
+                {
+                    return result;
+                }
+            }
+            return new API<bool?>() { success = result1.success, message = result1.message };
+        }
+
+        public async Task<API<string>> UploadToQiniu(string watermarkId, string name)
+        {
+            var request = await Connections.HttpGetAsync<string>(HOST + $"/api/Qiniu/GetToken?key={watermarkId}.zip", Encoding.UTF8);
+            if (!request.success) return request;
+            var token = request.data ?? "";
             var path = Global.TemplatesFolder + watermarkId;
             if (Directory.Exists(path))
             {
-                var config = path + Path.DirectorySeparatorChar + "config.json";
-                if (File.Exists(config))
+                var configPath = path + Path.DirectorySeparatorChar + "config.json";
+                if (File.Exists(configPath))
                 {
-                    var wc = Global.ReadConfig(config);
+                    var wc = Global.ReadConfigFromPath(configPath);
                     wc.Name = name;
-                    File.Delete(config);
+                    File.Delete(configPath);
                     var json = Global.CanvasSerialize(wc);
-                    System.IO.File.WriteAllText(config, json);
+                    System.IO.File.WriteAllText(configPath, json);
                 }
 
-                var target = Global.TemplatesFolder + $"{watermarkId}.zip";
-                if (File.Exists(target)) File.Delete(target);
-                ZipFile.CreateFromDirectory(path, target);
-                using (var form = new MultipartFormDataContent())
-                {
-                    using (var fileStream = new FileStream(target, FileMode.Open))
-                    {
-                        form.Add(new StreamContent(fileStream), "file", Path.GetFileName(target));
-                        form.Add(new StringContent(watermarkId), "watermarkId");
-                        form.Add(new StringContent(coins.ToString()), "coins");
-                        form.Add(new StringContent(desc), "desc");
-                        form.Add(new StringContent(Global.CurrentUser.ID), "userId");
-                        using var response = await _client.PostAsync("/api/Watermark/Upload", form);
-                        var bt = await response.Content.ReadAsByteArrayAsync();
-                        var str = Encoding.UTF8.GetString(bt);
-                        var result = JsonConvert.DeserializeObject<API<bool?>>(str);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            return result;
-                        }
-                        else return new API<bool?>() { success = false };
-                    }
-                }
+                var targetPath = Global.TemplatesFolder + $"{watermarkId}.zip";
+                if (File.Exists(targetPath)) File.Delete(targetPath);
+                ZipFile.CreateFromDirectory(path, targetPath);
+
+                Config config = new Config();
+                // 设置上传区域
+                config.Zone = Zone.ZONE_CN_South;
+                // 设置 http 或者 https 上传
+                config.UseHttps = true;
+                config.UseCdnDomains = true;
+                config.ChunkSize = ChunkUnit.U512K;
+                // 表单上传
+                FormUploader target = new FormUploader(config);
+                HttpResult result = target.UploadFile(targetPath, $"{watermarkId}.zip", token, null);
+                return new API<string> { success = result.Code == 200, message = new APISub { content = result.Text } } ;
             }
-            else return new API<bool?>() { success = false };
+            return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
         }
 
         public async Task<List<ZipedTemplate>> GetWatermarks(int start, int length, string desc = "countDesc")
         {
             try
             {
-                using(var client =  new HttpClient())
-                {
-                    var stream = await client.GetStreamAsync("http://cdn.thankful.top/JointWatermark_V1.8.0.0.zip");
-                    using (var ms = new MemoryStream())
-                    {
-                        stream.CopyTo(ms);
-                        ms.Seek(0, SeekOrigin.Begin);
-                        using (var archive = new ZipArchive(ms, ZipArchiveMode.Read))
-                        {
-                            foreach (var entry in archive.Entries)
-                            {
+                using HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={Global.CurrentUser.ID}&start={start}&length={length}&type={desc}");
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
 
-                            }
-                        }
+                if (responseObject != null && responseObject.success)
+                {
+                    var total = responseObject.data.Total;
+
+                    var data = (JArray)responseObject.data.Data;
+                    if (data == null) return [];
+                    List<ZipedTemplate> templates = new List<ZipedTemplate>();
+                    List<Task> tasks = new List<Task>();
+                    foreach (var item in data)
+                    {
+                        var t = new ZipedTemplate();
+                        t.WatermarkId = item?["ID"]?.ToString();
+                        t.Desc = item?["DESC"]?.ToString();
+                        t.Coins = Convert.ToInt32(item?["COINS"]?.ToString() ?? "0");
+                        t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
+                        templates.Add(t);
                     }
+
+                    return templates;
                 }
-                return new List<ZipedTemplate> ();
-
-                using (HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={Global.CurrentUser.ID}&start={start}&length={length}&type={desc}"))
+                else
                 {
-                    response.EnsureSuccessStatusCode();
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
-
-                    if (responseObject != null && responseObject.success)
-                    {
-                        var total = responseObject.data.Total;
-
-                        var fileResults = (JArray)responseObject.data.Files;
-                        List<ZipedTemplate> templates = new List<ZipedTemplate>();
-                        List<Task> tasks = new List<Task>();    
-                        foreach (var fileResult in fileResults)
-                        {
-                            var content = fileResult?["File"]?["FileContents"]?.ToString() ?? "";
-                            var fileContents = Convert.FromBase64String(content);
-                            var t = ExtractZip(fileContents);
-                            t.WatermarkId = fileResult?["File"]?["ID"]?.ToString();
-                            t.Desc = fileResult?["File"]?["DESC"]?.ToString();
-                            t.DownloadTimes = Convert.ToInt32(fileResult?["File"]?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
-                            templates.Add(t);
-                        }
-
-                        return templates;
-                    }
-                    else
-                    {
-                        return new List<ZipedTemplate>();
-                    }
+                    return new List<ZipedTemplate>();
                 }
             }
             catch (Exception ex)
             {
-                return new List<ZipedTemplate>();
+                return [];
             }
         }
-
-        ZipedTemplate ExtractZip(byte[] zipBytes)
+        
+        public async Task<ZipedTemplate> ExtractZip(string watermarkId)
         {
-            using (MemoryStream memoryStream = new MemoryStream(zipBytes))
+            using var client = new HttpClient();
+            var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
+            using MemoryStream ms = new MemoryStream();
+            stream.CopyTo(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+            ZipedTemplate t = new ZipedTemplate();
+            foreach (var entry in archive.Entries)
             {
-                using (ZipArchive archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+                if (entry.FullName.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
                 {
-                    ZipedTemplate t = new ZipedTemplate();
-                    foreach (var entry in archive.Entries)
-                    {
-                        if (entry.FullName.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
-                        {
-                            using (var entryStream = entry.Open())
-                            {
-                                using (StreamReader reader = new StreamReader(entryStream))
-                                {
-                                    string content = reader.ReadToEnd();
-                                    t.WMCanvas = Global.ReadConfig(content);
-                                    Console.WriteLine($"Content of {entry.FullName}: {content}");
-                                }
-                            }
-                        }
-                        else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
-                        {
-                            using var entryStream = entry.Open();
-                            SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
-                            t.Bitmap = sKBitmap;
-                        }
-                        else if(entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
-                        {
-                            using var entryStream = entry.Open();
-                            t.Fonts[entry.FullName] = entryStream;
-                        }
-                        else
-                        {
-                            using var entryStream = entry.Open();
-                            SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
-                            t.Images[entry.FullName] = sKBitmap;
-                        }
-                    }
-                    return t;
+                    using var entryStream = entry.Open();
+                    using StreamReader reader = new StreamReader(entryStream);
+                    string content = reader.ReadToEnd();
+                    t.WMCanvas = Global.ReadConfig(content);
+                    Console.WriteLine($"Content of {entry.FullName}: {content}");
+                }
+                else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var entryStream = entry.Open();
+                    SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
+                    t.Bitmap = sKBitmap;
+                }
+                else if (entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
+                {
+                    using var entryStream = entry.Open();
+                    t.Fonts[entry.FullName] = entryStream;
+                }
+                else
+                {
+                    using var entryStream = entry.Open();
+                    SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
+                    t.Images[entry.FullName] = sKBitmap;
                 }
             }
+            return t;
         }
 
 
@@ -231,6 +231,33 @@ namespace Watermark.Win.Models
             var pw = sb.ToString();
             return pw;
         }
+
+        public async Task<bool> Download(string watermarkId)
+        {
+            try
+            {
+                using var client = new HttpClient();
+                var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
+                if (!Directory.Exists(Global.TemplatesFolder))
+                {
+                    Directory.CreateDirectory(Global.TemplatesFolder);
+                }
+
+                var target = Global.TemplatesFolder + watermarkId;
+                if (!Directory.Exists(target))
+                {
+                    Directory.CreateDirectory(target);
+                }
+                //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
+                ZipFile.ExtractToDirectory(stream, target);
+                return true;
+            }
+            catch { return false; }
+            finally
+            {
+                _=Connections.HttpGetAsync<string>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
+            }
+        }
     }
 
     public class LoginModel
@@ -262,6 +289,7 @@ namespace Watermark.Win.Models
         public string Desc { get; set; }
         public string WatermarkId { get; set; }
         public int DownloadTimes { get; set; }
+        public int Coins { get; set; }
     }
 
     public class SysUser

@@ -94,6 +94,10 @@ namespace Watermark.Win.Models
 
     public class API<T>
     {
+        public API() 
+        {
+            message = new APISub();
+        }
         public int code { get; set; }
         public bool success { get; set; }
         public T data { get; set; }
