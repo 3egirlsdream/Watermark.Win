@@ -78,12 +78,12 @@ namespace Watermark.Win.Models
             };
             var targetImage = SKImage.Create(info);
             var targetBitmap = SKBitmap.FromImage(targetImage);
-            if(mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableGaussianBlur)
-            {
-                targetBitmap = GaussianBlur(targetBitmap, originalBitmap, mainCanvas.ImageProperties.GaussianDeep, (float)xs);
-            }
             SKCanvas targetCanvas = new SKCanvas(targetBitmap);
             targetCanvas.Clear(SKColor.Parse(mainCanvas.BackgroundColor));
+            if (mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableGaussianBlur)
+            {
+                GaussianBlur(targetBitmap, originalBitmap, mainCanvas.ImageProperties.GaussianDeep, (float)xs);
+            }
             SKPoint p1 = new SKPoint((float)border_l, (float)border_t);
             if (mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableShadow)
             {
@@ -129,10 +129,20 @@ namespace Watermark.Win.Models
 
             using var sk = SKImage.FromBitmap(targetBitmap);
             using var data = sk.Encode(SKEncodedImageFormat.Jpeg, 100);
-            //using var sm = File.OpenWrite("output.jpg");
-            //data.SaveTo(sm);
-            var bytes = data.ToArray();
+            if (!isPreview)
+            {
+                var output = AppDomain.CurrentDomain.BaseDirectory + "output";
+                if (!Directory.Exists(output))
+                {
+                    Directory.CreateDirectory(output);  
+                }
+                output += Path.DirectorySeparatorChar + Path.GetFileName(mainCanvas.Path);
+                using var sm = File.OpenWrite(output);
+                data.SaveTo(sm);
+                return "";
+            }
 
+            var bytes = data.ToArray();
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
@@ -210,9 +220,33 @@ namespace Watermark.Win.Models
                 else if (mText.IsBold) fontStyle = SKFontStyle.Bold;
                 else fontStyle = SKFontStyle.Normal;
 
-                var typeface_cp = SKTypeface.FromFamilyName(mText.FontFamily, fontStyle);
-
-
+                var families = SKFontManager.Default.FontFamilies;
+                SKTypeface tc;
+                string fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
+                if (ziped != null)
+                {
+                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out Stream stream))
+                    {
+                        tc = SKTypeface.FromStream(stream);
+                    }
+                    else
+                    {
+                        tc = SKTypeface.FromFamilyName(families.FirstOrDefault());
+                    }
+                }
+                else if(families.Any(c=> c == mText.FontFamily))
+                {
+                    tc = SKTypeface.FromFamilyName(mText.FontFamily);
+                }
+                else if (File.Exists(fontPath + mText.FontFamily))
+                {
+                    tc =  SKTypeface.FromFile(fontPath + mText.FontFamily);
+                }
+                else
+                {
+                    tc = SKTypeface.FromFamilyName(families.FirstOrDefault());
+                }
+                var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle);
                 var fontxs = Math.Min(hc, wc) / 156.0;
                 if (fontxs == 0) fontxs = 1;
 
@@ -525,22 +559,15 @@ namespace Watermark.Win.Models
             }
         }
 
-        private SKBitmap GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)
+        private void GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)
         {
             var width = bitmap.Width;
             var height = bitmap.Height;
-
-            var skSurface = SKSurface.Create(new SKImageInfo(width, height));
-            var skCanvas = skSurface.Canvas;
-
             var paint = new SKPaint();
             var imageFilter = SKImageFilter.CreateBlur(sigma * xs, sigma * xs);
             paint.ImageFilter = imageFilter;
-
-            skCanvas.DrawBitmap(original, new SKRect(0, 0, width, height), paint);
-
-            var data = skSurface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
-            return SKBitmap.Decode(data);
+            var can = new SKCanvas(bitmap);
+            can.DrawBitmap(original, new SKRect(0, 0, width, height), paint);
         }
 
     }

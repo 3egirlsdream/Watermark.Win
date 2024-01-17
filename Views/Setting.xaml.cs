@@ -152,7 +152,7 @@ namespace Watermark.Win.Views
 
         private void ListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if(sender is ListBox box)
+            if (sender is ListBox box)
             {
                 if (box.SelectedIndex == 0)
                 {

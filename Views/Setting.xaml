@@ -46,7 +46,7 @@
                 </Border.Clip>
                 <StackPanel>
                     <Label Content="选项" FontSize="12" Grid.Row="0" Panel.ZIndex="2" VerticalAlignment="Bottom" Margin="10 0" FontWeight="ExtraBold" Foreground="#acacac"/>
-                    <ListBox SelectedIndex="0" SelectionChanged="ListBox_SelectionChanged" HorizontalContentAlignment="Stretch">
+                    <ListBox SelectedIndex="0" SelectionChanged="ListBox_SelectionChanged" HorizontalContentAlignment="Stretch" BorderThickness="0">
                         <TextBlock Text="关于" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                         <TextBlock Text="字体" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                     </ListBox>
@@ -56,12 +56,12 @@
             <Button Height="30" Width="30"  HorizontalAlignment="Right"  Grid.ColumnSpan="2" Click="WindowMininizeClick" Panel.ZIndex="2" Content="×" Background="Transparent" BorderThickness="0">
             </Button>
 
-            <Border Grid.Column="1" Grid.RowSpan="2" >
+            <Border Grid.Column="1" Grid.RowSpan="2">
                 <Border.Clip>
                     <RectangleGeometry RadiusX="5" RadiusY="5"  
                                        Rect="0,0,580,480" />
                 </Border.Clip>
-                <TabControl VerticalContentAlignment="Top" Padding="20">
+                <TabControl VerticalContentAlignment="Top" Padding="20" BorderThickness="0">
                     <TabItem Width="0" x:Name="t1">
                         <Grid Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
@@ -80,17 +80,16 @@
                                     <TextBlock x:Name="version" Grid.Row="0" HorizontalAlignment="Center" FontSize="17" FontFamily="微软雅黑" Margin="0 0 0 10" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </StackPanel>
                                 <TextBlock x:Name="Latest" Text="你使用的是最新版本!" Foreground="Gray"/>
-
-                                <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" Margin="0 8" Height="35" Width="35"
-                                          Click="newVersionClick"
-                                          ToolTip="点击下载"
-                                          HorizontalAlignment="Left" >
-                                </Button>
-                                <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Cursor="Hand" />
+                                <Grid HorizontalAlignment="Stretch" Height="35" Margin="0 8">
+                                    <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Height="30" Width="100"  Click="newVersionClick" ToolTip="点击下载" Visibility="Collapsed" HorizontalAlignment="Left" Content="下载"/>
+                                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Cursor="Hand" Width="100" Height="30" HorizontalAlignment="Right"/>
+                                </Grid>
+                               
+                               
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                                 <TextBlock Text="自动更新" FontSize="17"/>
                                 <TextBlock Text="点击自动开始更新程序" Foreground="Gray" Margin="0 8"/>
-                                <Button Content="自动更新" Cursor="Hand" Click="Button_Click"/>
+                                <Button Content="自动更新" Cursor="Hand" Height="30" Click="Button_Click" Width="100" HorizontalAlignment="Right"/>
                                 <ProgressBar Value="{Binding DownLoadProgress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0 10" Height="10"/>
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                                 <TextBlock Text="更新日志" FontSize="17"/>
@@ -118,8 +117,8 @@
                                                 <ColumnDefinition Width="40"/>
                                             </Grid.ColumnDefinitions>
                                             <Label Grid.Column="0" Content="{Binding NAME, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Command="{Binding DataContext.CmdDownloadFont, RelativeSource={ RelativeSource AncestorType=Window}}" CommandParameter="{Binding ID}" Height="30" Width="30"
-                                                          IsEnabled="{Binding IsLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <Button Grid.Column="1" Command="{Binding DataContext.CmdDownloadFont, RelativeSource={ RelativeSource AncestorType=Window}}" CommandParameter="{Binding ID}" Height="30" Width="40"
+                                                          IsEnabled="{Binding IsLoading, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="下载"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -130,16 +129,14 @@
                             <Grid HorizontalAlignment="Stretch">
                                 <Label HorizontalAlignment="Left" Content="普通字体" FontSize="12" Foreground="Gray"/>
                                 <TextBox x:Name="normalText" Width="300" HorizontalAlignment="Right" Margin="50 0" IsReadOnly="True"/>
-                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right"   Command="{Binding CmdImportFont}" CommandParameter="normal">
-                                </Button>
+                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right"   Command="{Binding CmdImportFont}" CommandParameter="normal" Content="导入"/>
                             </Grid>
                             <Grid HorizontalAlignment="Stretch">
                                 <Label HorizontalAlignment="Left" Content="粗体" FontSize="12" Foreground="Gray"/>
                                 <TextBox x:Name="boldText" Width="300" Margin="50 0" HorizontalAlignment="Right" IsReadOnly="True"/>
-                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right" Command="{Binding CmdImportFont}" CommandParameter="bold">
-                                </Button>
+                                <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right" Command="{Binding CmdImportFont}" CommandParameter="bold" Content="导入"/>
                             </Grid>
-                            <Button x:Name="save" Content="保存"  Cursor="Hand" HorizontalAlignment="Left" Command="{Binding CmdSaveFont}"/>
+                            <Button x:Name="save" Content="保存"  Cursor="Hand" Height="30" Width="100" HorizontalAlignment="Left" Command="{Binding CmdSaveFont}"/>
                             <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                         </StackPanel>
 

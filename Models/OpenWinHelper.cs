@@ -18,5 +18,10 @@ namespace Watermark.Win.Models
 
             SynchronizationContext.Current!.Post(_ => { ExecuteWithObject(action); }, null);
         }
+
+        public static void OpenFolder(Action action) 
+        { 
+            action?.Invoke();
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿@using Watermark.Win.BlazorPages
+﻿@using System.IO
+@using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Newtonsoft.Json
 @inject ISnackbar Snackbar
@@ -21,16 +22,16 @@
         </MudToolBar>
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
-        <div style="width:calc(100% - 400px);height:100%;position:fixed;">
+        <div style="width:calc(100% - 500px);height:100%;position:fixed;">
             <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
                 @if (!string.IsNullOrEmpty(url))
                 {
-                    <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width:100%;" />
+                    <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width: 100%; height: 100%; padding-left: 5%; padding-right: 5%; padding-top: 100px; padding-bottom: 100px;" />
                 }
 
             </div>
         </div>
-        <div style="width:400px;height:100%;margin-left:calc(100% - 400px);padding:10px;">
+        <div style="width:500px;height:100%;margin-left:calc(100% - 500px);padding:10px;">
             <MudExpansionPanels DisableBorders="true" Elevation="0">
                 <MudExpansionPanel Text="画布">
                     <MudStack Row>
@@ -240,7 +241,7 @@
                                                                                  ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
                                                         </MudButtonGroup>
                                                         <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
-                                                            <div style="width:calc(100% - 80px);float:left;">
+                                                            <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                                 @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                             </div>
                                                             <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
@@ -248,7 +249,25 @@
 
 
                                                         <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-                                                        <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                                        <MudStack Class="mt-5">
+                                                            <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                            <MudStack Row>
+                                                             <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                                 @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
+                                                                    {
+                                                                        <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
+                                                                    }
+                                                                </MudMenu>
+                                                                <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                                    @foreach (var font in Fonts)
+                                                                    {
+                                                                        <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
+                                                                    }
+                                                                </MudMenu>
+                                                                <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+                                                            </MudStack>
+
+                                                        </MudStack>
                                                     }
                                                 </MudExpansionPanel>
                                             }
@@ -313,14 +332,32 @@
                                             </MudButtonGroup>
 
                                             <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
-                                                <div style="width:calc(100% - 80px);float:left;">
+                                                <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                     @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                 </div>
                                                 <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
                                             </div>
 
                                             <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-                                            <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                            <MudStack Class="mt-5">
+                                                <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                <MudStack Row>
+                                                 <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                     @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
+                                                        {
+                                                            <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
+                                                        }
+                                                    </MudMenu>
+                                                    <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                        @foreach (var font in Fonts)
+                                                        {
+                                                            <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
+                                                        }
+                                                    </MudMenu>
+                                                    <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+                                                </MudStack>
+
+                                            </MudStack>
                                         }
                                     </MudExpansionPanel>
                                 }
@@ -370,6 +407,7 @@
     string url = "";
     string defaultImage = "";
     bool SrcLoading = false;
+    List<string> Fonts = new List<string>();
     Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
 
     protected override void OnInitialized()
@@ -392,6 +430,7 @@
                 };
             });
         });
+        InitLocalFonts();
         OnButtonClicked();
     }
 
@@ -491,6 +530,68 @@
     void SelectDefaultImage()
     {
         Global.SelectDefaultImage(canvas.ID, ImagesBase64);
+    }
+
+    void InitLocalFonts()
+    {
+        Fonts = new List<string>();
+        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
+        if (Directory.Exists(fontPath))
+        {
+            var files = Directory.GetFiles(fontPath);
+            foreach (var file in files)
+            {
+                Fonts.Add(Path.GetFileName(file));
+            }
+
+        }
+    }
+
+
+    void ImportLocalFont()
+    {
+        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
+        Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+        dialog.DefaultExt = ".ttf";  // 设置默认类型
+        dialog.Multiselect = false;                             // 设置可选格式
+        dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
+        // 打开选择框选择
+        Nullable<bool> result = dialog.ShowDialog();
+        if (result == true)
+        {
+            var f = dialog.FileName;
+
+            var file = new FileInfo(f);
+            if (file.Exists)
+            {
+                try
+                {
+                    file.CopyTo(fontPath, true);
+                }
+                catch { }
+                finally
+                {
+                    InitLocalFonts();
+                }
+            }
+
+        }
+    }
+
+    void SelectLocalFont(WMText mText, string fontName)
+    {
+        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar + fontName;
+        var targetPath = Global.TemplatesFolder + CurrentCanvas.ID;
+        var file = new FileInfo(fontName);
+        if (file.Exists)
+        {
+            try
+            {
+                file.CopyTo(targetPath, true);
+                mText.FontFamily = fontName;
+            }
+            catch { }
+        }
     }
 
 }

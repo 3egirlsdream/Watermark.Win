@@ -73,6 +73,24 @@ namespace Watermark.Win.Models
         {
             try
             {
+                using(var client =  new HttpClient())
+                {
+                    var stream = await client.GetStreamAsync("http://cdn.thankful.top/JointWatermark_V1.8.0.0.zip");
+                    using (var ms = new MemoryStream())
+                    {
+                        stream.CopyTo(ms);
+                        ms.Seek(0, SeekOrigin.Begin);
+                        using (var archive = new ZipArchive(ms, ZipArchiveMode.Read))
+                        {
+                            foreach (var entry in archive.Entries)
+                            {
+
+                            }
+                        }
+                    }
+                }
+                return new List<ZipedTemplate> ();
+
                 using (HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={Global.CurrentUser.ID}&start={start}&length={length}&type={desc}"))
                 {
                     response.EnsureSuccessStatusCode();
@@ -137,6 +155,11 @@ namespace Watermark.Win.Models
                             using var entryStream = entry.Open();
                             SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
                             t.Bitmap = sKBitmap;
+                        }
+                        else if(entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
+                        {
+                            using var entryStream = entry.Open();
+                            t.Fonts[entry.FullName] = entryStream;
                         }
                         else
                         {
@@ -229,9 +252,11 @@ namespace Watermark.Win.Models
         public ZipedTemplate()
         {
             Images = new Dictionary<string, SKBitmap>();
+            Fonts = new Dictionary<string, Stream>();
         }
         public WMCanvas WMCanvas { get; set; }
         public Dictionary<string, SKBitmap> Images { get; set; }
+        public Dictionary<string, Stream> Fonts { get; set; }
         public SKBitmap Bitmap { get; set; }
         public string Src { get; set; }
         public string Desc { get; set; }

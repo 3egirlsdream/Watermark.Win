@@ -14,6 +14,7 @@
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="Export">导出全部</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
             </MudMenu>
@@ -52,9 +53,9 @@
 
                         <div style="float:left;">
                             <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
-                                <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
-                            </div>
+                            <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
                         </div>
+                    </div>
                     <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">@DateTime.Now</MudText>
@@ -66,9 +67,9 @@
                     <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
                     <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
                     <MudStack Row Style="margin-left:120px;" Class="mt-5">
-                         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-                         <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
-                     </MudStack>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
+                        <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
+                    </MudStack>
                 }
             </MudPopover>
         </MudToolBar>
@@ -87,8 +88,8 @@
                                     <Content>
                                         <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
                                         <MudText Class="mx-5">@pair.Canvas.Name</MudText>
-                                        </Content>
-                                    </MudTreeViewItem>
+                                    </Content>
+                                </MudTreeViewItem>
                             }
                         </MudTreeViewItem>
                     </MudTreeView>
@@ -143,7 +144,7 @@
         <MudForm>
             <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
             <MudStack Row Class="mt-5">
-                 @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
+                @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
                 {
                     <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                 }
@@ -222,12 +223,12 @@
             if (login.success)
             {
                 Global.CurrentUser = new LoginChildModel
-                    {
-                        ID = login.data.data.ID,
-                        IMG = login.data.data.IMG,
-                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-                        USER_NAME = login.data.data.USER_NAME
-                    };
+                {
+                    ID = login.data.data.ID,
+                    IMG = login.data.data.IMG,
+                    DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+                    USER_NAME = login.data.data.USER_NAME
+                };
                 IsLoginIn = true;
                 await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
                 StateHasChanged();
@@ -256,11 +257,11 @@
     {
         // 实例化一个文件选择对象
         Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
+        {
+            DefaultExt = ".png",  // 设置默认类型
+            Multiselect = true,                             // 设置可选格式
+            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+        };
         // 打开选择框选择
         Nullable<bool> result = dialog.ShowDialog();
         if (result == true)
@@ -292,12 +293,12 @@
                     return dic.First().Value;
                 });
                 Images.Add(new TemplateList
-                    {
-                        Canvas = canvas,
-                        Src = await src,
-                        ID = canvas.ID,
-                        Path = file
-                    });
+                {
+                    Canvas = canvas,
+                    Src = await src,
+                    ID = canvas.ID,
+                    Path = file
+                });
                 var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
                 MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
                 MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
@@ -315,16 +316,11 @@
 
     async void ClickImage(TemplateList image)
     {
-        CurrentImage = new TemplateList
-            {
-                ID = image.ID,
-                Canvas = image.Canvas,
-                Path = image.Path
-            };
+        CurrentImage = image;
         SrcLoading = true;
         var t = Task.Run(() =>
         {
-            CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
+            //CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
             WatermarkHelper helper = new WatermarkHelper();
             CurrentImage.Canvas.Path = CurrentImage.Path;
             return helper.Generation(CurrentImage.Canvas, null);
@@ -390,7 +386,7 @@
                         MainLoading.Value = cot * 100.0 / directories.Length;
                         MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
                         App.Current.Dispatcher.Invoke(() => StateHasChanged());
-                        
+
                         return src;
                     });
                     tasks.Add(t);
@@ -448,5 +444,31 @@
             IsLoginIn = true;
             StateHasChanged();
         }
+    }
+
+    async void Export()
+    {
+        var helper = new WatermarkHelper();
+        MainLoading.Show = true;
+        foreach (var item in Images)
+        {
+            var idx = Images.IndexOf(item) + 1;
+            MainLoading.Message = $"正在导出图片，一共{Images.Count}张，目前第{idx}张";
+            MainLoading.Value = idx * 100.0 / Images.Count;
+            //item.Canvas.Path = item.Path;
+            await helper.GenerationAsync(item.Canvas, null, false);
+        }
+        MainLoading.Value = 100;
+        await Task.Delay(200);
+        MainLoading.Show = false;
+        StateHasChanged();
+        var action = new Action(() =>
+        {
+            var path = AppDomain.CurrentDomain.BaseDirectory + "output";
+            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        });
+        OpenWinHelper.OpenFolder(action);
+
     }
 }
