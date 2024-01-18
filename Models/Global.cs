@@ -38,21 +38,21 @@ namespace Watermark.Win.Models
             {
                 var ls = Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvasSerialize>(json);
                 if(ls == null) return new WMCanvas();
-                var newCanvas = new WMCanvas()
+                var newCanvas = new WMCanvas
                 {
                     ID = ls.ID,
                     Name = ls.Name,
                     BorderThickness = ls.BorderThickness,
                     BackgroundColor =  ls.BackgroundColor,
                     ImageProperties = ls.ImageProperties,
-                    EnableMarginXS = ls.EnableMarginXS
+                    EnableMarginXS = ls.EnableMarginXS,
+                    //一级容器
+                    Children = new List<WMContainer>(ls.Containers.Where(c => c.PNode.PID == "0"))
                 };
-                //一级容器
-                newCanvas.Children = new List<WMContainer>(ls.Containers.Where(c => c.PNode.PID == "0"));
                 //每个容器下的二级节点
                 foreach (var container in newCanvas.Children)
                 {
-                    if (container.Controls == null) container.Controls = new List<IWMControl>();
+                    container.Controls ??= [];
                     container.Controls.AddRange(ls.Lines.Where(c => c.PNode.PID == container.ID));
                     container.Controls.AddRange(ls.Logos.Where(c => c.PNode.PID == container.ID));
                     container.Controls.AddRange(ls.Texts.Where(c => c.PNode.PID == container.ID));
@@ -60,7 +60,7 @@ namespace Watermark.Win.Models
                     var secondContainer = ls.Containers.Where(c => c.PNode.PID == container.ID);
                     foreach (var ctrl in secondContainer)
                     {
-                        if (ctrl.Controls == null) ctrl.Controls = new List<IWMControl>();
+                        ctrl.Controls ??= [];
                         ctrl.Controls.AddRange(ls.Lines.Where(c => c.PNode.PID == ctrl.ID));
                         ctrl.Controls.AddRange(ls.Logos.Where(c => c.PNode.PID == ctrl.ID));
                         ctrl.Controls.AddRange(ls.Texts.Where(c => c.PNode.PID == ctrl.ID));
@@ -86,11 +86,11 @@ namespace Watermark.Win.Models
                 MissingMemberHandling = MissingMemberHandling.Ignore // 忽略缺少的字段
             };
             var nc = JsonConvert.DeserializeObject<WMCanvasSerialize>(JsonConvert.SerializeObject(canvas), settings);
-            if(nc == null) nc = new WMCanvasSerialize();
-            nc.Containers = new List<WMContainer>();
-            nc.Lines = new List<WMLine>();
-            nc.Logos = new List<WMLogo>();
-            nc.Texts = new List<WMText>();
+            nc ??= new WMCanvasSerialize();
+            nc.Containers = [];
+            nc.Lines = [];
+            nc.Logos = [];
+            nc.Texts = [];
 
 
             for (var i = 0; i < canvas.Children.Count; i++)
@@ -114,15 +114,13 @@ namespace Watermark.Win.Models
                             else if (child is WMLogo logo) nc.Logos.Add(logo);
                             else if (child is WMText text) nc.Texts.Add(text);
                         }
-                        var cld_copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(mContainer));
-                        if (cld_copy is null) cld_copy = new WMContainer();
+                        var cld_copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(mContainer))??new WMContainer();
                         cld_copy.Controls = [];
                         nc.Containers.Add(cld_copy);
                     }
                 }
-                var copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(ct));
-                if(copy is null) copy = new WMContainer();
-                copy.Controls = new List<IWMControl>();
+                var copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(ct))??new WMContainer();
+                copy.Controls = [];
                 nc.Containers.Add(copy);
             }
 

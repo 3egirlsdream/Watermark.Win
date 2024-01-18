@@ -1,7 +1,8 @@
 ﻿@using System.IO
 @using Watermark.Win.BlazorPages
-@using Watermark.Win.Models
+@using Watermark.Core.Models
 @using Newtonsoft.Json
+@using Watermark.Win.Models
 @inject ISnackbar Snackbar
 @inject WMCanvas CurrentCanvas
 <MudThemeProvider />
@@ -503,95 +504,27 @@
 
     void SelectImage(WMLogo mLogo)
     {
-        Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = false,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
-        // 打开选择框选择
-        Nullable<bool> result = dialog.ShowDialog();
-        if (result == true)
-        {
-            var p = dialog.FileName;
-            var destFolder = Global.TemplatesFolder + canvas.ID;
-            if (!System.IO.Directory.Exists(destFolder))
-            {
-                System.IO.Directory.CreateDirectory(destFolder);
-            }
-
-            var name = p.Substring(p.LastIndexOf('\\') + 1);
-            var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
-            System.IO.File.Copy(p, destFile, true);
-            mLogo.Path = name;
-            Global.ImageFile2Base64(ImagesBase64, destFile, mLogo.ID);
-        }
+        ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
     }
     void SelectDefaultImage()
     {
         Global.SelectDefaultImage(canvas.ID, ImagesBase64);
     }
 
-    void InitLocalFonts()
-    {
-        Fonts = new List<string>();
-        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
-        if (Directory.Exists(fontPath))
-        {
-            var files = Directory.GetFiles(fontPath);
-            foreach (var file in files)
-            {
-                Fonts.Add(Path.GetFileName(file));
-            }
-
-        }
-    }
-
 
     void ImportLocalFont()
     {
-        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
-        Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
-        dialog.DefaultExt = ".ttf";  // 设置默认类型
-        dialog.Multiselect = false;                             // 设置可选格式
-        dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
-        // 打开选择框选择
-        Nullable<bool> result = dialog.ShowDialog();
-        if (result == true)
-        {
-            var f = dialog.FileName;
+        ClientInstance.ImportLocalFontAction?.Invoke(Fonts);
+    }
 
-            var file = new FileInfo(f);
-            if (file.Exists)
-            {
-                try
-                {
-                    file.CopyTo(fontPath, true);
-                }
-                catch { }
-                finally
-                {
-                    InitLocalFonts();
-                }
-            }
-
-        }
+    void InitLocalFonts()
+    {
+        ClientInstance.InitLocalFontsAction?.Invoke(Fonts);
     }
 
     void SelectLocalFont(WMText mText, string fontName)
     {
-        var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar + fontName;
-        var targetPath = Global.TemplatesFolder + CurrentCanvas.ID;
-        var file = new FileInfo(fontName);
-        if (file.Exists)
-        {
-            try
-            {
-                file.CopyTo(targetPath, true);
-                mText.FontFamily = fontName;
-            }
-            catch { }
-        }
+        ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
     }
 
 }
