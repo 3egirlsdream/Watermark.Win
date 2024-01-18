@@ -29,11 +29,11 @@
                 {
                     <MudPaper Elevation="0" Class="pa-2">
                         <MudStack Row>
-                             <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
-                             <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
-                             <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
-                        </MudStack>
-                    </MudPaper>
+                         <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
+                         <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
+                         <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
+                     </MudStack>
+                 </MudPaper>
                 }
             </MudStack>
         </MudPaper>
@@ -41,7 +41,11 @@
             <MudChipSet MultiSelection="true" Filter="true">
                 @foreach (var exif in DefaultExifLists)
                 {
-                    <MudChip Label="true" Text="@(exif.Key + $"({exif.Value})")" Default="@exif.IsChecked" OnClick="(()=> Click(exif))"/>
+                    @if (ExifHelper.GetName.TryGetValue(exif.Key, out string v))
+                    {
+                        <MudChip Label="true" Text="@(v + $"({exif.Value})")" Default="@exif.IsChecked" OnClick="(()=> Click(exif))" />
+                    }
+
                 }
             </MudChipSet>
         </MudPaper>
@@ -58,30 +62,36 @@
 
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
-    string ex = "{\"ImageDescription\":\" \",\"Make\":\"SONY\",\"Model\":\"ILCE-7M2\",\"XResolution\":\"300\",\"YResolution\":\"300\",\"ResolutionUnit\":\"2\",\"Software\":\"Capture One Express (for Sony) 12.1.1 Windows\",\"ExposureTime\":\"0.0125\",\"FNumber\":\"8\",\"ExposureProgram\":\"3\",\"ISOSpeedRatings\":\"125\",\"PhotographicSensitivity\":\"125\",\"SensitivityType\":\"2\",\"RecommendedExposureIndex\":\"125\",\"ExifVersion\":\"System.Byte[]\",\"DateTimeOriginal\":\"2020:06:05 19:12:08\",\"DateTimeDigitized\":\"2020:06:05 19:12:08\",\"ShutterSpeedValue\":\"6.321928\",\"ApertureValue\":\"6\",\"BrightnessValue\":\"2.5953125\",\"ExposureBiasValue\":\"0.3\",\"MaxApertureValue\":\"4\",\"MeteringMode\":\"3\",\"LightSource\":\"0\",\"Flash\":\"16\",\"FocalLength\":\"63\",\"PixelXDimension\":\"3812\",\"PixelYDimension\":\"5718\",\"FileSource\":\"3\",\"SceneType\":\"1\",\"CustomRendered\":\"0\",\"ExposureMode\":\"0\",\"WhiteBalance\":\"0\",\"DigitalZoomRatio\":\"1\",\"FocalLengthIn35mmFilm\":\"63\",\"SceneCaptureType\":\"0\",\"Contrast\":\"2\",\"Saturation\":\"2\",\"Sharpness\":\"2\",\"LensSpecification\":\"System.Double[]\",\"LensModel\":\"Sony FE 24-105mm F4 G OSS (SEL24105G)\"}";
     void Submit()
     {
         //var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
         MudDialog.Close(DialogResult.Ok(Exifs));
     }
     [Parameter]
-    public List<ExifConfigInfo> Exifs { get; set; }
+    public List<ExifConfigInfo> Exifs { get; set; } = [];
     //"F##4##suffix;"
 
     void Click(DefaultExifs exif)
     {
         exif.IsChecked = !exif.IsChecked;
-        Exifs = new List<ExifConfigInfo>();
-        foreach (var ls in DefaultExifLists.Where(c => c.IsChecked))
-        {
-            ExifConfigInfo i = new ExifConfigInfo
+        var i = new ExifConfigInfo
             {
                 Prefix = "",
                 Suffix = "",
-                Key = ls.Key,
-                Value = ls.Value
+                Key = exif.Key,
+                Value = exif.Value
             };
+        if (exif.IsChecked)
+        {
             Exifs.Add(i);
+        }
+        else
+        {
+            var e = Exifs.FirstOrDefault(c => c.Key == exif.Key);
+            if (e != null)
+            {
+                Exifs.Remove(e);
+            }
         }
     }
 
@@ -99,15 +109,14 @@
     protected override void OnInitialized()
     {
         DefaultExifLists = new List<DefaultExifs>();
-        var dic = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(ex);
-        foreach(var pair in dic)
+        foreach (var pair in ExifHelper.DefaultMeta)
         {
             var de = new DefaultExifs
-            {
-                IsChecked = false,
-                Key = pair.Key,
-                Value = pair.Value
-            };
+                {
+                    IsChecked = false,
+                    Key = pair.Key,
+                    Value = pair.Value
+                };
             if (Exifs != null && Exifs.Any(c => c.Key == pair.Key)) de.IsChecked = true;
             DefaultExifLists.Add(de);
         }

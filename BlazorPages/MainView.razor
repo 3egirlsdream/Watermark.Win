@@ -332,7 +332,6 @@
         SrcLoading = true;
         var t = Task.Run(() =>
         {
-            //CurrentImage.Canvas = Global.ReadConfig(Global.CanvasSerialize(image.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject()); ;
             WatermarkHelper helper = new WatermarkHelper();
             CurrentImage.Canvas.Path = CurrentImage.Path;
             return helper.Generation(CurrentImage.Canvas, null);
@@ -424,7 +423,8 @@
         SrcLoading = true;
         var t = Task.Run(() =>
         {
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));// Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvas>(Newtonsoft.Json.JsonConvert.SerializeObject());
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+            cvs.Exif = CurrentImage.Canvas.Exif;
             CurrentImage.Canvas = cvs;
             WatermarkHelper helper = new WatermarkHelper();
             cvs.Path = CurrentImage.Path;
