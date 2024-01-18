@@ -253,6 +253,21 @@ namespace Watermark.Win.Models
             return Tuple.Create(string.Empty, string.Empty);
         }
 
+        public static dynamic ReadSYS()
+        {
+            var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}qiniu.txt";
+            if (!File.Exists(path)) return Tuple.Create(string.Empty, string.Empty);
+            using var fs = new FileStream(path, FileMode.Open);
+            using var sr = new StreamReader(fs);
+            var content = sr.ReadToEnd();
+            if (!string.IsNullOrEmpty(content))
+            {
+                var result = JsonConvert.DeserializeObject<dynamic>(content);
+                return result;
+            }
+            return new { };
+        }
+
         public static Task<Tuple<string, string>> ReadLocalAsync()
         {
             return Task.Run(() => ReadLocal());

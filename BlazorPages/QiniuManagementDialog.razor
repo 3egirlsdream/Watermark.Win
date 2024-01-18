@@ -1,0 +1,136 @@
+﻿@using Qiniu.Http
+@using Qiniu.Storage
+@using Qiniu.Util
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Options="DialogOptions" Style="min-width:50%;min-height:50%;width:80%; height:630px;overflow-y:hidden">
+    <DialogContent>
+        <MudTable Items="@rows" FixedHeader="true" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<ListItem,bool>(FilterFunc1)" Height="@("400px")">
+            <ToolBarContent>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>全选</MudTh>
+                <MudTh>名称</MudTh>
+                <MudTh>MimeType</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nr"><MudCheckBox @bind-Value="dic[context.Key]"/></MudTd>
+                    <MudTd DataLabel="名称">@context.Key</MudTd>
+                    <MudTd DataLabel="MimeType">@context.MimeType</MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </DialogContent>
+        <DialogActions>
+            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="Delete">删除</MudButton>
+        </DialogActions>
+</MudDialog>
+
+
+
+
+    @code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+    string AccessKey = "", SecretKey = "", Bucket = "oomusic";
+    string searchString1 = "";
+    List<ListItem> rows = [];
+    Dictionary<string, bool> dic = new Dictionary<string, bool>();
+
+    protected override Task OnInitializedAsync()
+    {
+        var result = Global.ReadSYS();
+        if(result != null)
+        {
+            AccessKey = Convert.ToString(result?.AccessKey ?? "");
+            SecretKey = Convert.ToString(result?.SecretKey ?? "");
+        }
+        Init();
+        return Task.CompletedTask;
+    }
+
+    void Init()
+    {
+        Config config = new Config();
+        config.Zone = Zone.ZONE_CN_South;
+        Mac mac = new Mac(AccessKey, SecretKey);
+        BucketManager bucketManager = new BucketManager(mac, config);
+        // 指定前缀，只有资源名匹配该前缀的资源会被列出
+        string prefix = "";
+        // 指定目录分隔符，列出所有公共前缀（模拟列出目录效果）
+        string delimiter = "";
+        // 本次列举的条目数，范围为1-1000
+        int limit = 1000;
+        // 上一次列举返回的位置标记，作为本次列举的起点信息
+        string marker = "";
+        ListResult listRet = bucketManager.ListFiles(Bucket, prefix, marker, limit, delimiter);
+        if (listRet.Code == (int)HttpCode.OK)
+        {
+            rows = listRet.Result.Items;
+            foreach (var item in rows)
+            {
+                dic[item.Key] = false;
+            }
+        }
+    }
+
+    void Delete()
+    {
+        Severity severity = Severity.Success;
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+        Config config = new Config();
+        config.Zone = Zone.ZONE_CN_South;
+        Mac mac = new Mac(AccessKey, SecretKey);
+        BucketManager bucketManager = new BucketManager(mac, config);
+
+        List<string> ops = new List<string>();
+        var keys = dic.Where(c => c.Value).Select(c => c.Key).ToList();
+        foreach (string key in keys)
+        {
+            string op = bucketManager.DeleteOp(Bucket, key);
+            ops.Add(op);
+        }
+        BatchResult ret = bucketManager.Batch(ops);
+        if (ret.Code / 100 != 2)
+        {
+            Console.WriteLine("batch error: " + ret.ToString());
+        }
+        foreach (BatchInfo info in ret.Result)
+        {
+            if (info.Code == (int)HttpCode.OK)
+            {
+                Snackbar.Add("delete success", severity, config =>
+                {
+                    config.ShowCloseIcon = false;
+                });
+            }
+            else
+            {
+                Snackbar.Add(info.Data.Error, severity, config =>
+                {
+                    config.ShowCloseIcon = false;
+                });
+            }
+        }
+        Init();
+    }
+    private bool FilterFunc1(ListItem element) => FilterFunc(element, searchString1);
+    private bool FilterFunc(ListItem element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Key.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.MimeType.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+}
