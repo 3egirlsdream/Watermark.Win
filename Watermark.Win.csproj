@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ExifLib" Version="1.7.0" />
+    <PackageReference Include="ExifLib.Standard" Version="1.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.3" />
     <PackageReference Include="MudBlazor" Version="6.12.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
