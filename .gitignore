@@ -9,3 +9,6 @@
 /bin/Release/net8.0-windows
 /Watermark.Win.csproj.user
 /Properties/PublishProfiles/FolderProfile.pubxml.user
+/Watermark.Win/bin
+/Watermark.Win/obj
+/Watermark.Win/Properties/PublishProfiles
