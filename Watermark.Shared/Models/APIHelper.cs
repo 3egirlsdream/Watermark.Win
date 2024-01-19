@@ -124,7 +124,7 @@ namespace Watermark.Win.Models
         public async Task<ZipedTemplate> ExtractZip(string watermarkId)
         {
             using var client = new HttpClient();
-            var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
+            var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
             using MemoryStream ms = new MemoryStream();
             stream.CopyTo(ms);
             ms.Seek(0, SeekOrigin.Begin);

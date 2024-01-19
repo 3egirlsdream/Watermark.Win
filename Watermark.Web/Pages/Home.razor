@@ -1,7 +1,71 @@
 ﻿@page "/"
+@using MudBlazor
+@using SkiaSharp
+@using Watermark.Win.Models
 
 <PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
+@if (!string.IsNullOrEmpty(src))
+{
+    <MudImage Src="@src" Width="200" ObjectFit="ObjectFit.Contain"/>
+}
 
 Welcome to your new app.
+<MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadFiles" Accept=".png, .jpg">
+                        <ButtonTemplate>
+                            <MudButton HtmlTag="label"
+                                       Variant="Variant.Filled"
+                                       Color="MudBlazor.Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                                       for="@context.Id">
+                                选择照片
+                            </MudButton>
+                        </ButtonTemplate>
+                    </MudFileUpload>
+<MudButton Variant="Variant.Filled" OnClick="Click">点击</MudButton>
+@code
+{
+    string src = "";
+    WMCanvas canvas;
+    private async void UploadFiles(IReadOnlyList<IBrowserFile> files)
+    {
+
+        foreach (var file in files)
+        {
+            try
+            {
+                MemoryStream ms = new MemoryStream();
+                await file.OpenReadStream(100000000).CopyToAsync(ms);
+                canvas = new WMCanvas();
+                var bitmap = SKBitmap.Decode(ms.ToArray());
+                WatermarkHelper helper = new WatermarkHelper();
+                var ziped = new ZipedTemplate
+                    {
+                        WatermarkId = canvas.ID,
+                        WMCanvas = canvas,
+                        Bitmap = bitmap
+                    };
+                src = helper.Generation(canvas, ziped, true);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        //TODO upload the files to the server
+    }
+
+    async void Click()
+    {
+        APIHelper helper = new APIHelper();
+        var ws = await helper.GetWatermarks(0, 10);
+        if(ws != null && ws.Count > 0)
+        {
+            var result = await helper.ExtractZip(ws[0].WatermarkId);
+            var wh = new WatermarkHelper();
+            src = wh.Generation(result.WMCanvas, result, true);
+            StateHasChanged();
+        } 
+    }
+
+}
