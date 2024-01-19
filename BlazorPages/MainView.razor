@@ -265,65 +265,69 @@
     }
 
     List<TemplateList> Images = new List<TemplateList>();
-    async void SelectPictureClick()
+    void SelectPictureClick()
     {
-        // 实例化一个文件选择对象
-        Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
-        // 打开选择框选择
-        Nullable<bool> result = dialog.ShowDialog();
-        if (result == true)
+        var action = new Action(async () =>
         {
-            MainLoading.Show = true;
-            Images = new List<TemplateList>();
-            MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
-            MainLoading.Value = 0;
-            if (!Directory.Exists(Global.ThumbnailFolder))
-            {
-                Directory.CreateDirectory(Global.ThumbnailFolder);
-            }
-            foreach (var file in dialog.FileNames)
-            {
-                Dictionary<string, string> dic = new Dictionary<string, string>();
-                WMCanvas canvas = new WMCanvas();
-                canvas.Path = file;
-                canvas.Exif = await ExifHelper.ReadImageAsync(file);
-                await Task.Run(() =>
+            // 实例化一个文件选择对象
+            Microsoft.Win32.OpenFileDialog dialog = new()
                 {
-                    var thumbnail = Global.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
-                    var bitmap = SkiaSharp.SKBitmap.Decode(file);
-                    return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
-                });
-
-                var src = Task.Run(() =>
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = true,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                MainLoading.Show = true;
+                Images = new List<TemplateList>();
+                MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
+                MainLoading.Value = 0;
+                if (!Directory.Exists(Global.ThumbnailFolder))
                 {
-                    Global.ImageFile2Base64(dic, file, canvas.ID);
-                    return dic.First().Value;
-                });
-                Images.Add(new TemplateList
+                    Directory.CreateDirectory(Global.ThumbnailFolder);
+                }
+                foreach (var file in dialog.FileNames)
+                {
+                    Dictionary<string, string> dic = new Dictionary<string, string>();
+                    WMCanvas canvas = new WMCanvas();
+                    canvas.Path = file;
+                    canvas.Exif = await ExifHelper.ReadImageAsync(file);
+                    await Task.Run(() =>
                     {
-                        Canvas = canvas,
-                        Src = await src,
-                        ID = canvas.ID,
-                        Path = file
+                        var thumbnail = Global.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
+                        var bitmap = SkiaSharp.SKBitmap.Decode(file);
+                        return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
                     });
-                var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
-                MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
-                MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
+
+                    var src = Task.Run(() =>
+                    {
+                        Global.ImageFile2Base64(dic, file, canvas.ID);
+                        return dic.First().Value;
+                    });
+                    Images.Add(new TemplateList
+                        {
+                            Canvas = canvas,
+                            Src = await src,
+                            ID = canvas.ID,
+                            Path = file
+                        });
+                    var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
+                    MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
+                    MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
+                    StateHasChanged();
+                }
+
+
+                MainLoading.Message = $"导入完成";
+                MainLoading.Value = 100;
+                await Task.Delay(200);
+                MainLoading.Show = false;
                 StateHasChanged();
             }
-
-
-            MainLoading.Message = $"导入完成";
-            MainLoading.Value = 100;
-            await Task.Delay(200);
-            MainLoading.Show = false;
-            StateHasChanged();
-        }
+        });
+        OpenWinHelper.Open(action);
     }
 
     async void ClickImage(TemplateList image)

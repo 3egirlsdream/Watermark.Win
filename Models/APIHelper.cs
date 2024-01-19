@@ -240,13 +240,11 @@ namespace Watermark.Win.Models
                 }
                 //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
                 ZipFile.ExtractToDirectory(stream, target);
+
+                await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
                 return true;
             }
             catch { return false; }
-            finally
-            {
-                _=Connections.HttpGetAsync<string>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
-            }
         }
     }
 

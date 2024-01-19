@@ -78,13 +78,15 @@ namespace Watermark.Win.Models
             };
             var targetImage = SKImage.Create(info);
             var targetBitmap = SKBitmap.FromImage(targetImage);
-            SKCanvas targetCanvas = new SKCanvas(targetBitmap);
-            targetCanvas.Clear(SKColor.Parse(mainCanvas.BackgroundColor));
+            var targetCanvas = new SKCanvas(targetBitmap);
+            mainCanvas.BackgroundColor ??= "#FFF";
+            var bkColor = mainCanvas.BackgroundColor.Length > 7 ? mainCanvas.BackgroundColor[..7] : mainCanvas.BackgroundColor;
+            targetCanvas.Clear(SKColor.Parse(bkColor));
             if (mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableGaussianBlur)
             {
                 GaussianBlur(targetBitmap, originalBitmap, mainCanvas.ImageProperties.GaussianDeep, (float)xs);
             }
-            SKPoint p1 = new SKPoint((float)border_l, (float)border_t);
+            SKPoint p1 = new((float)border_l, (float)border_t);
             if (mainCanvas.ImageProperties != null && mainCanvas.ImageProperties.EnableShadow)
             {
                 DrawShadow(targetCanvas, p1, originalBitmap.Width, originalBitmap.Height, xs, mainCanvas.ImageProperties);
@@ -151,8 +153,8 @@ namespace Watermark.Win.Models
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
             var wc = container.WidthPercent / 100.0 * originalBitmap.Width;
-            info.Height = (int)hc;
-            info.Width = (int)wc;
+            info.Height = (int)hc == 0 ? 1 : (int)hc;
+            info.Width = (int)wc == 0 ? 1 : (int)wc;
             var bitmapc = new SKBitmap(info.Width, info.Height);
             var canvasc = new SKCanvas(bitmapc);
             canvasc.Clear(SKColors.Transparent);
@@ -250,11 +252,11 @@ namespace Watermark.Win.Models
                 var fontxs = Math.Min(hc, wc) / 156.0;
                 if (fontxs == 0) fontxs = 1;
 
-
+                var fontColor = mText.FontColor.Length > 7 ? mText.FontColor.Substring(0, 7) : mText.FontColor;
                 //字体乘以系数
                 var paint_cp = new SKPaint()
                 {
-                    Color = SKColor.Parse(mText.FontColor),
+                    Color = SKColor.Parse(fontColor),
                     TextSize = (int)(mText.FontSize * fontxs),
                     Typeface = typeface_cp
                 };
@@ -281,9 +283,7 @@ namespace Watermark.Win.Models
             {
                 if (component is WMLogo mLogo)
                 {
-                    SKCanvas canvas_cp;
-                    SKBitmap bitmap_logo;
-                    DrawLogo(hc, wc, component, mLogo, out canvas_cp, out bitmap_logo, null);
+                    DrawLogo(hc, wc, component, mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, null);
                 }
                 else if (component is WMText mText)
                 {
@@ -392,11 +392,14 @@ namespace Watermark.Win.Models
                         var min = Math.Min(hc, wc);
                         if (occupy_y == 0)
                         {
-                            var totalComponentHeight = container.Controls.Sum(c => c.Height) + container.Controls.Select(c => (c.Margin.Top + c.Margin.Bottom) / 100.0 * min).Sum();
+                            var totalComponentHeight = container.Controls.Sum(c => c.Height) + container.Controls.Select(c => (c.Margin.Top - c.Margin.Bottom) / 100.0 * min).Sum();
                             occupy_y = (ch - totalComponentHeight) / 2;
                         }
+                        //加上当前的上边距
+                        occupy_y += (component.Margin.Top / 100.0 * min);
                         stdy = occupy_y;
-                        occupy_y = stdy + component.Height + (min * (component.Margin.Top - component.Margin.Bottom) / 100.0);
+                        //减去当前的下边距
+                        occupy_y = stdy + component.Height - (min * component.Margin.Bottom / 100.0);
                     }
                     else if (container.VerticalAlignment == System.Windows.VerticalAlignment.Bottom)
                     {
@@ -414,13 +417,11 @@ namespace Watermark.Win.Models
                 //绘制
                 if (component is WMLogo mLogo)
                 {
-                    SKCanvas canvas_cp;
-                    SKBitmap bitmap_logo;
                     var action = new Action<SKBitmap>((bitmap_cp) =>
                     {
                         canvasc.DrawBitmap(bitmap_cp, new SKPoint((float)stdx, (float)stdy));
                     });
-                    DrawLogo(hc, wc, component, mLogo, out canvas_cp, out bitmap_logo, action);
+                    DrawLogo(hc, wc, component, mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, action);
                 }
                 else if (component is WMText mText)
                 {
@@ -444,9 +445,11 @@ namespace Watermark.Win.Models
                 {
                     var pt1 = new SKPoint();
                     var pt2 = new SKPoint();
+                    mLine.Color ??= "#000";
+                    var color = mLine.Color.Length > 7 ? mLine.Color[..7] : mLine.Color;
                     var paint_line = new SKPaint
                     {
-                        Color = SKColor.Parse(mLine.Color),
+                        Color = SKColor.Parse(color),
                         StrokeWidth = (float)Math.Min(mLine.Height, mLine.Width)
                     };
                     var maxLine = Math.Max(mLine.Height, mLine.Width);
@@ -538,25 +541,23 @@ namespace Watermark.Win.Models
 
         static void DrawShadow(SKCanvas canvas, SKPoint point, int w, int h, double xs, WMImage mImage)
         {
-            SKRect rect = new SKRect(point.X, point.Y, point.X + w, point.Y + h);
+            var rect = new SKRect(point.X, point.Y, point.X + w, point.Y + h);
             float cornerRadius = mImage.CornerRadius;
-            using (var paint2 = new SKPaint())
-            {
-                paint2.IsAntialias = true;
-                paint2.Color = SKColors.White;
+            using var paint2 = new SKPaint();
+            paint2.IsAntialias = true;
+            paint2.Color = SKColors.White;
 
-                // 绘制阴影
-                paint2.ImageFilter = SKImageFilter.CreateDropShadow(
-                    dx: 0,
-                    dy: 0,
-                    sigmaX: (int)(mImage.ShadowRange * xs),
-                    sigmaY: (int)(mImage.ShadowRange * xs),
-                    color: SKColor.Parse(mImage.ShadowColor),
-                    shadowMode: SKDropShadowImageFilterShadowMode.DrawShadowAndForeground
-                );
+            // 绘制阴影
+            paint2.ImageFilter = SKImageFilter.CreateDropShadow(
+                dx: 0,
+                dy: 0,
+                sigmaX: (int)(mImage.ShadowRange * xs),
+                sigmaY: (int)(mImage.ShadowRange * xs),
+                color: SKColor.Parse(mImage.ShadowColor),
+                shadowMode: SKDropShadowImageFilterShadowMode.DrawShadowAndForeground
+            );
 
-                canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
-            }
+            canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
         }
 
         private void GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)

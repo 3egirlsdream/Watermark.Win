@@ -130,6 +130,11 @@ namespace Watermark.Win.Models
 
         public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, string destFile, string id)
         {
+            if (string.IsNullOrEmpty(destFile))
+            {
+                ImagesBase64[id] = "";
+                return;
+            }
             using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
             if (bitmap != null)
             {
@@ -146,30 +151,35 @@ namespace Watermark.Win.Models
         {
             try
             {
-                Microsoft.Win32.OpenFileDialog dialog = new()
+                var action = new Action(() =>
                 {
-                    DefaultExt = ".png",  // 设置默认类型
-                    Multiselect = false,                             // 设置可选格式
-                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-                };
-                // 打开选择框选择
-                Nullable<bool> result = dialog.ShowDialog();
-                if (result == true)
-                {
-                    var p = dialog.FileName;
-                    var destFolder = Global.TemplatesFolder + id;
-                    if (!System.IO.Directory.Exists(destFolder))
+                    Microsoft.Win32.OpenFileDialog dialog = new()
                     {
-                        System.IO.Directory.CreateDirectory(destFolder);
+                        DefaultExt = ".png",  // 设置默认类型
+                        Multiselect = false,                             // 设置可选格式
+                        Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                    };
+                    // 打开选择框选择
+                    Nullable<bool> result = dialog.ShowDialog();
+
+                    if (result == true)
+                    {
+                        var p = dialog.FileName;
+                        var destFolder = Global.TemplatesFolder + id;
+                        if (!System.IO.Directory.Exists(destFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(destFolder);
+                        }
+
+                        var name = p.Substring(p.LastIndexOf('\\') + 1);
+                        var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+
+                        Global.ImageFile2Base64(dic, p, "default");
+                        SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+                        WriteThumbnailImage(bitmap, destFile);
                     }
-
-                    var name = p.Substring(p.LastIndexOf('\\') + 1);
-                    var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-
-                    Global.ImageFile2Base64(dic, p, "default");
-                    SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-                    WriteThumbnailImage(bitmap, destFile);
-                }
+                });
+                OpenWinHelper.Open(action);
             }
             catch (Exception ex)
             {

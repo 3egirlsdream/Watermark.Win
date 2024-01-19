@@ -372,33 +372,6 @@
 </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @code {
     [Inject]
     private IDialogService DialogService { get; set; }
@@ -504,8 +477,13 @@
 
     void SelectImage(WMLogo mLogo)
     {
-        ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
+        var action = new Action(() =>
+        {
+            ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
+        });
+        OpenWinHelper.Open(action);
     }
+
     void SelectDefaultImage()
     {
         Global.SelectDefaultImage(canvas.ID, ImagesBase64);
@@ -514,17 +492,29 @@
 
     void ImportLocalFont()
     {
-        ClientInstance.ImportLocalFontAction?.Invoke(Fonts);
+        var action = new Action(() =>
+        {
+            ClientInstance.ImportLocalFontAction?.Invoke(Fonts);
+        });
+        OpenWinHelper.Open(action);
     }
 
     void InitLocalFonts()
     {
-        ClientInstance.InitLocalFontsAction?.Invoke(Fonts);
+        var action = new Action(() =>
+        {
+            ClientInstance.InitLocalFontsAction?.Invoke(Fonts);
+        });
+        OpenWinHelper.Open(action);
     }
 
     void SelectLocalFont(WMText mText, string fontName)
     {
-        ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
+        var action = new Action(() =>
+        {
+            ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
+        });
+        OpenWinHelper.Open(action);
     }
 
 }

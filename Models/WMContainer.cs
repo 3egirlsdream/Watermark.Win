@@ -17,8 +17,12 @@ namespace Watermark.Win.Models
         {
             Controls = [];
             ID = Guid.NewGuid().ToString("N").ToUpper();
-            HeightPercent = 1;
-            WidthPercent = 1;
+            HeightPercent = 13;
+            WidthPercent = 100;
+            Orientation = Orientation.Vertical;
+            HorizontalAlignment = HorizontalAlignment.Center;
+            VerticalAlignment  = VerticalAlignment.Center;
+            ContainerAlignment = ContainerAlignment.Bottom;
         }
         public Orientation Orientation { get; set; }
         public HorizontalAlignment HorizontalAlignment { get; set; }
@@ -78,11 +82,11 @@ namespace Watermark.Win.Models
         {
             EnableRadius = false;
             EnableShadow = false;
-            ShadowRange = 10;
+            ShadowRange = 30;
             ShadowColor = "#FF808080";
             CornerRadius = 15;
             EnableGaussianBlur = false;
-            GaussianDeep = 10;
+            GaussianDeep = 50;
         }
         public bool EnableShadow { get; set; }
         public int ShadowRange {  get; set; }
@@ -138,7 +142,7 @@ namespace Watermark.Win.Models
         public WMText()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
-            Exifs = new List<ExifConfigInfo>();
+            Exifs = [];
         }
         [JsonIgnore]
         public string Text { get; set; }
@@ -155,6 +159,7 @@ namespace Watermark.Win.Models
         public WMLine()
         {
             ID = Guid.NewGuid().ToString("N").ToUpper();
+            Color = "#000";
         }
         public Orientation Orientation { get; set; }
         public int Thickness { get; set; }

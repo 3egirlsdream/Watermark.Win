@@ -45,7 +45,7 @@
                                 </MudCardContent>
                                 <MudCardActions Style="position:relative;">
                                     @t.DownloadTimes<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
-                                <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
                                 <MudIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" OnClick="()=>Share(t.WatermarkId)"></MudIconButton>
                             </MudCardActions>
                         </MudCard>
