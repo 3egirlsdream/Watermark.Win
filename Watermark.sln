@@ -5,7 +5,9 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Win", "Watermark.Win\Watermark.Win.csproj", "{99D14577-7182-4ADF-B1C2-AF8EDFAD2829}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark.Web", "Watermark.Web\Watermark.Web.csproj", "{10922053-4AEB-4006-97AF-BDD586976CB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Web", "Watermark.Web\Watermark.Web.csproj", "{10922053-4AEB-4006-97AF-BDD586976CB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark.Shared", "Watermark.Shared\Watermark.Shared.csproj", "{EEFB2B91-1A99-4298-BDE1-DF34A0039744}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{10922053-4AEB-4006-97AF-BDD586976CB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10922053-4AEB-4006-97AF-BDD586976CB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10922053-4AEB-4006-97AF-BDD586976CB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEFB2B91-1A99-4298-BDE1-DF34A0039744}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEFB2B91-1A99-4298-BDE1-DF34A0039744}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEFB2B91-1A99-4298-BDE1-DF34A0039744}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEFB2B91-1A99-4298-BDE1-DF34A0039744}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
