@@ -1,4 +1,5 @@
 ﻿
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
 
@@ -44,7 +45,7 @@
         APIHelper helper = new APIHelper();
         var user = new SysUser
         {
-            PK_ID = Global.Key(),
+            PK_ID = ClientInstance.Key(),
             DISPLAY_NAME = DisplayName,
             USER_NAME = UserName,
             PASSWORD = Password

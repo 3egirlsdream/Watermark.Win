@@ -1,6 +1,7 @@
 ﻿@using System.IO
+@using Watermark.Shared.Models
 @using Watermark.Win.BlazorPages
-@using Watermark.Core.Models
+@using Watermark.Shared.Enums
 @using Newtonsoft.Json
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
@@ -74,56 +75,56 @@
                     <MudExpansionPanel Text="@container.Name">
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件水平对齐</MudText>
-                            <MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="System.Windows.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Left)">
+                            <MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Center)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Right)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
                                 </MudToggleItem>
                             </MudToggleGroup>
                         </div>
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
-                            <MudToggleGroup @bind-Value="@container.VerticalAlignment" T="System.Windows.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Top)">
+                            <MudToggleGroup @bind-Value="@container.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Center)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Bottom)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
                                 </MudToggleItem>
                             </MudToggleGroup>
                         </div>
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件堆叠方向</MudText>
-                            <MudToggleGroup @bind-Value="@container.Orientation" T="System.Windows.Controls.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                <MudToggleItem Value="@(System.Windows.Controls.Orientation.Horizontal)">
+                            <MudToggleGroup @bind-Value="@container.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
                                     <MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(System.Windows.Controls.Orientation.Vertical)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
                                     <MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
                                 </MudToggleItem>
                             </MudToggleGroup>
                         </div>
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器依靠方向</MudText>
-                            <MudToggleGroup @bind-Value="@container.ContainerAlignment" T="ContainerAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                <MudToggleItem Value="@(ContainerAlignment.Top)">
+                            <MudToggleGroup @bind-Value="@container.ContainerAlignment" T="Watermark.Shared.Enums.ContainerAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Top)">
                                     <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(ContainerAlignment.Bottom)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Bottom)">
                                     <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(ContainerAlignment.Left)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Left)">
                                     <MudIcon Icon="@Icons.Material.Filled.ArrowBack" />
                                 </MudToggleItem>
-                                <MudToggleItem Value="@(ContainerAlignment.Right)">
+                                <MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Right)">
                                     <MudIcon Icon="@Icons.Material.Filled.ArrowForward" />
                                 </MudToggleItem>
                             </MudToggleGroup>
@@ -147,28 +148,28 @@
                                     <MudExpansionPanel Text="@mContainer.Name">
                                         <div class="d-flex justify-space-between mt-5">
                                             <MudText Typo="Typo.button">容器内组件水平对齐</MudText>
-                                            <MudToggleGroup @bind-Value="@mContainer.HorizontalAlignment" T="System.Windows.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Left)">
+                                            <MudToggleGroup @bind-Value="@mContainer.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
                                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
                                                 </MudToggleItem>
-                                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Center)">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
                                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
                                                 </MudToggleItem>
-                                                <MudToggleItem Value="@(System.Windows.HorizontalAlignment.Right)">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
                                                     <MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
                                                 </MudToggleItem>
                                             </MudToggleGroup>
                                         </div>
                                         <div class="d-flex justify-space-between mt-5">
                                             <MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
-                                            <MudToggleGroup @bind-Value="@mContainer.VerticalAlignment" T="System.Windows.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Top)">
+                                            <MudToggleGroup @bind-Value="@mContainer.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
                                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
                                                 </MudToggleItem>
-                                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Center)">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
                                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
                                                 </MudToggleItem>
-                                                <MudToggleItem Value="@(System.Windows.VerticalAlignment.Bottom)">
+                                                <MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
                                                     <MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
                                                 </MudToggleItem>
                                             </MudToggleGroup>
@@ -202,11 +203,11 @@
                                                         <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
                                                         <div class="d-flex justify-space-between mt-5">
                                                             <MudText Typo="Typo.button">线方向</MudText>
-                                                            <MudToggleGroup @bind-Value="@mLine.Orientation" T="System.Windows.Controls.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                                                <MudToggleItem Value="@(System.Windows.Controls.Orientation.Horizontal)">
+                                                            <MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                                                <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
                                                                     <MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
                                                                 </MudToggleItem>
-                                                                <MudToggleItem Value="@(System.Windows.Controls.Orientation.Vertical)">
+                                                                <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
                                                                     <MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
                                                                 </MudToggleItem>
                                                             </MudToggleGroup>
@@ -293,11 +294,11 @@
                                             <MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
                                             <div class="d-flex justify-space-between mt-5">
                                                 <MudText Typo="Typo.button">线方向</MudText>
-                                                <MudToggleGroup @bind-Value="@mLine.Orientation" T="System.Windows.Controls.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-                                                    <MudToggleItem Value="@(System.Windows.Controls.Orientation.Horizontal)">
+                                                <MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+                                                    <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
                                                         <MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
                                                     </MudToggleItem>
-                                                    <MudToggleItem Value="@(System.Windows.Controls.Orientation.Vertical)">
+                                                    <MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
                                                         <MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
                                                     </MudToggleItem>
                                                 </MudToggleGroup>
@@ -486,7 +487,7 @@
 
     void SelectDefaultImage()
     {
-        Global.SelectDefaultImage(canvas.ID, ImagesBase64);
+        ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
     }
 
 

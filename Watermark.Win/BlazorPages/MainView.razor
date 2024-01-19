@@ -24,7 +24,7 @@
                 <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="Global.OpenSetting">设置</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem>
             </MudMenu>
             <MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
@@ -218,7 +218,7 @@
         public static void SelectImage()
         {
             var dic = new Dictionary<string, string>();
-            Global.SelectDefaultImage(ID, dic);
+            ClientInstance.SelectDefaultImage(ID, dic);
             Base64Src = dic.First().Value;
         }
     };

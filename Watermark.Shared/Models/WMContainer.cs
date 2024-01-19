@@ -1,13 +1,5 @@
 ﻿using Newtonsoft.Json;
-using SkiaSharp;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
@@ -176,13 +168,6 @@ namespace Watermark.Win.Models
     }
 
 
-    public enum ContainerAlignment
-    {
-        Left,
-        Top,
-        Right,
-        Bottom
-    }
     public class Thickness
     {
         public Thickness() { }

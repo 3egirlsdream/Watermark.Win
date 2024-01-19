@@ -20,6 +20,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\APIHelper.cs" />
+    <Compile Remove="Models\CLIENT_VERSION.cs" />
+    <Compile Remove="Models\CloudFont.cs" />
+    <Compile Remove="Models\Connection.cs" />
+    <Compile Remove="Models\ExifHelper.cs" />
+    <Compile Remove="Models\Global.cs" />
+    <Compile Remove="Models\OpenWinHelper.cs" />
+    <Compile Remove="Models\ValidationBase.cs" />
+    <Compile Remove="Models\WatermarkHelper.cs" />
+    <Compile Remove="Models\WMContainer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="leica.ico" />
   </ItemGroup>
 
@@ -30,8 +43,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Qiniu" Version="8.5.0" />
     <PackageReference Include="SkiaSharp.Views.WPF" Version="2.88.6" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.2.0" />
     <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 
 </Project>

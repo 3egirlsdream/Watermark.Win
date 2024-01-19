@@ -1,16 +1,5 @@
-﻿using MudBlazor;
-using SkiaSharp;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
+﻿using SkiaSharp;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
@@ -291,7 +280,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMLine mLine)
                 {
-                    if (mLine.Orientation == System.Windows.Controls.Orientation.Horizontal)
+                    if (mLine.Orientation == Orientation.Horizontal)
                     {
                         mLine.Height = mLine.Thickness * xs;
                         mLine.Width = component.Percent / 100.0 * wc;
@@ -319,30 +308,30 @@ namespace Watermark.Win.Models
             {
                 double stdx = 0, stdy = 0;
                 //水平布局，比例按高计算, margin只左右生效
-                if (container.Orientation == System.Windows.Controls.Orientation.Horizontal)
+                if (container.Orientation == Orientation.Horizontal)
                 {
                     var ch = container.HeightPercent / 100.0 * originalBitmap.Height;
                     var cw = container.WidthPercent / 100.0 * originalBitmap.Width;
-                    if (container.VerticalAlignment == System.Windows.VerticalAlignment.Top)
+                    if (container.VerticalAlignment == VerticalAlignment.Top)
                     {
                         stdy = 0;
                     }
-                    else if (container.VerticalAlignment == System.Windows.VerticalAlignment.Center)
+                    else if (container.VerticalAlignment == VerticalAlignment.Center)
                     {
                         stdy = (ch - component.Height) / 2;
                     }
-                    else if (container.VerticalAlignment == System.Windows.VerticalAlignment.Bottom)
+                    else if (container.VerticalAlignment == VerticalAlignment.Bottom)
                     {
                         stdy = ch - component.Height;
                     }
                     stdy += (component.Margin.Top - component.Margin.Bottom) / 100.0 * ch;
 
-                    if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Left)
+                    if (container.HorizontalAlignment == HorizontalAlignment.Left)
                     {
                         stdx = occupy_x + (ch * (component.Margin.Left - component.Margin.Right) / 100.0);
                         occupy_x = stdx + component.Width;
                     }
-                    else if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Center)
+                    else if (container.HorizontalAlignment == HorizontalAlignment.Center)
                     {
                         if (occupy_x == 0)
                         {
@@ -352,7 +341,7 @@ namespace Watermark.Win.Models
                         stdx = occupy_x + (ch * (component.Margin.Left - component.Margin.Right) / 100.0);
                         occupy_x = stdx + component.Width;
                     }
-                    else if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Right)
+                    else if (container.HorizontalAlignment == HorizontalAlignment.Right)
                     {
                         if (occupy_x == 0)
                         {
@@ -366,15 +355,15 @@ namespace Watermark.Win.Models
                 {
                     var ch = container.HeightPercent / 100.0 * originalBitmap.Height;
                     var cw = container.WidthPercent / 100.0 * originalBitmap.Width;
-                    if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Left)
+                    if (container.HorizontalAlignment == HorizontalAlignment.Left)
                     {
                         stdx = 0;
                     }
-                    else if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Center)
+                    else if (container.HorizontalAlignment == HorizontalAlignment.Center)
                     {
                         stdx = (cw - component.Width) / 2;
                     }
-                    else if (container.HorizontalAlignment == System.Windows.HorizontalAlignment.Right)
+                    else if (container.HorizontalAlignment == HorizontalAlignment.Right)
                     {
                         stdx = cw - component.Width;
                     }
@@ -382,12 +371,12 @@ namespace Watermark.Win.Models
                     stdx += (component.Margin.Left - component.Margin.Right) / 100.0 * cw;
 
 
-                    if (container.VerticalAlignment == System.Windows.VerticalAlignment.Top)
+                    if (container.VerticalAlignment == VerticalAlignment.Top)
                     {
                         stdy = 0;
                         occupy_y = stdy + component.Height + (ch * (component.Margin.Top - component.Margin.Bottom) / 100.0);
                     }
-                    else if (container.VerticalAlignment == System.Windows.VerticalAlignment.Center)
+                    else if (container.VerticalAlignment == VerticalAlignment.Center)
                     {
                         var min = Math.Min(hc, wc);
                         if (occupy_y == 0)
@@ -401,7 +390,7 @@ namespace Watermark.Win.Models
                         //减去当前的下边距
                         occupy_y = stdy + component.Height - (min * component.Margin.Bottom / 100.0);
                     }
-                    else if (container.VerticalAlignment == System.Windows.VerticalAlignment.Bottom)
+                    else if (container.VerticalAlignment == VerticalAlignment.Bottom)
                     {
                         if (occupy_y == 0)
                         {
@@ -453,7 +442,7 @@ namespace Watermark.Win.Models
                         StrokeWidth = (float)Math.Min(mLine.Height, mLine.Width)
                     };
                     var maxLine = Math.Max(mLine.Height, mLine.Width);
-                    if (mLine.Orientation == System.Windows.Controls.Orientation.Horizontal)
+                    if (mLine.Orientation == Orientation.Horizontal)
                     {
                         pt1 = new SKPoint((float)stdx, (float)stdy);
                         pt2 = new SKPoint((float)(pt1.X + maxLine), pt1.Y);

@@ -11,5 +11,9 @@
 /Properties/PublishProfiles/FolderProfile.pubxml.user
 /Watermark.Win/bin
 /Watermark.Win/obj
+/Watermark.Web/obj
 /Watermark.Win/Properties/PublishProfiles
 /Watermark.Shared/obj
+/Watermark.Shared/bin/Debug/net8.0
+/Watermark.Web/obj/Debug/
+/Watermark.Web/obj/Debug/net8.0/Watermark.Web.assets.cache

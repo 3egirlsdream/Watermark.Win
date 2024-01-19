@@ -6,4 +6,17 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Models\ClientInstance.cs" />
+    <Compile Remove="Models\IocHelper.cs" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ExifLib.Standard" Version="1.7.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Qiniu" Version="8.5.0" />
+		<PackageReference Include="SkiaSharp" Version="2.88.7" />
+	</ItemGroup>
 </Project>
+
+
