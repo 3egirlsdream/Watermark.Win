@@ -261,8 +261,6 @@
                 var result = await helper.UploadWatermark(watermarkId, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
                 string message = "";
                 Severity severity = Severity.Success;
-                Snackbar.Clear();
-                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
 
                 if (result.success)
                 {
@@ -276,10 +274,7 @@
 
                 var target = Global.TemplatesFolder + $"{watermarkId}.zip";
                 if (File.Exists(target)) File.Delete(target);
-                Snackbar.Add(message, severity, config =>
-                {
-                    config.ShowCloseIcon = false;
-                });
+                ClientInstance.ShowMsg(Snackbar, message, severity);
                 loading = false;
                 StateHasChanged();
             });
@@ -324,8 +319,6 @@
         var result = await helper.Download(watermarkId);
         string message = "";
         Severity Severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         if (result)
         {
             Severity = Severity.Success;
@@ -337,10 +330,7 @@
             Severity = Severity.Error;
             message = "下载失败";
         }
-        Snackbar.Add(message, Severity, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+        ClientInstance.ShowMsg(Snackbar, message, Severity);
         loading = false;
         StateHasChanged();
     }
@@ -368,8 +358,6 @@
         var result = await helper.Download(watermarkId);
         string message = "";
         Severity Severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         if (result)
         {
             Severity = Severity.Success;
@@ -386,10 +374,8 @@
             Severity = Severity.Error;
             message = "下载失败";
         }
-        Snackbar.Add(message, Severity, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+
+        ClientInstance.ShowMsg(Snackbar, message, Severity);
         loading = false;
         StateHasChanged();
     }

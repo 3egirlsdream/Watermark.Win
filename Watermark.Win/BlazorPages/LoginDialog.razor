@@ -4,7 +4,7 @@
 <MudDialog Options="DialogOptions" Style="width:400px;background:#F9FAFC">
     <DialogContent>
         <MudForm>
-            <MudTextField @bind-Value="UserName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" />
+            <MudTextField @bind-Value="UserName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" AutoFocus />
             <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
         </MudForm>
         <MudOverlay Visible="@Loading" DarkBackground="true" Absolute="false" ZIndex="999">

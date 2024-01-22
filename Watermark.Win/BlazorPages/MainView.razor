@@ -698,10 +698,7 @@
                 }
                 await InitLogoStore();
             }
-           Snackbar.Add("导入完成", Severity.Success, config =>
-           {
-               config.ShowCloseIcon = false;
-           });
+            ClientInstance.ShowMsg(Snackbar, "导入完成", Severity.Success);
             
            StateHasChanged();
         });

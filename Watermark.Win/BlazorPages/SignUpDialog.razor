@@ -6,15 +6,15 @@
 <MudDialog Options="DialogOptions" Style="width:400px;">
     <DialogContent>
         <MudForm>
-            <MudTextField @bind-Value="UserName" T="string" Label="账号" Required="true" RequiredError="账号不能为空" />
+            <MudTextField @bind-Value="UserName" T="string" Label="账号" Required="true" RequiredError="账号不能为空" AutoFocus/>
             <MudTextField @bind-Value="DisplayName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" />
-            <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
+            <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password"/>
             <MudTextField @bind-Value="CheckPassword" T="string" Label="确认密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
             @if (!string.IsNullOrEmpty(Error))
             {
                 <MudStack Row Class="mt-5">
                     <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" />
-                    <MudText Typo="Typo.caption">@Error</MudText>
+                     <MudText Color="Color.Error" Typo="Typo.caption" Style="line-height: 26px;">@Error</MudText>
                 </MudStack>
             }
         </MudForm>
@@ -54,7 +54,8 @@
         if (string.IsNullOrEmpty(UserName)) Error = "账号不能为空";
         else if (string.IsNullOrEmpty(Password)) Error = "密码不能为空";
         else if (string.IsNullOrEmpty(DisplayName)) Error = "展示名不能为空";
-        if (Password != CheckPassword) Error = "密码不一致";
+        else if (Password != CheckPassword) Error = "密码不一致";
+        else if (Password.Length < 9) Error = "密码过短";
         if (!string.IsNullOrEmpty(Error)) return;
         var result = await helper.Register(user);
 

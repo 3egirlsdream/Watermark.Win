@@ -1,4 +1,5 @@
-﻿using SkiaSharp;
+﻿using MudBlazor;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -189,6 +190,15 @@ namespace Watermark.Shared.Models
 
 
             OpenWinHelper.Open(action);
+        }
+
+        public static void ShowMsg(ISnackbar snackbar, string message, Severity severity)
+        {
+            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+            snackbar?.Add(message, severity, config =>
+                {
+                    config.ShowCloseIcon = false;
+                });
         }
     }
 }

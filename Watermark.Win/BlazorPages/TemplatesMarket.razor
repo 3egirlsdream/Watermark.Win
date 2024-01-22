@@ -115,12 +115,7 @@
         System.Windows.Clipboard.SetText(id);
 
         string message = "已复制ID到剪贴板";
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-        Snackbar.Add(message, Severity.Success, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+        ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
     }
 
     async void LoadMore()
@@ -163,10 +158,8 @@
     {
         var helper = new APIHelper();
         var result = await helper.Download(watermarkId);
-        string message = "已复制ID到剪贴板";
+        string message = "";
         Severity Severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         if (result)
         {
             Severity = Severity.Success;
@@ -177,9 +170,7 @@
             Severity = Severity.Error;
             message = "下载失败";
         }
-        Snackbar.Add(message, Severity, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+
+        ClientInstance.ShowMsg(Snackbar, message, Severity);
     }
 }

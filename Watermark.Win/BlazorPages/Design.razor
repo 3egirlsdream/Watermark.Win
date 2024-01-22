@@ -36,14 +36,14 @@
             </div>
         </div>
         <div style="width:500px;height:100%;margin-left:calc(100% - 500px);padding:10px;">
-            <MudExpansionPanels DisableBorders="true" Elevation="0">
+            <MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
                 <MudExpansionPanel Text="画布">
                     <MudStack Row>
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>
                     <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" />
-                    <MudStack Row Class="mt-5">
+                     <MudStack Row Class="mt-5">
                          <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                          <MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                          <MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -245,11 +245,13 @@
                                                             <MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatClear" Color="@Color.Error"
                                                                                  ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
                                                         </MudButtonGroup>
-                                                        <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
+
+                                                        <p Class="mt-5" style="font-weight:normal">文字内容</p>
+                                                        <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
                                                             <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                                 @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                             </div>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small"/>
                                                         </div>
 
 
@@ -336,11 +338,12 @@
                                                                      ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
                                             </MudButtonGroup>
 
-                                            <div Class="mt-5" Style="line-height:40px;border-bottom:1px solid #808080;height:40px;">
+                                            <p Class="mt-5" style="font-weight:normal">文字内容</p>
+                                            <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
                                                 <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                     @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                 </div>
-                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small"/>
                                             </div>
 
                                             <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
@@ -478,7 +481,7 @@
             }
             var json = Global.CanvasSerialize(canvas);
             System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", json);
-            if(cloud == "cloud")
+            if (cloud == "cloud")
             {
                 APIHelper helper = new APIHelper();
                 await helper.UploadToQiniu(CurrentCanvas.ID, "");
@@ -488,20 +491,13 @@
         finally
         {
             string message = "保存成功！";
-            Snackbar.Clear();
-            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-            Snackbar.Add(message, Severity.Success, config =>
-            {
-                config.ShowCloseIcon = false;
-            });
+            ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
         }
     }
 
     void SaveAs()
     {
         string message = "保存成功！";
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         try
         {
             if (string.IsNullOrEmpty(newTemplateName)) return;
@@ -534,11 +530,7 @@
         {
             message = ex.Message;
         }
-
-        Snackbar.Add(message, Severity.Success, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+        ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
     }
 
 
