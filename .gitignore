@@ -19,3 +19,11 @@
 /Watermark.Web/obj/Debug/net8.0/Watermark.Web.assets.cache
 /Watermark.Web/bin/Debug/net8.0
 /Watermark.Web/Watermark.Web.csproj.user
+/Watermark.Shared/bin
+/Watermark.Web/Watermark.Web/Properties/PublishProfiles
+/Watermark.Web/Watermark.Web.Client/Properties/PublishProfiles
+*.user
+/Watermark.Web/Watermark.Web/obj
+/Watermark.Web/Watermark.Web.Client/obj
+/Watermark.Web/Watermark.Web.Client/bin
+/Watermark.Web/Watermark.Web/bin

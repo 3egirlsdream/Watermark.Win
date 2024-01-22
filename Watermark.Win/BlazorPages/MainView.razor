@@ -13,7 +13,7 @@
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">导入图标</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">导入图标</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="Export">导出全部</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
@@ -51,7 +51,7 @@
             }
 
             <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
-                @if (IsLoginIn && Global.CurrentUser != null)
+                @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.USER_NAME))
                 {
                     <div style="height:50px">
                         @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
@@ -114,15 +114,55 @@
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
             }
-            <div style="background: #F9FAFC; width: 100%; height: 100%; line-height: 100vh; text-align: center;">
+            <div style="background: #F9FAFC; width: 100%; height: 100%; text-align: center;">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
-                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%; height:100%; padding-left:5%;padding-right:5%;padding-top:100px;padding-bottom:100px;" />
-
+                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
+                    <MudPaper Height="90" Style="white-space:nowrap; overflow:auto;width:90%;margin:0 5%">
+                        <MudToolBar>
+                        @if(LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
+                        {
+                            foreach(var item in dic)
+                            {
+                                <MudMenu>
+                                    <ActivatorContent>
+                                        <MudButton>
+                                                @if (LogoBase64.TryGetValue(item.Key, out string src))
+                                                {
+                                                    <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
+                                                }
+                                                <p Style="max-width:100px;overflow:hidden">
+                                                @item.Value
+                                                </p>
+                                            </MudButton>
+                                    </ActivatorContent>
+                                    <ChildContent>
+                                            @foreach(var l in LogoStore)
+                                            {
+                                                <MudMenuItem>
+                                                    <MudTooltip Text="点击模板即可还原图标">
+                                                        <MudButton OnClick="()=>ChangeLogo(item.Key, l)" >
+                                                            @if (LogoBase64.TryGetValue(l, out string src))
+                                                            {
+                                                                <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
+                                                            }
+                                                            <p Style="max-width:100px;overflow:hidden;max-height:40px">
+                                                                @l
+                                                            </p>
+                                                        </MudButton>
+                                                    </MudTooltip>
+                                                </MudMenuItem>
+                                            }
+                                    </ChildContent>
+                                </MudMenu>
+                            }
+                        }
+                        </MudToolBar>
+                    </MudPaper>
                 }
                 else
                 {
-                    <svg t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128">
+                    <svg t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128" style="margin-top: calc(50vh - 64px);">
                         <path d="M256 298.666667a85.333333 85.333333 0 1 1 85.333333 85.333333 85.333333 85.333333 0 0 1-85.333333-85.333333z m674.133333 415.146666l-256-341.333333a32.426667 32.426667 0 0 0-51.2 0l-170.666666 220.586667a21.333333 21.333333 0 0 1-33.28 0l-93.44-113.493334a32 32 0 0 0-49.92 0l-181.333334 234.24a42.666667 42.666667 0 0 0-8.96 26.026667v38.826667a32.426667 32.426667 0 0 0 32 32h789.333334a32.426667 32.426667 0 0 0 32-32v-39.253334a42.666667 42.666667 0 0 0-8.533334-25.6z" p-id="3272" fill="#e9e9e9"></path>
                     </svg>
                 }
@@ -160,7 +200,7 @@
                 {
                     <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                 }
-                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="CreateTemplate.SelectImage" Style="float:right;width:40px;height:40px;" />
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectImage" Style="float:right;width:40px;height:40px;" />
             </MudStack>
         </MudForm>
     </DialogContent>
@@ -190,13 +230,17 @@
         public static string Message { get; set; }
     }
 
+    Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
+    Dictionary<string, string> LogoBase64 = new Dictionary<string, string>();
+    List<string> LogoStore = new List<string>();
+
     class CreateTemplate
     {
         public static bool DialogVisible { get; set; } = false;
         public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
         public static string TemplateName { get; set; }
         public static string Base64Src { get; set; }
-        private static string ID = Guid.NewGuid().ToString("N").ToUpper();
+        public static string ID = Guid.NewGuid().ToString("N").ToUpper();
         public static void OK()
         {
             if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
@@ -212,21 +256,52 @@
                 var win = new DesignWin(canvas);
                 win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
                 win.ShowDialog();
+                ID = Guid.NewGuid().ToString("N").ToUpper();
             });
             OpenWinHelper.Open(action);
         }
-        public static void SelectImage()
-        {
-            var dic = new Dictionary<string, string>();
-            ClientInstance.SelectDefaultImage(ID, dic);
-            Base64Src = dic.First().Value;
-        }
     };
 
+    void SelectImage()
+    {
+        var dic = new Dictionary<string, string>();
+        var action = new Action(() =>
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                var p = dialog.FileName;
+                var destFolder = Global.TemplatesFolder + CreateTemplate.ID;
+                if (!System.IO.Directory.Exists(destFolder))
+                {
+                    System.IO.Directory.CreateDirectory(destFolder);
+                }
+
+                var name = p.Substring(p.LastIndexOf('\\') + 1);
+                var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+
+                Global.ImageFile2Base64(dic, p, "default");
+                SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+                ClientInstance.WriteThumbnailImage(bitmap, destFile);
+                CreateTemplate.Base64Src = dic.First().Value;
+                StateHasChanged();
+            }
+        });
+        OpenWinHelper.Open(action);
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await InitTemplates();
+        await InitLogoStore();
         var result = await Global.ReadLocalAsync();
         if (!string.IsNullOrEmpty(result.Item1))
         {
@@ -235,12 +310,12 @@
             if (login.success)
             {
                 Global.CurrentUser = new LoginChildModel
-                    {
-                        ID = login.data.data.ID,
-                        IMG = login.data.data.IMG,
-                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-                        USER_NAME = login.data.data.USER_NAME
-                    };
+                {
+                    ID = login.data.data.ID,
+                    IMG = login.data.data.IMG,
+                    DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+                    USER_NAME = login.data.data.USER_NAME
+                };
                 IsLoginIn = true;
                 await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
                 StateHasChanged();
@@ -271,11 +346,11 @@
         {
             // 实例化一个文件选择对象
             Microsoft.Win32.OpenFileDialog dialog = new()
-                {
-                    DefaultExt = ".png",  // 设置默认类型
-                    Multiselect = true,                             // 设置可选格式
-                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-                };
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = true,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
@@ -307,12 +382,12 @@
                         return dic.First().Value;
                     });
                     Images.Add(new TemplateList
-                        {
-                            Canvas = canvas,
-                            Src = await src,
-                            ID = canvas.ID,
-                            Path = file
-                        });
+                    {
+                        Canvas = canvas,
+                        Src = await src,
+                        ID = canvas.ID,
+                        Path = file
+                    });
                     var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
                     MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
                     MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
@@ -391,11 +466,11 @@
                     {
                         var src = helper.Generation(canvas, null);
                         var wh = new TemplateList
-                            {
-                                ID = canvas.ID,
-                                Canvas = canvas,
-                                Src = src
-                            };
+                        {
+                            ID = canvas.ID,
+                            Canvas = canvas,
+                            Src = src
+                        };
                         wMTemplates.Add(wh);
                         var idx = directories.ToList().IndexOf(dirct) + 1;
                         MainLoading.Value = cot * 100.0 / directories.Length;
@@ -436,6 +511,7 @@
         });
 
         CurrentImage.Src = await t;
+        InitLogoCacheDic(CurrentImage, template);
         SrcLoading = false;
         StateHasChanged();
     }
@@ -493,5 +569,142 @@
         var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge });
         var result = await dialog.Result;
         await InitTemplates();
+    }
+
+    void InitLogoCacheDic(TemplateList img, TemplateList template)
+    {
+        //if (LogoCacheDic.ContainsKey(img.ID)) return;
+
+        var logoes = new List<WMLogo>();
+        foreach (var c1 in template.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo) logoes.Add(logo);
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
+                    }
+                }
+            }
+        }
+
+        var dic = new Dictionary<string, string>();
+        foreach (var logo in logoes)
+        {
+            dic[logo.ID] = logo.Path;
+            var target = logo.Path;
+            if (!File.Exists(target))
+            {
+                target  = Global.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+            }
+            if (File.Exists(target))
+            {
+                Global.ImageFile2Base64(LogoBase64, target, logo.ID);
+            }
+        }
+        LogoCacheDic[img.ID] = dic;
+
+    }
+
+    async Task InitLogoStore()
+    {
+        LogoStore = new List<string>(); 
+        if (Directory.Exists(Global.LogoesFolder))
+        {
+            var files = new DirectoryInfo(Global.LogoesFolder);
+            var tasks = new List<Task>();
+            foreach(var file in files.GetFiles())
+            {
+                var t = Task.Run(() =>
+                {
+                    LogoStore.Add(file.FullName);
+                    Global.ImageFile2Base64(LogoBase64, file.FullName, file.FullName);
+                });
+                tasks.Add(t);
+            }
+            await Task.WhenAll(tasks.ToArray());
+        }
+    }
+
+    async void ChangeLogo(string sourceId, string logoPath)
+    {
+        SrcLoading = true;
+        foreach (var c1 in CurrentImage.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo && logo.ID == sourceId)
+                {
+                    logo.Path = logoPath;
+                    break;
+                }
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+                        {
+                            wcLogo.Path = logoPath;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        var api = new WatermarkHelper();
+        CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null);
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    void ImportLogoes()
+    {
+        var action = new Action(async () =>
+        {
+            // 实例化一个文件选择对象
+            Microsoft.Win32.OpenFileDialog dialog = new()
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = true,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                if (!Directory.Exists(Global.LogoesFolder))
+                {
+                    Directory.CreateDirectory(Global.LogoesFolder);
+                }
+
+                foreach (var filename in dialog.FileNames)
+                {
+                    try
+                    {
+                        if (File.Exists(filename))
+                        {
+                            await Task.Run(() =>
+                            {
+                                var target = Global.LogoesFolder + Path.GetFileName(filename);
+                                File.Copy(filename, target, true);
+                            });
+                            
+                        }
+                    }
+                    catch { }
+                }
+                await InitLogoStore();
+            }
+           Snackbar.Add("导入完成", Severity.Success, config =>
+           {
+               config.ShowCloseIcon = false;
+           });
+            
+           StateHasChanged();
+        });
+        OpenWinHelper.Open(action);
     }
 }

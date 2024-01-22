@@ -31,10 +31,11 @@ namespace Watermark.Win.Views
             Resources.SetIoc(services);
             InitializeComponent();
         }
-        public DesignWin(WMCanvas canvas)
+        public DesignWin(WMCanvas canvas, string cloud = "")
         {
             var services = IocHelper.GetIoc();
             services.AddSingleton(canvas);
+            services.AddSingleton(cloud);
             Resources.SetIoc(services);
             InitializeComponent();
         }

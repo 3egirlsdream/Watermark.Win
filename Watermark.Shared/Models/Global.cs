@@ -7,6 +7,7 @@ namespace Watermark.Win.Models
     {
         public static string TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + System.IO.Path.DirectorySeparatorChar;
         public static string ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + System.IO.Path.DirectorySeparatorChar;
+        public static string LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + System.IO.Path.DirectorySeparatorChar;
         public static LoginChildModel CurrentUser = new LoginChildModel();
 
         public static WMCanvas ReadConfigFromPath(string path)
@@ -116,6 +117,25 @@ namespace Watermark.Win.Models
         public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, string destFile, string id)
         {
             if (string.IsNullOrEmpty(destFile))
+            {
+                ImagesBase64[id] = "";
+                return;
+            }
+            using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
+            if (bitmap != null)
+            {
+                using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 50);
+                ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+            }
+            else
+            {
+                ImagesBase64[id] = "";
+            }
+        }
+
+        public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, byte[] destFile, string id)
+        {
+            if (destFile == null)
             {
                 ImagesBase64[id] = "";
                 return;

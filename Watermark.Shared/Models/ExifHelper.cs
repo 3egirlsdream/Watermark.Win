@@ -51,6 +51,35 @@ namespace Watermark.Win.Models
             }
         }
 
+        public static Dictionary<string, string> ReadImage(byte[] path)
+        {
+            var stream = new MemoryStream(path);
+            return ReadImage(stream);
+        }
+
+        public static Dictionary<string, string> ReadImage(Stream path)
+        {
+            try
+            {
+                ExifReader exifReader = new ExifReader(path);
+                var dic = new Dictionary<string, string>();
+                foreach (var key in Enum.GetNames(typeof(ExifTags)))
+                {
+                    var e = (ExifTags)Enum.Parse(typeof(ExifTags), key);
+                    if (exifReader.GetTagValue(e, out object result))
+                    {
+                        dic[key] = result.ToString();
+                    }
+                }
+                return dic;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                return DefaultMeta;
+            }
+        }
+
         public static Task<Dictionary<string, string>> ReadImageAsync(string path)
         {
             return Task.Run(() => { return ReadImage(path); });

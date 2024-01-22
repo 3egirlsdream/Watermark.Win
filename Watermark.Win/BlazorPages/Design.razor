@@ -6,6 +6,7 @@
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
 @inject WMCanvas CurrentCanvas
+@inject string cloud
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -15,6 +16,7 @@
         <MudToolBar Style="height:40px;padding-left:5px;">
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
             <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
+            <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.SaveAs" Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MudButton>
             @if (SrcLoading)
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
@@ -40,6 +42,7 @@
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>
+                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" />
                     <MudStack Row Class="mt-5">
                          <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                          <MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -47,7 +50,7 @@
                          <MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                      </MudStack>
                      <MudStack Row Class="mt-5" Style="position:relative">
-                         <MudText Align="Align.Justify" Typo="Typo.button">启用边框宽高系数统一</MudText>
+                         <MudText Align="Align.Justify" Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
                          <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" Style="position:absolute;right:5px" />
                      </MudStack>
                      <MudStack Row Class="mt-5" Style="position:relative">
@@ -372,10 +375,24 @@
     </div>
 </div>
 
+<MudDialog @bind-IsVisible="showDialog" Options="DialogOptions" Style="max-width:400px;">
+    <DialogContent>
+        <MudForm>
+            <MudTextField @bind-Value="newTemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="SaveAs">确定</MudButton>
+    </DialogActions>
+</MudDialog>
+
 
 @code {
     [Inject]
     private IDialogService DialogService { get; set; }
+    bool showDialog = false;
+    string newTemplateName = "";
+    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
 
     Thickness BorderThickness = new Thickness();
     WMCanvas canvas;
@@ -450,7 +467,7 @@
         }
     }
 
-    void SaveTemplate()
+    async void SaveTemplate()
     {
         try
         {
@@ -461,6 +478,11 @@
             }
             var json = Global.CanvasSerialize(canvas);
             System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", json);
+            if(cloud == "cloud")
+            {
+                APIHelper helper = new APIHelper();
+                await helper.UploadToQiniu(CurrentCanvas.ID, "");
+            }
         }
         catch { }
         finally
@@ -473,6 +495,50 @@
                 config.ShowCloseIcon = false;
             });
         }
+    }
+
+    void SaveAs()
+    {
+        string message = "保存成功！";
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+        try
+        {
+            if (string.IsNullOrEmpty(newTemplateName)) return;
+            var ID = Guid.NewGuid().ToString("N").ToUpper();
+            var path = Global.TemplatesFolder + ID;
+            if (!System.IO.Directory.Exists(path))
+            {
+                System.IO.Directory.CreateDirectory(path);
+            }
+            var source = Global.TemplatesFolder + canvas.ID;
+            DirectoryInfo info = new DirectoryInfo(source);
+            foreach (var file in info.GetFiles())
+            {
+                if (file.Exists)
+                {
+                    var target = path + Path.DirectorySeparatorChar + file.Name;
+                    file.CopyTo(target, true);
+                }
+            }
+            var json = Global.CanvasSerialize(canvas);
+            var newCanvas = Global.ReadConfig(json);
+            newCanvas.ID = ID;
+            newCanvas.Name = newTemplateName;
+            var newJson = Global.CanvasSerialize(newCanvas);
+            System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", newJson);
+            showDialog = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+
+        Snackbar.Add(message, Severity.Success, config =>
+        {
+            config.ShowCloseIcon = false;
+        });
     }
 
 

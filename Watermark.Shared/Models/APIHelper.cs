@@ -12,7 +12,11 @@ namespace Watermark.Win.Models
 {
     public class APIHelper
     {
+#if DEBUG
+        public static string HOST = "https://localhost:44389";
+#else
         public static string HOST = "http://thankful.top:4396";
+#endif
         public APIHelper()
         {
             _client = new HttpClient() { BaseAddress =  new Uri(HOST) };
@@ -53,7 +57,7 @@ namespace Watermark.Win.Models
             if (Directory.Exists(path))
             {
                 var configPath = path + Path.DirectorySeparatorChar + "config.json";
-                if (File.Exists(configPath))
+                if (File.Exists(configPath) && !string.IsNullOrEmpty(name))
                 {
                     var wc = Global.ReadConfigFromPath(configPath);
                     wc.Name = name;
@@ -81,11 +85,11 @@ namespace Watermark.Win.Models
             return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
         }
 
-        public async Task<List<ZipedTemplate>> GetWatermarks(int start, int length, string desc = "countDesc")
+        public async Task<List<ZipedTemplate>> GetWatermarks(string user, int start, int length, string desc = "countDesc")
         {
             try
             {
-                using HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={Global.CurrentUser.ID}&start={start}&length={length}&type={desc}");
+                using HttpResponseMessage response = await _client.GetAsync($"/api/Watermark/GetWatermarks?userId={user}&start={start}&length={length}&type={desc}");
                 response.EnsureSuccessStatusCode();
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var responseObject = JsonConvert.DeserializeObject<API<dynamic>>(responseContent);
@@ -167,13 +171,7 @@ namespace Watermark.Win.Models
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(HOST);
-                var bytes = MD5.HashData(Encoding.UTF8.GetBytes(user.PASSWORD));
-                StringBuilder sb = new StringBuilder();
-                foreach (var b in bytes)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                var password = sb.ToString();
+                var password = GetMD5(user.PASSWORD);
                 
                 var formContent = new {
                     username = user.USER_NAME,
@@ -210,14 +208,15 @@ namespace Watermark.Win.Models
 
         public string GetMD5(string password)
         {
-            var bytes = MD5.HashData(Encoding.UTF8.GetBytes(password));
-            StringBuilder sb = new StringBuilder();
-            foreach (var b in bytes)
-            {
-                sb.Append(b.ToString("x2"));
-            }
-            var pw = sb.ToString();
-            return pw;
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+
+        }
+
+        public bool FolderExsist(string watermarkId)
+        {
+            var target = Global.TemplatesFolder + watermarkId;
+            if(Directory.Exists(target)) return true;
+            return false;
         }
 
         public async Task<bool> Download(string watermarkId)
@@ -232,17 +231,42 @@ namespace Watermark.Win.Models
                 }
 
                 var target = Global.TemplatesFolder + watermarkId;
-                if (!Directory.Exists(target))
+                if (Directory.Exists(target))
                 {
-                    Directory.CreateDirectory(target);
+                    Directory.Delete(target, true);
                 }
+                Directory.CreateDirectory(target);
                 //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
-                ZipFile.ExtractToDirectory(stream, target);
+                ZipFile.ExtractToDirectory(stream, target, true);
 
                 await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
                 return true;
             }
-            catch { return false; }
+            catch(Exception ex) 
+            { 
+                return false; 
+            }
+        }
+
+
+        public async Task<Tuple<bool, bool>> TemplateIsExsist(string watermarkId, string? userId)
+        {
+            try
+            {
+                var result = await Connections.HttpGetAsync<dynamic>(HOST + $"/api/Watermark/TemplateIsExsist?watermarkId={watermarkId}&userId={userId}", Encoding.UTF8);
+                if(result == null || !result.success ) 
+                {
+                    throw new Exception("");
+                }
+                var exsist = (bool)result.data.exsist;
+                var self = (bool)result.data.self;
+                return Tuple.Create(exsist, self);
+            }
+            catch (Exception ex)
+            {
+                Tuple<bool, bool> tuple = Tuple.Create(false, false);
+                return tuple;
+            }
         }
     }
 

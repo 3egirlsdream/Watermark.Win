@@ -31,7 +31,8 @@ namespace Watermark.Win.Models
             }
             else
             {
-                originalBitmap = ziped.Bitmap;
+                originalBitmap = new SKBitmap();
+                ziped.Bitmap.CopyTo(originalBitmap);
             }
 
             if (mainCanvas.Exif == null || mainCanvas.Exif.Count == 0)

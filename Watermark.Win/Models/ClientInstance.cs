@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -147,7 +146,7 @@ namespace Watermark.Shared.Models
             }
         }
 
-        static void WriteThumbnailImage(SKBitmap source, string target)
+        public static void WriteThumbnailImage(SKBitmap source, string target)
         {
             double w = source.Width, h = source.Height;
             var xs = 1080.0 / h;
@@ -172,13 +171,9 @@ namespace Watermark.Shared.Models
         }
         public static string Key()
         {
-            using (var md5 = MD5.Create())
-            {
-                var result = md5.ComputeHash(Encoding.UTF8.GetBytes(UUID().Replace("-", "") + "CATLNMSL"));
-                var strResult = BitConverter.ToString(result);
-                string result3 = strResult.Replace("-", "");
-                return result3;
-            }
+            var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(UUID().Replace("-", "") + "CATLNMSL"));
+            string result3 = result.Replace("-", "");
+            return result3;
         }
 
         public static void OpenSetting()

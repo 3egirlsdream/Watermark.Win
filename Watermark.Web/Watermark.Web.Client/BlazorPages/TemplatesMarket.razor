@@ -28,6 +28,7 @@
                 @foreach (var t in ZipedTemplates)
                 {
                     <MudItem xs="4">
+
                         <MudCard>
                             @if (!string.IsNullOrEmpty(t.Src))
                             {
@@ -108,11 +109,12 @@
         }
         await Task.WhenAll(tasks);
         loading = false;
+        StateHasChanged();
     }
 
     void Share(string id)
     {
-        System.Windows.Clipboard.SetText(id);
+        //System.Windows.Clipboard.SetText(id);
 
         string message = "已复制ID到剪贴板";
         Snackbar.Clear();
@@ -156,21 +158,21 @@
         await Task.WhenAll(tasks);
         ZipedTemplates.AddRange(more);
         loading = false;
-        StateHasChanged();
     }
 
     async void Download(string watermarkId)
     {
         var helper = new APIHelper();
-        var result = await helper.Download(watermarkId);
-        string message = "已复制ID到剪贴板";
+        var result = await helper.ExtractZip(watermarkId);
+        string message = "";
         Severity Severity = Severity.Success;
         Snackbar.Clear();
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-        if (result)
+        if (result != null)
         {
             Severity = Severity.Success;
             message = "下载成功";
+            MudDialog.Close(result);
         }
         else
         {
