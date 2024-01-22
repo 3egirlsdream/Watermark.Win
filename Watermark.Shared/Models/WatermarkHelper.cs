@@ -1,4 +1,5 @@
 ﻿using SkiaSharp;
+using System;
 using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
@@ -150,7 +151,11 @@ namespace Watermark.Win.Models
             canvasc.Clear(SKColors.Transparent);
             if (designMode)
             {
-                canvasc.Clear(SKColor.Parse("#F9FAFC"));
+                Random random = new Random();
+                int red = random.Next(0, 256); // 0 到 255 之间的随机数
+                int green = random.Next(0, 256);
+                int blue = random.Next(0, 256);
+                canvasc.Clear(new SKColor(Convert.ToByte(red), Convert.ToByte(green), Convert.ToByte(blue)));
             }
 
             void DrawLogo(double hc, double wc, IWMControl component, WMLogo mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, Action<SKBitmap> callback)
