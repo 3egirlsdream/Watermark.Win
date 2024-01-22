@@ -429,7 +429,7 @@
             var t = Task.Run(() =>
             {
                 var helper = new WatermarkHelper();
-                return helper.Generation(canvas, null);
+            return helper.Generation(canvas, null, true);
             });
             url = await t;
             SrcLoading = false;

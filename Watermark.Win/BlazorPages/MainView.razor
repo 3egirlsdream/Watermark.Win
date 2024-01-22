@@ -413,7 +413,7 @@
         {
             WatermarkHelper helper = new WatermarkHelper();
             CurrentImage.Canvas.Path = CurrentImage.Path;
-            return helper.Generation(CurrentImage.Canvas, null);
+            return helper.Generation(CurrentImage.Canvas, null, true);
         });
 
         CurrentImage.Src = await t;
@@ -464,7 +464,7 @@
                     WatermarkHelper helper = new WatermarkHelper();
                     var t = Task.Run(() =>
                     {
-                        var src = helper.Generation(canvas, null);
+                        var src = helper.Generation(canvas, null, true);
                         var wh = new TemplateList
                         {
                             ID = canvas.ID,
@@ -507,7 +507,7 @@
             CurrentImage.Canvas = cvs;
             WatermarkHelper helper = new WatermarkHelper();
             cvs.Path = CurrentImage.Path;
-            return helper.Generation(cvs, null);
+            return helper.Generation(cvs, null, true);
         });
 
         CurrentImage.Src = await t;
@@ -655,7 +655,7 @@
             }
         }
         var api = new WatermarkHelper();
-        CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null);
+        CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null, true);
         SrcLoading = false;
         StateHasChanged();
     }

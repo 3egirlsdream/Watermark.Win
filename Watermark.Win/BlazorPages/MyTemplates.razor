@@ -121,7 +121,7 @@
                     using var reader = new System.IO.StreamReader(stream);
                     var content = reader.ReadToEnd();
                     var canvas = Global.ReadConfig(content);
-                    var src = helper.Generation(canvas, null);
+                    var src = helper.Generation(canvas, null, true);
                     pairs[canvas.ID] = src;
                     wMTemplates.Add(canvas);
                     App.Current.Dispatcher.Invoke(() => StateHasChanged());
@@ -167,7 +167,7 @@
         {
             var c = Task.Run(() =>
             {
-                t.Src = whelper.Generation(t.WMCanvas, t);
+                t.Src = whelper.Generation(t.WMCanvas, t, true);
                 return t.Src;
             });
 

@@ -101,7 +101,7 @@
         {
             var c = Task.Run(() =>
             {
-                t.Src = whelper.Generation(t.WMCanvas, t);
+                t.Src = whelper.Generation(t.WMCanvas, t, true);
                 return t.Src;
             });
 
@@ -149,7 +149,7 @@
         {
             var c = Task.Run(() =>
             {
-                t.Src = whelper.Generation(t.WMCanvas, t);
+                t.Src = whelper.Generation(t.WMCanvas, t, true);
                 return t.Src;
             });
 

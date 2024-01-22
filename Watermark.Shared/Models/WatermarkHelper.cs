@@ -5,11 +5,11 @@ namespace Watermark.Win.Models
 {
     public class WatermarkHelper
     {
-        public Task<string> GenerationAsync(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview = true)
+        public Task<string> GenerationAsync(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
-            return Task.Run(() => Generation(mainCanvas, ziped, isPreview));
+            return Task.Run(() => Generation(mainCanvas, ziped, isPreview, designMode));
         }
-        public string Generation(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview = true)
+        public string Generation(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
             SKBitmap originalBitmap;
             string path = Global.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
@@ -88,7 +88,7 @@ namespace Watermark.Win.Models
             //绘制容器
             foreach (var container in mainCanvas.Children)
             {
-                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref info, container, mainCanvas.ID, ziped);
+                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref info, container, mainCanvas.ID, ziped, designMode);
 
                 var container_point = new SKPoint(0, 0);
                 var cl = container.Margin.Left * singeBorderWidth;
@@ -138,7 +138,7 @@ namespace Watermark.Win.Models
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, ZipedTemplate ziped)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, ZipedTemplate ziped, bool designMode)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
@@ -148,6 +148,10 @@ namespace Watermark.Win.Models
             var bitmapc = new SKBitmap(info.Width, info.Height);
             var canvasc = new SKCanvas(bitmapc);
             canvasc.Clear(SKColors.Transparent);
+            if (designMode)
+            {
+                canvasc.Clear(SKColor.Parse("#F9FAFC"));
+            }
 
             void DrawLogo(double hc, double wc, IWMControl component, WMLogo mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, Action<SKBitmap> callback)
             {
@@ -294,7 +298,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -457,7 +461,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }

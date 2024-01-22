@@ -298,7 +298,7 @@
             {
                 var helper = new WatermarkHelper();
 
-                var src = helper.Generation(data.WMCanvas, data);
+                var src = helper.Generation(data.WMCanvas, data, true);
                 data.Src = src;
                 wMTemplates.Add(data);
                 StateHasChanged();
@@ -373,7 +373,7 @@
                 WatermarkId = image.ID,
                 WMCanvas = CurrentImage.Canvas,
             };
-            return helper.Generation(CurrentImage.Canvas, ziped);
+            return helper.Generation(CurrentImage.Canvas, ziped, true);
         });
 
         CurrentImage.Src = await t;
@@ -408,7 +408,7 @@
             WatermarkHelper helper = new WatermarkHelper();
             cvs.Path = CurrentImage.Path;
             template.Bitmap = CurrentImage.Bitmap;
-            return helper.Generation(cvs, template);
+            return helper.Generation(cvs, template, true);
         });
 
         CurrentImage.Src = await t;
@@ -469,7 +469,7 @@
             {
                 var helper = new WatermarkHelper();
 
-                var src = helper.Generation(data.WMCanvas, data);
+                var src = helper.Generation(data.WMCanvas, data, true);
                 data.Src = src;
                 wMTemplates.Add(data);
                 StateHasChanged();
