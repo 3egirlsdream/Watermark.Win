@@ -1,0 +1,93 @@
+﻿
+@using Watermark.Shared.Models
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Options="DialogOptions" Style="width:400px;">
+    <DialogContent>
+        <MudForm>
+            <MudTextField @bind-Value="UserName" T="string" Label="账号" Required="true" RequiredError="账号不能为空" />
+            <MudTextField @bind-Value="DisplayName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" />
+            <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
+            <MudTextField @bind-Value="CheckPassword" T="string" Label="确认密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <MudStack Row Class="mt-5">
+                    <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" />
+                    <MudText Typo="Typo.caption">@Error</MudText>
+                </MudStack>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="LoginOK">确定</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+    string UserName { get; set; }
+    string Password { get; set; }
+    string CheckPassword { get; set; }
+    string DisplayName { get; set; }
+    string Error { get; set; }
+
+
+
+    public async void LoginOK()
+    {
+        APIHelper helper = new APIHelper();
+        var user = new SysUser
+        {
+            PK_ID = ClientInstance.Key(),
+            DISPLAY_NAME = DisplayName,
+            USER_NAME = UserName,
+            PASSWORD = Password
+        };
+        Error = "";
+        if (string.IsNullOrEmpty(UserName)) Error = "账号不能为空";
+        else if (string.IsNullOrEmpty(Password)) Error = "密码不能为空";
+        else if (string.IsNullOrEmpty(DisplayName)) Error = "展示名不能为空";
+        if (Password != CheckPassword) Error = "密码不一致";
+        if (!string.IsNullOrEmpty(Error)) return;
+        var result = await helper.Register(user);
+
+
+
+        string message = "";
+        Severity severity = Severity.Success;
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+
+        if (result.success && result.data != null)
+        {
+            Global.CurrentUser = new LoginChildModel
+            {
+                ID = result.data.ID,
+                IMG = "",
+                DISPLAY_NAME = result.data.DISPLAY_NAME,
+                USER_NAME = result.data.USER_NAME
+            };
+            message = "注册并登录成功";
+            severity = Severity.Success;
+            MudDialog.Close(true);
+            StateHasChanged();
+        }
+        else
+        {
+            severity = Severity.Error;
+            message = result.message?.content ?? "注册失败";
+        }
+
+        Snackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = false;
+        });
+    }
+}

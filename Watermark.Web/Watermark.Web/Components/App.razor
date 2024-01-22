@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    @*<link rel="stylesheet" href="bootstrap/bootstrap.min.css" />*@
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="Watermark.Web.styles.css" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+</body>
+
+</html>
+<script>
+    window.saveAsFile = function(filename, byteArray) {
+    // 创建一个Blob对象
+    var blob = new Blob([new Uint8Array(byteArray)], { type: "application/octet-stream" });
+
+    // 创建一个虚拟链接
+    var link = document.createElement('a');
+
+    // 设置链接属性，包括文件名和URL
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+
+    // 模拟点击这个链接来触发下载操作
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>

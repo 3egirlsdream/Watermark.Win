@@ -1,0 +1,207 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using System.Windows
+@using System.IO
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
+<style>
+	.mud-card-actions {
+		position: relative;
+	}
+</style>
+<MudDialog Style="min-width:50%;min-height:50%;width:80%; height:80%;overflow-y:hidden">
+	<DialogContent>
+		<MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(80vh - 120px);overflow-y:auto;padding:5px;">
+			@foreach (var grid in ZipedTemplates)
+			{
+				<MudItem>
+					<MudPaper Width="256px" Class="mt-2">
+						<MudCard Class="pa-2" Style="background:#F9FAFC;">
+							<MudImage Src="@(grid.Src)" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
+							<MudCardActions>
+								@*<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>Upload(grid.WMCanvas.ID)">上传</MudButton>
+							<MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-2" OnClick="(()=>EditTemplate(grid.WMCanvas))">编辑</MudButton>
+							<MudButton Variant="Variant.Filled" Color="Color.Error" Style="position:absolute;right:0" OnClick="()=>DeleteTemplate(grid.WMCanvas.ID)">删除</MudButton>*@
+								<MudButton Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Secondary" Style="position:absolute;right:0" OnClick="()=>Download(grid)">下载</MudButton>
+							</MudCardActions>
+						</MudCard>
+					</MudPaper>
+				</MudItem>
+			}
+
+			<MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
+				<MudStack Justify="Justify.Center">
+					<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
+					<MudText Typo="Typo.subtitle1" Color="Color.Dark">
+						<b>@loadingMessage</b>
+					</MudText>
+				</MudStack>
+			</MudOverlay>
+		</MudGrid>
+	</DialogContent>
+	<DialogActions>
+		<MudButton Color="Color.Primary" Variant="Variant.Filled" FullWidth="true" OnClick="Submit">Ok</MudButton>
+	</DialogActions>
+</MudDialog>
+
+
+
+@code {
+	[CascadingParameter]
+	MudDialogInstance MudDialog { get; set; }
+	[Inject]
+	private IDialogService DialogService { get; set; }
+
+	void Submit() => MudDialog.Close(DialogResult.Ok(true));
+	void Cancel() => MudDialog.Cancel();
+	private DialogOptions dialogOptions = new() { FullWidth = true };
+	bool loading = true;
+	string loadingMessage = "正在加载模板...";
+	List<ZipedTemplate> ZipedTemplates { get; set; } = new List<ZipedTemplate>();
+	async void InitTemplates()
+	{
+		loading = true;
+		StateHasChanged();
+		var helper = new APIHelper();
+		ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 0, 100);
+		List<Task> tasks1 = new List<Task>();
+		foreach (var t in ZipedTemplates)
+		{
+			var task = helper.ExtractZip(t.WatermarkId).ContinueWith(item =>
+			{
+				t.WMCanvas = item.Result.WMCanvas;
+				t.Images = item.Result.Images;
+				t.Fonts = item.Result.Fonts;
+				t.Bitmap = item.Result.Bitmap;
+			});
+			tasks1.Add(task);
+		}
+		await Task.WhenAll(tasks1);
+		var whelper = new WatermarkHelper();
+		List<Task> tasks = new List<Task>();
+		foreach (var t in ZipedTemplates)
+		{
+			var c = Task.Run(() =>
+			{
+				t.Src = whelper.Generation(t.WMCanvas, t);
+				return t.Src;
+			});
+
+			tasks.Add(c);
+		}
+		await Task.WhenAll(tasks);
+		loading = false;
+		StateHasChanged();
+	}
+
+	protected override void OnInitialized()
+	{
+		if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.USER_NAME)) return;
+		InitTemplates();
+	}
+
+	void EditTemplate(WMCanvas canvas)
+	{
+		//var action = new Action(() =>
+		//{
+		//    var win = new Watermark.Win.Views.DesignWin(canvas);
+		//    win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+		//    win.ShowDialog();
+		//});
+		//OpenWinHelper.Open(action);
+	}
+	async void DeleteTemplate(string id)
+	{
+
+		bool? result = await DialogService.ShowMessageBox(
+		"删除",
+		(MarkupString)"确定删除模板？&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+		yesText: "确定", cancelText: "取消");
+		if (result == true)
+		{
+			try
+			{
+				var path = Global.TemplatesFolder + id;
+				System.IO.Directory.Delete(path, true);
+				StateHasChanged();
+			}
+			catch { }
+			finally
+			{
+				InitTemplates();
+			}
+		}
+
+	}
+
+	async void Upload(string id)
+	{
+		var parameters = new DialogParameters<UploadTemplateDialog>();
+		parameters.Add(x => x.Name, ZipedTemplates.FirstOrDefault(c => c.WMCanvas.ID == id)?.WMCanvas.Name ?? "");
+		var dialog = DialogService.Show<UploadTemplateDialog>("", parameters);
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			dynamic data = result.Data;
+			if (data == null)
+			{
+				return;
+			}
+
+
+			Action action = new Action(async () =>
+			{
+				loading = true;
+				StateHasChanged();
+				loadingMessage = "正在上传...";
+				var helper = new APIHelper();
+				var result = await helper.UploadWatermark(id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
+				string message = "";
+				Severity severity = Severity.Success;
+				Snackbar.Clear();
+				Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+
+				if (result.success)
+				{
+					message = "上传成功";
+				}
+				else
+				{
+					severity = Severity.Error;
+					message = result.message?.content;
+				}
+
+				var target = Global.TemplatesFolder + $"{id}.zip";
+				if (File.Exists(target)) File.Delete(target);
+				Snackbar.Add(message, severity, config =>
+				{
+					config.ShowCloseIcon = false;
+				});
+				loading = false;
+				StateHasChanged();
+			});
+
+			if (string.IsNullOrEmpty(Global.CurrentUser.ID))
+			{
+				var rst = DialogService.Show<LoginDialog>("");
+				var dialogResult = await rst.Result;
+				if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+				{
+					action.Invoke();
+				}
+			}
+			else
+			{
+				action.Invoke();
+			}
+		}
+
+
+	}
+
+	void Download(ZipedTemplate ziped)
+	{
+		MudDialog.Close(ziped);
+	}
+}
