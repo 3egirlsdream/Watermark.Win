@@ -14,15 +14,15 @@
 <div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
         <MudToolBar Style="height:40px;padding-left:5px;">
-            <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
-            <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
-            <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.SaveAs" Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.SaveAs" Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MudButton>
             @if (SrcLoading)
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            <MudButton Variant="Variant.Text" Icon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
         </MudToolBar>
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
@@ -42,7 +42,8 @@
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>
-                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" />
+                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense"/>
+                     <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
                      <MudStack Row Class="mt-5">
                          <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                          <MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />

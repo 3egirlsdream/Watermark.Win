@@ -28,6 +28,7 @@ namespace Watermark.Win.Views
             var services = IocHelper.GetIoc();
 
             services.AddSingleton(new WMCanvas());
+            services.AddSingleton("");
             Resources.SetIoc(services);
             InitializeComponent();
         }
