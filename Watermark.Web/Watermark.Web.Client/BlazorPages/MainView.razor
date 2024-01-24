@@ -103,7 +103,6 @@
         </MudToolBar>
     </div>
     <div Style="height:100%;width:100%;display: flex;">
-
         <div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
             <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; height: 100%;overflow-y:auto;overflow-x:hidden;">
                 <MudList Clickable="true">
@@ -154,16 +153,21 @@
         </div>
     </div>
 
-    <MudOverlay Visible="MainLoading.Show" DarkBackground="true" Absolute="false" ZIndex="99999">
+    <MudOverlay Visible="@(MainLoading.Show || System.Runtime.InteropServices.RuntimeInformation.OSDescription != "Browser")" DarkBackground="true" Absolute="false" ZIndex="99999">
         <MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
             <MudStack>
-                <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
+                @if (System.Runtime.InteropServices.RuntimeInformation.OSDescription == "Browser")
+                {
+                    <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
+                }
                 <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
                     <b>@MainLoading.Message</b>
                 </MudText>
             </MudStack>
         </MudPaper>
     </MudOverlay>
+
+    <MudText Style="position:absolute; bottom:0px;margin: 0 auto; width: 100%;text-align: center; color:lightgrey" Typo="Typo.body2">Powered By .NET 8 Blazor WebAssembly</MudText>
 </div>
 
 
@@ -207,7 +211,7 @@
     {
         public static bool Show { get; set; } = false;
         public static double Value { get; set; }
-        public static string Message { get; set; }
+        public static string Message { get; set; } = "正在下载资源...";
     }
 
     class CreateTemplate

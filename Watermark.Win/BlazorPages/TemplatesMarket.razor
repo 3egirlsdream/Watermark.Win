@@ -10,17 +10,22 @@
                     <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="false" ShowBullets="true" EnableSwipeGesture="true" AutoCycle="true" TData="object">
                         <MudCarouselItem Transition="Transition.Fade" Color="@Color.Primary">
                             <div class="d-flex" style="height:100%">
-                                <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MudBlazor" Size="@Size.Large" />
+                                <MudGrid>
+                                    @if (ZipedTemplates.Count >= 2)
+                                    {
+                                        <MudItem xs="6">
+                                            <MudImage Height="180" Class="ma-5" ObjectFit="ObjectFit.Contain" Src="@ZipedTemplates[0].Src"/>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudImage Height="180" Class="ma-5" ObjectFit="ObjectFit.Contain" Src="@ZipedTemplates[1].Src" />
+                                        </MudItem>
+                                    }
+                                </MudGrid>
                             </div>
                         </MudCarouselItem>
                         <MudCarouselItem Transition="Transition.Fade" Color="@Color.Secondary">
                             <div class="d-flex" style="height:100%">
                                 <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MudBlazor" Size="@Size.Large" />
-                            </div>
-                        </MudCarouselItem>
-                        <MudCarouselItem Transition="Transition.Fade">
-                            <div class="d-flex" style="height:100%">
-                                <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MudBlazor" Color="@Color.Primary" Size="@Size.Large" />
                             </div>
                         </MudCarouselItem>
                     </MudCarousel>
@@ -51,7 +56,7 @@
 
                     </MudItem>
                 }
-                <MudButton FullWidth Variant="Variant.Filled" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
+                <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
             }
         </MudGrid>
         <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
