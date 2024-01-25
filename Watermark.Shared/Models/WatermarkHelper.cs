@@ -138,14 +138,26 @@ namespace Watermark.Win.Models
             var bytes = data.ToArray();
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
-
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, ZipedTemplate ziped, bool designMode)
+        
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, ZipedTemplate ziped, bool designMode, int level = 1)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
             var wc = container.WidthPercent / 100.0 * originalBitmap.Width;
             info.Height = (int)hc == 0 ? 1 : (int)hc;
-            info.Width = (int)wc == 0 ? 1 : (int)wc;
+
+            if ((int)wc == 0 && level == 2)
+            {
+                double maxTextWidth = 1;
+                foreach (WMText mText in container.Controls.Where(c=>c is WMText))
+                {
+                    DrawText(xs, mText, null);
+                    maxTextWidth = Math.Max(maxTextWidth, mText.Width);
+                }
+                wc = maxTextWidth;
+            }
+
+            info.Width = (int)wc;
             var bitmapc = new SKBitmap(info.Width, info.Height);
             var canvasc = new SKCanvas(bitmapc);
             canvasc.Clear(SKColors.Transparent);
@@ -303,7 +315,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode);
+                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }

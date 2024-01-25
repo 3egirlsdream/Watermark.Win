@@ -21,6 +21,12 @@
 
 </html>
 <script>
+    window.getDimensions = function () {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+    };
     window.saveAsFile = function(filename, byteArray) {
     // 创建一个Blob对象
     var blob = new Blob([new Uint8Array(byteArray)], { type: "application/octet-stream" });
@@ -36,5 +42,13 @@
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+        
 }
 </script>
+
+<style>
+    .page {
+        overflow-y: hidden
+    }
+</style>
