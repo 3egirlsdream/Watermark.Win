@@ -15,6 +15,7 @@ COPY ["Watermark.Shared/Watermark.Shared.csproj", "Watermark.Shared/"]
 RUN dotnet restore "./Watermark.Web/Watermark.Web/./Watermark.Web.csproj"
 COPY . .
 WORKDIR "/src/Watermark.Web/Watermark.Web"
+RUN dotnet workload install wasm-tools
 RUN dotnet build "./Watermark.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
