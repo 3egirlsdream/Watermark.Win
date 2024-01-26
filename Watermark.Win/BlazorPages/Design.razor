@@ -186,7 +186,7 @@
                                          </MudStack>
                                          <MudStack Row Class=" mt-5">
                                              <MudTextField @bind-Value="@mContainer.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                             <MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                             <MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例, 0自动计算)" Variant="Variant.Outlined" Margin="Margin.Dense" />
                                          </MudStack>
                                          <MudExpansionPanels DisableBorders="true" Elevation="0">
                                              @foreach (var c_comp in mContainer.Controls)

@@ -158,7 +158,9 @@ namespace Watermark.Win.Models
                 else
                 {
                     using var entryStream = entry.Open();
-                    SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
+                    using MemoryStream mss = new();
+                    entryStream.CopyTo(mss);
+                    SKBitmap sKBitmap = SKBitmap.Decode(mss.ToArray());
                     t.Images[entry.FullName] = sKBitmap;
                 }
             }
