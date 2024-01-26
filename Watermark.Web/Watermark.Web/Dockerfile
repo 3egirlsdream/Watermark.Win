@@ -12,11 +12,11 @@ COPY ["Watermark.Web/Watermark.Web.Client/Watermark.Web.Client.csproj", "Waterma
 RUN dotnet restore "./Watermark.Web/Watermark.Web/./Watermark.Web.csproj"
 COPY . .
 WORKDIR "/src/Watermark.Web/Watermark.Web"
-RUN dotnet build "./Watermark.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "Watermark.Web/Watermark.Web/Watermark.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Watermark.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Watermark.Web/Watermark.Web/Watermark.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
