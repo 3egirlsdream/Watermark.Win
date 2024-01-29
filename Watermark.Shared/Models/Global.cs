@@ -8,7 +8,7 @@ namespace Watermark.Win.Models
         public static string TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + System.IO.Path.DirectorySeparatorChar;
         public static string ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + System.IO.Path.DirectorySeparatorChar;
         public static string LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + System.IO.Path.DirectorySeparatorChar;
-        public static LoginChildModel CurrentUser = new LoginChildModel();
+        public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
 
         public static WMCanvas ReadConfigFromPath(string path)
         {
@@ -82,11 +82,11 @@ namespace Watermark.Win.Models
             for (var i = 0; i < canvas.Children.Count; i++)
             {
                 var ct = canvas.Children[i];
-                ct.PNode = new PNode(i, "0");
+                ct.PNode = new WMPNode(i, "0");
                 for (var j = 0; j < ct.Controls.Count; j++)
                 {
                     var mc = ct.Controls[j];
-                    mc.PNode = new PNode(j, ct.ID);
+                    mc.PNode = new WMPNode(j, ct.ID);
                     if (mc is WMLine mLine) nc.Lines.Add(mLine);
                     else if (mc is WMLogo mLogo) nc.Logos.Add(mLogo);
                     else if (mc is WMText mText) nc.Texts.Add(mText);
@@ -95,7 +95,7 @@ namespace Watermark.Win.Models
                         for (var k = 0; k < mContainer.Controls.Count; k++)
                         {
                             var child = mContainer.Controls[k];
-                            child.PNode = new PNode(k, mContainer.ID);
+                            child.PNode = new WMPNode(k, mContainer.ID);
                             if (child is WMLine line) nc.Lines.Add(line);
                             else if (child is WMLogo logo) nc.Logos.Add(logo);
                             else if (child is WMText text) nc.Texts.Add(text);

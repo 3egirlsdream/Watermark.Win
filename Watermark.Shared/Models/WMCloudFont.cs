@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Watermark.Win.Models
 {
-    public class CloudFont : ValidationBase
+    public class WMCloudFont : ValidationBase
     {
         public string ID { get; set; }
         public string NAME { get; set; }

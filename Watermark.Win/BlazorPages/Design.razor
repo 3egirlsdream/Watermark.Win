@@ -398,7 +398,7 @@
     string newTemplateName = "";
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
 
-    Thickness BorderThickness = new Thickness();
+    WMThickness BorderThickness = new WMThickness();
     WMCanvas canvas;
     string url = "";
     string defaultImage = "";
@@ -453,7 +453,7 @@
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled)
         {
-            mText.Exifs = (List<ExifConfigInfo>)dialogResult.Data;
+            mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
             StateHasChanged();
         }
     }

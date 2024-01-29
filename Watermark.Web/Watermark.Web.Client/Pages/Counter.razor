@@ -41,7 +41,7 @@ Welcome to your new app.
                 canvas = new WMCanvas();
                 var bitmap = SKBitmap.Decode(ms.ToArray());
                 WatermarkHelper helper = new WatermarkHelper();
-                var ziped = new ZipedTemplate
+                var ziped = new WMZipedTemplate
                 {
                     WatermarkId = canvas.ID,
                     WMCanvas = canvas,

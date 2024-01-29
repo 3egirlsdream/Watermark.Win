@@ -43,7 +43,7 @@
     public async void LoginOK()
     {
         APIHelper helper = new APIHelper();
-        var user = new SysUser
+        var user = new WMSysUser
         {
             PK_ID = ClientInstance.Key(),
             DISPLAY_NAME = DisplayName,
@@ -68,7 +68,7 @@
 
         if (result.success && result.data != null)
         {
-            Global.CurrentUser = new LoginChildModel
+            Global.CurrentUser = new WMLoginChildModel
             {
                 ID = result.data.ID,
                 IMG = "",

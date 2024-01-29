@@ -68,13 +68,13 @@
         MudDialog.Close(DialogResult.Ok(Exifs));
     }
     [Parameter]
-    public List<ExifConfigInfo> Exifs { get; set; } = [];
+    public List<WMExifConfigInfo> Exifs { get; set; } = [];
     //"F##4##suffix;"
 
     void Click(DefaultExifs exif)
     {
         exif.IsChecked = !exif.IsChecked;
-        var i = new ExifConfigInfo
+        var i = new WMExifConfigInfo
             {
                 Prefix = "",
                 Suffix = "",

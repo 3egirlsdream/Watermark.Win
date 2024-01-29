@@ -85,7 +85,7 @@ namespace Watermark.Win.Models
             return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
         }
 
-        public async Task<List<ZipedTemplate>> GetWatermarks(string user, int start, int length, string desc = "countDesc")
+        public async Task<List<WMZipedTemplate>> GetWatermarks(string user, int start, int length, string desc = "countDesc")
         {
             try
             {
@@ -100,11 +100,11 @@ namespace Watermark.Win.Models
 
                     var data = (JArray)responseObject.data.Data;
                     if (data == null) return [];
-                    List<ZipedTemplate> templates = new List<ZipedTemplate>();
+                    List<WMZipedTemplate> templates = new List<WMZipedTemplate>();
                     List<Task> tasks = new List<Task>();
                     foreach (var item in data)
                     {
-                        var t = new ZipedTemplate();
+                        var t = new WMZipedTemplate();
                         t.WatermarkId = item?["ID"]?.ToString();
                         t.Desc = item?["DESC"]?.ToString();
                         t.Coins = Convert.ToInt32(item?["COINS"]?.ToString() ?? "0");
@@ -116,7 +116,7 @@ namespace Watermark.Win.Models
                 }
                 else
                 {
-                    return new List<ZipedTemplate>();
+                    return new List<WMZipedTemplate>();
                 }
             }
             catch (Exception ex)
@@ -125,7 +125,7 @@ namespace Watermark.Win.Models
             }
         }
         
-        public async Task<ZipedTemplate> ExtractZip(string watermarkId)
+        public async Task<WMZipedTemplate> ExtractZip(string watermarkId)
         {
             using var client = new HttpClient();
             var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
@@ -133,7 +133,7 @@ namespace Watermark.Win.Models
             stream.CopyTo(ms);
             ms.Seek(0, SeekOrigin.Begin);
             using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
-            ZipedTemplate t = new ZipedTemplate();
+            WMZipedTemplate t = new WMZipedTemplate();
             foreach (var entry in archive.Entries)
             {
                 if (entry.FullName.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
@@ -168,7 +168,7 @@ namespace Watermark.Win.Models
         }
 
 
-        public async Task<API<SysUser>> Register(SysUser user)
+        public async Task<API<WMSysUser>> Register(WMSysUser user)
         {
             using (var client = new HttpClient())
             {
@@ -185,26 +185,26 @@ namespace Watermark.Win.Models
                 var response = await client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
                 var bt = await response.Content.ReadAsByteArrayAsync();
                 var str = Encoding.UTF8.GetString(bt);
-                var result = JsonConvert.DeserializeObject<API<SysUser>>(str);
+                var result = JsonConvert.DeserializeObject<API<WMSysUser>>(str);
                 if (response.IsSuccessStatusCode)
                 {
                     return result;
                 }
-                else return new API<SysUser>() { success = false };
+                else return new API<WMSysUser>() { success = false };
             }
         }
     
-        public async Task<API<LoginModel>> LoginIn(string user, string password, bool isMD5 = false)
+        public async Task<API<WMLoginModel>> LoginIn(string user, string password, bool isMD5 = false)
         {
             try
             {
                 string pw = GetMD5(password);
                 if (isMD5) pw = password;
-                return await Connections.HttpGetAsync<LoginModel>(HOST + $"/api/Watermark/Login?user={user}&pwd={pw}", Encoding.UTF8);
+                return await Connections.HttpGetAsync<WMLoginModel>(HOST + $"/api/Watermark/Login?user={user}&pwd={pw}", Encoding.UTF8);
             }
             catch (Exception ex)
             {
-                return new API<LoginModel>() { data = new LoginModel { Message = ex.Message } };
+                return new API<WMLoginModel>() { data = new WMLoginModel { Message = ex.Message } };
             }
         }
 
@@ -270,46 +270,5 @@ namespace Watermark.Win.Models
                 return tuple;
             }
         }
-    }
-
-    public class LoginModel
-    {
-        public string Message { get; set; }
-        public LoginChildModel data { get; set; }
-        public string token { get; set; }
-    }
-    public class LoginChildModel
-    {
-        public string ID { get; set; }
-        public string IMG { get; set; }
-        public string DISPLAY_NAME { get; set; }
-        public string USER_NAME { get; set; }
-    }
-
-    public class ZipedTemplate
-    {
-        public ZipedTemplate()
-        {
-            Images = new Dictionary<string, SKBitmap>();
-            Fonts = new Dictionary<string, Stream>();
-        }
-        public WMCanvas WMCanvas { get; set; }
-        public Dictionary<string, SKBitmap> Images { get; set; }
-        public Dictionary<string, Stream> Fonts { get; set; }
-        public SKBitmap Bitmap { get; set; }
-        public string Src { get; set; }
-        public string Desc { get; set; }
-        public string WatermarkId { get; set; }
-        public int DownloadTimes { get; set; }
-        public int Coins { get; set; }
-    }
-
-    public class SysUser
-    {
-        public string ID { get; set; }
-        public string USER_NAME { get; set; }
-        public string DISPLAY_NAME { get; set; }
-        public string PASSWORD { get; set; }
-        public string PK_ID { get; set; }
     }
 }

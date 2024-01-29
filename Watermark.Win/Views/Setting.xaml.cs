@@ -34,7 +34,7 @@ namespace Watermark.Win.Views
         private async void CheckVersion(object sender, RoutedEventArgs e)
         {
             checkUpdateBtn.IsEnabled = false;
-            var version = await Connections.HttpGetAsync<CLIENT_VERSION>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+            var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
             if (version != null && version.success && version.data != null && version.data.VERSION != null)
             {
                 newPath = version.data.PATH;
@@ -121,7 +121,7 @@ namespace Watermark.Win.Views
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            var version = await Connections.HttpGetAsync<CLIENT_VERSION>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+            var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
             if (version != null && version.success && version.data != null && version.data.VERSION != null)
             {
                 newPath = version.data.PATH;
@@ -224,8 +224,8 @@ namespace Watermark.Win.Views
         }
 
 
-        private ObservableCollection<CloudFont> fontsList;
-        public ObservableCollection<CloudFont> FontsList
+        private ObservableCollection<WMCloudFont> fontsList;
+        public ObservableCollection<WMCloudFont> FontsList
         {
             get => fontsList;
             set
@@ -244,7 +244,7 @@ namespace Watermark.Win.Views
 
         private async void InitFontsList()
         {
-            var version = await Connections.HttpGetAsync<ObservableCollection<CloudFont>>(APIHelper.HOST + "/api/CloudSync/GetFontsList", Encoding.Default);
+            var version = await Connections.HttpGetAsync<ObservableCollection<WMCloudFont>>(APIHelper.HOST + "/api/CloudSync/GetFontsList", Encoding.Default);
             if (version != null && version.success && version.data != null && version.data.Count > 0)
             {
                 FontsList = version.data;
@@ -370,7 +370,7 @@ namespace Watermark.Win.Views
             CanExecuteDelegate = o => true
         };
 
-        private async void downloadFont(CloudFont first)
+        private async void downloadFont(WMCloudFont first)
         {
             using (var wc = new WebClient())
             {

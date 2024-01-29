@@ -94,7 +94,7 @@
     bool loading = true;
     string loadingMessage = "正在加载模板...";
     List<WMCanvas> wMTemplates { get; set; }
-    List<ZipedTemplate> ZipedTemplates { get; set; } = new List<ZipedTemplate>();
+    List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
     Dictionary<string, string> pairs;
     async Task InitTemplates()
     {

@@ -80,7 +80,7 @@
                     <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
                     <MudText Typo="Typo.body2" Class="px-4 py-1">@DateTime.Now</MudText>
-                    <MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new LoginChildModel(); IsLoginIn = false; }">退出</MudButton>
+                    <MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); IsLoginIn = false; }">退出</MudButton>
                 }
                 else
                 {
@@ -201,7 +201,7 @@
     [Inject]
     private IDialogService DialogService { get; set; }
 
-    Thickness BorderThickness = new Thickness();
+    WMThickness BorderThickness = new WMThickness();
     string url = "";
     bool SrcLoading = false;
     bool ShowUserInfo = false;
@@ -273,7 +273,7 @@
             var login = await helper.LoginIn(result.Item1, result.Item2, true);
             if (login.success)
             {
-                Global.CurrentUser = new LoginChildModel
+                Global.CurrentUser = new WMLoginChildModel
                     {
                         ID = login.data.data.ID,
                         IMG = login.data.data.IMG,
@@ -297,7 +297,7 @@
         var dialog = await rst.Result;
         if (!dialog.Canceled)
         {
-            var data = (ZipedTemplate)dialog.Data;
+            var data = (WMZipedTemplate)dialog.Data;
             if (data != null)
             {
                 var helper = new WatermarkHelper();
@@ -348,7 +348,7 @@
         {
             WatermarkHelper helper = new WatermarkHelper();
             CurrentImage.Canvas.Path = CurrentImage.Path;
-            var ziped = new ZipedTemplate
+            var ziped = new WMZipedTemplate
                 {
                     Bitmap = image.Bitmap,
                     WatermarkId = image.ID,
@@ -362,8 +362,8 @@
         StateHasChanged();
     }
 
-    List<ZipedTemplate> wMTemplates = new List<ZipedTemplate>();
-    ZipedTemplate CurrentTemplate;
+    List<WMZipedTemplate> wMTemplates = new List<WMZipedTemplate>();
+    WMZipedTemplate CurrentTemplate;
     TemplateList CurrentImage;
 
 
@@ -376,7 +376,7 @@
         public string Src { get; set; }
     }
 
-    async void ChangeTemplate(ZipedTemplate template)
+    async void ChangeTemplate(WMZipedTemplate template)
     {
         CurrentTemplate = template;
         if (CurrentImage == null) return;
@@ -445,7 +445,7 @@
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            var data = (ZipedTemplate)result.Data;
+            var data = (WMZipedTemplate)result.Data;
             if (data != null)
             {
                 var helper = new WatermarkHelper();

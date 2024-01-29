@@ -58,7 +58,7 @@
 	private DialogOptions dialogOptions = new() { FullWidth = true };
 	bool loading = true;
 	string loadingMessage = "正在加载模板...";
-	List<ZipedTemplate> ZipedTemplates { get; set; } = new List<ZipedTemplate>();
+	List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
 	async void InitTemplates()
 	{
 		loading = true;
@@ -200,7 +200,7 @@
 
 	}
 
-	void Download(ZipedTemplate ziped)
+	void Download(WMZipedTemplate ziped)
 	{
 		MudDialog.Close(ziped);
 	}

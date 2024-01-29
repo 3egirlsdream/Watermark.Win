@@ -6,11 +6,11 @@ namespace Watermark.Win.Models
 {
     public class WatermarkHelper
     {
-        public Task<string> GenerationAsync(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview, bool designMode = false)
+        public Task<string> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
             return Task.Run(() => Generation(mainCanvas, ziped, isPreview, designMode));
         }
-        public string Generation(WMCanvas mainCanvas, ZipedTemplate ziped, bool isPreview, bool designMode = false)
+        public string Generation(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
             SKBitmap originalBitmap;
             string path = Global.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
@@ -139,7 +139,7 @@ namespace Watermark.Win.Models
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
         
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, ZipedTemplate ziped, bool designMode, int level = 1)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;

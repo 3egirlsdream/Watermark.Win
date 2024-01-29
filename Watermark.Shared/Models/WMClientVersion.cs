@@ -2,7 +2,7 @@
 
 namespace Watermark.Win.Models
 {
-    public class CLIENT_VERSION
+    public class WMClientVersion
     {
         public string? ID { get; set; }
         public DateTime DATETIME { get; set; }
