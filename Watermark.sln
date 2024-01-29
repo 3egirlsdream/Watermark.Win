@@ -7,9 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Win", "Watermark.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Shared", "Watermark.Shared\Watermark.Shared.csproj", "{EEFB2B91-1A99-4298-BDE1-DF34A0039744}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark.Web", "Watermark.Web\Watermark.Web\Watermark.Web.csproj", "{2947859B-5E59-4532-91B9-79E851E072A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Web", "Watermark.Web\Watermark.Web\Watermark.Web.csproj", "{2947859B-5E59-4532-91B9-79E851E072A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark.Web.Client", "Watermark.Web\Watermark.Web.Client\Watermark.Web.Client.csproj", "{4EE58B51-F812-48A6-BAD0-F7B03755E723}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Web.Client", "Watermark.Web\Watermark.Web.Client\Watermark.Web.Client.csproj", "{4EE58B51-F812-48A6-BAD0-F7B03755E723}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
