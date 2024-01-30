@@ -1,8 +1,6 @@
 ﻿@page "/"
-@using System.Net.Http
-@using System.Net.Http.Json
-@using System.IO
-@using Newtonsoft.Json
+@rendermode InteractiveWebAssembly
+@inject HttpClient http
 
 
 
@@ -34,38 +32,34 @@
         </MudStack>
         @foreach (var item in pairs)
         {
-            <p>@item.Key</p>
-
-            <br />
+            <p>@item.Key</p><br/>
         }
     </div>
     <MudButton FullWidth OnClick="init">计算</MudButton>
-     @* <MudOverlay Visible="@(System.Runtime.InteropServices.RuntimeInformation.OSDescription != "Browser")" DarkBackground="true" Absolute="false" ZIndex="99999">
-         <MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
-             <MudStack>
-                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-7" Style="margin:auto" />
-                 <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
-                     <b>加载中</b>
-                 </MudText>
-             </MudStack>
-         </MudPaper>
-     </MudOverlay> *@
- </div>
+    <MudOverlay Visible="@(System.Runtime.InteropServices.RuntimeInformation.OSDescription != "Browser")" DarkBackground="true" Absolute="false" ZIndex="99999">
+        <MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
+            <MudStack>
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-7" Style="margin:auto"/>
+                <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
+                    <b>加载中</b>
+                </MudText>
+            </MudStack>
+        </MudPaper>
+    </MudOverlay>
+</div>
 
 
 
- @code {
+@code {
     string fromMT, fromDT, targetST;
     List<SynthesisCombination> pals = new List<SynthesisCombination>();
     Dictionary<int, string> pallist = new Dictionary<int, string>();
     string sampleText = "";
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        HttpClient http = new HttpClient();
         if (firstRender)
         {
-            var json = File.ReadAllText("C:\\Users\\kingdee\\source\\repos\\JointWatermark\\Watermark.Win\\wwwroot\\txt.json");
-            pals = JsonConvert.DeserializeObject<List<SynthesisCombination>>(json);
+            pals = await http.GetFromJsonAsync<List<SynthesisCombination>>("txt.json");
             foreach (var p in pals)
             {
                 pallist[p.MomId] = p.MomName;
@@ -84,7 +78,6 @@
     int? startM = null, startD = null, target = null;
     void init()
     {
-        pairs = new Dictionary<string, int>();
         int? startM = pallist?.FirstOrDefault(x => x.Value == fromMT).Key ?? null,
         startD = pallist?.FirstOrDefault(x => x.Value == fromDT).Key,
         target = pallist?.FirstOrDefault(x => x.Value == targetST).Key;
@@ -141,6 +134,12 @@
             }
         }
     }
+
+
+
+
+
+
 
 
 
