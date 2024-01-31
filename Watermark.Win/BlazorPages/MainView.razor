@@ -34,12 +34,13 @@
                 <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
                 <MudMenuItem> 交流群2：836325187 </MudMenuItem>
             </MudMenu>
-            <MudMenu Label="赞助开发" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-            </MudMenu>
             <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Star">点个⭐</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.BugReport">提交BUG</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Web" OnClick="@(()=>OpenLink("http://www.thankful.top"))">网页版</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Star" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))">点个⭐</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.BugReport" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))">提交反馈</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
             </MudMenu>
             @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
             {
@@ -563,13 +564,25 @@
         await Task.Delay(200);
         MainLoading.Show = false;
         StateHasChanged();
-        var action = new Action(() =>
+
+
+        var task = Task.Run(() =>
         {
             var path = AppDomain.CurrentDomain.BaseDirectory + "output";
             var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
             System.Diagnostics.Process.Start(psi);
         });
-        OpenWinHelper.OpenFolder(action);
+        Snackbar.Clear();
+        Snackbar.Add("打开输出文件夹？", Severity.Info, config =>
+        {
+            config.Action = "好的";
+            config.ActionColor = Color.Primary;
+            config.Onclick = snackbar =>
+            {
+                return task;
+            };
+        });
+
 
     }
 
@@ -749,5 +762,15 @@
         }
         SrcLoading = false;
         StateHasChanged();
+    }
+
+    void OpenLink(string link)
+    {
+        var action = new Action(() =>
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        });
+        OpenWinHelper.Open(action);
     }
 }
