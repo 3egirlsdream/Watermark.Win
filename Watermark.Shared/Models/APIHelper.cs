@@ -106,6 +106,7 @@ namespace Watermark.Win.Models
                     {
                         var t = new WMZipedTemplate();
                         t.WatermarkId = item?["ID"]?.ToString();
+                        t.UserId = item?["USER_ID"]?.ToString();
                         t.Desc = item?["DESC"]?.ToString();
                         t.Coins = Convert.ToInt32(item?["COINS"]?.ToString() ?? "0");
                         t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");

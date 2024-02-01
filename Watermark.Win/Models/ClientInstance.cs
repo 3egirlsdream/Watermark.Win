@@ -43,6 +43,33 @@ namespace Watermark.Shared.Models
             }
         };
 
+        public static Action<WMCanvas, WMContainer, Dictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                var p = dialog.FileName;
+                var destFolder = Global.TemplatesFolder + canvas.ID;
+                if (!System.IO.Directory.Exists(destFolder))
+                {
+                    System.IO.Directory.CreateDirectory(destFolder);
+                }
+
+                var name = p.Substring(p.LastIndexOf('\\') + 1);
+                var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+                System.IO.File.Copy(p, destFile, true);
+                mContainer.Path = name;
+                Global.ImageFile2Base64(ImagesBase64, destFile, mContainer.ID);
+            }
+        };
+
 
 
         public static Action<List<string>> InitLocalFontsAction = (Fonts) =>

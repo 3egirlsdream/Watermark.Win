@@ -112,8 +112,8 @@
                         </MudList>
                     </MudPaper>
                 </MudTabPanel>
-                <MudTabPanel Text="Tab Two">
-                    <MudText>Content Two</MudText>
+                <MudTabPanel Text="">
+                    <MudText></MudText>
                 </MudTabPanel>
             </MudTabs>
             @*   *@
@@ -588,7 +588,7 @@
 
     async void OpenTemplateMarket()
     {
-        var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge });
+        var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
         var result = await dialog.Result;
         await InitTemplates();
     }

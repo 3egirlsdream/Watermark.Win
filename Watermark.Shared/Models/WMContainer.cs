@@ -22,6 +22,7 @@ namespace Watermark.Win.Models
         public int HeightPercent { get; set; }
         public int WidthPercent { get; set; }
         public List<IWMControl> Controls { get; set; }
+        public string Path { get; set; }
     }
 
 }

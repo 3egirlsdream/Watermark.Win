@@ -16,6 +16,7 @@ namespace Watermark.Win.Models
         public string Src { get; set; }
         public string Desc { get; set; }
         public string WatermarkId { get; set; }
+        public string UserId { get; set; }
         public int DownloadTimes { get; set; }
         public int Coins { get; set; }
     }

@@ -78,6 +78,14 @@
                 {
                     <MudExpansionPanel Text="@container.Name">
                         <div class="d-flex justify-space-between mt-5">
+                            <MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
+                            @if (ImagesBase64.TryGetValue(container.ID, out string src))
+                            {
+                                <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Style="float:right" />
+                            }
+                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" />
+                        </div>
+                        <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件水平对齐</MudText>
                             <MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
                                 <MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
@@ -540,6 +548,15 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
+        });
+        OpenWinHelper.Open(action);
+    }
+
+    void SelectImage(WMContainer mContainer)
+    {
+        var action = new Action(() =>
+        {
+            ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, ImagesBase64);
         });
         OpenWinHelper.Open(action);
     }
