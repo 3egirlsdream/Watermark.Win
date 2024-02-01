@@ -153,8 +153,10 @@ namespace Watermark.Win.Models
                 }
                 else if (entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
                 {
-                    using var entryStream = entry.Open();
-                    t.Fonts[entry.FullName] = entryStream;
+                    var entryStream = entry.Open();
+                    using MemoryStream mss = new();
+                    entryStream.CopyTo(mss);
+                    t.Fonts[entry.FullName] = mss.ToArray();
                 }
                 else
                 {

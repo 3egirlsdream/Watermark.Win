@@ -1,4 +1,6 @@
 ﻿using SkiaSharp;
+using System;
+using System.IO.Compression;
 using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
@@ -206,7 +208,7 @@ namespace Watermark.Win.Models
                 }
                 else
                 {
-                    if (ziped.Images.TryGetValue(mLogo.Path, out SKBitmap logo))
+                    if (ziped.Images.TryGetValue(mLogo.Path ?? "", out SKBitmap logo))
                     {
                         bitmap_logo = logo;
                     }
@@ -249,9 +251,10 @@ namespace Watermark.Win.Models
                 string fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
                 if (ziped != null)
                 {
-                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out Stream stream))
+                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out byte[] stream))
                     {
-                        tc = SKTypeface.FromStream(stream);
+                        var mss = new MemoryStream(stream);
+                        tc = SKTypeface.FromStream(mss);
                     }
                     else
                     {

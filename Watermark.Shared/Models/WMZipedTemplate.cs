@@ -7,11 +7,11 @@ namespace Watermark.Win.Models
         public WMZipedTemplate()
         {
             Images = new Dictionary<string, SKBitmap>();
-            Fonts = new Dictionary<string, Stream>();
+            Fonts = new Dictionary<string, byte[]>();
         }
         public WMCanvas WMCanvas { get; set; }
         public Dictionary<string, SKBitmap> Images { get; set; }
-        public Dictionary<string, Stream> Fonts { get; set; }
+        public Dictionary<string, byte[]> Fonts { get; set; }
         public SKBitmap Bitmap { get; set; }
         public string Src { get; set; }
         public string Desc { get; set; }

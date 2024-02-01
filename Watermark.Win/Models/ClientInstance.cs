@@ -100,13 +100,17 @@ namespace Watermark.Shared.Models
             if (result == true)
             {
                 var f = dialog.FileName;
-
+                if (!Directory.Exists(fontPath))
+                {
+                    Directory.CreateDirectory(fontPath);
+                }
                 var file = new FileInfo(f);
                 if (file.Exists)
                 {
                     try
                     {
-                        file.CopyTo(fontPath, true);
+                        var target = fontPath + Path.DirectorySeparatorChar + Path.GetFileName(f);
+                        file.CopyTo(target, true);
                     }
                     catch { }
                     finally
@@ -121,8 +125,8 @@ namespace Watermark.Shared.Models
         public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
-            var targetPath = Global.TemplatesFolder + CurrentCanvas.ID;
-            var file = new FileInfo(fontName);
+            var targetPath = Global.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
+            var file = new FileInfo(fontPath);
             if (file.Exists)
             {
                 try
