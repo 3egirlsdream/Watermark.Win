@@ -421,6 +421,7 @@
         Global.ImageFile2Base64(ImagesBase64, Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
         canvas.Children.ForEach(c =>
         {
+            if(!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, c.Path, c.ID);
             c.Controls.ForEach(x =>
             {
                 if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, mLogo.Path, mLogo.ID);

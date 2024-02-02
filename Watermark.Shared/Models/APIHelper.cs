@@ -143,7 +143,6 @@ namespace Watermark.Win.Models
                     using StreamReader reader = new StreamReader(entryStream);
                     string content = reader.ReadToEnd();
                     t.WMCanvas = Global.ReadConfig(content);
-                    Console.WriteLine($"Content of {entry.FullName}: {content}");
                 }
                 else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
                 {

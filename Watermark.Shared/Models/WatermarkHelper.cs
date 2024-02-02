@@ -1,6 +1,8 @@
 ﻿using SkiaSharp;
 using System;
+using System.IO;
 using System.IO.Compression;
+using System.Reflection.Metadata;
 using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
@@ -174,12 +176,23 @@ namespace Watermark.Win.Models
             //容器绘制背景
             if (!string.IsNullOrEmpty(container.Path))
             {
-                var bkPath = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
-                if (Path.Exists(bkPath))
+                if (ziped == null)
                 {
-                    var bkBitmap = SKBitmap.Decode(bkPath);
-                    bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
-                    canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
+                    var bkPath = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
+                    if (Path.Exists(bkPath))
+                    {
+                        var bkBitmap = SKBitmap.Decode(bkPath);
+                        bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
+                        canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
+                    }
+                }
+                else
+                {
+                    if (ziped.Images.TryGetValue(container.Path ?? "", out SKBitmap? logo) && logo != null)
+                    {
+                        logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
+                        canvasc.DrawBitmap(logo, new SKPoint(0, 0));
+                    }
                 }
             }
 
