@@ -42,7 +42,7 @@
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>
-                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense"/>
+                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
                      <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
                      <MudStack Row Class="mt-5">
                          <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -81,9 +81,10 @@
                             <MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
                             @if (ImagesBase64.TryGetValue(container.ID, out string src))
                             {
-                                <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Style="float:right" />
+                                <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Width="260" Style="float:right" />
+                                <MudIcon Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="float:right;margin-top: 10px;cursor: pointer;" Size="Size.Small" @onclick="() => RemoveImage(container)" />
                             }
-                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" />
+                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" Size="Size.Small" />
                         </div>
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件水平对齐</MudText>
@@ -260,7 +261,7 @@
                                                             <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                                 @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                             </div>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small"/>
+                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
                                                         </div>
 
 
@@ -352,7 +353,7 @@
                                                 <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                     @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                 </div>
-                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small"/>
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
                                             </div>
 
                                             <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
@@ -419,17 +420,18 @@
         canvas = CurrentCanvas;
         if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
         Global.ImageFile2Base64(ImagesBase64, Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
+        var folder = Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
         canvas.Children.ForEach(c =>
         {
-            if(!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, c.Path, c.ID);
+            if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, folder + c.Path, c.ID);
             c.Controls.ForEach(x =>
             {
-                if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, mLogo.Path, mLogo.ID);
+                if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, folder + mLogo.Path, mLogo.ID);
                 else if (x is WMContainer mContainer)
                 {
                     mContainer.Controls.ForEach(z =>
                     {
-                        if (z is WMLogo logo1) Global.ImageFile2Base64(ImagesBase64, logo1.Path, logo1.ID);
+                        if (z is WMLogo logo1) Global.ImageFile2Base64(ImagesBase64, folder + logo1.Path, logo1.ID);
                     });
 
                 };
@@ -549,6 +551,7 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
+            StateHasChanged();
         });
         OpenWinHelper.Open(action);
     }
@@ -558,6 +561,7 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, ImagesBase64);
+            StateHasChanged();
         });
         OpenWinHelper.Open(action);
     }
@@ -565,6 +569,7 @@
     void SelectDefaultImage()
     {
         ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
+        StateHasChanged();
     }
 
 
@@ -593,6 +598,18 @@
             ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
         });
         OpenWinHelper.Open(action);
+    }
+
+    void RemoveImage(WMContainer container)
+    {
+        var filename = Global.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
+        if (File.Exists(filename))
+        {
+            File.Delete(filename);
+            container.Path = string.Empty;
+            ImagesBase64.Remove(container.ID);
+            StateHasChanged();
+        }
     }
 
 }
