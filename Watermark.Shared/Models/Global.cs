@@ -222,5 +222,52 @@ namespace Watermark.Win.Models
         {
             return Task.Run(() => ReadLocal());
         }
+
+        public static string GetGanZhi(int year)
+        {
+            string[] gan = { "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸" };
+            string[] zhi = { "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥" };
+
+            // 计算干支
+            int baseYear = 1924; // 甲子年对应的公元年份
+            int offset = year - 3;
+            int ganIndex = (offset) % 10 == 0 ? gan.Length - 1 : offset % 10; // 天干循环60年一轮，故加上36
+            int zhiIndex = (offset) % 12 == 0 ? zhi.Length - 1 : offset % 12; // 地支同理
+
+            string ganZhi = gan[ganIndex - 1] + zhi[zhiIndex - 1];
+            return ganZhi;
+        }
+
+        public static string GetMonth(int month)
+        {
+            string[] mon = { "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖", "拾", "冬", "腊" };
+            return mon[month - 1];
+        }
+
+        public static string GetDay(int day)
+        {
+            Dictionary<double, string> days = new Dictionary<double, string>();
+            days[0] = "十";
+            days[1] = "一";
+            days[2] = "二";
+            days[3] = "三";
+            days[4] = "四";
+            days[5] = "五";
+            days[6] = "六";
+            days[7] = "七";
+            days[8] = "八";
+            days[9] = "九";
+            var rst = "";
+            foreach(var d in day.ToString())
+            {
+                try
+                {
+                    rst += days[Char.GetNumericValue(d)];
+                }
+                catch { }
+            }
+
+            return rst;
+        }
     }
 }

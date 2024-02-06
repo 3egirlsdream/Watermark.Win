@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection.Metadata;
+using System.Text.RegularExpressions;
 using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
@@ -152,7 +153,7 @@ namespace Watermark.Win.Models
             if ((int)wc == 0 && level == 2)
             {
                 double maxTextWidth = 1;
-                foreach (WMText mText in container.Controls.Where(c=>c is WMText))
+                foreach (WMText mText in container.Controls.Where(c=>c is WMText).Cast<WMText>())
                 {
                     DrawText(xs, mText, null);
                     maxTextWidth = Math.Max(maxTextWidth, mText.Width);
@@ -262,6 +263,7 @@ namespace Watermark.Win.Models
                 var families = SKFontManager.Default.FontFamilies;
                 SKTypeface tc;
                 string fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
+                string templateFontPath = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {
                     if (ziped.Fonts.TryGetValue(mText.FontFamily, out byte[] stream))
@@ -271,7 +273,8 @@ namespace Watermark.Win.Models
                     }
                     else
                     {
-                        tc = SKTypeface.FromFamilyName(families.FirstOrDefault());
+                        var font = families.FirstOrDefault(c => c == mText.FontFamily) ?? families.FirstOrDefault();
+                        tc = SKTypeface.FromFamilyName(font);
                     }
                 }
                 else if(families.Any(c=> c == mText.FontFamily))
@@ -281,6 +284,10 @@ namespace Watermark.Win.Models
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
                     tc =  SKTypeface.FromFile(fontPath + mText.FontFamily);
+                }
+                else if (File.Exists(templateFontPath))
+                {
+                    tc = SKTypeface.FromFile(templateFontPath);
                 }
                 else
                 {
@@ -296,7 +303,8 @@ namespace Watermark.Win.Models
                 {
                     Color = SKColor.Parse(fontColor),
                     TextSize = (int)(mText.FontSize * fontxs),
-                    Typeface = typeface_cp
+                    Typeface = typeface_cp,
+                    IsAntialias = true
                 };
                 var text = string.Join(" ",
                             mText.Exifs.Select(x =>
@@ -308,8 +316,16 @@ namespace Watermark.Win.Models
                                 return x.Prefix + x.Suffix;
                             }));
                 var fw = paint_cp.MeasureText(text);
-                var fh = paint_cp.FontMetrics.Descent - paint_cp.FontMetrics.Ascent;
-                mText.Height = fh;
+                var fh = paint_cp.FontMetrics.CapHeight;
+                if(Regex.IsMatch(text, "[\u4e00-\u9fbb]"))
+                {
+                    fh += Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0); 
+                    if(mText.FontFamily.Contains("宋"))
+                    {
+                        fh += Math.Abs(paint_cp.FontMetrics.Descent);
+                    }
+                }
+                mText.Height = (int)fh;
                 mText.Width = fw;
 
                 action?.Invoke(paint_cp);

@@ -23,15 +23,15 @@
 
 <MudDialog Style="min-width:50%;">
     <DialogContent>
-        <MudPaper Class="my-2">
+        <MudPaper Class="my-2" Elevation="2" Style="white-space: nowrap; overflow-x:auto">
             <MudStack Row>
                 @foreach (var exif in Exifs)
                 {
-                    <MudPaper Elevation="0" Class="pa-2">
-                        <MudStack Row>
-                         <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
-                         <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:50px"></MudTextField>
-                         <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:30px"></MudTextField>
+                    <MudPaper Elevation="0" Class="pa-2 ma-2" Style="background:#ebebeb;">
+                     <MudStack Row>
+                         <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="min-width:100px"></MudTextField>
+                         <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px" ReadOnly></MudTextField>
+                         <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px"></MudTextField>
                      </MudStack>
                  </MudPaper>
                 }

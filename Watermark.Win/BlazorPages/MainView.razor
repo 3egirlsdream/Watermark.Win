@@ -99,6 +99,14 @@
                     <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; height:100%; overflow-y:auto;overflow-x:hidden;">
                         <MudList Clickable="true">
                             <MudTreeView T="string" Hover="true">
+                                @if(wMTemplates == null || wMTemplates.Count == 0)
+                                {
+                                    <MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
+                                               EndIcon="@Icons.Material.Filled.Download"
+                                               Color="Color.Primary" OnClick="OpenTemplateMarket">
+                                        下载模板
+                                    </MudButton>
+                                }
                                 @foreach (var pair in wMTemplates)
                                 {
                                     <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
