@@ -145,6 +145,10 @@
                 {
                     <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
                 }
+                else
+                {
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-7" Style="margin: 0 auto;" />
+                }
                 <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
                     <b>@MainLoading.Message</b>
                 </MudText>

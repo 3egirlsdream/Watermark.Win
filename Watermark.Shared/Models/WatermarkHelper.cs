@@ -131,7 +131,7 @@ namespace Watermark.Win.Models
                 var output = AppDomain.CurrentDomain.BaseDirectory + "output";
                 if (!Directory.Exists(output))
                 {
-                    Directory.CreateDirectory(output);  
+                    Directory.CreateDirectory(output);
                 }
                 output += Path.DirectorySeparatorChar + Path.GetFileName(mainCanvas.Path);
                 using var sm = File.OpenWrite(output);
@@ -142,7 +142,7 @@ namespace Watermark.Win.Models
             var bytes = data.ToArray();
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
-        
+
         private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
         {
             //创建容器大小的画布
@@ -153,7 +153,7 @@ namespace Watermark.Win.Models
             if ((int)wc == 0 && level == 2)
             {
                 double maxTextWidth = 1;
-                foreach (WMText mText in container.Controls.Where(c=>c is WMText).Cast<WMText>())
+                foreach (WMText mText in container.Controls.Where(c => c is WMText).Cast<WMText>())
                 {
                     DrawText(xs, mText, null);
                     maxTextWidth = Math.Max(maxTextWidth, mText.Width);
@@ -274,12 +274,12 @@ namespace Watermark.Win.Models
                     else
                     {
                         var font = families.FirstOrDefault(c => c == mText.FontFamily) ?? families.FirstOrDefault();
-                        tc = SKTypeface.FromFamilyName(font);
+                        tc = SKTypeface.FromFamilyName(font, fontStyle);
                     }
                 }
-                else if(families.Any(c=> c == mText.FontFamily))
+                else if (families.Any(c => c == mText.FontFamily))
                 {
-                    tc = SKTypeface.FromFamilyName(mText.FontFamily);
+                    tc = SKTypeface.FromFamilyName(mText.FontFamily, fontStyle);
                 }
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
@@ -291,9 +291,9 @@ namespace Watermark.Win.Models
                 }
                 else
                 {
-                    tc = SKTypeface.FromFamilyName(families.FirstOrDefault());
+                    tc = SKTypeface.FromFamilyName(families.FirstOrDefault(), fontStyle);
                 }
-                var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle);
+                var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle)??tc;
                 var fontxs = Math.Min(hc, wc) / 156.0;
                 if (fontxs == 0) fontxs = 1;
 
@@ -317,10 +317,10 @@ namespace Watermark.Win.Models
                             }));
                 var fw = paint_cp.MeasureText(text);
                 var fh = paint_cp.FontMetrics.CapHeight;
-                if(Regex.IsMatch(text, "[\u4e00-\u9fbb]"))
+                if (Regex.IsMatch(text, "[\u4e00-\u9fbb]"))
                 {
-                    fh += Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0); 
-                    if(mText.FontFamily.Contains("宋"))
+                    fh += Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0);
+                    if (mText.FontFamily.Contains("宋"))
                     {
                         fh += Math.Abs(paint_cp.FontMetrics.Descent);
                     }

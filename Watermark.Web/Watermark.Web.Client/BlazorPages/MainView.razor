@@ -30,12 +30,12 @@
                 <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
                 <MudMenuItem> 交流群2：836325187 </MudMenuItem>
             </MudMenu>
-            <MudMenu Label="赞助开发" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-            </MudMenu>
             <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Star">点个⭐</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.BugReport">提交BUG</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Star" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))">点个⭐</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.BugReport" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))">提交反馈</MudMenuItem>
+            </MudMenu>
+            <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
             </MudMenu>
             @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
             {
@@ -50,17 +50,6 @@
                 </ButtonTemplate>
             </MudFileUpload>*@
 
-            <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="SelectPictureClick" Style="flex: none; width: 170px; margin-top:0;">
-                <ButtonTemplate>
-                    <MudButton HtmlTag="label"
-                               Variant="Variant.Text"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.CloudUpload"
-                               for="@context.Id">
-                        导入图片
-                    </MudButton>
-                </ButtonTemplate>
-            </MudFileUpload>
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
             {
@@ -130,6 +119,15 @@
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
             }
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="SelectPictureClick" Style="position: absolute; bottom: 25px; right:25px;">
+                <ButtonTemplate>
+                    <MudFab HtmlTag="label"
+                            Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.Add"
+                            for="@context.Id">
+                    </MudFab>
+                </ButtonTemplate>
+            </MudFileUpload>
             <div style="background: #F9FAFC; width: 100%; height: 100%; line-height: 100vh; text-align: center;">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
@@ -160,6 +158,10 @@
                 @if (System.Runtime.InteropServices.RuntimeInformation.OSDescription == "Browser")
                 {
                     <MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
+                }
+                else
+                {
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-7" Style="margin: 0 auto;" />
                 }
                 <MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
                     <b>@MainLoading.Message</b>
@@ -497,5 +499,15 @@
     {
         public int Width { get; set; }
         public int Height { get; set; }
+    }
+
+    void OpenLink(string link)
+    {
+        var action = new Action(() =>
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        });
+        OpenWinHelper.Open(action);
     }
 }
