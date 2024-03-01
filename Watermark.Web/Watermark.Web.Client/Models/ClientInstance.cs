@@ -2,6 +2,7 @@
 using static System.Net.Mime.MediaTypeNames;
 using System.Text;
 using Watermark.Win.Models;
+using MudBlazor;
 
 namespace Watermark.Shared.Models
 {
@@ -63,6 +64,15 @@ namespace Watermark.Shared.Models
         public static void OpenSetting()
         {
             
+        }
+
+        public static void ShowMsg(ISnackbar snackbar, string message, Severity severity)
+        {
+            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+            snackbar?.Add(message, severity, config =>
+            {
+                config.ShowCloseIcon = false;
+            });
         }
     }
 }

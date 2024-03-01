@@ -137,8 +137,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await InitTemplates();
-        await LoadCloudTemplate();
+        try
+        {
+            await InitTemplates();
+            await LoadCloudTemplate();
+        }
+        catch(Exception ex)
+        {
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
     }
 
     async Task LoadCloudTemplate()

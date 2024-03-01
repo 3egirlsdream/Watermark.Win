@@ -1,6 +1,7 @@
 ﻿@page "/"
 @rendermode InteractiveWebAssembly
 @using System.IO
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
@@ -236,13 +237,13 @@
             try
             {
                 MemoryStream ms = new MemoryStream();
-                await file.OpenReadStream(100000000).CopyToAsync(ms);
+                await file.OpenReadStream(file.Size).CopyToAsync(ms);
                 CreateTemplate.CurTemplete = ms.ToArray();
                 Global.ImageFile2Base64(dic, CreateTemplate.CurTemplete, CreateTemplate.ID);
             }
             catch (Exception ex)
             {
-
+                ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
             }
         }
         CreateTemplate.Base64Src = dic.First().Value;
@@ -365,7 +366,7 @@
             }
             catch(Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
+                ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
             }
         }
 

@@ -120,9 +120,9 @@
                         </MudList>
                     </MudPaper>
                 </MudTabPanel>
-                <MudTabPanel Text="">
+                @* <MudTabPanel Text="">
                     <MudText></MudText>
-                </MudTabPanel>
+                </MudTabPanel> *@
             </MudTabs>
             @*   *@
         </div>
@@ -508,7 +508,7 @@
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(ex.Message);
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
         }
     }
 
