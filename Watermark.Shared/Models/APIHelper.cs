@@ -13,7 +13,7 @@ namespace Watermark.Win.Models
     public class APIHelper
     {
 #if DEBUG
-        public static string HOST = "https://localhost:44389";
+        public static string HOST = "http://thankful.top:4396";
 #else
         public static string HOST = "http://thankful.top:4396";
 #endif

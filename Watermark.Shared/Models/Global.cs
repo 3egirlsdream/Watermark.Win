@@ -232,7 +232,8 @@ namespace Watermark.Win.Models
             int offset = year - 3;
             int ganIndex = (offset) % 10 == 0 ? gan.Length - 1 : offset % 10;
             int zhiIndex = (offset) % 12 == 0 ? zhi.Length - 1 : offset % 12;
-
+            ganIndex = ganIndex < 0 ? 1 : ganIndex;
+            zhiIndex = zhiIndex < 0 ? 1 : zhiIndex;
             string ganZhi = gan[ganIndex - 1] + zhi[zhiIndex - 1];
             return ganZhi;
         }

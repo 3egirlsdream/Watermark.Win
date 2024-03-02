@@ -1,0 +1,167 @@
+﻿@using System.Diagnostics
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+<MudDialog Style="width:100%; height:100%;overflow-y:hidden">
+    <DialogContent>
+        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(100vh - 30px);overflow-y:auto;padding:5px;">
+            @if (ZipedTemplates != null)
+            {
+                @foreach (var t in ZipedTemplates)
+                {
+                    <MudItem xs="12">
+                        <MudCard>
+                            @if (!string.IsNullOrEmpty(t.Src))
+                            {
+                                <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                            }
+                            else
+                            {
+                                <MudOverlay Visible="@loading" DarkBackground="true" Absolute="true">
+                                    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+                                </MudOverlay>
+                            }
+                            <MudCardContent Style="height:80px;overflow-y:auto;">
+                                <MudText Typo="Typo.body2">@t.Desc</MudText>
+                                </MudCardContent>
+                                <MudCardActions Style="position:relative;">
+                                    @t.DownloadTimes<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
+                                <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
+                                <MudIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" OnClick="()=>Share(t.WatermarkId)"></MudIconButton>
+                            </MudCardActions>
+                        </MudCard>
+
+                    </MudItem>
+                }
+                <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
+            }
+        </MudGrid>
+        <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
+            <MudStack Justify="Justify.Center">
+                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
+                <MudText Typo="Typo.subtitle1" Color="Color.Dark">
+                    <b>正在加载模板...</b>
+                </MudText>
+            </MudStack>
+        </MudOverlay>
+    </DialogContent>
+</MudDialog>
+
+
+@code {
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+    [Inject]
+    private IDialogService DialogService { get; set; }
+    bool loading = false;
+    List<WMZipedTemplate> ZipedTemplates;
+    int start = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        var helper = new APIHelper();
+        ZipedTemplates = await helper.GetWatermarks("", start, 10);
+        List<Task> tasks1 = new List<Task>();
+        foreach (var t in ZipedTemplates)
+        {
+            var task = helper.ExtractZip(t.WatermarkId).ContinueWith(item =>
+            {
+                t.WMCanvas = item.Result.WMCanvas;
+                t.Images = item.Result.Images;
+                t.Fonts = item.Result.Fonts;
+                t.Bitmap = item.Result.Bitmap;
+            });
+            tasks1.Add(task);
+        }
+        await Task.WhenAll(tasks1);
+        var whelper = new WatermarkHelper();
+        List<Task> tasks = new List<Task>();
+        foreach (var t in ZipedTemplates)
+        {
+            var c = Task.Run(() =>
+            {
+                t.Src = whelper.Generation(t.WMCanvas, t, true);
+                return t.Src;
+            });
+
+            tasks.Add(c);
+        }
+        await Task.WhenAll(tasks);
+        loading = false;
+        StateHasChanged();
+    }
+
+    void Share(string id)
+    {
+        //System.Windows.Clipboard.SetText(id);
+
+        string message = "已复制ID到剪贴板";
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+        Snackbar.Add(message, Severity.Success, config =>
+        {
+            config.ShowCloseIcon = false;
+        });
+    }
+
+    async void LoadMore()
+    {
+        loading = true;
+        var helper = new APIHelper();
+        var more = await helper.GetWatermarks("", ++start, 10);
+        List<Task> tasks1 = new List<Task>();
+        foreach (var t in more)
+        {
+            var task = helper.ExtractZip(t.WatermarkId).ContinueWith(item =>
+            {
+                t.WMCanvas = item.Result.WMCanvas;
+                t.Images = item.Result.Images;
+                t.Fonts = item.Result.Fonts;
+                t.Bitmap = item.Result.Bitmap;
+            });
+            tasks1.Add(task);
+        }
+        await Task.WhenAll(tasks1);
+        var whelper = new WatermarkHelper();
+        List<Task> tasks = new List<Task>();
+        foreach (var t in more)
+        {
+            var c = Task.Run(() =>
+            {
+                t.Src = whelper.Generation(t.WMCanvas, t, true);
+                return t.Src;
+            });
+
+            tasks.Add(c);
+        }
+        await Task.WhenAll(tasks);
+        ZipedTemplates.AddRange(more);
+        loading = false;
+    }
+
+    async void Download(string watermarkId)
+    {
+        var helper = new APIHelper();
+        var result = await helper.ExtractZip(watermarkId);
+        string message = "";
+        Severity Severity = Severity.Success;
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+        if (result != null)
+        {
+            Severity = Severity.Success;
+            message = "下载成功";
+            MudDialog.Close(result);
+        }
+        else
+        {
+            Severity = Severity.Error;
+            message = "下载失败";
+        }
+        Snackbar.Add(message, Severity, config =>
+        {
+            config.ShowCloseIcon = false;
+        });
+    }
+}

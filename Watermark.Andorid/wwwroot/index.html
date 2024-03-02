@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Watermark.Andorid</title>
+    <base href="/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="Watermark.Andorid.styles.css" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+</head>
+
+<body>
+
+    <div class="status-bar-safe-area"></div>
+
+    <div id="app">Loading...</div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+</body>
+
+</html>
+
+<script>
+    window.getDimensions = function () {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+    };
+    window.saveAsFile = function (filename, byteArray) {
+        // 创建一个Blob对象
+        var blob = new Blob([new Uint8Array(byteArray)], { type: "application/octet-stream" });
+
+        // 创建一个虚拟链接
+        var link = document.createElement('a');
+
+        // 设置链接属性，包括文件名和URL
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+
+        // 模拟点击这个链接来触发下载操作
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+
+    }
+</script>
+
+<style>
+    .page {
+        overflow-y: hidden
+    }
+</style>
