@@ -5,14 +5,30 @@
 @using Newtonsoft.Json
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
-@inject WMCanvas CurrentCanvas
-@inject string cloud
-<MudThemeProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
-<div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
-    <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
+<style>
+    .design-main
+    ::-webkit-scrollbar {
+        width: 0px;
+        display: none;
+    }
+
+
+    .design-main {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        background: transparent;
+        height: 100vh;
+        width: 100vw;
+        overflow-x: hidden
+    }
+    
+
+
+</style>
+
+<div class="design-main">
+    <div style="height: 40px; position: fixed; width: 100%; top: 0; left: 0; z-index: 999; background: transparent; display: none">
         <MudToolBar Style="height:40px;padding-left:5px;">
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
@@ -26,7 +42,7 @@
         </MudToolBar>
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
-        <div style="width:calc(100% - 500px);height:100%;position:fixed;">
+        @*<div style="width:calc(100% - 500px);height:100%;position:fixed;">
             <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
                 @if (!string.IsNullOrEmpty(url))
                 {
@@ -34,14 +50,14 @@
                 }
 
             </div>
-        </div>
-        <div style="width:500px;height:100%;margin-left:calc(100% - 500px);padding:10px;">
+        </div>*@
+        <div style="width:100%;padding:10px;">
             <MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
                 <MudExpansionPanel Text="画布">
-                    <MudStack Row>
+                    @*<MudStack Row>
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
-                    </MudStack>
+                    </MudStack>*@
                     <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
                      <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
                      <MudStack Row Class="mt-5">
@@ -61,10 +77,10 @@
                      <MudColorPicker class="mt-5" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
                      <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
-                     <MudStack Row Class="mt-5" Style="position:relative">
+                     @*<MudStack Row Class="mt-5" Style="position:relative;">
                          <MudText Align="Align.Justify" Typo="Typo.button">启用图片圆角</MudText>
                          <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" Style="position:absolute;right:5px" />
-                     </MudStack>
+                     </MudStack>*@
                      <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
                      <MudStack Row Class="mt-5" Style="position:relative">
@@ -401,11 +417,17 @@
 
 
 @code {
+    [Parameter]
+    public WMCanvas CurrentCanvas { get; set; }
+    [Parameter]
+    public string cloud { get; set; }
+
     [Inject]
     private IDialogService DialogService { get; set; }
     bool showDialog = false;
     string newTemplateName = "";
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+
 
     WMThickness BorderThickness = new WMThickness();
     WMCanvas canvas;
@@ -454,6 +476,13 @@
         StateHasChanged();
 
     }
+
+    public WMCanvas GetImageSrc()
+    {
+        return canvas;
+    }
+
+
 
     async void OpenExifDialog(WMText mText)
     {
@@ -610,6 +639,13 @@
             ImagesBase64.Remove(container.ID);
             StateHasChanged();
         }
+    }
+
+    public void SetCanvas(WMCanvas mCanvas)
+    {
+        CurrentCanvas =  mCanvas;
+        canvas = CurrentCanvas;
+        StateHasChanged();
     }
 
 }

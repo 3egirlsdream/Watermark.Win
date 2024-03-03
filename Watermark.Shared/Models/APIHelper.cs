@@ -20,8 +20,9 @@ namespace Watermark.Win.Models
         public APIHelper()
         {
             _client = new HttpClient() { BaseAddress =  new Uri(HOST) };
+            client = new HttpClient();
         }
-
+        HttpClient client;
         HttpClient _client;
 
         public async Task<API<bool?>> UploadWatermark(string watermarkId, string name, int coins, string desc = "")
@@ -80,7 +81,7 @@ namespace Watermark.Win.Models
                 // 表单上传
                 FormUploader target = new FormUploader(config);
                 HttpResult result = target.UploadFile(targetPath, $"{watermarkId}.zip", token, null);
-                return new API<string> { success = result.Code == 200, message = new APISub { content = result.Text } } ;
+                return new API<string> { success = result.Code == 200, message = new APISub { content = result.Text } };
             }
             return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
         }
@@ -125,48 +126,54 @@ namespace Watermark.Win.Models
                 return [];
             }
         }
-        
+
         public async Task<WMZipedTemplate> ExtractZip(string watermarkId)
         {
-            using var client = new HttpClient();
-            var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
-            using MemoryStream ms = new MemoryStream();
-            stream.CopyTo(ms);
-            ms.Seek(0, SeekOrigin.Begin);
-            using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
-            WMZipedTemplate t = new WMZipedTemplate();
-            foreach (var entry in archive.Entries)
+            try
             {
-                if (entry.FullName.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
+                var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
+                using MemoryStream ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
+                WMZipedTemplate t = new WMZipedTemplate();
+                foreach (var entry in archive.Entries)
                 {
-                    using var entryStream = entry.Open();
-                    using StreamReader reader = new StreamReader(entryStream);
-                    string content = reader.ReadToEnd();
-                    t.WMCanvas = Global.ReadConfig(content);
+                    if (entry.FullName.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var entryStream = entry.Open();
+                        using StreamReader reader = new StreamReader(entryStream);
+                        string content = reader.ReadToEnd();
+                        t.WMCanvas = Global.ReadConfig(content);
+                    }
+                    else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var entryStream = entry.Open();
+                        SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
+                        t.Bitmap = sKBitmap;
+                    }
+                    else if (entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
+                    {
+                        var entryStream = entry.Open();
+                        using MemoryStream mss = new();
+                        entryStream.CopyTo(mss);
+                        t.Fonts[entry.FullName] = mss.ToArray();
+                    }
+                    else
+                    {
+                        using var entryStream = entry.Open();
+                        using MemoryStream mss = new();
+                        entryStream.CopyTo(mss);
+                        SKBitmap sKBitmap = SKBitmap.Decode(mss.ToArray());
+                        t.Images[entry.FullName] = sKBitmap;
+                    }
                 }
-                else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
-                {
-                    using var entryStream = entry.Open();
-                    SKBitmap sKBitmap = SKBitmap.Decode(entryStream);
-                    t.Bitmap = sKBitmap;
-                }
-                else if (entry.FullName.EndsWith(".ttf") || entry.FullName.EndsWith(".otf"))
-                {
-                    var entryStream = entry.Open();
-                    using MemoryStream mss = new();
-                    entryStream.CopyTo(mss);
-                    t.Fonts[entry.FullName] = mss.ToArray();
-                }
-                else
-                {
-                    using var entryStream = entry.Open();
-                    using MemoryStream mss = new();
-                    entryStream.CopyTo(mss);
-                    SKBitmap sKBitmap = SKBitmap.Decode(mss.ToArray());
-                    t.Images[entry.FullName] = sKBitmap;
-                }
+                return t;
             }
-            return t;
+            catch (Exception ex)
+            {
+                return default;
+            }
         }
 
 
@@ -176,8 +183,9 @@ namespace Watermark.Win.Models
             {
                 client.BaseAddress = new Uri(HOST);
                 var password = GetMD5(user.PASSWORD);
-                
-                var formContent = new {
+
+                var formContent = new
+                {
                     username = user.USER_NAME,
                     displayname = user.DISPLAY_NAME,
                     password = password,
@@ -195,7 +203,7 @@ namespace Watermark.Win.Models
                 else return new API<WMSysUser>() { success = false };
             }
         }
-    
+
         public async Task<API<WMLoginModel>> LoginIn(string user, string password, bool isMD5 = false)
         {
             try
@@ -219,7 +227,7 @@ namespace Watermark.Win.Models
         public bool FolderExsist(string watermarkId)
         {
             var target = Global.TemplatesFolder + watermarkId;
-            if(Directory.Exists(target)) return true;
+            if (Directory.Exists(target)) return true;
             return false;
         }
 
@@ -246,9 +254,9 @@ namespace Watermark.Win.Models
                 await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
                 return true;
             }
-            catch(Exception ex) 
-            { 
-                return false; 
+            catch (Exception ex)
+            {
+                return false;
             }
         }
 
@@ -258,7 +266,7 @@ namespace Watermark.Win.Models
             try
             {
                 var result = await Connections.HttpGetAsync<dynamic>(HOST + $"/api/Watermark/TemplateIsExsist?watermarkId={watermarkId}&userId={userId}", Encoding.UTF8);
-                if(result == null || !result.success ) 
+                if (result == null || !result.success)
                 {
                     throw new Exception("");
                 }

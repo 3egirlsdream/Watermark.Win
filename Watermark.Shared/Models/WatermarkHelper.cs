@@ -133,7 +133,15 @@ namespace Watermark.Win.Models
                 {
                     Directory.CreateDirectory(output);
                 }
-                output += Path.DirectorySeparatorChar + Path.GetFileName(mainCanvas.Path);
+                var newFileaName = "DFX_" + Path.GetFileName(mainCanvas.Path);
+                output += Path.DirectorySeparatorChar + newFileaName;
+#if ANDROID
+                output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
+#endif
+                if (output.StartsWith("/data/user"))
+                {
+                    output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
+                }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);
                 return "";
