@@ -36,7 +36,6 @@
         position: absolute;
         bottom: 0;
         width: 100%;
-        background: #e3e3e3;
     }
 
     .water-tab-text {
@@ -102,7 +101,7 @@
     <div Style="height:100%;width:100vw;display: flex;">
 
         <div style="height: 100%; padding: 0px; background: #2d3436; width:100%">
-            <div class="water-tab">
+            <MudPaper class="water-tab" Elevation="0">
                 <div class="water-tab-text" @onclick="()=> activeTab = 1">
                     <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
                         <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  官方模板
@@ -118,7 +117,7 @@
                         <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />  关于
                     </MudText>
                 </div>
-            </div>
+            </MudPaper>
 
             @if (activeTab == 1)
             {
@@ -189,7 +188,7 @@
 
     @if (!openDrawer)
     {
-        <MudFab Style="position: absolute; bottom: 25px; margin-left:calc(50vw - 20px);" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowUpward" OnClick="()=> openDrawer = true" Size="Size.Small" />
+        <MudFab Style="position: absolute; bottom: 45px; margin-left:calc(50vw - 20px);" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowUpward" OnClick="()=> openDrawer = true" Size="Size.Small" />
     }
     @*  <div style="width: 200px; height: 100%; background: #F9FAFC; position: absolute; right: 0; overflow-y: auto; overflow-x: hidden; padding: 30px 0 0 0;">
         <MudList Clickable="true">

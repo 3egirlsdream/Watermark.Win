@@ -110,9 +110,12 @@ namespace Watermark.Shared.Models
         /// <returns></returns>
         public static string GetAndroidId()
         {
+#if ANDROID
             var context = Android.App.Application.Context;
             var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
             return deviceId;
+#endif
+            return "";
         }
     }
 }
