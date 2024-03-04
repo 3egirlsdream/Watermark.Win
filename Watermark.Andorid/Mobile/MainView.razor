@@ -30,6 +30,23 @@
         overflow-x: hidden;
         background: #2d3436;
     }
+
+    .water-tab {
+        height: 48px;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        background: #e3e3e3;
+    }
+
+    .water-tab-text {
+        width: 33.3%;
+        height: 48px;
+        float: left;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 </style>
 
 <div Style="background:#2d3436;height:100vh;width:100%;">
@@ -85,8 +102,27 @@
     <div Style="height:100%;width:100vw;display: flex;">
 
         <div style="height: 100%; padding: 0px; background: #2d3436; width:100%">
-            <MudTabs IconColor="Color.Surface" Elevation="0" Rounded="false"  ApplyEffectsToContainer="true" MinimumTabWidth="150px" PanelClass="panel-class" Style="margin-top: 40px;height: calc(100% - 40px);" AlwaysShowScrollButtons="false">
-                <MudTabPanel Text="官方模板" Style="height:100%" Icon="@Icons.Material.Filled.BrightnessAuto">
+            <div class="water-tab">
+                <div class="water-tab-text" @onclick="()=> activeTab = 1">
+                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
+                        <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  官方模板
+                    </MudText>
+                </div>
+                <div class="water-tab-text" @onclick="()=> activeTab = 2">
+                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
+                        <MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />  用户模板
+                    </MudText>
+                </div>
+                <div class="water-tab-text" @onclick="()=> activeTab = 3">
+                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
+                        <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />  关于
+                    </MudText>
+                </div>
+            </div>
+
+            @if (activeTab == 1)
+            {
+                <div style="height:calc(100% - 88px);clear:both;margin-top:40px">
                     <MudPaper Elevation="0" Class="mud-tab-class">
                         <MudList Clickable="true">
                             <MudTreeView T="string" Hover="true">
@@ -103,11 +139,14 @@
                                 }
 
                                 <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
-                            </MudTreeView>
-                        </MudList>
-                    </MudPaper>
-                </MudTabPanel>
-                <MudTabPanel Text="用户模板">
+                             </MudTreeView>
+                         </MudList>
+                     </MudPaper>
+                </div>
+            }
+            @if (activeTab == 2)
+            {
+                <div style="height:calc(100% - 88px);clear:both;margin-top:40px">
                     <MudPaper Elevation="0" Class="mud-tab-class">
                         <MudList Clickable="true">
                             <MudTreeView T="string" Hover="true">
@@ -125,12 +164,16 @@
                                 }
 
                                 <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
-                            </MudTreeView>
-                        </MudList>
-                    </MudPaper>
-                </MudTabPanel>
-            </MudTabs>
+                             </MudTreeView>
+                         </MudList>
+                     </MudPaper>
+                </div>
+            }
+
+
         </div>
+
+
 
     </div>
 
@@ -229,13 +272,13 @@
     bool IsLoginIn = false;
     bool openDrawer = false;
     private Design design;
-
+    int activeTab = 1;
 
     class MainLoading
     {
         public static bool Show { get; set; } = true;
         public static double Value { get; set; }
-        public static string Message { get; set; } = "正在下载资源...";
+        public static string Message { get; set; } = "正在加载模板...";
     }
 
     class CreateTemplate
@@ -413,6 +456,8 @@
             Title = "选择图片"
         });
         if (result is null) return;
+
+        MainLoading.Message = "正在生成图片...";
         MainLoading.Show = true;
         StateHasChanged();
         var sm = await result.OpenReadAsync();
@@ -550,6 +595,7 @@
 
     async Task LoadTemplates()
     {
+        MainLoading.Message = "正在加载模板...";
         MainLoading.Show = true;
         var helper = new APIHelper();
         ZipedTemplates = await helper.GetWatermarks("", start, 10);
@@ -618,12 +664,15 @@
         ZipedTemplates.AddRange(more);
     }
 
-    public void RefreshEditImage()
+    public async void RefreshEditImage()
     {
+        MainLoading.Message = "正在生成图片...";
+        MainLoading.Show = true;
         var cvs = design.GetImageSrc();
         var whelper = new WatermarkHelper();
         CurrentImage.Canvas = cvs;
-        CurrentImage.Src = whelper.Generation(cvs, CurrentTemplate, true, false);
+        CurrentImage.Src = await whelper.GenerationAsync(cvs, CurrentTemplate, true, false);
+        MainLoading.Show = false;
         StateHasChanged();
     }
 

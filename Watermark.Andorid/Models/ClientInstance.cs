@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Watermark.Andorid;
 using Watermark.Win.Models;
 
 namespace Watermark.Shared.Models
@@ -97,6 +98,11 @@ namespace Watermark.Shared.Models
                 {
                     config.ShowCloseIcon = false;
                 });
+        }
+
+        public static Version GetVersion()
+        {
+            return AppInfo.Version;
         }
     }
 }
