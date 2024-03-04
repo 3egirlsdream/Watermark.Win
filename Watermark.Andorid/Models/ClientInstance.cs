@@ -117,5 +117,18 @@ namespace Watermark.Shared.Models
 #endif
             return "";
         }
+
+
+        public static async Task<bool> IsOutOfDate()
+        {
+            var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=Watermark_A", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.VERSION != null)
+            {
+                var v1 = GetVersion();
+                var v2 = new Version(version.data.VERSION);
+                if (v2 > v1) return true;
+            }
+            return false;
+        }
     }
 }

@@ -291,13 +291,12 @@
                                                                         <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
                                                                     }
                                                                 </MudMenu>
-                                                                <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                                @* <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                                     @foreach (var font in Fonts)
                                                                     {
                                                                         <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
                                                                     }
-                                                                </MudMenu>
-                                                                <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+                                                                </MudMenu> *@
                                                             </MudStack>
 
                                                         </MudStack>
@@ -382,13 +381,12 @@
                                                             <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
                                                         }
                                                     </MudMenu>
-                                                    <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                                   @*  <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                         @foreach (var font in Fonts)
                                                         {
                                                             <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
                                                         }
-                                                    </MudMenu>
-                                                    <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+                                                    </MudMenu> *@
                                                 </MudStack>
 
                                             </MudStack>
