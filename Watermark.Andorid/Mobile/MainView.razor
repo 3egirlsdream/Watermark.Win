@@ -566,6 +566,7 @@
         MainLoading.Value = 100;
         await Task.Delay(200);
         MainLoading.Show = false;
+        Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
         StateHasChanged();
 
     }

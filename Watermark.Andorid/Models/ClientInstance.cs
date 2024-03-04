@@ -104,5 +104,15 @@ namespace Watermark.Shared.Models
         {
             return AppInfo.Version;
         }
+
+        /// 获取设备号
+        /// </summary>
+        /// <returns></returns>
+        public static string GetAndroidId()
+        {
+            var context = Android.App.Application.Context;
+            var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
+            return deviceId;
+        }
     }
 }
