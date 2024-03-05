@@ -10,21 +10,21 @@ namespace Watermark.Win.Models
 {
     public class WatermarkHelper
     {
-        public Task<string> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
+		public Task<string> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
             return Task.Run(() => Generation(mainCanvas, ziped, isPreview, designMode));
         }
         public string Generation(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
-            SKBitmap originalBitmap;
-            string path = Global.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
+			SKBitmap originalBitmap;
+            string path = Global.AppPath.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
             if (ziped == null)
             {
                 var codec = SKCodec.Create(!string.IsNullOrEmpty(mainCanvas.Path) ? mainCanvas.Path : path);
                 if (!string.IsNullOrEmpty(mainCanvas.Path))
                 {
                     path = mainCanvas.Path;
-                    if (isPreview) path = Path.Combine(Global.ThumbnailFolder, path.Substring(path.LastIndexOf('\\') + 1));
+                    if (isPreview) path = Path.Combine(Global.AppPath.ThumbnailFolder, path.Substring(path.LastIndexOf('\\') + 1));
                 }
                 originalBitmap = SKBitmap.Decode(path);
                 if (originalBitmap == null)
@@ -140,7 +140,9 @@ namespace Watermark.Win.Models
 #endif
                 if (output.StartsWith("/data/user"))
                 {
-                    output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
+                    var ot = $"/storage/emulated/0/{WMAppPath.AppId}/";
+					if (!Directory.Exists(ot)) Directory.CreateDirectory(ot);
+					output = System.IO.Path.Combine(ot, newFileaName + ".jpg");
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);
@@ -187,7 +189,7 @@ namespace Watermark.Win.Models
             {
                 if (ziped == null)
                 {
-                    var bkPath = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
+                    var bkPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
                     if (Path.Exists(bkPath))
                     {
                         var bkBitmap = SKBitmap.Decode(bkPath);
@@ -217,7 +219,7 @@ namespace Watermark.Win.Models
                     }
                     else
                     {
-                        var path = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mLogo.Path;
+                        var path = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mLogo.Path;
                         if (File.Exists(path))
                         {
                             bitmap_logo = SKBitmap.Decode(path);
@@ -271,7 +273,7 @@ namespace Watermark.Win.Models
                 var families = SKFontManager.Default.FontFamilies;
                 SKTypeface tc;
                 string fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
-                string templateFontPath = Global.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
+                string templateFontPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {
                     if (ziped.Fonts.TryGetValue(mText.FontFamily, out byte[] stream))

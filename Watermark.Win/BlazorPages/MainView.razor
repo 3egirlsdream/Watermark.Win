@@ -262,7 +262,7 @@
         {
             if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
             var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
-            var basePath = Global.TemplatesFolder + canvas.ID;
+            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
             if (!Directory.Exists(basePath))
             {
                 Directory.CreateDirectory(basePath);
@@ -296,7 +296,7 @@
             if (result == true)
             {
                 var p = dialog.FileName;
-                var destFolder = Global.TemplatesFolder + CreateTemplate.ID;
+                var destFolder = Global.AppPath.TemplatesFolder + CreateTemplate.ID;
                 if (!System.IO.Directory.Exists(destFolder))
                 {
                     System.IO.Directory.CreateDirectory(destFolder);
@@ -376,9 +376,9 @@
                 Images = new List<TemplateList>();
                 MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
                 MainLoading.Value = 0;
-                if (!Directory.Exists(Global.ThumbnailFolder))
+                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
                 {
-                    Directory.CreateDirectory(Global.ThumbnailFolder);
+                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
                 }
                 foreach (var file in dialog.FileNames)
                 {
@@ -388,7 +388,7 @@
                     canvas.Exif = await ExifHelper.ReadImageAsync(file);
                     await Task.Run(() =>
                     {
-                        var thumbnail = Global.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
+                        var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
                         var bitmap = SkiaSharp.SKBitmap.Decode(file);
                         return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
                     });
@@ -454,13 +454,13 @@
     async Task InitTemplates()
     {
         MainLoading.Show = true;
-        if (!System.IO.Directory.Exists(Global.TemplatesFolder))
+        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
         {
-            System.IO.Directory.CreateDirectory(Global.TemplatesFolder);
+            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
         }
         try
         {
-            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
             wMTemplates = new List<TemplateList>();
             var directories = directoryInfo.GetDirectories();
             MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
@@ -628,7 +628,7 @@
             var target = logo.Path;
             if (!File.Exists(target))
             {
-                target  = Global.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+                target  = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
             }
             if (File.Exists(target))
             {
@@ -642,9 +642,9 @@
     async Task InitLogoStore()
     {
         LogoStore = new List<string>();
-        if (Directory.Exists(Global.LogoesFolder))
+        if (Directory.Exists(Global.AppPath.LogoesFolder))
         {
-            var files = new DirectoryInfo(Global.LogoesFolder);
+            var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
             var tasks = new List<Task>();
             foreach (var file in files.GetFiles())
             {
@@ -705,9 +705,9 @@
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
             {
-                if (!Directory.Exists(Global.LogoesFolder))
+                if (!Directory.Exists(Global.AppPath.LogoesFolder))
                 {
-                    Directory.CreateDirectory(Global.LogoesFolder);
+                    Directory.CreateDirectory(Global.AppPath.LogoesFolder);
                 }
 
                 foreach (var filename in dialog.FileNames)
@@ -718,7 +718,7 @@
                         {
                             await Task.Run(() =>
                             {
-                                var target = Global.LogoesFolder + Path.GetFileName(filename);
+                                var target = Global.AppPath.LogoesFolder + Path.GetFileName(filename);
                                 File.Copy(filename, target, true);
                             });
 

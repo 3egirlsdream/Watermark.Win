@@ -36,7 +36,7 @@ namespace Watermark.Win
 
         protected override void OnClosed(EventArgs e)
         {
-            var path = Global.ThumbnailFolder;
+            var path = Global.AppPath.ThumbnailFolder;
             if(Directory.Exists(path))
             {
                 Directory.Delete(path, true);

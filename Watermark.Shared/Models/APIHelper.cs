@@ -54,7 +54,7 @@ namespace Watermark.Win.Models
             var request = await Connections.HttpGetAsync<string>(HOST + $"/api/Qiniu/GetToken?key={watermarkId}.zip", Encoding.UTF8);
             if (!request.success) return request;
             var token = request.data ?? "";
-            var path = Global.TemplatesFolder + watermarkId;
+            var path = Global.AppPath.TemplatesFolder + watermarkId;
             if (Directory.Exists(path))
             {
                 var configPath = path + Path.DirectorySeparatorChar + "config.json";
@@ -67,7 +67,7 @@ namespace Watermark.Win.Models
                     System.IO.File.WriteAllText(configPath, json);
                 }
 
-                var targetPath = Global.TemplatesFolder + $"{watermarkId}.zip";
+                var targetPath = Global.AppPath.TemplatesFolder + $"{watermarkId}.zip";
                 if (File.Exists(targetPath)) File.Delete(targetPath);
                 ZipFile.CreateFromDirectory(path, targetPath);
 
@@ -226,7 +226,7 @@ namespace Watermark.Win.Models
 
         public bool FolderExsist(string watermarkId)
         {
-            var target = Global.TemplatesFolder + watermarkId;
+            var target = Global.AppPath.TemplatesFolder + watermarkId;
             if (Directory.Exists(target)) return true;
             return false;
         }
@@ -237,12 +237,12 @@ namespace Watermark.Win.Models
             {
                 using var client = new HttpClient();
                 var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
-                if (!Directory.Exists(Global.TemplatesFolder))
+                if (!Directory.Exists(Global.AppPath.TemplatesFolder))
                 {
-                    Directory.CreateDirectory(Global.TemplatesFolder);
+                    Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
                 }
 
-                var target = Global.TemplatesFolder + watermarkId;
+                var target = Global.AppPath.TemplatesFolder + watermarkId;
                 if (Directory.Exists(target))
                 {
                     Directory.Delete(target, true);
@@ -259,6 +259,39 @@ namespace Watermark.Win.Models
                 return false;
             }
         }
+
+
+        public async Task<bool> DownloadAndorid(List<string> watermarkIds)
+        {
+            try
+            {
+                using var client = new HttpClient();
+                foreach(var watermarkId in watermarkIds)
+                {
+                    var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
+                    if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+                    {
+                        Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+                    }
+
+                    var target = Global.AppPath.TemplatesFolder + watermarkId;
+                    if (Directory.Exists(target))
+                    {
+                        Directory.Delete(target, true);
+                    }
+                    Directory.CreateDirectory(target);
+                    ZipFile.ExtractToDirectory(stream, target, true);
+                    await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
 
 
         public async Task<Tuple<bool, bool>> TemplateIsExsist(string watermarkId, string? userId)

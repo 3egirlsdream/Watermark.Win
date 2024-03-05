@@ -29,7 +29,7 @@ namespace Watermark.Shared.Models
             if (result == true)
             {
                 var p = dialog.FileName;
-                var destFolder = Global.TemplatesFolder + canvas.ID;
+                var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
                 if (!System.IO.Directory.Exists(destFolder))
                 {
                     System.IO.Directory.CreateDirectory(destFolder);
@@ -56,7 +56,7 @@ namespace Watermark.Shared.Models
             if (result == true)
             {
                 var p = dialog.FileName;
-                var destFolder = Global.TemplatesFolder + canvas.ID;
+                var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
                 if (!System.IO.Directory.Exists(destFolder))
                 {
                     System.IO.Directory.CreateDirectory(destFolder);
@@ -125,7 +125,7 @@ namespace Watermark.Shared.Models
         public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
-            var targetPath = Global.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
+            var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
             var file = new FileInfo(fontPath);
             if (file.Exists)
             {
@@ -156,7 +156,7 @@ namespace Watermark.Shared.Models
                     if (result == true)
                     {
                         var p = dialog.FileName;
-                        var destFolder = Global.TemplatesFolder + id;
+                        var destFolder = Global.AppPath.TemplatesFolder + id;
                         if (!System.IO.Directory.Exists(destFolder))
                         {
                             System.IO.Directory.CreateDirectory(destFolder);

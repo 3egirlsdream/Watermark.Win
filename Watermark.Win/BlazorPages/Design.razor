@@ -419,8 +419,8 @@
     {
         canvas = CurrentCanvas;
         if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-        Global.ImageFile2Base64(ImagesBase64, Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
-        var folder = Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
+        Global.ImageFile2Base64(ImagesBase64, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
+        var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
         canvas.Children.ForEach(c =>
         {
             if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, folder + c.Path, c.ID);
@@ -486,7 +486,7 @@
     {
         try
         {
-            var path = Global.TemplatesFolder + CurrentCanvas.ID;
+            var path = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
             if (!System.IO.Directory.Exists(path))
             {
                 System.IO.Directory.CreateDirectory(path);
@@ -514,12 +514,12 @@
         {
             if (string.IsNullOrEmpty(newTemplateName)) return;
             var ID = Guid.NewGuid().ToString("N").ToUpper();
-            var path = Global.TemplatesFolder + ID;
+            var path = Global.AppPath.TemplatesFolder + ID;
             if (!System.IO.Directory.Exists(path))
             {
                 System.IO.Directory.CreateDirectory(path);
             }
-            var source = Global.TemplatesFolder + canvas.ID;
+            var source = Global.AppPath.TemplatesFolder + canvas.ID;
             DirectoryInfo info = new DirectoryInfo(source);
             foreach (var file in info.GetFiles())
             {
@@ -602,7 +602,7 @@
 
     void RemoveImage(WMContainer container)
     {
-        var filename = Global.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
+        var filename = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
         if (File.Exists(filename))
         {
             File.Delete(filename);

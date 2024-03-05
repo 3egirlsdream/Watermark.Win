@@ -22,9 +22,6 @@
         width: 100vw;
         overflow-x: hidden
     }
-    
-
-
 </style>
 
 <div class="design-main">
@@ -43,20 +40,20 @@
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
         @*<div style="width:calc(100% - 500px);height:100%;position:fixed;">
-            <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
-                @if (!string.IsNullOrEmpty(url))
-                {
-                    <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width: 100%; height: 100%; padding-left: 5%; padding-right: 5%; padding-top: 100px; padding-bottom: 100px;" />
-                }
+        <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
+        @if (!string.IsNullOrEmpty(url))
+        {
+        <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width: 100%; height: 100%; padding-left: 5%; padding-right: 5%; padding-top: 100px; padding-bottom: 100px;" />
+        }
 
-            </div>
+        </div>
         </div>*@
         <div style="width:100%;padding:10px;">
             <MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
                 <MudExpansionPanel Text="画布">
                     @*<MudStack Row>
-                        <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
-                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
+                    <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
+                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
                     </MudStack>*@
                     <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
                      <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
@@ -78,9 +75,9 @@
                      <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
                      @*<MudStack Row Class="mt-5" Style="position:relative;">
-                         <MudText Align="Align.Justify" Typo="Typo.button">启用图片圆角</MudText>
-                         <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" Style="position:absolute;right:5px" />
-                     </MudStack>*@
+                    <MudText Align="Align.Justify" Typo="Typo.button">启用图片圆角</MudText>
+                    <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" Style="position:absolute;right:5px" />
+                    </MudStack>*@
                      <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
                      <MudStack Row Class="mt-5" Style="position:relative">
@@ -288,15 +285,15 @@
                                                              <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                                  @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
                                                                     {
-                                                                        <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
+                                                                        <MudMenuItem OnClick="()=>{mText.FontFamily = font; StateHasChanged();}">@font</MudMenuItem>
                                                                     }
                                                                 </MudMenu>
                                                                 @* <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
-                                                                    @foreach (var font in Fonts)
-                                                                    {
-                                                                        <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
-                                                                    }
-                                                                </MudMenu> *@
+                                            @foreach (var font in Fonts)
+                                            {
+                                            <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
+                                            }
+                                            </MudMenu> *@
                                                             </MudStack>
 
                                                         </MudStack>
@@ -378,15 +375,15 @@
                                                  <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                      @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
                                                         {
-                                                            <MudMenuItem OnClick="()=> mText.FontFamily = font">@font</MudMenuItem>
+                                                            <MudMenuItem OnClick="()=>{mText.FontFamily = font; StateHasChanged();}">@font</MudMenuItem>
                                                         }
                                                     </MudMenu>
-                                                   @*  <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
-                                                        @foreach (var font in Fonts)
-                                                        {
-                                                            <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
-                                                        }
-                                                    </MudMenu> *@
+                                                    @*  <MudMenu Label="选择本地字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+                                    @foreach (var font in Fonts)
+                                    {
+                                    <MudMenuItem OnClick="()=>SelectLocalFont(mText, font)">@font</MudMenuItem>
+                                    }
+                                    </MudMenu> *@
                                                 </MudStack>
 
                                             </MudStack>
@@ -439,8 +436,8 @@
     {
         canvas = CurrentCanvas;
         if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-        Global.ImageFile2Base64(ImagesBase64, Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
-        var folder = Global.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
+        Global.ImageFile2Base64(ImagesBase64, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
+        var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
         canvas.Children.ForEach(c =>
         {
             if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, folder + c.Path, c.ID);
@@ -458,7 +455,7 @@
             });
         });
         InitLocalFonts();
-        OnButtonClicked();
+        //OnButtonClicked();
     }
 
     private async void OnButtonClicked()
@@ -513,7 +510,7 @@
     {
         try
         {
-            var path = Global.TemplatesFolder + CurrentCanvas.ID;
+            var path = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
             if (!System.IO.Directory.Exists(path))
             {
                 System.IO.Directory.CreateDirectory(path);
@@ -541,12 +538,12 @@
         {
             if (string.IsNullOrEmpty(newTemplateName)) return;
             var ID = Guid.NewGuid().ToString("N").ToUpper();
-            var path = Global.TemplatesFolder + ID;
+            var path = Global.AppPath.TemplatesFolder + ID;
             if (!System.IO.Directory.Exists(path))
             {
                 System.IO.Directory.CreateDirectory(path);
             }
-            var source = Global.TemplatesFolder + canvas.ID;
+            var source = Global.AppPath.TemplatesFolder + canvas.ID;
             DirectoryInfo info = new DirectoryInfo(source);
             foreach (var file in info.GetFiles())
             {
@@ -629,7 +626,7 @@
 
     void RemoveImage(WMContainer container)
     {
-        var filename = Global.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
+        var filename = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
         if (File.Exists(filename))
         {
             File.Delete(filename);

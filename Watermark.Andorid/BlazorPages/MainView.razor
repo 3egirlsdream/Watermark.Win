@@ -260,7 +260,7 @@
         {
             if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
             var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
-            var basePath = Global.TemplatesFolder + canvas.ID;
+            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
             if (!Directory.Exists(basePath))
             {
                 Directory.CreateDirectory(basePath);
@@ -361,13 +361,13 @@
     async Task InitTemplates()
     {
         MainLoading.Show = true;
-        if (!System.IO.Directory.Exists(Global.TemplatesFolder))
+        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
         {
-            System.IO.Directory.CreateDirectory(Global.TemplatesFolder);
+            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
         }
         try
         {
-            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
             wMTemplates = new List<TemplateList>();
             var directories = directoryInfo.GetDirectories();
             MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
@@ -535,7 +535,7 @@
             var target = logo.Path;
             if (!File.Exists(target))
             {
-                target  = Global.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+                target  = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
             }
             if (File.Exists(target))
             {
@@ -549,9 +549,9 @@
     async Task InitLogoStore()
     {
         LogoStore = new List<string>();
-        if (Directory.Exists(Global.LogoesFolder))
+        if (Directory.Exists(Global.AppPath.LogoesFolder))
         {
-            var files = new DirectoryInfo(Global.LogoesFolder);
+            var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
             var tasks = new List<Task>();
             foreach (var file in files.GetFiles())
             {

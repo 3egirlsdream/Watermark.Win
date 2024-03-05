@@ -468,7 +468,7 @@
         {
             try
             {
-                var path = Global.TemplatesFolder + CurrentCanvas.ID;
+                var path = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
                 if (!System.IO.Directory.Exists(path))
                 {
                     System.IO.Directory.CreateDirectory(path);

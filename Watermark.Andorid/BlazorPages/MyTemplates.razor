@@ -101,12 +101,12 @@
     {
         loading = true;
         pairs = new Dictionary<string, string>();
-        if (!System.IO.Directory.Exists(Global.TemplatesFolder))
+        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
         {
-            System.IO.Directory.CreateDirectory(Global.TemplatesFolder);
+            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
         }
 
-        System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.TemplatesFolder);
+        System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
         wMTemplates = new List<WMCanvas>();
         List<Task> tasks = new List<Task>();
         foreach (var dirct in directoryInfo.GetDirectories())
@@ -207,7 +207,7 @@
         {
             try
             {
-                var path = Global.TemplatesFolder + id;
+                var path = Global.AppPath.TemplatesFolder + id;
                 System.IO.Directory.Delete(path, true);
                 StateHasChanged();
             }
@@ -280,7 +280,7 @@
                     message = result.message?.content;
                 }
 
-                var target = Global.TemplatesFolder + $"{watermarkId}.zip";
+                var target = Global.AppPath.TemplatesFolder + $"{watermarkId}.zip";
                 if (File.Exists(target)) File.Delete(target);
                 ClientInstance.ShowMsg(Snackbar, message, severity);
                 loading = false;

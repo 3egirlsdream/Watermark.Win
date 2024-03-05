@@ -253,7 +253,7 @@
     {
         if (string.IsNullOrEmpty(CreateTemplate.TemplateName) || string.IsNullOrEmpty(CreateTemplate.Base64Src)) return;
         var canvas = new WMCanvas() { Name = CreateTemplate.TemplateName, ID = CreateTemplate.ID };
-        var basePath = Global.TemplatesFolder + canvas.ID;
+        var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
         if (!Directory.Exists(basePath))
         {
             Directory.CreateDirectory(basePath);

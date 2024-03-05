@@ -122,7 +122,7 @@
 		{
 			try
 			{
-				var path = Global.TemplatesFolder + id;
+				var path = Global.AppPath.TemplatesFolder + id;
 				System.IO.Directory.Delete(path, true);
 				StateHasChanged();
 			}
@@ -172,7 +172,7 @@
 					message = result.message?.content;
 				}
 
-				var target = Global.TemplatesFolder + $"{id}.zip";
+				var target = Global.AppPath.TemplatesFolder + $"{id}.zip";
 				if (File.Exists(target)) File.Delete(target);
 				Snackbar.Add(message, severity, config =>
 				{

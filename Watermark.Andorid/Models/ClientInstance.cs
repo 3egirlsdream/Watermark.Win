@@ -48,7 +48,7 @@ namespace Watermark.Shared.Models
         public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
-            var targetPath = Global.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
+            var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
             var file = new FileInfo(fontPath);
             if (file.Exists)
             {
@@ -75,14 +75,9 @@ namespace Watermark.Shared.Models
             image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
         }
 
-        private static string UUID()
-        {
-            string code = null;
-            return code;
-        }
         public static string Key()
         {
-            var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(UUID().Replace("-", "") + "CATLNMSL"));
+            var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(GetAndroidId().Replace("-", "") + "CATLNMSL"));
             string result3 = result.Replace("-", "");
             return result3;
         }

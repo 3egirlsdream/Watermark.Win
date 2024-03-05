@@ -1,16 +1,30 @@
 ﻿using Newtonsoft.Json;
 using SkiaSharp;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
-    public static class Global
+	public static class Global
     {
-        public static string TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + System.IO.Path.DirectorySeparatorChar;
-        public static string ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + System.IO.Path.DirectorySeparatorChar;
-        public static string LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + System.IO.Path.DirectorySeparatorChar;
-        public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
+		static WMAppPath CP = new()
+        {
+            TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + Path.DirectorySeparatorChar,
+            ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
+            LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
+            OutputFolder = AppDomain.CurrentDomain.BaseDirectory + "Output" + Path.DirectorySeparatorChar
+		};
+        static WMAppPath AP = new()
+        {
+            TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
+            ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
+            LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
+			OutputFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
+		};
 
-        public static WMCanvas ReadConfigFromPath(string path)
+		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
+		public static DeviceType DeviceType = DeviceType.Other;
+		public static WMAppPath AppPath = DeviceType == DeviceType.Andorid ? AP : CP;
+		public static WMCanvas ReadConfigFromPath(string path)
         {
             using var stream = new System.IO.FileStream(path, System.IO.FileMode.Open);
             using var reader = new System.IO.StreamReader(stream);
@@ -269,5 +283,5 @@ namespace Watermark.Win.Models
                 return string.Empty;
             }
         }
-    }
+	}
 }
