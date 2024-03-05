@@ -265,7 +265,7 @@ namespace Watermark.Win.Models
         {
             try
             {
-                using var client = new HttpClient();
+                var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 foreach(var watermarkId in watermarkIds)
                 {
                     var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
@@ -280,9 +280,12 @@ namespace Watermark.Win.Models
                         Directory.Delete(target, true);
                     }
                     Directory.CreateDirectory(target);
-                    ZipFile.ExtractToDirectory(stream, target, true);
-                    await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
-                }
+                    await Task.Run(() =>
+                    {
+                        ZipFile.ExtractToDirectory(stream, target, true);
+                    });
+
+				}
                 
                 return true;
             }

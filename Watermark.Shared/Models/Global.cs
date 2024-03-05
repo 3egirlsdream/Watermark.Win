@@ -15,15 +15,16 @@ namespace Watermark.Win.Models
 		};
         static WMAppPath AP = new()
         {
-            TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
+            BasePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId,
+            TemplatesFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
-			OutputFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
+            OutputFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
 		};
 
 		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
 		public static DeviceType DeviceType = DeviceType.Other;
-		public static WMAppPath AppPath = DeviceType == DeviceType.Andorid ? AP : CP;
+		public static WMAppPath AppPath { get => DeviceType == DeviceType.Andorid ? AP : CP; }
 		public static WMCanvas ReadConfigFromPath(string path)
         {
             using var stream = new System.IO.FileStream(path, System.IO.FileMode.Open);

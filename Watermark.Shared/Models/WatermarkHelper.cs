@@ -140,9 +140,7 @@ namespace Watermark.Win.Models
 #endif
                 if (output.StartsWith("/data/user"))
                 {
-                    var ot = $"/storage/emulated/0/{WMAppPath.AppId}/";
-					if (!Directory.Exists(ot)) Directory.CreateDirectory(ot);
-					output = System.IO.Path.Combine(ot, newFileaName + ".jpg");
+                    output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);

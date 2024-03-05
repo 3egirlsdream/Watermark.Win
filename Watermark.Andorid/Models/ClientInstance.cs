@@ -1,4 +1,5 @@
-﻿using MudBlazor;
+﻿using Microsoft.Maui.Controls.PlatformConfiguration;
+using MudBlazor;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
