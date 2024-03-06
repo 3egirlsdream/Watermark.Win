@@ -1,14 +1,17 @@
-﻿using Microsoft.Maui.Controls.PlatformConfiguration;
+﻿using Android.Provider;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 using MudBlazor;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using Watermark.Andorid;
+using Watermark.Andorid.BlazorPages;
 using Watermark.Win.Models;
 
 namespace Watermark.Shared.Models
@@ -126,5 +129,48 @@ namespace Watermark.Shared.Models
             }
             return false;
         }
+
+        public static async Task<bool> CheckUpdate()
+        {
+            try
+            {
+                var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkAndroid", Encoding.Default);
+                if (version != null && version.success && version.data != null && version.data.VERSION != null)
+                {
+                    var v1 = GetVersion();
+                    var v2 = new Version(version.data.VERSION);
+                    return v2 > v1;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public static async Task Update(Action<int> action)
+        {
+			using var wc = new WebClient();
+			var downloadUri = "http://thankful.top:2038/api/public/dl/nYBc6YEO";
+			var fileName = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
+			var uri = MediaStore.Downloads.ExternalContentUri;
+			string path = uri.Path + Path.DirectorySeparatorChar + fileName;
+			try
+			{
+				wc.DownloadProgressChanged += (ss, e) =>
+				{
+					action.Invoke(e.ProgressPercentage);
+				};
+				await wc.DownloadFileTaskAsync(new Uri(downloadUri), path);
+				System.Diagnostics.Process.Start(path);
+			}
+			catch (Exception ex)
+			{
+			}
+		}
     }
 }

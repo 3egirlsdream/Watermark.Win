@@ -1,0 +1,87 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+
+<style>
+
+    .ddd {
+        border: 0;
+        outline: 0;
+        text-decoration: 2px solid underline;
+        line-height: 2;
+        text-underline-offset: 10px;
+        display: inline-block;
+        border-bottom: 1px solid;
+        width: 10px;
+    }
+
+    input {
+        width: fit-content;
+    }
+
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .rectangle {
+        position: relative;
+        width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
+        padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
+        margin-right: 20px; /* 设置右侧间距 */
+        margin-bottom: 20px; /* 设置下方间距 */
+    }
+
+        .rectangle img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 图片填充整个矩形 */
+        }
+</style>
+
+<MudDialog>
+    <DialogContent>
+        <div class="container">
+            @foreach(var per in Logoes)
+            {
+                <div class="rectangle">
+                    <MudImage ObjectFit="ObjectFit.Contain" Src="@per.Value" @onclick="()=>Click(per)" />
+                </div>
+            }
+        </div>
+    </DialogContent>
+</MudDialog>
+
+
+
+@code {
+
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+    Dictionary<string, string> Logoes = new Dictionary<string, string>();
+
+    void Click(KeyValuePair<string, string> pair)
+    {
+        MudDialog.Close(DialogResult.Ok(pair));
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var folder = Global.AppPath.LogoesFolder;
+        if (!Directory.Exists(folder)) return;
+
+        var directory = new DirectoryInfo(folder);
+        var mission = new List<Task>();
+        foreach(var logo in directory.GetFiles())
+        {
+            var t = Task.Run(() => Global.ImageFile2Base64(Logoes, logo.FullName, logo.Name));
+            mission.Add(t);
+        }
+        await Task.WhenAll(mission);
+    }
+
+}

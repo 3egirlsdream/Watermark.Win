@@ -15,11 +15,11 @@ namespace Watermark.Win.Models
 		};
         static WMAppPath AP = new()
         {
-            BasePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId,
-            TemplatesFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
-            ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
-            LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
-            OutputFolder = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
+            BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId,
+            TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
+            ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
+            LogoesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
+            OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
 		};
 
 		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
