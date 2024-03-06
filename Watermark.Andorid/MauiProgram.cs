@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 using MudBlazor;
+using Watermark.Andorid.Mobile;
 
 namespace Watermark.Andorid
 {
@@ -17,7 +18,9 @@ namespace Watermark.Andorid
                 });
 
             builder.Services.AddMauiBlazorWebView();
-
+#if ANDROID
+            builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
+#endif
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
 

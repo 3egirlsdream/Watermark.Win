@@ -464,6 +464,7 @@
             var pair = (KeyValuePair<string, string>)dialogResult.Data;
             ImagesBase64[pair.Key] = pair.Value;
             mLogo.Path = pair.Key;
+            ImagesBase64[mLogo.ID] = pair.Value;
             StateHasChanged();
         }
     }

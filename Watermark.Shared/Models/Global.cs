@@ -284,5 +284,7 @@ namespace Watermark.Win.Models
                 return string.Empty;
             }
         }
+
+        public static string APK { get; set; }
 	}
 }

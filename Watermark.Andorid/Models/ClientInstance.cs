@@ -1,17 +1,6 @@
-﻿using Android.Provider;
-using Microsoft.Maui.Controls.PlatformConfiguration;
-using MudBlazor;
+﻿using MudBlazor;
 using SkiaSharp;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using Watermark.Andorid;
-using Watermark.Andorid.BlazorPages;
 using Watermark.Win.Models;
 
 namespace Watermark.Shared.Models
@@ -154,23 +143,7 @@ namespace Watermark.Shared.Models
 
         public static async Task Update(Action<int> action)
         {
-			using var wc = new WebClient();
-			var downloadUri = "http://thankful.top:2038/api/public/dl/nYBc6YEO";
-			var fileName = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
-			var uri = MediaStore.Downloads.ExternalContentUri;
-			string path = uri.Path + Path.DirectorySeparatorChar + fileName;
-			try
-			{
-				wc.DownloadProgressChanged += (ss, e) =>
-				{
-					action.Invoke(e.ProgressPercentage);
-				};
-				await wc.DownloadFileTaskAsync(new Uri(downloadUri), path);
-				System.Diagnostics.Process.Start(path);
-			}
-			catch (Exception ex)
-			{
-			}
-		}
+           
+        }
     }
 }

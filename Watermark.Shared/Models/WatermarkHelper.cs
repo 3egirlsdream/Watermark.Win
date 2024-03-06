@@ -222,6 +222,10 @@ namespace Watermark.Win.Models
                         {
                             bitmap_logo = SKBitmap.Decode(path);
                         }
+                        else if (File.Exists(Global.AppPath.LogoesFolder + mLogo.Path))
+                        {
+                            bitmap_logo = SKBitmap.Decode(Global.AppPath.LogoesFolder + mLogo.Path);
+                        }
                         else
                         {
                             bitmap_logo = new SKBitmap(100, 100);

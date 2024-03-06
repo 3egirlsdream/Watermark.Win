@@ -185,7 +185,7 @@
              <div class="water-tab-item" style="@(activeTab == 3 ? "":"display:none")">
                  @if (IsLoginIn && Global.CurrentUser != null)
                 {
-                    <MudPaper Width="80%" Style="margin: 48px 10%;padding:10px;" Elevation="0">
+                    <MudPaper Width="80%" Style="margin: 48px 10% 10px 10%; padding:10px;" Elevation="0">
                         @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
                         {
                             <MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
@@ -203,7 +203,7 @@
                 }
                 else
                 {
-                    <MudPaper Width="80%" Style="margin:10%;padding:10px" Elevation="0">
+                    <MudPaper Width="80%" Style="margin:48px 10% 10px 10%;padding:10px" Elevation="0">
                         <MudSkeleton />
                         <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
                         <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
@@ -215,7 +215,7 @@
                 }
 
 
-                <MudPaper Width="80%" Style="margin:10%;" Elevation="0" class="pa-3">
+                <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
                     <MudStack Row style="position:relative;align-items: center">
                          <MudText Typo="Typo.button"> 版本更新 </MudText>
                         @if (checkUpdate)
@@ -230,9 +230,9 @@
                     }
                 </MudPaper>
 
-                <MudFileUpload T="IReadOnlyList<IBrowserFile>" Accept=".png" FilesChanged="ImportLogo">
+                <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="ImportLogo">
                     <ButtonTemplate>
-                        <MudPaper Width="80%" Elevation="0" Style="margin:10%;" class="pa-3">
+                        <MudPaper Width="80%" Elevation="0" Style="margin:0 10%;" class="pa-3">
                             <MudStack Row style="position:relative;align-items: center">
                                  <MudText Typo="Typo.button"> 导入图标 </MudText>
                                  <MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" />
@@ -347,7 +347,9 @@
     TemplateList CurrentImage;
     List<TemplateList> Images = new List<TemplateList>();
     bool checkUpdate = false;
-    int DownLoadProgress = 0;
+    int DownLoadProgress = 0; 
+    [Inject]
+    private IUpgradeService UpgradeService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -723,21 +725,37 @@
         StateHasChanged();
     }
 
+    private void DownloadProgressChanged(long readLength, long allLength)
+    {
+        InvokeAsync(() =>
+        {
+            var c = (int)(readLength * 100 / allLength);
 
+            if (c > 0 && c % 5 == 0) //刷新进度为每5%更新一次，过快的刷新会导致页面显示数值与实际不一致
+            {
+                DownLoadProgress = c; //下载完成百分比
+                StateHasChanged();
+            }
+        });
+    }
     async void Update()
     {
-        var action = new Action<int>((v) =>
-        {
-            DownLoadProgress = v;
-        });
-
-        await Watermark.Shared.Models.ClientInstance.Update(action);
+        if (!checkUpdate) return;
+        Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
+        var downloadUri = "http://thankful.top:2038/api/public/dl/nYBc6YEO";
+        await UpgradeService.DownloadFileAsync(downloadUri, DownloadProgressChanged);
+        UpgradeService.InstallNewVersion();
         DownLoadProgress = 0;
+        StateHasChanged();
     }
 
     async void ImportLogo(IReadOnlyList<IBrowserFile> files)
     {
         var target = Global.AppPath.LogoesFolder;
+        if (!Directory.Exists(target))
+        {
+            Directory.CreateDirectory(target);
+        }
         foreach(var file in files)
         {
             var id = Guid.NewGuid().ToString();

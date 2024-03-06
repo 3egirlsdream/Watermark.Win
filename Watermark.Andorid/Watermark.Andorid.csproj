@@ -40,6 +40,7 @@
         <Authors>JiangXinJi</Authors>
         <Description>强大的水印模板编辑工具。</Description>
         <PackageIcon>logo.png</PackageIcon>
+        <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
@@ -47,14 +48,17 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
+      <AndroidKeyStore>False</AndroidKeyStore>
+      <PublishTrimmed>True</PublishTrimmed>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
+      <AndroidKeyStore>False</AndroidKeyStore>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-ios|AnyCPU'">
@@ -68,14 +72,14 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.19041.0|AnyCPU'">
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
@@ -89,14 +93,14 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.19041.0|AnyCPU'">
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <ItemGroup>
