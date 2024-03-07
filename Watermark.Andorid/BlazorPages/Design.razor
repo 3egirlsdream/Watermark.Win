@@ -375,6 +375,11 @@
     </div>
 </div>
 
+<MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    <LogoDialog OnImageTouched="SelectLogoCallback" />
+</MudDrawer>
+
+
 <MudDialog @bind-IsVisible="showDialog" Options="DialogOptions" Style="max-width:400px;">
     <DialogContent>
         <MudForm>
@@ -398,7 +403,7 @@
     bool showDialog = false;
     string newTemplateName = "";
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-
+    bool openLogoDialog = false;
 
     WMThickness BorderThickness = new WMThickness();
     WMCanvas canvas;
@@ -407,6 +412,7 @@
     bool SrcLoading = false;
     List<string> Fonts = new List<string>();
     Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
+    WMLogo selectedLogo;
 
     protected override void OnInitialized()
     {
@@ -453,20 +459,19 @@
         return canvas;
     }
 
-    async void OpenLogoDialog(WMLogo mLogo)
+    void SelectLogoCallback(KeyValuePair<string, string> pair)
     {
-        var parameters = new DialogParameters<LogoDialog>();
-        var option = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var rst = DialogService.Show<LogoDialog>("", parameters, option);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled)
-        {
-            var pair = (KeyValuePair<string, string>)dialogResult.Data;
-            ImagesBase64[pair.Key] = pair.Value;
-            mLogo.Path = pair.Key;
-            ImagesBase64[mLogo.ID] = pair.Value;
-            StateHasChanged();
-        }
+        if (selectedLogo is null) return;
+        ImagesBase64[pair.Key] = pair.Value;
+        selectedLogo.Path = pair.Key;
+        ImagesBase64[selectedLogo.ID] = pair.Value;
+        StateHasChanged();
+    }
+
+    void OpenLogoDialog(WMLogo mLogo)
+    {
+        selectedLogo = mLogo;
+        openLogoDialog = true;
     }
 
     async void OpenExifDialog(WMText mText)

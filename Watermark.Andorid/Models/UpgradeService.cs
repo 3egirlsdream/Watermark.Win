@@ -4,7 +4,7 @@ using Android.OS;
 #endif
 using Watermark.Win.Models;
 
-namespace Watermark.Andorid.Mobile
+namespace Watermark.Andorid.Models
 {
     public interface IUpgradeService
     {
@@ -65,7 +65,7 @@ namespace Watermark.Andorid.Mobile
             {
                 //给临时读取权限
                 intent.SetFlags(ActivityFlags.GrantReadUriPermission);
-                var uri = FileProvider.GetUriForFile(Android.App.Application.Context, "com.masa.mauidemo.fileprovider", apkFile);
+                var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(Android.App.Application.Context, "com.masa.mauidemo.fileprovider", apkFile);
                 // 设置显式 MIME 数据类型
                 intent.SetDataAndType(uri, "application/vnd.android.package-archive");
             }

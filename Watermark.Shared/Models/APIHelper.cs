@@ -266,7 +266,7 @@ namespace Watermark.Win.Models
             try
             {
                 var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                foreach(var watermarkId in watermarkIds)
+                foreach (var watermarkId in watermarkIds)
                 {
                     var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
                     if (!Directory.Exists(Global.AppPath.TemplatesFolder))
@@ -285,13 +285,33 @@ namespace Watermark.Win.Models
                         ZipFile.ExtractToDirectory(stream, target, true);
                     });
 
-				}
-                
+                }
+
                 return true;
             }
             catch (Exception ex)
             {
                 return false;
+            }
+        }
+
+
+        public async Task DownloadLogoes()
+        {
+            try
+            {
+                string logoUri = "Logoes";
+                if (Directory.Exists(Global.AppPath.LogoesFolder)) return;
+                Directory.CreateDirectory(Global.AppPath.LogoesFolder);
+                var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{logoUri}.zip");
+                var target = Global.AppPath.LogoesFolder;
+                await Task.Run(() =>
+                {
+                    ZipFile.ExtractToDirectory(stream, target, true);
+                });
+            }
+            catch (Exception ex)
+            {
             }
         }
 

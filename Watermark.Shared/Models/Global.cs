@@ -286,5 +286,8 @@ namespace Watermark.Win.Models
         }
 
         public static string APK { get; set; }
-	}
+
+        public static bool DarkMode { get; set; } = true;
+
+    }
 }

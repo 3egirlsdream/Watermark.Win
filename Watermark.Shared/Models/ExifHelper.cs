@@ -42,32 +42,9 @@ namespace Watermark.Win.Models
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {
                     var e = (ExifTags)Enum.Parse(typeof(ExifTags), key);
-                    if (exifReader.GetTagValue(e, out object result))
+                    if (exifReader.GetTagValue(e, out object result) && result != null)
                     {
-                        dic[key] = result.ToString();
-                        if (result is byte[] v) dic[key] = Convert.ToBase64String(v);
-                        else if (key == Enum.GetName(ExifTags.ExposureTime) && result is double et)
-                        {
-                            dic[key] = "1/" + (1 / et);
-                        }
-                        else if (result is DateTime || key.Contains("DateTime"))
-                        {
-                            DateTime dt;
-                            if(result is DateTime) 
-                            { 
-                                dt = (DateTime)result; 
-                            } 
-                            else
-                            {
-                                string format = "yyyy:MM:dd HH:mm:ss";
-                                DateTime.TryParseExact(result.ToString(), format, null, System.Globalization.DateTimeStyles.None, out dt);
-                            }
-                            var k = key + "gz";
-                            var ganzhi = Global.GetGanZhi(dt.Year);
-                            var mon = Global.GetMonth(dt.Month);
-                            var day = Global.GetDay(dt.Day);
-                            dic[k] = ganzhi + "年" + mon + "月" + day + "日";
-                        }
+                        HandleExif(dic, key, result);
                     }
                 }
                 return dic;
@@ -94,31 +71,9 @@ namespace Watermark.Win.Models
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {
                     var e = (ExifTags)Enum.Parse(typeof(ExifTags), key);
-                    if (exifReader.GetTagValue(e, out object result))
+                    if (exifReader.GetTagValue(e, out object result) && result != null)
                     {
-                        dic[key] = result.ToString();
-                        if (result is byte[] v) dic[key] = Convert.ToBase64String(v);
-                        else if (key == Enum.GetName(ExifTags.ExposureTime) && result is double et)
-                        {
-                            dic[key] = "1/" + (1 / et);
-                        }
-                        else if (result is DateTime || key.Contains("DateTime"))
-                        {
-                            DateTime dt;
-                            if (result is DateTime time)
-                            {
-                                dt = time;
-                            }
-                            else
-                            {
-                                DateTime.TryParse(result.ToString(), out dt);
-                            }
-                            var k = key + "gz";
-                            var ganzhi = Global.GetGanZhi(dt.Year);
-                            var mon = Global.GetMonth(dt.Month);
-                            var day = Global.GetDay(dt.Day);
-                            dic[k] = ganzhi + "年" + mon + "月" + day + "日";
-                        }
+                        HandleExif(dic, key, result);
                     }
                 }
                 return dic;
@@ -133,6 +88,35 @@ namespace Watermark.Win.Models
         public static Task<Dictionary<string, string>> ReadImageAsync(string path)
         {
             return Task.Run(() => { return ReadImage(path); });
+        }
+
+        static void HandleExif(Dictionary<string, string> dic, string key, object result)
+        {
+            dic[key] = result.ToString();
+            if (result is byte[] v) dic[key] = Convert.ToBase64String(v);
+            else if (key == Enum.GetName(ExifTags.ExposureTime) && result is double et)
+            {
+                dic[key] = "1/" + (1 / et);
+            }
+            else if (result is DateTime || key.Contains("DateTime"))
+            {
+                DateTime dt;
+                if (result is DateTime)
+                {
+                    dt = (DateTime)result;
+                }
+                else
+                {
+                    string format = "yyyy:MM:dd HH:mm:ss";
+                    DateTime.TryParseExact(result.ToString(), format, null, System.Globalization.DateTimeStyles.None, out dt);
+                }
+                var k = key + "gz";
+                var ganzhi = Global.GetGanZhi(dt.Year);
+                var mon = Global.GetMonth(dt.Month);
+                var day = Global.GetDay(dt.Day);
+                dic[k] = ganzhi + "年" + mon + "月" + day + "日";
+                dic[key] = dt.ToString("yyyy-MM-dd HH:mm:ss");
+            }
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿@page "/"
 @using System.IO
 @using Watermark.Andorid.BlazorPages
+@using Watermark.Andorid.Models
 @using Watermark.Win.Models
+@using Watermark.Shared.Models
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
@@ -196,7 +198,7 @@
                         }
                         <MudStack Row Style="align-items: center;">
                              <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
-                                <MudButton Variant="Variant.Outlined" Class="ml-5">开通VIP</MudButton>
+                                <MudButton Variant="Variant.Outlined" Class="ml-5" OnClick="()=> openVip = true">开通VIP</MudButton>
                             </MudStack>
                             <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
                         </MudPaper>
@@ -214,32 +216,72 @@
                      </MudPaper>
                 }
 
+                @* 活动面板 *@
+                <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+                    <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+                        <MudCarouselItem Transition="@Transition.Fade">
+                            <div class="d-flex" style="height:100%">
+                                <MudImage Src="https://cdn.thankful.top/huodong1.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                            </div>
+                        </MudCarouselItem>
+                    </MudCarousel>
+                    <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+                        <MudCarouselItem Transition="@Transition.Fade">
+                            <div class="d-flex" style="height:100%">
+                                <MudImage Src="https://cdn.thankful.top/huodong2.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                            </div>
+                        </MudCarouselItem>
+                    </MudCarousel>
+                </MudPaper>
+
 
                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
                     <MudStack Row style="position:relative;align-items: center">
-                         <MudText Typo="Typo.button"> 版本更新 </MudText>
-                        @if (checkUpdate)
+                         <MudText Typo="Typo.button"> 版本更新 @($" {ClientInstance.GetVersion().ToString()}")</MudText>
+                         @if (checkUpdate)
                         {
                             <MudChip Size="Size.Small" Color="Color.Error">new</MudChip>
                         }
                         <MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="Update" />
-                     </MudStack>
+                    </MudStack>
                     @if (DownLoadProgress > 0)
                     {
                         <MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" Class="mr-5" style="width:auto" />
                     }
                 </MudPaper>
 
-                <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="ImportLogo">
-                    <ButtonTemplate>
-                        <MudPaper Width="80%" Elevation="0" Style="margin:0 10%;" class="pa-3">
-                            <MudStack Row style="position:relative;align-items: center">
-                                 <MudText Typo="Typo.button"> 导入图标 </MudText>
-                                 <MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" />
-                             </MudStack>
-                         </MudPaper>
-                     </ButtonTemplate>
-                 </MudFileUpload>
+                <MudPaper Width="80%" Elevation="0" Style="margin:0 10%;" class="pa-3">
+                    <MudStack Row style="position:relative;align-items: center">
+                         <MudText Typo="Typo.button"> 导入图标 </MudText>
+                         <MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="() => openLogoDialog = true"/>
+                     </MudStack>
+                 </MudPaper>
+
+                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+                     <MudStack Row style="position:relative;align-items: center">
+                         <MudText Typo="Typo.button"> 夜间模式 </MudText>
+                         <MudSwitch @bind-Value="@Global.DarkMode" Color="Color.Primary" />
+                     </MudStack>
+                 </MudPaper>
+
+                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+                     <MudStack Row style="position:relative;align-items: center">
+                         <MudText Typo="Typo.button"> PC客户端 </MudText>
+                         <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))" />
+                     </MudStack>
+                 </MudPaper>
+                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+                     <MudStack Row style="position:relative;align-items: center">
+                         <MudText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></MudText>
+                         <MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" />
+                     </MudStack>
+                 </MudPaper>
+                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+                     <MudStack Row style="position:relative;align-items: center">
+                         <MudText Typo="Typo.button"> 交流群：836325187</MudText>
+                         <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("836325187"))" />
+                     </MudStack>
+                 </MudPaper>
 
              </div>
 
@@ -257,7 +299,7 @@
 
 
     <MudOverlay Visible="@MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Width="200px" Height="200px" Elevation="2" Style="text-align:center;padding-top:calc(50% - 38px)">
+        <MudPaper Width="200px" Height="200px" Elevation="25" Style="text-align:center;padding-top:calc(50% - 38px)">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
             <MudText Typo="Typo.subtitle1" Color="Color.Primary">
                 <b>@MainLoading.Message</b>
@@ -265,9 +307,9 @@
         </MudPaper>
     </MudOverlay>
     <MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Width="200px" Height="200px" Elevation="2" Style="text-align:center;padding-top:calc(50% - 38px)">
+        <MudPaper Width="200px" Height="200px" Elevation="25" Style="text-align:center;padding-top:calc(50% - 38px)">
             <MudText Typo="Typo.subtitle1" Color="Color.Primary">
-                <b>应用版本过低，请升级！</b><a href="http://thankful.top/">http://thankful.top/</a>
+                <b>应用版本过低，请升级！</b><a href="http://thankful.top:2038/api/public/dl/nYBc6YEO">下载链接</a>
             </MudText>
         </MudPaper>
     </MudOverlay>
@@ -295,8 +337,11 @@
 </MudDrawer>
 
 
-<MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    <LogoDialog/>
+</MudDrawer>
 
+<MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
 </MudDrawer>
 
 
@@ -337,6 +382,7 @@
     bool IsLoginIn = false;
     bool openDrawer = false;
     bool openVip = false;
+    bool openLogoDialog = false;
     private Design design;
     int activeTab = 1;
     bool ForceUpdate = false;
@@ -347,12 +393,13 @@
     TemplateList CurrentImage;
     List<TemplateList> Images = new List<TemplateList>();
     bool checkUpdate = false;
-    int DownLoadProgress = 0; 
+    int DownLoadProgress = 0;
     [Inject]
     private IUpgradeService UpgradeService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        APIHelper helper = new APIHelper();
         var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
         if (isOutOfDate)
         {
@@ -364,7 +411,6 @@
         var result = await Global.ReadLocalAsync();
         if (!string.IsNullOrEmpty(result.Item1))
         {
-            APIHelper helper = new APIHelper();
             var login = await helper.LoginIn(result.Item1, result.Item2, true);
             if (login.success)
             {
@@ -383,6 +429,7 @@
         }
         await LoadTemplates();
         checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
+        await helper.DownloadLogoes();
     }
 
     async void SelectImage(IReadOnlyList<IBrowserFile> files)
@@ -740,7 +787,7 @@
     }
     async void Update()
     {
-        if (!checkUpdate) return;
+        if (!checkUpdate || DownLoadProgress > 0) return;
         Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
         var downloadUri = "http://thankful.top:2038/api/public/dl/nYBc6YEO";
         await UpgradeService.DownloadFileAsync(downloadUri, DownloadProgressChanged);
@@ -749,19 +796,11 @@
         StateHasChanged();
     }
 
-    async void ImportLogo(IReadOnlyList<IBrowserFile> files)
+
+    async void CopyClipboard(string uri)
     {
-        var target = Global.AppPath.LogoesFolder;
-        if (!Directory.Exists(target))
-        {
-            Directory.CreateDirectory(target);
-        }
-        foreach(var file in files)
-        {
-            var id = Guid.NewGuid().ToString();
-            using var fs = File.Create(target + id + ".png");
-            await file.OpenReadStream(file.Size).CopyToAsync(fs);
-        }
+        await Clipboard.Default.SetTextAsync(uri);
+        Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
     }
 
 
