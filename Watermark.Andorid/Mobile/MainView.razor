@@ -184,10 +184,10 @@
                  </MudPaper>
              </div>
 
-             <div class="water-tab-item" style="@(activeTab == 3 ? "":"display:none")">
+             <div class="water-tab-item" style="@(activeTab == 3 ? "overflow-y:auto":"display:none")">
                  @if (IsLoginIn && Global.CurrentUser != null)
                 {
-                    <MudPaper Width="80%" Style="margin: 48px 10% 10px 10%; padding:10px;" Elevation="0">
+                    <MudPaper Width="80%" Style="margin: 10px 10% 10px 10%; padding:10px;" Elevation="0">
                         @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
                         {
                             <MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
@@ -205,7 +205,7 @@
                 }
                 else
                 {
-                    <MudPaper Width="80%" Style="margin:48px 10% 10px 10%;padding:10px" Elevation="0">
+                    <MudPaper Width="80%" Style="margin:10px 10% 10px 10%;padding:10px" Elevation="0">
                         <MudSkeleton />
                         <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
                         <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
@@ -218,17 +218,15 @@
 
                 @* 活动面板 *@
                 <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
-                    <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+                    <MudCarousel Class="mud-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
                         <MudCarouselItem Transition="@Transition.Fade">
                             <div class="d-flex" style="height:100%">
-                                <MudImage Src="https://cdn.thankful.top/huodong1.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                                <MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
                             </div>
                         </MudCarouselItem>
-                    </MudCarousel>
-                    <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
-                        <MudCarouselItem Transition="@Transition.Fade">
+                         <MudCarouselItem Transition="@Transition.Fade">
                             <div class="d-flex" style="height:100%">
-                                <MudImage Src="https://cdn.thankful.top/huodong2.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                                <MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
                             </div>
                         </MudCarouselItem>
                     </MudCarousel>
@@ -315,7 +313,7 @@
     </MudOverlay>
 </div>
 
-<MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;">
     <div style="height:40px;width:100%;top:0;left:0;z-index:999;background:#2d3436">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudIconButton Icon="@Icons.Material.Filled.KeyboardBackspace" OnClick="()=>openDrawer = false" Style="color: #dfe6e9" />
@@ -337,11 +335,14 @@
 </MudDrawer>
 
 
-<MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-    <LogoDialog/>
+<MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    @if (openLogoDialog)
+    {
+        <LogoDialog/>
+    }
 </MudDrawer>
 
-<MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
 </MudDrawer>
 
 
@@ -394,6 +395,7 @@
     List<TemplateList> Images = new List<TemplateList>();
     bool checkUpdate = false;
     int DownLoadProgress = 0;
+    
     [Inject]
     private IUpgradeService UpgradeService { get; set; }
 
@@ -601,12 +603,12 @@
             design.SetCanvas(CurrentImage.Canvas);
 
         openDrawer = true;
-        StateHasChanged();
     }
 
     async void OpenLoginDialog()
     {
-        var rst = DialogService.Show<LoginDialog>("");
+        DialogOptions topCenter = new DialogOptions() { Position = DialogPosition.TopCenter };
+        var rst = DialogService.Show<LoginDialog>("", topCenter);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {

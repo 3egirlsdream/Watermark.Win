@@ -376,7 +376,10 @@
 </div>
 
 <MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-    <LogoDialog OnImageTouched="SelectLogoCallback" />
+    @if (openLogoDialog)
+    {
+        <LogoDialog OnImageTouched="SelectLogoCallback" />
+    }
 </MudDrawer>
 
 
@@ -465,6 +468,7 @@
         ImagesBase64[pair.Key] = pair.Value;
         selectedLogo.Path = pair.Key;
         ImagesBase64[selectedLogo.ID] = pair.Value;
+        openLogoDialog = false;
         StateHasChanged();
     }
 

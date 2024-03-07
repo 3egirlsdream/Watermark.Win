@@ -321,7 +321,7 @@ namespace Watermark.Win.Models
                 var text = string.Join(" ",
                             mText.Exifs.Select(x =>
                             {
-                                if (meta.TryGetValue(x.Key, out var value))
+                                if (meta.TryGetValue(x.Key, out var value) && !string.IsNullOrWhiteSpace(value))
                                 {
                                     return x.Prefix + value + x.Suffix;
                                 }

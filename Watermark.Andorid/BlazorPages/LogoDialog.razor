@@ -24,6 +24,7 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: flex-start;
+        padding:10px;
     }
 
     .rectangle {
@@ -34,6 +35,9 @@
         margin-bottom: 20px; /* 设置下方间距 */
     }
 
+        .rectangle .mud-input-control{
+            margin-top:0px;
+        }
         .rectangle .mud-input-control-input-container {
             position: absolute;
             height: 100%;
@@ -50,8 +54,8 @@
 
 
 <div class="container">
-    <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;position: absolute;height:100%;width:100%">
-        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="ImportLogo" Style="position: absolute;height:100%;width:100%">
+    <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="ImportLogo" Style="position: absolute;    margin-top: calc(50% - 30px); margin-left: calc(50% - 30px);">
             <ButtonTemplate>
                 <MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.Add" Size="Size.Large" />
             </ButtonTemplate>
@@ -60,7 +64,7 @@
     @foreach (var per in Logoes)
     {
         <div class="rectangle">
-            <MudImage ObjectFit="ObjectFit.Contain" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
+            <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
         </div>
     }
 </div>
