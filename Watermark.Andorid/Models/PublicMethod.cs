@@ -1,16 +1,5 @@
 ﻿using Microsoft.JSInterop;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
-using System.Threading.Tasks;
-using static AndroidX.ConstraintLayout.Core.State.State;
 using Watermark.Win.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Watermark.Andorid.Models
 {
@@ -25,7 +14,8 @@ namespace Watermark.Andorid.Models
             _ =Task.Run(async () =>
             {
 
-                string con = aliPayStrs;//调用支付宝app支付接口返回的内容　　　　　　　　　 var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+                string con = aliPayStrs;//调用支付宝app支付接口返回的内容　　　　　　　　　 
+                var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
                 Com.Alipay.Sdk.App.PayTask pa = new Com.Alipay.Sdk.App.PayTask(act);
                 var result = pa.PayV2(con, true);
                 var resultStatus = result.TryGetValue("resultStatus", out string resultStatusDic) ? resultStatusDic : "-1";
@@ -64,7 +54,7 @@ namespace Watermark.Andorid.Models
                         IMG = login.data.data.IMG,
                         DISPLAY_NAME = login.data.data.DISPLAY_NAME,
                         USER_NAME = login.data.data.USER_NAME,
-                        IsVIP = login.data.data.IsVIP
+                        EXPIRE_DATE = login.data.data.EXPIRE_DATE
                     };
                 }
             }

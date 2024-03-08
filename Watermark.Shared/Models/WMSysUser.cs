@@ -7,5 +7,7 @@
         public required string DISPLAY_NAME { get; set; }
         public required string PASSWORD { get; set; }
         public required string PK_ID { get; set; }
+        public DateTime? EXPIRE_DATE { get; set; }  
+        public int RECOMMEND {  get; set; }
     }
 }

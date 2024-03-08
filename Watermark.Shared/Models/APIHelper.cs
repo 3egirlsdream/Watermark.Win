@@ -111,6 +111,7 @@ namespace Watermark.Win.Models
                         t.Desc = item?["DESC"]?.ToString();
                         t.Coins = Convert.ToInt32(item?["COINS"]?.ToString() ?? "0");
                         t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
+                        t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "") > 0 ? true : false;
                         templates.Add(t);
                     }
 
