@@ -19,5 +19,9 @@ namespace Watermark.Win.Models
         public string UserId { get; set; }
         public int DownloadTimes { get; set; }
         public int Coins { get; set; }
+        /// <summary>
+        /// 官方精选
+        /// </summary>
+        public bool Recommend { get; set; }
     }
 }

@@ -55,6 +55,13 @@
         margin-top: 40px
     }
 
+    .mud-tab-class .mud-list-item-clickable:focus:not(.mud-selected-item) {
+        transform: scale(1.2);
+    }
+
+    .mud-tab-class .mud-list-item-clickable {
+        transition: transform 0.3s ease;
+    }
 </style>
 
 <div Style="background:#2d3436;height:100vh;width:100%;">
@@ -72,77 +79,48 @@
                 }
             </MudText>
             <MudStack Row Style="position:absolute;right:10px;">
-                 <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Style="margin-right: 0px; margin-top: 10px; color: #dfe6e9" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-                 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
-                {
-                    <MudText Typo="Typo.overline" Style="margin: 7px 0px 5px 0px;">@Global.CurrentUser.DISPLAY_NAME</MudText>
-                }
-            </MudStack>
+                 <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : Icons.Material.Filled.Add)" Style="margin-right: 0px; margin-top: 10px; color: #dfe6e9" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
+             </MudStack>
 
 
+             <MudPopover Style="width:200px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="0">
+                 <MudList Clickable="true">
+                     <MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio">
+                         拼图
+                     </MudListItem>
+                     <MudListItem Icon="@Icons.Material.Filled.DesignServices">
+                         设计模板
+                     </MudListItem>
+                 </MudList>
+             </MudPopover>
+         </MudToolBar>
+     </div>
+     <div Style="height:100%;width:100vw;display: flex;" @onclick="()=> ShowUserInfo = false">
 
-            <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="0">
-                @if (IsLoginIn && Global.CurrentUser != null)
-                {
-                    <div style="height:50px">
-                        @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
-                        {
-                            <MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
-                        }
-                        else
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
-                        }
+         <div style="height: 100%; padding: 0px; background: #2d3436; width:100%">
+             <MudPaper class="water-tab" Elevation="0">
+                 <div class="water-tab-text" @onclick="()=> activeTab = 1">
+                     <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
+                         <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  官方精选
+                     </MudText>
+                 </div>
+                 <div class="water-tab-text" @onclick="()=> activeTab = 2">
+                     <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
+                         <MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />  全部模板
+                     </MudText>
+                 </div>
+                 <div class="water-tab-text" @onclick="()=> activeTab = 3">
+                     <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
+                         <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />  关于
+                     </MudText>
+                 </div>
+             </MudPaper>
 
-                        <div style="float:left;">
-                            <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
-                                <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit">@Global.CurrentUser.USER_NAME</MudText>
-                            </div>
-                        </div>
-                    <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
-                    <MudText Typo="Typo.body2" Class="px-4 py-1">剩余点数：50</MudText>
-                    <MudText Typo="Typo.body2" Class="px-4 py-1">@DateTime.Now</MudText>
-                    <MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); IsLoginIn = false; }">退出</MudButton>
-                }
-                else
-                {
-                    <MudSkeleton />
-                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-                    <MudStack Row Style="margin-left:120px;" Class="mt-5">
-                         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-                         @*<MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>*@
-                     </MudStack>
-                }
-            </MudPopover>
-        </MudToolBar>
-    </div>
-    <div Style="height:100%;width:100vw;display: flex;" @onclick="()=> ShowUserInfo = false">
-
-        <div style="height: 100%; padding: 0px; background: #2d3436; width:100%">
-            <MudPaper class="water-tab" Elevation="0">
-                <div class="water-tab-text" @onclick="()=> activeTab = 1">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  官方模板
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="()=> activeTab = 2">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />  用户模板
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="()=> activeTab = 3">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />  关于
-                    </MudText>
-                </div>
-            </MudPaper>
-
-            <div class="water-tab-item" style="@(activeTab == 1 ? "":"display:none")">
-                <MudPaper Elevation="0" Class="mud-tab-class">
-                    <MudList Clickable="true">
-                        <MudTreeView T="string" Hover="true">
-                            @foreach (var t in ZipedTemplates.Where(x => x.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || x.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB"))
+             <div class="water-tab-item" style="@(activeTab == 1 ? "":"display:none")">
+                 <MudPaper Elevation="0" Class="mud-tab-class">
+                     <MudList Clickable="true">
+                         <MudTreeView T="string" Hover="true">
+                             @foreach (var t in ZipedTemplates.Where(x => x.Recommend))
                             {
                                 <MudTreeViewItem Value="@t" @onclick="() => OpenPhoto(t)" Style="cursor:pointer; " class="mb-2">
                                     <Content>
@@ -163,10 +141,10 @@
 
              <div class="water-tab-item" style="@(activeTab == 2 ? "":"display:none")">
                  <MudPaper Elevation="0" Class="mud-tab-class">
+
                      <MudList Clickable="true">
                          <MudTreeView T="string" Hover="true">
-
-                             @foreach (var t in ZipedTemplates.Where(x => x.UserId != "0BECCA9A-6F10-4A88-8753-921195D08853" && x.UserId != "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB"))
+                             @foreach (var t in ZipedTemplates)
                             {
                                 <MudTreeViewItem Value="@t" @onclick="() => OpenPhoto(t)" Style="cursor:pointer; ">
                                     <Content>
@@ -198,8 +176,15 @@
                         }
                         <MudStack Row Style="align-items: center;">
                              <MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
+                            @if (!Global.CurrentUser.IsVIP)
+                            {
                                 <MudButton Variant="Variant.Outlined" Class="ml-5" OnClick="()=> openVip = true">开通VIP</MudButton>
-                            </MudStack>
+                            }
+                            else
+                            {
+                                <MudChip Size="Size.Medium" Color="Color.Warning">VIP</MudChip>
+                            }
+                        </MudStack>
                             <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
                         </MudPaper>
                 }
@@ -224,7 +209,7 @@
                                 <MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
                             </div>
                         </MudCarouselItem>
-                         <MudCarouselItem Transition="@Transition.Fade">
+                        <MudCarouselItem Transition="@Transition.Fade">
                             <div class="d-flex" style="height:100%">
                                 <MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
                             </div>
@@ -251,14 +236,14 @@
                 <MudPaper Width="80%" Elevation="0" Style="margin:0 10%;" class="pa-3">
                     <MudStack Row style="position:relative;align-items: center">
                          <MudText Typo="Typo.button"> 导入图标 </MudText>
-                         <MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="() => openLogoDialog = true"/>
+                         <MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="() => openLogoDialog = true" />
                      </MudStack>
                  </MudPaper>
 
                  <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
                      <MudStack Row style="position:relative;align-items: center">
                          <MudText Typo="Typo.button"> 夜间模式 </MudText>
-                         <MudSwitch @bind-Value="@Global.DarkMode" Color="Color.Primary" />
+                         <MudSwitch @bind-Value="@Global.DarkMode" Color="Color.Primary" style="position:absolute;right:10px" />
                      </MudStack>
                  </MudPaper>
 
@@ -317,7 +302,7 @@
     <div style="height:40px;width:100%;top:0;left:0;z-index:999;background:#2d3436">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudIconButton Icon="@Icons.Material.Filled.KeyboardBackspace" OnClick="()=>openDrawer = false" Style="color: #dfe6e9" />
-            <MudButton StartIcon="@Icons.Material.Filled.Save" Style="margin-right: 10px; position: absolute; right: 10px; color: #dfe6e9" OnClick="Export">保存</MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.Save" Style="margin-right: 10px; position: absolute; right: 10px; color: #dfe6e9" OnClick="()=>openSave = true">保存</MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Primary" OnClick="RefreshEditImage">刷新</MudButton>
         </MudToolBar>
     </div>
@@ -338,11 +323,52 @@
 <MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
     @if (openLogoDialog)
     {
-        <LogoDialog/>
+        <LogoDialog />
     }
 </MudDrawer>
 
 <MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    <MudPaper Width="80%" Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+        <MudStack Row style="position:relative;align-items: center">
+             <MudText Typo="Typo.button"> 永久授权 </MudText>
+             <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">￥38</MudChip>
+         </MudStack>
+         <MudStack Row style="position:relative;align-items: center">
+             <MudText Typo="Typo.button"> 年票 </MudText>
+             <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">￥28</MudChip>
+         </MudStack>
+         <MudStack Row style="position:relative;align-items: center">
+             <MudText Typo="Typo.button"> 季票 </MudText>
+             <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">￥18</MudChip>
+         </MudStack>
+         <MudStack Row style="position:relative;align-items: center">
+             <MudText Typo="Typo.button"> 月票 </MudText>
+             <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">￥8</MudChip>
+         </MudStack>
+     </MudPaper>
+</MudDrawer>
+
+
+<MudDrawer @bind-Open="@openSave" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    <MudCard Elevation="0">
+        <MudCardContent>
+            <MudForm>
+                <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("default")">原图</MudSelectItem>
+                    <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
+                    <MudSelectItem Value="@("2160")">4K</MudSelectItem>
+                </MudSelect>
+                <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@(100)">原图</MudSelectItem>
+                    <MudSelectItem Value="@(85)">高</MudSelectItem>
+                    <MudSelectItem Value="@(70)">中</MudSelectItem>
+                </MudSelect>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
+        </MudCardActions>
+    </MudCard>
 </MudDrawer>
 
 
@@ -384,6 +410,7 @@
     bool openDrawer = false;
     bool openVip = false;
     bool openLogoDialog = false;
+    bool openSave = false;
     private Design design;
     int activeTab = 1;
     bool ForceUpdate = false;
@@ -656,6 +683,7 @@
         await Task.Delay(200);
         MainLoading.Show = false;
         Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
+        openSave = false;
         StateHasChanged();
 
     }

@@ -289,5 +289,9 @@ namespace Watermark.Win.Models
 
         public static bool DarkMode { get; set; } = true;
 
+        public static string Resolution { get; set; } = "default";
+
+        public static int Quality { get; set; } = 100;
+
     }
 }

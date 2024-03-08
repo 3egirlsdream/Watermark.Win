@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Watermark.Shared.Enums;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Watermark.Win.Models
 {
@@ -124,8 +125,27 @@ namespace Watermark.Win.Models
                 targetCanvas.DrawBitmap(bitmapc, container_point);
             }
 
+            //缩图
+            if (!isPreview)
+            {
+                var ros = Global.Resolution == "1080" ? 1080 : 2160;
+                if (Global.Resolution != "default" && targetBitmap.Width > ros && targetBitmap.Height > ros)
+                {
+                    int minSide = Math.Min(targetBitmap.Width, targetBitmap.Height);
+                    decimal resolition = (decimal)minSide / ros;
+                    var w = targetBitmap.Width < targetBitmap.Height ? ros : (int)(targetBitmap.Width / resolition);
+                    var h = targetBitmap.Height < targetBitmap.Width ? ros : (int)(targetBitmap.Height / resolition);
+
+                    var scaleXs = 1080.0 / h;
+                    targetBitmap = targetBitmap.Resize(new SkiaSharp.SKImageInfo((int)(w * scaleXs), (int)(h * scaleXs)), SkiaSharp.SKFilterQuality.Medium);
+                }
+            }
+
             using var sk = SKImage.FromBitmap(targetBitmap);
-            using var data = sk.Encode(SKEncodedImageFormat.Jpeg, 100);
+            using var data = sk.Encode(SKEncodedImageFormat.Jpeg, Global.Quality);
+
+
+
             if (!isPreview)
             {
                 var output = AppDomain.CurrentDomain.BaseDirectory + "output";

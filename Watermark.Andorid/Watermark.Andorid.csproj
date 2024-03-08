@@ -143,4 +143,10 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
+      <PackageReference Include="Chi.MauiBinding.Android.AliPay">
+        <Version>15.8.11</Version>
+      </PackageReference>
+    </ItemGroup>
+
 </Project>
