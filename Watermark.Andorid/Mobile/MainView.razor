@@ -81,7 +81,7 @@
 
 
 
-            <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
+            <MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="0">
                 @if (IsLoginIn && Global.CurrentUser != null)
                 {
                     <div style="height:50px">
@@ -117,7 +117,7 @@
             </MudPopover>
         </MudToolBar>
     </div>
-    <div Style="height:100%;width:100vw;display: flex;">
+    <div Style="height:100%;width:100vw;display: flex;" @onclick="()=> ShowUserInfo = false">
 
         <div style="height: 100%; padding: 0px; background: #2d3436; width:100%">
             <MudPaper class="water-tab" Elevation="0">
@@ -395,7 +395,7 @@
     List<TemplateList> Images = new List<TemplateList>();
     bool checkUpdate = false;
     int DownLoadProgress = 0;
-    
+
     [Inject]
     private IUpgradeService UpgradeService { get; set; }
 
@@ -570,8 +570,18 @@
         Images = new List<TemplateList>();
         Dictionary<string, string> dic = new Dictionary<string, string>();
         WMCanvas canvas = new WMCanvas();
-        canvas.Path = result.FullPath;
         canvas.Exif = await Task.Run(() => ExifHelper.ReadImage(ms));
+        if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+        }
+        await Task.Run(() =>
+        {
+            var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
+            var bitmap = SkiaSharp.SKBitmap.Decode(result.FullPath);
+            return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
+        });
+        canvas.Path = result.FullPath;
         var tl = new TemplateList
             {
                 Canvas = canvas,

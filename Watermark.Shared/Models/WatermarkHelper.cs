@@ -141,6 +141,10 @@ namespace Watermark.Win.Models
                 if (output.StartsWith("/data/user"))
                 {
                     output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
+                    if (Directory.Exists(output))
+                    {
+                        output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + $"_{DateTime.Now:yyyyMMddHHmmss}.jpg");
+                    }
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);

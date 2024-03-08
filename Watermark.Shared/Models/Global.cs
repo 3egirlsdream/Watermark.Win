@@ -174,7 +174,7 @@ namespace Watermark.Win.Models
             var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Medium);
             using var image = SKImage.FromBitmap(resized);
             using var writeStream = File.OpenWrite(target);
-            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 70).SaveTo(writeStream);
+            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100).SaveTo(writeStream);
         }
 
         public static Task WriteThumbnailImageAsync(SKBitmap source, string target)
