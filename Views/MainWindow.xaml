@@ -82,6 +82,11 @@
                     </MenuItem.ToolTip>
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="手机版">
+                <MenuItem.ToolTip>
+                    <Image Source="https://cdn.thankful.top/andorid.png" Height="200" Width="200"/>
+                </MenuItem.ToolTip>
+            </MenuItem>
             <MenuItem Header="模板市场" Click="TemplatesMarketClick">
             </MenuItem>
         </Menu>
