@@ -160,6 +160,10 @@ namespace Watermark.Win.Models
 #endif
                 if (output.StartsWith("/data/user"))
                 {
+                    if (!Directory.Exists("/storage/emulated/0/DCIM/Camera/"))
+                    {
+                        Directory.CreateDirectory("/storage/emulated/0/DCIM/Camera/");
+                    }
                     output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
                     if (File.Exists(output))
                     {
