@@ -459,13 +459,13 @@
 			if (login.success)
 			{
 				Global.CurrentUser = new WMLoginChildModel
-					{
-						ID = login.data.data.ID,
-						IMG = login.data.data.IMG,
-						DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-						USER_NAME = login.data.data.USER_NAME,
-						EXPIRE_DATE = login.data.data.EXPIRE_DATE
-					};
+				{
+					ID = login.data.data.ID,
+					IMG = login.data.data.IMG,
+					DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+					USER_NAME = login.data.data.USER_NAME,
+					EXPIRE_DATE = login.data.data.EXPIRE_DATE
+				};
 				IsLoginIn = true;
 				await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
 				StateHasChanged();
@@ -560,13 +560,13 @@
 			return dic.First().Value;
 		});
 		Images.Add(new TemplateList
-			{
-				Canvas = canvas,
-				Src = await src,
-				ID = canvas.ID,
-				Path = file.Name,
-				Bitmap = bitmap
-			});
+		{
+			Canvas = canvas,
+			Src = await src,
+			ID = canvas.ID,
+			Path = file.Name,
+			Bitmap = bitmap
+		});
 		CurrentImage = Images!.FirstOrDefault();
 		StateHasChanged();
 	}
@@ -580,11 +580,11 @@
 			WatermarkHelper helper = new WatermarkHelper();
 			CurrentImage.Canvas.Path = CurrentImage.Path;
 			var ziped = new WMZipedTemplate
-				{
-					Bitmap = image.Bitmap,
-					WatermarkId = image.ID,
-					WMCanvas = CurrentImage.Canvas,
-				};
+			{
+				Bitmap = image.Bitmap,
+				WatermarkId = image.ID,
+				WMCanvas = CurrentImage.Canvas,
+			};
 			return helper.Generation(CurrentImage.Canvas, ziped, true);
 		});
 
@@ -596,9 +596,9 @@
 	async void OpenPhoto(WMZipedTemplate template)
 	{
 		var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-			{
-				Title = "选择图片"
-			});
+		{
+			Title = "选择图片"
+		});
 		if (result is null) return;
 
 		MainLoading.Message = "正在生成图片...";
@@ -629,11 +629,11 @@
 		});
 		canvas.Path = result.FullPath;
 		var tl = new TemplateList
-			{
-				Canvas = canvas,
-				ID = canvas.ID,
-				Path = result.FullPath
-			};
+		{
+			Canvas = canvas,
+			ID = canvas.ID,
+			Path = result.FullPath
+		};
 		Images.Add(tl);
 		CurrentImage = tl;
 		await ChangeTemplate(template);
@@ -729,6 +729,7 @@
 	async Task LoadTemplates()
 	{
 		MainLoading.Message = "正在下载模板...";
+		StateHasChanged();
 		MainLoading.Show = true;
 		var helper = new APIHelper();
 		ZipedTemplates = await helper.GetWatermarks("", start, 999);
@@ -757,15 +758,15 @@
 				if (System.IO.File.Exists(configPath))
 				{
 					var t = Task.Run(() =>
-							{
-								using var reader = new System.IO.StreamReader(File.OpenRead(configPath));
-								var content = reader.ReadToEnd();
-								var canvas = Global.ReadConfig(content);
-								var src = watermarkHelper.Generation(canvas, null, true, false);
-								dirct.WMCanvas = canvas;
-								dirct.Src = src;
-								return src;
-							});
+					{
+						using var reader = new System.IO.StreamReader(File.OpenRead(configPath));
+						var content = reader.ReadToEnd();
+						var canvas = Global.ReadConfig(content);
+						var src = watermarkHelper.Generation(canvas, null, true, false);
+						dirct.WMCanvas = canvas;
+						dirct.Src = src;
+						return src;
+					});
 					mission.Add(t);
 				}
 			}

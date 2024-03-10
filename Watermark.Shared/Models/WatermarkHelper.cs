@@ -532,6 +532,19 @@ namespace Watermark.Win.Models
                                 return x.Prefix + x.Suffix;
                             }));
                         canvasc.DrawText(text, skp, p);
+
+                        if(mText.EnableBorder)
+                        {
+                            using SKPaint borderPaint = new SKPaint();
+                            borderPaint.IsAntialias = true;
+                            borderPaint.Style = SKPaintStyle.Stroke;
+                            var color = mText.BorderColor.Length > 7 ? mText.BorderColor[..7] : mText.BorderColor; 
+                            borderPaint.Color = SKColor.Parse(color);
+                            borderPaint.StrokeWidth = (float)(mText.BorderWidth * xs);
+                            SKRect rect = new SKRect((float)(skp.X - 10 * xs), (float)(skp.Y - mText.Height - 15  * xs), (float)(mText.Width + skp.X + 10 * xs), (float)(mText.Height+skp.Y));
+                            SKRect rect2 = new SKRect((float)(skp.X - mText.Height / 2), (float)(skp.Y - mText.Height * 1.5), (float)(mText.Width + skp.X + mText.Height / 2), (float)(mText.Height / 2 +skp.Y));
+                            canvasc.DrawRoundRect(rect2, mText.BorderRadius, mText.BorderRadius, borderPaint);
+                        }
                     });
                     DrawText(xs, mText, action);
                 }
