@@ -604,15 +604,19 @@
 		MainLoading.Message = "正在生成图片...";
 		MainLoading.Show = true;
 		StateHasChanged();
+		WMCanvas canvas = new WMCanvas();
 		var sm = await result.OpenReadAsync();
 		using var ms = new MemoryStream();
 		sm.Seek(0, SeekOrigin.Begin);
 		await sm.CopyToAsync(ms);
-		//var arr = ms.ToArray();
+		canvas.Exif = await Task.Run(() =>
+		{
+			var arr = ms.ToArray();
+			return ExifHelper.ReadImage(arr);
+		});
+
 		Images = new List<TemplateList>();
 		Dictionary<string, string> dic = new Dictionary<string, string>();
-		WMCanvas canvas = new WMCanvas();
-		canvas.Exif = await Task.Run(() => ExifHelper.ReadImage(ms));
 		if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
 		{
 			Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
