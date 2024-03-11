@@ -4,21 +4,31 @@
 @inject ISnackbar Snackbar
 <style>
     .fullscreen {
-        opacity:0;
+        opacity: 0;
         position: absolute;
-        right: 10px;
-        top: 10px;
+        right: 0px;
+        top: 0px;
     }
-    .fullscreen:hover{
-        opacity:1;
+
+        .fullscreen:hover {
+            opacity: 1;
+        }
+
+    .fullscreen-icon {
     }
+
+        .fullscreen-icon:hover
+        .fullscreen {
+            opacity: 1;
+            cursor: pointer;
+        }
 </style>
 
 <MudDialog Style="width:90%; height:90%;overflow-y:hidden">
     <DialogContent>
         <MudToolBar Style="padding:0px">
             <MudSpacer />
-            <MudTextField @bind-Value="Search" Label="搜索" Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Default" />
+            <MudTextField @bind-Value="Search" Label="搜索" Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Default" @onkeydown="OnKeyDown" />
         </MudToolBar>
         <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 70px);overflow-y:auto;padding:5px;">
             @if (ZipedTemplates != null)
@@ -26,11 +36,11 @@
                 <MudItem xs="12">
                     <MudText Typo="Typo.h4">推荐</MudText>
                 </MudItem>
-                @foreach (var t in ZipedTemplates.Where(x=>x.Recommend))
+                @foreach (var t in ZipedTemplates.Where(x => !string.IsNullOrEmpty(Search) ? x.WMCanvas.Name.Contains(Search) && x.Recommend : x.Recommend))
                 {
-                    <MudItem xs="2"> 
-                        <MudPaper Elevation="25" Style="position:relative;">
-                            <MudIcon Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" />
+                    <MudItem xs="2">
+                        <MudPaper Elevation="25" Style="position:relative;" Class="fullscreen-icon">
+                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
                             <div style="height:200px;">
                                 @if (!string.IsNullOrEmpty(t.Src))
                                 {
@@ -38,11 +48,11 @@
                                 }
                             </div>
                             <div style="display:flex;align-items:center;">
-                                <MudText Style="margin: auto;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
-                                </div>
-                                <div Style="position:relative; height:40px; display: flex; align-items: center;">
-                                    <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small"/>
-                                    <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
+                                <MudText Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
+                            </div>
+                            <div Style="position:relative; height:40px; display: flex; align-items: center;">
+                                <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
+                                <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
                                 <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:35px" IconSize="Size.Small" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
                                 <MudIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)"></MudIconButton>
                             </div>
@@ -55,10 +65,11 @@
                 <MudItem xs="12">
                     <MudText Typo="Typo.h4">最热门</MudText>
                 </MudItem>
-                @foreach (var t in hottest)
+                @foreach (var t in hottest.Where(x => !string.IsNullOrEmpty(Search) ? x.WMCanvas.Name.Contains(Search) : true))
                 {
                     <MudItem xs="2">
-                        <MudPaper>
+                        <MudPaper Elevation="25" Style="position:relative;" Class="fullscreen-icon">
+                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
                             <div style="height:200px;">
                                 @if (!string.IsNullOrEmpty(t.Src))
                                 {
@@ -66,14 +77,14 @@
                                 }
                             </div>
                             <div style="display:flex;align-items:center;">
-                                <MudText Style="margin: auto;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
-                                </div>
-                                <div Style="position:relative; height:40px; display: flex; align-items: center;">
-                                    @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                <MudText Style="margin: auto; text-overflow: ellipsis; white-space: nowrap;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
+                            </div>
+                            <div Style="position:relative; height:40px; display: flex; align-items: center;">
+                                @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
+                                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
                                 }
-                                    <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
+                                <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
                                 <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:35px" IconSize="Size.Small" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
                                 <MudIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)"></MudIconButton>
                             </div>
@@ -88,10 +99,11 @@
                 <MudItem xs="12">
                     <MudText Typo="Typo.h4">最新</MudText>
                 </MudItem>
-                @foreach (var t in newest)
+                @foreach (var t in newest.Where(x => !string.IsNullOrEmpty(Search) ? x.WMCanvas.Name.Contains(Search) : true))
                 {
                     <MudItem xs="2">
-                        <MudPaper>
+                        <MudPaper Elevation="25" Style="position:relative;" Class="fullscreen-icon">
+                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
                             <div style="height:200px;">
                                 @if (!string.IsNullOrEmpty(t.Src))
                                 {
@@ -99,12 +111,12 @@
                                 }
                             </div>
                             <div style="display:flex;align-items:center;">
-                                <MudText Style="margin: auto;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
-                                </div>
-                                <div Style="position:relative; height:40px; display: flex; align-items: center;">
-                                    @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                <MudText Style="margin: auto; text-overflow: ellipsis; white-space: nowrap;" Typo="Typo.subtitle1">@t.WMCanvas?.Name</MudText>
+                            </div>
+                            <div Style="position:relative; height:40px; display: flex; align-items: center;">
+                                @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
+                                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
                                 }
                                 <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
                                 <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:35px" IconSize="Size.Small" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
@@ -123,6 +135,12 @@
                 </MudText>
             </MudStack>
         </MudOverlay>
+        <MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999">
+            <MudPaper Style="position:relative;">
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Primary" OnClick="()=>FocusImageShow = false" Style="position:absolute;right:0px;top:0px;" Size="Size.Small" />
+                <MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImage" Style="height: 80vh;padding:30px" Class="rounded-lg" />
+            </MudPaper>
+        </MudOverlay>
     </DialogContent>
 </MudDialog>
 
@@ -136,6 +154,8 @@
     bool loading = false;
     string loadingMessage = "正在下载模板...";
     string Search = "";
+    bool FocusImageShow = false;
+    string FocusImage = "";
     List<WMZipedTemplate> ZipedTemplates;
     List<WMZipedTemplate> hottest;
     List<WMZipedTemplate> newest;
@@ -145,7 +165,7 @@
     protected override async Task OnInitializedAsync()
     {
         var date = Global.ReadDate();
-        if((DateTime.Now - date).TotalDays > 5)
+        if ((DateTime.Now - date).TotalDays > 5)
         {
             if (Directory.Exists(Global.AppPath.MarketFolder))
             {
@@ -199,11 +219,39 @@
                 {
                     var t = Task.Run(() =>
                     {
-                        using var reader = new System.IO.StreamReader(File.OpenRead(configPath));
-                        var content = reader.ReadToEnd();
-                        var canvas = Global.ReadConfig(content);
-                        var src = watermarkHelper.Generation(canvas, null, true, false);
-                        dirct.WMCanvas = canvas;
+
+                        var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
+                        foreach (var file in folder.GetFiles())
+                        {
+                            if (file.Name.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
+                            {
+                                using var reader = new System.IO.StreamReader(File.OpenRead(file.FullName));
+                                var content = reader.ReadToEnd();
+                                var canvas = Global.ReadConfig(content);
+                                dirct.WMCanvas = Global.ReadConfig(content);
+                            }
+                            else if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
+                                dirct.Bitmap = sKBitmap;
+                            }
+                            else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
+                            {
+                                var fs = file.OpenRead();
+                                using MemoryStream mss = new();
+                                fs.CopyTo(mss);
+                                dirct.Fonts[file.Name] = mss.ToArray();
+                            }
+                            else
+                            {
+                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
+                                dirct.Images[file.Name] = sKBitmap;
+                            }
+
+                        }
+
+
+                        var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
                         dirct.Src = src;
                         return src;
                     });
@@ -221,7 +269,7 @@
     }
 
 
-    
+
     async Task InitTemplate()
     {
         loading = true;
@@ -335,5 +383,13 @@
         start = 1;
         await InitTemplate();
         StateHasChanged();
+    }
+
+    void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            StateHasChanged();
+        }
     }
 }

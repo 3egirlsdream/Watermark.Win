@@ -148,7 +148,7 @@ namespace Watermark.Win.Models
 
             if (!isPreview)
             {
-                var output = AppDomain.CurrentDomain.BaseDirectory + "output";
+                var output = Global.OutPutPath;
                 if (!Directory.Exists(output))
                 {
                     Directory.CreateDirectory(output);

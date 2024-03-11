@@ -1,0 +1,107 @@
+﻿@using System.Diagnostics
+@using System.IO
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Style="width:90%; height:90%;overflow-y:hidden">
+    <DialogContent>
+        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 70px);overflow-y:hidden;padding:5px;">
+            @if (Images != null)
+            {
+                <MudItem xs="10">
+                    <MudGrid Style="max-height: calc(90vh - 70px); overflow-y: auto">
+                        @foreach (var t in Images)
+                        {
+                            <MudItem xs="2">
+                                <MudPaper Elevation="25" Style="position:relative;">
+                                    <div style="height:200px;">
+                                        @if (!string.IsNullOrEmpty(t.Src))
+                                        {
+                                            <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                                        }
+                                    </div>
+                                    <div Style="position:relative; height:40px; display: flex; align-items: center;">
+                                        <MudCheckBox @bind-Checked="t.IsChecked" Color="Color.Default" Style="position:absolute;right:10px"></MudCheckBox>
+                                    </div>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+
+                </MudItem>
+                <MudItem xs="2">
+                    <MudCard Elevation="0">
+                        <MudCardContent>
+                            <MudForm>
+                                <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem Value="@("default")">原图</MudSelectItem>
+                                    <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
+                                    <MudSelectItem Value="@("2160")">4K</MudSelectItem>
+                                </MudSelect>
+                                <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem Value="@(100)">原图</MudSelectItem>
+                                    <MudSelectItem Value="@(85)">高</MudSelectItem>
+                                    <MudSelectItem Value="@(70)">中</MudSelectItem>
+                                </MudSelect>
+                                <MudStack Row Class="mt-5" Style="position:relative;display:flex;align-items:center;">
+                                    <MudTextField T="string" @bind-Value="@Global.OutPutPath" Label="路径" Variant="Variant.Outlined"  Margin="Margin.Dense" Style="width:calc(100% - 50px)"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" OnClick="OpenFolder" Style="position:absolute;right:5px"/>
+                                </MudStack>
+                                
+                            </MudForm>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Save">导出</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudCheckBox @bind-Checked="CheckAll" Color="Color.Default" T="bool" ValueChanged="Changed">选择全部</MudCheckBox>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public List<TemplateList> Images { get; set; }
+
+
+    bool CheckAll = false;
+
+    void Save()
+    {
+        MudDialog.Close(Images);
+    }
+
+    void OpenFolder()
+    {
+        var action = new Action(() =>
+        {
+            Microsoft.Win32.OpenFolderDialog dialog = new();
+            var result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                Global.OutPutPath = dialog.FolderName;
+                StateHasChanged();
+            }
+        });
+        OpenWinHelper.Open(action);
+    }
+
+
+    public EventCallback<bool> EventCallback { get; set; }
+    void Changed(bool e)
+    {
+        Images.ForEach(x => x.IsChecked = e);
+        StateHasChanged();
+    }
+}

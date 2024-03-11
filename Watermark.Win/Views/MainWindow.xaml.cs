@@ -27,11 +27,17 @@ namespace Watermark.Win
             {
                 Resources.SetIoc();
                 InitializeComponent();
+                Loaded+=MainWindow_Loaded;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            CheckUpdate();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -43,5 +49,37 @@ namespace Watermark.Win
             }
         }
 
+        public void CheckUpdate()
+        {
+            var day = DateTime.Now.DayOfYear;
+            if (day % 3 == 0)
+            {
+                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                var action = new Action<string, string>((t, m) =>
+                {
+                    var win = new UpdateWin();
+                    win.updatelog.Text = m;
+                    win.msg.Content = t;
+                    win.ShowInTaskbar = false;
+                    win.Owner = this;
+                    win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    win.ShowDialog();
+                });
+
+                CheckUpdate(v, action);
+            }
+        }
+
+        public async void CheckUpdate(string nowv, Action<string, string> action)
+        {
+            var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+            if (version != null && version.success && version.data != null && version.data.VERSION != null)
+            {
+                var v1 = new Version(nowv);
+                var v2 = new Version(version.data.VERSION);
+                if (v2 > v1)
+                    action.Invoke($"有新版本V{version.data.VERSION}可以下载", version.data.MEMO);
+            }
+        }
     }
 }

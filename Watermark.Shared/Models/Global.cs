@@ -327,5 +327,7 @@ namespace Watermark.Win.Models
 
         public static int Quality { get; set; } = 100;
 
+        public static string OutPutPath { get; set; } = Global.AppPath.OutputFolder;
+
     }
 }
