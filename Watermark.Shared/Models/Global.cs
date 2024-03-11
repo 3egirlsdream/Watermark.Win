@@ -8,6 +8,7 @@ namespace Watermark.Win.Models
     {
 		static WMAppPath CP = new()
         {
+            MarketFolder = AppDomain.CurrentDomain.BaseDirectory + "Market" + Path.DirectorySeparatorChar,
             TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
@@ -198,6 +199,17 @@ namespace Watermark.Win.Models
             };
             File.WriteAllText(path, JsonConvert.SerializeObject(str));
         }
+
+        public static void WriteDate()
+        {
+            var path = AppDomain.CurrentDomain.BaseDirectory + $".sys";
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            path += $"{Path.DirectorySeparatorChar}date";
+            if (File.Exists(path)) File.Delete(path);
+            var str = DateTime.Now.ToString();
+            File.WriteAllText(path, JsonConvert.SerializeObject(str));
+        }
+
         public static Task WriteAccount2LocalAsync(string username, string password)
         {
             return Task.Run(() => WriteAccount2Local(username, password));
@@ -231,6 +243,28 @@ namespace Watermark.Win.Models
                 return result;
             }
             return new { };
+        }
+
+        public static DateTime ReadDate()
+        {
+            var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}date";
+            if (!File.Exists(path))
+            {
+                WriteDate();
+                return DateTime.Now;
+            }
+            using var fs = new FileStream(path, FileMode.Open);
+            using var sr = new StreamReader(fs);
+            var content = sr.ReadToEnd();
+            if (!string.IsNullOrEmpty(content))
+            {
+                if (DateTime.TryParse(content, out var date))
+                {
+                    return date;
+                }
+                return DateTime.Now;
+            }
+            return DateTime.Now;
         }
 
         public static Task<Tuple<string, string>> ReadLocalAsync()

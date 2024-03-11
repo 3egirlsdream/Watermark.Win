@@ -611,6 +611,7 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
+            StateHasChanged();
         });
         OpenWinHelper.Open(action);
     }

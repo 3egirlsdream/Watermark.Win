@@ -49,6 +49,7 @@
                     <ListBox SelectedIndex="0" SelectionChanged="ListBox_SelectionChanged" HorizontalContentAlignment="Stretch" BorderThickness="0">
                         <TextBlock Text="关于" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                         <TextBlock Text="字体" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
+                        <TextBlock Text="缓存" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                     </ListBox>
                 </StackPanel>
 
@@ -139,6 +140,16 @@
                             <Button x:Name="save" Content="保存"  Cursor="Hand" Height="30" Width="100" HorizontalAlignment="Left" Command="{Binding CmdSaveFont}"/>
                             <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                         </StackPanel>
+
+                    </TabItem>
+                    <TabItem Width="0" x:Name="t3" >
+                        <TabItem.Header>
+                            <TextBlock/>
+                        </TabItem.Header>
+                        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                            <Label Content="清除模板市场缓存" FontSize="14"/>
+                            <Button x:Name="clearCache" Content="清除" Width="100" Height="30" HorizontalAlignment="Right" Click="Button_Click_1"/>
+                        </Grid>
 
                     </TabItem>
                 </TabControl>

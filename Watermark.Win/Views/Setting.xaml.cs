@@ -162,7 +162,20 @@ namespace Watermark.Win.Views
                 {
                     t2?.Focus();
                 }
+                else if (box.SelectedIndex == 2)
+                {
+                    t3?.Focus();
+                }
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(Global.AppPath.MarketFolder))
+            {
+                Directory.Delete(Global.AppPath.MarketFolder);
+            }
+            clearCache.Content = "清除完成";
         }
     }
 

@@ -261,12 +261,43 @@ namespace Watermark.Win.Models
             }
         }
 
+        public async Task<bool> Downloads(List<string> watermarkIds)
+        {
+            try
+            {
+                foreach (var watermarkId in watermarkIds)
+                {
+                    var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
+                    if (!Directory.Exists(Global.AppPath.MarketFolder))
+                    {
+                        Directory.CreateDirectory(Global.AppPath.MarketFolder);
+                    }
+
+                    var target = Global.AppPath.MarketFolder + watermarkId;
+                    if (Directory.Exists(target))
+                    {
+                        Directory.Delete(target, true);
+                    }
+                    Directory.CreateDirectory(target);
+                    await Task.Run(() =>
+                    {
+                        ZipFile.ExtractToDirectory(stream, target, true);
+                    });
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
 
         public async Task<bool> DownloadAndorid(List<string> watermarkIds)
         {
             try
             {
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 foreach (var watermarkId in watermarkIds)
                 {
                     var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
