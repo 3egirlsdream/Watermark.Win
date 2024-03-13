@@ -443,6 +443,17 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		var date = Global.ReadDate();
+		if ((DateTime.Now - date).TotalDays > 5)
+		{
+			if (Directory.Exists(Global.AppPath.TemplatesFolder))
+			{
+				Directory.Delete(Global.AppPath.TemplatesFolder, true);
+			}
+			Global.WriteDate();
+		}
+
+
 		APIHelper helper = new APIHelper();
 		var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
 		if (isOutOfDate)

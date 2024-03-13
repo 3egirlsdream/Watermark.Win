@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using SkiaSharp;
 using Watermark.Shared.Enums;
+using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Watermark.Win.Models
 {
@@ -8,7 +10,8 @@ namespace Watermark.Win.Models
     {
 		static WMAppPath CP = new()
         {
-            MarketFolder = AppDomain.CurrentDomain.BaseDirectory + "Market" + Path.DirectorySeparatorChar,
+            BasePath = AppDomain.CurrentDomain.BaseDirectory,
+			MarketFolder = AppDomain.CurrentDomain.BaseDirectory + "Market" + Path.DirectorySeparatorChar,
             TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
@@ -328,6 +331,67 @@ namespace Watermark.Win.Models
         public static int Quality { get; set; } = 100;
 
         public static string OutPutPath { get; set; } = Global.AppPath.OutputFolder;
+
+        public static Dictionary<string, string> ReadFont()
+        {
+            var path = AppPath.BasePath;
+			var fontPath = new Dictionary<string, string>();
+			if (Directory.Exists(path))
+            {
+                var root = new DirectoryInfo(path);
+                foreach(var folder in root.GetDirectories())
+				{
+					func(fontPath, folder);
+
+					foreach (var subFolder in folder.GetDirectories())
+					{
+						func(fontPath, subFolder);
+					}
+
+				}
+			}
+
+			static void func(Dictionary<string, string> fontPath, DirectoryInfo folder)
+			{
+				foreach (var file in folder.GetFiles().Where(file => file.Exists && (file.Extension == ".otf" || file.Extension == ".ttf")))
+				{
+					fontPath[file.Name] = file.FullName;
+				}
+                foreach(var  f in folder.GetDirectories())
+                {
+                    func(fontPath, f);
+                }
+			}
+
+
+            var fontDemo = new Dictionary<string, string>();
+
+			var bitmap = new SKBitmap(200, 46);
+			var canvas = new SKCanvas(bitmap);
+			foreach (var p in fontPath)
+            {
+				var skytype = SKTypeface.FromFile(p.Value);
+
+				var paint_cp = new SKPaint()
+				{
+					Color = SKColors.Black,
+					TextSize = 20,
+					Typeface = skytype,
+					IsAntialias = true
+				};
+
+                var h = paint_cp.FontMetrics.CapHeight + Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0);
+                canvas.Clear(SKColors.White);
+                canvas.DrawText("雨纷纷 旧故里草木深", new SKPoint(2, 2 +  h), paint_cp);
+                canvas.DrawText("abc ABC", new SKPoint(2, 24 + h), paint_cp);
+                var image = SKImage.FromBitmap(bitmap);
+                var result = "data:image/jpeg;base64," + Convert.ToBase64String(image.Encode(SKEncodedImageFormat.Jpeg, 100).ToArray());
+                fontDemo[p.Key] = result;
+			}
+            
+            return fontDemo;
+		}
+
 
     }
 }

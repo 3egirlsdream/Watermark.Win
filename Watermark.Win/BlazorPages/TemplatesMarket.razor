@@ -92,7 +92,7 @@
 
                     </MudItem>
                 }
-                <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
+                @* <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton> *@
             }
             @if (newest != null)
             {
@@ -169,7 +169,7 @@
         {
             if (Directory.Exists(Global.AppPath.MarketFolder))
             {
-                Directory.Delete(Global.AppPath.MarketFolder);
+                Directory.Delete(Global.AppPath.MarketFolder, true);
             }
             Global.WriteDate();
         }
