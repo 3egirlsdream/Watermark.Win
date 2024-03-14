@@ -551,18 +551,23 @@
     {
         var helper = new WatermarkHelper();
         MainLoading.Show = true;
+        MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
         StateHasChanged();
+        var idx = 1;
+        var mission = new List<Task>();
         foreach (var item in images)
         {
-            var idx = images.IndexOf(item) + 1;
-            MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
-            MainLoading.Value = idx * 100.0 / images.Count;
-            StateHasChanged();
-            //item.Canvas.Path = item.Path;
-            await helper.GenerationAsync(item.Canvas, null, false);
+            var t = Task.Run(() =>
+            {
+                helper.Generation(item.Canvas, null, false);
+                MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
+                MainLoading.Value = idx++ * 100.0 / images.Count;
+                InvokeAsync(StateHasChanged);
+            });
+            mission.Add(t);
         }
+        await Task.WhenAll(mission);
         MainLoading.Value = 100;
-        await Task.Delay(200);
         MainLoading.Show = false;
         StateHasChanged();
 
@@ -705,15 +710,20 @@
 
     public async Task Help()
     {
-        SrcLoading = true;
+        MainLoading.Show = true;
+        StateHasChanged();
+        int idx = 1;
+        WatermarkHelper helper = new WatermarkHelper();
         foreach (var img in Images)
         {
+            MainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+            MainLoading.Value = idx++ * 100.0 / Images.Count;
+            StateHasChanged();
             var t = Task.Run(() =>
             {
                 var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.Canvas));
                 cvs.Exif = img.Canvas.Exif;
                 img.Canvas = cvs;
-                WatermarkHelper helper = new WatermarkHelper();
                 cvs.Path = img.Path;
                 return helper.Generation(cvs, null, true);
             });
@@ -721,7 +731,8 @@
             img.Src = await t;
             InitLogoCacheDic(img, CurrentTemplate);
         }
-        SrcLoading = false;
+        MainLoading.Value = 100;
+        MainLoading.Show = false;
         StateHasChanged();
     }
 

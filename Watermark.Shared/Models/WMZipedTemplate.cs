@@ -24,5 +24,6 @@ namespace Watermark.Win.Models
         /// 官方精选
         /// </summary>
         public bool Recommend { get; set; }
+        public DateTime DateTimeCreated { get; set; }
     }
 }

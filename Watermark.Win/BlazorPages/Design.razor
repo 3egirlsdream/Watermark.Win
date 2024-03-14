@@ -1,4 +1,7 @@
 ﻿@using System.IO
+@using NHotkey
+@using NHotkey.Wpf
+@using System.Windows.Input
 @using Watermark.Shared.Models
 @using Watermark.Win.BlazorPages
 @using Watermark.Shared.Enums
@@ -10,7 +13,11 @@
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-
+<style>
+.mud-tooltip-root.mud-tooltip-inline {
+    height:24px;
+}
+</style>
 <div Style="background:#e3e3e3;height:100vh;width:100vw;overflow-x:hidden">
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
         <MudToolBar Style="height:40px;padding-left:5px;">
@@ -22,7 +29,7 @@
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新(Ctrl R)</MudButton>
         </MudToolBar>
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
@@ -462,6 +469,8 @@
         });
         InitLocalFonts();
         OnButtonClicked();
+
+        HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, OnIncrementOrDecrement);
     }
 
     private async void OnButtonClicked()
@@ -591,8 +600,12 @@
 
     void SelectDefaultImage()
     {
-        ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
-        StateHasChanged();
+        var action = new Action(() =>
+        {
+            ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
+            StateHasChanged();
+        });
+        OpenWinHelper.Open(action);
     }
 
 
@@ -635,5 +648,8 @@
             StateHasChanged();
         }
     }
-
+    private void OnIncrementOrDecrement(object sender, HotkeyEventArgs e)
+    {
+        OnButtonClicked();
+    }
 }

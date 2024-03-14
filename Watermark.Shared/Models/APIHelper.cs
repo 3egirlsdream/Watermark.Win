@@ -13,7 +13,7 @@ namespace Watermark.Win.Models
     public class APIHelper
     {
 #if DEBUG
-        public static string HOST = "https://localhost:44389";
+        public static string HOST = "http://thankful.top:4396";
 #else
         public static string HOST = "http://thankful.top:4396";
 #endif
@@ -113,6 +113,11 @@ namespace Watermark.Win.Models
                         t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
                         t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "0") > 0 ? true : false;
                         t.UserDisplayName = item?["DISPLAY_NAME"]?.ToString();
+                        if(DateTime.TryParse(item?["DATETIME_CREATED"]?.ToString(), out var dt))
+                        {
+                            t.DateTimeCreated = dt;
+                        }
+                        else t.DateTimeCreated = DateTime.Now;
                         templates.Add(t);
                     }
 
@@ -372,17 +377,17 @@ namespace Watermark.Win.Models
 
         public async void AddILike(string userId, string watermarkId)
         {
-            await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/AddILike?userId={userId}&watermarkId={watermarkId}");
+            await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/AddILike?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
         }
 
         public async void DeleteILike(string userId, string watermarkId)
         {
-            await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/DeleteILike?userId={userId}&watermarkId={watermarkId}");
+            await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/DeleteILike?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
         }
 
         public async Task<API<List<WMZipedTemplate>>> GetILike(string userId)
         {
-            var result = await Connections.HttpGetAsync<List<WMZipedTemplate>>(HOST + $"/api/Watermark/GetILike?userId={userId}");
+            var result = await Connections.HttpGetAsync<List<WMZipedTemplate>>(HOST + $"/api/Watermark/GetILike?userId={userId}", Encoding.UTF8);
             return result;
         }
 

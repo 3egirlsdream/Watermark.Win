@@ -56,9 +56,11 @@
                                     @t.WMCanvas?.Name
                                 </MudText>
                             </div>
-                            <div Style="position:relative; height:20px; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                            <div Style="position:relative; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
                                 <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
-                                @t.UserDisplayName
+                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};")">
+                                    @t.UserDisplayName
+                                </MudText>
                             </div>
                             <div Style="position:relative; height:30px; display: flex; align-items: center;">
                                 <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
@@ -95,16 +97,18 @@
                                 </MudText>
                             </div>
 
-                            <div Style="position:relative; height:20px; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                            <div Style="position:relative; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
                                 @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
                                 {
                                     <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
                                 }
                                 else
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Upload" Color="Color.Default" Size="Size.Small" />
+                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
                                 }
-                                @t.UserDisplayName
+                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};")">
+                                    @t.UserDisplayName
+                                </MudText>
                             </div>
                             <div Style="position:relative; height:30px; display: flex; align-items: center;">
                                 <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
@@ -128,7 +132,7 @@
                             <div style="height:200px;display:flex;align-items:center;">
                                 @if (!string.IsNullOrEmpty(t.Src))
                                 {
-                                    <MudImage Style="width:100%;height:200px;" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                                    <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
                                 }
                                 else
                                 {
@@ -140,16 +144,18 @@
                                     @t.WMCanvas?.Name
                                 </MudText>
                             </div>
-                            <div Style="position:relative; height:20px; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                            <div Style="position:relative; display: flex; align-items: center; text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
                                 @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
                                 {
                                     <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
                                 }
                                 else
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Upload" Color="Color.Default" Size="Size.Small" />
+                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
                                 }
-                                @t.UserDisplayName
+                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};")">
+                                    @t.UserDisplayName
+                                </MudText> 
                             </div>
                             <div Style="position:relative; height:30px; display: flex; align-items: center;">
                                 <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="Size.Small" />@t.DownloadTimes
@@ -221,8 +227,7 @@
         List<Task> tasks1 = new List<Task>();
         var recommend = allTemplates.Where(x => x.Recommend);
         hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
-        var newt = await helper.GetWatermarks("", start, 999, "timeDesc");
-        newest = newt.Where(x => !x.Recommend).ToList();
+        newest = allTemplates.OrderBy(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
         ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).ToList();
 
         if (!Directory.Exists(Global.AppPath.MarketFolder))
@@ -281,9 +286,9 @@
 
                         }
 
-
                         var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
                         dirct.Src = src;
+                        InvokeAsync(StateHasChanged);
                         return src;
                     });
                     mission.Add(t);

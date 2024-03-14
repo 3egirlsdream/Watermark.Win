@@ -39,7 +39,7 @@ namespace Watermark.Win.Models
             }
         }
 
-        public static async Task<API<T>> HttpGetAsync<T>(string url, Encoding encoding = null)
+        public static async Task<API<T>> HttpGetAsync<T>(string url, Encoding encoding)
         {
             try
             {

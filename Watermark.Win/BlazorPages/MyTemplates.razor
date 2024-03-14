@@ -61,7 +61,7 @@
                         </MudCardContent>
                         <MudCardActions Style="position:relative;">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" Style="cursor:pointer;" Size="MudBlazor.Size.Small" OnClick="()=>DeleteILike(t.WatermarkId)" />
-                            <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:0px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
+                            <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:10px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
                         </MudCardActions>
                     </MudCard>
                 </MudItem>
@@ -128,7 +128,7 @@
     List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
     List<WMZipedTemplate> ILikeTemplates { get; set; } = new();
     Dictionary<string, string> pairs;
-    
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -188,19 +188,20 @@
         var helper = new APIHelper();
         ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
         StateHasChanged();
-        List<Task> tasks1 = new List<Task>();
+        var mission = new List<Task>();
         foreach (var t in ZipedTemplates)
         {
-            var task = helper.ExtractZip(t.WatermarkId).ContinueWith(item =>
+            var tx = Task.Run(async Task () =>
             {
-                t.WMCanvas = item.Result.WMCanvas;
-                t.Images = item.Result.Images;
-                t.Fonts = item.Result.Fonts;
-                t.Bitmap = item.Result.Bitmap;
+                var zip = await helper.ExtractZip(t.WatermarkId);
+                t.WMCanvas = zip.WMCanvas;
+                t.Images = zip.Images;
+                t.Fonts = zip.Fonts;
+                t.Bitmap = zip.Bitmap;
             });
-            tasks1.Add(task);
+            mission.Add(tx);
         }
-        await Task.WhenAll(tasks1);
+        await Task.WhenAll(mission);
         var whelper = new WatermarkHelper();
         List<Task> tasks = new List<Task>();
         foreach (var t in ZipedTemplates)
@@ -208,6 +209,7 @@
             var c = Task.Run(() =>
             {
                 t.Src = whelper.Generation(t.WMCanvas, t, true);
+                InvokeAsync(StateHasChanged);
                 return t.Src;
             });
 

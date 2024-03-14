@@ -124,6 +124,7 @@ namespace Watermark.Win.Models
                     container_point = new SKPoint((float)(cl+border_l), (float)b);
                 }
                 targetCanvas.DrawBitmap(bitmapc, container_point);
+                bitmapc.Dispose();
             }
 
             //缩图
@@ -173,6 +174,10 @@ namespace Watermark.Win.Models
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);
+                targetCanvas.Dispose();
+                targetBitmap.Dispose();
+                originalBitmap.Dispose();
+                targetImage.Dispose();
                 return "";
             }
 
@@ -222,6 +227,7 @@ namespace Watermark.Win.Models
                         var bkBitmap = SKBitmap.Decode(bkPath);
                         bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
                         canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
+                        bkBitmap.Dispose();
                     }
                 }
                 else
@@ -278,7 +284,7 @@ namespace Watermark.Win.Models
 
                 var wcp = bitmap_logo.Width * logo_xs;
                 hcp = bitmap_logo.Height * logo_xs;
-                var bitmap_cp = new SKBitmap((int)wcp, (int)hcp);
+                using var bitmap_cp = new SKBitmap((int)wcp, (int)hcp);
                 canvas_cp = new SKCanvas(bitmap_cp);
 
                 if (callback != null)
@@ -402,7 +408,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -578,7 +584,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }
