@@ -28,16 +28,20 @@
                 @foreach (var exif in Exifs)
                 {
                     <MudPaper Elevation="0" Class="pa-2 ma-2" Style="background:#ebebeb;">
-                     <MudStack Row>
-                         <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="min-width:100px"></MudTextField>
-                         <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px" ReadOnly></MudTextField>
-                         <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px"></MudTextField>
-                     </MudStack>
-                 </MudPaper>
+                        <MudStack Row="true">
+                            <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="min-width:100px" />
+                            <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px" ReadOnly="true" />
+                            <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px" />
+                        </MudStack>
+                    </MudPaper>
                 }
             </MudStack>
         </MudPaper>
         <MudPaper Elevation="2" Style="height:50vh;overflow-y:auto;">
+            <MudStack Row="true" Style="display:flex; align-items:center;" Class="pl-1">
+                <MudIcon Icon="@Icons.Material.Filled.Lightbulb" />
+                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};")"> 以下均为示例数据，不可以编辑，可以添加前后缀, 导出以图片实际元数据为准</MudText>
+            </MudStack>
             <MudChipSet MultiSelection="true" Filter="true">
                 @foreach (var exif in DefaultExifLists)
                 {

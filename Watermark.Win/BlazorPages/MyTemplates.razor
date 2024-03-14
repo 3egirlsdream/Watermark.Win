@@ -10,23 +10,25 @@
         position: relative;
     }
 </style>
-<MudDialog Style="min-width:50%;min-height:50%;width:80%; height:80%;overflow-y:hidden">
+<MudDialog Style="min-width:50%;min-height:50%;width:90%; height:90%;overflow-y:hidden">
     <DialogContent>
-        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(80vh - 120px);overflow-y:auto;padding:5px;">
+        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 120px);overflow-y:auto;padding:5px;">
             <MudItem xs="12">
                 <MudText Typo="Typo.h4">
-                    我本地的<MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=> { InitTemplates(); LoadCloudTemplate();}"></MudIconButton>
+                    我本地的<MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=>InitTemplates()"></MudIconButton>
                 </MudText>
             </MudItem>
             @foreach (var grid in wMTemplates)
             {
                 <MudItem>
-                    <MudPaper Width="256px">
-                        <MudCard Class="pa-2" Style="background:#F9FAFC;">
+                    <MudPaper Width="256px" Elevation="25">
+                        <MudCard Class="pa-2" Elevation="0">
                             <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
                             <MudCardContent>
-                                <MudText Typo="Typo.body2">@grid.Name</MudText>
-                                </MudCardContent>
+                                <MudText Typo="Typo.subtitle1" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                                    @grid.Name
+                                </MudText>
+                            </MudCardContent>
                             <MudCardActions>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>Upload(grid.ID)">上传</MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-2" OnClick="(()=>EditTemplate(grid))">编辑</MudButton>
@@ -36,30 +38,59 @@
                     </MudPaper>
                 </MudItem>
             }
+
             <MudItem xs="12">
-                <MudText Typo="Typo.h4">我上传的</MudText>
+                <MudText Typo="Typo.h4">我收藏的</MudText>
             </MudItem>
-            @foreach (var t in ZipedTemplates)
+            @foreach (var t in ILikeTemplates)
             {
-                <MudItem xs="4">
-                    <MudCard>
+                <MudItem xs="2">
+                    <MudCard Elevation="25">
                         @if (!string.IsNullOrEmpty(t.Src))
                         {
                             <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
                         }
                         else
                         {
-                            <MudOverlay Visible="@loading" DarkBackground="true" Absolute="true">
-                                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
-                            </MudOverlay>
+                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left: calc(50% - 20px); margin-top: 20px;" />
                         }
-                        <MudCardContent Style="height:80px;overflow-y:auto;">
-                            <MudText Typo="Typo.body2">@t.Desc</MudText>
-                            </MudCardContent>
-                            <MudCardActions Style="position:relative;">
-                                @t.DownloadTimes<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                                @(t.WMCanvas?.Name ?? t.Desc)
+                            </MudText>
+                        </MudCardContent>
+                        <MudCardActions Style="position:relative;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" Style="cursor:pointer;" Size="MudBlazor.Size.Small" OnClick="()=>DeleteILike(t.WatermarkId)" />
+                            <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:0px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4">我上传的</MudText>
+            </MudItem>
+            @foreach (var t in ZipedTemplates)
+            {
+                <MudItem xs="3">
+                    <MudCard Elevation="25">
+                        @if (!string.IsNullOrEmpty(t.Src))
+                        {
+                            <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                        }
+                        else
+                        {
+                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left: calc(50% - 20px); margin-top: 20px;" />
+                        }
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
+                                @(t.WMCanvas?.Name ?? t.Desc)
+                            </MudText>
+                        </MudCardContent>
+                        <MudCardActions Style="position:relative;">
+                            <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="MudBlazor.Size.Small" />@t.DownloadTimes
                             <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
-                            <MudButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" OnClick="()=>DownloadEdit(t.WatermarkId)">编辑</MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Secondary" Style="position:absolute;right:10px" OnClick="()=>DownloadEdit(t.WatermarkId)" Size="MudBlazor.Size.Small">编辑</MudButton>
                         </MudCardActions>
                     </MudCard>
 
@@ -95,7 +126,23 @@
     string loadingMessage = "正在加载模板...";
     List<WMCanvas> wMTemplates { get; set; }
     List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
+    List<WMZipedTemplate> ILikeTemplates { get; set; } = new();
     Dictionary<string, string> pairs;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await InitTemplates();
+            await LoadILikeTemplate();
+            await LoadCloudTemplate();
+        }
+        catch (Exception ex)
+        {
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+    }
+
     async Task InitTemplates()
     {
         loading = true;
@@ -135,26 +182,12 @@
         StateHasChanged();
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            await InitTemplates();
-            await LoadCloudTemplate();
-        }
-        catch(Exception ex)
-        {
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-        }
-    }
-
     async Task LoadCloudTemplate()
     {
         if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        loading = true;
-        StateHasChanged();
         var helper = new APIHelper();
         ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
+        StateHasChanged();
         List<Task> tasks1 = new List<Task>();
         foreach (var t in ZipedTemplates)
         {
@@ -181,8 +214,92 @@
             tasks.Add(c);
         }
         await Task.WhenAll(tasks);
-        loading = false;
         StateHasChanged();
+    }
+
+    async Task LoadILikeTemplate()
+    {
+        if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var helper = new APIHelper();
+        if (!Directory.Exists(Global.AppPath.MarketFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.MarketFolder);
+        }
+        var templateFolderInfo = new DirectoryInfo(Global.AppPath.MarketFolder);
+        var downloadedTemplates = templateFolderInfo.GetDirectories().Select(x => x.Name).ToList();
+        var getILike = await helper.GetILike(Global.CurrentUser.ID);
+        ILikeTemplates = new List<WMZipedTemplate>();
+        if (getILike != null && getILike.success)
+        {
+            ILikeTemplates = getILike.data;
+        }
+        else
+        {
+            ClientInstance.ShowMsg(Snackbar, getILike?.message?.content, Severity.Error);
+        }
+
+        var needToDownloadTemplates = ILikeTemplates.Where(x => !downloadedTemplates.Contains(x.WatermarkId)).Select(x => x.WatermarkId).ToList();
+        var downloaded = await helper.Downloads(needToDownloadTemplates);
+        if (!downloaded) Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "下载失败", Severity.Error);
+
+        try
+        {
+            StateHasChanged();
+            List<Task> mission = new List<Task>();
+            var basePath = Global.AppPath.MarketFolder;
+
+            WatermarkHelper watermarkHelper = new WatermarkHelper();
+            foreach (var dirct in ILikeTemplates)
+            {
+                var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+                if (System.IO.File.Exists(configPath))
+                {
+                    var t = Task.Run(() =>
+                    {
+                        var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
+                        foreach (var file in folder.GetFiles())
+                        {
+                            if (file.Name.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
+                            {
+                                using var reader = new System.IO.StreamReader(File.OpenRead(file.FullName));
+                                var content = reader.ReadToEnd();
+                                var canvas = Global.ReadConfig(content);
+                                dirct.WMCanvas = Global.ReadConfig(content);
+                            }
+                            else if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
+                                dirct.Bitmap = sKBitmap;
+                            }
+                            else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
+                            {
+                                var fs = file.OpenRead();
+                                using MemoryStream mss = new();
+                                fs.CopyTo(mss);
+                                dirct.Fonts[file.Name] = mss.ToArray();
+                            }
+                            else
+                            {
+                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
+                                dirct.Images[file.Name] = sKBitmap;
+                            }
+
+                        }
+
+                        var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
+                        dirct.Src = src;
+                        return src;
+                    });
+                    mission.Add(t);
+                }
+            }
+            await Task.WhenAll(mission);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
     }
 
     void EditTemplate(WMCanvas canvas, string cloud = "")
@@ -195,6 +312,7 @@
         });
         OpenWinHelper.Open(action);
     }
+    
     async void DeleteTemplate(string id)
     {
 
@@ -225,7 +343,7 @@
         {
             APIHelper api = new APIHelper();
             var apiResult = await api.TemplateIsExsist(watermarkId, Global.CurrentUser?.ID);
-            if(apiResult.Item1 && apiResult.Item2)
+            if (apiResult.Item1 && apiResult.Item2)
             {
                 bool? rtl = await DialogService.ShowMessageBox(
                                "确认覆盖",
@@ -254,7 +372,7 @@
         if (!result.Canceled)
         {
             dynamic data = result.Data;
-            if(data == null)
+            if (data == null)
             {
                 return;
             }
@@ -371,7 +489,7 @@
             message = "下载成功";
             await InitTemplates();
             var canvas = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
-            if(canvas != null)
+            if (canvas != null)
             {
                 EditTemplate(canvas, "cloud");
             }
@@ -385,6 +503,21 @@
         ClientInstance.ShowMsg(Snackbar, message, Severity);
         loading = false;
         StateHasChanged();
+    }
+
+    void DeleteILike(string watermarkId)
+    {
+        if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+        {
+            var helper = new APIHelper();
+            helper.DeleteILike(Global.CurrentUser.ID, watermarkId);
+            var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
+            if (item != null)
+            {
+                ILikeTemplates.Remove(item);
+                StateHasChanged();
+            }
+        }
     }
 
 }

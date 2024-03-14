@@ -17,7 +17,7 @@
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">导入图标</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">图标库</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="OpenExport">导出</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
@@ -685,47 +685,7 @@
 
     void ImportLogoes()
     {
-        var action = new Action(async () =>
-        {
-            // 实例化一个文件选择对象
-            Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
-            // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-            if (result == true)
-            {
-                if (!Directory.Exists(Global.AppPath.LogoesFolder))
-                {
-                    Directory.CreateDirectory(Global.AppPath.LogoesFolder);
-                }
-
-                foreach (var filename in dialog.FileNames)
-                {
-                    try
-                    {
-                        if (File.Exists(filename))
-                        {
-                            await Task.Run(() =>
-                            {
-                                var target = Global.AppPath.LogoesFolder + Path.GetFileName(filename);
-                                File.Copy(filename, target, true);
-                            });
-
-                        }
-                    }
-                    catch { }
-                }
-                await InitLogoStore();
-            }
-            ClientInstance.ShowMsg(Snackbar, "导入完成", Severity.Success);
-
-            StateHasChanged();
-        });
-        OpenWinHelper.Open(action);
+        var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
     }
 
 

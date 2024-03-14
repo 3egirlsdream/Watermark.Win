@@ -1,7 +1,7 @@
 ﻿@using Watermark.Win.Models
 @inject ISnackbar Snackbar
 
-<MudDialog Options="DialogOptions" Style="width:400px;background:#F9FAFC">
+<MudDialog Style="width:400px;background:#F9FAFC">
     <DialogContent>
         <MudForm>
             <MudTextField @bind-Value="UserName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" AutoFocus />
@@ -24,7 +24,6 @@
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
 
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
     string UserName { get; set; }
     string Password { get; set; }
     bool Loading = false;

@@ -1,5 +1,6 @@
 ﻿using SkiaSharp;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection.Metadata;
@@ -262,7 +263,7 @@ namespace Watermark.Win.Models
                 }
                 else
                 {
-                    if (ziped.Images.TryGetValue(mLogo.Path ?? "", out SKBitmap logo))
+                    if (ziped.Images.TryGetValue(mLogo.Path ?? "", out var logo))
                     {
                         bitmap_logo = logo;
                     }
@@ -270,10 +271,6 @@ namespace Watermark.Win.Models
                     {
                         bitmap_logo = new SKBitmap(100, 100);
                     }
-                }
-                if (mLogo.White2Transparent)
-                {
-                    bitmap_logo = ConvertWhiteToTransparent(bitmap_logo);
                 }
                 var hcp = min * (component.Percent / 100.0);
 
@@ -283,9 +280,16 @@ namespace Watermark.Win.Models
                 hcp = bitmap_logo.Height * logo_xs;
                 var bitmap_cp = new SKBitmap((int)wcp, (int)hcp);
                 canvas_cp = new SKCanvas(bitmap_cp);
-                var rect_cp = new SKRect(0, 0, (int)wcp, (int)hcp);
-                canvas_cp.DrawBitmap(bitmap_logo, rect_cp);
 
+                if (callback != null)
+                {
+                    if (mLogo.White2Transparent)
+                    {
+                        bitmap_logo = ConvertWhiteToTransparent(bitmap_logo);
+                    }
+                    var rect_cp = new SKRect(0, 0, (int)wcp, (int)hcp);
+                    canvas_cp.DrawBitmap(bitmap_logo, rect_cp);
+                }
                 //记录图表尺寸
                 mLogo.Width = wcp;
                 mLogo.Height = hcp;
@@ -306,7 +310,7 @@ namespace Watermark.Win.Models
                 string templateFontPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {
-                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out byte[] stream))
+                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out var stream))
                     {
                         var mss = new MemoryStream(stream);
                         tc = SKTypeface.FromStream(mss);
@@ -415,8 +419,8 @@ namespace Watermark.Win.Models
                 //水平布局，比例按高计算, margin只左右生效
                 if (container.Orientation == Orientation.Horizontal)
                 {
-                    var ch = container.HeightPercent / 100.0 * originalBitmap.Height;
-                    var cw = container.WidthPercent / 100.0 * originalBitmap.Width;
+                    var ch = hc;
+                    var cw = wc;
                     if (container.VerticalAlignment == VerticalAlignment.Top)
                     {
                         stdy = 0;
@@ -433,7 +437,7 @@ namespace Watermark.Win.Models
 
                     if (container.HorizontalAlignment == HorizontalAlignment.Left)
                     {
-                        stdx = occupy_x + (ch * (component.Margin.Left - component.Margin.Right) / 100.0);
+                        stdx = occupy_x + (cw * (component.Margin.Left - component.Margin.Right) / 100.0);
                         occupy_x = stdx + component.Width;
                     }
                     else if (container.HorizontalAlignment == HorizontalAlignment.Center)
@@ -443,7 +447,7 @@ namespace Watermark.Win.Models
                             var totalComponentWidth = container.Controls.Sum(c => c.Width) + container.Controls.Select(c => (c.Margin.Left + c.Margin.Right) / 100.0 * container.HeightPercent).Sum();
                             occupy_x = (cw - totalComponentWidth) / 2;
                         }
-                        stdx = occupy_x + (ch * (component.Margin.Left - component.Margin.Right) / 100.0);
+                        stdx = occupy_x + (cw * (component.Margin.Left - component.Margin.Right) / 100.0);
                         occupy_x = stdx + component.Width;
                     }
                     else if (container.HorizontalAlignment == HorizontalAlignment.Right)
@@ -452,7 +456,7 @@ namespace Watermark.Win.Models
                         {
                             occupy_x = cw;
                         }
-                        stdx = occupy_x - component.Width - (ch * (component.Margin.Right - component.Margin.Left) / 100.0);
+                        stdx = occupy_x - component.Width - (cw * (component.Margin.Right - component.Margin.Left) / 100.0);
                         occupy_x = stdx;
                     }
                 }
