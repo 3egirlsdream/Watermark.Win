@@ -20,10 +20,10 @@
             </MudItem>
             @foreach (var grid in wMTemplates)
             {
-                <MudItem>
-                    <MudPaper Width="256px" Elevation="25">
-                        <MudCard Class="pa-2" Elevation="0">
-                            <MudImage Src="@(pairs[grid.ID])" Width="240" Height="200" ObjectFit="ObjectFit.Contain" />
+                <MudItem xs="3">
+                    <MudPaper Elevation="25">
+                        <MudCard Class="pa-2" Elevation="0" Style="background:#e5e5e5;">
+                            <MudImage Src="@(pairs[grid.ID])" Style="width:100%;" Height="200" ObjectFit="ObjectFit.Contain" />
                             <MudCardContent>
                                 <MudText Typo="Typo.subtitle1" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
                                     @grid.Name
@@ -45,7 +45,7 @@
             @foreach (var t in ILikeTemplates)
             {
                 <MudItem xs="2">
-                    <MudCard Elevation="25">
+                    <MudCard Elevation="25" Class="pa-1" Style="background:#e5e5e5;">
                         @if (!string.IsNullOrEmpty(t.Src))
                         {
                             <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
@@ -73,7 +73,7 @@
             @foreach (var t in ZipedTemplates)
             {
                 <MudItem xs="3">
-                    <MudCard Elevation="25">
+                    <MudCard Elevation="25" Class="pa-1" Style="background:#e5e5e5;">
                         @if (!string.IsNullOrEmpty(t.Src))
                         {
                             <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
