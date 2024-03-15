@@ -443,7 +443,7 @@
         var isOK = await func();
         if (!isOK) return;
         loading = true;
-        var result = await helper.Download(watermarkId);
+        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
         string message = "";
         Severity Severity = Severity.Success;
         if (result)
@@ -482,7 +482,7 @@
         var isOK = await func();
         if (!isOK) return;
         loading = true;
-        var result = await helper.Download(watermarkId);
+        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
         string message = "";
         Severity Severity = Severity.Success;
         if (result)

@@ -166,7 +166,7 @@
                                                             {
                                                                 <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
                                                             }
-                                                            <p Style="max-width:100px;overflow:hidden;max-height:40px">
+                                                            <p Style="max-width:60px;overflow:hidden;max-height:40px;text-overflow:ellipsis;white-space: nowrap;">
                                                                 @l
                                                             </p>
                                                         </MudButton>
@@ -238,8 +238,6 @@
     [Inject]
     private IDialogService DialogService { get; set; }
 
-    WMThickness BorderThickness = new WMThickness();
-    string url = "";
     bool SrcLoading = false;
     bool ShowUserInfo = false;
     bool IsLoginIn = false;
@@ -547,30 +545,27 @@
         }
     }
 
-    async Task Export(List<TemplateList> images)
+    void Export(List<TemplateList> images)
     {
         var helper = new WatermarkHelper();
         MainLoading.Show = true;
         MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
         StateHasChanged();
         var idx = 1;
-        var mission = new List<Task>();
-        foreach (var item in images)
+        var options = new ParallelOptions();
+        options.MaxDegreeOfParallelism = 5;
+        Parallel.ForEach(images, item =>
         {
-            var t = Task.Run(() =>
-            {
-                helper.Generation(item.Canvas, null, false);
-                MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
-                MainLoading.Value = idx++ * 100.0 / images.Count;
-                InvokeAsync(StateHasChanged);
-            });
-            mission.Add(t);
-        }
-        await Task.WhenAll(mission);
+            helper.Generation(item.Canvas, null, false);
+            MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
+            MainLoading.Value = idx++ * 100.0 / images.Count;
+            InvokeAsync(StateHasChanged);
+            GC.Collect();
+        });
+
         MainLoading.Value = 100;
         MainLoading.Show = false;
         StateHasChanged();
-
 
         var task = Task.Run(() =>
         {
@@ -754,7 +749,7 @@
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is List<TemplateList> images)
         {
-            await Export(images.Where(x => x.IsChecked).ToList());
+            Export(images.Where(x => x.IsChecked).ToList());
         }
     }
 }

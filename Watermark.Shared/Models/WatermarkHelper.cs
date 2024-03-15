@@ -596,7 +596,11 @@ namespace Watermark.Win.Models
         // 将白色像素转为透明像素
         static SKBitmap ConvertWhiteToTransparent(SKBitmap originalBitmap)
         {
-            for (int x = 0; x < originalBitmap.Width; x++)
+            var option = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = 5
+            };
+            Parallel.For(0, originalBitmap.Width, option, (x) =>
             {
                 for (int y = 0; y < originalBitmap.Height; y++)
                 {
@@ -609,7 +613,7 @@ namespace Watermark.Win.Models
                     }
 
                 }
-            }
+            });
             return originalBitmap;
 
         }

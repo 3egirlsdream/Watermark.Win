@@ -238,7 +238,7 @@ namespace Watermark.Win.Models
             return false;
         }
 
-        public async Task<bool> Download(string watermarkId)
+        public async Task<bool> Download(string watermarkId, string watermarkUserId)
         {
             try
             {
@@ -258,7 +258,10 @@ namespace Watermark.Win.Models
                 //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
                 ZipFile.ExtractToDirectory(stream, target, true);
 
-                await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
+                if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID) && Global.CurrentUser.ID != watermarkUserId)
+                {
+                    await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
+                }
                 return true;
             }
             catch (Exception ex)

@@ -61,3 +61,53 @@ a, .btn-link {
     flex-direction: column;
     --sk-color: white;
 }
+
+.flex-vertical-center {
+    display:flex;
+    align-items:center;
+}
+
+
+
+.fullscreen {
+    opacity: 0;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+}
+
+    .fullscreen:hover {
+        opacity: 1;
+    }
+
+.fullscreen-icon {
+}
+
+    .fullscreen-icon:hover
+    .fullscreen {
+        opacity: 1;
+        cursor: pointer;
+    }
+
+.dfm-card-name {
+    margin: auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
+}
+
+.dfm-card-user-name {
+    position: relative;
+    display: flex;
+    align-items: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
+}
+
+.dfm-card-footer {
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
