@@ -135,20 +135,27 @@ namespace Watermark.Win.Models
 
         public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, string destFile, string id)
         {
-            if (string.IsNullOrEmpty(destFile))
+            try
             {
-                ImagesBase64[id] = "";
-                return;
+                if (string.IsNullOrEmpty(destFile))
+                {
+                    ImagesBase64[id] = "";
+                    return;
+                }
+                using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
+                if (bitmap != null)
+                {
+                    using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 70);
+                    ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+                }
+                else
+                {
+                    ImagesBase64[id] = "";
+                }
             }
-            using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
-            if (bitmap != null)
+            catch(Exception ex)
             {
-                using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 70);
-                ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
-            }
-            else
-            {
-                ImagesBase64[id] = "";
+
             }
         }
 

@@ -382,8 +382,8 @@
             Action action = new Action(async () =>
             {
                 loading = true;
-                StateHasChanged();
                 loadingMessage = "正在上传...";
+                StateHasChanged();
                 var helper = new APIHelper();
                 var result = await helper.UploadWatermark(watermarkId, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
                 string message = "";

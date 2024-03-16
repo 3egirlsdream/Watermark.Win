@@ -97,44 +97,36 @@
     <div Style="height:100%;width:100vw;display: flex;">
 
         <div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
-            <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="panel-class" MinimumTabWidth="150px" Style="margin-top: 40px;height: calc(100% - 40px);" AlwaysShowScrollButtons="false">
-                <MudTabPanel Text="模板" Style="height:100%">
-                    <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; height:100%; overflow-y:auto;overflow-x:hidden;">
-                        <MudList Clickable="true">
-                            <MudTreeView T="string" Hover="true">
-                                @if (wMTemplates == null || wMTemplates.Count == 0)
-                                {
-                                    <MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
-                                               EndIcon="@Icons.Material.Filled.Download"
-                                               Color="Color.Primary" OnClick="OpenTemplateMarket">
-                                        下载模板
-                                    </MudButton>
-                                }
-                                @foreach (var pair in wMTemplates)
-                                {
-                                    <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
-                                        <Content>
-                                            <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-                                            <MudText Class="mx-5">@pair.Canvas.Name</MudText>
-                                        </Content>
-                                    </MudTreeViewItem>
-                                }
-                            </MudTreeView>
-                        </MudList>
-                    </MudPaper>
-                </MudTabPanel>
-                @* <MudTabPanel Text="">
-                        <MudText></MudText>
-                    </MudTabPanel> *@
-            </MudTabs>
-            @*   *@
+            <MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px; margin-top: 40px;height: calc(100% - 40px); overflow-y:auto;overflow-x:hidden;">
+                <MudList Clickable="true">
+                    <MudTreeView T="string" Hover="true">
+                        @if (wMTemplates == null || wMTemplates.Count == 0)
+                        {
+                            <MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
+                                       EndIcon="@Icons.Material.Filled.Download"
+                                       Color="Color.Primary" OnClick="OpenTemplateMarket">
+                                下载模板
+                            </MudButton>
+                        }
+                        @foreach (var pair in wMTemplates)
+                        {
+                            <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
+                                <Content>
+                                    <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
+                                    <MudText Class="mx-5">@pair.Canvas.Name</MudText>
+                                </Content>
+                            </MudTreeViewItem>
+                        }
+                    </MudTreeView>
+                </MudList>
+            </MudPaper>
         </div>
         <div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
             @if (SrcLoading)
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
             }
-            <div style="background: #F9FAFC; width: 100%; height: 100%; text-align: center;">
+            <div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
                     <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
@@ -188,7 +180,7 @@
                 }
             </div>
         </div>
-        <div style="width: 200px; height: calc(100% - 30px);  background: #F9FAFC;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
+        <div style="width: 200px; height: calc(100% - 30px);  background: #F5F5F5;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
             <MudList Clickable="true">
                 @foreach (var file in Images)
                 {
@@ -286,11 +278,11 @@
         var action = new Action(() =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = false,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = false,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
 
@@ -328,12 +320,12 @@
             if (login.success)
             {
                 Global.CurrentUser = new WMLoginChildModel
-                {
-                    ID = login.data.data.ID,
-                    IMG = login.data.data.IMG,
-                    DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-                    USER_NAME = login.data.data.USER_NAME
-                };
+                    {
+                        ID = login.data.data.ID,
+                        IMG = login.data.data.IMG,
+                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+                        USER_NAME = login.data.data.USER_NAME
+                    };
                 IsLoginIn = true;
                 await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
                 StateHasChanged();
@@ -360,11 +352,11 @@
         {
             // 实例化一个文件选择对象
             Microsoft.Win32.OpenFileDialog dialog = new()
-            {
-                DefaultExt = ".png",  // 设置默认类型
-                Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-            };
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = true,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
             // 打开选择框选择
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
@@ -396,12 +388,12 @@
                         return dic.First().Value;
                     });
                     Images.Add(new TemplateList
-                    {
-                        Canvas = canvas,
-                        Src = await src,
-                        ID = canvas.ID,
-                        Path = file
-                    });
+                        {
+                            Canvas = canvas,
+                            Src = await src,
+                            ID = canvas.ID,
+                            Path = file
+                        });
                     var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
                     MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
                     MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
@@ -472,11 +464,11 @@
                     {
                         var src = helper.Generation(canvas, null, true);
                         var wh = new TemplateList
-                        {
-                            ID = canvas.ID,
-                            Canvas = canvas,
-                            Src = src
-                        };
+                            {
+                                ID = canvas.ID,
+                                Canvas = canvas,
+                                Src = src
+                            };
                         wMTemplates.Add(wh);
                         var idx = directories.ToList().IndexOf(dirct) + 1;
                         MainLoading.Value = cot * 100.0 / directories.Length;

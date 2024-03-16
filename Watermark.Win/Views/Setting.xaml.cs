@@ -172,6 +172,15 @@ namespace Watermark.Win.Views
             }
             clearCache.Content = "清除完成";
         }
+
+        private void clearDownloadCache_Click(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(Global.AppPath.TemplatesFolder))
+            {
+                Directory.Delete(Global.AppPath.TemplatesFolder, true);
+            }
+            clearCache.Content = "清除完成";
+        }
     }
 
     public class SettingVM : INotifyPropertyChanged

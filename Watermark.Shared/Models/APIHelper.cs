@@ -27,6 +27,25 @@ namespace Watermark.Win.Models
 
         public async Task<API<bool?>> UploadWatermark(string watermarkId, string name, int coins, string desc = "")
         {
+            //剔除无用的文件
+            var folder = Global.AppPath.TemplatesFolder + watermarkId + Path.DirectorySeparatorChar;
+            if(Directory.Exists(folder))
+            {
+                var json = File.ReadAllText(folder + "config.json");
+                var direct = new DirectoryInfo(folder);
+                var files = direct.GetFiles();
+                foreach(var file in files)
+                {
+                    try
+                    {
+                        if (file.Extension != ".json" && !file.Name.Contains("default") && !json.Contains(file.Name))
+                        {
+                            file.Delete();
+                        }
+                    }
+                    catch { }
+                }
+            }
 
             var result1 = await UploadToQiniu(watermarkId, name);
             if (result1.success)
@@ -394,5 +413,21 @@ namespace Watermark.Win.Models
             return result;
         }
 
+        public async Task<API<List<string>>> GetISubscribed(string userId)
+        {
+            var result = await Connections.HttpGetAsync<List<string>>(HOST + $"/api/Watermark/GetISubscribed?userId={userId}", Encoding.UTF8);
+            return result;
+        }
+
+        public async Task<API<bool>> SubscribeUser(string userId, string subscribedId)
+        {
+            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/SubscribeUser?userId={userId}&subscribedId={subscribedId}", Encoding.UTF8);
+            return result;
+        }
+        public async Task<API<bool>> TakeOffOnWatermark(string userId, string watermarkId)
+        {
+            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/TakeOffOnWatermark?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
+            return result;
+        }
     }
 }
