@@ -12,7 +12,7 @@
                 <MudTreeViewItem Value="@(container.Name)" Expanded="true">
                     <BodyContent>
                         <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                            <MudText Style="justify-self: start;">@($"{container.Name} ({container.ID.Substring(27)})")</MudText>
+                            <MudTextField @bind-Value="@container.Name" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
                             <div style="justify-self: end;">
                                 @*<MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" />*@
                                 <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
@@ -92,6 +92,7 @@
                 <DialogContent>
                     @if (MoveContainer)
                     {
+                        <MudTextField @bind-Value="@MoveConntainerCtrl.Name" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         <MudSelect @bind-Value="MoveForwardConntainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
                             @foreach (var c in MoveContainers)
                             {

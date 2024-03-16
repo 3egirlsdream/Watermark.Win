@@ -47,7 +47,7 @@ namespace Watermark.Win.Models
                 mainCanvas.Exif = ExifHelper.ReadImage(path);
             }
 
-            var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980);
+            var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980); 
             //创建画布
             var wh_xs = Math.Min(originalBitmap.Width, originalBitmap.Height) * 1.0 / Math.Max(originalBitmap.Width, originalBitmap.Height);
             var singeBorderWidth = originalBitmap.Width / 100.0;
@@ -91,11 +91,11 @@ namespace Watermark.Win.Models
 
             targetCanvas.DrawBitmap(originalBitmap, p1);
 
-
+            double fontxs = 0;
             //绘制容器
             foreach (var container in mainCanvas.Children)
             {
-                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref info, container, mainCanvas.ID, ziped, designMode);
+                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref fontxs, ref info, container, mainCanvas.ID, ziped, designMode);
 
                 var container_point = new SKPoint(0, 0);
                 var cl = container.Margin.Left * singeBorderWidth;
@@ -185,7 +185,7 @@ namespace Watermark.Win.Models
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
 
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref double fontxs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
@@ -197,10 +197,10 @@ namespace Watermark.Win.Models
                 double maxTextWidth = 1;
                 foreach (WMText mText in container.Controls.Where(c => c is WMText).Cast<WMText>())
                 {
-                    DrawText(xs, mText, null);
+                    DrawText(ref fontxs, mText, null);
                     maxTextWidth = Math.Max(maxTextWidth, mText.Width);
                 }
-                wc = maxTextWidth;
+                wc = maxTextWidth + 25;
             }
 
             info.Width = (int)wc;
@@ -302,7 +302,7 @@ namespace Watermark.Win.Models
                 callback?.Invoke(bitmap_cp);
             }
 
-            void DrawText(double xs, WMText mText, Action<SKPaint> action)
+            void DrawText(ref double fontxs, WMText mText, Action<SKPaint> action)
             {
                 SKFontStyle fontStyle;
                 if (mText.IsBold && mText.IsItalic) fontStyle = SKFontStyle.BoldItalic;
@@ -344,8 +344,11 @@ namespace Watermark.Win.Models
                     tc = SKTypeface.FromFamilyName(families.FirstOrDefault(), fontStyle);
                 }
                 var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle)??tc;
-                var fontxs = Math.Min(hc, wc) / 156.0;
-                if (fontxs == 0) fontxs = 1;
+                if (fontxs == 0)
+                {
+                    fontxs = Math.Min(hc, wc) / 156.0;
+                    if (fontxs == 0) fontxs = 1;
+                }
 
                 var fontColor = mText.FontColor.Length > 7 ? mText.FontColor.Substring(0, 7) : mText.FontColor;
                 //字体乘以系数
@@ -391,7 +394,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMText mText)
                 {
-                    DrawText(xs, mText, null);
+                    DrawText(ref fontxs, mText, null);
                 }
                 else if (component is WMLine mLine)
                 {
@@ -408,7 +411,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, 2);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -468,8 +471,8 @@ namespace Watermark.Win.Models
                 }
                 else
                 {
-                    var ch = container.HeightPercent / 100.0 * originalBitmap.Height;
-                    var cw = container.WidthPercent / 100.0 * originalBitmap.Width;
+                    var ch = hc;
+                    var cw = wc;
                     if (container.HorizontalAlignment == HorizontalAlignment.Left)
                     {
                         stdx = 0;
@@ -556,7 +559,7 @@ namespace Watermark.Win.Models
                             canvasc.DrawRoundRect(rect2, mText.BorderRadius, mText.BorderRadius, borderPaint);
                         }
                     });
-                    DrawText(xs, mText, action);
+                    DrawText(ref fontxs, mText, action);
                 }
                 else if (component is WMLine mLine)
                 {
@@ -584,7 +587,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, 2);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }
