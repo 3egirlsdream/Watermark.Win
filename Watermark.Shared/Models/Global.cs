@@ -20,7 +20,8 @@ namespace Watermark.Win.Models
         static WMAppPath AP = new()
         {
             BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId,
-            TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
+            MarketFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Market" + Path.DirectorySeparatorChar,
+			TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
             OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
@@ -331,7 +332,7 @@ namespace Watermark.Win.Models
 
         public static string APK { get; set; }
 
-        public static bool DarkMode { get; set; } = true;
+        public static bool DarkMode { get; set; } = false;
 
         public static string Resolution { get; set; } = "default";
 

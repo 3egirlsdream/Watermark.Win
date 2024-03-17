@@ -532,6 +532,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMText mText)
                 {
+                    var _xs = fontxs;
                     var action = new Action<SKPaint>((p) =>
                     {
                         var skp = new SKPoint((float)stdx, (float)(stdy + mText.Height));
@@ -553,7 +554,7 @@ namespace Watermark.Win.Models
                             borderPaint.Style = SKPaintStyle.Stroke;
                             var color = mText.BorderColor.Length > 7 ? mText.BorderColor[..7] : mText.BorderColor; 
                             borderPaint.Color = SKColor.Parse(color);
-                            borderPaint.StrokeWidth = (float)(mText.BorderWidth * xs);
+                            borderPaint.StrokeWidth = (float)(mText.BorderWidth * _xs);
                             SKRect rect = new SKRect((float)(skp.X - 10 * xs), (float)(skp.Y - mText.Height - 15  * xs), (float)(mText.Width + skp.X + 10 * xs), (float)(mText.Height+skp.Y));
                             SKRect rect2 = new SKRect((float)(skp.X - mText.Height / 2), (float)(skp.Y - mText.Height * 1.5), (float)(mText.Width + skp.X + mText.Height / 2), (float)(mText.Height / 2 +skp.Y));
                             canvasc.DrawRoundRect(rect2, mText.BorderRadius, mText.BorderRadius, borderPaint);

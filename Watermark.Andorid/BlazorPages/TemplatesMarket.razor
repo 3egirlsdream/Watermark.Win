@@ -158,7 +158,7 @@
     async void Download(string watermarkId)
     {
         var helper = new APIHelper();
-        var result = await helper.Download(watermarkId);
+        var result = await helper.Download(watermarkId, "");
         string message = "";
         Severity Severity = Severity.Success;
         if (result)

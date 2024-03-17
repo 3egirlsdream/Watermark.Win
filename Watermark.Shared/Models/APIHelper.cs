@@ -329,12 +329,12 @@ namespace Watermark.Win.Models
                 foreach (var watermarkId in watermarkIds)
                 {
                     var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
-                    if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+                    if (!Directory.Exists(Global.AppPath.MarketFolder))
                     {
-                        Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+                        Directory.CreateDirectory(Global.AppPath.MarketFolder);
                     }
 
-                    var target = Global.AppPath.TemplatesFolder + watermarkId;
+                    var target = Global.AppPath.MarketFolder + watermarkId;
                     if (Directory.Exists(target))
                     {
                         Directory.Delete(target, true);
@@ -397,9 +397,11 @@ namespace Watermark.Win.Models
             }
         }
 
-        public async void AddILike(string userId, string watermarkId)
+        public async Task<bool> AddILike(string userId, string watermarkId)
         {
-            await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/AddILike?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
+            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/AddILike?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
+            if (result != null) return result.data;
+            else return false;
         }
 
         public async void DeleteILike(string userId, string watermarkId)
