@@ -275,7 +275,7 @@ namespace Watermark.Win.Models
                 }
                 Directory.CreateDirectory(target);
                 //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
-                ZipFile.ExtractToDirectory(stream, target, true);
+                await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
 
                 if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID) && Global.CurrentUser.ID != watermarkUserId)
                 {

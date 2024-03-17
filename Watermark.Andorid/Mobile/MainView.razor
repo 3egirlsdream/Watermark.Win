@@ -932,7 +932,7 @@
 		// MainLoading.Show = true;
 		//showMarket = false;
 		var helper = new APIHelper();
-		var allTemplates = await helper.GetWatermarks("", start, 999);
+		var allTemplates = await helper.GetWatermarks("", start, 40);
 		var recommend = allTemplates.Where(x => x.Recommend);
 		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
 		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
@@ -1315,7 +1315,11 @@
 		{
 			FocusImageShow = false;
 			bool? rtl = await DialogService.ShowMessageBox("确认覆盖", (MarkupString)"此模板已存在，确定覆盖？", yesText: "确定", cancelText: "取消");
-			if (rtl == true) action.Invoke();
+			if (rtl == true) 
+			{
+				Directory.Delete(p, true);
+				action.Invoke();
+			}
 		}
 		else
 		{
