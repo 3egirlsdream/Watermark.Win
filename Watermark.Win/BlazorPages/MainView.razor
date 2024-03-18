@@ -458,7 +458,7 @@
                     using var reader = new System.IO.StreamReader(stream);
                     var content = reader.ReadToEnd();
                     var canvas = Global.ReadConfig(content);
-
+                    await InitFonts([canvas]);
                     WatermarkHelper helper = new WatermarkHelper();
                     var t = Task.Run(() =>
                     {
@@ -748,5 +748,14 @@
         {
             Export(images.Where(x => x.IsChecked).ToList());
         }
+    }
+
+    async Task InitFonts(List<WMCanvas> mCanvas)
+    {
+        MainLoading.Message = "正在下载字体资源...";
+        MainLoading.Show = true;
+        var fonts = Global.GetAllFontName(mCanvas);
+        var helper = new APIHelper();
+        await helper.DownloadFonts(fonts);
     }
 }

@@ -3,6 +3,7 @@ using SkiaSharp;
 using Watermark.Shared.Enums;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Concurrent;
 
 namespace Watermark.Win.Models
 {
@@ -402,38 +403,46 @@ namespace Watermark.Win.Models
 
         public static bool SecondExif { get; set; } = false;
 
-        static Dictionary<string, byte[]> Fonts = [];
+        static ConcurrentDictionary<string, byte[]> Fonts = [];
         static HttpClient? _client;
         public static bool TryGetFont(string key, out byte[] bt)
         {
-            if(Fonts.TryGetValue(key, out bt))
+            if (Fonts.TryGetValue(key, out bt))
             {
                 return true;
             }
 
             //先看本地有没有
             var p = AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar + key;
-            if (!File.Exists(p))
-            {
-                _client ??= new HttpClient() { BaseAddress = new Uri(APIHelper.HOST) };
-                using var stream = _client.GetStreamAsync($"https://cdn.thankful.top/{key}").Result;
-                using var fs = File.Create(p);
-                stream.CopyTo(fs);
-            }
-
-            try
+            if (File.Exists(p))
             {
                 bt = File.ReadAllBytes(p);
                 Fonts[key] = bt;
                 return true;
             }
-            catch
-            {
-                return false;
-            }
+            return false;
 
         }
 
         public static int MAX_THREAD { get; set; } = 5;
+
+
+        public static List<string> GetAllFontName(List<WMCanvas> mCanvas)
+        {
+            var vs = new List<string>();
+            foreach(var canvas in mCanvas) 
+            {
+                foreach(var ctrl in canvas.Children)
+                {
+					vs.AddRange(ctrl.Controls.Where(x => x is WMText).Cast<WMText>().Select(x => x.FontFamily));
+					if (ctrl is WMContainer ct2)
+                    {
+                        vs.AddRange(ct2.Controls.Where(x => x is WMText).Cast<WMText>().Select(x => x.FontFamily));
+                    }
+                    
+                }
+            }
+            return vs.Distinct().ToList();
+        }
     }
 }

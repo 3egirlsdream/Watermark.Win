@@ -158,16 +158,18 @@
         foreach (var dirct in directoryInfo.GetDirectories())
         {
             var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-            System.IO.Stream stream;
             if (System.IO.File.Exists(configPath))
             {
                 WatermarkHelper helper = new WatermarkHelper();
+                var canvas = await Task.Run(() =>
+                {
+
+                    var content = File.ReadAllText(configPath);
+                    return Global.ReadConfig(content);
+                });
+                await InitFonts([canvas]);
                 var t = Task.Run(() =>
                 {
-                    stream = new System.IO.FileStream(configPath, System.IO.FileMode.Open);
-                    using var reader = new System.IO.StreamReader(stream);
-                    var content = reader.ReadToEnd();
-                    var canvas = Global.ReadConfig(content);
                     var src = helper.Generation(canvas, null, true);
                     pairs[canvas.ID] = src;
                     wMTemplates.Add(canvas);
@@ -191,9 +193,10 @@
         var mission = new List<Task>();
         foreach (var t in ZipedTemplates)
         {
-            var tx = Task.Run(async Task () =>
+            var zip = await helper.ExtractZip(t.WatermarkId);
+            await InitFonts([zip.WMCanvas]);
+            var tx = Task.Run(() =>
             {
-                var zip = await helper.ExtractZip(t.WatermarkId);
                 t.WMCanvas = zip.WMCanvas;
                 t.Images = zip.Images;
                 t.Fonts = zip.Fonts;
@@ -256,19 +259,21 @@
                 var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
                 if (System.IO.File.Exists(configPath))
                 {
+                    var canvas = await Task.Run(() =>
+                    {
+                        var content = File.ReadAllText(configPath);
+                        return Global.ReadConfig(content);
+                    });
+
+                    dirct.WMCanvas = canvas;
+                    await InitFonts([canvas]);
+
                     var t = Task.Run(() =>
                     {
                         var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
                         foreach (var file in folder.GetFiles())
                         {
-                            if (file.Name.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
-                            {
-                                using var reader = new System.IO.StreamReader(File.OpenRead(file.FullName));
-                                var content = reader.ReadToEnd();
-                                var canvas = Global.ReadConfig(content);
-                                dirct.WMCanvas = Global.ReadConfig(content);
-                            }
-                            else if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+                            if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
                             {
                                 var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
                                 dirct.Bitmap = sKBitmap;
@@ -314,7 +319,7 @@
         });
         OpenWinHelper.Open(action);
     }
-    
+
     async void DeleteTemplate(string id)
     {
 
@@ -326,6 +331,7 @@
         {
             try
             {
+                loadingMessage = "正在删除...";
                 var path = Global.AppPath.TemplatesFolder + id;
                 System.IO.Directory.Delete(path, true);
                 StateHasChanged();
@@ -333,6 +339,7 @@
             catch { }
             finally
             {
+                loadingMessage = "正在加载...";
                 await InitTemplates();
             }
         }
@@ -520,6 +527,13 @@
                 StateHasChanged();
             }
         }
+    }
+
+    async Task InitFonts(List<WMCanvas> mCanvas)
+    {
+        var fonts = Global.GetAllFontName(mCanvas);
+        var helper = new APIHelper();
+        await helper.DownloadFonts(fonts);
     }
 
 }

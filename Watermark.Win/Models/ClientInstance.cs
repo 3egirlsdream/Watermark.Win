@@ -178,7 +178,7 @@ namespace Watermark.Shared.Models
         {
             double w = source.Width, h = source.Height;
             var xs = 1080.0 / h;
-            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
+            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.High);
             using var image = SKImage.FromBitmap(resized);
             using var writeStream = File.OpenWrite(target);
             image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);

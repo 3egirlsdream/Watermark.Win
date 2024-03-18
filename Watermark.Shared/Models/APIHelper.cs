@@ -28,8 +28,8 @@ namespace Watermark.Win.Models
         public async Task<API<bool?>> UploadWatermark(string watermarkId, string name, int coins, string desc = "")
         {
             //获取云端已有的字体文件
-            var fonts = await Connections.HttpGetAsync<List<string>>(HOST + $"/api/Watermark/GetCloudFonts", Encoding.UTF8);
-
+            var cloudFonts = await Connections.HttpGetAsync<List<WMCloudFont>>(HOST + $"/api/CloudSync/GetFontsList", Encoding.UTF8);
+            var fonts = cloudFonts.success ? cloudFonts.data.Select(x=>x.NAME).ToList() : [];
             //剔除无用的文件
             var folder = Global.AppPath.TemplatesFolder + watermarkId + Path.DirectorySeparatorChar;
             if (Directory.Exists(folder))
@@ -47,12 +47,12 @@ namespace Watermark.Win.Models
                         }
                         else if (file.Extension == ".otf" || file.Extension == ".ttf")
                         {
-                            if (!fonts.data.Any(c => c == file.Name))
+                            if (!fonts.Any(c => c == file.Name))
                             {
                                 var r = await UploadFontToQiniu(watermarkId, file.Name);
                                 if (r.success)
                                 {
-                                    await Connections.HttpGetAsync<List<string>>(HOST + $"/api/Watermark/UploadCloudFont?name={file.Name}", Encoding.UTF8);
+                                    await Connections.HttpGetAsync<List<string>>(HOST + $"/api/CloudSync/UploadPath?Name={file.Name}&Url=https://cdn.thankful.top/{file.Name}&Url_B=https://cdn.thankful.top/{file.Name}", Encoding.UTF8);
                                 }
                             }
                             file.Delete();
@@ -480,5 +480,29 @@ namespace Watermark.Win.Models
             var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/TakeOffOnWatermark?userId={userId}&watermarkId={watermarkId}", Encoding.UTF8);
             return result;
         }
+
+        public async Task DownloadFonts(List<string> fonts)
+        {
+            var p = Global.AppPath.BasePath + "fonts";
+            if (!Directory.Exists(p))
+            {
+                Directory.CreateDirectory(p);
+            }
+
+            foreach (var key in fonts)
+            {
+                try
+                {
+                    var path = Path.Combine(p, key);
+                    if (File.Exists(path)) continue;
+                    using var stream = await _client.GetStreamAsync($"https://cdn.thankful.top/{key}");
+                    using var fs = File.Create(path);
+                    stream.CopyTo(fs);
+                    fs.Close();
+                    fs.Dispose();
+                }
+                catch { }
+            }
+		}
     }
 }
