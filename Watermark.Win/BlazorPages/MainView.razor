@@ -545,19 +545,18 @@
         MainLoading.Value = 0;
         StateHasChanged();
         var idx = 1;
-        var mission = new List<Task>();
-        foreach (var item in images)
+        var option = new ParallelOptions();
+        option.MaxDegreeOfParallelism = Global.MAX_THREAD;
+        await Task.Run(() =>
         {
-            var t = Task.Run(() =>
+            Parallel.ForEach(images, option, (item) =>
             {
                 helper.Generation(item.Canvas, null, false);
                 MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
                 MainLoading.Value = idx++ * 100.0 / images.Count;
                 InvokeAsync(StateHasChanged);
             });
-            mission.Add(t);
-        }
-        await Task.WhenAll(mission);
+        });
 
         MainLoading.Value = 100;
         MainLoading.Show = false;

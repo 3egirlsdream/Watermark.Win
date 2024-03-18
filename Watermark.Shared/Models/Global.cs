@@ -433,5 +433,7 @@ namespace Watermark.Win.Models
             }
 
         }
+
+        public static int MAX_THREAD { get; set; } = 5;
     }
 }
