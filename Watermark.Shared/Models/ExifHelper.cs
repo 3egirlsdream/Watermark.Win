@@ -52,7 +52,8 @@ namespace Watermark.Win.Models
             catch(Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-                return DefaultMeta;
+                if (Global.SecondExif) return ReadImageCopy(path);
+                else return DefaultMeta;
             }
         }
 
@@ -117,6 +118,28 @@ namespace Watermark.Win.Models
                 dic[k] = ganzhi + "年" + mon + "月" + day + "日";
                 dic[key] = dt.ToString("yyyy-MM-dd HH:mm:ss");
             }
+        }
+
+        static Dictionary<string, string> ReadImageCopy(string path)
+        {
+            try
+            {
+                var exifReader = MetadataExtractor.ImageMetadataReader.ReadMetadata(path);
+                var dic = new Dictionary<string, string>();
+                foreach (var key in exifReader)
+                {
+                    foreach (var tag in key.Tags)
+                    {
+                        HandleExif(dic, tag.Name, tag.Description ?? "");
+                    }
+                }
+                return dic;
+            }
+            catch(Exception ex) 
+            {
+                return DefaultMeta;
+            }
+
         }
     }
 }

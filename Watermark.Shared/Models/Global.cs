@@ -400,6 +400,6 @@ namespace Watermark.Win.Models
             return fontDemo;
 		}
 
-
+        public static bool SecondExif { get; set; } = false;
     }
 }

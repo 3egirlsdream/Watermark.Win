@@ -21,6 +21,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="ExifLib.Standard" Version="1.7.0" />
+		<PackageReference Include="MetadataExtractor" Version="2.8.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Qiniu" Version="8.5.0" />
 		<PackageReference Include="SkiaSharp" Version="2.88.7" />
