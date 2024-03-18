@@ -335,7 +335,7 @@ namespace Watermark.Win.Models
                 {
                     var mss = new MemoryStream(bt);
                     tc = SKTypeface.FromStream(mss);
-                }
+				}
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
                     tc =  SKTypeface.FromFile(fontPath + mText.FontFamily);

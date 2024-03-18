@@ -493,15 +493,26 @@ namespace Watermark.Win.Models
             {
                 try
                 {
+                    if(!key.Contains(".")) continue;
                     var path = Path.Combine(p, key);
-                    if (File.Exists(path)) continue;
+                    if (File.Exists(path))
+                    {
+                        SKTypeface typeface = SKTypeface.FromFile(path);
+                        if (typeface != null) continue;
+                        else
+                        {
+                            File.Delete(path);
+                        }
+                    };
                     using var stream = await _client.GetStreamAsync($"https://cdn.thankful.top/{key}");
                     using var fs = File.Create(path);
-                    stream.CopyTo(fs);
+                    await stream.CopyToAsync(fs);
                     fs.Close();
                     fs.Dispose();
                 }
-                catch { }
+                catch(Exception ex) 
+                { 
+                }
             }
 		}
     }

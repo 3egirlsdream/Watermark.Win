@@ -20,7 +20,7 @@ namespace Watermark.Win.Models
 		};
         static WMAppPath AP = new()
         {
-            BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId,
+            BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar,
             MarketFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Market" + Path.DirectorySeparatorChar,
 			TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
@@ -423,6 +423,18 @@ namespace Watermark.Win.Models
             return false;
 
         }
+
+        public static async Task TryAgainGetFont(string key)
+        {
+			//先看本地有没有
+			var p = AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar + key;
+			if (File.Exists(p))
+			{
+				File.Delete(p);
+			}
+            var api = new APIHelper();
+            await api.DownloadFonts([key]);
+		}
 
         public static int MAX_THREAD { get; set; } = 5;
 

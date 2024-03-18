@@ -416,12 +416,20 @@
 						<MudText Typo="Typo.button">下载缓存</MudText>
 						<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" />
 					</MudStack>
+				</MudPaper>
+				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
 					<MudStack Row style="position:relative;align-items: center">
 						<MudText Typo="Typo.button">模板市场缓存</MudText>
 						<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>  DeleteCache(Global.AppPath.MarketFolder)" />
 					</MudStack>
 				</MudPaper>
 
+				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
+					<MudStack Row style="position:relative;align-items: center">
+						<MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
+						<MudSwitch @bind-Value="@Global.SecondExif" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
+					</MudStack>
+				</MudPaper>
 			</div>
 
 
@@ -622,7 +630,7 @@
 	List<TemplateList> Images = new List<TemplateList>();
 	bool checkUpdate = false;
 	int DownLoadProgress = 0;
-	string cardStyle => $"margin:10px 16px;background:{Colors.Grey.Lighten4}";
+	string cardStyle => $"margin:1px 16px;background:{Colors.Grey.Lighten4}";
 
 #if ANDROID
 
@@ -932,7 +940,7 @@
 		// MainLoading.Show = true;
 		//showMarket = false;
 		var helper = new APIHelper();
-		var allTemplates = await helper.GetWatermarks("", start, 40);
+		var allTemplates = await helper.GetWatermarks("", start, 99);
 		var recommend = allTemplates.Where(x => x.Recommend);
 		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
 		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
@@ -977,29 +985,30 @@
 				var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
 				if (System.IO.File.Exists(configPath))
 				{
+
+					var canvas = await Task.Run(() =>
+					{
+						var content = File.ReadAllText(configPath);
+						return Global.ReadConfig(content);
+					});
+					dirct.WMCanvas = canvas;
+					await InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
 						var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
 						foreach (var file in folder.GetFiles())
 						{
-							if (file.Name.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
-							{
-								using var reader = new System.IO.StreamReader(File.OpenRead(file.FullName));
-								var content = reader.ReadToEnd();
-								var canvas = Global.ReadConfig(content);
-								dirct.WMCanvas = Global.ReadConfig(content);
-							}
-							else if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
+							if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
 							{
 								var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
 								dirct.Bitmap = sKBitmap;
 							}
 							else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
 							{
-								var fs = file.OpenRead();
-								using MemoryStream mss = new();
-								fs.CopyTo(mss);
-								dirct.Fonts[file.Name] = mss.ToArray();
+								// var fs = file.OpenRead();
+								// using MemoryStream mss = new();
+								// fs.CopyTo(mss);
+								// dirct.Fonts[file.Name] = mss.ToArray();
 							}
 							else
 							{
@@ -1058,10 +1067,14 @@
 				var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
 				if (System.IO.File.Exists(configPath))
 				{
-					var t = Task.Run(() =>
+					var canvas = await Task.Run(() =>
 					{
 						var content = File.ReadAllText(configPath);
-						var canvas = Global.ReadConfig(content);
+						return Global.ReadConfig(content);
+					});
+					await InitFonts([canvas]);
+					var t = Task.Run(() =>
+					{
 						var src = watermarkHelper.Generation(canvas, null, true, false);
 						dirct.WMCanvas = canvas;
 						dirct.Src = src;
@@ -1096,14 +1109,15 @@
 			dirct.WatermarkId = watermarkId;
 			var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
 			if (!System.IO.File.Exists(configPath)) return dirct;
-			await Task.Run(() =>
+			var canvas = await Task.Run(() =>
 			{
 				var content = File.ReadAllText(configPath);
-				var canvas = Global.ReadConfig(content);
-				var src = watermarkHelper.Generation(canvas, null, true, false);
-				dirct.WMCanvas = canvas;
-				dirct.Src = src;
+				return Global.ReadConfig(content);
 			});
+			dirct.WMCanvas = canvas;
+			await InitFonts([canvas]);
+			var src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
+			dirct.Src = src;
 			return dirct;
 		}
 		catch (Exception ex)
@@ -1315,7 +1329,7 @@
 		{
 			FocusImageShow = false;
 			bool? rtl = await DialogService.ShowMessageBox("确认覆盖", (MarkupString)"此模板已存在，确定覆盖？", yesText: "确定", cancelText: "取消");
-			if (rtl == true) 
+			if (rtl == true)
 			{
 				Directory.Delete(p, true);
 				action.Invoke();
@@ -1343,6 +1357,13 @@
 			firstClick2Panel = false;
 			var _ = LoadTemplatesMarket();
 		}
+	}
+
+	async Task InitFonts(List<WMCanvas> mCanvas)
+	{
+		var fonts = Global.GetAllFontName(mCanvas);
+		var helper = new APIHelper();
+		await helper.DownloadFonts(fonts);
 	}
 
 

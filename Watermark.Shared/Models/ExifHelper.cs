@@ -59,8 +59,17 @@ namespace Watermark.Win.Models
 
         public static Dictionary<string, string> ReadImage(byte[] path)
         {
-            var stream = new MemoryStream(path);
-            return ReadImage(stream);
+            try
+            {
+                var stream = new MemoryStream(path);
+                return ReadImage(stream);
+            }
+            catch(Exception ex)
+			{
+				var stream = new MemoryStream(path);
+				if (Global.SecondExif) return ReadImageCopy(stream);
+                return DefaultMeta;
+			}
         }
 
         public static Dictionary<string, string> ReadImage(Stream path)
@@ -81,8 +90,7 @@ namespace Watermark.Win.Models
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                return DefaultMeta;
+                throw ex;
             }
         }
 
@@ -119,8 +127,30 @@ namespace Watermark.Win.Models
                 dic[key] = dt.ToString("yyyy-MM-dd HH:mm:ss");
             }
         }
+		static Dictionary<string, string> ReadImageCopy(Stream path)
+		{
+			try
+			{
+				path.Seek(0, SeekOrigin.Begin);
+				var exifReader = MetadataExtractor.ImageMetadataReader.ReadMetadata(path);
+				var dic = new Dictionary<string, string>();
+				foreach (var key in exifReader)
+				{
+					foreach (var tag in key.Tags)
+					{
+						HandleExif(dic, tag.Name, tag.Description ?? "");
+					}
+				}
+				return dic;
+			}
+			catch (Exception ex)
+			{
+				return DefaultMeta;
+			}
 
-        static Dictionary<string, string> ReadImageCopy(string path)
+		}
+
+		static Dictionary<string, string> ReadImageCopy(string path)
         {
             try
             {
