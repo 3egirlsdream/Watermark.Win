@@ -401,5 +401,37 @@ namespace Watermark.Win.Models
 		}
 
         public static bool SecondExif { get; set; } = false;
+
+        static Dictionary<string, byte[]> Fonts = [];
+        static HttpClient? _client;
+        public static bool TryGetFont(string key, out byte[] bt)
+        {
+            if(Fonts.TryGetValue(key, out bt))
+            {
+                return true;
+            }
+
+            //先看本地有没有
+            var p = AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar + key;
+            if (!File.Exists(p))
+            {
+                _client ??= new HttpClient() { BaseAddress = new Uri(APIHelper.HOST) };
+                using var stream = _client.GetStreamAsync($"https://cdn.thankful.top/{key}").Result;
+                using var fs = File.Create(p);
+                stream.CopyTo(fs);
+            }
+
+            try
+            {
+                bt = File.ReadAllBytes(p);
+                Fonts[key] = bt;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+
+        }
     }
 }

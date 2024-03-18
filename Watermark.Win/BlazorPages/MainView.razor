@@ -563,12 +563,7 @@
         MainLoading.Show = false;
         StateHasChanged();
 
-        var task = Task.Run(() =>
-        {
-            var path = Global.OutPutPath;
-            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
-            System.Diagnostics.Process.Start(psi);
-        });
+
         Snackbar.Clear();
         Snackbar.Add("打开输出文件夹？", Severity.Info, config =>
         {
@@ -576,12 +571,19 @@
             config.ActionColor = Color.Primary;
             config.Onclick = snackbar =>
             {
-                return task;
+                return OpenFolder();
             };
         });
-
-
     }
+
+    async Task OpenFolder()
+    {
+        var path = Global.OutPutPath;
+        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
+        System.Diagnostics.Process.Start(psi);
+        await Task.CompletedTask;
+    }
+
 
     async void OpenTemplateMarket()
     {

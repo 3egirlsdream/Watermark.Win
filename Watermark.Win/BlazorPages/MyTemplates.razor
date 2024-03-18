@@ -275,10 +275,10 @@
                             }
                             else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
                             {
-                                var fs = file.OpenRead();
-                                using MemoryStream mss = new();
-                                fs.CopyTo(mss);
-                                dirct.Fonts[file.Name] = mss.ToArray();
+                                // var fs = file.OpenRead();
+                                // using MemoryStream mss = new();
+                                // fs.CopyTo(mss);
+                                // dirct.Fonts[file.Name] = mss.ToArray();
                             }
                             else
                             {

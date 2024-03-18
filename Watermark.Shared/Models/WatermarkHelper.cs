@@ -312,13 +312,13 @@ namespace Watermark.Win.Models
 
                 var families = SKFontManager.Default.FontFamilies;
                 SKTypeface tc;
-                string fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
+                string fontPath = Global.AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar;
                 string templateFontPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {
-                    if (ziped.Fonts.TryGetValue(mText.FontFamily, out var stream))
+                    if (Global.TryGetFont(mText.FontFamily, out var bt))
                     {
-                        var mss = new MemoryStream(stream);
+                        var mss = new MemoryStream(bt);
                         tc = SKTypeface.FromStream(mss);
                     }
                     else
@@ -330,6 +330,11 @@ namespace Watermark.Win.Models
                 else if (families.Any(c => c == mText.FontFamily))
                 {
                     tc = SKTypeface.FromFamilyName(mText.FontFamily, fontStyle);
+                }
+                else if(Global.TryGetFont(mText.FontFamily, out var bt))
+                {
+                    var mss = new MemoryStream(bt);
+                    tc = SKTypeface.FromStream(mss);
                 }
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
