@@ -357,7 +357,7 @@ namespace Watermark.Win.Models
 
             var fontDemo = new Dictionary<string, string>();
 
-			var bitmap = new SKBitmap(200, 46);
+			var bitmap = new SKBitmap(200, 72);
 			var canvas = new SKCanvas(bitmap);
 			foreach (var p in fontPath)
             {
@@ -372,9 +372,10 @@ namespace Watermark.Win.Models
 
                 var h = paint_cp.FontMetrics.CapHeight + Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0);
                 canvas.Clear(SKColors.White);
-                canvas.DrawText("雨纷纷 旧故里草木深", new SKPoint(2, 2 +  h), paint_cp);
+                canvas.DrawText("雨纷纷 旧故里草木深", new SKPoint(2, 2 + h), paint_cp);
                 canvas.DrawText("abc ABC", new SKPoint(2, 24 + h), paint_cp);
-                var image = SKImage.FromBitmap(bitmap);
+				canvas.DrawText(Path.GetFileName(p.Value), new SKPoint(2, 50 + h), paint_cp);
+				var image = SKImage.FromBitmap(bitmap);
                 var result = "data:image/jpeg;base64," + Convert.ToBase64String(image.Encode(SKEncodedImageFormat.Jpeg, 100).ToArray());
                 fontDemo[p.Key] = result;
 			}

@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Watermark.Shared.Enums;
@@ -142,7 +143,7 @@ namespace Watermark.Win.Models
                     var h = targetBitmap.Height < targetBitmap.Width ? ros : (int)(targetBitmap.Height / resolition);
 
                     var scaleXs = 1080.0 / h;
-                    targetBitmap = targetBitmap.Resize(new SkiaSharp.SKImageInfo((int)(w * scaleXs), (int)(h * scaleXs)), SkiaSharp.SKFilterQuality.Medium);
+                    targetBitmap = targetBitmap.Resize(new SkiaSharp.SKImageInfo((int)(w), (int)(h)), SkiaSharp.SKFilterQuality.Medium);
                 }
             }
 
@@ -678,17 +679,22 @@ namespace Watermark.Win.Models
             using var path = new SKPath();
             // 定义圆角矩形的参数  
             float cornerRadius = radius; // 圆角半径  
-            var rect = new SKRect(left, top, w, h); // 圆角矩形的位置和大小  
+            var rect = new SKRect(left, top, w + left, h + top); // 圆角矩形的位置和大小  
 
             path.AddRoundRect(rect, cornerRadius, cornerRadius);
-            // 使用前景图片创建一个位图着色器  
-            using SKShader shader = SKShader.CreateBitmap(originalBitmap, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, SKMatrix.CreateIdentity());
+
+			SKMatrix matrix = SKMatrix.CreateScale(1, 1);
+			matrix.TransX = rect.Left;
+			matrix.TransY = rect.Top;
+			// 使用前景图片创建一个位图着色器  
+			using SKShader shader = SKShader.CreateBitmap(originalBitmap, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, matrix);
+            
             // 设置画笔，并使用着色器  
             using SKPaint paint = new();
             paint.Shader = shader;
             paint.IsAntialias = true;
-            // 绘制圆角矩形，填充前景图片  
-            canvas.DrawPath(path, paint);
+			// 绘制圆角矩形，填充前景图片  
+			canvas.DrawPath(path, paint);
 
         }
 
@@ -699,14 +705,14 @@ namespace Watermark.Win.Models
             using var paint2 = new SKPaint();
             paint2.IsAntialias = true;
             paint2.Color = SKColors.White;
-
-            // 绘制阴影
-            paint2.ImageFilter = SKImageFilter.CreateDropShadowOnly(
-                dx: 0,
-                dy: 0,
+			var sdColor = mImage.ShadowColor == "#FF808080" ? "#FF808080" : mImage.ShadowColor.Length > 7 ? mImage.ShadowColor[..7] : mImage.ShadowColor;
+			// 绘制阴影
+			paint2.ImageFilter = SKImageFilter.CreateDropShadowOnly(
+			dx: 0,
+			dy: 0,
                 sigmaX: (int)(mImage.ShadowRange * xs),
                 sigmaY: (int)(mImage.ShadowRange * xs),
-                color: SKColor.Parse(mImage.ShadowColor)
+                color: SKColor.Parse(sdColor)
             );
 
             canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);

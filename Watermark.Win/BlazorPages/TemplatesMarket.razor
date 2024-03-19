@@ -224,7 +224,7 @@
 		StateHasChanged();
 		loading = true;
 		var helper = new APIHelper();
-		var allTemplates = await helper.GetWatermarks("", start, 999, sortCode);
+		var allTemplates = (await helper.GetWatermarks("", start, 999, sortCode)).Where(x => x.Visible);
 		List<Task> tasks1 = new List<Task>();
 		var recommend = allTemplates.Where(x => x.Recommend);
 		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();

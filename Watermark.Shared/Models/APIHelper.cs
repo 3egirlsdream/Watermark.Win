@@ -524,7 +524,7 @@ namespace Watermark.Win.Models
             string pageName = Enum.GetName(typeof(ProgramPage), page);
             string platform = Enum.GetName(typeof(Platform), pf);
 
-            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/PageVisitRecord?pageName={pageName}&watermarkId={platform}", Encoding.UTF8);
+            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/PageVisitRecord?pageName={pageName}&platform={platform}", Encoding.UTF8);
 			return result;
 		}
 
