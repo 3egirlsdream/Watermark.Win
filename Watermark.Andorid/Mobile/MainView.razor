@@ -13,10 +13,6 @@
 		height: calc(100% - 50px);
 	}
 
-	.mud-tabs-toolbar {
-		background: transparent;
-	}
-
 	.mud-tab-class
 	::-webkit-scrollbar {
 		width: 0px;
@@ -131,173 +127,163 @@
 			<MudPaper class="water-tab" Elevation="0">
 				<div class="water-tab-text" @onclick="()=> activeTab = 1">
 					<MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
-						<MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  我的模板
+						<MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  &nbsp;<b>我的模板</b>
 					</MudText>
 				</div>
 				<div class="water-tab-text" @onclick="ToSecondPanel">
 					<MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
-						<MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />  模板市场
+						<MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />   &nbsp;<b>模板市场</b>
 					</MudText>
 				</div>
 				<div class="water-tab-text" @onclick="()=> activeTab = 3">
 					<MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
-						<MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />  关于
+						<MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />   &nbsp;<b>关于</b>
 					</MudText>
 				</div>
 			</MudPaper>
 
 			<div class="water-tab-item" style="@(activeTab == 1 ? "":"display:none")">
-				<MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5}")">
-					<MudGrid Class="pt-2">
-						<MudItem xs="12">
-							<MudText Typo="Typo.h5"><b>我的下载</b></MudText>
-						</MudItem>
-						<MudItem xs="12" Style="width: 100%; height: 262px; overflow-x: auto; white-space: nowrap;">
-							@foreach (var t in downloadedTemplates)
-							{
-								<div style="@($"display:{(t.State ? "" : "none")};width: 250px; height: 100%; display: inline-block;  margin-right: 10px; ")">
-									@* <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Class="fullscreen" />
-
-								<div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;top: 190px;">
-								<MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
-								<MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
-								</div> *@
-									<MudCard style="padding:16px;background:#E5E5E5;height:238px" class="flex-vertical-center" Elevation="0">
-										@if (!string.IsNullOrEmpty(t.Src))
-										{
-											<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d', t.WatermarkId, t.Src, true)" />
-										}
-									</MudCard>
-								</div>
-							}
-						</MudItem>
-						<MudItem xs="12">
-							<MudText Typo="Typo.h5"><b>我的收藏</b></MudText>
-						</MudItem>
-						<MudItem xs="12" Style="width: 100%; height: 262px; overflow-x: auto; white-space: nowrap;">
-							@foreach (var t in ILikeTemplates)
-							{
-								<div style="@($"display:{(t.State ? "" : "none")};width: 250px; height: 100%; display: inline-block;  margin-right: 10px; ")">
-									<MudCard style="padding:16px;background:#E5E5E5;height:238px" class="flex-vertical-center" Elevation="0">
-										@if (!string.IsNullOrEmpty(t.Src))
-										{
-											<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r', t.WatermarkId, t.Src, true)" />
-										}
-									</MudCard>
-								</div>
-							}
-						</MudItem>
+				<MudStack Row="true" Justify="Justify.Center" class="water-tab" Style="top:0" Elevation="0">
+					<div style="@($"{( tb1_t1 == 1 ? "border-bottom:5px solid #676767;font-weight:700;" : "")}height:40px;display:flex;align-items:center;margin-right:20px")" @onclick="()=> tb1_t1 = 1">
+						<MudText Typo="Typo.subtitle1" style="display: flex;align-items: center;" Color="(tb1_t1 == 1 ? Color.Primary: Color.Default)">
+							我的下载
+						</MudText>
+					</div>
+					<div Style="@($"{( tb1_t1 == 2 ? "border-bottom:5px solid #676767;font-weight:700;" : "")}height:40px;display:flex;align-items:center;margin-left:20px")" @onclick="()=> tb1_t1 = 2">
+						<MudText Typo="Typo.subtitle1" style="display: flex;align-items: center;" Color="(tb1_t1 == 2 ? Color.Primary: Color.Default)">
+							我的收藏
+						</MudText>
+					</div>
+				</MudStack>
+				<MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
+					<MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb1_t1 == 1 ? "" : "display:none")">
+						@foreach (var t in downloadedTemplates)
+						{
+							<MudItem xs="6" Style="padding:4px;">
+								<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+									@if (!string.IsNullOrEmpty(t.Src))
+									{
+										<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+									}
+								</MudCard>
+							</MudItem>
+						}
 					</MudGrid>
+					<MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb1_t1 == 2 ? "" : "display:none")">
+						@foreach (var t in ILikeTemplates)
+						{
+							<MudItem xs="6" Style="padding:4px;">
+								<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+									@if (!string.IsNullOrEmpty(t.Src))
+									{
+										<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />
+									}
+								</MudCard>
+							</MudItem>
+						}
+					</MudGrid>
+
 				</MudPaper>
 			</div>
 
 
 			<div class="water-tab-item" style="@(activeTab == 2 ? "":"display:none")">
-				<MudPaper Elevation="0" Class="mud-tab-class">
-					<MudGrid Class="pt-2">
-						<MudItem xs="12">
-							<MudText Typo="Typo.h5"><b>推荐</b></MudText>
-						</MudItem>
-						<MudItem xs="12" Style="width: 100%; height: 374px; overflow-x: auto; white-space: nowrap;">
-							@foreach (var t in ZipedTemplates.Where(x => x.Recommend))
-							{
-								<div style="@($"display:{(t.State ? "" : "none")};width: 300px; height: 100%; display: inline-block;  margin-right: 10px; ")">
-									@* <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Class="fullscreen" />
+				<MudStack Row="true" Justify="Justify.Center" class="water-tab" Style="top:0" Elevation="0">
+					<div style="@($"{( tb2_t2 == 1 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin:0 10px ")" @onclick="()=> tb2_t2 = 1">
+						<MudText Typo="Typo.subtitle1" style="@($"{(tb2_t2 == 1 ? "font-weight: 700;" : "")}margin: auto;")" Color="(tb2_t2 == 1 ? Color.Primary: Color.Default)">
+							推荐
+						</MudText>
+					</div>
 
-								<div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;top: 190px;">
-								<MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
-								<MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
-								</div> *@
-									<MudCard style="padding:16px;background:#E5E5E5;height:268px" class="flex-vertical-center" Elevation="0">
-										@if (!string.IsNullOrEmpty(t.Src))
-										{
-											<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t.WatermarkId, t.Src, true)" />
-										}
-										else
-										{
-											<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-										}
-									</MudCard>
-									<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-										<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-											@t.WMCanvas?.Name
-										</MudText>
-										<div style="display: flex; align-items: center;">
-											<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-											<span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-										</div>
-									</div>
-									<div class="dfm-card-user-name">
-										<MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
-										<MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-											@t.UserDisplayName
-										</MudText>
+					@foreach (var sub in subscribed)
+					{
+						<div Style="@($"{( tb2_t2 == subscribed.IndexOf(sub) + 2 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin:0 10px ")" @onclick="()=> tb2_t2 = subscribed.IndexOf(sub) + 2">
+							<MudText Typo="Typo.subtitle1" style="@($"{(tb2_t2 == subscribed.IndexOf(sub) + 2 ? "font-weight: 700;" : "")}margin: auto;")" Color="(tb2_t2 == subscribed.IndexOf(sub) + 2 ? Color.Primary: Color.Default)">
+								@sub.Item1
+							</MudText>
+						</div>
+					}
+				</MudStack>
+				<MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
+					<MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb2_t2 == 1 ? "" : "display:none")">
+						@foreach (var t in ZipedTemplates.Where(x => x.Recommend))
+						{
+							<MudItem xs="6" Style="padding:4px;">
+								<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+									@if (!string.IsNullOrEmpty(t.Src))
+									{
+										<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
+									}
+									else
+									{
+										<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+									}
+								</MudCard>
+								<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+									<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+										@t.WMCanvas?.Name
+									</MudText>
+									<div style="display: flex; align-items: center;">
+										<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
+										<span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
 									</div>
 								</div>
-							}
-						</MudItem>
-
-
-						@if (subscribed != null)
+								<div class="dfm-card-user-name">
+									<MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
+									<MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+										@t.UserDisplayName
+									</MudText>
+								</div>
+							</MudItem>
+						}
+					</MudGrid>
+					@if (subscribed != null)
+					{
+						@foreach (var sub in subscribed)
 						{
-							@foreach (var sub in subscribed)
-							{
-								@if (sub.Item2.Count > 0)
+							<MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@($"{(tb2_t2 == subscribed.IndexOf(sub) + 2 ? "" : "display:none;")}")">
+								@foreach (var t in sub.Item2)
 								{
-									<MudItem xs="12">
-										<MudText Typo="Typo.h5"><b>@sub.Item1</b></MudText>
-									</MudItem>
-								}
-								<MudItem xs="12" Style="width: 100%; height: 374px; overflow-x: auto; white-space: nowrap;">
-									@foreach (var t in sub.Item2)
-									{
-										<div style="@($"display:{(t.State ? "" : "none")};width: 300px; height: 100%; display: inline-block;  margin-right: 10px; ")">
-											@* <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
-								<div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;top: 190px;">
-								<MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
-								<MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
-								</div> *@
-											<MudCard style="padding:16px;background:#E5E5E5;height:268px" class="flex-vertical-center" Elevation="0">
-												@if (!string.IsNullOrEmpty(t.Src))
-												{
-													<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t.WatermarkId, t.Src, true)" />
-												}
-												else
-												{
-													<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-												}
-											</MudCard>
-											<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-												<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-													@t.WMCanvas?.Name
-												</MudText>
-												<div style="display: flex; align-items: center;">
-													<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-													<span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-												</div>
-											</div>
-											<div class="dfm-card-user-name">
-												@if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
-												{
-													<MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
-												}
-												else
-												{
-													<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-												}
-												<MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-													@t.UserDisplayName
-												</MudText>
-												<MudIconButton Icon="@Icons.Material.Filled.NotificationAdd" Size="Size.Small" Color="@(subscribed.Any(x=>x.Item1 == t.UserDisplayName) ? Color.Default : Color.Warning)" OnClick="()=>Subscribe(t.UserId)" Class="fullscreen" Style="position: absolute; right: 5px;" />
+									<MudItem xs="6" Style="padding:4px;">
+										<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+											@if (!string.IsNullOrEmpty(t.Src))
+											{
+												<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
+											}
+											else
+											{
+												<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+											}
+										</MudCard>
+										<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+											<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+												@t.WMCanvas?.Name
+											</MudText>
+											<div style="display: flex; align-items: center;">
+												<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
+												<span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
 											</div>
 										</div>
-									}
-								</MudItem>
+										<div class="dfm-card-user-name">
+											@if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+											{
+												<MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
+											}
+											else
+											{
+												<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+											}
+											<MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+												@t.UserDisplayName
+											</MudText>
+										</div>
+									</MudItem>
+								}
+							</MudGrid>
 
-							}
 						}
 
-					</MudGrid>
+					}
 
 
 				</MudPaper>
@@ -463,15 +449,34 @@
 	</MudOverlay>
 
 
-	<MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999">
-		<MudPaper Style="position:relative;background:#E5E5E5" Elevation="25">
-			<MudFab StartIcon="@Icons.Material.Filled.Close" Color="Color.Primary" OnClick="()=>FocusImageShow = false" Style="position:absolute;margin-left: calc(50% - 20px);bottom: -50px;" Size="Size.Small" />
-			<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImageSrc" Style="width: 90vw;padding:10px 10px 50px 10px" Class="rounded-lg" />
+	<MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999" OnClick="()=>FocusImageShow = false">
+		<MudPaper Style="position:relative;background:#E5E5E5;padding:16px;box-sizing: content-box;width: 90vw;" Elevation="25">
+			<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImageSrc" Style="width: 90vw;" />
 			@if (FocusImageType == 'a')
 			{
-				<MudIconButton Icon="@Icons.Material.Filled.Download" Variant="Variant.Text" Color="Color.Primary" DisableElevation="true" Style="position:absolute;right:10px;bottom:10px" OnClick="()=>DownloadTemplate(FocusImageId)" />
-				<MudIconButton Icon="@Icons.Material.Filled.Star" Variant="Variant.Text" Color="Color.Default" DisableElevation="true" Style="position:absolute;left:10px;bottom:10px" OnClick="()=>Delete()" />
-			}
+				<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+					<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+						@FocusImage?.WMCanvas?.Name
+					</MudText>
+					<div style="display: flex; align-items: center;">
+						<span style="font-size: 10px;line-height: 8px;">已下载 @FocusImage?.DownloadTimes</span>
+					</div>
+				</div>
+				<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+					<div style="display: flex; align-items: center;">
+						<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+						<MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+							@FocusImage?.UserDisplayName
+						</MudText>
+					</div>
+					<div style="display: flex; align-items: center;">
+						<MudIconButton Icon="@Icons.Material.Filled.AddAlert" Variant="Variant.Text" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Default : Color.Warning)" Size="Size.Medium" DisableElevation="true" OnClick="()=>Subscribe(FocusImage?.UserId)" />
+						<MudIconButton Icon="@Icons.Material.Filled.StarBorder" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="()=>Delete()" />
+						<MudIconButton Icon="@Icons.Material.Filled.Download" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
+					</div>
+				</div>
+
+				}
 			else if (FocusImageType == 'r')
 			{
 				<MudIconButton Icon="@Icons.Material.Filled.Star" Variant="Variant.Text" Color="Color.Warning" DisableElevation="true" Style="position:absolute;left:10px;bottom:10px" OnClick="()=>Delete()" />
@@ -611,6 +616,8 @@
 	bool openSave = false;
 	private Design design;
 	int activeTab = 1;
+	int tb1_t1 = 1;
+	int tb2_t2 = 1;
 	bool ForceUpdate = false;
 	bool showMarket = false;
 	bool FocusImageShow = false;
@@ -629,6 +636,7 @@
 	WMZipedTemplate CurrentTemplate;
 	TemplateList CurrentImage;
 	List<TemplateList> Images = new List<TemplateList>();
+	WMZipedTemplate FocusImage;
 	bool checkUpdate = false;
 	int DownLoadProgress = 0;
 	string cardStyle => $"margin:1px 16px;background:{Colors.Grey.Lighten4}";
@@ -640,7 +648,7 @@
 #endif
 	protected override async Task OnInitializedAsync()
 	{
-        await Global.InitConfig();
+		await Global.InitConfig();
 		var date = Global.ReadDate();
 		if ((DateTime.Now - date).TotalDays > 5)
 		{
@@ -1237,11 +1245,12 @@
 		await LoadTemplatesMarket();
 	}
 
-	void OpenFocus(char t, string id, string src, bool b)
+	void OpenFocus(char t, WMZipedTemplate zip, bool b)
 	{
+		FocusImage = zip;
 		FocusImageType = t;
-		FocusImageId = id;
-		FocusImageSrc = src;
+		FocusImageId = zip.WatermarkId;
+		FocusImageSrc = zip.Src;
 		FocusImageShow = b;
 		StateHasChanged();
 	}
