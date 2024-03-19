@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.Windows
 @using System.IO
+@using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
@@ -136,6 +137,9 @@
             await InitTemplates();
             await LoadILikeTemplate();
             await LoadCloudTemplate();
+
+            var api = new APIHelper();
+            await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Win);
         }
         catch (Exception ex)
         {

@@ -1,5 +1,6 @@
 ﻿@using System.Diagnostics
 @using System.IO
+@using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
 <style>
@@ -212,6 +213,9 @@
 		}
 
 		await LoadTemplates();
+
+		var api = new APIHelper();
+		await api.PageVisitRecord(ProgramPage.Market, Platform.Win);
 	}
 
 	async Task LoadTemplates()

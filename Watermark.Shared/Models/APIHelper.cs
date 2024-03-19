@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
@@ -517,5 +518,15 @@ namespace Watermark.Win.Models
                 }
             }
 		}
-    }
+
+		public async Task<API<bool>> PageVisitRecord(ProgramPage page, Platform pf)
+		{
+            string pageName = Enum.GetName(typeof(ProgramPage), page);
+            string platform = Enum.GetName(typeof(Platform), pf);
+
+            var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/PageVisitRecord?pageName={pageName}&watermarkId={platform}", Encoding.UTF8);
+			return result;
+		}
+
+	}
 }

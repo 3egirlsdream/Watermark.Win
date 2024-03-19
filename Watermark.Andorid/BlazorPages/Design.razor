@@ -458,7 +458,9 @@
             });
         });
         InitLocalFonts();
-        //OnButtonClicked();
+
+        var api = new APIHelper();
+        var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
     }
 
     private async void OnButtonClicked()

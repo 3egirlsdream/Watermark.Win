@@ -467,6 +467,8 @@
         OnButtonClicked();
 
         HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, OnIncrementOrDecrement);
+        var api = new APIHelper();
+        var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Win);
     }
 
     private async void OnButtonClicked()

@@ -2,6 +2,7 @@
 @using System.IO
 @using Watermark.Andorid.BlazorPages
 @using Watermark.Andorid.Models
+@using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
 @inject ISnackbar Snackbar
@@ -682,6 +683,8 @@
 		await LoadTemplates();
 		await helper.DownloadLogoes();
 		checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
+
+		await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
 	}
 
 	async void SelectImage(IReadOnlyList<IBrowserFile> files)
@@ -1357,6 +1360,8 @@
 		{
 			firstClick2Panel = false;
 			var _ = LoadTemplatesMarket();
+			var api = new APIHelper();
+			var __ = api.PageVisitRecord(ProgramPage.Market, Platform.Andorid);
 		}
 	}
 
