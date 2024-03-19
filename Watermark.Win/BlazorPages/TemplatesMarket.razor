@@ -321,27 +321,42 @@
 
 	async void Download(string watermarkId, string userId)
 	{
-		var helper = new APIHelper();
-		var result = await helper.Download(watermarkId, userId);
-		string message = "";
-		Severity Severity = Severity.Success;
-		if (result)
+		var action = new Action(async () =>
 		{
-			Severity = Severity.Success;
-			message = "下载成功";
-			if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+			string message = "";
+			Severity Severity = Severity.Success;
+			var helper = new APIHelper();
+			var result = await helper.Download(watermarkId, userId);
+			if (result)
 			{
-				helper.AddILike(Global.CurrentUser.ID, watermarkId);
+				Severity = Severity.Success;
+				message = "下载成功";
+				if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+				{
+					var _=helper.AddILike(Global.CurrentUser.ID, watermarkId);
+				}
 			}
+			else
+			{
+				Severity = Severity.Error;
+				message = "下载失败";
+			}
+			ClientInstance.ShowMsg(Snackbar, message, Severity);
+		});
 
+		if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
+		{
+			var rst = DialogService.Show<LoginDialog>("");
+			var dialogResult = await rst.Result;
+			if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+			{
+				action.Invoke();
+			}
 		}
 		else
 		{
-			Severity = Severity.Error;
-			message = "下载失败";
+			action.Invoke();
 		}
-
-		ClientInstance.ShowMsg(Snackbar, message, Severity);
 	}
 
 	void OnKeyDown(KeyboardEventArgs e)

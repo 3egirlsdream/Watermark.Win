@@ -30,9 +30,9 @@
                                 </MudText>
                             </MudCardContent>
                             <MudCardActions>
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>Upload(grid.ID)">上传</MudButton>
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-2" OnClick="(()=>EditTemplate(grid))">编辑</MudButton>
-                                <MudButton Variant="Variant.Filled" Color="Color.Error" Style="position:absolute;right:0" OnClick="()=>DeleteTemplate(grid.ID)">删除</MudButton>
+                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Default" OnClick="()=>Upload(grid.ID)"/>
+                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Class="ml-2" OnClick="(()=>EditTemplate(grid))"/>
+                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="position:absolute;right:0" OnClick="()=>DeleteTemplate(grid.ID)"/>
                             </MudCardActions>
                         </MudCard>
                     </MudPaper>
@@ -60,8 +60,8 @@
                             </MudText>
                         </MudCardContent>
                         <MudCardActions Style="position:relative;">
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" Style="cursor:pointer;" Size="MudBlazor.Size.Small" OnClick="()=>DeleteILike(t.WatermarkId)" />
-                            <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:10px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
+                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="MudBlazor.Size.Small" OnClick="()=>DeleteILike(t.WatermarkId)" />
+                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Style="position:absolute;right:10px" OnClick="()=>Download(t.WatermarkId)"/>
                         </MudCardActions>
                     </MudCard>
                 </MudItem>
@@ -88,9 +88,9 @@
                             </MudText>
                         </MudCardContent>
                         <MudCardActions Style="position:relative;">
-                            <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;" Size="MudBlazor.Size.Small" />@t.DownloadTimes
-                            <MudButton Size="MudBlazor.Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
-                            <MudButton Variant="Variant.Text" Color="Color.Secondary" Style="position:absolute;right:10px" OnClick="()=>DownloadEdit(t.WatermarkId)" Size="MudBlazor.Size.Small">编辑</MudButton>
+                            <MudButton EndIcon="@Icons.Material.Filled.LinkOff" Color="@(t.Visible ? Color.Default : Color.Warning)" Style="cursor:pointer;" Size="MudBlazor.Size.Small" OnClick="()=>TakOffOnShop(t)">@(t.Visible ? "下架" : "上架")</MudButton>
+                            <MudIconButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="position:absolute;right:50px" OnClick="()=>Download(t.WatermarkId)" />
+                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Style="position:absolute;right:10px" OnClick="()=>DownloadEdit(t.WatermarkId)" Size="MudBlazor.Size.Small"/>
                         </MudCardActions>
                     </MudCard>
 
@@ -398,7 +398,7 @@
 
                 if (result.success)
                 {
-                    message = "上传成功";
+                    message = $"上传成功{(!result.data ? "(缓存刷新失败)" : "")}";
                 }
                 else
                 {
@@ -534,6 +534,18 @@
         var fonts = Global.GetAllFontName(mCanvas);
         var helper = new APIHelper();
         await helper.DownloadFonts(fonts);
+    }
+
+    async void TakOffOnShop(WMZipedTemplate t)
+    {
+        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var api = new APIHelper();
+        var result = await api.TakeOffOnWatermark(Global.CurrentUser.ID, t.WatermarkId);
+        if(result.success && result.data)
+        {
+            t.Visible = !t.Visible;
+            StateHasChanged();
+        }
     }
 
 }

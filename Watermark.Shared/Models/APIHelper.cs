@@ -113,6 +113,7 @@ namespace Watermark.Win.Models
                 config.UseHttps = true;
                 config.UseCdnDomains = true;
                 config.ChunkSize = ChunkUnit.U512K;
+
                 // 表单上传
                 FormUploader target = new FormUploader(config);
                 HttpResult result = target.UploadFile(targetPath, $"{watermarkId}.zip", token, null);
@@ -181,6 +182,7 @@ namespace Watermark.Win.Models
                         t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
                         t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "0") > 0 ? true : false;
                         t.UserDisplayName = item?["DISPLAY_NAME"]?.ToString();
+                        t.Visible = item?["STATE"]?.ToString() == "A";
                         if (DateTime.TryParse(item?["DATETIME_CREATED"]?.ToString(), out var dt))
                         {
                             t.DateTimeCreated = dt;
@@ -497,7 +499,7 @@ namespace Watermark.Win.Models
                     var path = Path.Combine(p, key);
                     if (File.Exists(path))
                     {
-                        SKTypeface typeface = SKTypeface.FromFile(path);
+                        using var typeface = SKTypeface.FromFile(path);
                         if (typeface != null) continue;
                         else
                         {

@@ -4,6 +4,7 @@ using Watermark.Shared.Enums;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Watermark.Win.Models
 {
@@ -333,7 +334,6 @@ namespace Watermark.Win.Models
 
         public static string APK { get; set; }
 
-        public static bool DarkMode { get; set; } = false;
 
         public static string Resolution { get; set; } = "default";
 
@@ -343,35 +343,17 @@ namespace Watermark.Win.Models
 
         public static Dictionary<string, string> ReadFont()
         {
-            var path = AppPath.BasePath;
+            var path = AppPath.BasePath + "fonts";
 			var fontPath = new Dictionary<string, string>();
 			if (Directory.Exists(path))
             {
                 var root = new DirectoryInfo(path);
-                foreach(var folder in root.GetDirectories())
+                foreach(var f in root.GetFiles())
 				{
-					func(fontPath, folder);
+                    fontPath[f.Name] = f.FullName;
 
-					foreach (var subFolder in folder.GetDirectories())
-					{
-						func(fontPath, subFolder);
-					}
-
-				}
-			}
-
-			static void func(Dictionary<string, string> fontPath, DirectoryInfo folder)
-			{
-				foreach (var file in folder.GetFiles().Where(file => file.Exists && (file.Extension == ".otf" || file.Extension == ".ttf")))
-				{
-					fontPath[file.Name] = file.FullName;
-				}
-                foreach(var  f in folder.GetDirectories())
-                {
-                    func(fontPath, f);
                 }
 			}
-
 
             var fontDemo = new Dictionary<string, string>();
 
@@ -380,7 +362,6 @@ namespace Watermark.Win.Models
 			foreach (var p in fontPath)
             {
 				var skytype = SKTypeface.FromFile(p.Value);
-
 				var paint_cp = new SKPaint()
 				{
 					Color = SKColors.Black,
@@ -401,10 +382,8 @@ namespace Watermark.Win.Models
             return fontDemo;
 		}
 
-        public static bool SecondExif { get; set; } = false;
 
         static ConcurrentDictionary<string, byte[]> Fonts = [];
-        static HttpClient? _client;
         public static bool TryGetFont(string key, out byte[] bt)
         {
             if (Fonts.TryGetValue(key, out bt))
@@ -424,19 +403,6 @@ namespace Watermark.Win.Models
 
         }
 
-        public static async Task TryAgainGetFont(string key)
-        {
-			//先看本地有没有
-			var p = AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar + key;
-			if (File.Exists(p))
-			{
-				File.Delete(p);
-			}
-            var api = new APIHelper();
-            await api.DownloadFonts([key]);
-		}
-
-        public static int MAX_THREAD { get; set; } = 5;
 
 
         public static List<string> GetAllFontName(List<WMCanvas> mCanvas)
@@ -455,6 +421,89 @@ namespace Watermark.Win.Models
                 }
             }
             return vs.Distinct().ToList();
+        }
+
+
+        static bool secondExif = true;
+        public static bool SECOND_EXIF 
+        {
+            get => secondExif;
+            set
+            {
+                secondExif = value;
+                SaveConfig();
+            }
+        }
+        static bool darkMode = false;
+        public static bool DARK_MODE 
+        {
+            get=> darkMode;
+            set
+            {
+                darkMode = value;
+                SaveConfig();
+            }
+        }
+        static int maxThread = 5;
+        public static int MAX_THREAD 
+        {
+            get => maxThread;
+            set
+            {
+                maxThread = value;
+                SaveConfig();
+            }
+        }
+
+        public static void SaveConfig()
+        {
+            Debug.WriteLine(1);
+            var dic = new ConcurrentDictionary<string, string>();
+            dic[nameof(MAX_THREAD)] = MAX_THREAD.ToString();
+            dic[nameof(SECOND_EXIF)] = SECOND_EXIF.ToString();
+            dic[nameof(DARK_MODE)] = DARK_MODE.ToString();
+
+            var path = AppDomain.CurrentDomain.BaseDirectory + $".sys";
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            path += $"{Path.DirectorySeparatorChar}config.json";
+            if (File.Exists(path)) File.Delete(path);
+            File.WriteAllText(path, JsonConvert.SerializeObject(dic));
+        }
+
+        public static ConcurrentDictionary<string, string> GetConfig()
+        {
+            var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}config.json";
+            if (!File.Exists(path))
+            {
+                SaveConfig();
+                return [];
+            }
+            var content = File.ReadAllText(path);
+            if (!string.IsNullOrEmpty(content))
+            {
+                return JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(content) ?? [];
+            }
+            return [] ;
+        }
+
+        public static async Task InitConfig()
+        {
+            await Task.Run(() =>
+            {
+                var dic = GetConfig();
+                if (dic.TryGetValue(nameof(MAX_THREAD), out string v1) && int.TryParse(v1, out int vv1))
+                {
+                    MAX_THREAD = vv1;
+                }
+                if (dic.TryGetValue(nameof(SECOND_EXIF), out string v2) && bool.TryParse(v2, out bool vv2))
+                {
+                    SECOND_EXIF = vv2;
+                }
+                if (dic.TryGetValue(nameof(DARK_MODE), out string v3) && bool.TryParse(v3, out bool vv3))
+                {
+                    SECOND_EXIF = vv3;
+                }
+            });
         }
     }
 }

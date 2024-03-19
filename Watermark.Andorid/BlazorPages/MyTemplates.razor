@@ -272,7 +272,7 @@
 
                 if (result.success)
                 {
-                    message = "上传成功";
+                    message = $"上传成功{(!result.data ? "(缓存刷新失败)":"")}";
                 }
                 else
                 {

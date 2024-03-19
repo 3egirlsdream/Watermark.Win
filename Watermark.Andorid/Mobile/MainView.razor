@@ -90,7 +90,7 @@
 	}
 </style>
 
-<MudThemeProvider IsDarkMode="@Global.DarkMode" />
+<MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <div Style="height:100vh;width:100%;">
@@ -383,7 +383,7 @@
 				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
 					<MudStack Row style="position:relative;align-items: center">
 						<MudText Typo="Typo.button"> 夜间模式 </MudText>
-						<MudSwitch @bind-Value="@Global.DarkMode" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
+						<MudSwitch @bind-Value="@Global.DARK_MODE" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
 					</MudStack>
 				</MudPaper>
 
@@ -427,7 +427,7 @@
 				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
 					<MudStack Row style="position:relative;align-items: center">
 						<MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
-						<MudSwitch @bind-Value="@Global.SecondExif" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
+						<MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
 					</MudStack>
 				</MudPaper>
 			</div>
@@ -639,6 +639,7 @@
 #endif
 	protected override async Task OnInitializedAsync()
 	{
+        await Global.InitConfig();
 		var date = Global.ReadDate();
 		if ((DateTime.Now - date).TotalDays > 5)
 		{

@@ -1,0 +1,72 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+
+<style>
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        padding: 10px;
+    }
+
+    .rectangle {
+        position: relative;
+        width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
+        /* padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */ */
+        margin-right: 20px; /* 设置右侧间距 */
+        margin-bottom: 20px; /* 设置下方间距 */
+    }
+
+        .rectangle .mud-input-control {
+            margin-top: 0px;
+        }
+
+        .rectangle .mud-input-control-input-container {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+        }
+
+        .rectangle img {
+            /* position: absolute; */
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 图片填充整个矩形 */
+        }
+</style>
+
+<MudDialog Options="DialogOptions" Style="width:80%;height:80%">
+    <DialogContent>
+        <div class="container">
+            @foreach (var per in Fonts)
+            {
+                <div class="rectangle">
+                    <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
+                </div>
+            }
+        </div>
+    </DialogContent>
+</MudDialog>
+
+
+@code {
+
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+    Dictionary<string, string> Fonts = new Dictionary<string, string>();
+    void Click(KeyValuePair<string, string> pair)
+    {
+        MudDialog.Close(pair);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Fonts = await Task.Run(()=> Global.ReadFont());
+    }
+
+}

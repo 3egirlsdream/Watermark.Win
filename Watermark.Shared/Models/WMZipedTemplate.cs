@@ -25,6 +25,13 @@ namespace Watermark.Win.Models
         /// </summary>
         public bool Recommend { get; set; }
         public DateTime DateTimeCreated { get; set; }
+        /// <summary>
+        /// 市场里搜索
+        /// </summary>
         public bool State {  get; set; } = true;
+        /// <summary>
+        /// 上架 下架
+        /// </summary>
+        public bool Visible { get; set; }
     }
 }

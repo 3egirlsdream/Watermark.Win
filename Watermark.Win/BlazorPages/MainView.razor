@@ -108,14 +108,17 @@
                                 下载模板
                             </MudButton>
                         }
-                        @foreach (var pair in wMTemplates)
+                        else
                         {
-                            <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
-                                <Content>
-                                    <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-                                    <MudText Class="mx-5">@pair.Canvas.Name</MudText>
-                                </Content>
-                            </MudTreeViewItem>
+                            @foreach (var pair in wMTemplates)
+                            {
+                                <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
+                                    <Content>
+                                        <MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
+                                        <MudText Class="mx-5">@pair.Canvas.Name</MudText>
+                                    </Content>
+                                </MudTreeViewItem>
+                            }
                         }
                     </MudTreeView>
                 </MudList>
@@ -310,6 +313,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Global.InitConfig();
         await InitTemplates();
         await InitLogoStore();
         var result = await Global.ReadLocalAsync();
@@ -680,9 +684,14 @@
         StateHasChanged();
     }
 
-    void ImportLogoes()
+    async void ImportLogoes()
     {
         var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await InitLogoStore();
+        }
     }
 
 

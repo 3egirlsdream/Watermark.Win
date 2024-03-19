@@ -42,7 +42,6 @@
     <PackageReference Include="NHotkey.Wpf" Version="3.0.0" />
     <PackageReference Include="SkiaSharp.Views.WPF" Version="2.88.6" />
     <PackageReference Include="System.Management" Version="8.0.0" />
-		<PackageReference Include="MetadataExtractor" Version="2.8.1" />
   </ItemGroup>
 
   <ItemGroup>

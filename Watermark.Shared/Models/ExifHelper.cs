@@ -47,12 +47,23 @@ namespace Watermark.Win.Models
                         HandleExif(dic, key, result);
                     }
                 }
+
+
+                var b = dic.TryGetValue("LensModel", out string v);
+                if (!b || string.IsNullOrEmpty(v))
+                {
+                    var d2 = ReadImageCopy(path);
+                    if (d2.TryGetValue("LensModel", out string v2))
+                    {
+                        dic["LensModel"] = v2;
+                    }
+                }
                 return dic;
             }
             catch(Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-                if (Global.SecondExif) return ReadImageCopy(path);
+                if (Global.SECOND_EXIF) return ReadImageCopy(path);
                 else return DefaultMeta;
             }
         }
@@ -62,12 +73,25 @@ namespace Watermark.Win.Models
             try
             {
                 var stream = new MemoryStream(path);
-                return ReadImage(stream);
+                var dic = ReadImage(stream);
+
+
+                var b = dic.TryGetValue("LensModel", out string v);
+                if (!b || string.IsNullOrEmpty(v))
+                {
+                    var s2 = new MemoryStream(path);
+                    var d2 = ReadImageCopy(s2);
+                    if(d2.TryGetValue("LensModel", out string v2))
+                    {
+                        dic["LensModel"] = v2;
+                    }
+                }
+                return dic; 
             }
             catch(Exception ex)
 			{
 				var stream = new MemoryStream(path);
-				if (Global.SecondExif) return ReadImageCopy(stream);
+				if (Global.SECOND_EXIF) return ReadImageCopy(stream);
                 return DefaultMeta;
 			}
         }
@@ -86,6 +110,7 @@ namespace Watermark.Win.Models
                         HandleExif(dic, key, result);
                     }
                 }
+
                 return dic;
             }
             catch (Exception ex)
@@ -138,7 +163,7 @@ namespace Watermark.Win.Models
 				{
 					foreach (var tag in key.Tags)
 					{
-						HandleExif(dic, tag.Name, tag.Description ?? "");
+						HandleExif(dic, tag.Name.Replace(" ", "").Replace("/", "").Replace("-", ""), tag.Description ?? "");
 					}
 				}
 				return dic;
@@ -160,7 +185,7 @@ namespace Watermark.Win.Models
                 {
                     foreach (var tag in key.Tags)
                     {
-                        HandleExif(dic, tag.Name, tag.Description ?? "");
+                        HandleExif(dic, tag.Name.Replace(" ", "").Replace("/", "").Replace("-", ""), tag.Description ?? "");
                     }
                 }
                 return dic;

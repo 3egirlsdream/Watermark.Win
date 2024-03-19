@@ -88,8 +88,11 @@ namespace Watermark.Win.Models
             {
                 DrawShadow(targetCanvas, p1, originalBitmap.Width, originalBitmap.Height, xs, mainCanvas.ImageProperties);
             }
-
-            targetCanvas.DrawBitmap(originalBitmap, p1);
+            if (mainCanvas.ImageProperties!.EnableRadius)
+            {
+                DrawRoundCorner(originalBitmap, targetCanvas, (int)p1.X, (int)p1.Y, originalBitmap.Width, originalBitmap.Height, mainCanvas.ImageProperties.CornerRadius);
+            }
+            else targetCanvas.DrawBitmap(originalBitmap, p1);
 
             double fontxs = 0;
             //绘制容器
@@ -669,6 +672,26 @@ namespace Watermark.Win.Models
             return rotatedBitmap;
         }
 
+        void DrawRoundCorner(SKBitmap originalBitmap , SKCanvas canvas, int left, int top, int w, int h, int radius)
+        {
+            // 创建一个圆角矩形的路径  
+            using var path = new SKPath();
+            // 定义圆角矩形的参数  
+            float cornerRadius = radius; // 圆角半径  
+            var rect = new SKRect(left, top, w, h); // 圆角矩形的位置和大小  
+
+            path.AddRoundRect(rect, cornerRadius, cornerRadius);
+            // 使用前景图片创建一个位图着色器  
+            using SKShader shader = SKShader.CreateBitmap(originalBitmap, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, SKMatrix.CreateIdentity());
+            // 设置画笔，并使用着色器  
+            using SKPaint paint = new();
+            paint.Shader = shader;
+            paint.IsAntialias = true;
+            // 绘制圆角矩形，填充前景图片  
+            canvas.DrawPath(path, paint);
+
+        }
+
         static void DrawShadow(SKCanvas canvas, SKPoint point, int w, int h, double xs, WMImage mImage)
         {
             var rect = new SKRect(point.X, point.Y, point.X + w, point.Y + h);
@@ -678,13 +701,12 @@ namespace Watermark.Win.Models
             paint2.Color = SKColors.White;
 
             // 绘制阴影
-            paint2.ImageFilter = SKImageFilter.CreateDropShadow(
+            paint2.ImageFilter = SKImageFilter.CreateDropShadowOnly(
                 dx: 0,
                 dy: 0,
                 sigmaX: (int)(mImage.ShadowRange * xs),
                 sigmaY: (int)(mImage.ShadowRange * xs),
-                color: SKColor.Parse(mImage.ShadowColor),
-                shadowMode: SKDropShadowImageFilterShadowMode.DrawShadowAndForeground
+                color: SKColor.Parse(mImage.ShadowColor)
             );
 
             canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
