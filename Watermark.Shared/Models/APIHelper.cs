@@ -270,7 +270,7 @@ namespace Watermark.Win.Models
                     pkid = user.PK_ID
                 };
 
-                var response = await client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
+                using var response = await client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
                 var bt = await response.Content.ReadAsByteArrayAsync();
                 var str = Encoding.UTF8.GetString(bt);
                 var result = JsonConvert.DeserializeObject<API<WMSysUser>>(str);
@@ -314,21 +314,21 @@ namespace Watermark.Win.Models
             try
             {
                 using var client = new HttpClient();
-                var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
-                if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+                using (var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip"))
                 {
-                    Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-                }
+                    if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+                    {
+                        Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+                    }
 
-                var target = Global.AppPath.TemplatesFolder + watermarkId;
-                if (Directory.Exists(target))
-                {
-                    Directory.Delete(target, true);
+                    var target = Global.AppPath.TemplatesFolder + watermarkId;
+                    if (Directory.Exists(target))
+                    {
+                        Directory.Delete(target, true);
+                    }
+                    Directory.CreateDirectory(target);
+                    await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
                 }
-                Directory.CreateDirectory(target);
-                //File.WriteAllBytes(target + $"{Path.DirectorySeparatorChar}{watermarkId}.zip", stream);
-                await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
-
                 if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID) && Global.CurrentUser.ID != watermarkUserId)
                 {
                     await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/Download?watermarkId={watermarkId}", Encoding.UTF8);
@@ -347,22 +347,21 @@ namespace Watermark.Win.Models
             {
                 foreach (var watermarkId in watermarkIds)
                 {
-                    var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
-                    if (!Directory.Exists(Global.AppPath.MarketFolder))
+                    using (var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip"))
                     {
-                        Directory.CreateDirectory(Global.AppPath.MarketFolder);
-                    }
+                        if (!Directory.Exists(Global.AppPath.MarketFolder))
+                        {
+                            Directory.CreateDirectory(Global.AppPath.MarketFolder);
+                        }
 
-                    var target = Global.AppPath.MarketFolder + watermarkId;
-                    if (Directory.Exists(target))
-                    {
-                        Directory.Delete(target, true);
+                        var target = Global.AppPath.MarketFolder + watermarkId;
+                        if (Directory.Exists(target))
+                        {
+                            Directory.Delete(target, true);
+                        }
+                        Directory.CreateDirectory(target);
+                        await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
                     }
-                    Directory.CreateDirectory(target);
-                    await Task.Run(() =>
-                    {
-                        ZipFile.ExtractToDirectory(stream, target, true);
-                    });
                 }
 
                 return true;
@@ -380,23 +379,21 @@ namespace Watermark.Win.Models
             {
                 foreach (var watermarkId in watermarkIds)
                 {
-                    var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip");
-                    if (!Directory.Exists(Global.AppPath.MarketFolder))
+                    using (var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip"))
                     {
-                        Directory.CreateDirectory(Global.AppPath.MarketFolder);
-                    }
+                        if (!Directory.Exists(Global.AppPath.MarketFolder))
+                        {
+                            Directory.CreateDirectory(Global.AppPath.MarketFolder);
+                        }
 
-                    var target = Global.AppPath.MarketFolder + watermarkId;
-                    if (Directory.Exists(target))
-                    {
-                        Directory.Delete(target, true);
+                        var target = Global.AppPath.MarketFolder + watermarkId;
+                        if (Directory.Exists(target))
+                        {
+                            Directory.Delete(target, true);
+                        }
+                        Directory.CreateDirectory(target);
+                        await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
                     }
-                    Directory.CreateDirectory(target);
-                    await Task.Run(() =>
-                    {
-                        ZipFile.ExtractToDirectory(stream, target, true);
-                    });
-
                 }
 
                 return true;
@@ -415,12 +412,12 @@ namespace Watermark.Win.Models
                 string logoUri = "Logoes";
                 if (Directory.Exists(Global.AppPath.LogoesFolder)) return;
                 Directory.CreateDirectory(Global.AppPath.LogoesFolder);
-                var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{logoUri}.zip");
-                var target = Global.AppPath.LogoesFolder;
-                await Task.Run(() =>
+                using (var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{logoUri}.zip"))
                 {
-                    ZipFile.ExtractToDirectory(stream, target, true);
-                });
+                    var target = Global.AppPath.LogoesFolder;
+                    await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
+                }
+
             }
             catch (Exception ex)
             {

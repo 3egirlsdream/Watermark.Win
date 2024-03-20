@@ -3,6 +3,8 @@
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
+@implements IDisposable
+
 <style>
 	.flex-vertical-center {
 		display: flex;
@@ -287,10 +289,6 @@
 							}
 							else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
 							{
-								// var fs = file.OpenRead();
-								// using MemoryStream mss = new();
-								// fs.CopyTo(mss);
-								// dirct.Fonts[file.Name] = mss.ToArray();
 							}
 							else
 							{
@@ -308,6 +306,7 @@
 				});
 			});
 			StateHasChanged();
+			ZipedTemplates.ForEach(x => x.Dispose());
 		}
 		catch (Exception ex)
 		{
@@ -410,6 +409,14 @@
 		var fonts = Global.GetAllFontName(mCanvas);
 		var helper = new APIHelper();
 		await helper.DownloadFonts(fonts);
+	}
+
+	public void Dispose()
+	{
+		ZipedTemplates = null;
+		hottest = null;
+		newest = null;
+		subscribed = null;
 	}
 
 }

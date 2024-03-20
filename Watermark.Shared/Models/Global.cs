@@ -185,7 +185,7 @@ namespace Watermark.Win.Models
         {
             double w = source.Width, h = source.Height;
             var xs = 1080.0 / h;
-            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Medium);
+            using var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Medium);
             using var image = SKImage.FromBitmap(resized);
             using var writeStream = File.OpenWrite(target);
             image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100).SaveTo(writeStream);
@@ -357,8 +357,8 @@ namespace Watermark.Win.Models
 
             var fontDemo = new Dictionary<string, string>();
 
-			var bitmap = new SKBitmap(200, 72);
-			var canvas = new SKCanvas(bitmap);
+			using var bitmap = new SKBitmap(200, 72);
+			using var canvas = new SKCanvas(bitmap);
 			foreach (var p in fontPath)
             {
 				var skytype = SKTypeface.FromFile(p.Value);
@@ -425,7 +425,7 @@ namespace Watermark.Win.Models
         }
 
 
-        static bool secondExif = true;
+        static bool secondExif = false;
         public static bool SECOND_EXIF 
         {
             get => secondExif;
@@ -458,7 +458,6 @@ namespace Watermark.Win.Models
 
         public static void SaveConfig()
         {
-            Debug.WriteLine(1);
             var dic = new ConcurrentDictionary<string, string>();
             dic[nameof(MAX_THREAD)] = MAX_THREAD.ToString();
             dic[nameof(SECOND_EXIF)] = SECOND_EXIF.ToString();

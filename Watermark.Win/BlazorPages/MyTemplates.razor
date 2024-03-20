@@ -149,81 +149,101 @@
 
     async Task InitTemplates()
     {
-        loading = true;
-        pairs = new Dictionary<string, string>();
-        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
+        try
         {
-            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-        }
-
-        System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
-        wMTemplates = new List<WMCanvas>();
-        List<Task> tasks = new List<Task>();
-        foreach (var dirct in directoryInfo.GetDirectories())
-        {
-            var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-            if (System.IO.File.Exists(configPath))
+            loading = true;
+            pairs = new Dictionary<string, string>();
+            if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
             {
-                WatermarkHelper helper = new WatermarkHelper();
-                var canvas = await Task.Run(() =>
-                {
-
-                    var content = File.ReadAllText(configPath);
-                    return Global.ReadConfig(content);
-                });
-                await InitFonts([canvas]);
-                var t = Task.Run(() =>
-                {
-                    var src = helper.Generation(canvas, null, true);
-                    pairs[canvas.ID] = src;
-                    wMTemplates.Add(canvas);
-                    App.Current.Dispatcher.Invoke(() => StateHasChanged());
-                    return src;
-                });
-                tasks.Add(t);
+                System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
             }
+
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
+            wMTemplates = new List<WMCanvas>();
+            List<Task> tasks = new List<Task>();
+            foreach (var dirct in directoryInfo.GetDirectories())
+            {
+                var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+                if (System.IO.File.Exists(configPath))
+                {
+                    WatermarkHelper helper = new WatermarkHelper();
+                    var canvas = await Task.Run(() =>
+                    {
+                        var content = File.ReadAllText(configPath);
+                        return Global.ReadConfig(content);
+                    });
+                    await InitFonts([canvas]);
+                    var t = Task.Run(() =>
+                    {
+                        var src = helper.Generation(canvas, null, true);
+                        pairs[canvas.ID] = src;
+                        wMTemplates.Add(canvas);
+                        InvokeAsync(StateHasChanged);
+                    });
+                    tasks.Add(t);
+                }
+            }
+            await Task.WhenAll(tasks);
+            loading = false;
+            StateHasChanged();
         }
-        await Task.WhenAll(tasks);
-        loading = false;
-        StateHasChanged();
+        catch(Exception ex)
+        {
+            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            GC.Collect();
+        }
     }
 
     async Task LoadCloudTemplate()
     {
-        if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        var helper = new APIHelper();
-        ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
-        StateHasChanged();
-        var mission = new List<Task>();
-        foreach (var t in ZipedTemplates)
+        try
         {
-            var zip = await helper.ExtractZip(t.WatermarkId);
-            await InitFonts([zip.WMCanvas]);
-            var tx = Task.Run(() =>
+            if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+            var helper = new APIHelper();
+            ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
+            StateHasChanged();
+            var mission = new List<Task>();
+            foreach (var t in ZipedTemplates)
             {
-                t.WMCanvas = zip.WMCanvas;
-                t.Images = zip.Images;
-                t.Fonts = zip.Fonts;
-                t.Bitmap = zip.Bitmap;
-            });
-            mission.Add(tx);
-        }
-        await Task.WhenAll(mission);
-        var whelper = new WatermarkHelper();
-        List<Task> tasks = new List<Task>();
-        foreach (var t in ZipedTemplates)
-        {
-            var c = Task.Run(() =>
+                var zip = await helper.ExtractZip(t.WatermarkId);
+                await InitFonts([zip.WMCanvas]);
+                var tx = Task.Run(() =>
+                {
+                    t.WMCanvas = zip.WMCanvas;
+                    t.Images = zip.Images;
+                    t.Fonts = zip.Fonts;
+                    t.Bitmap = zip.Bitmap;
+                });
+                mission.Add(tx);
+            }
+            await Task.WhenAll(mission);
+            var whelper = new WatermarkHelper();
+            List<Task> tasks = new List<Task>();
+            foreach (var t in ZipedTemplates)
             {
-                t.Src = whelper.Generation(t.WMCanvas, t, true);
-                InvokeAsync(StateHasChanged);
-                return t.Src;
-            });
+                var c = Task.Run(() =>
+                {
+                    t.Src = whelper.Generation(t.WMCanvas, t, true);
+                    InvokeAsync(StateHasChanged);
+                });
 
-            tasks.Add(c);
+                tasks.Add(c);
+            }
+            await Task.WhenAll(tasks);
+            StateHasChanged();
+            ZipedTemplates.ForEach(x => x.Dispose());
         }
-        await Task.WhenAll(tasks);
-        StateHasChanged();
+        catch(Exception ex)
+        {
+            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            GC.Collect();
+        }
     }
 
     async Task LoadILikeTemplate()
@@ -306,10 +326,15 @@
             }
             await Task.WhenAll(mission);
             StateHasChanged();
+            ILikeTemplates.ForEach(x => x.Dispose());
         }
         catch (Exception ex)
         {
             Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            GC.Collect();
         }
     }
 

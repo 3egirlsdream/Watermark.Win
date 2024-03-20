@@ -37,7 +37,7 @@ namespace Watermark.Win.Models
                 {
                     return DefaultMeta;
                 }
-                var exifReader = new ExifReader(path);
+                using var exifReader = new ExifReader(path);
                 var dic = new Dictionary<string, string>();
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {
@@ -72,9 +72,8 @@ namespace Watermark.Win.Models
         {
             try
             {
-                var stream = new MemoryStream(path);
+                using var stream = new MemoryStream(path);
                 var dic = ReadImage(stream);
-
 
                 var b = dic.TryGetValue("LensModel", out string v);
                 if (!b || string.IsNullOrEmpty(v))
@@ -90,7 +89,7 @@ namespace Watermark.Win.Models
             }
             catch(Exception ex)
 			{
-				var stream = new MemoryStream(path);
+				using var stream = new MemoryStream(path);
 				if (Global.SECOND_EXIF) return ReadImageCopy(stream);
                 return DefaultMeta;
 			}
@@ -100,7 +99,7 @@ namespace Watermark.Win.Models
         {
             try
             {
-                var exifReader = new ExifReader(path);
+                using var exifReader = new ExifReader(path);
                 var dic = new Dictionary<string, string>();
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {
@@ -166,7 +165,9 @@ namespace Watermark.Win.Models
 						HandleExif(dic, tag.Name.Replace(" ", "").Replace("/", "").Replace("-", ""), tag.Description ?? "");
 					}
 				}
-				return dic;
+                path?.Dispose();
+                exifReader = null;
+                return dic;
 			}
 			catch (Exception ex)
 			{
@@ -188,6 +189,7 @@ namespace Watermark.Win.Models
                         HandleExif(dic, tag.Name.Replace(" ", "").Replace("/", "").Replace("-", ""), tag.Description ?? "");
                     }
                 }
+                exifReader = null;
                 return dic;
             }
             catch(Exception ex) 

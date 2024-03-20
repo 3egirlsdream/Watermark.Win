@@ -16,7 +16,7 @@
     <div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FFF;">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="SelectPictureClick">导入图片</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="ImportLocalImages">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">图标库</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="OpenExport">导出</MudMenuItem>
                 <MudDivider />
@@ -215,7 +215,7 @@
                 {
                     <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                 }
-                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectImage" Style="float:right;width:40px;height:40px;" />
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
             </MudStack>
         </MudForm>
     </DialogContent>
@@ -236,46 +236,41 @@
     bool SrcLoading = false;
     bool ShowUserInfo = false;
     bool IsLoginIn = false;
-    class MainLoading
-    {
-        public static bool Show { get; set; } = false;
-        public static double Value { get; set; }
-        public static string Message { get; set; }
-    }
-
+    List<TemplateList> wMTemplates;
+    TemplateList CurrentTemplate;
+    TemplateList CurrentImage;
     Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
     Dictionary<string, string> LogoBase64 = new Dictionary<string, string>();
     List<string> LogoStore = new List<string>();
+    List<TemplateList> Images = new List<TemplateList>();
 
-    class CreateTemplate
+    protected override async Task OnInitializedAsync()
     {
-        public static bool DialogVisible { get; set; } = false;
-        public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-        public static string TemplateName { get; set; }
-        public static string Base64Src { get; set; }
-        public static string ID = Guid.NewGuid().ToString("N").ToUpper();
-        public static void OK()
+        await Global.InitConfig();
+        await InitTemplates();
+        await InitLogoStore();
+        var result = await Global.ReadLocalAsync();
+        if (!string.IsNullOrEmpty(result.Item1))
         {
-            if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
-            var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
-            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
-            if (!Directory.Exists(basePath))
+            APIHelper helper = new APIHelper();
+            var login = await helper.LoginIn(result.Item1, result.Item2, true);
+            if (login.success)
             {
-                Directory.CreateDirectory(basePath);
+                Global.CurrentUser = new WMLoginChildModel
+                    {
+                        ID = login.data.data.ID,
+                        IMG = login.data.data.IMG,
+                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
+                        USER_NAME = login.data.data.USER_NAME
+                    };
+                IsLoginIn = true;
+                await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
+                StateHasChanged();
             }
-            DialogVisible = false;
-            var action = new Action(() =>
-            {
-                var win = new DesignWin(canvas);
-                win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-                win.ShowDialog();
-                ID = Guid.NewGuid().ToString("N").ToUpper();
-            });
-            OpenWinHelper.Open(action);
         }
-    };
+    }
 
-    void SelectImage()
+    void SelectExampleImage()
     {
         var dic = new Dictionary<string, string>();
         var action = new Action(() =>
@@ -311,33 +306,6 @@
         OpenWinHelper.Open(action);
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await Global.InitConfig();
-        await InitTemplates();
-        await InitLogoStore();
-        var result = await Global.ReadLocalAsync();
-        if (!string.IsNullOrEmpty(result.Item1))
-        {
-            APIHelper helper = new APIHelper();
-            var login = await helper.LoginIn(result.Item1, result.Item2, true);
-            if (login.success)
-            {
-                Global.CurrentUser = new WMLoginChildModel
-                    {
-                        ID = login.data.data.ID,
-                        IMG = login.data.data.IMG,
-                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-                        USER_NAME = login.data.data.USER_NAME
-                    };
-                IsLoginIn = true;
-                await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
-                StateHasChanged();
-            }
-        }
-    }
-
-
     public async void OpenMyTemplates()
     {
         var parameters = new DialogParameters<MyTemplates>();
@@ -349,8 +317,7 @@
 
     }
 
-    List<TemplateList> Images = new List<TemplateList>();
-    void SelectPictureClick()
+    void ImportLocalImages()
     {
         var action = new Action(async () =>
         {
@@ -382,7 +349,7 @@
                     await Task.Run(() =>
                     {
                         var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
-                        var bitmap = SkiaSharp.SKBitmap.Decode(file);
+                        using var bitmap = SkiaSharp.SKBitmap.Decode(file);
                         return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
                     });
 
@@ -419,21 +386,13 @@
     {
         CurrentImage = image;
         SrcLoading = true;
-        var t = Task.Run(() =>
-        {
-            WatermarkHelper helper = new WatermarkHelper();
-            CurrentImage.Canvas.Path = CurrentImage.Path;
-            return helper.Generation(CurrentImage.Canvas, null, true);
-        });
-
-        CurrentImage.Src = await t;
+        WatermarkHelper helper = new WatermarkHelper();
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var src = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        CurrentImage.Src = src;
         SrcLoading = false;
         StateHasChanged();
     }
-
-    List<TemplateList> wMTemplates;
-    TemplateList CurrentTemplate;
-    TemplateList CurrentImage;
 
 
     async Task InitTemplates()
@@ -452,18 +411,15 @@
             MainLoading.Value = 0;
             List<Task> tasks = new List<Task>();
             int cot = 1;
+            WatermarkHelper helper = new WatermarkHelper();
             foreach (var dirct in directories)
             {
                 var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-                System.IO.Stream stream;
                 if (System.IO.File.Exists(configPath))
                 {
-                    stream = new System.IO.FileStream(configPath, System.IO.FileMode.Open);
-                    using var reader = new System.IO.StreamReader(stream);
-                    var content = reader.ReadToEnd();
+                    var content = File.ReadAllText(configPath);
                     var canvas = Global.ReadConfig(content);
                     await InitFonts([canvas]);
-                    WatermarkHelper helper = new WatermarkHelper();
                     var t = Task.Run(() =>
                     {
                         var src = helper.Generation(canvas, null, true);
@@ -477,9 +433,7 @@
                         var idx = directories.ToList().IndexOf(dirct) + 1;
                         MainLoading.Value = cot * 100.0 / directories.Length;
                         MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
-                        App.Current.Dispatcher.Invoke(() => StateHasChanged());
-
-                        return src;
+                        InvokeAsync(StateHasChanged);
                     });
                     tasks.Add(t);
                 }
@@ -494,6 +448,10 @@
         catch (Exception ex)
         {
             ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            GC.Collect();
         }
     }
 
@@ -543,6 +501,7 @@
 
     async void Export(List<TemplateList> images)
     {
+
         var helper = new WatermarkHelper();
         MainLoading.Show = true;
         MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
@@ -566,7 +525,6 @@
         MainLoading.Show = false;
         StateHasChanged();
 
-
         Snackbar.Clear();
         Snackbar.Add("打开输出文件夹？", Severity.Info, config =>
         {
@@ -577,6 +535,8 @@
                 return OpenFolder();
             };
         });
+
+        GC.Collect();
     }
 
     async Task OpenFolder()
@@ -767,4 +727,42 @@
         var helper = new APIHelper();
         await helper.DownloadFonts(fonts);
     }
+
+
+    class MainLoading
+    {
+        public static bool Show { get; set; } = false;
+        public static double Value { get; set; }
+        public static string Message { get; set; }
+    }
+
+    class CreateTemplate
+    {
+        public static bool DialogVisible { get; set; } = false;
+        public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+        public static string TemplateName { get; set; }
+        public static string Base64Src { get; set; }
+        public static string ID = Guid.NewGuid().ToString("N").ToUpper();
+        public static void OK()
+        {
+            if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
+            var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
+            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            DialogVisible = false;
+            var action = new Action(() =>
+            {
+                var win = new DesignWin(canvas);
+                win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                win.ShowDialog();
+                ID = Guid.NewGuid().ToString("N").ToUpper();
+            });
+            OpenWinHelper.Open(action);
+        }
+    };
+
+
 }

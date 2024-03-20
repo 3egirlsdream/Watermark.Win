@@ -54,7 +54,9 @@ namespace Watermark.Win
             var day = DateTime.Now.DayOfYear;
             if (day % 3 == 0)
             {
+#pragma warning disable CS8602 // 解引用可能出现空引用。
                 var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+#pragma warning restore CS8602 // 解引用可能出现空引用。
                 var action = new Action<string, string>((t, m) =>
                 {
                     var win = new UpdateWin();

@@ -161,6 +161,10 @@ namespace Watermark.Win.Views
                 {
                     t3?.Focus();
                 }
+                else if (box.SelectedIndex == 3)
+                {
+                    t4?.Focus();
+                }
             }
         }
 
@@ -192,6 +196,12 @@ namespace Watermark.Win.Views
             window = check as Setting;
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             InitFontsList();
+            Global.InitConfig().ContinueWith(x =>
+            {
+                ExifIsChecked = Global.SECOND_EXIF;
+                MaxThread = Global.MAX_THREAD.ToString();
+            });
+            
         }
 
 
@@ -214,6 +224,35 @@ namespace Watermark.Win.Views
             {
                 loading = value;
                 NotifyPropertyChanged(nameof(Loading));
+            }
+        }
+
+        
+
+        private bool exifIsChecked;
+        public bool ExifIsChecked
+        {
+            get => exifIsChecked;
+            set
+            {
+                exifIsChecked = value;
+                Global.SECOND_EXIF = value;
+                NotifyPropertyChanged(nameof(ExifIsChecked));
+            }
+        }
+
+        private string maxThread;
+        public string MaxThread
+        {
+            get => maxThread;
+            set
+            {
+                maxThread = value;
+                if(int.TryParse(value, out int v))
+                {
+                    Global.MAX_THREAD = v;
+                }
+                NotifyPropertyChanged(nameof(MaxThread));
             }
         }
 

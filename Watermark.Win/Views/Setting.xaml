@@ -50,6 +50,7 @@
                         <TextBlock Text="关于" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                         <TextBlock Text="字体" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                         <TextBlock Text="缓存" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
+                        <TextBlock Text="实验性功能" HorizontalAlignment="Left" FontSize="14" FontFamily="微软雅黑"/>
                     </ListBox>
                 </StackPanel>
 
@@ -83,14 +84,14 @@
                                 <TextBlock x:Name="Latest" Text="你使用的是最新版本!" Foreground="Gray"/>
                                 <Grid HorizontalAlignment="Stretch" Height="35" Margin="0 8">
                                     <Button x:Name="newVersion" Grid.Row="1" Grid.Column="1" Height="30" Width="100"  Click="newVersionClick" ToolTip="点击下载" Visibility="Collapsed" HorizontalAlignment="Left" Content="下载"/>
-                                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Cursor="Hand" Width="100" Height="30" HorizontalAlignment="Right"/>
+                                    <Button x:Name="checkUpdateBtn" Content="检查更新" Click="CheckVersion" Cursor="Hand" Width="100" Height="30" HorizontalAlignment="Right" BorderThickness="0"/>
                                 </Grid>
                                
                                
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                                 <TextBlock Text="自动更新" FontSize="17"/>
                                 <TextBlock Text="点击自动开始更新程序" Foreground="Gray" Margin="0 8"/>
-                                <Button Content="自动更新" Cursor="Hand" Height="30" Click="Button_Click" Width="100" HorizontalAlignment="Right"/>
+                                <Button Content="自动更新" Cursor="Hand" Height="30" Click="Button_Click" Width="100" HorizontalAlignment="Right" BorderThickness="0"/>
                                 <ProgressBar Value="{Binding DownLoadProgress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0 10" Height="10"/>
                                 <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                                 <TextBlock Text="更新日志" FontSize="17"/>
@@ -109,7 +110,7 @@
                         </TabItem.Header>
                         <StackPanel HorizontalAlignment="Stretch">
                             <Label Content="下载字体" FontSize="14"/>
-                            <ListBox AllowDrop="True" HorizontalContentAlignment="Stretch" ItemsSource="{Binding FontsList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
+                            <ListBox Height="230" AllowDrop="True" HorizontalContentAlignment="Stretch" ItemsSource="{Binding FontsList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.CanContentScroll="False" VirtualizingPanel.IsVirtualizing="False">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Background="Transparent">
@@ -132,13 +133,12 @@
                                 <TextBox x:Name="normalText" Width="300" HorizontalAlignment="Right" Margin="50 0" IsReadOnly="True"/>
                                 <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right"   Command="{Binding CmdImportFont}" CommandParameter="normal" Content="导入"/>
                             </Grid>
-                            <Grid HorizontalAlignment="Stretch">
+                            <Grid HorizontalAlignment="Stretch" Margin="0 5 0 0">
                                 <Label HorizontalAlignment="Left" Content="粗体" FontSize="12" Foreground="Gray"/>
                                 <TextBox x:Name="boldText" Width="300" Margin="50 0" HorizontalAlignment="Right" IsReadOnly="True"/>
                                 <Button  Cursor="Hand" Height="30" Width="30" VerticalAlignment="Bottom" HorizontalAlignment="Right" Command="{Binding CmdImportFont}" CommandParameter="bold" Content="导入"/>
                             </Grid>
                             <Button x:Name="save" Content="保存"  Cursor="Hand" Height="30" Width="100" HorizontalAlignment="Left" Command="{Binding CmdSaveFont}"/>
-                            <GridSplitter Height="1" Background="LightGray" HorizontalAlignment="Stretch" Margin="0 5"/>
                         </StackPanel>
 
                     </TabItem>
@@ -165,6 +165,29 @@
 
                         </Grid>
                         
+                    </TabItem>
+                    <TabItem Width="0" x:Name="t4" >
+                        <TabItem.Header>
+                            <TextBlock/>
+                        </TabItem.Header>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0">
+                                <CheckBox Content="启动增强EXIF解析" IsChecked="{Binding ExifIsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="1" Margin="0 10 0 0">
+                                <Label Content="最大线程数" FontSize="14"/>
+                                <TextBox Text="{Binding MaxThread, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="30" HorizontalAlignment="Right" VerticalContentAlignment="Center"/>
+                            </Grid>
+
+                        </Grid>
+
                     </TabItem>
                 </TabControl>
 

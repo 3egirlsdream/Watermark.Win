@@ -151,7 +151,7 @@ namespace Watermark.Win.Models
             using var data = sk.Encode(SKEncodedImageFormat.Jpeg, Global.Quality);
 
 
-
+            string result = "";
             if (!isPreview)
             {
                 var output = Global.OutPutPath;
@@ -178,15 +178,18 @@ namespace Watermark.Win.Models
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);
-                targetCanvas.Dispose();
-                targetBitmap.Dispose();
-                originalBitmap.Dispose();
-                targetImage.Dispose();
-                return "";
+            }
+            else
+            {
+                var bytes = data.ToArray();
+                result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
             }
 
-            var bytes = data.ToArray();
-            return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+            targetCanvas.Dispose();
+            targetBitmap.Dispose();
+            originalBitmap.Dispose();
+            targetImage.Dispose();
+            return result;
         }
 
         private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref double fontxs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
@@ -244,8 +247,9 @@ namespace Watermark.Win.Models
                 }
             }
 
-            void DrawLogo(double hc, double wc, IWMControl component, WMLogo mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, Action<SKBitmap> callback)
+            void DrawLogo(double hc, double wc, IWMControl component, WMLogo mLogo,  Action<SKBitmap> callback)
             {
+                SKCanvas canvas_cp; SKBitmap bitmap_logo;
                 //logo系数按窄边计算
                 var min = Math.Min(hc, wc);
                 if (ziped == null)
@@ -304,6 +308,8 @@ namespace Watermark.Win.Models
                 mLogo.Width = wcp;
                 mLogo.Height = hcp;
                 callback?.Invoke(bitmap_cp);
+                canvas_cp?.Dispose();
+                //bitmap_logo?.Dispose();
             }
 
             void DrawText(ref double fontxs, WMText mText, Action<SKPaint> action)
@@ -322,7 +328,7 @@ namespace Watermark.Win.Models
                 {
                     if (Global.TryGetFont(mText.FontFamily, out var bt))
                     {
-                        var mss = new MemoryStream(bt);
+                        using var mss = new MemoryStream(bt);
                         tc = SKTypeface.FromStream(mss);
                     }
                     else
@@ -337,7 +343,7 @@ namespace Watermark.Win.Models
                 }
                 else if(Global.TryGetFont(mText.FontFamily, out var bt))
                 {
-                    var mss = new MemoryStream(bt);
+                    using var mss = new MemoryStream(bt);
                     tc = SKTypeface.FromStream(mss);
 				}
                 else if (File.Exists(fontPath + mText.FontFamily))
@@ -352,7 +358,7 @@ namespace Watermark.Win.Models
                 {
                     tc = SKTypeface.FromFamilyName(families.FirstOrDefault(), fontStyle);
                 }
-                var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle)??tc;
+                using var typeface_cp = SKFontManager.Default.MatchTypeface(tc, fontStyle)??tc;
                 if (fontxs == 0)
                 {
                     fontxs = Math.Min(hc, wc) / 156.0;
@@ -361,7 +367,7 @@ namespace Watermark.Win.Models
 
                 var fontColor = mText.FontColor.Length > 7 ? mText.FontColor.Substring(0, 7) : mText.FontColor;
                 //字体乘以系数
-                var paint_cp = new SKPaint()
+                using var paint_cp = new SKPaint()
                 {
                     Color = SKColor.Parse(fontColor),
                     TextSize = (int)(mText.FontSize * fontxs),
@@ -391,6 +397,8 @@ namespace Watermark.Win.Models
                 mText.Width = fw;
 
                 action?.Invoke(paint_cp);
+                tc?.Dispose();
+                fontStyle?.Dispose();
             }
 
 
@@ -399,7 +407,7 @@ namespace Watermark.Win.Models
             {
                 if (component is WMLogo mLogo)
                 {
-                    DrawLogo(hc, wc, component, mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, null);
+                    DrawLogo(hc, wc, component, mLogo, null);
                 }
                 else if (component is WMText mText)
                 {
@@ -537,7 +545,7 @@ namespace Watermark.Win.Models
                     {
                         canvasc.DrawBitmap(bitmap_cp, new SKPoint((float)stdx, (float)stdy));
                     });
-                    DrawLogo(hc, wc, component, mLogo, out SKCanvas canvas_cp, out SKBitmap bitmap_logo, action);
+                    DrawLogo(hc, wc, component, mLogo, action);
                 }
                 else if (component is WMText mText)
                 {
@@ -577,7 +585,7 @@ namespace Watermark.Win.Models
                     var pt2 = new SKPoint();
                     mLine.Color ??= "#000";
                     var color = mLine.Color.Length > 7 ? mLine.Color[..7] : mLine.Color;
-                    var paint_line = new SKPaint
+                    using var paint_line = new SKPaint
                     {
                         Color = SKColor.Parse(color),
                         StrokeWidth = (float)Math.Min(mLine.Height, mLine.Width)
@@ -602,7 +610,7 @@ namespace Watermark.Win.Models
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }
             }
-
+            canvasc.Dispose();
             return bitmapc;
         }
 
@@ -669,6 +677,7 @@ namespace Watermark.Win.Models
                 surface.RotateDegrees((float)angle);
                 surface.Translate(-originalWidth / 2, -originalHeight / 2);
                 surface.DrawBitmap(bitmap, new SKPoint());
+                bitmap.Dispose();
             }
             return rotatedBitmap;
         }
@@ -716,16 +725,17 @@ namespace Watermark.Win.Models
             );
 
             canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
+            paint2.ImageFilter.Dispose();
         }
 
         private void GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)
         {
             var width = bitmap.Width;
             var height = bitmap.Height;
-            var paint = new SKPaint();
-            var imageFilter = SKImageFilter.CreateBlur(sigma * xs, sigma * xs);
+            using var paint = new SKPaint();
+            using var imageFilter = SKImageFilter.CreateBlur(sigma * xs, sigma * xs);
             paint.ImageFilter = imageFilter;
-            var can = new SKCanvas(bitmap);
+            using var can = new SKCanvas(bitmap);
             can.DrawBitmap(original, new SKRect(0, 0, width, height), paint);
         }
 
