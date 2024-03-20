@@ -723,9 +723,7 @@
     {
         MainLoading.Message = "正在下载字体资源...";
         MainLoading.Show = true;
-        var fonts = Global.GetAllFontName(mCanvas);
-        var helper = new APIHelper();
-        await helper.DownloadFonts(fonts);
+        await Global.InitFonts(mCanvas);
     }
 
 

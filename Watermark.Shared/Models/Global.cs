@@ -424,6 +424,13 @@ namespace Watermark.Win.Models
             return vs.Distinct().ToList();
         }
 
+        public static async Task InitFonts(List<WMCanvas> mCanvas)
+        {
+            var helper = new APIHelper();
+            var fonts = GetAllFontName(mCanvas);
+            await helper.DownloadFonts(fonts);
+        }
+
 
         static bool secondExif = false;
         public static bool SECOND_EXIF 

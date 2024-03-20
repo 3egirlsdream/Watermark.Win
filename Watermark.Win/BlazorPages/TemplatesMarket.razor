@@ -277,7 +277,7 @@
 						var canvas = Global.ReadConfig(content);
 
 						dirct.WMCanvas = canvas;
-						InitFonts([canvas]).Wait();
+						Global.InitFonts([canvas]).Wait();
 
 						var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
 						foreach (var file in folder.GetFiles())
@@ -402,13 +402,6 @@
 		var helper = new APIHelper();
 		var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
 		await LoadTemplates();
-	}
-
-	async Task InitFonts(List<WMCanvas> mCanvas)
-	{
-		var fonts = Global.GetAllFontName(mCanvas);
-		var helper = new APIHelper();
-		await helper.DownloadFonts(fonts);
 	}
 
 	public void Dispose()

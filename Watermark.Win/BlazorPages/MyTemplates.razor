@@ -172,7 +172,7 @@
                         var content = File.ReadAllText(configPath);
                         return Global.ReadConfig(content);
                     });
-                    await InitFonts([canvas]);
+                    await Global.InitFonts([canvas]);
                     var t = Task.Run(() =>
                     {
                         var src = helper.Generation(canvas, null, true);
@@ -209,7 +209,7 @@
             foreach (var t in ZipedTemplates)
             {
                 var zip = await helper.ExtractZip(t.WatermarkId);
-                await InitFonts([zip.WMCanvas]);
+                await Global.InitFonts([zip.WMCanvas]);
                 var tx = Task.Run(() =>
                 {
                     t.WMCanvas = zip.WMCanvas;
@@ -290,7 +290,7 @@
                     });
 
                     dirct.WMCanvas = canvas;
-                    await InitFonts([canvas]);
+                    await Global.InitFonts([canvas]);
 
                     var t = Task.Run(() =>
                     {
@@ -556,13 +556,6 @@
                 StateHasChanged();
             }
         }
-    }
-
-    async Task InitFonts(List<WMCanvas> mCanvas)
-    {
-        var fonts = Global.GetAllFontName(mCanvas);
-        var helper = new APIHelper();
-        await helper.DownloadFonts(fonts);
     }
 
     async void TakOffOnShop(WMZipedTemplate t)

@@ -22,40 +22,18 @@
         width: 100vw;
         overflow-x: hidden
     }
+
+    .d-flex-center {
+        display: flex;
+        align-items: center;
+    }
 </style>
 
 <div class="design-main">
-    <div style="height: 40px; position: fixed; width: 100%; top: 0; left: 0; z-index: 999; background: transparent; display: none">
-        <MudToolBar Style="height:40px;padding-left:5px;">
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Class="mr-5" OnClick="SaveTemplate">保存</MudButton>
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" Class="mr-5" OnClick="OpenEditDialog">编辑/新增组件</MudButton>
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.SaveAs" Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MudButton>
-            @if (SrcLoading)
-            {
-                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
-            }
-            <MudSpacer />
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新</MudButton>
-        </MudToolBar>
-    </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
-        @*<div style="width:calc(100% - 500px);height:100%;position:fixed;">
-        <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
-        @if (!string.IsNullOrEmpty(url))
-        {
-        <MudImage ObjectFit="@ObjectFit.ScaleDown" Src="@url" Elevation="25" Style="width: 100%; height: 100%; padding-left: 5%; padding-right: 5%; padding-top: 100px; padding-bottom: 100px;" />
-        }
-
-        </div>
-        </div>*@
         <div style="width:100%;padding:10px;">
             <MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
                 <MudExpansionPanel Text="画布">
-                    @*<MudStack Row>
-                    <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
-                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
-                    </MudStack>
-                    <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />*@
                     <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
                     <MudStack Row Class="mt-5">
                         <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -90,14 +68,14 @@
                 @foreach (var container in canvas.Children)
                 {
                     <MudExpansionPanel Text="@container.Name">
-                        <div class="d-flex justify-space-between mt-5">
+                        <div class="d-flex justify-space-between mt-5 d-flex-center ">
                             <MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
                             @if (ImagesBase64.TryGetValue(container.ID, out string src))
                             {
                                 <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Width="260" Style="float:right" />
-                                <MudIcon Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="float:right;margin-top: 10px;cursor: pointer;" Size="Size.Small" @onclick="() => RemoveImage(container)" />
+                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="float:right;cursor: pointer;" Size="Size.Small" OnClick="() => RemoveImage(container)" />
                             }
-                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" Size="Size.Small" />
+                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;" Size="Size.Small" />
                         </div>
                         <div class="d-flex justify-space-between mt-5">
                             <MudText Typo="Typo.button">容器内组件水平对齐</MudText>
@@ -251,7 +229,7 @@
                                                         </MudStack>
                                                         <div Class="mt-5" Style="display:flex;align-items:center;height:40px;">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
+                                                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
                                                             @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
                                                             {
                                                                 <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
@@ -273,7 +251,7 @@
                                                             <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                                 @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                             </div>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
+                                                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
                                                         </div>
 
 
@@ -286,7 +264,7 @@
                                                         </MudSelect>
                                                         <MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">@mText.FontFamily</MudText>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)" />
+                                                            <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)" />
                                                         </MudStack>
                                                         <MudStack Row class="mt-5" Style="position:relative">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
@@ -342,7 +320,7 @@
                                             </MudStack>
                                             <div Class="mt-5" Style="display:flex;align-items:center;height:40px;">
                                                 <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
+                                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
                                                 @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
                                                 {
                                                     <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
@@ -371,7 +349,7 @@
 
                                             <MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
                                                 <MudText Align="Align.Justify" Typo="Typo.button">@mText.FontFamily</MudText>
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)" />
+                                                <MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)" />
                                             </MudStack>
                                             <MudStack Row class="mt-5" Style="position:relative">
                                                 <MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
@@ -397,6 +375,12 @@
     @if (openLogoDialog)
     {
         <LogoDialog OnImageTouched="SelectLogoCallback" />
+    }
+</MudDrawer>
+<MudDrawer @bind-Open="@openFontsDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+    @if (openFontsDialog)
+    {
+        <FontsDialog OnImageTouched="SelectFontCallback" />
     }
 </MudDrawer>
 
@@ -425,6 +409,7 @@
     string newTemplateName = "";
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
     bool openLogoDialog = false;
+    bool openFontsDialog = false;
 
     WMThickness BorderThickness = new WMThickness();
     WMCanvas canvas;
@@ -434,7 +419,7 @@
     List<string> Fonts = new List<string>();
     Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
     WMLogo selectedLogo;
-
+    WMText selectedText;
     protected override void OnInitialized()
     {
         canvas = CurrentCanvas;
@@ -463,7 +448,7 @@
         var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
     }
 
-    private async void OnButtonClicked()
+    private async void RefreshImage()
     {
         SrcLoading = true;
         var t = Task.Run(() =>
@@ -489,6 +474,14 @@
         selectedLogo.Path = pair.Key;
         ImagesBase64[selectedLogo.ID] = pair.Value;
         openLogoDialog = false;
+        StateHasChanged();
+    }
+
+    void SelectFontCallback(KeyValuePair<string, string> pair)
+    {
+        if (selectedText is null) return;
+        selectedText.FontFamily = pair.Key;
+        openFontsDialog = false;
         StateHasChanged();
     }
 
@@ -522,31 +515,6 @@
         if (!dialogResult.Canceled)
         {
             StateHasChanged();
-        }
-    }
-
-    async void SaveTemplate()
-    {
-        try
-        {
-            var path = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
-            if (!System.IO.Directory.Exists(path))
-            {
-                System.IO.Directory.CreateDirectory(path);
-            }
-            var json = Global.CanvasSerialize(canvas);
-            System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", json);
-            if (cloud == "cloud")
-            {
-                APIHelper helper = new APIHelper();
-                await helper.UploadToQiniu(CurrentCanvas.ID, "");
-            }
-        }
-        catch { }
-        finally
-        {
-            string message = "保存成功！";
-            ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
         }
     }
 
@@ -589,16 +557,6 @@
     }
 
 
-    void SelectImage(WMLogo mLogo)
-    {
-        var action = new Action(() =>
-        {
-            ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
-            StateHasChanged();
-        });
-        OpenWinHelper.Open(action);
-    }
-
     void SelectImage(WMContainer mContainer)
     {
         var action = new Action(() =>
@@ -615,30 +573,11 @@
         StateHasChanged();
     }
 
-
-    void ImportLocalFont()
-    {
-        var action = new Action(() =>
-        {
-            ClientInstance.ImportLocalFontAction?.Invoke(Fonts);
-        });
-        OpenWinHelper.Open(action);
-    }
-
     void InitLocalFonts()
     {
         var action = new Action(() =>
         {
             ClientInstance.InitLocalFontsAction?.Invoke(Fonts);
-        });
-        OpenWinHelper.Open(action);
-    }
-
-    void SelectLocalFont(WMText mText, string fontName)
-    {
-        var action = new Action(() =>
-        {
-            ClientInstance.SelectLocalFontAction?.Invoke(canvas, mText, fontName);
         });
         OpenWinHelper.Open(action);
     }
@@ -662,14 +601,10 @@
         StateHasChanged();
     }
 
-    async void SelectLocalFont(WMText mText)
+    void SelectLocalFont(WMText mText)
     {
-        var dialog = DialogService.Show<FontsDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data is KeyValuePair<string, string> pair)
-        {
-            mText.FontFamily = pair.Key;
-        }
+        selectedText = mText;
+        openFontsDialog = true;
     }
 
 }

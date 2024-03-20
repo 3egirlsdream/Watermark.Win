@@ -14,7 +14,7 @@
 
     .rectangle {
         position: relative;
-        width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
+        width: calc(25% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
         /* padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
         margin-right: 20px; /* 设置右侧间距 */
         margin-bottom: 20px; /* 设置下方间距 */
@@ -38,35 +38,32 @@
         }
 </style>
 
-<MudDialog Options="DialogOptions" Style="width:80%;height:80%">
-    <DialogContent>
-        <div class="container">
-            @foreach (var per in Fonts)
-            {
-                <div class="rectangle">
-                    <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
-                </div>
-            }
+<div class="container">
+    @foreach (var per in Fonts)
+    {
+        <div class="rectangle">
+            <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
         </div>
-    </DialogContent>
-</MudDialog>
+    }
+</div>
 
 
 @code {
-
-
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-    Dictionary<string, string> Fonts = new Dictionary<string, string>();
-    void Click(KeyValuePair<string, string> pair)
+    [Parameter]
+    public EventCallback<KeyValuePair<string, string>> OnImageTouched { get; set; }
+    async Task Click(KeyValuePair<string, string> pair)
     {
-        MudDialog.Close(pair);
+        if (OnImageTouched.HasDelegate)
+        {
+            await OnImageTouched.InvokeAsync(pair);
+        }
     }
 
+    Dictionary<string, string> Fonts = new Dictionary<string, string>();
+  
     protected override async Task OnInitializedAsync()
     {
-        Fonts = await Task.Run(()=> Global.ReadFont());
+        Fonts = await Task.Run(() => Global.ReadFont());
     }
 
 }

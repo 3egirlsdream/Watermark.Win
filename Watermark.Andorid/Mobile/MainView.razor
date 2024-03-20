@@ -290,147 +290,13 @@
 			</div>
 
 			<div class="water-tab-item" style="@(activeTab == 3 ? "overflow-y:auto;height:calc(100% - 48px);margin-top: 40px":"display:none")">
-				@if (IsLoginIn && Global.CurrentUser != null)
-				{
-					<MudPaper Style="@($"padding:10px;{@cardStyle}")" Elevation="0">
-						@if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
-						{
-							<MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
-						}
-						else
-						{
-							<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
-						}
-						<MudStack Row Style="align-items: center;">
-							<MudText Typo="Typo.body1" Class="px-4" Color="Color.Secondary">@Global.CurrentUser.DISPLAY_NAME</MudText>
-							@if (!Global.CurrentUser.IsVIP)
-							{
-								<MudButton Variant="Variant.Outlined" Class="ml-5" OnClick="()=> openVip = true">开通VIP</MudButton>
-							}
-							else
-							{
-								<MudButton Variant="Variant.Outlined" Class="ml-5" Color="Color.Warning">VIP</MudButton>
-							}
-						</MudStack>
-						<MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
-					</MudPaper>
-				}
-				else
-				{
-					<MudPaper Style="@($"padding:10px;{@cardStyle}")" Elevation="0">
-						<MudSkeleton />
-						<MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-						<MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-						<MudStack Row Class="mt-5">
-							<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-							<MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
-						</MudStack>
-					</MudPaper>
-				}
-
-				@* 活动面板 *@
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudCarousel Class="mud-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
-						<MudCarouselItem Transition="@Transition.Fade">
-							<div class="d-flex" style="height:100%">
-								<MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
-							</div>
-						</MudCarouselItem>
-						<MudCarouselItem Transition="@Transition.Fade">
-							<div class="d-flex" style="height:100%">
-								<MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
-							</div>
-						</MudCarouselItem>
-					</MudCarousel>
-				</MudPaper>
-
-
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 版本更新 @($" {ClientInstance.GetVersion().ToString()}")</MudText>
-						@if (checkUpdate)
-						{
-							<MudChip Size="Size.Small" Color="Color.Error">new</MudChip>
-						}
-						<MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="Update" />
-					</MudStack>
-					@if (DownLoadProgress > 0)
-					{
-						<MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" Class="mr-5" style="width:auto" />
-					}
-				</MudPaper>
-
-				<MudPaper Elevation="0" Style="@cardStyle" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 导入图标 </MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="() => openLogoDialog = true" />
-					</MudStack>
-				</MudPaper>
-
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 夜间模式 </MudText>
-						<MudSwitch @bind-Value="@Global.DARK_MODE" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
-					</MudStack>
-				</MudPaper>
-
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> PC客户端 </MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))" />
-					</MudStack>
-				</MudPaper>
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" />
-					</MudStack>
-				</MudPaper>
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 交流群：836325187</MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("836325187"))" />
-					</MudStack>
-				</MudPaper>
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 切换账号</MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.ExitToApp" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); IsLoginIn = false; }" />
-					</MudStack>
-				</MudPaper>
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button">下载缓存</MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" />
-					</MudStack>
-				</MudPaper>
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button">模板市场缓存</MudText>
-						<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>  DeleteCache(Global.AppPath.MarketFolder)" />
-					</MudStack>
-				</MudPaper>
-
-				<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-					<MudStack Row style="position:relative;align-items: center">
-						<MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
-						<MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" style="position:absolute;right:0px;height:38px;" />
-					</MudStack>
-				</MudPaper>
+				<SettingPage/>
 			</div>
-
-
 		</div>
 
 
 
 	</div>
-
-	@if (!openDrawer)
-	{
-		<MudFab Style="position: absolute; bottom: 55px; margin-left:calc(50vw - 20px);" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowUpward" OnClick="()=> openDrawer = true" Size="Size.Small" />
-	}
-
 
 	<MudOverlay Visible="@MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
 		<MudPaper Width="200px" Height="200px" Elevation="25" Style="text-align:center;padding-top:calc(50% - 38px)">
@@ -494,9 +360,9 @@
 <MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
 	<div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-			<MudIconButton Icon="@Icons.Material.Filled.KeyboardBackspace" OnClick="()=>openDrawer = false" />
-			<MudButton StartIcon="@Icons.Material.Filled.Save" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true">保存</MudButton>
-			<MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Primary" OnClick="RefreshEditImage">刷新</MudButton>
+			<MudIconButton Icon="@Icons.Material.Filled.KeyboardBackspace" OnClick="()=> openDrawer = false" />
+			<MudIconButton Variant="Variant.Filled" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true"/>
+			<MudIconButton Variant="Variant.Filled" DisableElevation Icon="@Icons.Material.Filled.Refresh" Color="Color.Primary" OnClick="RefreshEditImage"/>
 		</MudToolBar>
 	</div>
 
@@ -508,41 +374,6 @@
 
 		<Design @ref="design" CurrentCanvas="CurrentImage.Canvas" />
 	}
-</MudDrawer>
-
-
-<MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-	@if (openLogoDialog)
-	{
-		<LogoDialog />
-	}
-</MudDrawer>
-
-<MudDrawer @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-	<MudPaper Style="margin: 4% 10% 10px 10%;" Elevation="0" class="pa-3">
-		<MudStack Row style="position:relative;align-items: center">
-			<MudText Typo="Typo.button"> 永久授权 </MudText>
-			<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥38</MudChip>
-		</MudStack>
-	</MudPaper>
-	<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
-		<MudStack Row style="position:relative;align-items: center">
-			<MudText Typo="Typo.button"> 年票 </MudText>
-			<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥28</MudChip>
-		</MudStack>
-	</MudPaper>
-	<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
-		<MudStack Row style="position:relative;align-items: center">
-			<MudText Typo="Typo.button"> 季票 </MudText>
-			<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥18</MudChip>
-		</MudStack>
-	</MudPaper>
-	<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
-		<MudStack Row style="position:relative;align-items: center">
-			<MudText Typo="Typo.button"> 月票 </MudText>
-			<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥8</MudChip>
-		</MudStack>
-	</MudPaper>
 </MudDrawer>
 
 
@@ -606,20 +437,15 @@
 	[Inject]
 	private IDialogService DialogService { get; set; }
 	WMThickness BorderThickness = new WMThickness();
-	string url = "";
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
-	bool IsLoginIn = false;
 	bool openDrawer = false;
-	bool openVip = false;
-	bool openLogoDialog = false;
 	bool openSave = false;
 	private Design design;
 	int activeTab = 1;
 	int tb1_t1 = 1;
 	int tb2_t2 = 1;
 	bool ForceUpdate = false;
-	bool showMarket = false;
 	bool FocusImageShow = false;
 	string FocusImageSrc = "";
 	string FocusImageId = "";
@@ -637,28 +463,19 @@
 	TemplateList CurrentImage;
 	List<TemplateList> Images = new List<TemplateList>();
 	WMZipedTemplate FocusImage;
-	bool checkUpdate = false;
-	int DownLoadProgress = 0;
-	string cardStyle => $"margin:1px 16px;background:{Colors.Grey.Lighten4}";
 
-#if ANDROID
-
-	[Inject]
-	private IUpgradeService UpgradeService { get; set; }
-#endif
 	protected override async Task OnInitializedAsync()
 	{
 		await Global.InitConfig();
 		var date = Global.ReadDate();
 		if ((DateTime.Now - date).TotalDays > 5)
 		{
-			if (Directory.Exists(Global.AppPath.TemplatesFolder))
+			if (Directory.Exists(Global.AppPath.MarketFolder))
 			{
-				Directory.Delete(Global.AppPath.TemplatesFolder, true);
+				Directory.Delete(Global.AppPath.MarketFolder, true);
 			}
 			Global.WriteDate();
 		}
-
 
 		APIHelper helper = new APIHelper();
 		var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
@@ -683,14 +500,12 @@
 						USER_NAME = login.data.data.USER_NAME,
 						EXPIRE_DATE = login.data.data.EXPIRE_DATE
 					};
-				IsLoginIn = true;
 				await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
 				StateHasChanged();
 			}
 		}
 		await LoadTemplates();
 		await helper.DownloadLogoes();
-		checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
 
 		await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
 	}
@@ -880,29 +695,6 @@
 		openDrawer = true;
 	}
 
-	async void OpenLoginDialog()
-	{
-		DialogOptions topCenter = new DialogOptions() { Position = DialogPosition.TopCenter };
-		var rst = DialogService.Show<LoginDialog>("", topCenter);
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-		{
-			IsLoginIn = true;
-			StateHasChanged();
-		}
-	}
-
-	async void OpenSignUpDialog()
-	{
-		var rst = DialogService.Show<SignUpDialog>("");
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-		{
-			IsLoginIn = true;
-			StateHasChanged();
-		}
-	}
-
 	async void Export()
 	{
 		var helper = new WatermarkHelper();
@@ -947,10 +739,6 @@
 
 	async Task LoadTemplatesMarket()
 	{
-		// MainLoading.Message = "正在下载模板...";
-		// StateHasChanged();
-		// MainLoading.Show = true;
-		//showMarket = false;
 		var helper = new APIHelper();
 		var allTemplates = await helper.GetWatermarks("", start, 99);
 		var recommend = allTemplates.Where(x => x.Recommend);
@@ -1004,7 +792,7 @@
 						return Global.ReadConfig(content);
 					});
 					dirct.WMCanvas = canvas;
-					await InitFonts([canvas]);
+					await Global.InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
 						var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
@@ -1084,7 +872,7 @@
 						var content = File.ReadAllText(configPath);
 						return Global.ReadConfig(content);
 					});
-					await InitFonts([canvas]);
+					await Global.InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
 						var src = watermarkHelper.Generation(canvas, null, true, false);
@@ -1127,7 +915,7 @@
 				return Global.ReadConfig(content);
 			});
 			dirct.WMCanvas = canvas;
-			await InitFonts([canvas]);
+			await Global.InitFonts([canvas]);
 			var src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
 			dirct.Src = src;
 			return dirct;
@@ -1186,39 +974,6 @@
 		CurrentImage.Src = await whelper.GenerationAsync(cvs, null, true, false);
 		MainLoading.Show = false;
 		StateHasChanged();
-	}
-
-	private void DownloadProgressChanged(long readLength, long allLength)
-	{
-		InvokeAsync(() =>
-		{
-			var c = (int)(readLength * 100 / allLength);
-
-			if (c > 0 && c % 5 == 0) //刷新进度为每5%更新一次，过快的刷新会导致页面显示数值与实际不一致
-			{
-				DownLoadProgress = c; //下载完成百分比
-				StateHasChanged();
-			}
-		});
-	}
-	async void Update()
-	{
-#if ANDROID
-	if (!checkUpdate || DownLoadProgress > 0) return;
-	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
-	var downloadUri = "https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk";
-	await UpgradeService.DownloadFileAsync(downloadUri, DownloadProgressChanged);
-	UpgradeService.InstallNewVersion();
-	DownLoadProgress = 0;
-	StateHasChanged();
-#endif
-	}
-
-
-	async void CopyClipboard(string uri)
-	{
-		await Clipboard.Default.SetTextAsync(uri);
-		Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
 	}
 
 	async Task<List<string>> IntiSubscribedUserList()
@@ -1354,14 +1109,6 @@
 		}
 	}
 
-	void DeleteCache(string p)
-	{
-		if (Directory.Exists(p))
-		{
-			Directory.Delete(p, true);
-			ClientInstance.ShowMsg(Snackbar, "清除完成", Severity.Success);
-		}
-	}
 	void ToSecondPanel()
 	{
 		activeTab = 2;
@@ -1372,13 +1119,6 @@
 			var api = new APIHelper();
 			var __ = api.PageVisitRecord(ProgramPage.Market, Platform.Andorid);
 		}
-	}
-
-	async Task InitFonts(List<WMCanvas> mCanvas)
-	{
-		var fonts = Global.GetAllFontName(mCanvas);
-		var helper = new APIHelper();
-		await helper.DownloadFonts(fonts);
 	}
 
 
