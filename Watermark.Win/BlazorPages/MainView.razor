@@ -349,8 +349,8 @@
                     await Task.Run(() =>
                     {
                         var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
-                        using var bitmap = SkiaSharp.SKBitmap.Decode(file);
-                        return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
+                        var bitmap = SkiaSharp.SKBitmap.Decode(file);
+                        Global.WriteThumbnailImage(bitmap, thumbnail);
                     });
 
                     var src = Task.Run(() =>
