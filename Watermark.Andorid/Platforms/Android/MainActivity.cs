@@ -13,8 +13,8 @@ namespace Watermark.Andorid
 		{
 #if ANDROID
 			//设置状态栏，导航样颜色为透明
-			Window.SetStatusBarColor(Color.Transparent);
-			Window.SetNavigationBarColor(Color.Transparent);
+			Window.SetStatusBarColor(Color.White);
+			Window.SetNavigationBarColor(Color.White);
 			Window.DecorView.SystemUiVisibility = (StatusBarVisibility)SystemUiFlags.LightStatusBar;
 #endif
 			base.OnCreate(savedInstanceState);
