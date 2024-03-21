@@ -17,7 +17,8 @@ namespace Watermark.Win.Models
             TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
-            OutputFolder = AppDomain.CurrentDomain.BaseDirectory + "Output" + Path.DirectorySeparatorChar
+            OutputFolder = AppDomain.CurrentDomain.BaseDirectory + "Output" + Path.DirectorySeparatorChar,
+			CacheFolder = AppDomain.CurrentDomain.BaseDirectory + "Cache" + Path.DirectorySeparatorChar
 		};
         static WMAppPath AP = new()
         {
@@ -26,7 +27,8 @@ namespace Watermark.Win.Models
 			TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
-            OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar
+            OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar,
+			CacheFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Cache" + Path.DirectorySeparatorChar
 		};
 
 		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
@@ -500,17 +502,31 @@ namespace Watermark.Win.Models
                 var dic = GetConfig();
                 if (dic.TryGetValue(nameof(MAX_THREAD), out string v1) && int.TryParse(v1, out int vv1))
                 {
-                    MAX_THREAD = vv1;
+                    maxThread = vv1;
                 }
                 if (dic.TryGetValue(nameof(SECOND_EXIF), out string v2) && bool.TryParse(v2, out bool vv2))
                 {
-                    SECOND_EXIF = vv2;
+                    secondExif = vv2;
                 }
                 if (dic.TryGetValue(nameof(DARK_MODE), out string v3) && bool.TryParse(v3, out bool vv3))
                 {
-                    SECOND_EXIF = vv3;
+                    darkMode = vv3;
                 }
             });
+        }
+
+        public static string GetImageSrcOrStoreImage(string watermarkId)
+        {
+            var p = Path.Combine(AppPath.CacheFolder, watermarkId + ".jpg");
+            if(File.Exists(p))
+            {
+                using var bitmap = SKBitmap.Decode(p);
+                using var sk = SKImage.FromBitmap(bitmap);
+                using var data = sk.Encode(SKEncodedImageFormat.Jpeg, 50);
+				var bytes = data.ToArray();
+				return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+			}
+            return "";
         }
     }
 }

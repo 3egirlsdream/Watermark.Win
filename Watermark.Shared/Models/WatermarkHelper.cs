@@ -178,9 +178,18 @@ namespace Watermark.Win.Models
                 }
                 using var sm = File.OpenWrite(output);
                 data.SaveTo(sm);
-            }
+				var bytes = data.ToArray();
+				result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+			}
             else
             {
+                var p = Path.Combine(Global.AppPath.CacheFolder, mainCanvas.ID + ".jpg");
+                if (!File.Exists(p))
+                {
+                    if (!Directory.Exists(Global.AppPath.CacheFolder)) Directory.CreateDirectory(Global.AppPath.CacheFolder);
+					using var sm = File.OpenWrite(p);
+					data.SaveTo(sm);
+				}
                 var bytes = data.ToArray();
                 result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
             }

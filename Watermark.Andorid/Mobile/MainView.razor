@@ -34,8 +34,8 @@
 		position: absolute;
 		bottom: 0;
 		width: 100%;
-		background:#fff;
-		z-index:10;
+		background: #fff;
+		z-index: 10;
 	}
 
 	.water-tab-text {
@@ -94,7 +94,7 @@
 <MudSnackbarProvider />
 <div Style="height:100vh;width:100%;">
 	<div style="@($"height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;display:{(activeTab == 3 ? "":"none")}")">
-		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
+		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
 			<MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
 				你好，
 				@if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
@@ -385,8 +385,8 @@
 							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">取消收藏</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
-							<MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>{ FocusImageShow = false; OpenPhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImage?.WatermarkId)); }" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">使用模板</span></MudText>
+							<MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
+							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">下载</span></MudText>
 						</MudStack>
 
 					</div>
@@ -406,7 +406,7 @@
 							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">删除</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
-							<MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>{ FocusImageShow = false; OpenPhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)); } "/>
+							<MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>{ FocusImageShow = false; OpenPhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)); } " />
 							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">使用模板</span></MudText>
 						</MudStack>
 
@@ -549,9 +549,11 @@
 
 		Global.DeviceType = Shared.Enums.DeviceType.Andorid;
 		await LoadTemplates();
+		await LoadCollectTemplate();
 		await helper.DownloadLogoes();
 
 		await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+		
 	}
 
 	async void SelectImage(IReadOnlyList<IBrowserFile> files)
@@ -819,13 +821,12 @@
 		StateHasChanged();
 		try
 		{
-			// MainLoading.Message = $"正在加载模板...";
 			List<Task> mission = new List<Task>();
 			var basePath = Global.AppPath.MarketFolder;
 
 			WatermarkHelper watermarkHelper = new WatermarkHelper();
 			foreach (var dirct in ZipedTemplates)
-			{
+			 {
 				var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
 				if (System.IO.File.Exists(configPath))
 				{
@@ -837,6 +838,8 @@
 					});
 					dirct.WMCanvas = canvas;
 					dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
+					dirct.Src = await Task.Run(() =>  Global.GetImageSrcOrStoreImage(dirct.WatermarkId));
+					if (!string.IsNullOrEmpty(dirct.Src)) continue;
 					await Global.InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
@@ -850,10 +853,6 @@
 							}
 							else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
 							{
-								// var fs = file.OpenRead();
-								// using MemoryStream mss = new();
-								// fs.CopyTo(mss);
-								// dirct.Fonts[file.Name] = mss.ToArray();
 							}
 							else
 							{
@@ -862,30 +861,52 @@
 							}
 
 						}
-
-						var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
-						dirct.Src = src;
+						dirct.Src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
 						InvokeAsync(StateHasChanged);
-						return src;
 					});
 					mission.Add(t);
 				}
-			}
+			 }
 
-			var getILike = await helper.GetILike(Global.CurrentUser.ID);
+			var getILike = await helper.GetILike(Global.CurrentUser?.ID ?? "");
 			if (getILike != null && getILike.success && getILike.data != null)
 			{
 				ILikeTemplates = ZipedTemplates.Where(x => getILike.data.Select(c => c.WatermarkId).Contains(x.WatermarkId)).ToList();
 			}
 
 			await Task.WhenAll(mission);
-			// MainLoading.Show = false;
 			StateHasChanged();
 		}
 		catch (Exception ex)
 		{
 			Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
+	}
+
+	async Task LoadCollectTemplate()
+	{
+		var api = new APIHelper();
+		var allTemplates = await api.GetWatermarks("", start, 99);
+		var getILike = await api.GetILike(Global.CurrentUser?.ID ?? "");
+		if (getILike != null && getILike.success && getILike.data != null)
+		{
+			ILikeTemplates = allTemplates.Where(x => getILike.data.Select(c => c.WatermarkId).Contains(x.WatermarkId)).ToList();
+			foreach (var t in ILikeTemplates)
+			{
+				var configPath = Global.AppPath.BasePath + t.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+				if (System.IO.File.Exists(configPath))
+				{
+					var canvas = await Task.Run(() =>
+					{
+						var content = File.ReadAllText(configPath);
+						return Global.ReadConfig(content);
+					});
+					t.WMCanvas = canvas;
+				}
+				await Task.Run(() => t.Src = Global.GetImageSrcOrStoreImage(t.WatermarkId));
+			}
+		}
+
 	}
 
 	async Task LoadTemplates()
@@ -922,7 +943,8 @@
 				await Global.InitFonts([tp.WMCanvas]);
 				var t = Task.Run(() =>
 				{
-					var src = watermarkHelper.Generation(tp.WMCanvas, null, true, false);
+					var src = Global.GetImageSrcOrStoreImage(tp.WatermarkId);
+					if (string.IsNullOrEmpty(src)) src = watermarkHelper.Generation(tp.WMCanvas, null, true, false);
 					tp.Src = src;
 				});
 				mission.Add(t);
@@ -960,7 +982,8 @@
 			dirct.WMCanvas = canvas;
 			dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 			await Global.InitFonts([canvas]);
-			var src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
+			var src = Global.GetImageSrcOrStoreImage(watermarkId);
+			if (string.IsNullOrEmpty(src)) src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
 			dirct.Src = src;
 			return dirct;
 		}
@@ -1127,6 +1150,7 @@
 		});
 		if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
 		{
+			FocusImageShow = false;
 			var rst = DialogService.Show<LoginDialog>("");
 			var dialogResult = await rst.Result;
 			if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
