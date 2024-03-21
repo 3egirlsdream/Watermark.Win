@@ -275,8 +275,8 @@
 					{
 						var content = File.ReadAllText(configPath);
 						var canvas = Global.ReadConfig(content);
-
 						dirct.WMCanvas = canvas;
+						dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 						Global.InitFonts([canvas]).Wait();
 
 						var folder = new DirectoryInfo(basePath + dirct.WatermarkId);

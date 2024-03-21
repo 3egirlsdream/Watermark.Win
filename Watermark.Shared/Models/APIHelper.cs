@@ -525,5 +525,11 @@ namespace Watermark.Win.Models
 			return result;
 		}
 
+		public async Task<API<bool>> UploadLog(string device, string msg)
+		{
+			var result = await Connections.HttpGetAsync<bool>(HOST + $"/api/Watermark/UploadLog?device={device}&msg={msg}", Encoding.UTF8);
+			return result;
+		}
+
 	}
 }

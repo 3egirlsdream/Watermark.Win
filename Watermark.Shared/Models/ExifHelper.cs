@@ -37,7 +37,9 @@ namespace Watermark.Win.Models
                 {
                     return DefaultMeta;
                 }
-                using var exifReader = new ExifReader(path);
+                if(Global.SECOND_EXIF) return ReadImageCopy(path);
+
+				using var exifReader = new ExifReader(path);
                 var dic = new Dictionary<string, string>();
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {
@@ -47,24 +49,11 @@ namespace Watermark.Win.Models
                         HandleExif(dic, key, result);
                     }
                 }
-
-
-                var b = dic.TryGetValue("LensModel", out string v);
-                if (!b || string.IsNullOrEmpty(v))
-                {
-                    var d2 = ReadImageCopy(path);
-                    if (d2.TryGetValue("LensModel", out string v2))
-                    {
-                        dic["LensModel"] = v2;
-                    }
-                }
                 return dic;
             }
             catch(Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                if (Global.SECOND_EXIF) return ReadImageCopy(path);
-                else return DefaultMeta;
+                return DefaultMeta;
             }
         }
 
@@ -73,33 +62,20 @@ namespace Watermark.Win.Models
             try
             {
                 using var stream = new MemoryStream(path);
-                var dic = ReadImage(stream);
-
-                var b = dic.TryGetValue("LensModel", out string v);
-                if (!b || string.IsNullOrEmpty(v))
-                {
-                    var s2 = new MemoryStream(path);
-                    var d2 = ReadImageCopy(s2);
-                    if(d2.TryGetValue("LensModel", out string v2))
-                    {
-                        dic["LensModel"] = v2;
-                    }
-                }
-                return dic; 
-            }
+                return ReadImage(stream);
+			}
             catch(Exception ex)
 			{
-				using var stream = new MemoryStream(path);
-				if (Global.SECOND_EXIF) return ReadImageCopy(stream);
                 return DefaultMeta;
 			}
         }
 
-        public static Dictionary<string, string> ReadImage(Stream path)
+        private static Dictionary<string, string> ReadImage(Stream path)
         {
             try
             {
-                using var exifReader = new ExifReader(path);
+                if(Global.SECOND_EXIF) return ReadImageCopy(path);
+				using var exifReader = new ExifReader(path);
                 var dic = new Dictionary<string, string>();
                 foreach (var key in Enum.GetNames(typeof(ExifTags)))
                 {

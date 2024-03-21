@@ -836,6 +836,7 @@
 						return Global.ReadConfig(content);
 					});
 					dirct.WMCanvas = canvas;
+					dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 					await Global.InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
@@ -912,6 +913,7 @@
 				{
 					var content = File.ReadAllText(configPath);
 					dirct.WMCanvas = Global.ReadConfig(content);
+					dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 					downloadedTemplates.Add(dirct);
 				}
 			}
@@ -956,6 +958,7 @@
 				return Global.ReadConfig(content);
 			});
 			dirct.WMCanvas = canvas;
+			dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 			await Global.InitFonts([canvas]);
 			var src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
 			dirct.Src = src;

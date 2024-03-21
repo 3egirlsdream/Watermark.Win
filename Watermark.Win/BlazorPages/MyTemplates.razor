@@ -172,6 +172,7 @@
                         var content = File.ReadAllText(configPath);
                         return Global.ReadConfig(content);
                     });
+                    canvas.Exif = ExifHelper.DefaultMeta;
                     await Global.InitFonts([canvas]);
                     var t = Task.Run(() =>
                     {
@@ -213,6 +214,7 @@
                 var tx = Task.Run(() =>
                 {
                     t.WMCanvas = zip.WMCanvas;
+                    t.WMCanvas.Exif = ExifHelper.DefaultMeta;
                     t.Images = zip.Images;
                     t.Fonts = zip.Fonts;
                     t.Bitmap = zip.Bitmap;
@@ -290,6 +292,7 @@
                     });
 
                     dirct.WMCanvas = canvas;
+                    dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
                     await Global.InitFonts([canvas]);
 
                     var t = Task.Run(() =>
