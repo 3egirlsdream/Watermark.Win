@@ -893,7 +893,7 @@
 			ILikeTemplates = allTemplates.Where(x => getILike.data.Select(c => c.WatermarkId).Contains(x.WatermarkId)).ToList();
 			foreach (var t in ILikeTemplates)
 			{
-				var configPath = Global.AppPath.BasePath + t.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+				var configPath = Path.Combine(Global.AppPath.MarketFolder, t.WatermarkId, "config.json");
 				if (System.IO.File.Exists(configPath))
 				{
 					var canvas = await Task.Run(() =>

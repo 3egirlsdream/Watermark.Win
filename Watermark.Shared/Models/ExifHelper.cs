@@ -143,7 +143,16 @@ namespace Watermark.Win.Models
 				}
                 path?.Dispose();
                 exifReader = null;
-                return dic;
+
+				if (!dic.TryGetValue("LensModel", out string m) || string.IsNullOrEmpty(m))
+				{
+					if (dic.TryGetValue("LensType", out m))
+					{
+						dic["LensModel"] = m?.Trim();
+					}
+				}
+
+				return dic;
 			}
 			catch (Exception ex)
 			{
@@ -166,6 +175,14 @@ namespace Watermark.Win.Models
                     }
                 }
                 exifReader = null;
+                
+                if (!dic.TryGetValue("LensModel",out string m) || string.IsNullOrEmpty(m))
+                {
+                    if(dic.TryGetValue("LensType", out m))
+                    {
+                        dic["LensModel"] = m?.Trim();
+                    }
+                }
                 return dic;
             }
             catch(Exception ex) 
