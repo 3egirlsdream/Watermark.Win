@@ -73,9 +73,14 @@
 							@if (ImagesBase64.TryGetValue(container.ID, out string src))
 							{
 								<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Width="260" Style="float:right" />
-								<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="float:right;cursor: pointer;" Size="Size.Small" OnClick="() => RemoveImage(container)" />
 							}
-							<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;" Size="Size.Small" />
+							<MudStack Row="true">
+								@if (ImagesBase64.TryGetValue(container.ID, out string src))
+								{
+									<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="cursor: pointer;" Size="Size.Small" OnClick="() => RemoveImage(container)" />
+								}
+								<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Class="ml-1" Size="Size.Small" />
+							</MudStack>
 						</div>
 						<div class="d-flex justify-space-between mt-5">
 							<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
@@ -223,17 +228,17 @@
 													}
 													else if (c_comp is WMLogo mLogo)
 													{
-														<MudStack Row class="mt-5" Style="position:relative">
-															<MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-															<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+														<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+															<MudText Typo="Typo.button">白底转透明像素</MudText>
+															<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
 														</MudStack>
-														<div Class="mt-5" Style="display:flex;align-items:center;height:40px;">
+														<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
 															<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-															<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
 															@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
 															{
-																<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+																<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" />
 															}
+															<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" />
 														</div>
 													}
 													else if (c_comp is WMText mText)
@@ -311,17 +316,17 @@
 										}
 										else if (ctrl is WMLogo mLogo)
 										{
-											<MudStack Row class="mt-5" Style="position:relative">
-												<MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-												<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+											<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+												<MudText Typo="Typo.button">白底转透明像素</MudText>
+												<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
 											</MudStack>
-											<div Class="mt-5" Style="display:flex;align-items:center;height:40px;">
+											<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
 												<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-												<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" Style="float:right;max-width:80px;" />
 												@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
 												{
-													<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+													<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" />
 												}
+												<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> OpenLogoDialog(mLogo))" />
 											</div>
 										}
 										else if (ctrl is WMText mText)
@@ -423,6 +428,15 @@
 	{
 		canvas = CurrentCanvas;
 		if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
+		InitLogoBase64();
+		InitLocalFonts();
+
+		var api = new APIHelper();
+		var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
+	}
+
+	void InitLogoBase64()
+	{
 		Global.ImageFile2Base64(ImagesBase64, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
 		var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
 		canvas.Children.ForEach(c =>
@@ -441,10 +455,6 @@
 				};
 			});
 		});
-		InitLocalFonts();
-
-		var api = new APIHelper();
-		var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
 	}
 
 	private async void RefreshImage()
@@ -597,7 +607,8 @@
 	{
 		CurrentCanvas = mCanvas;
 		canvas = CurrentCanvas;
-		StateHasChanged();
+		InitLogoBase64();
+		InvokeAsync(StateHasChanged);
 	}
 
 	void SelectLocalFont(WMText mText)
