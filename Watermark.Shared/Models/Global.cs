@@ -528,5 +528,14 @@ namespace Watermark.Win.Models
 			}
             return "";
         }
-    }
+
+        public static bool UploadMode { get; set; } = false;
+
+        public static string GetSrc(string watermarkId)
+        {
+            return $"https://cdn.thankful.top/{watermarkId}.jpg";
+
+		}
+
+	}
 }

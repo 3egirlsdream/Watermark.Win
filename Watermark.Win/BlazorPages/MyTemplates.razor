@@ -57,7 +57,7 @@
                         }
                         <MudCardContent>
                             <MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
-                                @(t.WMCanvas?.Name ?? t.Desc)
+                                @(t.Name ?? t.Desc)
                             </MudText>
                         </MudCardContent>
                         <MudCardActions Style="position:relative;">
@@ -85,7 +85,7 @@
                         }
                         <MudCardContent>
                             <MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
-                                @(t.WMCanvas?.Name ?? t.Desc)
+                                @(t.Name ?? t.Desc)
                             </MudText>
                         </MudCardContent>
                         <MudCardActions Style="position:relative;">
@@ -205,38 +205,7 @@
             if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
             var helper = new APIHelper();
             ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
-            StateHasChanged();
-            var mission = new List<Task>();
-            foreach (var t in ZipedTemplates)
-            {
-                var zip = await helper.ExtractZip(t.WatermarkId);
-                await Global.InitFonts([zip.WMCanvas]);
-                var tx = Task.Run(() =>
-                {
-                    t.WMCanvas = zip.WMCanvas;
-                    t.WMCanvas.Exif = ExifHelper.DefaultMeta;
-                    t.Images = zip.Images;
-                    t.Fonts = zip.Fonts;
-                    t.Bitmap = zip.Bitmap;
-                });
-                mission.Add(tx);
-            }
-            await Task.WhenAll(mission);
-            var whelper = new WatermarkHelper();
-            List<Task> tasks = new List<Task>();
-            foreach (var t in ZipedTemplates)
-            {
-                var c = Task.Run(() =>
-                {
-                    t.Src = whelper.Generation(t.WMCanvas, t, true);
-                    InvokeAsync(StateHasChanged);
-                });
-
-                tasks.Add(c);
-            }
-            await Task.WhenAll(tasks);
-            StateHasChanged();
-            ZipedTemplates.ForEach(x => x.Dispose());
+            ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         }
         catch(Exception ex)
         {
@@ -268,77 +237,7 @@
         {
             ClientInstance.ShowMsg(Snackbar, getILike?.message?.content, Severity.Error);
         }
-
-        var needToDownloadTemplates = ILikeTemplates.Where(x => !downloadedTemplates.Contains(x.WatermarkId)).Select(x => x.WatermarkId).ToList();
-        var downloaded = await helper.Downloads(needToDownloadTemplates);
-        if (!downloaded) Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "下载失败", Severity.Error);
-
-        try
-        {
-            StateHasChanged();
-            List<Task> mission = new List<Task>();
-            var basePath = Global.AppPath.MarketFolder;
-
-            WatermarkHelper watermarkHelper = new WatermarkHelper();
-            foreach (var dirct in ILikeTemplates)
-            {
-                var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
-                if (System.IO.File.Exists(configPath))
-                {
-                    var canvas = await Task.Run(() =>
-                    {
-                        var content = File.ReadAllText(configPath);
-                        return Global.ReadConfig(content);
-                    });
-
-                    dirct.WMCanvas = canvas;
-                    dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
-                    await Global.InitFonts([canvas]);
-
-                    var t = Task.Run(() =>
-                    {
-                        var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
-                        foreach (var file in folder.GetFiles())
-                        {
-                            if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
-                                dirct.Bitmap = sKBitmap;
-                            }
-                            else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
-                            {
-                                // var fs = file.OpenRead();
-                                // using MemoryStream mss = new();
-                                // fs.CopyTo(mss);
-                                // dirct.Fonts[file.Name] = mss.ToArray();
-                            }
-                            else
-                            {
-                                var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
-                                dirct.Images[file.Name] = sKBitmap;
-                            }
-
-                        }
-
-                        var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
-                        dirct.Src = src;
-                        return src;
-                    });
-                    mission.Add(t);
-                }
-            }
-            await Task.WhenAll(mission);
-            StateHasChanged();
-            ILikeTemplates.ForEach(x => x.Dispose());
-        }
-        catch (Exception ex)
-        {
-            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-        }
-        finally
-        {
-            GC.Collect();
-        }
+        ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
     }
 
     void EditTemplate(WMCanvas canvas, string cloud = "")

@@ -45,9 +45,9 @@
         <div style="width:500px;height:100%;margin-left:calc(100% - 500px);padding:10px;">
             <MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
                 <MudExpansionPanel Text="画布">
-                    <MudStack Row>
+                    <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
-                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" Style="float:right;width:40px;height:40px;" />
+                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage"/>
                     </MudStack>
                     <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
                     <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
@@ -57,26 +57,26 @@
                         <MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         <MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
                     </MudStack>
-                    <MudStack Row Class="mt-5" Style="position:relative">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
-                        <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" Style="position:absolute;right:5px" />
+                    <MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                        <MudText Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
+                        <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
                     </MudStack>
-                    <MudStack Row Class="mt-5" Style="position:relative">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用阴影</MudText>
-                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" Style="position:absolute;right:5px" />
+                    <MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                        <MudText Typo="Typo.button">启用阴影</MudText>
+                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" />
                     </MudStack>
                     <MudColorPicker class="mt-5" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
-                    <MudStack Row Class="mt-5" Style="position:relative">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用图片圆角</MudText>
-                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" Style="position:absolute;right:5px" />
+                    <MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                        <MudText Typo="Typo.button">启用图片圆角</MudText>
+                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" />
                     </MudStack>
                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
-                    <MudStack Row Class="mt-5" Style="position:relative">
-                        <MudText Align="Align.Justify" Typo="Typo.button">启用背景高斯模糊</MudText>
-                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" Style="position:absolute;right:5px" />
+                    <MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                        <MudText Typo="Typo.button">启用背景高斯模糊</MudText>
+                        <MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
                     </MudStack>
                     <MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
@@ -248,17 +248,17 @@
                                                     else if (c_comp is WMLogo mLogo)
                                                     {
 
-                                                        <MudStack Row class="mt-5" Style="position:relative">
-                                                            <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-                                                            <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+                                                        <MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+                                                            <MudText Typo="Typo.button">白底转透明像素</MudText>
+                                                            <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
                                                         </MudStack>
-                                                        <div Class="mt-5" Style="line-height:40px;height:40px;">
+                                                        <div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
                                                             <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
                                                             @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
                                                             {
                                                                 <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
                                                             }
+                                                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
                                                         </div>
                                                     }
                                                     else if (c_comp is WMText mText)
@@ -293,7 +293,7 @@
                                                                     }
                                                                 </MudMenu>
 
-                                                                <MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
+                                                                <MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
                                                                 <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
                                                             </MudStack>
                                                         </MudStack>
@@ -345,17 +345,17 @@
                                         }
                                         else if (ctrl is WMLogo mLogo)
                                         {
-                                            <MudStack Row class="mt-5" Style="position:relative">
-                                                <MudText Align="Align.Justify" Typo="Typo.button">白底转透明像素</MudText>
-                                                <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" Style="position:absolute;right:5px" />
+                                            <MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.button">白底转透明像素</MudText>
+                                                <MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary"/>
                                             </MudStack>
-                                            <div Class="mt-5" Style="line-height:40px;height:40px;">
+                                            <div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
                                                 <MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
                                                 @if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
                                                 {
                                                     <MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
                                                 }
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
                                             </div>
                                         }
                                         else if (ctrl is WMText mText)
@@ -389,7 +389,7 @@
                                                         }
                                                     </MudMenu>
 
-                                                    <MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
+                                                    <MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
                                                     <MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
                                                 </MudStack>
 

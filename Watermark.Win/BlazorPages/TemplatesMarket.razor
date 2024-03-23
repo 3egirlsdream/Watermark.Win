@@ -89,7 +89,7 @@
 							</MudCard>
 							<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
 								<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-									@t.WMCanvas?.Name
+									@t.Name ?? @t.Desc
 								</MudText>
 								<div style="display: flex; align-items: center;">
 									<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
@@ -138,7 +138,7 @@
 								</MudCard>
 								<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
 									<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-										@t.WMCanvas?.Name
+										@(t.Name ?? t.Desc)
 									</MudText>
 									<div style="display: flex; align-items: center;">
 										<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
@@ -222,9 +222,6 @@
 
 	async Task LoadTemplates()
 	{
-		loadingMessage = "正在下载模板...";
-		StateHasChanged();
-		loading = true;
 		var helper = new APIHelper();
 		var allTemplates = (await helper.GetWatermarks("", start, 999, sortCode)).Where(x => x.Visible);
 		List<Task> tasks1 = new List<Task>();
@@ -232,15 +229,6 @@
 		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
 		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
 		ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).ToList();
-		if (!Directory.Exists(Global.AppPath.MarketFolder))
-		{
-			Directory.CreateDirectory(Global.AppPath.MarketFolder);
-		}
-		var templateFolderInfo = new DirectoryInfo(Global.AppPath.MarketFolder);
-		var downloadedTemplates = templateFolderInfo.GetDirectories().Select(x => x.Name).ToList();
-		var needToDownloadTemplates = ZipedTemplates.Where(x => !downloadedTemplates.Contains(x.WatermarkId)).Select(x => x.WatermarkId).ToList();
-		var downloaded = await helper.Downloads(needToDownloadTemplates);
-		if (!downloaded) Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "下载失败", Severity.Error);
 		var subUser = await IntiSubscribedUserList();
 		subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
 		foreach (var su in subUser)
@@ -255,63 +243,7 @@
 
 		subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
 		subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).ToList()));
-
-		loading = false;
-		StateHasChanged();
-		try
-		{
-			List<Task> mission = new List<Task>();
-			var basePath = Global.AppPath.MarketFolder;
-
-			WatermarkHelper watermarkHelper = new WatermarkHelper();
-			var option = new ParallelOptions();
-			option.MaxDegreeOfParallelism = Global.MAX_THREAD;
-			await Task.Run(() =>
-			{
-				Parallel.ForEach(ZipedTemplates, option, (dirct) =>
-				{
-					var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
-					if (System.IO.File.Exists(configPath))
-					{
-						var content = File.ReadAllText(configPath);
-						var canvas = Global.ReadConfig(content);
-						dirct.WMCanvas = canvas;
-						dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
-						Global.InitFonts([canvas]).Wait();
-
-						var folder = new DirectoryInfo(basePath + dirct.WatermarkId);
-						foreach (var file in folder.GetFiles())
-						{
-							if (file.Name.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
-							{
-								var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
-								dirct.Bitmap = sKBitmap;
-							}
-							else if (file.Name.EndsWith(".ttf") || file.Name.EndsWith(".otf"))
-							{
-							}
-							else
-							{
-								var sKBitmap = SkiaSharp.SKBitmap.Decode(file.FullName);
-								dirct.Images[file.Name] = sKBitmap;
-							}
-
-						}
-
-						var src = watermarkHelper.Generation(dirct.WMCanvas, dirct, true, false);
-						dirct.Src = src;
-						InvokeAsync(StateHasChanged);
-
-					}
-				});
-			});
-			StateHasChanged();
-			ZipedTemplates.ForEach(x => x.Dispose());
-		}
-		catch (Exception ex)
-		{
-			Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-		}
+		ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
 	}
 
 	void Share(string id)
@@ -370,7 +302,7 @@
 			var templates = ZipedTemplates.AsEnumerable();
 			if (!string.IsNullOrEmpty(Search))
 			{
-				templates = ZipedTemplates.Where(x => x.WMCanvas.Name.Contains(Search) || x.WMCanvas.ID == Search || x.UserDisplayName.Contains(Search));
+				templates = ZipedTemplates.Where(x => x.Desc.Contains(Search) || x.WatermarkId == Search || x.UserDisplayName.Contains(Search));
 			}
 			foreach (var item in templates)
 			{

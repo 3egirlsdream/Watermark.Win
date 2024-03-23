@@ -183,7 +183,7 @@ namespace Watermark.Win.Views
             {
                 Directory.Delete(Global.AppPath.TemplatesFolder, true);
             }
-            clearCache.Content = "清除完成";
+            clearDownloadCache.Content = "清除完成";
         }
     }
 

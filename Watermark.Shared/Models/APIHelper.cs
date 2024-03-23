@@ -64,7 +64,26 @@ namespace Watermark.Win.Models
                 }
             }
 
-            var result1 = await UploadToQiniu(watermarkId, name);
+            //生成一张预览图
+            var op = Path.Combine(Global.AppPath.OutputFolder, watermarkId + ".jpg");
+            if(File.Exists(op)) { File.Delete(op); }
+            var cfg = Path.Combine(Global.AppPath.TemplatesFolder, watermarkId, "config.json");
+            var j = File.ReadAllText(cfg);
+            var canvas = Global.ReadConfig(j);
+            canvas.Path = Path.Combine(Global.AppPath.TemplatesFolder, watermarkId, "default.jpg");
+			var re = Global.Resolution;
+            var qua = Global.Quality;
+            Global.Resolution = "1080";
+            Global.Quality = 75;
+            Global.UploadMode = true;
+            var helper = new WatermarkHelper();
+            await helper.GenerationAsync(canvas, null, false);
+			Global.Resolution = re;
+			Global.Quality = qua;
+			Global.UploadMode = false;
+            await UploadImageToQiniu(watermarkId);
+
+			var result1 = await UploadToQiniu(watermarkId, name);
             if (result1.success)
             {
                 using var form = new MultipartFormDataContent();
@@ -72,6 +91,7 @@ namespace Watermark.Win.Models
                 form.Add(new StringContent(watermarkId), "watermarkId");
                 form.Add(new StringContent(coins.ToString()), "coins");
                 form.Add(new StringContent(desc), "desc");
+                form.Add(new StringContent(name), "name");
                 form.Add(new StringContent(Global.CurrentUser.ID), "userId");
                 using var response = await _client.PostAsync("/api/Watermark/Upload", form);
                 var bt = await response.Content.ReadAsByteArrayAsync();
@@ -156,7 +176,41 @@ namespace Watermark.Win.Models
             return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
         }
 
-        public async Task<List<WMZipedTemplate>> GetWatermarks(string user, int start, int length, string desc = "countDesc")
+
+		public async Task<API<string>> UploadImageToQiniu(string watermarkId)
+		{
+			var path = Global.AppPath.OutputFolder;
+			if (Directory.Exists(path))
+			{
+				var request = await Connections.HttpGetAsync<string>(HOST + $"/api/Qiniu/GetToken?key={watermarkId}.jpg", Encoding.UTF8);
+				if (!request.success) return request;
+				var token = request.data ?? "";
+
+				var targetPath = Path.Combine(path, $"{watermarkId}.jpg");
+
+				Config config = new Config
+				{
+					// 设置上传区域
+					Zone = Zone.ZONE_CN_South,
+					// 设置 http 或者 https 上传
+					UseHttps = true,
+					UseCdnDomains = true,
+					ChunkSize = ChunkUnit.U512K
+				};
+				// 表单上传
+				FormUploader target = new FormUploader(config);
+				HttpResult result = target.UploadFile(targetPath, $"{watermarkId}.jpg", token, null);
+				var rst = new API<string>
+				{
+					success = result.Code == 200,
+					message = new APISub { content = result.Text }
+				};
+				return rst;
+			}
+			return new API<string>() { success = false, message = new APISub() { content = "文件不存在" } };
+		}
+
+		public async Task<List<WMZipedTemplate>> GetWatermarks(string user, int start, int length, string desc = "countDesc")
         {
             try
             {
@@ -184,6 +238,7 @@ namespace Watermark.Win.Models
                         t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "0") > 0 ? true : false;
                         t.UserDisplayName = item?["DISPLAY_NAME"]?.ToString();
                         t.Visible = item?["STATE"]?.ToString() == "A";
+                        t.Name = item?["NAME"]?.ToString() ?? "";
                         if (DateTime.TryParse(item?["DATETIME_CREATED"]?.ToString(), out var dt))
                         {
                             t.DateTimeCreated = dt;

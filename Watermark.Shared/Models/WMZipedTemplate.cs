@@ -17,6 +17,7 @@ namespace Watermark.Win.Models
         public SKBitmap Bitmap { get; set; }
         public string Src { get; set; }
         public string Desc { get; set; }
+        public string Name { get; set; }
         public string WatermarkId { get; set; }
         public string UserId { get; set; }
         public string UserDisplayName { get; set; }

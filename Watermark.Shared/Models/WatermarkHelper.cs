@@ -1,6 +1,7 @@
 ﻿using SkiaSharp;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Numerics;
@@ -152,6 +153,7 @@ namespace Watermark.Win.Models
 
 
             string result = "";
+            //非预览
             if (!isPreview)
             {
                 var output = Global.OutPutPath;
@@ -160,23 +162,25 @@ namespace Watermark.Win.Models
                     Directory.CreateDirectory(output);
                 }
                 var newFileaName = "DFX_" + Path.GetFileNameWithoutExtension(mainCanvas.Path);
+                if (Global.UploadMode)
+                {
+                    newFileaName = mainCanvas.ID;
+				}
                 output += Path.DirectorySeparatorChar + newFileaName + ".jpg";
-#if WINDOWS
-               using var sm = File.OpenWrite(output);
-               data.SaveTo(sm);
-#endif
-				var bytes = data.ToArray();
-				result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+                if (Global.DeviceType != DeviceType.Andorid)
+                {
+                    using var sm = File.OpenWrite(output);
+                    data.SaveTo(sm);
+                }
+                else
+                {
+                    //手机设备需要返回字符串保存到相册
+                    var bytes = data.ToArray();
+                    result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+                }
 			}
             else
             {
-                var p = Path.Combine(Global.AppPath.CacheFolder, mainCanvas.ID + ".jpg");
-                if (!File.Exists(p))
-                {
-                    if (!Directory.Exists(Global.AppPath.CacheFolder)) Directory.CreateDirectory(Global.AppPath.CacheFolder);
-					using var sm = File.OpenWrite(p);
-					data.SaveTo(sm);
-				}
                 var bytes = data.ToArray();
                 result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
             }
@@ -710,9 +714,9 @@ namespace Watermark.Win.Models
             using var paint2 = new SKPaint();
             paint2.IsAntialias = true;
             paint2.Color = SKColors.White;
-			var sdColor = mImage.ShadowColor == "#FF808080" ? "#FF808080" : mImage.ShadowColor.Length > 7 ? mImage.ShadowColor[..7] : mImage.ShadowColor;
-			// 绘制阴影
-			paint2.ImageFilter = SKImageFilter.CreateDropShadowOnly(
+            var sdColor = mImage.ShadowColor == "#FF808080" ? "#FF808080" : mImage.ShadowColor.Length > 7 ? mImage.ShadowColor[..7] : mImage.ShadowColor;
+            // 绘制阴影
+            paint2.ImageFilter = SKImageFilter.CreateDropShadowOnly(
 			dx: 0,
 			dy: 0,
                 sigmaX: (int)(mImage.ShadowRange * xs),
@@ -722,6 +726,20 @@ namespace Watermark.Win.Models
 
             canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, paint2);
             paint2.ImageFilter.Dispose();
+        }
+
+        static void Parse(string hex, out byte a, out byte r, out byte g, out byte b)
+        {
+            uint argbValue = Convert.ToUInt32(hex.Replace("#", ""), 16); // 将十六进制字符串转换为无符号整数
+
+            Color color = Color.FromArgb((int)argbValue); // 使用Color结构创建ARGB颜色
+
+            Console.WriteLine($"ARGB 颜色值为：{color.ToArgb()}"); // 
+
+            a = color.A;
+            r = color.R; 
+            g = color.G;
+            b = color.B;
         }
 
         private void GaussianBlur(SKBitmap bitmap, SKBitmap original, float sigma, float xs)
