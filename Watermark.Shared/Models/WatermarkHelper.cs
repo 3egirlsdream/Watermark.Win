@@ -161,23 +161,10 @@ namespace Watermark.Win.Models
                 }
                 var newFileaName = "DFX_" + Path.GetFileNameWithoutExtension(mainCanvas.Path);
                 output += Path.DirectorySeparatorChar + newFileaName + ".jpg";
-#if ANDROID
-                output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
+#if WINDOWS
+               using var sm = File.OpenWrite(output);
+               data.SaveTo(sm);
 #endif
-                if (output.StartsWith("/data/user"))
-                {
-                    if (!Directory.Exists("/storage/emulated/0/DCIM/Camera/"))
-                    {
-                        Directory.CreateDirectory("/storage/emulated/0/DCIM/Camera/");
-                    }
-                    output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + ".jpg");
-                    if (File.Exists(output))
-                    {
-                        output = System.IO.Path.Combine("/storage/emulated/0/DCIM/Camera/", newFileaName + $"_{DateTime.Now:yyyyMMddHHmmss}.jpg");
-                    }
-                }
-                using var sm = File.OpenWrite(output);
-                data.SaveTo(sm);
 				var bytes = data.ToArray();
 				result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
 			}

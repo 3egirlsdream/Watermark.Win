@@ -460,7 +460,7 @@
 					<MudSelectItem Value="@(85)">高</MudSelectItem>
 					<MudSelectItem Value="@(70)">中</MudSelectItem>
 				</MudSelect>
-				<MudTextField Label="输出目录" Value="@("DCIM/Camera")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" />
+				<MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" />
 			</MudForm>
 		</MudCardContent>
 	</MudCard>
@@ -553,7 +553,7 @@
 		await helper.DownloadLogoes();
 
 		await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
-		
+
 	}
 
 	async void SelectImage(IReadOnlyList<IBrowserFile> files)
@@ -750,7 +750,13 @@
 			var idx = Images.IndexOf(item) + 1;
 			MainLoading.Message = $"正在导出图片，一共{Images.Count}张，目前第{idx}张";
 			MainLoading.Value = idx * 100.0 / Images.Count;
-			await helper.GenerationAsync(item.Canvas, null, false, false);
+			var rs = await helper.GenerationAsync(item.Canvas, null, false, false);
+	#if ANDROID
+			var b64 = rs.Replace("data:image/jpeg;base64,", "");
+			var bt = Convert.FromBase64String(b64);
+			var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path);
+			Watermark.Andorid.SavePictureService.SavePicture(bt, "DFX_" + fn);
+	#endif
 			//item.Canvas.Path = item.Path;
 			//await JSRuntime.InvokeVoidAsync("saveAsFile", $"{item.ID}.jpg", Convert.FromBase64String(item.Src.Split(',')[1]));
 			StateHasChanged();
@@ -826,7 +832,7 @@
 
 			WatermarkHelper watermarkHelper = new WatermarkHelper();
 			foreach (var dirct in ZipedTemplates)
-			 {
+			{
 				var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
 				if (System.IO.File.Exists(configPath))
 				{
@@ -838,7 +844,7 @@
 					});
 					dirct.WMCanvas = canvas;
 					dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
-					dirct.Src = await Task.Run(() =>  Global.GetImageSrcOrStoreImage(dirct.WatermarkId));
+					dirct.Src = await Task.Run(() => Global.GetImageSrcOrStoreImage(dirct.WatermarkId));
 					if (!string.IsNullOrEmpty(dirct.Src)) continue;
 					await Global.InitFonts([canvas]);
 					var t = Task.Run(() =>
@@ -866,7 +872,7 @@
 					});
 					mission.Add(t);
 				}
-			 }
+			}
 
 			var getILike = await helper.GetILike(Global.CurrentUser?.ID ?? "");
 			if (getILike != null && getILike.success && getILike.data != null)
