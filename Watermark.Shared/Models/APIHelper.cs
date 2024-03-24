@@ -538,7 +538,7 @@ namespace Watermark.Win.Models
 
         public async Task DownloadFonts(List<string> fonts)
         {
-            var p = Global.AppPath.BasePath + "fonts";
+            var p = Global.AppPath.FontFolder;
             if (!Directory.Exists(p))
             {
                 Directory.CreateDirectory(p);

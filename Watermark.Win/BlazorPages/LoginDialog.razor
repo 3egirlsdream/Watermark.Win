@@ -4,7 +4,7 @@
 <MudDialog Style="width:400px;background:#F9FAFC">
     <DialogContent>
         <MudForm>
-            <MudTextField @bind-Value="UserName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" AutoFocus />
+            <MudTextField @bind-Value="UserName" T="string" Label="邮箱" Required="true" RequiredError="邮箱不能为空" AutoFocus />
             <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
         </MudForm>
         <MudOverlay Visible="@Loading" DarkBackground="true" Absolute="false" ZIndex="999">
@@ -48,7 +48,8 @@
                     ID = result.data.data.ID,
                     IMG = result.data.data.IMG,
                     DISPLAY_NAME = result.data.data.DISPLAY_NAME,
-                    USER_NAME = result.data.data.USER_NAME
+                    USER_NAME = result.data.data.USER_NAME,
+                    EXPIRE_DATE = result.data.data.EXPIRE_DATE
                 };
             message = "登录成功";
             severity = Severity.Success;

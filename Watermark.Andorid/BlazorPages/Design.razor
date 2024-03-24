@@ -1,4 +1,5 @@
 ﻿@using System.IO
+@using System.Collections.Concurrent
 @using Watermark.Shared.Models
 @using Watermark.Andorid.BlazorPages
 @using Watermark.Shared.Enums
@@ -421,7 +422,7 @@
 	string defaultImage = "";
 	bool SrcLoading = false;
 	List<string> Fonts = new List<string>();
-	Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
+	ConcurrentDictionary<string, string> ImagesBase64 = new ConcurrentDictionary<string, string>();
 	WMLogo selectedLogo;
 	WMText selectedText;
 	protected override void OnInitialized()
@@ -598,7 +599,7 @@
 		{
 			File.Delete(filename);
 			container.Path = string.Empty;
-			ImagesBase64.Remove(container.ID);
+			ImagesBase64.Remove(container.ID, out string v);
 			StateHasChanged();
 		}
 	}

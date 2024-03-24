@@ -10,6 +10,6 @@
 		public string LogoesFolder { get; set; }
 		public string OutputFolder { get; set; }	
 		public string MarketFolder { get; set; }
-		public string CacheFolder { get; set; }
-	}
+        public string FontFolder { get; set; }
+    }
 }

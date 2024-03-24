@@ -322,7 +322,7 @@ namespace Watermark.Win.Models
 
                 var families = SKFontManager.Default.FontFamilies;
                 SKTypeface tc;
-                string fontPath = Global.AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar;
+                string fontPath = Global.AppPath.FontFolder;
                 string templateFontPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {

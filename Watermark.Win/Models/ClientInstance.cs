@@ -1,6 +1,7 @@
 ﻿using MudBlazor;
 using SkiaSharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Watermark.Shared.Models
     public static class ClientInstance
     {
 
-        public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public static Action<WMCanvas, WMLogo, ConcurrentDictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -43,7 +44,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static Action<WMCanvas, WMContainer, Dictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -138,7 +139,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static void SelectDefaultImage(string id, Dictionary<string, string> dic)
+        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
         {
             try
             {

@@ -18,8 +18,8 @@ namespace Watermark.Win.Models
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
             OutputFolder = AppDomain.CurrentDomain.BaseDirectory + "Output" + Path.DirectorySeparatorChar,
-			CacheFolder = AppDomain.CurrentDomain.BaseDirectory + "Cache" + Path.DirectorySeparatorChar
-		};
+            FontFolder = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar
+        };
         static WMAppPath AP = new()
         {
             BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar,
@@ -28,8 +28,8 @@ namespace Watermark.Win.Models
             ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
             OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar,
-			CacheFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Cache" + Path.DirectorySeparatorChar
-		};
+            FontFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "fonts" + Path.DirectorySeparatorChar
+        };
 
 		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
 		public static DeviceType DeviceType = DeviceType.Other;
@@ -138,7 +138,7 @@ namespace Watermark.Win.Models
             return json;
         }
 
-        public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, string destFile, string id)
+        public static void ImageFile2Base64(ConcurrentDictionary<string, string> ImagesBase64, string destFile, string id)
         {
             try
             {
@@ -150,7 +150,9 @@ namespace Watermark.Win.Models
                 using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
                 if (bitmap != null)
                 {
-                    using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 70);
+                    SKEncodedImageFormat format = SKEncodedImageFormat.Png;
+                    if (id == "hasselblad.png") format = SKEncodedImageFormat.Jpeg;
+                    using var data = bitmap.Encode(format, 70);
                     ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
                 }
                 else
@@ -164,7 +166,7 @@ namespace Watermark.Win.Models
             }
         }
 
-        public static void ImageFile2Base64(Dictionary<string, string> ImagesBase64, byte[] destFile, string id)
+        public static void ImageFile2Base64(ConcurrentDictionary<string, string> ImagesBase64, byte[] destFile, string id)
         {
             if (destFile == null)
             {
@@ -174,7 +176,9 @@ namespace Watermark.Win.Models
             using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
             if (bitmap != null)
             {
-                using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 70);
+                SKEncodedImageFormat format = SKEncodedImageFormat.Png;
+                if (id == "hasselblad.png") format = SKEncodedImageFormat.Jpeg;
+                using var data = bitmap.Encode(format, 70);
                 ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
             }
             else
@@ -345,7 +349,7 @@ namespace Watermark.Win.Models
 
         public static Dictionary<string, string> ReadFont()
         {
-            var path = AppPath.BasePath + "fonts";
+            var path = AppPath.FontFolder;
 			var fontPath = new Dictionary<string, string>();
 			if (Directory.Exists(path))
             {
@@ -395,7 +399,7 @@ namespace Watermark.Win.Models
             }
 
             //先看本地有没有
-            var p = AppPath.BasePath + "fonts" + Path.DirectorySeparatorChar + key;
+            var p = AppPath.FontFolder + key;
             if (File.Exists(p))
             {
                 bt = File.ReadAllBytes(p);
@@ -515,19 +519,6 @@ namespace Watermark.Win.Models
             });
         }
 
-        public static string GetImageSrcOrStoreImage(string watermarkId)
-        {
-            var p = Path.Combine(AppPath.CacheFolder, watermarkId + ".jpg");
-            if(File.Exists(p))
-            {
-                using var bitmap = SKBitmap.Decode(p);
-                using var sk = SKImage.FromBitmap(bitmap);
-                using var data = sk.Encode(SKEncodedImageFormat.Jpeg, 50);
-				var bytes = data.ToArray();
-				return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
-			}
-            return "";
-        }
 
         public static bool UploadMode { get; set; } = false;
 

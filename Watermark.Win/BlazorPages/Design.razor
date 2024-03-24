@@ -2,6 +2,7 @@
 @using NHotkey
 @using NHotkey.Wpf
 @using System.Windows.Input
+@using System.Collections.Concurrent
 @using Watermark.Shared.Models
 @using Watermark.Win.BlazorPages
 @using Watermark.Shared.Enums
@@ -439,7 +440,7 @@
     string defaultImage = "";
     bool SrcLoading = false;
     List<string> Fonts = new List<string>();
-    Dictionary<string, string> ImagesBase64 = new Dictionary<string, string>();
+    ConcurrentDictionary<string, string> ImagesBase64 = new ConcurrentDictionary<string, string>();
 
     protected override void OnInitialized()
     {
@@ -632,6 +633,7 @@
         if (!result.Canceled && result.Data is KeyValuePair<string, string> pair)
         {
             mText.FontFamily = pair.Key;
+            StateHasChanged();
         }
     }
 
@@ -642,7 +644,7 @@
         {
             File.Delete(filename);
             container.Path = string.Empty;
-            ImagesBase64.Remove(container.ID);
+            ImagesBase64.Remove(container.ID, out string v);
             StateHasChanged();
         }
     }

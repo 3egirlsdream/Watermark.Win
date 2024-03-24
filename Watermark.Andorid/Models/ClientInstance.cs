@@ -1,5 +1,6 @@
 ﻿using MudBlazor;
 using SkiaSharp;
+using System.Collections.Concurrent;
 using System.Text;
 using Watermark.Win.Models;
 
@@ -12,7 +13,7 @@ namespace Watermark.Shared.Models
         {
         };
 
-        public static Action<WMCanvas, WMContainer, Dictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
         {
         };
 
@@ -54,7 +55,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static void SelectDefaultImage(string id, Dictionary<string, string> dic)
+        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
         {
         }
 

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using System.IO
+@using System.Collections.Concurrent
 @using Watermark.Andorid.BlazorPages
 @using Watermark.Andorid.Models
 @using Watermark.Shared.Enums
@@ -568,7 +569,7 @@
 	async void SelectImage(IReadOnlyList<IBrowserFile> files)
 	{
 
-		var dic = new Dictionary<string, string>();
+		var dic = new ConcurrentDictionary<string, string>();
 		foreach (var file in files)
 		{
 			try
@@ -630,7 +631,7 @@
 	public async void SelectPictureClick(IBrowserFile file)
 	{
 		Images = new List<TemplateList>();
-		Dictionary<string, string> dic = new Dictionary<string, string>();
+		ConcurrentDictionary<string, string> dic = new ConcurrentDictionary<string, string>();
 		WMCanvas canvas = new WMCanvas();
 		canvas.Path = file.Name;
 		using var sm = new MemoryStream();
@@ -871,9 +872,7 @@
 				await Global.InitFonts([tp.WMCanvas]);
 				var t = Task.Run(() =>
 				{
-					var src = Global.GetImageSrcOrStoreImage(tp.WatermarkId);
-					if (string.IsNullOrEmpty(src)) src = watermarkHelper.Generation(tp.WMCanvas, null, true, false);
-					tp.Src = src;
+					tp.Src = watermarkHelper.Generation(tp.WMCanvas, null, true, false);
 				});
 				mission.Add(t);
 			}
@@ -910,9 +909,7 @@
 			dirct.WMCanvas = canvas;
 			dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 			await Global.InitFonts([canvas]);
-			var src = Global.GetImageSrcOrStoreImage(watermarkId);
-			if (string.IsNullOrEmpty(src)) src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
-			dirct.Src = src;
+			dirct.Src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
 			return dirct;
 		}
 		catch (Exception ex)

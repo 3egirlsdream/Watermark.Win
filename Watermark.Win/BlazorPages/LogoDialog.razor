@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
+@using System.Collections.Concurrent
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
@@ -65,7 +66,7 @@
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-    Dictionary<string, string> Logoes = new Dictionary<string, string>();
+    ConcurrentDictionary<string, string> Logoes = new();
     void Click(KeyValuePair<string, string> pair)
     {
         MudDialog.Close(pair);
