@@ -77,7 +77,7 @@
 								<MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
 								<MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
 							</div>
-							<MudCard style="height:232px;;padding:16px;background:#E5E5E5" class="flex-vertical-center" Elevation="0">
+							<MudCard style="height:232px;padding:16px;background:#E5E5E5" class="flex-vertical-center" Elevation="0">
 								@if (!string.IsNullOrEmpty(t.Src))
 								{
 									<MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
@@ -89,7 +89,7 @@
 							</MudCard>
 							<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
 								<MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-									@t.Name ?? @t.Desc
+									@t.Name
 								</MudText>
 								<div style="display: flex; align-items: center;">
 									<MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
@@ -177,7 +177,7 @@
 		<MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999">
 			<MudPaper Style="position:relative;background:#E5E5E5" Elevation="25">
 				<MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Primary" OnClick="()=>FocusImageShow = false" Style="position:absolute;right:0px;top:0px;" Size="Size.Small" />
-				<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImage" Style="height: 80vh;padding:30px" Class="rounded-lg" />
+				<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImage" Style="height: 80vh;padding:30px;width:100%" Class="rounded-lg" />
 			</MudPaper>
 		</MudOverlay>
 	</DialogContent>

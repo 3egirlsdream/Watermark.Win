@@ -103,9 +103,21 @@ namespace Watermark.Win.Models
         {
             dic[key] = result.ToString();
             if (result is byte[] v) dic[key] = Convert.ToBase64String(v);
-            else if (key == Enum.GetName(ExifTags.ExposureTime) && result is double et)
+            else if (key == Enum.GetName(ExifTags.ExposureTime))
             {
-                dic[key] = "1/" + (1 / et);
+                if (result is double et)
+                    dic[key] = "1/" + (1 / et);
+                else
+                {
+                    dic[key] = dic[key].Replace("sec", "");
+                }
+            }
+            else if (key == "FNumber" && dic.TryGetValue(key, out string fnumber)) dic[key] = fnumber.Replace("f/", "");
+            else if (key == "FocalLength35" && dic.TryGetValue(key, out string flength))
+            {
+                dic[key] = flength.Replace("mm", "");
+                dic["FocalLength"] = dic[key];
+                dic["FocalLengthIn35mmFilm"] = dic[key];
             }
             else if (result is DateTime || key.Contains("DateTime"))
             {

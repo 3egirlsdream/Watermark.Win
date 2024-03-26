@@ -1,6 +1,7 @@
 ﻿@using System.IO
 @using System.Diagnostics
 @using System.Collections.Concurrent
+@using Microsoft.AspNetCore.Components.Forms
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
@@ -139,51 +140,59 @@
             {
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;" />
             }
-            <div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;">
+            <div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;position:relative">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
-                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
-                    <MudPaper Height="90" Style="white-space:nowrap; overflow:auto;width:90%;margin:0 5%">
-                        <MudToolBar>
-                            @if (LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
-                            {
-                                foreach (var item in dic)
+                    <MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
+                        <MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
+                        <MudDivider />
+                        <MudCollapse Expanded="_expanded">
+                            <MudStack>
+                                <MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif">
+                                    <ButtonTemplate>
+                                        <MudIconButton HtmlTag="label" for="@context.Id" DisableElevation Icon="@Icons.Material.Filled.FindReplace" Variant="Variant.Filled" Size="Size.Small" />
+                                    </ButtonTemplate>
+                                </MudFileUpload>
+                                @if (LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
                                 {
-                                    <MudMenu>
-                                        <ActivatorContent>
-                                            <MudButton>
-                                                @if (LogoBase64.TryGetValue(item.Key, out string src))
+                                    foreach (var item in dic)
+                                    {
+                                        @if (LogoBase64.TryGetValue(item.Key, out string src))
+                                        {
+                                            <MudPaper Elevation="0" Style="height:30px;width:30px;">
+                                                <MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" @onclick="()=>ReplaceLogo(item.Key)" />
+                                            </MudPaper>
+                                            
+                                        }
+                                        @* <MudMenu>
+                                            <ActivatorContent>
+                                                <MudButton>
+                                                    
+                                                </MudButton>
+                                            </ActivatorContent>
+                                            <ChildContent>
+                                                @foreach (var l in LogoStore)
                                                 {
-                                                    <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
+                                                    <MudMenuItem>
+                                                        <MudTooltip Text="点击模板即可还原图标">
+                                                            <MudButton OnClick="()=>ChangeLogo(item.Key, l)">
+                                                                @if (LogoBase64.TryGetValue(l, out string src))
+                                                                {
+                                                                    <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
+                                                                }
+                                                            </MudButton>
+                                                        </MudTooltip>
+                                                    </MudMenuItem>
                                                 }
-                                                <p Style="max-width:100px;overflow:hidden">
-                                                    @item.Value
-                                                </p>
-                                            </MudButton>
-                                        </ActivatorContent>
-                                        <ChildContent>
-                                            @foreach (var l in LogoStore)
-                                            {
-                                                <MudMenuItem>
-                                                    <MudTooltip Text="点击模板即可还原图标">
-                                                        <MudButton OnClick="()=>ChangeLogo(item.Key, l)">
-                                                            @if (LogoBase64.TryGetValue(l, out string src))
-                                                            {
-                                                                <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
-                                                            }
-                                                            <p Style="max-width:60px;overflow:hidden;max-height:40px;text-overflow:ellipsis;white-space: nowrap;">
-                                                                @l
-                                                            </p>
-                                                        </MudButton>
-                                                    </MudTooltip>
-                                                </MudMenuItem>
-                                            }
-                                        </ChildContent>
-                                    </MudMenu>
+                                            </ChildContent>
+                                        </MudMenu> *@
+                                    }
                                 }
-                            }
-                        </MudToolBar>
-                    </MudPaper>
+                            </MudStack>
+                        </MudCollapse>
+                    </MudStack>
+                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
+                   
                 }
                 else
                 {
@@ -246,6 +255,7 @@
     bool SrcLoading = false;
     bool ShowUserInfo = false;
     bool IsLoginIn = false;
+    bool _expanded = false;
     List<TemplateList> wMTemplates;
     TemplateList CurrentTemplate;
     TemplateList CurrentImage;
@@ -347,13 +357,13 @@
                 Images = new List<TemplateList>();
                 MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
                 MainLoading.Value = 0;
+                StateHasChanged();
                 if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
                 {
                     Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
                 }
                 foreach (var file in dialog.FileNames)
                 {
-                    ConcurrentDictionary<string, string> dic = new ConcurrentDictionary<string, string>();
                     WMCanvas canvas = new WMCanvas();
                     canvas.Path = file;
                     canvas.Exif = await ExifHelper.ReadImageAsync(file);
@@ -364,15 +374,10 @@
                         Global.WriteThumbnailImage(bitmap, thumbnail);
                     });
 
-                    var src = Task.Run(() =>
-                    {
-                        Global.ImageFile2Base64(dic, file, canvas.ID);
-                        return dic.First().Value;
-                    });
                     Images.Add(new TemplateList
                         {
                             Canvas = canvas,
-                            Src = await src,
+                            Src = await Global.GetBase64(file),
                             ID = canvas.ID,
                             Path = file
                         });
@@ -665,6 +670,17 @@
         }
     }
 
+    async void ReplaceLogo(string sourceId)
+    {
+        var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
+        {
+            var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
+            ChangeLogo(sourceId, p);
+        }
+    }
+
 
     void EnableAll()
     {
@@ -729,6 +745,14 @@
             Export(images.Where(x => x.IsChecked).ToList());
         }
     }
+
+    async void SelectSourceImageExif(IBrowserFile file)
+    {
+        MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(file.Size).CopyToAsync(ms);
+        CurrentImage.Canvas.Exif = ExifHelper.ReadImage(ms.ToArray());
+    }
+
 
     async Task InitFonts(List<WMCanvas> mCanvas)
     {

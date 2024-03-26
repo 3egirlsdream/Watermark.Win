@@ -55,6 +55,10 @@ namespace Watermark.Win.Models
                                 {
                                     await Connections.HttpGetAsync<List<string>>(HOST + $"/api/CloudSync/UploadPath?Name={file.Name}&Url=https://cdn.thankful.top/{file.Name}&Url_B=https://cdn.thankful.top/{file.Name}", Encoding.UTF8);
                                 }
+                                else
+                                {
+                                    return new API<bool?> { success = false, message = new APISub { content = "模板中字体上传失败，请关闭所有文件夹重新上传模板" } };
+                                }
                             }
                             file.Delete();
 
@@ -71,6 +75,7 @@ namespace Watermark.Win.Models
             var j = File.ReadAllText(cfg);
             var canvas = Global.ReadConfig(j);
             canvas.Path = Path.Combine(Global.AppPath.TemplatesFolder, watermarkId, "default.jpg");
+            canvas.Exif = ExifHelper.DefaultMeta;
 			var re = Global.Resolution;
             var qua = Global.Quality;
             Global.Resolution = "1080";

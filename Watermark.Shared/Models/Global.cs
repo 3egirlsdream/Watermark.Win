@@ -8,12 +8,12 @@ using System.Diagnostics;
 
 namespace Watermark.Win.Models
 {
-	public static class Global
+    public static class Global
     {
-		static WMAppPath CP = new()
+        static WMAppPath CP = new()
         {
             BasePath = AppDomain.CurrentDomain.BaseDirectory,
-			MarketFolder = AppDomain.CurrentDomain.BaseDirectory + "Market" + Path.DirectorySeparatorChar,
+            MarketFolder = AppDomain.CurrentDomain.BaseDirectory + "Market" + Path.DirectorySeparatorChar,
             TemplatesFolder = AppDomain.CurrentDomain.BaseDirectory + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = AppDomain.CurrentDomain.BaseDirectory + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = AppDomain.CurrentDomain.BaseDirectory + "Logoes" + Path.DirectorySeparatorChar,
@@ -24,17 +24,17 @@ namespace Watermark.Win.Models
         {
             BasePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar,
             MarketFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Market" + Path.DirectorySeparatorChar,
-			TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
+            TemplatesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Templates" + Path.DirectorySeparatorChar,
             ThumbnailFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Thumbnails" + Path.DirectorySeparatorChar,
             LogoesFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Logoes" + Path.DirectorySeparatorChar,
             OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar,
             FontFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "fonts" + Path.DirectorySeparatorChar
         };
 
-		public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
-		public static DeviceType DeviceType = DeviceType.Other;
-		public static WMAppPath AppPath { get => DeviceType == DeviceType.Andorid ? AP : CP; }
-		public static WMCanvas ReadConfigFromPath(string path)
+        public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
+        public static DeviceType DeviceType = DeviceType.Other;
+        public static WMAppPath AppPath { get => DeviceType == DeviceType.Andorid ? AP : CP; }
+        public static WMCanvas ReadConfigFromPath(string path)
         {
             using var stream = new System.IO.FileStream(path, System.IO.FileMode.Open);
             using var reader = new System.IO.StreamReader(stream);
@@ -47,13 +47,13 @@ namespace Watermark.Win.Models
             try
             {
                 var ls = Newtonsoft.Json.JsonConvert.DeserializeObject<WMCanvasSerialize>(json);
-                if(ls == null) return new WMCanvas();
+                if (ls == null) return new WMCanvas();
                 var newCanvas = new WMCanvas
                 {
                     ID = ls.ID,
                     Name = ls.Name,
                     BorderThickness = ls.BorderThickness,
-                    BackgroundColor =  ls.BackgroundColor,
+                    BackgroundColor = ls.BackgroundColor,
                     ImageProperties = ls.ImageProperties,
                     EnableMarginXS = ls.EnableMarginXS,
                     //一级容器
@@ -82,7 +82,7 @@ namespace Watermark.Win.Models
                 newCanvas.Children = new List<WMContainer>(newCanvas.Children.OrderBy(c => c.PNode.SEQ));
                 return newCanvas;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new WMCanvas();
             }
@@ -124,12 +124,12 @@ namespace Watermark.Win.Models
                             else if (child is WMLogo logo) nc.Logos.Add(logo);
                             else if (child is WMText text) nc.Texts.Add(text);
                         }
-                        var cld_copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(mContainer))??new WMContainer();
+                        var cld_copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(mContainer)) ?? new WMContainer();
                         cld_copy.Controls = [];
                         nc.Containers.Add(cld_copy);
                     }
                 }
-                var copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(ct))??new WMContainer();
+                var copy = JsonConvert.DeserializeObject<WMContainer>(JsonConvert.SerializeObject(ct)) ?? new WMContainer();
                 copy.Controls = [];
                 nc.Containers.Add(copy);
             }
@@ -160,10 +160,29 @@ namespace Watermark.Win.Models
                     ImagesBase64[id] = "";
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
             }
+        }
+
+        public static Task<string> GetBase64(string destFile)
+        {
+            return Task.Run(() =>
+            {
+                if (string.IsNullOrEmpty(destFile))
+                {
+                    return "";
+                }
+                using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
+                if (bitmap != null)
+                {
+                    SKEncodedImageFormat format = SKEncodedImageFormat.Png;
+                    using var data = bitmap.Encode(format, 70);
+                    return "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+                }
+                return "";
+            });
         }
 
         public static void ImageFile2Base64(ConcurrentDictionary<string, string> ImagesBase64, byte[] destFile, string id)
@@ -209,12 +228,13 @@ namespace Watermark.Win.Models
         public static void WriteAccount2Local(string username, string password)
         {
             var path = AppDomain.CurrentDomain.BaseDirectory + $".sys";
-            if(!Directory.Exists(path)) Directory.CreateDirectory(path);
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
             path += $"{Path.DirectorySeparatorChar}sys";
-            if(File.Exists(path)) File.Delete(path);
+            if (File.Exists(path)) File.Delete(path);
             var str = new
             {
-                username, password
+                username,
+                password
             };
             File.WriteAllText(path, JsonConvert.SerializeObject(str));
         }
@@ -237,7 +257,7 @@ namespace Watermark.Win.Models
         public static Tuple<string, string> ReadLocal()
         {
             var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}sys";
-            if(!File.Exists (path)) return Tuple.Create(string.Empty, string.Empty); 
+            if (!File.Exists(path)) return Tuple.Create(string.Empty, string.Empty);
             using var fs = new FileStream(path, FileMode.Open);
             using var sr = new StreamReader(fs);
             var content = sr.ReadToEnd();
@@ -350,44 +370,44 @@ namespace Watermark.Win.Models
         public static Dictionary<string, string> ReadFont()
         {
             var path = AppPath.FontFolder;
-			var fontPath = new Dictionary<string, string>();
-			if (Directory.Exists(path))
+            var fontPath = new Dictionary<string, string>();
+            if (Directory.Exists(path))
             {
                 var root = new DirectoryInfo(path);
-                foreach(var f in root.GetFiles())
-				{
+                foreach (var f in root.GetFiles())
+                {
                     fontPath[f.Name] = f.FullName;
 
                 }
-			}
+            }
 
             var fontDemo = new Dictionary<string, string>();
 
-			using var bitmap = new SKBitmap(200, 72);
-			using var canvas = new SKCanvas(bitmap);
-			foreach (var p in fontPath)
+            using var bitmap = new SKBitmap(200, 72);
+            using var canvas = new SKCanvas(bitmap);
+            foreach (var p in fontPath)
             {
-				var skytype = SKTypeface.FromFile(p.Value);
-				var paint_cp = new SKPaint()
-				{
-					Color = SKColors.Black,
-					TextSize = 20,
-					Typeface = skytype,
-					IsAntialias = true
-				};
+                var skytype = SKTypeface.FromFile(p.Value);
+                var paint_cp = new SKPaint()
+                {
+                    Color = SKColors.Black,
+                    TextSize = 20,
+                    Typeface = skytype,
+                    IsAntialias = true
+                };
 
                 var h = paint_cp.FontMetrics.CapHeight + Math.Abs(paint_cp.FontMetrics.UnderlinePosition ?? 0);
                 canvas.Clear(SKColors.White);
                 canvas.DrawText("雨纷纷 旧故里草木深", new SKPoint(2, 2 + h), paint_cp);
                 canvas.DrawText("abc ABC", new SKPoint(2, 24 + h), paint_cp);
-				canvas.DrawText(Path.GetFileName(p.Value), new SKPoint(2, 50 + h), paint_cp);
-				var image = SKImage.FromBitmap(bitmap);
+                canvas.DrawText(Path.GetFileName(p.Value), new SKPoint(2, 50 + h), paint_cp);
+                var image = SKImage.FromBitmap(bitmap);
                 var result = "data:image/jpeg;base64," + Convert.ToBase64String(image.Encode(SKEncodedImageFormat.Jpeg, 100).ToArray());
                 fontDemo[p.Key] = result;
-			}
-            
+            }
+
             return fontDemo;
-		}
+        }
 
 
         static ConcurrentDictionary<string, byte[]> Fonts = [];
@@ -415,16 +435,16 @@ namespace Watermark.Win.Models
         public static List<string> GetAllFontName(List<WMCanvas> mCanvas)
         {
             var vs = new List<string>();
-            foreach(var canvas in mCanvas) 
+            foreach (var canvas in mCanvas)
             {
-                foreach(var ctrl in canvas.Children)
+                foreach (var ctrl in canvas.Children)
                 {
-					vs.AddRange(ctrl.Controls.Where(x => x is WMText).Cast<WMText>().Select(x => x.FontFamily));
-					if (ctrl is WMContainer ct2)
+                    vs.AddRange(ctrl.Controls.Where(x => x is WMText).Cast<WMText>().Select(x => x.FontFamily));
+                    if (ctrl is WMContainer ct2)
                     {
                         vs.AddRange(ct2.Controls.Where(x => x is WMText).Cast<WMText>().Select(x => x.FontFamily));
                     }
-                    
+
                 }
             }
             return vs.Distinct().ToList();
@@ -439,7 +459,7 @@ namespace Watermark.Win.Models
 
 
         static bool secondExif = false;
-        public static bool SECOND_EXIF 
+        public static bool SECOND_EXIF
         {
             get => secondExif;
             set
@@ -449,9 +469,9 @@ namespace Watermark.Win.Models
             }
         }
         static bool darkMode = false;
-        public static bool DARK_MODE 
+        public static bool DARK_MODE
         {
-            get=> darkMode;
+            get => darkMode;
             set
             {
                 darkMode = value;
@@ -459,7 +479,7 @@ namespace Watermark.Win.Models
             }
         }
         static int maxThread = 5;
-        public static int MAX_THREAD 
+        public static int MAX_THREAD
         {
             get => maxThread;
             set
@@ -496,7 +516,7 @@ namespace Watermark.Win.Models
             {
                 return JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(content) ?? [];
             }
-            return [] ;
+            return [];
         }
 
         public static async Task InitConfig()
@@ -526,7 +546,7 @@ namespace Watermark.Win.Models
         {
             return $"https://cdn.thankful.top/{watermarkId}.jpg";
 
-		}
+        }
 
-	}
+    }
 }
