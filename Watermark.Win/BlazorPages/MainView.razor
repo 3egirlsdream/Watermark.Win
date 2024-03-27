@@ -2,16 +2,36 @@
 @using System.Diagnostics
 @using System.Collections.Concurrent
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <style>
     .panel-class {
         height: calc(100% - 50px);
+    }
+
+    .expandable {
+        width: 30px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden;
+        height: 30px;
+        background-color: transparent;
+        transition: width 0.5s; /* 添加过渡效果 */
+    }
+
+        .expandable:hover {
+            width: 200px; /* 鼠标悬停时改变宽度，触发展开效果 */
+        }
+
+    .mud-input-control {
+        display: -webkit-box !important
     }
 </style>
 <div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
@@ -143,8 +163,8 @@
             <div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;position:relative">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
-                    <MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
-                        <MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
+                    <MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;" >
+                        <MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
                         <MudDivider />
                         <MudCollapse Expanded="_expanded">
                             <MudStack>
@@ -164,30 +184,31 @@
                                             </MudPaper>
                                             
                                         }
-                                        @* <MudMenu>
-                                            <ActivatorContent>
-                                                <MudButton>
-                                                    
-                                                </MudButton>
-                                            </ActivatorContent>
-                                            <ChildContent>
-                                                @foreach (var l in LogoStore)
-                                                {
-                                                    <MudMenuItem>
-                                                        <MudTooltip Text="点击模板即可还原图标">
-                                                            <MudButton OnClick="()=>ChangeLogo(item.Key, l)">
-                                                                @if (LogoBase64.TryGetValue(l, out string src))
-                                                                {
-                                                                    <MudImage Height="40" Width="40" ObjectFit="ObjectFit.Contain" Src="@src" />
-                                                                }
-                                                            </MudButton>
-                                                        </MudTooltip>
-                                                    </MudMenuItem>
-                                                }
-                                            </ChildContent>
-                                        </MudMenu> *@
                                     }
                                 }
+                                @foreach(var i in CurrentImage.Canvas.Children)
+                                {
+                                    foreach(var wmt in i.Controls.Where(x=>x is WMText).Cast<WMText>())
+                                    {
+                                        <div class="expandable" @onclick="()=>OpenExifDialog(wmt)">
+                                            <MudPaper Elevation="0" Style="width:100%;height:30px;display:flex;align-items:center;cursor:pointer;">
+                                                @(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+                                            </MudPaper>
+                                        </div>
+                                    }
+                                    foreach(var ctn in i.Controls.Where(x=>x is WMContainer).Cast<WMContainer>())
+                                    {
+                                        foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
+                                        {
+                                            <div class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
+                                                <MudPaper Elevation="0" Style="width:100%;height:30px;display:flex;align-items:center;cursor:pointer;">
+                                                    @(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+                                                </MudPaper>
+                                            </div>
+                                        }
+                                    }
+                                }
+                                
                             </MudStack>
                         </MudCollapse>
                     </MudStack>
@@ -256,7 +277,7 @@
     bool ShowUserInfo = false;
     bool IsLoginIn = false;
     bool _expanded = false;
-    List<TemplateList> wMTemplates;
+    BlockingCollection<TemplateList> wMTemplates;
     TemplateList CurrentTemplate;
     TemplateList CurrentImage;
     Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
@@ -290,6 +311,13 @@
             }
         }
     }
+
+
+    async Task InitFloat()
+    {
+        await JSRuntime.InvokeVoidAsync("initFloat");
+    }
+
 
     void SelectExampleImage()
     {
@@ -410,6 +438,17 @@
         StateHasChanged();
     }
 
+    async void RefreshImage()
+    {
+        SrcLoading = true;
+        WatermarkHelper helper = new WatermarkHelper();
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var src = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
 
     async Task InitTemplates()
     {
@@ -421,7 +460,7 @@
         try
         {
             System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
-            wMTemplates = new List<TemplateList>();
+            wMTemplates = new BlockingCollection<TemplateList>();
             var directories = directoryInfo.GetDirectories();
             MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
             MainLoading.Value = 0;
@@ -759,6 +798,21 @@
         MainLoading.Message = "正在下载字体资源...";
         MainLoading.Show = true;
         await Global.InitFonts(mCanvas);
+    }
+
+    async void OpenExifDialog(WMText mText)
+    {
+        var parameters = new DialogParameters<ExifConfig>();
+        parameters.Add(x => x.Exifs, mText.Exifs);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+        var rst = DialogService.Show<ExifConfig>("", parameters, option);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled)
+        {
+            mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+            RefreshImage();
+            StateHasChanged();
+        }
     }
 
 
