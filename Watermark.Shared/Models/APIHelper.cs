@@ -269,8 +269,8 @@ namespace Watermark.Win.Models
         {
             try
             {
-                var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
-                using MemoryStream ms = new MemoryStream();
+                using var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{watermarkId}.zip");
+                using MemoryStream ms = new();
                 await stream.CopyToAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 using ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read);
@@ -317,29 +317,25 @@ namespace Watermark.Win.Models
 
         public async Task<API<WMSysUser>> Register(WMSysUser user)
         {
-            using (var client = new HttpClient())
+            var password = GetMD5(user.PASSWORD);
+
+            var formContent = new
             {
-                client.BaseAddress = new Uri(HOST);
-                var password = GetMD5(user.PASSWORD);
+                username = user.USER_NAME,
+                displayname = user.DISPLAY_NAME,
+                password = password,
+                pkid = user.PK_ID
+            };
 
-                var formContent = new
-                {
-                    username = user.USER_NAME,
-                    displayname = user.DISPLAY_NAME,
-                    password = password,
-                    pkid = user.PK_ID
-                };
-
-                using var response = await client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
-                var bt = await response.Content.ReadAsByteArrayAsync();
-                var str = Encoding.UTF8.GetString(bt);
-                var result = JsonConvert.DeserializeObject<API<WMSysUser>>(str);
-                if (response.IsSuccessStatusCode)
-                {
-                    return result;
-                }
-                else return new API<WMSysUser>() { success = false };
+            using var response = await _client.PostAsJsonAsync("/api/Watermark/SignUp", formContent);
+            var bt = await response.Content.ReadAsByteArrayAsync();
+            var str = Encoding.UTF8.GetString(bt);
+            var result = JsonConvert.DeserializeObject<API<WMSysUser>>(str);
+            if (response.IsSuccessStatusCode)
+            {
+                return result;
             }
+            else return new API<WMSysUser>() { success = false };
         }
 
         public async Task<API<WMLoginModel>> LoginIn(string user, string password, bool isMD5 = false)
@@ -373,7 +369,6 @@ namespace Watermark.Win.Models
         {
             try
             {
-                using var client = new HttpClient();
                 using (var stream = await client.GetStreamAsync($"http://cdn.thankful.top/{watermarkId}.zip"))
                 {
                     if (!Directory.Exists(Global.AppPath.TemplatesFolder))
@@ -564,7 +559,7 @@ namespace Watermark.Win.Models
                             File.Delete(path);
                         }
                     };
-                    using var stream = await _client.GetStreamAsync($"https://cdn.thankful.top/{key}");
+                    using var stream = await client.GetStreamAsync($"https://cdn.thankful.top/{key}");
                     using var fs = File.Create(path);
                     await stream.CopyToAsync(fs);
                     fs.Close();

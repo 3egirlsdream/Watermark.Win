@@ -9,8 +9,6 @@ namespace Watermark.Win.Models
             ID = Guid.NewGuid().ToString("N").ToUpper();
             Exifs = [];
         }
-        [JsonIgnore]
-        public string Text { get; set; }
         public int FontSize { get; set; }
         public bool IsBold { get; set; }
         public bool IsItalic { get; set; }
@@ -20,7 +18,7 @@ namespace Watermark.Win.Models
         public bool EnableBorder { get; set; }
         public int BorderRadius { get; set; } = 5;
         public string BorderColor { get; set; } = "#e3e3e3";
-        public int BorderWidth { get; set; } = 2;
+        public int BorderWidth { get; set; } = 1;
     }
 
 }

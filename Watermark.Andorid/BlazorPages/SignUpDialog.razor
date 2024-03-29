@@ -71,14 +71,15 @@
         Snackbar.Clear();
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
 
-        if (result.success && result.data != null)
+        if (result != null && result.success && result.data != null)
         {
             Global.CurrentUser = new WMLoginChildModel
             {
                 ID = result.data.ID,
                 IMG = "",
                 DISPLAY_NAME = result.data.DISPLAY_NAME,
-                USER_NAME = result.data.USER_NAME
+                USER_NAME = result.data.USER_NAME,
+                EXPIRE_DATE = result.data.EXPIRE_DATE
             };
             message = "注册并登录成功";
             severity = Severity.Success;

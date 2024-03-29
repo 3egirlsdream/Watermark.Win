@@ -13,7 +13,8 @@
 
     </DialogContent>
     <DialogActions>
-        <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="LoginOK">确定</MudButton>
+        <MudButton Variant="Variant.Filled" OnClick="LoginOK">登录</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OpenSignUpDialog">注册</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -21,6 +22,8 @@
 
 
 @code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
 
@@ -70,5 +73,16 @@
         });
         Loading = false;
         StateHasChanged();
+    }
+
+    async void OpenSignUpDialog()
+    {
+        var rst = DialogService.Show<SignUpDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+            MudDialog.Close(true);
+        }
     }
 }

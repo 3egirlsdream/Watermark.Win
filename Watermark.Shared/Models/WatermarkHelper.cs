@@ -100,7 +100,8 @@ namespace Watermark.Win.Models
             //绘制容器
             foreach (var container in mainCanvas.Children)
             {
-                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref fontxs, ref info, container, mainCanvas.ID, ziped, designMode);
+                mainCanvas.Exif.TryGetValue("Make", out string? make);
+                SKBitmap bitmapc = DrawContainer(mainCanvas.Exif, originalBitmap, xs, ref fontxs, ref info, container, mainCanvas.ID, ziped, designMode, make ?? "");
 
                 var container_point = new SKPoint(0, 0);
                 var cl = container.Margin.Left * singeBorderWidth;
@@ -192,7 +193,7 @@ namespace Watermark.Win.Models
             return result;
         }
 
-        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref double fontxs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, int level = 1)
+        private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref double fontxs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, string make, int level = 1)
         {
             //创建容器大小的画布
             var hc = container.HeightPercent / 100.0 * originalBitmap.Height;
@@ -252,15 +253,22 @@ namespace Watermark.Win.Models
                 SKCanvas canvas_cp; SKBitmap bitmap_logo;
                 //logo系数按窄边计算
                 var min = Math.Min(hc, wc);
+
+                var path = mLogo.Path;
+                if (mLogo.AutoSetLogo && !string.IsNullOrEmpty(make))
+                {
+                    path = Path.Combine(Global.AppPath.LogoesFolder, make.ToLower() + ".png");
+                }
+
                 if (ziped == null)
                 {
-                    if (File.Exists(mLogo.Path))
+                    if (File.Exists(path))
                     {
-                        bitmap_logo = SKBitmap.Decode(mLogo.Path);
+                        bitmap_logo = SKBitmap.Decode(path);
                     }
                     else
                     {
-                        var path = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mLogo.Path;
+                        path = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mLogo.Path;
                         if (File.Exists(path))
                         {
                             bitmap_logo = SKBitmap.Decode(path);
@@ -428,7 +436,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, make, 2);
                     mContainer.Height = bitmap_child_c.Height;
                     mContainer.Width = bitmap_child_c.Width;
                 }
@@ -605,7 +613,7 @@ namespace Watermark.Win.Models
                 }
                 else if (component is WMContainer mContainer)
                 {
-                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, 2);
+                    using var bitmap_child_c = DrawContainer(meta, bitmapc, xs, ref fontxs, ref info, mContainer, canvasId, ziped, designMode, make, 2);
                     var child_cp_pt = new SKPoint((float)stdx, (float)stdy);
                     canvasc.DrawBitmap(bitmap_child_c, child_cp_pt);
                 }

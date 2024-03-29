@@ -185,6 +185,17 @@ namespace Watermark.Win.Views
             }
             clearDownloadCache.Content = "清除完成";
         }
+
+        private async void resetLogo_Click(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(Global.AppPath.LogoesFolder))
+            {
+                Directory.Delete(Global.AppPath.LogoesFolder, true);
+            }
+            var api = new APIHelper();
+            await api.DownloadLogoes();
+            resetLogo.Content = "重置完成";
+        }
     }
 
     public class SettingVM : INotifyPropertyChanged

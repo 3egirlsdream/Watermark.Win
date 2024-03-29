@@ -203,8 +203,7 @@ else
 #if ANDROID
 	if (!checkUpdate || DownLoadProgress > 0) return;
 	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
-	var downloadUri = "https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk";
-	await UpgradeService.DownloadFileAsync(downloadUri, DownloadProgressChanged);
+	await UpgradeService.DownloadFileAsync(ClientInstance.LinkPath, DownloadProgressChanged);
 	UpgradeService.InstallNewVersion();
 	DownLoadProgress = 0;
 	StateHasChanged();

@@ -293,8 +293,15 @@
 								}
 								@if (sub.Item1 == "最新")
 								{
-									<MudItem xs="12" Style="padding:4px;">
-										<MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">加载更多...</MudButton>
+									<MudItem xs="12" Style="padding:4px; text-align:center;">
+										@if (loadMore)
+										{
+											<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+										}
+										else
+										{
+											<MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">加载更多...</MudButton>
+										}
 									</MudItem>
 								}
 							</MudGrid>
@@ -317,7 +324,7 @@
 	</div>
 
 	<MudOverlay Visible="@MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-		<MudPaper Width="200px" Height="200px" Elevation="25" Style="text-align:center;padding-top:calc(50% - 38px)">
+		<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
 			<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 			<MudText Typo="Typo.subtitle1" Color="Color.Primary">
 				<b>@MainLoading.Message</b>
@@ -325,7 +332,7 @@
 		</MudPaper>
 	</MudOverlay>
 	<MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
-		<MudPaper Width="200px" Height="200px" Elevation="25" Style="text-align:center;padding-top:calc(50% - 38px)">
+		<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
 			<MudText Typo="Typo.subtitle1" Color="Color.Primary">
 				<b>应用版本过低，请升级！</b><a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk">下载链接</a>
 			</MudText>
@@ -523,6 +530,7 @@
 	char FocusImageType = ' ';
 	bool firstClick2Panel = true;
 	bool loading_down = false;
+	bool loadMore = false;
 	List<WMZipedTemplate> ZipedTemplates = new List<WMZipedTemplate>();
 	List<WMZipedTemplate> hottest = new();
 	List<WMZipedTemplate> newest = new();
@@ -714,8 +722,7 @@
 		await Task.Run(() =>
 		{
 			var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
-			var bitmap = SkiaSharp.SKBitmap.Decode(result.FullPath);
-			return Global.WriteThumbnailImageAsync(bitmap, thumbnail);
+			return Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
 		});
 		canvas.Path = result.FullPath;
 		var tl = new TemplateList
@@ -802,6 +809,8 @@
 
 	async Task LoadTemplatesMarket()
 	{
+		loadMore = true;
+		StateHasChanged();
 		var helper = new APIHelper();
 		var allTemplates = (await helper.GetWatermarks("", 1, 999)).Where(x => x.Visible);
 		var recommend = allTemplates.Where(x => x.Recommend);
@@ -823,6 +832,7 @@
 		subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
 		subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 50).ToList()));
 		ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+		loadMore = false;
 		StateHasChanged();
 	}
 

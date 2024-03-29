@@ -51,6 +51,7 @@
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenSignUpDialog">注册账号</MudMenuItem>
             </MudMenu>
             <MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
@@ -165,10 +166,10 @@
                 {
                     <MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;" >
                         <MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
-                        <MudDivider />
+                        <MudDivider Style="width:30px" />
                         <MudCollapse Expanded="_expanded">
                             <MudStack>
-                                <MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif">
+                                <MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg">
                                     <ButtonTemplate>
                                         <MudIconButton HtmlTag="label" for="@context.Id" DisableElevation Icon="@Icons.Material.Filled.FindReplace" Variant="Variant.Filled" Size="Size.Small" />
                                     </ButtonTemplate>
@@ -186,7 +187,7 @@
                                         }
                                     }
                                 }
-                                @foreach(var i in CurrentImage.Canvas.Children)
+                                @foreach(var i in CurrentImage!.Canvas.Children)
                                 {
                                     foreach(var wmt in i.Controls.Where(x=>x is WMText).Cast<WMText>())
                                     {
@@ -287,13 +288,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        APIHelper helper = new APIHelper();
         await Global.InitConfig();
         await InitTemplates();
         await InitLogoStore();
         var result = await Global.ReadLocalAsync();
         if (!string.IsNullOrEmpty(result.Item1))
         {
-            APIHelper helper = new APIHelper();
             var login = await helper.LoginIn(result.Item1, result.Item2, true);
             if (login.success)
             {
@@ -310,6 +311,7 @@
                 StateHasChanged();
             }
         }
+        await helper.DownloadLogoes();
     }
 
 
@@ -398,10 +400,8 @@
                     await Task.Run(() =>
                     {
                         var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
-                        var bitmap = SkiaSharp.SKBitmap.Decode(file);
-                        Global.WriteThumbnailImage(bitmap, thumbnail);
+                        Global.WriteThumbnailImage(file, thumbnail);
                     });
-
                     Images.Add(new TemplateList
                         {
                             Canvas = canvas,

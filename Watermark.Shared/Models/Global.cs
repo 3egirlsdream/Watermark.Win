@@ -177,8 +177,7 @@ namespace Watermark.Win.Models
                 using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
                 if (bitmap != null)
                 {
-                    SKEncodedImageFormat format = SKEncodedImageFormat.Png;
-                    using var data = bitmap.Encode(format, 70);
+                    using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 70);
                     return "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
                 }
                 return "";
@@ -206,8 +205,9 @@ namespace Watermark.Win.Models
             }
         }
 
-        public static void WriteThumbnailImage(SKBitmap source, string target)
+        public static void WriteThumbnailImage(string file, string target)
         {
+            using var source = SkiaSharp.SKBitmap.Decode(file);
             double w = source.Width, h = source.Height;
             var xs = 1080.0 / h;
             using var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Medium);
@@ -216,11 +216,11 @@ namespace Watermark.Win.Models
             image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 100).SaveTo(writeStream);
         }
 
-        public static Task WriteThumbnailImageAsync(SKBitmap source, string target)
+        public static Task WriteThumbnailImageAsync(string file, string target)
         {
             return Task.Run(() =>
             {
-                WriteThumbnailImage(source, target);
+                WriteThumbnailImage(file, target);
                 return Task.CompletedTask;
             });
         }
@@ -458,7 +458,7 @@ namespace Watermark.Win.Models
         }
 
 
-        static bool secondExif = false;
+        static bool secondExif = true;
         public static bool SECOND_EXIF
         {
             get => secondExif;

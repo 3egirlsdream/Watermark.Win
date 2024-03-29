@@ -233,6 +233,10 @@
 															<MudText Typo="Typo.button">白底转透明像素</MudText>
 															<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
 														</MudStack>
+														<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+															<MudText Typo="Typo.button">自动识别品牌图标</MudText>
+															<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
+														</MudStack>
 														<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
 															<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
 															@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
@@ -320,6 +324,10 @@
 											<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
 												<MudText Typo="Typo.button">白底转透明像素</MudText>
 												<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
+											</MudStack>
+											<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
+												<MudText Typo="Typo.button">自动识别品牌图标</MudText>
+												<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
 											</MudStack>
 											<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
 												<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>

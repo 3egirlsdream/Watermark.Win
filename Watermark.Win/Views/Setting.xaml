@@ -162,6 +162,10 @@
                                 <Label Content="清除已下载的模板缓存" FontSize="14"/>
                                 <Button x:Name="clearDownloadCache" Content="清除" Width="100" Height="30" HorizontalAlignment="Right" Click="clearDownloadCache_Click"/>
                             </Grid>
+                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="2" Margin="0 10 0 0">
+                                <Label Content="重置图标库缓存" FontSize="14"/>
+                                <Button x:Name="resetLogo" Content="清除" Width="100" Height="30" HorizontalAlignment="Right" Click="resetLogo_Click"/>
+                            </Grid>
 
                         </Grid>
                         

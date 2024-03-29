@@ -8,6 +8,7 @@
         }
         public string Path { get; set; }
         public bool White2Transparent { get; set; }
+        public bool AutoSetLogo {  get; set; }
     }
 
 }
