@@ -151,7 +151,7 @@ namespace Watermark.Win.Models
                 if (bitmap != null)
                 {
                     SKEncodedImageFormat format = SKEncodedImageFormat.Png;
-                    if (id == "hasselblad.png") format = SKEncodedImageFormat.Jpeg;
+                    if (id == "hasselblad.png" || "jpg".Equals(Path.GetExtension(destFile), StringComparison.OrdinalIgnoreCase)) format = SKEncodedImageFormat.Jpeg;
                     using var data = bitmap.Encode(format, 70);
                     ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
                 }
@@ -160,7 +160,7 @@ namespace Watermark.Win.Models
                     ImagesBase64[id] = "";
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
             }
@@ -195,7 +195,7 @@ namespace Watermark.Win.Models
             if (bitmap != null)
             {
                 SKEncodedImageFormat format = SKEncodedImageFormat.Png;
-                if (id == "hasselblad.png") format = SKEncodedImageFormat.Jpeg;
+                if (id == "hasselblad.png" || id.EndsWith("jpg")) format = SKEncodedImageFormat.Jpeg;
                 using var data = bitmap.Encode(format, 70);
                 ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
             }
@@ -258,9 +258,7 @@ namespace Watermark.Win.Models
         {
             var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}sys";
             if (!File.Exists(path)) return Tuple.Create(string.Empty, string.Empty);
-            using var fs = new FileStream(path, FileMode.Open);
-            using var sr = new StreamReader(fs);
-            var content = sr.ReadToEnd();
+            var content = File.ReadAllText(path);
             if (!string.IsNullOrEmpty(content))
             {
                 var result = JsonConvert.DeserializeObject<dynamic>(content);
@@ -273,9 +271,7 @@ namespace Watermark.Win.Models
         {
             var path = $"{AppDomain.CurrentDomain.BaseDirectory}.sys{Path.DirectorySeparatorChar}qiniu.txt";
             if (!File.Exists(path)) return Tuple.Create(string.Empty, string.Empty);
-            using var fs = new FileStream(path, FileMode.Open);
-            using var sr = new StreamReader(fs);
-            var content = sr.ReadToEnd();
+            var content = File.ReadAllText(path);
             if (!string.IsNullOrEmpty(content))
             {
                 var result = JsonConvert.DeserializeObject<dynamic>(content);
@@ -292,9 +288,7 @@ namespace Watermark.Win.Models
                 WriteDate();
                 return DateTime.Now;
             }
-            using var fs = new FileStream(path, FileMode.Open);
-            using var sr = new StreamReader(fs);
-            var content = sr.ReadToEnd();
+            var content = File.ReadAllText(path);
             if (!string.IsNullOrEmpty(content))
             {
                 if (DateTime.TryParse(content, out var date))
@@ -546,6 +540,14 @@ namespace Watermark.Win.Models
         {
             return $"https://cdn.thankful.top/{watermarkId}.jpg";
 
+        }
+
+        public static void CheckImageExtension(string file)
+        {
+            if(!file.EndsWith("jpg") && !file.EndsWith("png"))
+            {
+                throw new Exception("不支持的图片格式");
+            }
         }
 
     }

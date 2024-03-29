@@ -30,7 +30,7 @@
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="OnButtonClicked">刷新(Ctrl R)</MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Error" OnClick="PreviewImageRefresh">刷新(Ctrl R)</MudButton>
         </MudToolBar>
     </div>
     <div Style="height:calc(100% - 40px);width:100vw;display: flex;margin-top:40px;">
@@ -454,7 +454,8 @@
     {
         canvas = CurrentCanvas;
         if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-        Global.ImageFile2Base64(ImagesBase64, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
+        var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
+        Global.ImageFile2Base64(ImagesBase64, p, "default");
         var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
         canvas.Children.ForEach(c =>
         {
@@ -473,14 +474,14 @@
             });
         });
         InitLocalFonts();
-        OnButtonClicked();
+        PreviewImageRefresh();
 
         HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, OnIncrementOrDecrement);
         var api = new APIHelper();
         var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Win);
     }
 
-    private async void OnButtonClicked()
+    private async void PreviewImageRefresh()
     {
         SrcLoading = true;
         var t = Task.Run(() =>
@@ -504,7 +505,7 @@
         if (!dialogResult.Canceled)
         {
             mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
-            StateHasChanged();
+            PreviewImageRefresh();
         }
     }
 
@@ -584,13 +585,12 @@
         ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
     }
 
-
     void SelectImage(WMLogo mLogo)
     {
         var action = new Action(() =>
         {
             ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
-            StateHasChanged();
+            PreviewImageRefresh();
         });
         OpenWinHelper.Open(action);
     }
@@ -600,7 +600,7 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, ImagesBase64);
-            StateHasChanged();
+            PreviewImageRefresh();
         });
         OpenWinHelper.Open(action);
     }
@@ -610,17 +610,17 @@
         var action = new Action(() =>
         {
             ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
-            StateHasChanged();
+            PreviewImageRefresh();
         });
         OpenWinHelper.Open(action);
     }
-
 
     void ImportLocalFont()
     {
         var action = new Action(() =>
         {
             ClientInstance.ImportLocalFontAction?.Invoke(Fonts);
+            PreviewImageRefresh();
         });
         OpenWinHelper.Open(action);
     }
@@ -630,6 +630,7 @@
         var action = new Action(() =>
         {
             ClientInstance.InitLocalFontsAction?.Invoke(Fonts);
+            PreviewImageRefresh();
         });
         OpenWinHelper.Open(action);
     }
@@ -641,7 +642,7 @@
         if (!result.Canceled && result.Data is KeyValuePair<string, string> pair)
         {
             mText.FontFamily = pair.Key;
-            StateHasChanged();
+            PreviewImageRefresh();
         }
     }
 
@@ -653,11 +654,12 @@
             File.Delete(filename);
             container.Path = string.Empty;
             ImagesBase64.Remove(container.ID, out string v);
-            StateHasChanged();
+            PreviewImageRefresh();
         }
     }
+
     private void OnIncrementOrDecrement(object sender, HotkeyEventArgs e)
     {
-        OnButtonClicked();
+        PreviewImageRefresh();
     }
 }

@@ -9,7 +9,7 @@ namespace Watermark.Win.Models
             ID = Guid.NewGuid().ToString("N").ToUpper();
             Exifs = [];
         }
-        public int FontSize { get; set; }
+        public int FontSize { get; set; } = 14;
         public bool IsBold { get; set; }
         public bool IsItalic { get; set; }
         public string FontColor { get; set; } = "#000";

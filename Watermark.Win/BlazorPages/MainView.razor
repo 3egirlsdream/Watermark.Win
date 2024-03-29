@@ -313,13 +313,6 @@
         await helper.DownloadLogoes();
     }
 
-
-    async Task InitFloat()
-    {
-        await JSRuntime.InvokeVoidAsync("initFloat");
-    }
-
-
     void SelectExampleImage()
     {
         var dic = new ConcurrentDictionary<string, string>();

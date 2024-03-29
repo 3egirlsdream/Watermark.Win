@@ -51,7 +51,7 @@ namespace Watermark.Win.Models
                 }
                 return dic;
             }
-            catch(Exception ex)
+            catch (Exception)
             {
                 return DefaultMeta;
             }
@@ -64,8 +64,8 @@ namespace Watermark.Win.Models
                 using var stream = new MemoryStream(path);
                 return ReadImage(stream);
 			}
-            catch(Exception ex)
-			{
+            catch (Exception)
+            {
                 return DefaultMeta;
 			}
         }
@@ -166,7 +166,7 @@ namespace Watermark.Win.Models
 
 				return dic;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				return DefaultMeta;
 			}
@@ -197,7 +197,7 @@ namespace Watermark.Win.Models
                 }
                 return dic;
             }
-            catch(Exception ex) 
+            catch(Exception) 
             {
                 return DefaultMeta;
             }

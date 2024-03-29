@@ -476,6 +476,7 @@ namespace Watermark.Win.Models
             }
             catch (Exception ex)
             {
+                throw ex;
             }
         }
 

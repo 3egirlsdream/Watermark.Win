@@ -484,32 +484,6 @@
 </MudDrawer>
 
 
-<MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
-	<DialogContent>
-		<MudForm>
-			<MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
-			<MudStack Row Class="mt-5">
-				@if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
-				{
-					<MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
-				}
-				<MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="SelectImage" Accept=".png, .jpg">
-					<ButtonTemplate>
-						<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.OpenInNew" Style="float:right;max-width:80px;float:right;width:40px;height:40px;" />
-					</ButtonTemplate>
-				</MudFileUpload>
-			</MudStack>
-		</MudForm>
-	</DialogContent>
-	<DialogActions>
-		<MudButton FullWidth="true" Variant="Variant.Filled" OnClick="OpenDesign">确定</MudButton>
-	</DialogActions>
-</MudDialog>
-
-
-
-
-
 
 @code {
 	[Inject]
@@ -538,7 +512,6 @@
 	List<WMZipedTemplate> downloadedTemplates = new List<WMZipedTemplate>();
 	List<WMZipedTemplate> ILikeTemplates = new();
 	int start = 1;
-	List<WMZipedTemplate> wMTemplates = new List<WMZipedTemplate>();
 	WMZipedTemplate CurrentTemplate;
 	TemplateList CurrentImage;
 	List<TemplateList> Images = new List<TemplateList>();
@@ -546,127 +519,28 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		await Global.InitConfig();
-		var date = Global.ReadDate();
-		if ((DateTime.Now - date).TotalDays > 5)
+		try
 		{
-			if (Directory.Exists(Global.AppPath.MarketFolder))
+			await Global.InitConfig();
+			APIHelper helper = new APIHelper();
+			var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
+			if (isOutOfDate)
 			{
-				Directory.Delete(Global.AppPath.MarketFolder, true);
+				ForceUpdate = true;
+				return;
 			}
-			Global.WriteDate();
+
+			Global.DeviceType = Shared.Enums.DeviceType.Andorid;
+			await LoadTemplates();
+			await LoadCollectTemplate();
+			await helper.DownloadLogoes();
+
+			await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
 		}
-
-		APIHelper helper = new APIHelper();
-		var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
-		if (isOutOfDate)
+		catch(Exception ex)
 		{
-			ForceUpdate = true;
-			return;
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
-
-		Global.DeviceType = Shared.Enums.DeviceType.Andorid;
-		await LoadTemplates();
-		await LoadCollectTemplate();
-		await helper.DownloadLogoes();
-
-		await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
-
-	}
-
-	async void SelectImage(IReadOnlyList<IBrowserFile> files)
-	{
-
-		var dic = new ConcurrentDictionary<string, string>();
-		foreach (var file in files)
-		{
-			try
-			{
-				MemoryStream ms = new MemoryStream();
-				await file.OpenReadStream(file.Size).CopyToAsync(ms);
-				CreateTemplate.CurTemplete = ms.ToArray();
-				Global.ImageFile2Base64(dic, CreateTemplate.CurTemplete, CreateTemplate.ID);
-			}
-			catch (Exception ex)
-			{
-
-			}
-		}
-		CreateTemplate.Base64Src = dic.First().Value;
-		StateHasChanged();
-	}
-
-	void OpenDesign()
-	{
-		if (string.IsNullOrEmpty(CreateTemplate.TemplateName) || string.IsNullOrEmpty(CreateTemplate.Base64Src)) return;
-		var canvas = new WMCanvas() { Name = CreateTemplate.TemplateName, ID = CreateTemplate.ID };
-		var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
-		if (!Directory.Exists(basePath))
-		{
-			Directory.CreateDirectory(basePath);
-		}
-		CreateTemplate.DialogVisible = false;
-		var ps = new DialogParameters<Design>();
-		var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
-		//ps.Add(x => x.CurrentCanvas, canvas);
-		//ps.Add(x => x.CurrentTemplateBytes, CreateTemplate.CurTemplete);
-		DialogService.Show<Design>("", ps, option);
-	}
-
-	public async void OpenMyTemplates()
-	{
-		var parameters = new DialogParameters<MyTemplates>();
-
-		var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
-		var rst = DialogService.Show<MyTemplates>("我的模板", parameters, option);
-		var dialog = await rst.Result;
-		if (!dialog.Canceled)
-		{
-			var data = (WMZipedTemplate)dialog.Data;
-			if (data != null)
-			{
-				var helper = new WatermarkHelper();
-
-				var src = helper.Generation(data.WMCanvas, data, true);
-				data.Src = src;
-				wMTemplates.Add(data);
-				StateHasChanged();
-			}
-		}
-
-	}
-
-	public async void SelectPictureClick(IBrowserFile file)
-	{
-		Images = new List<TemplateList>();
-		ConcurrentDictionary<string, string> dic = new ConcurrentDictionary<string, string>();
-		WMCanvas canvas = new WMCanvas();
-		canvas.Path = file.Name;
-		using var sm = new MemoryStream();
-		await file.OpenReadStream(file.Size).CopyToAsync(sm);
-		var bt = Task.Run(() =>
-		{
-			canvas.Exif = ExifHelper.ReadImage(sm.ToArray());
-			return SkiaSharp.SKBitmap.Decode(sm.ToArray());
-		});
-
-		var bitmap = await bt;
-
-		var src = Task.Run(() =>
-		{
-			Global.ImageFile2Base64(dic, sm.ToArray(), canvas.ID);
-			return dic.First().Value;
-		});
-		Images.Add(new TemplateList
-			{
-				Canvas = canvas,
-				Src = await src,
-				ID = canvas.ID,
-				Path = file.Name,
-				Bitmap = bitmap
-			});
-		CurrentImage = Images!.FirstOrDefault();
-		StateHasChanged();
 	}
 
 	async void ClickImage(TemplateList image)
@@ -693,49 +567,56 @@
 
 	async void OpenPhoto(WMZipedTemplate template)
 	{
-		var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
+		try 
+		{
+			var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
 			{
 				Title = "选择图片"
 			});
-		if (result is null) return;
+			if (result is null) return;
+			Global.CheckImageExtension(result.FullPath);
+			MainLoading.Message = "正在生成图片...";
+			MainLoading.Show = true;
+			StateHasChanged();
+			WMCanvas canvas = new WMCanvas();
+			// var sm = await result.OpenReadAsync();
+			// using var ms = new MemoryStream();
+			// sm.Seek(0, SeekOrigin.Begin);
+			// await sm.CopyToAsync(ms);
+			canvas.Exif = await Task.Run(() =>
+			{
+				//var arr = ms.ToArray();
+				return ExifHelper.ReadImage(result.FullPath);
+			});
 
-		MainLoading.Message = "正在生成图片...";
-		MainLoading.Show = true;
-		StateHasChanged();
-		WMCanvas canvas = new WMCanvas();
-		var sm = await result.OpenReadAsync();
-		using var ms = new MemoryStream();
-		sm.Seek(0, SeekOrigin.Begin);
-		await sm.CopyToAsync(ms);
-		canvas.Exif = await Task.Run(() =>
-		{
-			var arr = ms.ToArray();
-			return ExifHelper.ReadImage(arr);
-		});
-
-		Images = new List<TemplateList>();
-		Dictionary<string, string> dic = new Dictionary<string, string>();
-		if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-		{
-			Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-		}
-		await Task.Run(() =>
-		{
-			var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
-			return Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
-		});
-		canvas.Path = result.FullPath;
-		var tl = new TemplateList
+			Images = new List<TemplateList>();
+			Dictionary<string, string> dic = new Dictionary<string, string>();
+			if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+			{
+				Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+			}
+			await Task.Run(() =>
+			{
+				var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
+				return Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
+			});
+			canvas.Path = result.FullPath;
+			var tl = new TemplateList
 			{
 				Canvas = canvas,
 				ID = canvas.ID,
 				Path = result.FullPath
 			};
-		Images.Add(tl);
-		CurrentImage = tl;
-		await ChangeTemplate(template);
-		MainLoading.Show = false;
-		StateHasChanged();
+			Images.Add(tl);
+			CurrentImage = tl;
+			await ChangeTemplate(template);
+			MainLoading.Show = false;
+			StateHasChanged();
+		}
+		catch(Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+		}
 	}
 
 	async Task ChangeTemplate(WMZipedTemplate template)
@@ -754,7 +635,6 @@
 		});
 
 		await Task.Run(() => design?.SetCanvas(CurrentImage.Canvas));
-
 
 		openDrawer = true;
 	}
@@ -785,27 +665,8 @@
 		Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
 		openSave = false;
 		StateHasChanged();
-
 	}
 
-	async void OpenTemplateMarket()
-	{
-		var dialog = DialogService.Show<TemplatesMarketMobile>(string.Empty, new DialogOptions() { FullScreen = true, CloseButton = true, FullWidth = true, MaxWidth = MaxWidth.ExtraExtraLarge });
-		var result = await dialog.Result;
-		if (!result.Canceled)
-		{
-			var data = (WMZipedTemplate)result.Data;
-			if (data != null)
-			{
-				var helper = new WatermarkHelper();
-
-				var src = helper.Generation(data.WMCanvas, data, true);
-				data.Src = src;
-				wMTemplates.Add(data);
-				StateHasChanged();
-			}
-		}
-	}
 
 	async Task LoadTemplatesMarket()
 	{
@@ -1133,17 +994,6 @@
 		public static double Value { get; set; }
 		public static string Message { get; set; } = "正在加载模板...";
 	}
-
-	class CreateTemplate
-	{
-		public static bool DialogVisible { get; set; } = false;
-		public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-		public static string TemplateName { get; set; }
-		public static string Base64Src { get; set; }
-		public static string ID = Guid.NewGuid().ToString("N").ToUpper();
-		public static byte[] CurTemplete { get; set; }
-
-	};
 
 	class TemplateList
 	{
