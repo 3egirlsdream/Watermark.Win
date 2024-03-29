@@ -13,8 +13,10 @@
 
     </DialogContent>
     <DialogActions>
-        <MudButton Variant="Variant.Filled" OnClick="LoginOK">登录</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OpenSignUpDialog">注册</MudButton>
+        <MudStack Row="true">
+            <MudButton Variant="Variant.Filled" OnClick="LoginOK" Size="Size.Small" Color="Color.Primary">登录</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OpenSignUpDialog" Size="Size.Small">注册</MudButton>
+        </MudStack>
     </DialogActions>
 </MudDialog>
 

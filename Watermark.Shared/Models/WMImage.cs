@@ -11,6 +11,7 @@
             CornerRadius = 15;
             EnableGaussianBlur = false;
             GaussianDeep = 50;
+            Show = true;
         }
         public bool EnableShadow { get; set; }
         public int ShadowRange {  get; set; }
@@ -20,6 +21,7 @@
 
         public bool EnableGaussianBlur { get; set; }
         public int GaussianDeep { get; set; }
+        public bool Show {  get; set; }
     }
 
 }

@@ -14,6 +14,8 @@ namespace Watermark.Win.Models
             HorizontalAlignment = HorizontalAlignment.Center;
             VerticalAlignment  = VerticalAlignment.Center;
             ContainerAlignment = ContainerAlignment.Bottom;
+            XOffset = 0;
+            YOffset = 0;
         }
         public Orientation Orientation { get; set; }
         public HorizontalAlignment HorizontalAlignment { get; set; }
@@ -23,6 +25,12 @@ namespace Watermark.Win.Models
         public int WidthPercent { get; set; }
         public List<IWMControl> Controls { get; set; }
         public string Path { get; set; }
+        /// <summary>
+        /// 裁切
+        /// </summary>
+        public bool EnableCrop {  get; set; }
+        public int XOffset {  get; set; }
+        public int YOffset { get; set; }
     }
 
 }

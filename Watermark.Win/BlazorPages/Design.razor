@@ -51,6 +51,10 @@
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage"/>
                     </MudStack>
                     <MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
+                    <MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                        <MudText Typo="Typo.button">显示主图</MudText>
+                        <MudSwitch @bind-Value="@canvas.ImageProperties.Show" Color="Color.Primary" />
+                    </MudStack>
                     <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
                     <MudStack Row Class="mt-5">
                         <MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />

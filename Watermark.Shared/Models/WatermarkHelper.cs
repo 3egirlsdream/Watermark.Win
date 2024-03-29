@@ -90,11 +90,14 @@ namespace Watermark.Win.Models
             {
                 DrawShadow(targetCanvas, p1, originalBitmap.Width, originalBitmap.Height, xs, mainCanvas.ImageProperties);
             }
-            if (mainCanvas.ImageProperties!.EnableRadius)
+            if (mainCanvas.ImageProperties!.Show)
             {
-                DrawRoundCorner(originalBitmap, targetCanvas, (int)p1.X, (int)p1.Y, originalBitmap.Width, originalBitmap.Height, mainCanvas.ImageProperties.CornerRadius);
+                if (mainCanvas.ImageProperties!.EnableRadius)
+                {
+                    DrawRoundCorner(originalBitmap, targetCanvas, (int)p1.X, (int)p1.Y, originalBitmap.Width, originalBitmap.Height, mainCanvas.ImageProperties.CornerRadius);
+                }
+                else targetCanvas.DrawBitmap(originalBitmap, p1);
             }
-            else targetCanvas.DrawBitmap(originalBitmap, p1);
 
             double fontxs = 0;
             //绘制容器
@@ -242,8 +245,15 @@ namespace Watermark.Win.Models
                 {
                     if (ziped.Images.TryGetValue(container.Path ?? "", out SKBitmap? logo) && logo != null)
                     {
-                        logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
-                        canvasc.DrawBitmap(logo, new SKPoint(0, 0));
+                        if(container.EnableCrop)
+                        {
+
+                        }
+                        else
+                        {
+                            logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
+                            canvasc.DrawBitmap(logo, new SKPoint(0, 0));
+                        }
                     }
                 }
             }
@@ -758,7 +768,8 @@ namespace Watermark.Win.Models
             using var imageFilter = SKImageFilter.CreateBlur(sigma * xs, sigma * xs);
             paint.ImageFilter = imageFilter;
             using var can = new SKCanvas(bitmap);
-            can.DrawBitmap(original, new SKRect(0, 0, width, height), paint);
+            var w = 100 * xs;
+            can.DrawBitmap(original, new SKRect(-w, -w, width + w, height+w), paint);
         }
 
     }
