@@ -1,4 +1,5 @@
 ﻿using SkiaSharp;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
@@ -36,6 +37,7 @@ namespace Watermark.Win.Models
         /// 上架 下架
         /// </summary>
         public bool Visible { get; set; }
+        public CanvasType CanvasType { get; set; }
 
         protected virtual void Dispose(bool disposing)
         {

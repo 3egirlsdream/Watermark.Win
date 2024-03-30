@@ -198,6 +198,7 @@
 	List<WMZipedTemplate> ZipedTemplates;
 	List<WMZipedTemplate> hottest;
 	List<WMZipedTemplate> newest;
+	List<WMZipedTemplate> splits;
 	List<Tuple<string, List<WMZipedTemplate>>> subscribed;
 	int start = 1;
 	string sortType = "最热门";
@@ -226,9 +227,10 @@
 		var allTemplates = (await helper.GetWatermarks("", start, 999, sortCode)).Where(x => x.Visible);
 		List<Task> tasks1 = new List<Task>();
 		var recommend = allTemplates.Where(x => x.Recommend);
-		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
-		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
-		ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).ToList();
+		hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(12).ToList();
+		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+		splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
+		ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
 		var subUser = await IntiSubscribedUserList();
 		subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
 		foreach (var su in subUser)
@@ -242,6 +244,7 @@
 		}
 
 		subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
+		subscribed.Add(Tuple.Create("拼图", splits));
 		subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).ToList()));
 		ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
 	}

@@ -55,11 +55,16 @@ namespace Watermark.Win.Models
             else
             {
                 if (mainCanvas.CustomWidth == 0 || mainCanvas.CustomHeight == 0) return "";
-                originalBitmap = new SKBitmap(mainCanvas.CustomWidth, mainCanvas.CustomHeight);
+                if (isPreview)
+                {
+                    var _xs = mainCanvas.CustomWidth * 1.0 / 1080;
+                    originalBitmap = new SKBitmap(1080, (int)(mainCanvas.CustomHeight / _xs));
+				}
+                else originalBitmap = new SKBitmap(mainCanvas.CustomWidth, mainCanvas.CustomHeight);
                 mainCanvas.BorderThickness = new WMThickness(0);
             }
 
-            var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980); 
+            var xs = originalBitmap.Width / 1080.0; 
             //创建画布
             var wh_xs = Math.Min(originalBitmap.Width, originalBitmap.Height) * 1.0 / Math.Max(originalBitmap.Width, originalBitmap.Height);
             var singeBorderWidth = originalBitmap.Width / 100.0;
@@ -104,7 +109,7 @@ namespace Watermark.Win.Models
             {
                 if (mainCanvas.ImageProperties!.EnableRadius)
                 {
-                    DrawRoundCorner(originalBitmap, targetCanvas, (int)p1.X, (int)p1.Y, originalBitmap.Width, originalBitmap.Height, mainCanvas.ImageProperties.CornerRadius);
+                    DrawRoundCorner(originalBitmap, targetCanvas, (int)p1.X, (int)p1.Y, originalBitmap.Width, originalBitmap.Height, (int)(mainCanvas.ImageProperties.CornerRadius * xs));
                 }
                 else targetCanvas.DrawBitmap(originalBitmap, p1);
             }
@@ -163,8 +168,6 @@ namespace Watermark.Win.Models
                     decimal resolition = (decimal)minSide / ros;
                     var w = targetBitmap.Width < targetBitmap.Height ? ros : (int)(targetBitmap.Width / resolition);
                     var h = targetBitmap.Height < targetBitmap.Width ? ros : (int)(targetBitmap.Height / resolition);
-
-                    var scaleXs = 1080.0 / h;
                     targetBitmap = targetBitmap.Resize(new SkiaSharp.SKImageInfo((int)(w), (int)(h)), SkiaSharp.SKFilterQuality.Medium);
                 }
             }
@@ -182,7 +185,7 @@ namespace Watermark.Win.Models
                 {
                     Directory.CreateDirectory(output);
                 }
-                var newFileaName = "DFX_" + Path.GetFileNameWithoutExtension(mainCanvas.Path);
+                var newFileaName = "DFX_" + (string.IsNullOrEmpty(mainCanvas.Path) ? Guid.NewGuid().ToString() : Path.GetFileNameWithoutExtension(mainCanvas.Path));
                 if (Global.UploadMode)
                 {
                     newFileaName = mainCanvas.ID;
@@ -249,15 +252,22 @@ namespace Watermark.Win.Models
             {
                 if (ziped == null)
                 {
-                    var bkPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
-                    if (Path.Exists(bkPath))
+                    var bkBitmap = SKBitmap.Decode(container.Path);
+                    if(bkBitmap == null)
                     {
-                        var bkBitmap = SKBitmap.Decode(bkPath);
+                        var bkPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
+                        if (Path.Exists(bkPath))
+                        {
+                            bkBitmap = SKBitmap.Decode(bkPath);
+                        }
+                    }
+                    if (bkBitmap != null)
+                    {
                         bkBitmap = CropImage(bitmapc, bkBitmap);
                         bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
                         if (container.ContainerProperties.EnableRadius)
                         {
-                            DrawRoundCorner(bkBitmap, canvasc, 0, 0, bkBitmap.Width, bkBitmap.Height, container.ContainerProperties.CornerRadius);
+                            DrawRoundCorner(bkBitmap, canvasc, 0, 0, bkBitmap.Width, bkBitmap.Height, (int)(container.ContainerProperties.CornerRadius * xs));
                         }
                         else canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
                         bkBitmap.Dispose();
@@ -271,7 +281,7 @@ namespace Watermark.Win.Models
                         logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
                         if (container.ContainerProperties.EnableRadius)
                         {
-                            DrawRoundCorner(logo, canvasc, 0, 0, logo.Width, logo.Height, container.ContainerProperties.CornerRadius);
+                            DrawRoundCorner(logo, canvasc, 0, 0, logo.Width, logo.Height, (int)(container.ContainerProperties.CornerRadius * xs));
                         }
                         else canvasc.DrawBitmap(logo, new SKPoint(0, 0));
                     }

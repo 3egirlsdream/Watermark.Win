@@ -94,7 +94,7 @@
 					}
 					else
 					{
-						<MudSelect @bind-Value="canvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" TextChanged="ValueChanged2">
+						<MudSelect Value="canvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
 							<MudSelectItem Value="@("1:1")" />
 							<MudSelectItem Value="@("16:9")" />
 							<MudSelectItem Value="@("9:16")" />
@@ -708,6 +708,7 @@
 
 	void ValueChanged2(string v)
 	{
+		canvas.LengthWidthRatio = v;
 		var wh = v.Split(":");
 		var w = Convert.ToDouble(wh[0]);
 		var h = Convert.ToDouble(wh[1]);

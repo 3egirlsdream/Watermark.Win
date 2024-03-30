@@ -184,7 +184,7 @@ namespace Watermark.Shared.Models
             var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.High);
             using var image = SKImage.FromBitmap(resized);
             using var writeStream = File.OpenWrite(target);
-            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
+            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 50).SaveTo(writeStream);
         }
 
         private static string UUID()

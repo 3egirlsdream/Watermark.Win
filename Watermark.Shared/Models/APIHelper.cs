@@ -97,7 +97,8 @@ namespace Watermark.Win.Models
                 form.Add(new StringContent(coins.ToString()), "coins");
                 form.Add(new StringContent(desc), "desc");
                 form.Add(new StringContent(name), "name");
-                form.Add(new StringContent(Global.CurrentUser.ID), "userId");
+				form.Add(new StringContent((int)canvas.CanvasType + ""), "canvasType");
+				form.Add(new StringContent(Global.CurrentUser.ID), "userId");
                 using var response = await _client.PostAsync("/api/Watermark/Upload", form);
                 var bt = await response.Content.ReadAsByteArrayAsync();
                 var str = Encoding.UTF8.GetString(bt);
@@ -240,11 +241,12 @@ namespace Watermark.Win.Models
                         t.Desc = item?["DESC"]?.ToString();
                         t.Coins = Convert.ToInt32(item?["COINS"]?.ToString() ?? "0");
                         t.DownloadTimes = Convert.ToInt32(item?["DOWNLOAD_TIMES"]?.ToString() ?? "0");
-                        t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "0") > 0 ? true : false;
+                        t.Recommend = Convert.ToInt32(item?["RECOMMEND"]?.ToString() ?? "0") > 0;
                         t.UserDisplayName = item?["DISPLAY_NAME"]?.ToString();
                         t.Visible = item?["STATE"]?.ToString() == "A";
                         t.Name = item?["NAME"]?.ToString() ?? "";
-                        if (DateTime.TryParse(item?["DATETIME_CREATED"]?.ToString(), out var dt))
+						t.CanvasType = (CanvasType)Convert.ToInt32(item?["CANVAS_TYPE"]?.ToString() ?? "0");
+						if (DateTime.TryParse(item?["DATETIME_CREATED"]?.ToString(), out var dt))
                         {
                             t.DateTimeCreated = dt;
                         }
@@ -283,6 +285,7 @@ namespace Watermark.Win.Models
                         using StreamReader reader = new StreamReader(entryStream);
                         string content = reader.ReadToEnd();
                         t.WMCanvas = Global.ReadConfig(content);
+                        t.CanvasType = t.WMCanvas?.CanvasType ?? CanvasType.Normal;
                     }
                     else if (entry.FullName.EndsWith("default.jpg", StringComparison.OrdinalIgnoreCase))
                     {
