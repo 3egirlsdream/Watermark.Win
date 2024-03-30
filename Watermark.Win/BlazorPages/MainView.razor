@@ -145,7 +145,7 @@
                         }
                         else
                         {
-                            @foreach (var pair in wMTemplates)
+                            @foreach (var pair in wMTemplates.OrderBy(x=>x.Canvas.Name))
                             {
                                 <MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
                                     <Content>
@@ -672,6 +672,7 @@
             {
                 if (cc1 is WMLogo logo && logo.ID == sourceId)
                 {
+                    logo.AutoSetLogo = false;
                     logo.Path = logoPath;
                     break;
                 }
@@ -681,6 +682,7 @@
                     {
                         if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
                         {
+                            wcLogo.AutoSetLogo = false;
                             wcLogo.Path = logoPath;
                             break;
                         }

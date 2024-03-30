@@ -21,32 +21,42 @@ namespace Watermark.Win.Models
         public string Generation(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
 			SKBitmap originalBitmap;
-            string path = Global.AppPath.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
-            if (ziped == null)
+            if (mainCanvas.CanvasType == CanvasType.Normal)
             {
-                var codec = SKCodec.Create(!string.IsNullOrEmpty(mainCanvas.Path) ? mainCanvas.Path : path);
-                if (!string.IsNullOrEmpty(mainCanvas.Path))
+                string path = Global.AppPath.TemplatesFolder + mainCanvas.ID + Path.DirectorySeparatorChar + "default.jpg";// "C:\\Users\\Jiang\\Pictures\\DSC02754.jpg";
+                if (ziped == null)
                 {
-                    path = mainCanvas.Path;
-                    if (isPreview) path = Path.Combine(Global.AppPath.ThumbnailFolder, path.Substring(path.LastIndexOf('\\') + 1));
+                    var codec = SKCodec.Create(!string.IsNullOrEmpty(mainCanvas.Path) ? mainCanvas.Path : path);
+                    if (!string.IsNullOrEmpty(mainCanvas.Path))
+                    {
+                        path = mainCanvas.Path;
+                        if (isPreview) path = Path.Combine(Global.AppPath.ThumbnailFolder, path.Substring(path.LastIndexOf('\\') + 1));
+                    }
+                    originalBitmap = SKBitmap.Decode(path);
+                    if (originalBitmap == null)
+                    {
+                        return "";
+                    }
+                    originalBitmap = AutoOrient(codec, originalBitmap);
+                    codec.Dispose();
                 }
-                originalBitmap = SKBitmap.Decode(path);
-                if (originalBitmap == null)
+                else
                 {
-                    return "";
+                    originalBitmap = new SKBitmap();
+                    ziped.Bitmap.CopyTo(originalBitmap);
                 }
-                originalBitmap = AutoOrient(codec, originalBitmap);
-                codec.Dispose();
+
+
+                if (mainCanvas.Exif == null || mainCanvas.Exif.Count == 0)
+                {
+                    mainCanvas.Exif = ExifHelper.ReadImage(path);
+                }
             }
             else
             {
-                originalBitmap = new SKBitmap();
-                ziped.Bitmap.CopyTo(originalBitmap);
-            }
-
-            if (mainCanvas.Exif == null || mainCanvas.Exif.Count == 0)
-            {
-                mainCanvas.Exif = ExifHelper.ReadImage(path);
+                if (mainCanvas.CustomWidth == 0 || mainCanvas.CustomHeight == 0) return "";
+                originalBitmap = new SKBitmap(mainCanvas.CustomWidth, mainCanvas.CustomHeight);
+                mainCanvas.BorderThickness = new WMThickness(0);
             }
 
             var xs = (originalBitmap.Height * originalBitmap.Width) / (1080.0 * 1980); 
@@ -132,6 +142,13 @@ namespace Watermark.Win.Models
                     var b = (totalHeight - ch - cb);
                     container_point = new SKPoint((float)(cl+border_l), (float)b);
                 }
+
+
+                if (container.ContainerProperties.EnableShadow)
+                {
+                    DrawShadow(targetCanvas, container_point, bitmapc.Width, bitmapc.Height, xs, container.ContainerProperties);
+                }
+
                 targetCanvas.DrawBitmap(bitmapc, container_point);
                 bitmapc.Dispose();
             }
@@ -236,8 +253,13 @@ namespace Watermark.Win.Models
                     if (Path.Exists(bkPath))
                     {
                         var bkBitmap = SKBitmap.Decode(bkPath);
+                        bkBitmap = CropImage(bitmapc, bkBitmap);
                         bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
-                        canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
+                        if (container.ContainerProperties.EnableRadius)
+                        {
+                            DrawRoundCorner(bkBitmap, canvasc, 0, 0, bkBitmap.Width, bkBitmap.Height, container.ContainerProperties.CornerRadius);
+                        }
+                        else canvasc.DrawBitmap(bkBitmap, new SKPoint(0, 0));
                         bkBitmap.Dispose();
                     }
                 }
@@ -245,15 +267,13 @@ namespace Watermark.Win.Models
                 {
                     if (ziped.Images.TryGetValue(container.Path ?? "", out SKBitmap? logo) && logo != null)
                     {
-                        if(container.EnableCrop)
+                        logo = CropImage(bitmapc, logo);
+                        logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
+                        if (container.ContainerProperties.EnableRadius)
                         {
-
+                            DrawRoundCorner(logo, canvasc, 0, 0, logo.Width, logo.Height, container.ContainerProperties.CornerRadius);
                         }
-                        else
-                        {
-                            logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
-                            canvasc.DrawBitmap(logo, new SKPoint(0, 0));
-                        }
+                        else canvasc.DrawBitmap(logo, new SKPoint(0, 0));
                     }
                 }
             }
@@ -630,6 +650,35 @@ namespace Watermark.Win.Models
             }
             canvasc.Dispose();
             return bitmapc;
+        }
+
+        private SKBitmap CropImage(SKBitmap bitmapc, SKBitmap bkBitmap)
+        {
+            double top = 0, left = 0;
+            double right;
+            double bottom;
+            //按短边缩放
+            if (bkBitmap.Width * 1.0 / bitmapc.Width < bkBitmap.Height * 1.0 / bitmapc.Height)
+            {
+                var container_xs = bkBitmap.Width * 1.0 / bitmapc.Width;
+                var container_img_h = bitmapc.Height * container_xs;
+                top = (bkBitmap.Height - container_img_h) / 2D;
+                right = bkBitmap.Width;
+                bottom = container_img_h + top;
+            }
+            else
+            {
+                var container_xs = bkBitmap.Height * 1.0 / bitmapc.Height;
+                var container_img_w = bitmapc.Width * container_xs;
+                left = (bkBitmap.Width - container_img_w) / 2D;
+                right = container_img_w + left;
+                bottom = bkBitmap.Height;
+            }
+            var cropBitmap = new SKBitmap((int)(right - left), (int)(bottom - top));
+            using var cropCanvas = new SKCanvas(cropBitmap);
+            cropCanvas.DrawBitmap(bkBitmap, new SKPoint((int)-left, (int)-top));
+            bkBitmap.Dispose();
+            return cropBitmap;
         }
 
         // 将白色像素转为透明像素

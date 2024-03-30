@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using SkiaSharp;
+using Watermark.Shared.Enums;
 
 namespace Watermark.Win.Models
 {
@@ -11,7 +13,10 @@ namespace Watermark.Win.Models
             EnableMarginXS = false;
             BorderThickness = new WMThickness(0);
             ImageProperties = new WMImage();
-        }
+            CanvasType = CanvasType.Normal;
+			Exif = [];
+
+		}
         public string ID { get; set; }
         public string Name { get; set; }
         public WMThickness BorderThickness { get; set; }
@@ -23,6 +28,12 @@ namespace Watermark.Win.Models
         public bool EnableMarginXS { get; set; }
         [JsonIgnore]
         public string Path { get; set; }
-    }
+        public CanvasType CanvasType { get; set; }
+        public int CustomWidth {  get; set; }
+        public int CustomHeight { get; set; }
+        public string LengthWidthRatio {  get; set; }
+
+
+	}
 
 }

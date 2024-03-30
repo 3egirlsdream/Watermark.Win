@@ -56,6 +56,10 @@ namespace Watermark.Win.Models
                     BackgroundColor = ls.BackgroundColor,
                     ImageProperties = ls.ImageProperties,
                     EnableMarginXS = ls.EnableMarginXS,
+                    CanvasType = ls.CanvasType,
+                    CustomHeight = ls.CustomHeight,
+                    CustomWidth = ls.CustomWidth,
+                    LengthWidthRatio = ls.LengthWidthRatio,
                     //一级容器
                     Children = new List<WMContainer>(ls.Containers.Where(c => c.PNode.PID == "0"))
                 };

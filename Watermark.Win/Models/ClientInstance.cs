@@ -3,6 +3,7 @@ using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Management;
@@ -63,9 +64,10 @@ namespace Watermark.Shared.Models
                     System.IO.Directory.CreateDirectory(destFolder);
                 }
 
-                var name = p.Substring(p.LastIndexOf('\\') + 1);
-                var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
-                System.IO.File.Copy(p, destFile, true);
+                var name = Path.GetFileName(p);
+				var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+				using var bitmap = SKBitmap.Decode(p);
+				WriteThumbnailImage(bitmap, destFile);
                 mContainer.Path = name;
                 Global.ImageFile2Base64(ImagesBase64, destFile, mContainer.ID);
             }

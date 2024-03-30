@@ -14,6 +14,9 @@
             Show = true;
         }
         public bool EnableShadow { get; set; }
+        /// <summary>
+        /// 阴影深度
+        /// </summary>
         public int ShadowRange {  get; set; }
         public string ShadowColor { get; set; }
         public bool EnableRadius { get; set; }
@@ -21,6 +24,9 @@
 
         public bool EnableGaussianBlur { get; set; }
         public int GaussianDeep { get; set; }
+        /// <summary>
+        /// 是否显示图片
+        /// </summary>
         public bool Show {  get; set; }
     }
 

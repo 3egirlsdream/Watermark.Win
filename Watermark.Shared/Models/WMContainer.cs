@@ -16,6 +16,7 @@ namespace Watermark.Win.Models
             ContainerAlignment = ContainerAlignment.Bottom;
             XOffset = 0;
             YOffset = 0;
+            ContainerProperties = new WMImage();
         }
         public Orientation Orientation { get; set; }
         public HorizontalAlignment HorizontalAlignment { get; set; }
@@ -31,6 +32,7 @@ namespace Watermark.Win.Models
         public bool EnableCrop {  get; set; }
         public int XOffset {  get; set; }
         public int YOffset { get; set; }
+        public WMImage ContainerProperties { get; set; }
     }
 
 }
