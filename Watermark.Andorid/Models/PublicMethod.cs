@@ -1,44 +1,74 @@
 ﻿using Microsoft.JSInterop;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Sharpen;
+using System.Text.RegularExpressions;
 using Watermark.Win.Models;
 
 namespace Watermark.Andorid.Models
 {
     public static class PublicMethods
     {
-
-        [JSInvokable]
-        public static async Task AliPays(IJSObjectReference objRef, string aliPayStrs)
+        public static async Task<API<string>> AliPays(decimal cost, string tradeName)
         {
-#if ANDROID
-
-            _ =Task.Run(async () =>
+            var api = new APIHelper();
+            var rs = await api.GetPayToken(cost, tradeName);
+            if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
             {
-
-                string con = aliPayStrs;//调用支付宝app支付接口返回的内容　　　　　　　　　 
-                var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-                Com.Alipay.Sdk.App.PayTask pa = new Com.Alipay.Sdk.App.PayTask(act);
-                var result = pa.PayV2(con, true);
-                var resultStatus = result.TryGetValue("resultStatus", out string resultStatusDic) ? resultStatusDic : "-1";
-                var memo = result.TryGetValue("memo", out string memoDic) ? memoDic : "";
-
-                if (resultStatus == "9000")
+                API<string> jt = await Task.Run(() =>
                 {
+#if ANDROID
+                    string con = rs.data;
+                    var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+                    Com.Alipay.Sdk.App.PayTask pa = new Com.Alipay.Sdk.App.PayTask(act);
+                    var payRs = pa.Pay(con, true);
+                    try
+                    {
+                        string json = payRs.ToString();
+                        if (json.StartsWith("resultStatus={9000}"))
+                        {
+                            var start = json.IndexOf("result={");
+                            var content = json.Substring(start + 8);
+                            var end = content.LastIndexOf("};extendInfo=");
+                            content = content.Substring(0, end);
+                            return new API<string> { success = true, data = content };
+                        }
+                        else return new API<string> { success = false, message = new APISub { content = $"支付失败：错误代码" } };
+                    }
+                    catch (Exception ex)
+                    {
+                        return new API<string> { message = new APISub { content = ex.Message }, success = false };
 
-                    memo = "支付成功";
-
-                }
-                else if (resultStatus == "-1")
-                {
-                    memo = "支付失败";
-                }
-                //执行前端html window上注册的回调方法
-                await objRef.InvokeVoidAsync("aliPayCallBack", new { resultStatus = resultStatus, memo = memo });
-
-            });
+                    }
+#else
+                    return new API<string> { };
 #endif
+                });
+                if (!jt.success) return jt;
+
+                JObject result = JObject.Parse(jt.data);
+                var r = result?["alipay_trade_app_pay_response"];
+                if (r == null) return new API<string> { success = false, message = new APISub { content = "API返回为空" } };
+                var code = r["code"]?.ToString();
+                var msg = r["msg"]?.ToString();
+                var app_id = r["app_id"]?.ToString();
+                var auth_app_id = r["auth_app_id"]?.ToString();
+                var out_trade_no = r["out_trade_no"]?.ToString(); ;
+                var total_amount = r["total_amount"]?.ToString();
+                var trade_no = r["trade_no"]?.ToString();
+                var seller_id = r["seller_id"]?.ToString();
+                var up = await api.RecordBill(code, msg, app_id, auth_app_id, out_trade_no, trade_no, tradeName, total_amount, seller_id);
+                if (up == null || !up.success) return new API<string> { success = false, message = new APISub { content = up?.message?.content ?? "" } };
+
+                return new API<string> { success = true, data = "支付成功" };
+            }
+            else
+            {
+                return rs;
+            }
+
         }
 
-        [JSInvokable]
         public static async Task ReLogin()
         {
             APIHelper helper = new APIHelper();

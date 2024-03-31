@@ -30,7 +30,7 @@ namespace Watermark.Win.Models
                     if (!string.IsNullOrEmpty(mainCanvas.Path))
                     {
                         path = mainCanvas.Path;
-                        if (isPreview) path = Path.Combine(Global.AppPath.ThumbnailFolder, path.Substring(path.LastIndexOf('\\') + 1));
+                        if (isPreview) path = Path.Combine(Global.AppPath.ThumbnailFolder, Path.GetFileName(path));
                     }
                     originalBitmap = SKBitmap.Decode(path);
                     if (originalBitmap == null)
@@ -251,11 +251,13 @@ namespace Watermark.Win.Models
             if (!string.IsNullOrEmpty(container.Path))
             {
                 if (ziped == null)
-                {
-                    var bkBitmap = SKBitmap.Decode(container.Path);
-                    if(bkBitmap == null)
+				{
+					var bkPath = container.Path;
+					var bkBitmap = SKBitmap.Decode(container.Path);
+
+					if (bkBitmap == null)
                     {
-                        var bkPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
+						bkPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + container.Path;
                         if (Path.Exists(bkPath))
                         {
                             bkBitmap = SKBitmap.Decode(bkPath);
@@ -263,7 +265,10 @@ namespace Watermark.Win.Models
                     }
                     if (bkBitmap != null)
                     {
-                        bkBitmap = CropImage(bitmapc, bkBitmap);
+						var codec = SKCodec.Create(bkPath);
+						bkBitmap = AutoOrient(codec, bkBitmap);
+                        codec.Dispose();
+						bkBitmap = CropImage(bitmapc, bkBitmap);
                         bkBitmap = bkBitmap.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
                         if (container.ContainerProperties.EnableRadius)
                         {
@@ -277,7 +282,7 @@ namespace Watermark.Win.Models
                 {
                     if (ziped.Images.TryGetValue(container.Path ?? "", out SKBitmap? logo) && logo != null)
                     {
-                        logo = CropImage(bitmapc, logo);
+						logo = CropImage(bitmapc, logo);
                         logo = logo.Resize(new SKSizeI(bitmapc.Width, bitmapc.Height), SKFilterQuality.High);
                         if (container.ContainerProperties.EnableRadius)
                         {

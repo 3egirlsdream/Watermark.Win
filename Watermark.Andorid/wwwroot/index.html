@@ -67,30 +67,6 @@
 
 
     }
-
-    $(function () {
-        var jsObjectReference;
-        $("#zhifuapp").click(function () {
-            // 调佣服务接口获取支付宝app支付需要的请求字符串（res）  returnUrl quitUrl参数忽略这是我自己测试用的
-            $.post("https://xxxx/ali/create-maui-app", { returnUrl: "", quitUrl: "" }, function (res) {
-                jsObjectReference = DotNet.createJSObjectReference(window);
-                DotNet.invokeMethodAsync('Watermark.Andorid.Models', 'AliPays', jsObjectReference, res)
-                    .then(data => {
-                        console.log(data);
-                    });
-            }).error(function (res) {
-                alert("出现错误:" + JSON.stringify(res));
-            })
-        })
-        //window上注册支付回调方法
-        window.aliPayCallBack = (res) => {
-            if (jsObjectReference) {
-                DotNet.disposeJSObjectReference(jsObjectReference);
-            }
-            DotNet.invokeMethodAsync('Watermark.Andorid.Models', 'ReLogin');
-        }
-
-    })
 </script>
 
 <style>

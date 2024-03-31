@@ -590,5 +590,38 @@ namespace Watermark.Win.Models
 			return result;
 		}
 
-	}
+        public async Task<API<string>> GetPayToken(decimal cost, string vip)
+        {
+            var result = await Connections.HttpGetAsync<string>(HOST + $"/api/Watermark/Pay?cost={cost}&vip={vip}", Encoding.UTF8);
+            return result;
+        }
+
+        public async Task<API<string>> RecordBill(string code, string msg, string appId, string authAppId, string outTradeNo, string tradeNo, string tradeName, string totalAmount, string sellerId)
+        {
+            var formContent = new
+            {
+                Code = code,
+                Msg = msg,
+                AppId = appId,
+                AuthAppId = authAppId,
+                OutTradeNo = outTradeNo,
+                TradeNo = tradeNo,
+                TradeName = tradeName,
+                TotalAmount = totalAmount,
+                SellerId = sellerId,
+                UserId = Global.CurrentUser.ID,
+            };
+
+            using var response = await _client.PostAsJsonAsync("/api/Watermark/RecordBill", formContent);
+            var bt = await response.Content.ReadAsByteArrayAsync();
+            var str = Encoding.UTF8.GetString(bt);
+            var result = JsonConvert.DeserializeObject<API<string>>(str);
+            if (response.IsSuccessStatusCode)
+            {
+                return result;
+            }
+            else return new API<string>() { success = false };
+        }
+
+    }
 }

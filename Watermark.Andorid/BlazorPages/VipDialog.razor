@@ -1,34 +1,65 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
+@using Watermark.Andorid.Models
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
 
-<MudPaper Style="margin: 4% 10% 10px 10%;" Elevation="0" class="pa-3">
+
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
     <MudStack Row style="position:relative;align-items: center">
         <MudText Typo="Typo.button"> 永久授权 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥38</MudChip>
+        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
     </MudStack>
 </MudPaper>
-<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
     <MudStack Row style="position:relative;align-items: center">
         <MudText Typo="Typo.button"> 年票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥28</MudChip>
+        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
     </MudStack>
 </MudPaper>
-<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
     <MudStack Row style="position:relative;align-items: center">
         <MudText Typo="Typo.button"> 季票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥18</MudChip>
+        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
     </MudStack>
 </MudPaper>
-<MudPaper Style="margin: 10px 10%;" Elevation="0" class="pa-3">
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
     <MudStack Row style="position:relative;align-items: center">
         <MudText Typo="Typo.button"> 月票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px">¥8</MudChip>
+        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8</MudChip>
     </MudStack>
 </MudPaper>
 
 
 @code {
+    [Parameter]
+    public EventCallback<bool> OnImageTouched { get; set; }
+    string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
+    async void Pay(decimal cost, string tradeName)
+    {
+        try
+        {
+            var result = await PublicMethods.AliPays(cost, tradeName);
+            if (result.success)
+            {
+                ClientInstance.ShowMsg(Snackbar, result.data, Severity.Success);
+                await PublicMethods.ReLogin();
+                if (OnImageTouched.HasDelegate)
+                {
+                    await OnImageTouched.InvokeAsync(true);
+                }
+            }
+            else
+            {
+                ClientInstance.ShowMsg(Snackbar, result?.message?.content ?? "支付失败", Severity.Error);
+            }
+        }
+        catch(Exception ex)
+        {
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+    }
 }

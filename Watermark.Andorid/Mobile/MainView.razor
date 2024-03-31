@@ -88,6 +88,23 @@
 		display: flex;
 		align-items: center;
 	}
+
+	.expandable {
+		width: 30px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow-x: hidden;
+		height: 30px;
+		transition: width 0.5s; /* 添加过渡效果 */
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+		padding: 0 10px 0 0px;
+	}
+
+		.expandable:hover {
+			width: 100%; /* 鼠标悬停时改变宽度，触发展开效果 */
+		}
 </style>
 
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
@@ -166,7 +183,21 @@
 						}
 						else
 						{
-							@foreach (var t in downloadedTemplates)
+							@foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
+							{
+								<MudItem xs="6" Style="padding:4px;">
+									<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+										<MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+									</MudCard>
+								</MudItem>
+							}
+							@if (downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split).Count() > 0)
+							{
+								<MudItem xs="12" Style="padding:4px;">
+									<MudText Typo="Typo.h5"><b>拼图</b></MudText>
+								</MudItem>
+							}
+							@foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
 							{
 								<MudItem xs="6" Style="padding:4px;">
 									<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
@@ -214,7 +245,7 @@
 				</MudStack>
 				<MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
 					<MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb2_t2 == 1 ? "" : "display:none")">
-						@if (ZipedTemplates == null || ZipedTemplates.Count == 0 || ZipedTemplates.Any(x=> string.IsNullOrEmpty(x.Src)))
+						@if (ZipedTemplates == null || ZipedTemplates.Count == 0 || ZipedTemplates.Any(x => string.IsNullOrEmpty(x.Src)))
 						{
 							<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
 						}
@@ -423,7 +454,8 @@
 							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">删除</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
-							<MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>{ FocusImageShow = false; OpenPhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)); } " />
+
+							<MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=> GeneratePhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)) " />
 							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">使用模板</span></MudText>
 						</MudStack>
 
@@ -440,12 +472,64 @@
 		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
 			<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="()=> openDrawer = false" />
 			<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
+			@if (SrcLoading)
+			{
+				<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
+			}
 			<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="RefreshEditImage" />
 		</MudToolBar>
 	</div>
 
 	@if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
 	{
+		<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
+			<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
+			<MudDivider Style="width:30px" />
+			<MudCollapse Expanded="_expanded">
+				<MudStack>
+					<MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 3px 3px 2px;" Elevation="25" @onclick="OpenFullExifInfo">
+						<svg t="1711715777941" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2452" width="24" height="24"><path d="M332.799002 686.081014m-332.799002 0a332.799002 332.799002 0 1 0 665.598003 0 332.799002 332.799002 0 1 0-665.598003 0Z" fill="#CCE4F2" p-id="2453"></path><path d="M883.19735 1024h-639.99808A141.055577 141.055577 0 0 1 102.399693 883.200422v-742.397772A141.055577 141.055577 0 0 1 243.19927 0.003072h516.350451a89.087733 89.087733 0 0 1 63.231811 25.599923l189.695431 189.695431A38.399885 38.399885 0 0 1 1023.996928 243.202342v639.99808a141.055577 141.055577 0 0 1-140.799578 140.799578zM243.19927 76.802842A63.999808 63.999808 0 0 0 179.199462 140.80265v742.397772A63.999808 63.999808 0 0 0 243.19927 947.20023h639.99808a63.999808 63.999808 0 0 0 63.999808-63.999808V259.074295l-179.199462-179.199463a12.799962 12.799962 0 0 0-8.447975-3.07199z" fill="#434260" p-id="2454"></path><path d="M275.455174 399.105875H409.598771v29.695911h-98.559704v62.975811h82.943751v29.95191h-82.943751v72.959781h102.399693v30.207909h-137.983586zM499.710501 508.417547l-60.671818-109.311672h39.679881l27.391918 52.735841c5.631983 10.495969 10.495969 20.479939 17.151948 34.047898h1.535996c5.887982-13.567959 10.239969-23.551929 15.359954-34.047898l25.599923-52.735841h37.375888l-60.671818 111.103666 65.023805 114.943656h-38.911884l-29.695911-56.063832-18.687944-36.86389c-6.399981 13.823959-12.031964 25.599923-17.407947 36.86389l-28.927914 56.063832H435.198694zM642.814072 399.105875h35.583893v226.047322h-35.583893zM737.789787 399.105875H870.397389v29.695911h-97.023709v69.119792h83.45575v29.695911h-83.45575v97.279708h-35.583893z" fill="#434260" p-id="2455"></path></svg>
+					</MudPaper>
+					<MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
+						<ButtonTemplate>
+							<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Size="Size.Small" />
+						</ButtonTemplate>
+					</MudFileUpload>
+					@if (LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
+					{
+						foreach (var item in dic)
+						{
+							@if (LogoBase64.TryGetValue(item.Key, out string src))
+							{
+								<MudPaper Elevation="25" Style="height:30px;width:30px;">
+									<MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" @onclick="()=>ReplaceLogo(item.Key)" />
+								</MudPaper>
+
+							}
+						}
+					}
+					@foreach (var i in CurrentImage!.Canvas.Children)
+					{
+						foreach (var wmt in i.Controls.Where(x => x is WMText).Cast<WMText>())
+						{
+							<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(wmt)">
+								@(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+							</MudPaper>
+						}
+						foreach (var ctn in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
+						{
+							foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
+							{
+								<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
+									@(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+								</MudPaper>
+							}
+						}
+					}
+
+				</MudStack>
+			</MudCollapse>
+		</MudStack>
 		<MudCard style="padding:16px;background:#E5E5E5;height:50%" Elevation="0">
 			<MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%;height:100%" />
 		</MudCard>
@@ -505,9 +589,13 @@
 	bool firstClick2Panel = true;
 	bool loading_down = false;
 	bool loadMore = false;
+	bool _expanded = false;
+	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
+	ConcurrentDictionary<string, string> LogoBase64 = new();
 	List<WMZipedTemplate> ZipedTemplates = new List<WMZipedTemplate>();
 	List<WMZipedTemplate> hottest = new();
 	List<WMZipedTemplate> newest = new();
+	List<WMZipedTemplate> splits = new();
 	List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
 	List<WMZipedTemplate> downloadedTemplates = new List<WMZipedTemplate>();
 	List<WMZipedTemplate> ILikeTemplates = new();
@@ -537,7 +625,7 @@
 
 			await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
 		}
-		catch(Exception ex)
+		catch (Exception ex)
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
@@ -564,15 +652,20 @@
 		SrcLoading = false;
 		StateHasChanged();
 	}
-
-	async void OpenPhoto(WMZipedTemplate template)
+	async void GeneratePhoto(WMZipedTemplate template)
 	{
-		try 
+		FocusImageShow = false;
+		if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
+		else await SelectSplitPhoto(template);
+	}
+	async Task	 OpenPhoto(WMZipedTemplate template)
+	{
+		try
 		{
 			var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-			{
-				Title = "选择图片"
-			});
+				{
+					Title = "选择图片"
+				});
 			if (result is null) return;
 			Global.CheckImageExtension(result.FullPath);
 			MainLoading.Message = "正在生成图片...";
@@ -595,25 +688,24 @@
 			{
 				Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
 			}
-			await Task.Run(() =>
-			{
-				var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
-				return Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
-			});
+
+			var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
+			await Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
+
 			canvas.Path = result.FullPath;
 			var tl = new TemplateList
-			{
-				Canvas = canvas,
-				ID = canvas.ID,
-				Path = result.FullPath
-			};
+				{
+					Canvas = canvas,
+					ID = canvas.ID,
+					Path = result.FullPath
+				};
 			Images.Add(tl);
 			CurrentImage = tl;
 			await ChangeTemplate(template);
 			MainLoading.Show = false;
 			StateHasChanged();
 		}
-		catch(Exception ex)
+		catch (Exception ex)
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
@@ -636,8 +728,48 @@
 
 		await Task.Run(() => design?.SetCanvas(CurrentImage.Canvas));
 
+		InitLogoCacheDic(CurrentImage.ID, new TemplateList { Canvas = CurrentImage.Canvas, ID = CurrentImage.Canvas.ID });
 		openDrawer = true;
 	}
+
+
+	async Task SelectSplitPhoto(WMZipedTemplate template)
+	{
+		try
+		{
+			var result = await FilePicker.PickMultipleAsync(new PickOptions
+				{
+					FileTypes = FilePickerFileType.Jpeg
+				});
+
+
+			MainLoading.Message = "正在生成图片...";
+			MainLoading.Show = true;
+			StateHasChanged();
+			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+			int c = 0;
+			foreach (var f in result)
+			{
+				cvs.Children[c++].Path = f.FullPath;
+			}
+			var helper = new WatermarkHelper();
+			CurrentImage = new();
+			CurrentImage.Canvas = cvs;
+			CurrentImage.ID = CurrentImage.Canvas.ID;
+			var src = await helper.GenerationAsync(cvs, null, true, false);
+			CurrentImage.Src = src;
+			Images = [CurrentImage];
+			InitLogoCacheDic(CurrentImage.ID, CurrentImage);
+			MainLoading.Show = false;
+			openDrawer = true;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+		}
+	}
+
 
 	async void Export()
 	{
@@ -675,9 +807,10 @@
 		var helper = new APIHelper();
 		var allTemplates = (await helper.GetWatermarks("", 1, 999)).Where(x => x.Visible);
 		var recommend = allTemplates.Where(x => x.Recommend);
-		hottest = allTemplates.Where(x => !x.Recommend).Take(12).ToList();
-		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend).ToList();
-		ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).ToList();
+		hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(12).ToList();
+		newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+		splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
+		ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
 		var subUser = await IntiSubscribedUserList();
 		subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
 		foreach (var su in subUser)
@@ -691,6 +824,8 @@
 		}
 
 		subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
+		subscribed.Add(Tuple.Create("拼图", splits));
+
 		subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 50).ToList()));
 		ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
 		loadMore = false;
@@ -735,6 +870,7 @@
 					var content = File.ReadAllText(configPath);
 					dirct.WMCanvas = Global.ReadConfig(content);
 					dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
+					dirct.CanvasType = dirct.WMCanvas.CanvasType;
 					downloadedTemplates.Add(dirct);
 				}
 			}
@@ -779,6 +915,7 @@
 			});
 			dirct.WMCanvas = canvas;
 			dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
+			dirct.CanvasType = dirct.WMCanvas.CanvasType;
 			await Global.InitFonts([canvas]);
 			dirct.Src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
 			return dirct;
@@ -983,6 +1120,118 @@
 			var api = new APIHelper();
 			var __ = api.PageVisitRecord(ProgramPage.Market, Platform.Andorid);
 		}
+	}
+
+	async void SelectSourceImageExif(IBrowserFile file)
+	{
+		MemoryStream ms = new MemoryStream();
+		await file.OpenReadStream(file.Size).CopyToAsync(ms);
+		CurrentImage.Canvas.Exif = ExifHelper.ReadImage(ms.ToArray());
+	}
+
+	async void OpenFullExifInfo()
+	{
+		var parameters = new DialogParameters<ExifInfo>();
+		parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif));
+		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+		var rst = DialogService.Show<ExifInfo>("", parameters, option);
+		var dialogResult = await rst.Result;
+	}
+
+	async void OpenExifDialog(WMText mText)
+	{
+		var parameters = new DialogParameters<ExifConfig>();
+		parameters.Add(x => x.Exifs, mText.Exifs);
+		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+		var rst = DialogService.Show<ExifConfig>("", parameters, option);
+		var dialogResult = await rst.Result;
+		if (!dialogResult.Canceled)
+		{
+			mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+			RefreshEditImage();
+			StateHasChanged();
+		}
+	}
+
+	async void ReplaceLogo(string sourceId)
+	{
+		var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
+		{
+			var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
+			ChangeLogo(sourceId, p);
+		}
+	}
+
+	async void ChangeLogo(string sourceId, string logoPath)
+	{
+		SrcLoading = true;
+		StateHasChanged();
+		foreach (var c1 in CurrentImage.Canvas.Children)
+		{
+			foreach (var cc1 in c1.Controls)
+			{
+				if (cc1 is WMLogo logo && logo.ID == sourceId)
+				{
+					logo.AutoSetLogo = false;
+					logo.Path = logoPath;
+					break;
+				}
+				else if (cc1 is WMContainer wc)
+				{
+					foreach (var wcc in wc.Controls)
+					{
+						if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+						{
+							wcLogo.AutoSetLogo = false;
+							wcLogo.Path = logoPath;
+							break;
+						}
+					}
+				}
+			}
+		}
+		var api = new WatermarkHelper();
+		CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null, true);
+		SrcLoading = false;
+		StateHasChanged();
+	}
+
+	void InitLogoCacheDic(string imgId, TemplateList template)
+	{
+		var logoes = new List<WMLogo>();
+		foreach (var c1 in template.Canvas.Children)
+		{
+			foreach (var cc1 in c1.Controls)
+			{
+				if (cc1 is WMLogo logo) logoes.Add(logo);
+				else if (cc1 is WMContainer wc)
+				{
+					foreach (var wcc in wc.Controls)
+					{
+						if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
+					}
+				}
+			}
+		}
+
+		var dic = new Dictionary<string, string>();
+		foreach (var logo in logoes)
+		{
+			dic[logo.ID] = logo.Path;
+			var target = logo.Path;
+			if (!File.Exists(target))
+			{
+				target = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+			}
+			if (File.Exists(target))
+			{
+				Global.ImageFile2Base64(LogoBase64, target, logo.ID);
+			}
+		}
+		LogoCacheDic[imgId] = dic;
+
 	}
 
 

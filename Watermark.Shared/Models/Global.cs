@@ -548,7 +548,7 @@ namespace Watermark.Win.Models
 
         public static void CheckImageExtension(string file)
         {
-            if(!file.EndsWith("jpg") && !file.EndsWith("png"))
+            if(!file.ToLower().EndsWith("jpg") && !file.ToLower().EndsWith("png"))
             {
                 throw new Exception("不支持的图片格式");
             }

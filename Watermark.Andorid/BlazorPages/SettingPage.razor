@@ -36,7 +36,7 @@
 			</MudText>
 			@if (!Global.CurrentUser.IsVIP)
 			{
-				<MudButton Variant="Variant.Outlined" Class="ml-5" OnClick="()=> openVip = true">开通VIP</MudButton>
+				<MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="()=> openVip = true">开通会员</MudButton>
 			}
 		</MudStack>
 		<MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
@@ -142,10 +142,10 @@ else
 	</MudStack>
 </MudPaper>
 
-<MudDrawer Style="@($"{(openVip?"":"display:none;")}")" @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer Style="@($"{(openVip?"padding:6px 0":"display:none;")}")" @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
 	@if (openVip)
 	{
-		<VipDialog />
+		<VipDialog OnImageTouched="OnImageTouched" />
 	}
 </MudDrawer>
 
@@ -159,7 +159,7 @@ else
 </MudDrawer>
 
 @code {
-#if ANDROID
+	#if ANDROID
 
 	[Inject]
 	private IUpgradeService UpgradeService { get; set; }
@@ -262,6 +262,12 @@ else
 			Directory.Delete(p, true);
 			ClientInstance.ShowMsg(Snackbar, "清除完成", Severity.Success);
 		}
+	}
+
+	void OnImageTouched(bool f)
+	{
+		openVip = false;
+		StateHasChanged();
 	}
 
 }
