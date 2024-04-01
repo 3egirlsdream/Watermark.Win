@@ -87,7 +87,7 @@
         {
             await OnImageTouched.InvokeAsync(pair);
         }
-        MudDialog.Close(pair);
+        MudDialog?.Close(pair);
     }
 
     protected override async Task OnInitializedAsync()

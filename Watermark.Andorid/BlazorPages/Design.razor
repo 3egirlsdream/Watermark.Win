@@ -471,6 +471,10 @@
 	ConcurrentDictionary<string, string> ImagesBase64 = new ConcurrentDictionary<string, string>();
 	WMLogo selectedLogo;
 	WMText selectedText;
+
+	[Parameter]
+	public EventCallback RefreshCallback { get; set; }
+
 	protected override void OnInitialized()
 	{
 		canvas = CurrentCanvas;
@@ -531,13 +535,17 @@
 		return canvas;
 	}
 
-	void SelectLogoCallback(KeyValuePair<string, string> pair)
+	async void SelectLogoCallback(KeyValuePair<string, string> pair)
 	{
 		if (selectedLogo is null) return;
 		ImagesBase64[pair.Key] = pair.Value;
 		selectedLogo.Path = pair.Key;
 		ImagesBase64[selectedLogo.ID] = pair.Value;
 		openLogoDialog = false;
+		if (RefreshCallback.HasDelegate)
+		{
+			await RefreshCallback.InvokeAsync();
+		}
 		StateHasChanged();
 	}
 

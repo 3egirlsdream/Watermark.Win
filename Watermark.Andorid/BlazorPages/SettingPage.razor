@@ -112,11 +112,11 @@ else
 </MudPaper>
 
 <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-	<MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+	@* <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
 		<MudText Typo="Typo.button"> 夜间模式 </MudText>
 		<MudSwitch @bind-Value="@Global.DARK_MODE" Color="Color.Primary" Size="Size.Small" />
 	</MudStack>
-	<MudDivider Class="my-2" />
+	<MudDivider Class="my-2" /> *@
 	<MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
 		<MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
 		<MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" Size="Size.Small" />
