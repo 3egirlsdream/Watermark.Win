@@ -131,7 +131,7 @@
 		<div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
 			<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="panel-class" MinimumTabWidth="150px" Style="margin-top: 40px;height: calc(100% - 40px);" AlwaysShowScrollButtons="false">
 				<MudTabPanel Text="模板" Style="height:100%">
-					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: calc(100% - 40px); overflow-y:auto;overflow-x:hidden;">
+					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
 						<MudList Clickable="true">
 							<MudTreeView T="string" Hover="true">
 								@if (wMTemplates == null || wMTemplates.Count == 0)
@@ -159,7 +159,7 @@
 					</MudPaper>
 				</MudTabPanel>
 				<MudTabPanel Text="拼图">
-					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: calc(100% - 40px); overflow-y:auto;overflow-x:hidden;">
+					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
 						<MudList Clickable="true">
 							<MudTreeView T="string" Hover="true">
 								@if (wMTemplates != null)
@@ -301,7 +301,7 @@
 	bool ShowUserInfo = false;
 	bool IsLoginIn = false;
 	bool _expanded = false;
-	BlockingCollection<TemplateList> wMTemplates;
+	List<TemplateList> wMTemplates;
 	TemplateList CurrentTemplate;
 	TemplateList CurrentImage;
 	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
@@ -476,7 +476,7 @@
 		try
 		{
 			System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
-			wMTemplates = new BlockingCollection<TemplateList>();
+			wMTemplates = new List<TemplateList>();
 			var directories = directoryInfo.GetDirectories();
 			MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
 			MainLoading.Value = 0;
@@ -493,14 +493,17 @@
 					await InitFonts([canvas]);
 					var t = Task.Run(() =>
 					{
-						var src = helper.Generation(canvas, null, true);
-						var wh = new TemplateList
+						lock (wMTemplates)
+						{
+							var src = helper.Generation(canvas, null, true);
+							var wh = new TemplateList
 							{
 								ID = canvas.ID,
 								Canvas = canvas,
 								Src = src
 							};
-						wMTemplates.Add(wh);
+							wMTemplates.Add(wh);
+						}
 						var idx = directories.ToList().IndexOf(dirct) + 1;
 						MainLoading.Value = cot * 100.0 / directories.Length;
 						MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";

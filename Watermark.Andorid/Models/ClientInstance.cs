@@ -1,4 +1,7 @@
-﻿using MudBlazor;
+﻿using Android.Renderscripts;
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
+using MudBlazor;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
@@ -148,4 +151,13 @@ namespace Watermark.Shared.Models
            
         }
     }
+	public static class Ext
+	{
+		public static void Back(this NavigationManager navigation)
+		{
+			var builder = MauiApp.CreateBuilder();
+			var jsruntime = builder.Services.BuildServiceProvider().GetService<IJSRuntime>();
+			jsruntime!.InvokeVoidAsync("history.back");
+		}
+	}
 }

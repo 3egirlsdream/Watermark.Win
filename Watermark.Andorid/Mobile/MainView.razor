@@ -8,6 +8,7 @@
 @using Watermark.Shared.Models
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager
 
 <style>
 	.panel-class {
@@ -470,7 +471,7 @@
 <MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
 	<div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-			<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="()=> openDrawer = false" />
+			<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="()=> CloseDrawer()" />
 			<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
 			@if (SrcLoading)
 			{
@@ -601,8 +602,8 @@
 	List<WMZipedTemplate> ILikeTemplates = new();
 	int start = 1;
 	WMZipedTemplate CurrentTemplate;
-	TemplateList CurrentImage;
-	List<TemplateList> Images = new List<TemplateList>();
+	WMTemplateList CurrentImage;
+	List<WMTemplateList> Images = new List<WMTemplateList>();
 	WMZipedTemplate FocusImage;
 
 	protected override async Task OnInitializedAsync()
@@ -631,7 +632,7 @@
 		}
 	}
 
-	async void ClickImage(TemplateList image)
+	async void ClickImage(WMTemplateList image)
 	{
 		CurrentImage = image;
 		SrcLoading = true;
@@ -682,7 +683,7 @@
 				return ExifHelper.ReadImage(result.FullPath);
 			});
 
-			Images = new List<TemplateList>();
+			Images = new List<WMTemplateList>();
 			Dictionary<string, string> dic = new Dictionary<string, string>();
 			if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
 			{
@@ -693,7 +694,7 @@
 			await Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
 
 			canvas.Path = result.FullPath;
-			var tl = new TemplateList
+			var tl = new WMTemplateList
 				{
 					Canvas = canvas,
 					ID = canvas.ID,
@@ -728,7 +729,7 @@
 
 		await Task.Run(() => design?.SetCanvas(CurrentImage.Canvas));
 
-		InitLogoCacheDic(CurrentImage.ID, new TemplateList { Canvas = CurrentImage.Canvas, ID = CurrentImage.Canvas.ID });
+		InitLogoCacheDic(CurrentImage.ID, new WMTemplateList { Canvas = CurrentImage.Canvas, ID = CurrentImage.Canvas.ID });
 		openDrawer = true; 
 		_expanded = false;
 	}
@@ -1200,7 +1201,7 @@
 		StateHasChanged();
 	}
 
-	void InitLogoCacheDic(string imgId, TemplateList template)
+	void InitLogoCacheDic(string imgId, WMTemplateList template)
 	{
 		var logoes = new List<WMLogo>();
 		foreach (var c1 in template.Canvas.Children)
@@ -1236,6 +1237,12 @@
 
 	}
 
+	void CloseDrawer()
+	{
+		openDrawer = false;
+		Vibration.Default.Vibrate(50);
+	}
+
 
 	#region class
 
@@ -1244,15 +1251,6 @@
 		public static bool Show { get; set; } = false;
 		public static double Value { get; set; }
 		public static string Message { get; set; } = "正在加载模板...";
-	}
-
-	class TemplateList
-	{
-		public string ID { get; set; }
-		public string Path { get; set; }
-		public WMCanvas Canvas { get; set; }
-		public SkiaSharp.SKBitmap Bitmap { get; set; }
-		public string Src { get; set; }
 	}
 
 	#endregion
