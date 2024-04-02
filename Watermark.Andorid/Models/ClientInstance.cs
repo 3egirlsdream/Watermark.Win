@@ -1,5 +1,4 @@
-﻿using Android.Renderscripts;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using SkiaSharp;
@@ -9,7 +8,7 @@ using Watermark.Win.Models;
 
 namespace Watermark.Shared.Models
 {
-    public static class ClientInstance
+	public static class ClientInstance
     {
         public static string LinkPath { get; set; }
         public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>

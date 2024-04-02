@@ -5,53 +5,63 @@
 
 <style>
 
-    .ddd {
-        border: 0;
-        outline: 0;
-        text-decoration: 2px solid underline;
-        line-height: 2;
-        text-underline-offset: 10px;
-        display: inline-block;
-        border-bottom: 1px solid;
-        width: 10px;
-    }
+	.ddd {
+		border: 0;
+		outline: 0;
+		text-decoration: 2px solid underline;
+		line-height: 2;
+		text-underline-offset: 10px;
+		display: inline-block;
+		border-bottom: 1px solid;
+		width: 10px;
+	}
 
-    input {
-        width: fit-content;
-    }
+	input {
+		width: fit-content;
+	}
+
+	.mud-input > input.mud-input-root-outlined.mud-input-root-margin-dense, div.mud-input-slot.mud-input-root-outlined.mud-input-root-margin-dense {
+		padding: 5px 5px;
+	}
+
+	.mud-dialog .mud-dialog-content {
+		padding:2px
+	}
 </style>
 
-<MudDialog Style="min-width:50%;">
-    <DialogContent>
-        <MudPaper Class="my-2" Elevation="2" Style="white-space: nowrap; overflow-x:auto">
-            <MudStack Row>
-                @foreach (var exif in Exifs)
-                {
-                    <MudPaper Elevation="0" Class="pa-2 ma-2">
-                        <MudStack Row>
-                             <MudTextField @bind-Value="exif.Prefix" Variant="Variant.Text" Margin="Margin.Dense" Style="min-width:100px"></MudTextField>
-                             <MudTextField @bind-Value="exif.Value" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px" ReadOnly></MudTextField>
-                             <MudTextField @bind-Value="exif.Suffix" Variant="Variant.Text" Margin="Margin.Dense" Style="width:100px"></MudTextField>
-                        </MudStack>
-                    </MudPaper>
-                }
-            </MudStack>
-        </MudPaper>
-        <MudPaper Elevation="2" Style="height:50vh;overflow-y:auto;">
-            <MudChipSet MultiSelection="true" Filter="true">
-                @foreach (var exif in DefaultExifLists)
-                {
-                    @if (ExifHelper.GetName.TryGetValue(exif.Key, out string v))
-                    {
-                        <MudChip Label="true" Text="@(v + $"({exif.Value})")" Default="@exif.IsChecked" OnClick="(()=> Click(exif))" />
-                    }
-                }
-            </MudChipSet>
-        </MudPaper>
-    </DialogContent>
-    <DialogActions>
-        <MudButton Color="Color.Primary" FullWidth="true" Variant="Variant.Filled" OnClick="Submit">Ok</MudButton>
-    </DialogActions>
+<MudDialog Style="width:90%;height:90%">
+	<DialogContent>
+		<MudPaper Elevation="0" Style="height:calc(90vh - 60px);overflow-y:auto;;padding:8px;">
+			<MudPaper Class="my-2" Elevation="25" Style="white-space: nowrap; overflow-x:auto">
+				<MudStack Row>
+					@foreach (var exif in Exifs)
+					{
+						<MudPaper Elevation="0" Class="pa-2 ma-2">
+							<MudStack Row>
+								<MudTextField @bind-Value="exif.Prefix" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:100px"></MudTextField>
+								<div style="padding:5px; border-radius:4px;border:1px solid #c4c4c4;font-size: 12px;margin-top: 3px;height: 29px;">@exif.Value</div>
+								<MudTextField @bind-Value="exif.Suffix" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:100px"></MudTextField>
+							</MudStack>
+						</MudPaper>
+					}
+				</MudStack>
+			</MudPaper>
+			<MudPaper Elevation="25" Style="height: calc(100% - 90px);overflow-y:auto;">
+				<MudChipSet MultiSelection="true" Filter="true">
+					@foreach (var exif in DefaultExifLists)
+					{
+						@if (ExifHelper.GetName.TryGetValue(exif.Key, out string v))
+						{
+							<MudChip Label="true" Text="@(v + $"({exif.Value})")" Default="@exif.IsChecked" OnClick="(()=> Click(exif))" />
+						}
+					}
+				</MudChipSet>
+			</MudPaper>
+		</MudPaper>
+	</DialogContent>
+	<DialogActions>
+		<MudButton Color="Color.Primary" FullWidth="true" Variant="Variant.Filled" OnClick="Submit">Ok</MudButton>
+	</DialogActions>
 </MudDialog>
 
 
@@ -59,72 +69,72 @@
 @code {
 
 
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    void Submit()
-    {
-        //var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
-        MudDialog.Close(DialogResult.Ok(Exifs));
-    }
-    [Parameter]
-    public List<WMExifConfigInfo> Exifs { get; set; } = [];
-    //"F##4##suffix;"
+	[CascadingParameter]
+	MudDialogInstance MudDialog { get; set; }
+	void Submit()
+	{
+		//var result = String.Join(";", ExifList.Select(c => c.prefix + "##" + c.content + "##" + c.suffix).ToArray());
+		MudDialog.Close(DialogResult.Ok(Exifs));
+	}
+	[Parameter]
+	public List<WMExifConfigInfo> Exifs { get; set; } = [];
+	//"F##4##suffix;"
 
-    void Click(DefaultExifs exif)
-    {
-        exif.IsChecked = !exif.IsChecked;
-        var i = new WMExifConfigInfo
-            {
-                Prefix = "",
-                Suffix = "",
-                Key = exif.Key,
-                Value = exif.Value
-            };
-        if (exif.IsChecked)
-        {
-            Exifs.Add(i);
-        }
-        else
-        {
-            var e = Exifs.FirstOrDefault(c => c.Key == exif.Key);
-            if (e != null)
-            {
-                Exifs.Remove(e);
-            }
-        }
-    }
-
-
-    class DefaultExifs
-    {
-        public bool IsChecked { get; set; }
-        public string Key { get; set; }
-        public string Value { get; set; }
-    }
-
-    List<DefaultExifs> DefaultExifLists;
+	void Click(DefaultExifs exif)
+	{
+		exif.IsChecked = !exif.IsChecked;
+		var i = new WMExifConfigInfo
+			{
+				Prefix = "",
+				Suffix = "",
+				Key = exif.Key,
+				Value = exif.Value
+			};
+		if (exif.IsChecked)
+		{
+			Exifs.Add(i);
+		}
+		else
+		{
+			var e = Exifs.FirstOrDefault(c => c.Key == exif.Key);
+			if (e != null)
+			{
+				Exifs.Remove(e);
+			}
+		}
+	}
 
 
-    protected override void OnInitialized()
-    {
-        DefaultExifLists = new List<DefaultExifs>();
-        foreach (var pair in ExifHelper.DefaultMeta)
-        {
-            var de = new DefaultExifs
-                {
-                    IsChecked = false,
-                    Key = pair.Key,
-                    Value = pair.Value
-                };
-            if (Exifs != null && Exifs.Any(c => c.Key == pair.Key)) de.IsChecked = true;
-            DefaultExifLists.Add(de);
-        }
+	class DefaultExifs
+	{
+		public bool IsChecked { get; set; }
+		public string Key { get; set; }
+		public string Value { get; set; }
+	}
 
-    }
+	List<DefaultExifs> DefaultExifLists;
 
-    private void oninput(ChangeEventArgs e)
-    {
-        //   exifInfo.prefix = e.Value?.ToString() ?? "";
-    }
+
+	protected override void OnInitialized()
+	{
+		DefaultExifLists = new List<DefaultExifs>();
+		foreach (var pair in ExifHelper.DefaultMeta)
+		{
+			var de = new DefaultExifs
+				{
+					IsChecked = false,
+					Key = pair.Key,
+					Value = pair.Value
+				};
+			if (Exifs != null && Exifs.Any(c => c.Key == pair.Key)) de.IsChecked = true;
+			DefaultExifLists.Add(de);
+		}
+
+	}
+
+	private void oninput(ChangeEventArgs e)
+	{
+		//   exifInfo.prefix = e.Value?.ToString() ?? "";
+	}
 
 }

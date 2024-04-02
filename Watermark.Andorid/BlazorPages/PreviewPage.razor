@@ -5,11 +5,25 @@
 @using Watermark.Win.Models
 @inject IDialogService DialogService
 @inject NavigationManager navigationManager
+@inject ISnackbar Snackbar
+
+<style>
+	.preview-box {
+		gap: 0px;
+		display: flex;
+		align-items: center;
+		text-align: center;
+		margin: auto;
+		width: 60px;
+		height: 60px;
+		justify-content: center;
+	}
+</style>
 
 <div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 	<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-		<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="Back"/>
-		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" />
+		<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="CloseDrawerClick" />
+		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
 		@if (SrcLoading)
 		{
 			<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
@@ -21,7 +35,7 @@
 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
 {
 	<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
-		<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
+		<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="ExpandSwitch" />
 		<MudDivider Style="width:30px" />
 		<MudCollapse Expanded="_expanded">
 			<MudStack>
@@ -50,17 +64,13 @@
 				{
 					foreach (var wmt in i.Controls.Where(x => x is WMText).Cast<WMText>())
 					{
-						<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(wmt)">
-							@(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
-						</MudPaper>
+						<MudIconButton Icon="@Icons.Material.Filled.Title" Variant="Variant.Filled" OnClick="()=>OpenExifDialog(wmt)" Style="width:30px;height:30px;" />
 					}
 					foreach (var ctn in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
 					{
 						foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
 						{
-							<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
-								@(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
-							</MudPaper>
+							<MudIconButton Icon="@Icons.Material.Filled.Title" Variant="Variant.Filled" OnClick="()=>OpenExifDialog(cwmt)" Style="width:30px;height:30px;" />
 						}
 					}
 				}
@@ -68,30 +78,146 @@
 			</MudStack>
 		</MudCollapse>
 	</MudStack>
-	<MudCard style="padding:16px;background:#E5E5E5;height:50%" Elevation="0">
+	<MudCard style="padding:16px;background:#E5E5E5;height:calc(100% - 100px)" Elevation="0">
 		<MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%;height:100%" />
 	</MudCard>
-
+	<MudPaper Elevation="25" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;">
+		<MudStack Style="gap:0px;display:flex;align-items:center;text-align:center;margin:auto;width:50px;height:60px;justify-content: center;" @onclick="()=>showSetting=true">
+			<MudIcon Icon="@Icons.Material.Filled.FilterFrames" />
+			<MudText Typo="Typo.subtitle2">比例</MudText>
+		</MudStack>
+	</MudPaper>
 	@* <Design @ref="design" CurrentCanvas="CurrentImage.Canvas" RefreshCallback="RefreshEditImage" /> *@
 }
 
+<MudDrawer @bind-Open="@showSetting" Width="100%" Height="20%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+	<MudPaper Elevation="25" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;">
+		<MudStack Row="true">
+			@foreach (var r in radioes)
+			{
+				<MudPaper Elevation="25" Class="ma-1">
+					<MudStack class="preview-box" @onclick="()=>CurrentImage.Canvas.LengthWidthRatio = r">
+						<MudIcon Icon="@Icons.Material.Filled.FilterFrames" />
+						<MudText Typo="Typo.subtitle2">@r</MudText>
+					</MudStack>
+				</MudPaper>
+			}
+		</MudStack>
+	</MudPaper>
+</MudDrawer>
+
+
+<MudDrawer @bind-Open="@openSave" Width="100%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+	<MudCard Elevation="0">
+		<MudCardHeader>
+			<CardHeaderContent>
+				<MudText></MudText>
+			</CardHeaderContent>
+			<CardHeaderActions>
+				<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
+			</CardHeaderActions>
+		</MudCardHeader>
+		<MudCardContent>
+			<MudForm>
+				<MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
+					<MudSelectItem Value="@("default")">原图</MudSelectItem>
+					<MudSelectItem Value="@("1080")">1080P</MudSelectItem>
+					<MudSelectItem Value="@("2160")">4K</MudSelectItem>
+				</MudSelect>
+				<MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
+					<MudSelectItem Value="@(100)">原图</MudSelectItem>
+					<MudSelectItem Value="@(85)">高</MudSelectItem>
+					<MudSelectItem Value="@(70)">中</MudSelectItem>
+				</MudSelect>
+				<MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" />
+			</MudForm>
+		</MudCardContent>
+	</MudCard>
+</MudDrawer>
+
+
+
 
 @code {
-	bool SrcLoading = false;
 	[Parameter]
 	public WMTemplateList CurrentImage { get; set; }
+	[Parameter]
+	public EventCallback CloseDrawer { get; set; }
+	[Parameter]
+	public List<WMTemplateList> Images { get; set; }
+
+
+	bool SrcLoading = false;
+	bool openSave = false;
 	bool _expanded = false;
+	bool showSetting = false;
 	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
 	ConcurrentDictionary<string, string> LogoBase64 = new();
-
-	void OpenExifDialog(WMText text)
+	List<string> radioes = ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "18:9", "1.85:1", "2.39:1"];
+	protected override void OnInitialized()
 	{
-
+		InitLogoCacheDic(CurrentImage.ID, CurrentImage);
 	}
 
-	void ReplaceLogo(string pair)
+	async void OpenExifDialog(WMText mText)
 	{
+		var parameters = new DialogParameters<ExifConfig>();
+		parameters.Add(x => x.Exifs, mText.Exifs);
+		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+		var rst = DialogService.Show<ExifConfig>("", parameters, option);
+		var dialogResult = await rst.Result;
+		if (!dialogResult.Canceled)
+		{
+			mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+			RefreshEditImage();
+			StateHasChanged();
+		}
+	}
 
+
+	async void ReplaceLogo(string sourceId)
+	{
+		var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
+		{
+			var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
+			ChangeLogo(sourceId, p);
+		}
+	}
+
+	async void ChangeLogo(string sourceId, string logoPath)
+	{
+		SrcLoading = true;
+		StateHasChanged();
+		foreach (var c1 in CurrentImage.Canvas.Children)
+		{
+			foreach (var cc1 in c1.Controls)
+			{
+				if (cc1 is WMLogo logo && logo.ID == sourceId)
+				{
+					logo.AutoSetLogo = false;
+					logo.Path = logoPath;
+					break;
+				}
+				else if (cc1 is WMContainer wc)
+				{
+					foreach (var wcc in wc.Controls)
+					{
+						if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+						{
+							wcLogo.AutoSetLogo = false;
+							wcLogo.Path = logoPath;
+							break;
+						}
+					}
+				}
+			}
+		}
+		var api = new WatermarkHelper();
+		CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null, true);
+		SrcLoading = false;
+		StateHasChanged();
 	}
 
 	async void SelectSourceImageExif(IBrowserFile file)
@@ -112,11 +238,91 @@
 
 	public async void RefreshEditImage()
 	{
+		SrcLoading = true;
+		var cvs = CurrentImage.Canvas;
+		var whelper = new WatermarkHelper();
+		CurrentImage.Canvas = cvs;
+		CurrentImage.Src = await whelper.GenerationAsync(cvs, null, true, false);
+		SrcLoading = false;
+		StateHasChanged();
 	}
 
-	void Back()
+	void CloseDrawerClick()
 	{
-		navigationManager.Back();
-		Vibration.Default.Vibrate(50);
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		CloseDrawer.InvokeAsync();
 	}
+
+
+	async void Export()
+	{
+		var helper = new WatermarkHelper();
+		SrcLoading = true;
+		foreach (var item in Images)
+		{
+			var idx = Images.IndexOf(item) + 1;
+			// MainLoading.Message = $"正在导出图片，一共{Images.Count}张，目前第{idx}张";
+			// MainLoading.Value = idx * 100.0 / Images.Count;
+			var rs = await helper.GenerationAsync(item.Canvas, null, false, false);
+#if ANDROID
+	var b64 = rs.Replace("data:image/jpeg;base64,", "");
+	var bt = Convert.FromBase64String(b64);
+	var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path);
+	Watermark.Andorid.SavePictureService.SavePicture(bt, "DFX_" + fn);
+#endif
+			//item.Canvas.Path = item.Path;
+			//await JSRuntime.InvokeVoidAsync("saveAsFile", $"{item.ID}.jpg", Convert.FromBase64String(item.Src.Split(',')[1]));
+			StateHasChanged();
+		}
+		// MainLoading.Value = 100;
+		await Task.Delay(200);
+		SrcLoading = false;
+		Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
+		openSave = false;
+		StateHasChanged();
+	}
+
+
+	void InitLogoCacheDic(string imgId, WMTemplateList template)
+	{
+		var logoes = new List<WMLogo>();
+		foreach (var c1 in template.Canvas.Children)
+		{
+			foreach (var cc1 in c1.Controls)
+			{
+				if (cc1 is WMLogo logo) logoes.Add(logo);
+				else if (cc1 is WMContainer wc)
+				{
+					foreach (var wcc in wc.Controls)
+					{
+						if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
+					}
+				}
+			}
+		}
+
+		var dic = new Dictionary<string, string>();
+		foreach (var logo in logoes)
+		{
+			dic[logo.ID] = logo.Path;
+			var target = logo.Path;
+			if (!File.Exists(target))
+			{
+				target = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+			}
+			if (File.Exists(target))
+			{
+				Global.ImageFile2Base64(LogoBase64, target, logo.ID);
+			}
+		}
+		LogoCacheDic[imgId] = dic;
+
+	}
+
+	void ExpandSwitch()
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		_expanded = !_expanded;
+	}
+
 }

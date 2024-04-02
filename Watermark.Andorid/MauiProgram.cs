@@ -28,7 +28,7 @@ namespace Watermark.Andorid
             builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-
+            
             return builder.Build();
         }
     }

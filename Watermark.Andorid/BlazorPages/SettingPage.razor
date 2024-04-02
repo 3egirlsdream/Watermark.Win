@@ -6,6 +6,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Watermark.Shared.Models
 @inject ISnackbar Snackbar
+@inject NavigationManager navigationManager
 <style>
 	.mud-switch {
 		margin-left: 0px;
@@ -200,6 +201,7 @@ else
 
 	async void Update()
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 #if ANDROID
 	if (!checkUpdate || DownLoadProgress > 0) return;
 	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
@@ -268,6 +270,11 @@ else
 	{
 		openVip = false;
 		StateHasChanged();
+	}
+
+	void ToPreview()
+	{
+		navigationManager.NavigateTo("/preview");
 	}
 
 }
