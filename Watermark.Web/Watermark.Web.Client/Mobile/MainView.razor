@@ -1,6 +1,7 @@
 ﻿@page "/mobile"
 @rendermode InteractiveWebAssembly
 @using System.IO
+@using System.Collections.Concurrent
 @using Watermark.Web.Client.BlazorPages
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
@@ -231,7 +232,7 @@
     async void SelectImage(IReadOnlyList<IBrowserFile> files)
     {
 
-        var dic = new Dictionary<string, string>();
+        var dic = new ConcurrentDictionary<string, string>();
         foreach (var file in files)
         {
             try
@@ -319,7 +320,7 @@
     public async void SelectPictureClick(IBrowserFile file)
     {
         Images = new List<TemplateList>();
-        Dictionary<string, string> dic = new Dictionary<string, string>();
+        var dic = new ConcurrentDictionary<string, string>();
         WMCanvas canvas = new WMCanvas();
         canvas.Path = file.Name;
         using var sm = new MemoryStream();

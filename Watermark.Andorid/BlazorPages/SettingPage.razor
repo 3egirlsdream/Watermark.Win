@@ -141,6 +141,14 @@ else
 		<MudText Typo="Typo.button"> 切换账号</MudText>
 		<MudIconButton Icon="@Icons.Material.Filled.ExitToApp" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> { Global.CurrentUser = null; }" />
 	</MudStack>
+	@if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+	{
+		<MudDivider Class="my-2" />
+		<MudStack Row style="position:relative;align-items: center">
+			<MudText Typo="Typo.button"> APP数据</MudText>
+			<MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>navigationManager.NavigateTo("/dms"))" />
+		</MudStack>
+	}
 </MudPaper>
 
 <MudDrawer Style="@($"{(openVip?"padding:6px 0":"display:none;")}")" @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
