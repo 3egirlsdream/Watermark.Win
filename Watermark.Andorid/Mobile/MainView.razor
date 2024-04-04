@@ -374,7 +374,7 @@
 
 	<MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999" OnClick="()=>FocusImageShow = false">
 		<MudPaper Style="position:relative;background:#E5E5E5;padding:16px;box-sizing: content-box;width: 90vw;" Elevation="25">
-			<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImageSrc" Style="width: 90vw;" />
+			<MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImageSrc" Style="width: 90vw;max-height:90vh" />
 			@if (FocusImageType == 'a')
 			{
 				<div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">

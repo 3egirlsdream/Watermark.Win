@@ -5,6 +5,7 @@ using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace Watermark.Win.Models
 {
@@ -30,7 +31,7 @@ namespace Watermark.Win.Models
             OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "Output" + Path.DirectorySeparatorChar,
             FontFolder = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + Path.DirectorySeparatorChar + WMAppPath.AppId + Path.DirectorySeparatorChar + "fonts" + Path.DirectorySeparatorChar
         };
-
+        static Dictionary<string, string> RadioBase64;
         public static WMLoginChildModel CurrentUser = new WMLoginChildModel();
         public static DeviceType DeviceType = DeviceType.Other;
         public static WMAppPath AppPath { get => DeviceType == DeviceType.Andorid ? AP : CP; }
@@ -407,8 +408,38 @@ namespace Watermark.Win.Models
             return fontDemo;
         }
 
+		public static Dictionary<string, string> GetRadio()
+		{
+            if(RadioBase64 != null) return RadioBase64;
+            RadioBase64 = new Dictionary<string, string>();
+			List<string> radioes = ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "18:9", "1.85:1", "2.39:1"];
+			
+			foreach (var p in radioes)
+			{
+                var vs = p.Split(':');
+                var w = double.Parse(vs[0]);
+                var h = double.Parse(vs[1]);
+                var xs = 50.0 / w;
+                if (h > w) xs = 50.0 / h;
+				using var bitmap = new SKBitmap((int)(w * xs), (int)(h * xs));
+				using var canvas = new SKCanvas(bitmap);
 
-        static ConcurrentDictionary<string, byte[]> Fonts = [];
+				using SKPaint borderPaint = new SKPaint();
+				borderPaint.IsAntialias = true;
+				borderPaint.Style = SKPaintStyle.Stroke;
+				borderPaint.Color = SKColor.Parse("#212121");
+				borderPaint.StrokeWidth = 5;
+				SKRect rect = new(0, 0, bitmap.Width, bitmap.Height);
+				canvas.DrawRect(rect, borderPaint);
+				using var image = SKImage.FromBitmap(bitmap);
+				var result = "data:image/jpeg;base64," + Convert.ToBase64String(image.Encode(SKEncodedImageFormat.Png, 50).ToArray());
+				RadioBase64[p] = result;
+			}
+			return RadioBase64;
+		}
+
+
+		static ConcurrentDictionary<string, byte[]> Fonts = [];
         public static bool TryGetFont(string key, out byte[] bt)
         {
             if (Fonts.TryGetValue(key, out bt))
