@@ -15,6 +15,7 @@
 		margin-inline-end: 0px;
 		margin-right: 0px;
 	}
+
 </style>
 @if (Global.CurrentUser != null)
 {
@@ -167,6 +168,34 @@ else
 	}
 </MudDrawer>
 
+<MudOverlay Visible="@showUpdateOverlay" DarkBackground="true" Absolute="true" ZIndex="99999">
+	<MudPaper Elevation="0" Class="pa-2">
+		<MudStack Style="text-align:center;">
+			<MudText Typo="Typo.subtitle1" Color="Color.Secondary"> 升级提醒</MudText>
+		</MudStack>
+		<br />
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			版本:@ClientInstance.UpdateVersion
+		</MudText>
+		<br/>
+
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			更新内容
+		</MudText>
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			@ClientInstance.UpdateMessage
+		</MudText>
+		@if (DownLoadProgress > 0)
+		{
+			<MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" style="width:auto" class="mt-2"/>
+		}
+		<MudButton Color="Color.Secondary" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Update" Size="Size.Small" Class="mt-2">更新</MudButton>
+		<MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>showUpdateOverlay = false" Size="Size.Small" Class="mt-2">以后再说</MudButton>
+		
+		
+	</MudPaper>
+</MudOverlay>
+
 @code {
 	#if ANDROID
 
@@ -182,6 +211,7 @@ else
 	bool checkUpdate = false;
 	int DownLoadProgress = 0;
 	bool openLogoDialog = false;
+	bool showUpdateOverlay = false;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -205,6 +235,10 @@ else
 			}
 		}
 		checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
+		if (checkUpdate)
+		{
+			showUpdateOverlay = true;
+		}
 	}
 
 	async void Update()

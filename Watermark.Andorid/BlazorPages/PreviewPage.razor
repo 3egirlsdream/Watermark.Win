@@ -66,18 +66,18 @@
 <div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 	<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
 		<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="CloseDrawerClick" />
-        <MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
+		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
 		@if (SrcLoading)
 		{
 			<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
 		}
-        <MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="RefreshEditImage" />
+		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="RefreshEditImage" />
 	</MudToolBar>
 </div>
 
 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
 {
-	<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
+	<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;z-index:99">
 		<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="ExpandSwitch" />
 		<MudDivider Style="width:30px" />
 		<MudCollapse Expanded="_expanded">
@@ -91,7 +91,7 @@
 					</ButtonTemplate>
 				</MudFileUpload>
 
-				@foreach (var i in CurrentImage!.Canvas.Children)
+				@foreach (var i in CurrentTemplate.Children)
 				{
 					<MudIconButton Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="()=> {SelectedContainer = i;ContainerLevel = 1;}" />
 					foreach (var ii in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
@@ -104,7 +104,12 @@
 		</MudCollapse>
 	</MudStack>
 	<MudCard Style="@($"padding:16px;background:#E5E5E5;transition: height 0.5s;height:calc(100% - {(ShowSetting ? (showRadio ? "100px" : "42%") : "100px")})")" Elevation="0">
-		<MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:100%;height:100%" />
+		<MudCarousel Class="mud-width-full" ItemsSource="@Images" @bind-SelectedIndex="SelecetedIndex" Style="height:90%;" ShowArrows="true" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="false">
+			<ItemTemplate>
+				<MudImage ObjectFit="@ObjectFit.Contain" Src="@context.Src" Elevation="0" Style="width:100%;height:100%" />
+			</ItemTemplate>
+		</MudCarousel>
+
 	</MudCard>
 	<MudStack Row="true" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;width:100%">
 		@if (CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split)
@@ -139,7 +144,7 @@
 			<MudItem xs="12" Style="width: 100%; overflow-x: auto; white-space: nowrap;">
 				@foreach (var r in radioes)
 				{
-					<MudPaper Elevation="25" Class="ma-1" Width="60px" Style="@($"display: inline-block;background:{(r == CurrentImage.Canvas.LengthWidthRatio ? Orange.Default : "")}")">
+					<MudPaper Elevation="25" Class="ma-1" Width="60px" Style="@($"display: inline-block;background:{(r == CurrentTemplate.LengthWidthRatio ? Orange.Default : "")}")">
 						<MudStack class="preview-box" @onclick="()=>SetLengthWidthRatio(r)">
 							@if (RadioBase64.TryGetValue(r, out string? src))
 							{
@@ -430,22 +435,28 @@
 	}
 </MudDrawer>
 
-
+<MudOverlay Visible="@loadingShow" DarkBackground="true" Absolute="true" ZIndex="99999">
+	<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
+		<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+		<MudText Typo="Typo.subtitle1" Color="Color.Primary">
+			<b>@loadingMessage</b>
+		</MudText>
+	</MudPaper>
+</MudOverlay>
 
 @code {
-	[Parameter]
 	public WMTemplateList CurrentImage { get; set; }
 	[Parameter]
 	public EventCallback CloseDrawer { get; set; }
 	[Parameter]
 	public List<WMTemplateList> Images { get; set; }
 
-
+	string loadingMessage = "";
+	bool loadingShow = false;
 	bool SrcLoading = false;
 	bool openSave = false;
 	bool _expanded = false;
 	bool showSetting = false;
-	bool showTooltip = false;
 	public bool ShowSetting
 	{
 		get => showSetting;
@@ -468,12 +479,27 @@
 	WMContainer SelectedContainer;
 	int ContainerLevel;
 	IWMControl SelectedControl;
+	WMCanvas CurrentTemplate;
+
+	int selectedIndex = 0;
+	public int SelecetedIndex
+	{
+		get => selectedIndex;
+		set
+		{
+			selectedIndex = value;
+			CurrentImage = Images[value];
+			RefreshEditImage();
+		}
+	}
 
 	protected override void OnInitialized()
 	{
+		CurrentImage = Images[0];
+		CurrentTemplate = Global.ReadConfig(Global.CanvasSerialize(CurrentImage.Canvas));
 		RadioBase64 = Global.GetRadio();
 		InitLogoCacheDic(CurrentImage.ID, CurrentImage);
-		showTooltip = true;
+		SelectedContainer = CurrentTemplate.Children.FirstOrDefault();
 	}
 
 	async void OpenExifDialog(WMText mText)
@@ -557,10 +583,10 @@
 	{
 		SrcLoading = true;
 		StateHasChanged();
-		var cvs = CurrentImage.Canvas;
-		var whelper = new WatermarkHelper();
-		CurrentImage.Canvas = cvs;
-		CurrentImage.Src = await whelper.GenerationAsync(cvs, null, true, false);
+		CurrentTemplate.Exif = CurrentImage.Canvas.Exif;
+		CurrentTemplate.Path = CurrentImage.Path;
+		var helper = new WatermarkHelper();
+		CurrentImage.Src = await helper.GenerationAsync(CurrentTemplate, null, true, false);
 		SrcLoading = false;
 		StateHasChanged();
 	}
@@ -575,14 +601,16 @@
 	async void Export()
 	{
 		var helper = new WatermarkHelper();
-		SrcLoading = true;
+		loadingShow = true;
 		StateHasChanged();
+		int cot = 1;
 		foreach (var item in Images)
 		{
-			var idx = Images.IndexOf(item) + 1;
-			// MainLoading.Message = $"正在导出图片，一共{Images.Count}张，目前第{idx}张";
-			// MainLoading.Value = idx * 100.0 / Images.Count;
-			var rs = await helper.GenerationAsync(item.Canvas, null, false, false);
+			loadingMessage = $"导出中，共{Images.Count}张，目前第{cot++}张";
+			var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate));
+			cvs.Path = item.Path;
+			cvs.Exif = item.Canvas.Exif;
+			var rs = await helper.GenerationAsync(cvs, null, false, false);
 #if ANDROID
 	var b64 = rs.Replace("data:image/jpeg;base64,", "");
 	var bt = Convert.FromBase64String(b64);
@@ -591,7 +619,7 @@
 #endif
 			StateHasChanged();
 		}
-		SrcLoading = false;
+		loadingShow = false;
 		Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
 		openSave = false;
 		StateHasChanged();

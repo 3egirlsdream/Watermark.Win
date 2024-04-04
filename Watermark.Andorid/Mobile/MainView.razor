@@ -471,7 +471,7 @@
 <MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
 	@if (openDrawer)
 	{
-		<PreviewPage CurrentImage="CurrentImage" CloseDrawer="()=>openDrawer=false" Images="Images"/>
+		<PreviewPage CloseDrawer="()=>openDrawer=false" Images="Images" />
 	}
 </MudDrawer>
 
@@ -565,45 +565,45 @@
 		if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
 		else await SelectSplitPhoto(template);
 	}
-	async Task	OpenPhoto(WMZipedTemplate template)
+	async Task OpenPhoto(WMZipedTemplate template)
 	{
 		try
 		{
-			var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
+			var result = await FilePicker.PickMultipleAsync(new PickOptions
 				{
-					Title = "选择图片"
+					PickerTitle = "长按多选照片",
+					FileTypes = FilePickerFileType.Images
 				});
-			if (result is null) return;
-			Global.CheckImageExtension(result.FullPath);
+			if (result is null || result.Count() == 0) return;
+			Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
 			MainLoading.Message = "正在生成图片...";
 			MainLoading.Show = true;
 			StateHasChanged();
-			WMCanvas canvas = new WMCanvas();
-			canvas.Exif = await Task.Run(() =>
-			{
-				return ExifHelper.ReadImage(result.FullPath);
-			});
-
 			Images = new List<WMTemplateList>();
-			Dictionary<string, string> dic = new Dictionary<string, string>();
 			if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
 			{
 				Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
 			}
-
-			var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
-			await Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
-
-			canvas.Path = result.FullPath;
-			var tl = new WMTemplateList
-				{
-					Canvas = canvas,
-					Path = result.FullPath
-				};
-			Images.Add(tl);
-			CurrentImage = tl;
-			await ChangeTemplate(template);
+			foreach (var f in result)
+			{
+				var img = new WMTemplateList();
+				var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+				cvs.Path = f.FullPath;
+				img.Canvas = cvs;
+				cvs.Exif = await ExifHelper.ReadImageAsync(f.FullPath);
+				img.ID = cvs.ID;
+				img.Path = f.FullPath;
+				Global.CheckImageExtension(f.FullPath);
+				var thumbnail = Global.AppPath.ThumbnailFolder + f.FileName;
+				await Global.WriteThumbnailImageAsync(f.FullPath, thumbnail);
+				Images.Add(img);
+			}
+			var helper = new WatermarkHelper();
+			CurrentImage = Images.First();
+			var src = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+			CurrentImage.Src = src;
 			MainLoading.Show = false;
+			openDrawer = true;
 			StateHasChanged();
 		}
 		catch (Exception ex)
@@ -612,34 +612,13 @@
 		}
 	}
 
-	async Task ChangeTemplate(WMZipedTemplate template)
-	{
-		CurrentTemplate = template;
-		if (CurrentImage == null) return;
-		await Task.Run(() =>
-		{
-			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-			cvs.Exif = CurrentImage.Canvas.Exif;
-			CurrentImage.Canvas = cvs;
-			CurrentImage.ID = cvs.ID;
-			WatermarkHelper helper = new WatermarkHelper();
-			cvs.Path = CurrentImage.Path;
-			template.Bitmap = CurrentImage.Bitmap;
-			CurrentImage.Src = helper.Generation(cvs, null, true, false);
-		});
-
-		//await Task.Run(() => design?.SetCanvas(CurrentImage.Canvas));
-
-		openDrawer = true; 
-	}
-
-
 	async Task SelectSplitPhoto(WMZipedTemplate template)
 	{
 		try
 		{
 			var result = await FilePicker.PickMultipleAsync(new PickOptions
 				{
+					PickerTitle = "长按多选照片",
 					FileTypes = FilePickerFileType.Jpeg
 				});
 
@@ -999,7 +978,7 @@
 	}
 
 
-	
+
 	void CloseDrawer()
 	{
 		openDrawer = false;

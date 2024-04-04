@@ -6,6 +6,7 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq.Expressions;
 
 namespace Watermark.Win.Models
 {
@@ -582,6 +583,18 @@ namespace Watermark.Win.Models
             if(!file.ToLower().EndsWith("jpg") && !file.ToLower().EndsWith("png"))
             {
                 throw new Exception("不支持的图片格式");
+            }
+        }
+
+        public static void VipFuncPermission(Func<bool> func, string request)
+        {
+            //true:触发VIP校验
+            if (func.Invoke())
+            {
+                if(CurrentUser == null || !CurrentUser.IsVIP)
+                {
+                    throw new Exception($"\"{request}\"，高级版可用。");
+                }
             }
         }
 

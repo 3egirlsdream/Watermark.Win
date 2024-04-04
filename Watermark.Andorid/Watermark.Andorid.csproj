@@ -48,7 +48,7 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
       <AndroidKeyStore>False</AndroidKeyStore>
       <PublishTrimmed>True</PublishTrimmed>
       <JavaMaximumHeapSize>2G</JavaMaximumHeapSize>
@@ -58,7 +58,7 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
       <AndroidKeyStore>False</AndroidKeyStore>
       <JavaMaximumHeapSize>2G</JavaMaximumHeapSize>
     </PropertyGroup>
@@ -74,14 +74,14 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.19041.0|AnyCPU'">
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
@@ -95,14 +95,14 @@
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.19041.0|AnyCPU'">
       <ApplicationTitle>DaVinci Frame Master-水印相框大师</ApplicationTitle>
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
-      <ApplicationDisplayVersion>1.1.7</ApplicationDisplayVersion>
+      <ApplicationDisplayVersion>1.1.8</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -121,6 +121,14 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="BlazorPages\SettingPage.razor.css" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="BlazorPages\SettingPage.razor.css" />
     </ItemGroup>
 
     <ItemGroup>

@@ -11,7 +11,9 @@ namespace Watermark.Shared.Models
 	public static class ClientInstance
     {
         public static string LinkPath { get; set; }
-        public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public static string UpdateMessage { get; set; }
+		public static string UpdateVersion { get; set; }
+		public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
         };
 
@@ -132,6 +134,8 @@ namespace Watermark.Shared.Models
                     var v1 = GetVersion();
                     var v2 = new Version(version.data.VERSION);
                     LinkPath = version!.data!.PATH!;
+                    UpdateMessage = version!.data!.MEMO;
+                    UpdateVersion = version!.data!.VERSION;
                     return v2 > v1;
                 }
                 else
