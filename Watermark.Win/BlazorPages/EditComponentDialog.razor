@@ -5,7 +5,7 @@
 
 <MudDialog Style="min-width:50%;">
     <DialogContent>
-        <MudButton FullWidth="true" OnClick="OpenAddControl">新增组件</MudButton>
+        <MudButton FullWidth="true" OnClick="OpenAddControl" Variant="Variant.Filled" DisableElevation Size="Size.Small" Class="my-2">新增组件</MudButton>
         <MudTreeView T="string" Dense="true" Hover="true">
             @foreach (var container in mCanvas.Children)
             {
@@ -104,7 +104,7 @@
                     }
                 </DialogContent>
                 <DialogActions>
-                    <MudButton FullWidth="true" OnClick="MoveOK">确定</MudButton>
+                    <MudButton FullWidth="true" DisableElevation OnClick="MoveOK" Class="mx-4" Variant="Variant.Filled" Size="Size.Small">确定</MudButton>
                 </DialogActions>
             </MudDialog>
             <MudDialog @bind-IsVisible="param.AddControl" Options="dialogOptions">
@@ -134,13 +134,13 @@
                     }
                 </DialogContent>
                 <DialogActions>
-                    <MudButton FullWidth="true" OnClick="Add">确定</MudButton>
+                    <MudButton FullWidth="true" DisableElevation OnClick="Add" Class="mx-4" Variant="Variant.Filled" Size="Size.Small">确定</MudButton>
                 </DialogActions>
             </MudDialog>
         </MudTreeView>
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Primary" FullWidth="true" OnClick="Submit">Ok</MudButton>
+        <MudButton Color="Color.Primary" FullWidth="true" Variant="Variant.Filled" DisableElevation OnClick="Submit" Size="Size.Small" Class="mx-4">Ok</MudButton>
     </DialogActions>
 </MudDialog>
 
