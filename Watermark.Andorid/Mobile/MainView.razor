@@ -9,7 +9,7 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
-
+@inject IDialogService DialogService
 <style>
 	.panel-class {
 		height: calc(100% - 50px);
@@ -250,7 +250,7 @@
 						{
 							<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
 						}
-						@foreach (var t in ZipedTemplates.Where(x => x.Recommend))
+						@foreach (var t in ZipedTemplates!.Where(x => x.Recommend).OrderByDescending(x=>x.DateTimeCreated))
 						{
 							<MudItem xs="6" Style="padding:4px;">
 								<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
@@ -356,17 +356,20 @@
 	</div>
 
 	<MudOverlay Visible="@MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-		<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
-			<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-			<MudText Typo="Typo.subtitle1" Color="Color.Primary">
-				<b>@MainLoading.Message</b>
-			</MudText>
+		<MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;padding:16px;">
+			<MudStack Style="text-align:center;">
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
+				<MudText Typo="Typo.subtitle1" Color="Color.Default" Class="mt-2">
+					@MainLoading.Message
+				</MudText>
+			</MudStack>
+
 		</MudPaper>
 	</MudOverlay>
 	<MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
 		<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
-			<MudText Typo="Typo.subtitle1" Color="Color.Primary">
-				<b>应用版本过低，请升级！</b><a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk">下载链接</a>
+			<MudText Typo="Typo.subtitle1" Color="Color.Default">
+				<b>应用版本过低，请升级！</b><a href="@ClientInstance.LinkPath">下载链接</a>
 			</MudText>
 		</MudPaper>
 	</MudOverlay>
@@ -478,14 +481,10 @@
 
 
 @code {
-	[Inject]
-	private IDialogService DialogService { get; set; }
-	WMThickness BorderThickness = new WMThickness();
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
 	bool openDrawer = false;
 	bool openSave = false;
-	private Design design;
 	int activeTab = 1;
 	int tb1_t1 = 1;
 	int tb2_t2 = 1;
@@ -499,12 +498,12 @@
 	bool loadMore = false;
 	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
 	ConcurrentDictionary<string, string> LogoBase64 = new();
-	List<WMZipedTemplate> ZipedTemplates = new List<WMZipedTemplate>();
+	List<WMZipedTemplate> ZipedTemplates = new();
 	List<WMZipedTemplate> hottest = new();
 	List<WMZipedTemplate> newest = new();
 	List<WMZipedTemplate> splits = new();
 	List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
-	List<WMZipedTemplate> downloadedTemplates = new List<WMZipedTemplate>();
+	List<WMZipedTemplate> downloadedTemplates = new();
 	List<WMZipedTemplate> ILikeTemplates = new();
 	int start = 1;
 	WMZipedTemplate CurrentTemplate;
@@ -561,6 +560,7 @@
 	}
 	async void GeneratePhoto(WMZipedTemplate template)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		FocusImageShow = false;
 		if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
 		else await SelectSplitPhoto(template);
@@ -734,6 +734,7 @@
 			}
 			await Task.WhenAll(mission);
 			loading_down = false;
+			HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 			StateHasChanged();
 		}
 		catch (Exception ex)
@@ -840,6 +841,7 @@
 
 	void OpenFocus(char t, WMZipedTemplate zip, bool b)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		FocusImage = zip;
 		FocusImageType = t;
 		FocusImageId = zip.WatermarkId;
@@ -912,6 +914,7 @@
 			var r = await api.Download(watermarkId, w?.UserId ?? "");
 			if (r)
 			{
+				HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 				FocusImageShow = false;
 				ClientInstance.ShowMsg(Snackbar, "下载完成", Severity.Success);
 				var dir = await LoadSingleTemplates(watermarkId);

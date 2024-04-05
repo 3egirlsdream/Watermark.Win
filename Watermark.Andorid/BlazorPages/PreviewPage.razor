@@ -66,7 +66,7 @@
 <div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 	<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
 		<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="CloseDrawerClick" />
-		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="()=>openSave = true" />
+		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="OpenSave" />
 		@if (SrcLoading)
 		{
 			<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
@@ -85,21 +85,16 @@
 				<MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 3px 3px 2px;" Elevation="25" @onclick="OpenFullExifInfo">
 					<svg t="1711715777941" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2452" width="24" height="24"><path d="M332.799002 686.081014m-332.799002 0a332.799002 332.799002 0 1 0 665.598003 0 332.799002 332.799002 0 1 0-665.598003 0Z" fill="#CCE4F2" p-id="2453"></path><path d="M883.19735 1024h-639.99808A141.055577 141.055577 0 0 1 102.399693 883.200422v-742.397772A141.055577 141.055577 0 0 1 243.19927 0.003072h516.350451a89.087733 89.087733 0 0 1 63.231811 25.599923l189.695431 189.695431A38.399885 38.399885 0 0 1 1023.996928 243.202342v639.99808a141.055577 141.055577 0 0 1-140.799578 140.799578zM243.19927 76.802842A63.999808 63.999808 0 0 0 179.199462 140.80265v742.397772A63.999808 63.999808 0 0 0 243.19927 947.20023h639.99808a63.999808 63.999808 0 0 0 63.999808-63.999808V259.074295l-179.199462-179.199463a12.799962 12.799962 0 0 0-8.447975-3.07199z" fill="#434260" p-id="2454"></path><path d="M275.455174 399.105875H409.598771v29.695911h-98.559704v62.975811h82.943751v29.95191h-82.943751v72.959781h102.399693v30.207909h-137.983586zM499.710501 508.417547l-60.671818-109.311672h39.679881l27.391918 52.735841c5.631983 10.495969 10.495969 20.479939 17.151948 34.047898h1.535996c5.887982-13.567959 10.239969-23.551929 15.359954-34.047898l25.599923-52.735841h37.375888l-60.671818 111.103666 65.023805 114.943656h-38.911884l-29.695911-56.063832-18.687944-36.86389c-6.399981 13.823959-12.031964 25.599923-17.407947 36.86389l-28.927914 56.063832H435.198694zM642.814072 399.105875h35.583893v226.047322h-35.583893zM737.789787 399.105875H870.397389v29.695911h-97.023709v69.119792h83.45575v29.695911h-83.45575v97.279708h-35.583893z" fill="#434260" p-id="2455"></path></svg>
 				</MudPaper>
-				<MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
-					<ButtonTemplate>
-						<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Size="Size.Small" />
-					</ButtonTemplate>
-				</MudFileUpload>
+				<MudIconButton Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="SelectSourceImageExif" />
 
 				@foreach (var i in CurrentTemplate.Children)
 				{
-					<MudIconButton Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="()=> {SelectedContainer = i;ContainerLevel = 1;}" />
+					<MudIconButton Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="()=> SelectContainer(i, 1)" />
 					foreach (var ii in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
 					{
-						<MudIconButton Icon="@Icons.Material.Outlined.Layers" Color="Color.Secondary" Variant="Variant.Filled" Style="width:30px;height:30px;margin-left:35px;" OnClick="()=> {SelectedContainer = ii;ContainerLevel = 2;}" />
+						<MudIconButton Icon="@Icons.Material.Outlined.Layers" Color="Color.Secondary" Variant="Variant.Filled" Style="width:30px;height:30px;margin-left:35px;" OnClick="()=> SelectContainer(ii, 2)" />
 					}
 				}
-
 			</MudStack>
 		</MudCollapse>
 	</MudStack>
@@ -114,7 +109,7 @@
 	<MudStack Row="true" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;width:100%">
 		@if (CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split)
 		{
-			<MudStack Style="gap:0px;display:flex;align-items:center;text-align:center;margin:auto;width:50px;height:60px;justify-content: center;" @onclick="()=>{ShowSetting=true;showRadio=true;showControlSetting = false;}">
+			<MudStack Style="gap:0px;display:flex;align-items:center;text-align:center;margin:auto;width:50px;height:60px;justify-content: center;" @onclick="OpenRadio">
 				<MudIcon Icon="@Icons.Material.Filled.FilterFrames" />
 				<MudText Typo="Typo.subtitle2">比例</MudText>
 			</MudStack>
@@ -436,11 +431,16 @@
 </MudDrawer>
 
 <MudOverlay Visible="@loadingShow" DarkBackground="true" Absolute="true" ZIndex="99999">
-	<MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
-		<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-		<MudText Typo="Typo.subtitle1" Color="Color.Primary">
-			<b>@loadingMessage</b>
-		</MudText>
+	<MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;">
+		<MudStack Style="text-align:center;">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
+			<MudText Typo="Typo.subtitle1" Color="Color.Default" Class="mt-2">
+				@loadingMessage[0]
+				<br />
+				@loadingMessage[1]
+			</MudText>
+		</MudStack>
+		
 	</MudPaper>
 </MudOverlay>
 
@@ -451,7 +451,7 @@
 	[Parameter]
 	public List<WMTemplateList> Images { get; set; }
 
-	string loadingMessage = "";
+	string[] loadingMessage = ["", ""];
 	bool loadingShow = false;
 	bool SrcLoading = false;
 	bool openSave = false;
@@ -517,57 +517,23 @@
 		}
 	}
 
-
-	async void ReplaceLogo(string sourceId)
+	async void SelectSourceImageExif()
 	{
-		var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-		var result = await dialog.Result;
-		if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
-		{
-			var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
-			ChangeLogo(sourceId, p);
-		}
-	}
-
-	async void ChangeLogo(string sourceId, string logoPath)
-	{
-		SrcLoading = true;
-		StateHasChanged();
-		foreach (var c1 in CurrentImage.Canvas.Children)
-		{
-			foreach (var cc1 in c1.Controls)
+		var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
 			{
-				if (cc1 is WMLogo logo && logo.ID == sourceId)
-				{
-					logo.AutoSetLogo = false;
-					logo.Path = logoPath;
-					break;
-				}
-				else if (cc1 is WMContainer wc)
-				{
-					foreach (var wcc in wc.Controls)
-					{
-						if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
-						{
-							wcLogo.AutoSetLogo = false;
-							wcLogo.Path = logoPath;
-							break;
-						}
-					}
-				}
-			}
-		}
-		var api = new WatermarkHelper();
-		CurrentImage.Src = await api.GenerationAsync(CurrentImage.Canvas, null, true);
-		SrcLoading = false;
-		StateHasChanged();
-	}
+				Title = "选择图片"
+			});
 
-	async void SelectSourceImageExif(IBrowserFile file)
-	{
-		MemoryStream ms = new MemoryStream();
-		await file.OpenReadStream(file.Size).CopyToAsync(ms);
-		CurrentImage.Canvas.Exif = ExifHelper.ReadImage(ms.ToArray());
+		if (result == null) return;
+		try
+		{
+			CurrentImage.Canvas.Exif = ExifHelper.ReadImage(result.FullPath);
+			RefreshEditImage();
+		}
+		catch(Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, $"不支持的图片格式：{ex.Message}", Severity.Error);
+		}
 	}
 
 	async void OpenFullExifInfo()
@@ -600,13 +566,15 @@
 
 	async void Export()
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		var helper = new WatermarkHelper();
 		loadingShow = true;
 		StateHasChanged();
 		int cot = 1;
 		foreach (var item in Images)
 		{
-			loadingMessage = $"导出中，共{Images.Count}张，目前第{cot++}张";
+			loadingMessage[0] = "导出中";
+			loadingMessage[1] = $"共{Images.Count}张，目前第{cot++}张";
 			var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate));
 			cvs.Path = item.Path;
 			cvs.Exif = item.Canvas.Exif;
@@ -671,30 +639,34 @@
 
 	void SelectLocalFont(WMText mText)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		selectedText = mText;
 		openFontsDialog = true;
 	}
 
 	void OpenLogoDialog(WMLogo mLogo)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		selectedLogo = mLogo;
 		openLogoDialog = true;
 	}
 
 	void SetLengthWidthRatio(string v)
 	{
-		CurrentImage.Canvas.LengthWidthRatio = v;
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		CurrentTemplate.LengthWidthRatio = v;
 		var wh = v.Split(":");
 		var w = Convert.ToDouble(wh[0]);
 		var h = Convert.ToDouble(wh[1]);
 		var xs = 6000 / w;
-		CurrentImage.Canvas.CustomWidth = 6000;
-		CurrentImage.Canvas.CustomHeight = (int)(xs * h);
+		CurrentTemplate.CustomWidth = 6000;
+		CurrentTemplate.CustomHeight = (int)(xs * h);
 		StateHasChanged();
 	}
 
 	void OpenControlSetting(IWMControl control)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		showRadio = false;
 		showControlSetting = true;
 		SelectedControl = control;
@@ -704,6 +676,7 @@
 
 	void SelectFontCallback(KeyValuePair<string, string> pair)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		if (selectedText is null) return;
 		selectedText.FontFamily = pair.Key;
 		openFontsDialog = false;
@@ -712,6 +685,7 @@
 
 	void SelectLogoCallback(KeyValuePair<string, string> pair)
 	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		if (selectedLogo is null) return;
 		LogoBase64[pair.Key] = pair.Value;
 		selectedLogo.Path = pair.Key;
@@ -720,5 +694,23 @@
 		StateHasChanged();
 	}
 
+	void OpenSave()
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		openSave = true;
+	}
+	void OpenRadio()
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		ShowSetting = true;
+		showRadio = true; 
+		showControlSetting = false;
+	}
 
+	void SelectContainer(WMContainer i, int lv) 
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		SelectedContainer = i; 
+		ContainerLevel = lv; 
+	}
 }

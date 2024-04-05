@@ -38,7 +38,7 @@
 			</MudText>
 			@if (!Global.CurrentUser.IsVIP)
 			{
-				<MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="()=> openVip = true">开通会员</MudButton>
+				<MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
 			}
 		</MudStack>
 		<MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
@@ -319,4 +319,9 @@ else
 		navigationManager.NavigateTo("/preview");
 	}
 
+	void OpenVip() 
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		openVip = true;
+	}
 }
