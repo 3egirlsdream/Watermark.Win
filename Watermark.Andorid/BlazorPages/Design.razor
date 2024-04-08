@@ -6,6 +6,8 @@
 @using Newtonsoft.Json
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
+@inject IWMWatermarkHelper helper
+@inject IJSRuntime JSRuntime
 
 <style>
 	.design-main
@@ -475,20 +477,21 @@
 	[Parameter]
 	public EventCallback RefreshCallback { get; set; }
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
 		canvas = CurrentCanvas;
 		if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-		InitLogoBase64();
+		await InitLogoBase64();
 		InitLocalFonts();
 
 		var api = new APIHelper();
 		var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
 	}
 
-	void InitLogoBase64()
+	async Task InitLogoBase64()
 	{
-		Global.ImageFile2Base64(ImagesBase64, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
+		ConcurrentDictionary<string, byte[]> dic = new();
+		Global.ImageFile2Base64(dic, Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar + "default.jpg", "default");
 		var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
 		canvas.Children.ForEach(c =>
 		{
@@ -503,28 +506,29 @@
 			// }
 			c.Controls.ForEach(x =>
 			{
-				if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, folder + mLogo.Path, mLogo.ID);
+				if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
 				else if (x is WMContainer mContainer)
 				{
 					mContainer.Controls.ForEach(z =>
 					{
-						if (z is WMLogo logo1) Global.ImageFile2Base64(ImagesBase64, folder + logo1.Path, logo1.ID);
+						if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
 					});
 
 				};
 			});
 		});
+
+		foreach (var e in dic)
+		{
+			ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+		}
 	}
 
 	private async void RefreshImage()
 	{
 		SrcLoading = true;
-		var t = Task.Run(() =>
-		{
-			var helper = new WatermarkHelper();
-			return helper.Generation(canvas, null, true, true);
-		});
-		url = await t;
+		var b64 = await helper.GenerationAsync(canvas, null, true, true);
+		url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 		SrcLoading = false;
 		StateHasChanged();
 

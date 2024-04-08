@@ -10,6 +10,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
 @inject IDialogService DialogService
+@inject IWMWatermarkHelper helper
 <style>
 	.panel-class {
 		height: calc(100% - 50px);
@@ -541,9 +542,8 @@
 	{
 		CurrentImage = image;
 		SrcLoading = true;
-		var t = Task.Run(() =>
+		var b64 = await Task.Run(() =>
 		{
-			WatermarkHelper helper = new WatermarkHelper();
 			CurrentImage.Canvas.Path = CurrentImage.Path;
 			var ziped = new WMZipedTemplate
 				{
@@ -554,7 +554,7 @@
 			return helper.Generation(CurrentImage.Canvas, ziped, true);
 		});
 
-		CurrentImage.Src = await t;
+		CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 		SrcLoading = false;
 		StateHasChanged();
 	}
@@ -598,10 +598,9 @@
 				await Global.WriteThumbnailImageAsync(f.FullPath, thumbnail);
 				Images.Add(img);
 			}
-			var helper = new WatermarkHelper();
 			CurrentImage = Images.First();
-			var src = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
-			CurrentImage.Src = src;
+			var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+			CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 			MainLoading.Show = false;
 			openDrawer = true;
 			StateHasChanged();
@@ -622,7 +621,7 @@
 					FileTypes = FilePickerFileType.Jpeg
 				});
 
-
+			if (result == null || !result.Any()) return;
 			MainLoading.Message = "正在生成图片...";
 			MainLoading.Show = true;
 			StateHasChanged();
@@ -630,14 +629,17 @@
 			int c = 0;
 			foreach (var f in result)
 			{
-				cvs.Children[c++].Path = f.FullPath;
+				if (c < cvs.Children.Count - 1)
+				{
+					cvs.Children[c++].Path = f.FullPath;
+				}
+				
 			}
-			var helper = new WatermarkHelper();
 			CurrentImage = new();
 			CurrentImage.Canvas = cvs;
 			CurrentImage.ID = CurrentImage.Canvas.ID;
-			var src = await helper.GenerationAsync(cvs, null, true, false);
-			CurrentImage.Src = src;
+			var b64 = await helper.GenerationAsync(cvs, null, true, false);
+			CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 			Images = [CurrentImage];
 			MainLoading.Show = false;
 			openDrawer = true;
@@ -697,7 +699,7 @@
 	{
 		loading_down = true;
 		StateHasChanged();
-		var helper = new APIHelper();
+		var api = new APIHelper();
 		if (!Directory.Exists(Global.AppPath.TemplatesFolder))
 		{
 			Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
@@ -705,9 +707,7 @@
 
 		try
 		{
-			List<Task> mission = new List<Task>();
 			var basePath = Global.AppPath.TemplatesFolder;
-			WatermarkHelper watermarkHelper = new WatermarkHelper();
 			var folder = new DirectoryInfo(basePath);
 			foreach (var tFolder in folder.GetDirectories())
 			{
@@ -726,13 +726,9 @@
 			foreach (var tp in downloadedTemplates)
 			{
 				await Global.InitFonts([tp.WMCanvas]);
-				var t = Task.Run(() =>
-				{
-					tp.Src = watermarkHelper.Generation(tp.WMCanvas, null, true, false);
-				});
-				mission.Add(t);
+				var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
+				tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 			}
-			await Task.WhenAll(mission);
 			loading_down = false;
 			HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 			StateHasChanged();
@@ -745,7 +741,7 @@
 
 	async Task<WMZipedTemplate> LoadSingleTemplates(string watermarkId)
 	{
-		var helper = new APIHelper();
+		var api = new APIHelper();
 		if (!Directory.Exists(Global.AppPath.TemplatesFolder))
 		{
 			Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
@@ -753,7 +749,6 @@
 
 		try
 		{
-			WatermarkHelper watermarkHelper = new WatermarkHelper();
 			WMZipedTemplate dirct = new();
 			dirct.WatermarkId = watermarkId;
 			var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
@@ -767,7 +762,8 @@
 			dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
 			dirct.CanvasType = dirct.WMCanvas.CanvasType;
 			await Global.InitFonts([canvas]);
-			dirct.Src = await watermarkHelper.GenerationAsync(canvas, null, true, false);
+			var b64 = await helper.GenerationAsync(canvas, null, true, false);
+			dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 			return dirct;
 		}
 		catch (Exception ex)
@@ -776,44 +772,6 @@
 			return new WMZipedTemplate();
 		}
 	}
-
-	async void LoadMore()
-	{
-		MainLoading.Show = true;
-		MainLoading.Message = "正在加载模板...";
-		var helper = new APIHelper();
-		var more = await helper.GetWatermarks("", ++start, 10);
-		List<Task> tasks1 = new List<Task>();
-		foreach (var t in more)
-		{
-			var task = helper.ExtractZip(t.WatermarkId).ContinueWith(item =>
-			{
-				t.WMCanvas = item.Result.WMCanvas;
-				t.Images = item.Result.Images;
-				t.Fonts = item.Result.Fonts;
-				t.Bitmap = item.Result.Bitmap;
-			});
-			tasks1.Add(task);
-		}
-		await Task.WhenAll(tasks1);
-		var whelper = new WatermarkHelper();
-		List<Task> tasks = new List<Task>();
-		foreach (var t in more)
-		{
-			var c = Task.Run(() =>
-			{
-				t.Src = whelper.Generation(t.WMCanvas, t, true);
-				return t.Src;
-			});
-
-			tasks.Add(c);
-		}
-		await Task.WhenAll(tasks);
-		ZipedTemplates.AddRange(more);
-		MainLoading.Show = false;
-		StateHasChanged();
-	}
-
 
 	async Task<List<string>> IntiSubscribedUserList()
 	{

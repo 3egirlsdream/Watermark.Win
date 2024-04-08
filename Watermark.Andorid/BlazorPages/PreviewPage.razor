@@ -10,6 +10,8 @@
 @inject IDialogService DialogService
 @inject NavigationManager navigationManager
 @inject ISnackbar Snackbar
+@inject IWMWatermarkHelper helper
+@inject IJSRuntime JSRuntime
 
 <style>
 	.preview-box {
@@ -493,12 +495,12 @@
 		}
 	}
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
 		CurrentImage = Images[0];
 		CurrentTemplate = Global.ReadConfig(Global.CanvasSerialize(CurrentImage.Canvas));
 		RadioBase64 = Global.GetRadio();
-		InitLogoCacheDic(CurrentImage.ID, CurrentImage);
+		await InitLogoCacheDic(CurrentImage.ID, CurrentImage);
 		SelectedContainer = CurrentTemplate.Children.FirstOrDefault();
 	}
 
@@ -551,8 +553,8 @@
 		StateHasChanged();
 		CurrentTemplate.Exif = CurrentImage.Canvas.Exif;
 		CurrentTemplate.Path = CurrentImage.Path;
-		var helper = new WatermarkHelper();
-		CurrentImage.Src = await helper.GenerationAsync(CurrentTemplate, null, true, false);
+		var b64 = await helper.GenerationAsync(CurrentTemplate, null, true, false);
+		CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 		SrcLoading = false;
 		StateHasChanged();
 	}
@@ -578,12 +580,10 @@
 			var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate));
 			cvs.Path = item.Path;
 			cvs.Exif = item.Canvas.Exif;
-			var rs = await helper.GenerationAsync(cvs, null, false, false);
+			var b64 = await helper.GenerationAsync(cvs, null, false, false);
 #if ANDROID
-	var b64 = rs.Replace("data:image/jpeg;base64,", "");
-	var bt = Convert.FromBase64String(b64);
-	var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path);
-	Watermark.Andorid.SavePictureService.SavePicture(bt, "DFX_" + fn);
+	var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
+	Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
 #endif
 			StateHasChanged();
 		}
@@ -594,7 +594,7 @@
 	}
 
 
-	void InitLogoCacheDic(string imgId, WMTemplateList template)
+	async Task InitLogoCacheDic(string imgId, WMTemplateList template)
 	{
 		var logoes = new List<WMLogo>();
 		foreach (var c1 in template.Canvas.Children)
@@ -613,6 +613,7 @@
 		}
 
 		var dic = new Dictionary<string, string>();
+		var db64 = new ConcurrentDictionary<string, byte[]>();
 		foreach (var logo in logoes)
 		{
 			dic[logo.ID] = logo.Path;
@@ -623,8 +624,13 @@
 			}
 			if (File.Exists(target))
 			{
-				Global.ImageFile2Base64(LogoBase64, target, logo.ID);
+				Global.ImageFile2Base64(db64, target, logo.ID);
 			}
+		}
+
+		foreach (var e in db64)
+		{
+			LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
 		}
 		LogoCacheDic[imgId] = dic;
 

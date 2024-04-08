@@ -43,29 +43,16 @@
 </html>
 
 <script>
-    window.getDimensions = function () {
-        return {
-            width: window.innerWidth,
-            height: window.innerHeight
-        };
-    };
-    window.saveAsFile = function (filename, byteArray) {
-        // 创建一个Blob对象
-        var blob = new Blob([new Uint8Array(byteArray)], { type: "application/octet-stream" });
-
-        // 创建一个虚拟链接
-        var link = document.createElement('a');
-
-        // 设置链接属性，包括文件名和URL
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-
-        // 模拟点击这个链接来触发下载操作
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-
+    function byteToUrl(blob) {
+        // 适配webview和web
+        var myBlob = new Blob([blob], { type: "image/jpeg" });
+        return (window.URL || window.webkitURL || window || {}).createObjectURL(myBlob);
+    }
+    /**
+    * 释放url对象，因为createObjectURL创建的对象一直会存在可能会占用过多的内存，请注意释放
+    */
+    function revokeUrl(url) {
+        (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
 </script>
 

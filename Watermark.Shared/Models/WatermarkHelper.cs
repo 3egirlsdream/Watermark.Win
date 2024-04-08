@@ -9,6 +9,7 @@ using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Watermark.Shared.Enums;
 using Watermark.Shared.Models;
+using XmpCore.Impl.XPath;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Watermark.Win.Models
@@ -378,9 +379,10 @@ namespace Watermark.Win.Models
                 else if (families.Any(c => c == mText.FontFamily))
                 {
                     tc = SKTypeface.FromFamilyName(mText.FontFamily, fontStyle);
-                }
-                else if(Global.TryGetFont(mText.FontFamily, out tc))
+				}
+                else if(File.Exists(Global.AppPath.FontFolder + mText.FontFamily))
                 {
+                    tc = SKTypeface.FromFile(Global.AppPath.FontFolder + mText.FontFamily);
 				}
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
@@ -434,6 +436,7 @@ namespace Watermark.Win.Models
 
                 action?.Invoke(paint_cp);
                 fontStyle?.Dispose();
+                tc?.Dispose();
             }
 
 

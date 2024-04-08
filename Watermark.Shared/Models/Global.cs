@@ -443,7 +443,7 @@ namespace Watermark.Win.Models
 		static ConcurrentDictionary<string, SKTypeface> Fonts = [];
 		public static bool TryGetFont(string key, out SKTypeface bt)
 		{
-			if (Fonts.TryGetValue(key, out bt))
+            if (Fonts.TryGetValue(key, out bt) && bt != null)
 			{
 				return true;
 			}
@@ -452,10 +452,8 @@ namespace Watermark.Win.Models
 			var p = AppPath.FontFolder + key;
 			if (File.Exists(p))
 			{
-				var b = File.ReadAllBytes(p);
-				using var ms = new MemoryStream(b);
-				bt = SKTypeface.FromStream(ms);
-				Fonts[key] = bt;
+				Fonts[key] = SKTypeface.FromFile(p);
+                bt = Fonts[key];
 				return true;
 			}
 			return false;

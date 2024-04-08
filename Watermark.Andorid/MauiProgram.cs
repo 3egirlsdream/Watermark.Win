@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using MudBlazor.Services;
 using MudBlazor;
+using MudBlazor.Services;
 using Watermark.Andorid.Models;
+using Watermark.Shared.Models;
+using Watermark.Win.Models;
 
 namespace Watermark.Andorid
 {
-    public static class MauiProgram
+	public static class MauiProgram
     {
         public static MauiApp CreateMauiApp()
         {
@@ -28,7 +30,7 @@ namespace Watermark.Andorid
             builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-            
+            builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
             return builder.Build();
         }
     }
