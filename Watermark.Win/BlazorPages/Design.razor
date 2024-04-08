@@ -1,4 +1,5 @@
 ﻿@using System.IO
+@using Microsoft.JSInterop
 @using NHotkey
 @using NHotkey.Wpf
 @using System.Windows.Input
@@ -11,6 +12,8 @@
 @inject ISnackbar Snackbar
 @inject WMCanvas CurrentCanvas
 @inject string cloud
+@inject IJSRuntime JSRuntime
+@inject IWMWatermarkHelper helper
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -55,7 +58,10 @@
 					@if (canvas.CanvasType == CanvasType.Normal)
 					{
 						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@ImagesBase64["default"]" />
+							@if (ImagesBase64.TryGetValue("default", out string src))
+							{
+								<MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@src" />
+							}
 							<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" />
 						</MudStack>
 
@@ -491,31 +497,36 @@
 	string defaultImage = "";
 	bool SrcLoading = false;
 	List<string> Fonts = new List<string>();
-	ConcurrentDictionary<string, string> ImagesBase64 = new ConcurrentDictionary<string, string>();
+	ConcurrentDictionary<string, string> ImagesBase64 = new();
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
+		ConcurrentDictionary<string, byte[]> dic = new();
 		canvas = CurrentCanvas;
 		if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
 		var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
-		Global.ImageFile2Base64(ImagesBase64, p, "default");
+		Global.ImageFile2Base64(dic, p, "default");
 		var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
 		canvas.Children.ForEach(c =>
 		{
-			if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(ImagesBase64, folder + c.Path, c.ID);
+			if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
 			c.Controls.ForEach(x =>
 			{
-				if (x is WMLogo mLogo) Global.ImageFile2Base64(ImagesBase64, folder + mLogo.Path, mLogo.ID);
+				if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
 				else if (x is WMContainer mContainer)
 				{
 					mContainer.Controls.ForEach(z =>
 					{
-						if (z is WMLogo logo1) Global.ImageFile2Base64(ImagesBase64, folder + logo1.Path, logo1.ID);
+						if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
 					});
 
 				};
 			});
 		});
+		foreach(var e in dic)
+		{
+			ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+		}
 		InitLocalFonts();
 		PreviewImageRefresh();
 
@@ -527,12 +538,8 @@
 	private async void PreviewImageRefresh()
 	{
 		SrcLoading = true;
-		var t = Task.Run(() =>
-		{
-			var helper = new WatermarkHelper();
-			return helper.Generation(canvas, null, true, true);
-		});
-		url = await t;
+		var b64 = await helper.GenerationAsync(canvas, null, true, true);
+		url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 		SrcLoading = false;
 		StateHasChanged();
 
@@ -630,9 +637,14 @@
 
 	void SelectImage(WMLogo mLogo)
 	{
-		var action = new Action(() =>
+		var dic = new ConcurrentDictionary<string, byte[]>();
+		var action = new Action(async() =>
 		{
-			ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, ImagesBase64);
+			ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, dic);
+			foreach (var e in dic)
+			{
+				ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+			}
 			PreviewImageRefresh();
 		});
 		OpenWinHelper.Open(action);
@@ -640,19 +652,29 @@
 
 	void SelectImage(WMContainer mContainer)
 	{
-		var action = new Action(() =>
+		var dic = new ConcurrentDictionary<string, byte[]>();
+		var action = new Action(async () =>
 		{
-			ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, ImagesBase64);
-			PreviewImageRefresh();
+			ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, dic);
+		foreach (var e in dic)
+		{
+			ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+		}
+		PreviewImageRefresh();
 		});
 		OpenWinHelper.Open(action);
 	}
 
 	void SelectDefaultImage()
 	{
-		var action = new Action(() =>
+		var dic = new ConcurrentDictionary<string, byte[]>();
+		var action = new Action(async () =>
 		{
-			ClientInstance.SelectDefaultImage(canvas.ID, ImagesBase64);
+			ClientInstance.SelectDefaultImage(canvas.ID, dic);
+			foreach (var e in dic)
+			{
+				ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+			}
 			PreviewImageRefresh();
 		});
 		OpenWinHelper.Open(action);

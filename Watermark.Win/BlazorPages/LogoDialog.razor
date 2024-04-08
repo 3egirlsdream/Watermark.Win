@@ -1,10 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @using System.Collections.Concurrent
+@using Microsoft.JSInterop
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
-
+@inject IJSRuntime JSRuntime
 <style>
     .container {
         display: flex;
@@ -84,12 +85,19 @@
 
         var directory = new DirectoryInfo(folder);
         var mission = new List<Task>();
+
+        var dic = new ConcurrentDictionary<string, byte[]>();
         foreach (var logo in directory.GetFiles())
         {
-            var t = Task.Run(() => Global.ImageFile2Base64(Logoes, logo.FullName, logo.Name));
+            var t = Task.Run(() => Global.ImageFile2Base64(dic, logo.FullName, logo.Name));
             mission.Add(t);
         }
+
         await Task.WhenAll(mission);
+        foreach (var e in dic)
+        {
+            Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+        }
     }
 
     async void ImportLogo(IReadOnlyList<IBrowserFile> files)

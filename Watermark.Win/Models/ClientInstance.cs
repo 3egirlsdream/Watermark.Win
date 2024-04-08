@@ -18,7 +18,7 @@ namespace Watermark.Shared.Models
     public static class ClientInstance
     {
 
-        public static Action<WMCanvas, WMLogo, ConcurrentDictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public static Action<WMCanvas, WMLogo, ConcurrentDictionary<string, byte[]>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -45,7 +45,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, byte[]>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -141,7 +141,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
+        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, byte[]> dic)
         {
             try
             {
@@ -184,7 +184,8 @@ namespace Watermark.Shared.Models
             var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.High);
             using var image = SKImage.FromBitmap(resized);
             using var writeStream = File.OpenWrite(target);
-            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 50).SaveTo(writeStream);
+			SKEncodedImageFormat format = Path.GetExtension(target)?.ToLower() == ".png" ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
+			image.Encode(format, 50).SaveTo(writeStream);
         }
 
         private static string UUID()

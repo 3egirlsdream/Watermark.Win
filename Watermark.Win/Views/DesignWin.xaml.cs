@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
+using Watermark.Shared.Models;
 using Watermark.Win.Models;
 
 namespace Watermark.Win.Views
@@ -15,13 +16,15 @@ namespace Watermark.Win.Views
 
             services.AddSingleton(new WMCanvas());
             services.AddSingleton("");
-            Resources.SetIoc(services);
+			services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
+			Resources.SetIoc(services);
             InitializeComponent();
         }
         public DesignWin(WMCanvas canvas, string cloud = "")
         {
             var services = IocHelper.GetIoc();
-            services.AddSingleton(canvas);
+			services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
+			services.AddSingleton(canvas);
             services.AddSingleton(cloud);
             Resources.SetIoc(services);
             InitializeComponent();

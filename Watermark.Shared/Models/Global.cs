@@ -144,13 +144,13 @@ namespace Watermark.Win.Models
             return json;
         }
 
-        public static void ImageFile2Base64(ConcurrentDictionary<string, string> ImagesBase64, string destFile, string id)
+        public static void ImageFile2Base64(ConcurrentDictionary<string, byte[]> ImagesBase64, string destFile, string id)
         {
             try
             {
                 if (string.IsNullOrEmpty(destFile))
                 {
-                    ImagesBase64[id] = "";
+                    ImagesBase64[id] = [];
                     return;
                 }
                 using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
@@ -159,11 +159,11 @@ namespace Watermark.Win.Models
                     SKEncodedImageFormat format = SKEncodedImageFormat.Png;
                     if (id == "hasselblad.png" || "jpg".Equals(Path.GetExtension(destFile), StringComparison.OrdinalIgnoreCase)) format = SKEncodedImageFormat.Jpeg;
                     using var data = bitmap.Encode(format, 70);
-                    ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+                    ImagesBase64[id] = data.ToArray();
                 }
                 else
                 {
-                    ImagesBase64[id] = "";
+                    ImagesBase64[id] = [];
                 }
             }
             catch (Exception)
@@ -172,29 +172,29 @@ namespace Watermark.Win.Models
             }
         }
 
-        public static Task<string> GetBase64(string destFile)
+        public static Task<byte[]> GetBase64(string destFile)
         {
             return Task.Run(() =>
             {
                 if (string.IsNullOrEmpty(destFile))
                 {
-                    return "";
+                    return [];
                 }
                 using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
                 if (bitmap != null)
                 {
                     using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 70);
-                    return "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+                    return data.ToArray();
                 }
-                return "";
+                return [];
             });
         }
 
-        public static void ImageFile2Base64(ConcurrentDictionary<string, string> ImagesBase64, byte[] destFile, string id)
+        public static void ImageFile2Base64(ConcurrentDictionary<string, byte[]> ImagesBase64, byte[] destFile, string id)
         {
             if (destFile == null)
             {
-                ImagesBase64[id] = "";
+                ImagesBase64[id] = [];
                 return;
             }
             using var bitmap = SkiaSharp.SKBitmap.Decode(destFile);
@@ -203,11 +203,11 @@ namespace Watermark.Win.Models
                 SKEncodedImageFormat format = SKEncodedImageFormat.Png;
                 if (id == "hasselblad.png" || id.EndsWith("jpg")) format = SKEncodedImageFormat.Jpeg;
                 using var data = bitmap.Encode(format, 70);
-                ImagesBase64[id] = "data:image/jpeg;base64," + Convert.ToBase64String(data.ToArray());
+                ImagesBase64[id] = data.ToArray();
             }
             else
             {
-                ImagesBase64[id] = "";
+                ImagesBase64[id] = [];
             }
         }
 
@@ -440,29 +440,31 @@ namespace Watermark.Win.Models
 		}
 
 
-		static ConcurrentDictionary<string, byte[]> Fonts = [];
-        public static bool TryGetFont(string key, out byte[] bt)
-        {
-            if (Fonts.TryGetValue(key, out bt))
-            {
-                return true;
-            }
+		static ConcurrentDictionary<string, SKTypeface> Fonts = [];
+		public static bool TryGetFont(string key, out SKTypeface bt)
+		{
+			if (Fonts.TryGetValue(key, out bt))
+			{
+				return true;
+			}
 
-            //先看本地有没有
-            var p = AppPath.FontFolder + key;
-            if (File.Exists(p))
-            {
-                bt = File.ReadAllBytes(p);
-                Fonts[key] = bt;
-                return true;
-            }
-            return false;
+			//先看本地有没有
+			var p = AppPath.FontFolder + key;
+			if (File.Exists(p))
+			{
+				var b = File.ReadAllBytes(p);
+				using var ms = new MemoryStream(b);
+				bt = SKTypeface.FromStream(ms);
+				Fonts[key] = bt;
+				return true;
+			}
+			return false;
 
-        }
+		}
 
 
 
-        public static List<string> GetAllFontName(List<WMCanvas> mCanvas)
+		public static List<string> GetAllFontName(List<WMCanvas> mCanvas)
         {
             var vs = new List<string>();
             foreach (var canvas in mCanvas)

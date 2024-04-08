@@ -8,17 +8,18 @@ using System.Numerics;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Watermark.Shared.Enums;
+using Watermark.Shared.Models;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Watermark.Win.Models
 {
-    public class WatermarkHelper
-    {
-		public Task<string> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
+    public class WatermarkHelper : IWMWatermarkHelper
+	{
+		public Task<byte[]> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
             return Task.Run(() => Generation(mainCanvas, ziped, isPreview, designMode));
         }
-        public string Generation(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
+        public byte[] Generation(WMCanvas mainCanvas, WMZipedTemplate ziped, bool isPreview, bool designMode = false)
         {
 			SKBitmap originalBitmap;
             if (mainCanvas.CanvasType == CanvasType.Normal)
@@ -35,7 +36,7 @@ namespace Watermark.Win.Models
                     originalBitmap = SKBitmap.Decode(path);
                     if (originalBitmap == null)
                     {
-                        return "";
+                        return [];
                     }
                     originalBitmap = AutoOrient(codec, originalBitmap);
                     codec.Dispose();
@@ -54,7 +55,7 @@ namespace Watermark.Win.Models
             }
             else
             {
-                if (mainCanvas.CustomWidth == 0 || mainCanvas.CustomHeight == 0) return "";
+                if (mainCanvas.CustomWidth == 0 || mainCanvas.CustomHeight == 0) return [];
                 if (isPreview)
                 {
                     var _xs = mainCanvas.CustomWidth * 1.0 / 1080;
@@ -196,24 +197,13 @@ namespace Watermark.Win.Models
                     using var sm = File.OpenWrite(output);
                     data.SaveTo(sm);
                 }
-                else
-                {
-                    //手机设备需要返回字符串保存到相册
-                    var bytes = data.ToArray();
-                    result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
-                }
 			}
-            else
-            {
-                var bytes = data.ToArray();
-                result = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
-            }
 
             targetCanvas.Dispose();
             targetBitmap.Dispose();
             originalBitmap.Dispose();
             targetImage.Dispose();
-            return result;
+            return data.ToArray();
         }
 
         private SKBitmap DrawContainer(Dictionary<string, string> meta, SKBitmap originalBitmap, double xs, ref double fontxs, ref SKImageInfo info, WMContainer container, string canvasId, WMZipedTemplate ziped, bool designMode, string make, int level = 1)
@@ -379,25 +369,18 @@ namespace Watermark.Win.Models
                 string templateFontPath = Global.AppPath.TemplatesFolder + canvasId + Path.DirectorySeparatorChar + mText.FontFamily;
                 if (ziped != null)
                 {
-                    if (Global.TryGetFont(mText.FontFamily, out var bt))
-                    {
-                        using var mss = new MemoryStream(bt);
-                        tc = SKTypeface.FromStream(mss);
-                    }
-                    else
-                    {
-                        var font = families.FirstOrDefault(c => c == mText.FontFamily) ?? families.FirstOrDefault();
-                        tc = SKTypeface.FromFamilyName(font, fontStyle);
-                    }
+                    if (!Global.TryGetFont(mText.FontFamily, out tc))
+					{
+						var font = families.FirstOrDefault(c => c == mText.FontFamily) ?? families.FirstOrDefault();
+						tc = SKTypeface.FromFamilyName(font, fontStyle);
+					}
                 }
                 else if (families.Any(c => c == mText.FontFamily))
                 {
                     tc = SKTypeface.FromFamilyName(mText.FontFamily, fontStyle);
                 }
-                else if(Global.TryGetFont(mText.FontFamily, out var bt))
+                else if(Global.TryGetFont(mText.FontFamily, out tc))
                 {
-                    using var mss = new MemoryStream(bt);
-                    tc = SKTypeface.FromStream(mss);
 				}
                 else if (File.Exists(fontPath + mText.FontFamily))
                 {
@@ -450,7 +433,6 @@ namespace Watermark.Win.Models
                 mText.Width = fw;
 
                 action?.Invoke(paint_cp);
-                tc?.Dispose();
                 fontStyle?.Dispose();
             }
 

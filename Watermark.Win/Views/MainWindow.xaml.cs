@@ -13,6 +13,7 @@ using MudBlazor.Services;
 using Watermark.Win.Models;
 using Watermark.Win.Views;
 using System.IO;
+using Watermark.Shared.Models;
 
 namespace Watermark.Win
 {
@@ -25,6 +26,7 @@ namespace Watermark.Win
         {
             try
             {
+                IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
                 Resources.SetIoc();
                 InitializeComponent();
                 Loaded+=MainWindow_Loaded;

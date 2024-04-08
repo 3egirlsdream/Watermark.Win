@@ -36,3 +36,18 @@
 
 </body>
 </html>
+
+
+<script>
+    function byteToUrl(blob) {
+        // 适配webview和web
+        var myBlob = new Blob([blob], { type: "image/jpeg" });
+        return (window.URL || window.webkitURL || window || {}).createObjectURL(myBlob);
+    }
+    /**
+    * 释放url对象，因为createObjectURL创建的对象一直会存在可能会占用过多的内存，请注意释放
+    */
+    function revokeUrl(url) {
+        (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
+    }
+</script>
