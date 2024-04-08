@@ -877,7 +877,10 @@
 						int c = 0;
 						foreach (var file in dialog.FileNames)
 						{
-							template.Canvas.Children[c++].Path = file;
+							if (c < template.Canvas.Children.Count - 1)
+							{
+								template.Canvas.Children[c++].Path = file;
+							}
 						}
 					}
 				});
