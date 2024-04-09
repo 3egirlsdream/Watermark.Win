@@ -86,7 +86,11 @@ namespace Watermark.Win.Models
             Global.Resolution = re;
             Global.Quality = qua;
             Global.UploadMode = false;
-            await UploadImageToQiniu(watermarkId);
+            var cfgRs = await UploadImageToQiniu(watermarkId);
+            if(cfgRs == null || !cfgRs.success)
+            {
+                return new API<bool?> { success = cfgRs?.success == true, message = new APISub { content = cfgRs?.message?.content ?? "图片上传失败，请重试" } };
+            }
 
             var result1 = await UploadToQiniu(watermarkId, name);
             if (result1.success)
