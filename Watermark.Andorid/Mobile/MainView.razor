@@ -627,14 +627,15 @@
 			StateHasChanged();
 			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
 			int c = 0;
-			foreach (var f in result)
+			foreach (var container in cvs.Children)
 			{
-				if (c < cvs.Children.Count - 1)
+				if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
 				{
-					cvs.Children[c++].Path = f.FullPath;
+					container.Path = result.Skip(c++).Take(1).First().FullPath;
+					cvs.Exif = ExifHelper.ReadImage(container.Path);
 				}
-				
 			}
+
 			CurrentImage = new();
 			CurrentImage.Canvas = cvs;
 			CurrentImage.ID = CurrentImage.Canvas.ID;

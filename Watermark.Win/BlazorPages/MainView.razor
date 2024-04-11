@@ -338,10 +338,10 @@
 		await helper.DownloadLogoes();
 	}
 
-	async void SelectExampleImage()
+	void SelectExampleImage()
 	{
 		var dic = new ConcurrentDictionary<string, byte[]>();
-		var action = new Action(() =>
+		var action = new Action(async () =>
 		{
 			Microsoft.Win32.OpenFileDialog dialog = new()
 				{
@@ -367,11 +367,11 @@
 				Global.ImageFile2Base64(dic, p, "default");
 				SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
 				ClientInstance.WriteThumbnailImage(bitmap, destFile);
+				CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
 				StateHasChanged();
 			}
 		});
 		OpenWinHelper.Open(action);
-		CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
 	}
 
 	public async void OpenMyTemplates()
@@ -855,6 +855,7 @@
 
 	async void SelectSplitImages(TemplateList template)
 	{
+		Dictionary<string, string> exif = ExifHelper.DefaultMeta;
 		var action = Task.Run(() =>
 				{
 					// 实例化一个文件选择对象
@@ -875,11 +876,12 @@
 						}
 
 						int c = 0;
-						foreach (var file in dialog.FileNames)
+						foreach (var container in template.Canvas.Children)
 						{
-							if (c < template.Canvas.Children.Count - 1)
+							if (c <= dialog.FileNames.Length - 1 && !container.ContainerProperties.FixImage)
 							{
-								template.Canvas.Children[c++].Path = file;
+								container.Path = dialog.FileNames[c++];
+								exif = ExifHelper.ReadImage(container.Path);
 							}
 						}
 					}
@@ -888,8 +890,9 @@
 
 		SrcLoading = true;
 		StateHasChanged();
-		var b64 = await helper.GenerationAsync(template.Canvas, null, true, false);
-		var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas)); ;
+		var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+		cvs.Exif = exif;
+		var b64 = await helper.GenerationAsync(cvs, null, true, false);
 		CurrentImage = new();
 		CurrentImage.Canvas = cvs;
 		CurrentImage.ID = CurrentImage.Canvas.ID;

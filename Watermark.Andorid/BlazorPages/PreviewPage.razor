@@ -162,7 +162,9 @@
 			@if (SelectedControl is WMContainer container && ContainerLevel == 1)
 			{
 				<MudText Typo="Typo.h5"><b>@container.Name</b></MudText>
-				<MudDivider />
+				<MudDivider />		
+				
+				<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@container.BackgroundColor" Class="mt-5" />
 				<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
 					<MudText Typo="Typo.button">启用阴影</MudText>
 					<MudSwitch @bind-Value="@container.ContainerProperties.EnableShadow" Color="Color.Primary" />
@@ -502,6 +504,8 @@
 		RadioBase64 = Global.GetRadio();
 		await InitLogoCacheDic(CurrentImage.ID, CurrentImage);
 		SelectedContainer = CurrentTemplate.Children.FirstOrDefault();
+		var api = new APIHelper();
+		var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
 	}
 
 	async void OpenExifDialog(WMText mText)

@@ -120,6 +120,13 @@
 				@foreach (var container in canvas.Children)
 				{
 					<MudExpansionPanel Text="@container.Name">
+						@if (canvas.CanvasType == CanvasType.Split)
+						{
+							<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">固定背景图片</MudText>
+								<MudSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="Color.Primary" />
+							</MudStack>
+						}
 						<div class="d-flex justify-space-between mt-5">
 							<MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
 							@if (ImagesBase64.TryGetValue(container.ID, out string src))
@@ -129,6 +136,7 @@
 							}
 							<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" Size="Size.Small" />
 						</div>
+						<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@container.BackgroundColor" Class="mt-5" />
 
 						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
 							<MudText Typo="Typo.button">启用阴影</MudText>
