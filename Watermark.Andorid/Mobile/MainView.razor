@@ -737,6 +737,7 @@
 		catch (Exception ex)
 		{
 			Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+			loading_down = false;
 		}
 	}
 

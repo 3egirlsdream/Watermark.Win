@@ -17,7 +17,7 @@
 	}
 
 </style>
-@if (Global.CurrentUser != null)
+@if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
 	<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
 		@if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))

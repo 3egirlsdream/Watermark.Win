@@ -13,7 +13,8 @@
 
     </DialogContent>
     <DialogActions>
-        <MudStack Row="true">
+        <MudButton Variant="Variant.Text" OnClick="OpenForgotSignUpDialog" Size="Size.Small" Color="Color.Default" Style="position: absolute;left: 20px;">忘记密码</MudButton>
+        <MudStack Row="true" Justify="Justify.SpaceBetween">
             <MudButton Variant="Variant.Filled" OnClick="LoginOK" Size="Size.Small" Color="Color.Primary">登录</MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OpenSignUpDialog" Size="Size.Small">注册</MudButton>
         </MudStack>
@@ -79,7 +80,22 @@
 
     async void OpenSignUpDialog()
     {
-        var rst = DialogService.Show<SignUpDialog>("");
+        var param = new DialogParameters<SignUpDialog>();
+        param.Add(x => x.FuncType, 0);
+        var rst = DialogService.Show<SignUpDialog>("", param);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+            MudDialog.Close(true);
+        }
+    }
+
+    async void OpenForgotSignUpDialog()
+    {
+        var param = new DialogParameters<SignUpDialog>();
+        param.Add(x => x.FuncType, 1);
+        var rst = DialogService.Show<SignUpDialog>("", param);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {

@@ -490,26 +490,33 @@
 			int cot = 1;
 			foreach (var dirct in directories)
 			{
-				var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-				if (System.IO.File.Exists(configPath))
+				try
 				{
-					var content = File.ReadAllText(configPath);
-					var canvas = Global.ReadConfig(content);
-					await InitFonts([canvas]);
-					var b64 = await helper.GenerationAsync(canvas, null, true);
-					var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-					var wh = new TemplateList
-						{
-							ID = canvas.ID,
-							Canvas = canvas,
-							Src = src
-						};
-					wMTemplates.Add(wh);
-					var idx = directories.ToList().IndexOf(dirct) + 1;
-					MainLoading.Value = cot * 100.0 / directories.Length;
-					MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
-					StateHasChanged();
+					var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+					if (System.IO.File.Exists(configPath))
+					{
+						var content = File.ReadAllText(configPath);
+						var canvas = Global.ReadConfig(content);
+						await InitFonts([canvas]);
+						var b64 = await helper.GenerationAsync(canvas, null, true);
+						var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+						var wh = new TemplateList
+							{
+								ID = canvas.ID,
+								Canvas = canvas,
+								Src = src
+							};
+						wMTemplates.Add(wh);
+						var idx = directories.ToList().IndexOf(dirct) + 1;
+						MainLoading.Value = cot * 100.0 / directories.Length;
+						MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
+						StateHasChanged();
 
+					}
+				}
+				catch(Exception ex)
+				{
+					ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 				}
 			}
 			MainLoading.Message = $"处理完成...";
@@ -521,6 +528,8 @@
 		catch (Exception ex)
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+			MainLoading.Show = false;
+			StateHasChanged();
 		}
 		finally
 		{
