@@ -251,7 +251,7 @@
 						{
 							<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
 						}
-						@foreach (var t in ZipedTemplates!.Where(x => x.Recommend).OrderByDescending(x=>x.DateTimeCreated))
+						@foreach (var t in ZipedTemplates!.Where(x => x.Recommend).OrderByDescending(x => x.DateTimeCreated))
 						{
 							<MudItem xs="6" Style="padding:4px;">
 								<MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
@@ -399,15 +399,15 @@
 					<div style="display: flex; align-items: center;">
 						<MudStack style="text-align: center;gap:0px;margin-right:20px">
 							<MudIconButton Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Variant="Variant.Text" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="()=>Subscribe(FocusImage?.UserId)" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px;margin-right:20px">
 							<MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
 							<MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">下载</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
 						</MudStack>
 
 					</div>
@@ -435,11 +435,11 @@
 					<div style="display: flex; align-items: center;">
 						<MudStack style="text-align: center;gap:0px;margin-right:20px">
 							<MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="Color.Warning" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">取消收藏</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">取消收藏</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
 							<MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">下载</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
 						</MudStack>
 
 					</div>
@@ -454,14 +454,17 @@
 				</div>
 				<div style="display: flex; align-items: center; justify-content: flex-end; margin-top:4px;">
 					<div style="display: flex; align-items: center;">
+						<MudStack style="text-align: center;gap:0px;margin-right:30px">
+							<MudIconButton Icon="@Icons.Material.Filled.Camera" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="()=>OpenCamera(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId))" />
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">拍照</span></MudText>
+						</MudStack>
 						<MudStack style="text-align: center;gap:0px;margin-right:20px">
 							<MudIconButton Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">删除</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">删除</span></MudText>
 						</MudStack>
 						<MudStack style="text-align: center;gap:0px">
-
 							<MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=> GeneratePhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)) " />
-							<MudText Typo="Typo.subtitle1"><span style="font-weight:100">使用模板</span></MudText>
+							<MudText Typo="Typo.subtitle2"><span style="font-weight:100">使用模板</span></MudText>
 						</MudStack>
 
 					</div>
@@ -940,7 +943,73 @@
 		var dialogResult = await rst.Result;
 	}
 
+	async void OpenCamera(WMZipedTemplate template)
+	{
+		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		var result = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+			{
+				Title = "拍照"
+			});
 
+		if (result is null) return;
+		FocusImageShow = false;
+		if (template.CanvasType == CanvasType.Normal)
+		{
+			MainLoading.Message = "正在生成图片...";
+			MainLoading.Show = true;
+			StateHasChanged();
+			Images = new List<WMTemplateList>();
+			if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+			{
+				Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+			}
+			var fullpath = result.FullPath;
+			var img = new WMTemplateList();
+			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+			cvs.Path = fullpath;
+			img.Canvas = cvs;
+			cvs.Exif = await ExifHelper.ReadImageAsync(fullpath);
+			img.ID = cvs.ID;
+			img.Path = fullpath;
+			Global.CheckImageExtension(fullpath);
+			var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(fullpath);
+			await Global.WriteThumbnailImageAsync(fullpath, thumbnail);
+			Images.Add(img);
+
+			CurrentImage = Images.First();
+			var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+			CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+			MainLoading.Show = false;
+			openDrawer = true;
+			StateHasChanged();
+		}
+		else
+		{
+			MainLoading.Message = "正在生成图片...";
+			MainLoading.Show = true;
+			StateHasChanged();
+			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+			foreach (var container in cvs.Children)
+			{
+				if (!container.ContainerProperties.FixImage)
+				{
+					container.Path = result.FullPath;
+					cvs.Exif = ExifHelper.ReadImage(container.Path);
+				}
+			}
+
+			CurrentImage = new();
+			CurrentImage.Canvas = cvs;
+			CurrentImage.ID = CurrentImage.Canvas.ID;
+			var b64 = await helper.GenerationAsync(cvs, null, true, false);
+			CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+			Images = [CurrentImage];
+			MainLoading.Show = false;
+			openDrawer = true;
+			StateHasChanged();
+		}
+
+	}
 
 	void CloseDrawer()
 	{
