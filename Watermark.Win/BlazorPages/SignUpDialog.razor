@@ -11,7 +11,7 @@
 			{
 				<MudTextField @bind-Value="DisplayName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" Margin="Margin.Dense" />
 			}
-			@if (FuncType == 0)
+			@if (FuncType == 2)
 			{
 				<MudTextField @bind-Value="OldPassword" T="string" Label="旧密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" Margin="Margin.Dense" />
 			}
