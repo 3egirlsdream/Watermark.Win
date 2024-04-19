@@ -247,6 +247,7 @@
 		subscribed.Add(Tuple.Create("拼图", splits));
 		subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).ToList()));
 		ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+		StateHasChanged();
 	}
 
 	void Share(string id)

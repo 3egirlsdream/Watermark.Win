@@ -3,28 +3,18 @@
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 
-<MudDialog Style="width:90%;">
+<MudDialog Options="DialogOptions" Style="width:100%; height:100%">
     <DialogContent>
-        <MudSimpleTable Hover="true" Dense="true" FixedHeader="false" Style="height:80%;">
-            <thead>
-                <tr>
-                    @foreach (var h in headings)
-                    {
-                        <th>@h</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in Exifs.OrderBy(x=>x.Key))
-                {
-                    <tr>
-                        <td>@row.Key</td>
-                        <td>@row.Value</td>
-                    </tr>
-                }
-            </tbody>
-        </MudSimpleTable>
+        <MudPaper Style="height:calc(100vh - 135px);overflow-y:auto;" Elevation="0">
+            @foreach (var row in Exifs.OrderBy(x => x.Key))
+            {
+                <MudTextField Value="@row.Value" Label="@row.Key" ReadOnly Variant="Variant.Text" Margin="Margin.Dense"></MudTextField>
+            }
+        </MudPaper>
     </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">关闭</MudButton>
+    </DialogActions>
 </MudDialog>
 
 
@@ -32,6 +22,10 @@
 @code {
     [Parameter]
     public Dictionary<string, string> Exifs { get; set; } = [];
-    List<string> headings = ["EXIF信息摘要", "值"];
+    [CascadingParameter] 
+    MudDialogInstance MudDialog { get; set; }
 
+    DialogOptions DialogOptions { get; set; } = new DialogOptions() { FullScreen = true };
+    List<string> headings = ["EXIF信息摘要", "值"];
+    void Cancel() => MudDialog.Cancel();
 }

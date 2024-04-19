@@ -133,7 +133,7 @@
 
 			<MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
 				<MudList Clickable="true" Dense="true">
-					<MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio">
+					<MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio" OnClick="OpenSplit">
 						拼图
 					</MudListItem>
 					<MudListItem Icon="@Icons.Material.Filled.DesignServices">
@@ -483,11 +483,20 @@
 </MudDrawer>
 
 
+<MudDrawer @bind-Open="@openSplit" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
+	@if (openSplit)
+	{
+		<SplitPage Images="Images.Select(x=>x.Path).ToList()" CloseDrawer="()=> openSplit = false"/>
+	}
+</MudDrawer>
+
+
 
 @code {
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
 	bool openDrawer = false;
+	bool openSplit = false;
 	bool openSave = false;
 	int activeTab = 1;
 	int tb1_t1 = 1;
@@ -612,6 +621,34 @@
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
+	}
+
+	async void OpenSplit()
+	{
+
+		var result = await FilePicker.PickMultipleAsync(new PickOptions
+			{
+				PickerTitle = "长按多选照片",
+				FileTypes = FilePickerFileType.Images
+			});
+		if (result is null || result.Count() == 0) return;
+		MainLoading.Message = "正在生成图片...";
+		MainLoading.Show = true;
+		StateHasChanged();
+		Images = new List<WMTemplateList>();
+		if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+		{
+			Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+		}
+		foreach (var f in result)
+		{
+			var img = new WMTemplateList();
+			img.Path = f.FullPath;
+			Images.Add(img);
+		}
+		MainLoading.Show = false;
+		openSplit = true;
+		StateHasChanged();
 	}
 
 	async Task SelectSplitPhoto(WMZipedTemplate template)

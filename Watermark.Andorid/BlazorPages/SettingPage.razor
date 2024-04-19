@@ -291,7 +291,8 @@ else
 
 	async void OpenSignUpDialog()
 	{
-		var rst = DialogService.Show<SignUpDialog>("");
+		DialogOptions topCenter = new DialogOptions() { FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter };
+		var rst = DialogService.Show<SignUpDialog>("", topCenter);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{

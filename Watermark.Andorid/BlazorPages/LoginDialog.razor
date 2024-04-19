@@ -1,7 +1,7 @@
 ﻿@using Watermark.Win.Models
 @inject ISnackbar Snackbar
 
-<MudDialog Options="DialogOptions" Style="width:400px;">
+<MudDialog Style="width:400px;">
     <DialogContent>
         <MudForm>
             <MudTextField @bind-Value="UserName" T="string" Label="邮箱" Required="true" RequiredError="邮箱不能为空" AutoFocus />
@@ -28,7 +28,6 @@
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
 
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
     string UserName { get; set; }
     string Password { get; set; }
     bool Loading = false;
@@ -78,9 +77,10 @@
 
     async void OpenSignUpDialog()
     {
+        DialogOptions topCenter = new DialogOptions() { FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter };
         var param = new DialogParameters<SignUpDialog>();
         param.Add(x => x.FuncType, 0);
-        var rst = DialogService.Show<SignUpDialog>("", param);
+        var rst = DialogService.Show<SignUpDialog>("", param, topCenter);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {
@@ -90,9 +90,10 @@
     }
     async void OpenForgotSignUpDialog()
     {
+        DialogOptions topCenter = new DialogOptions() { FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter };
         var param = new DialogParameters<SignUpDialog>();
         param.Add(x => x.FuncType, 1);
-        var rst = DialogService.Show<SignUpDialog>("", param);
+        var rst = DialogService.Show<SignUpDialog>("", param, topCenter);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {
