@@ -49,324 +49,378 @@
 		<div style="width:500px;height:100%;margin-left:calc(100% - 500px);padding:10px;">
 			<MudExpansionPanels DisableBorders="true" Elevation="0" Style="font-weight:700;">
 				<MudExpansionPanel Text="画布">
-					<MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Class="mt-5" Margin="Margin.Dense" />
-					<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" Class="mt-5" />
-					<MudRadioGroup @bind-Value="canvas.CanvasType" Class="mt-5 mx-2">
-						<MudRadio Value="CanvasType.Normal" Color="Color.Secondary" Dense="true">固定主要图片模式</MudRadio>
-						<MudRadio Value="CanvasType.Split" Color="Color.Secondary" Dense="true">自定义比例模式</MudRadio>
-					</MudRadioGroup>
+					<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+						<MudTextField @bind-Value="@canvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@canvas.BackgroundColor" />
+					</MudPaper>
+					<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+						<MudRadioGroup @bind-Value="canvas.CanvasType" Class="mx-2">
+							<MudRadio Value="CanvasType.Normal" Color="Color.Secondary" Dense="true">固定主要图片模式</MudRadio>
+							<MudRadio Value="CanvasType.Split" Color="Color.Secondary" Dense="true">自定义比例模式</MudRadio>
+						</MudRadioGroup>
+					</MudPaper>
 					@if (canvas.CanvasType == CanvasType.Normal)
 					{
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.FlexStart" Style="display:flex;align-items:center;">
+								<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="SelectDefaultImage" />
+								<MudToggleIconButton @bind-Toggled="@canvas.ImageProperties.Show" Size="Size.Small" ToggledSize="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.VisibilityOff" Color="@Color.Error" ToggledIcon="@Icons.Material.Filled.Visibility" ToggledColor="@Color.Primary" />
+							</MudStack>
+							<MudDivider Class="my-2" />
 							@if (ImagesBase64.TryGetValue("default", out string src))
 							{
-								<MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@src" />
+								<MudImage Height="250" ObjectFit="ObjectFit.Contain" Src="@src" />
 							}
-							<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectDefaultImage" />
-						</MudStack>
-
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">显示主图</MudText>
-							<MudToggleIconButton @bind-Toggled="@canvas.ImageProperties.Show" Icon="@Icons.Material.Filled.VisibilityOff" Color="@Color.Error" ToggledIcon="@Icons.Material.Filled.Visibility" ToggledColor="@Color.Primary" />
-						</MudStack>
-						<MudStack Row Class="mt-5">
-							<MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-						</MudStack>
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
-							<MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
-						</MudStack>
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用阴影</MudText>
-							<MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" />
-						</MudStack>
-						<MudColorPicker class="mt-5" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
-						<MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
-
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用图片圆角</MudText>
-							<MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" />
-						</MudStack>
-						<MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
-
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用背景高斯模糊</MudText>
-							<MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
-						</MudStack>
-						<MudTextField class="mt-5" @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row>
+								<MudTextField @bind-Value="@canvas.BorderThickness.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@canvas.BorderThickness.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@canvas.BorderThickness.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@canvas.BorderThickness.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+							</MudStack>
+							<MudDivider Class="my-2" />
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
+								<MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
+							</MudStack>
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用阴影</MudText>
+								<MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" />
+							</MudStack>
+							<MudColorPicker Class="my-2" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
+							<MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用图片圆角</MudText>
+								<MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" />
+							</MudStack>
+							<MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用背景高斯模糊</MudText>
+								<MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
+							</MudStack>
+							<MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
 					}
 					else
 					{
-						<MudSelect Value="canvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
-							<MudSelectItem Value="@("1:1")" />
-							<MudSelectItem Value="@("16:9")" />
-							<MudSelectItem Value="@("9:16")" />
-							<MudSelectItem Value="@("4:3")" />
-							<MudSelectItem Value="@("3:4")" />
-							<MudSelectItem Value="@("21:9")" />
-							<MudSelectItem Value="@("18:9")" />
-							<MudSelectItem Value="@("1.85:1")" />
-							<MudSelectItem Value="@("2.39:1")" />
-						</MudSelect>
-						<MudStack Row Class="mt-5">
-							<MudTextField @bind-Value="@canvas.CustomWidth" Label="自定义宽度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@canvas.CustomHeight" Label="自定义高度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-						</MudStack>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudSelect Value="canvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
+								<MudSelectItem Value="@("1:1")" />
+								<MudSelectItem Value="@("16:9")" />
+								<MudSelectItem Value="@("9:16")" />
+								<MudSelectItem Value="@("4:3")" />
+								<MudSelectItem Value="@("3:4")" />
+								<MudSelectItem Value="@("21:9")" />
+								<MudSelectItem Value="@("18:9")" />
+								<MudSelectItem Value="@("1.85:1")" />
+								<MudSelectItem Value="@("2.39:1")" />
+							</MudSelect>
+							<MudStack Row Class="mt-5">
+								<MudTextField @bind-Value="@canvas.CustomWidth" Label="自定义宽度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@canvas.CustomHeight" Label="自定义高度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+							</MudStack>
+						</MudPaper>
 					}
 				</MudExpansionPanel>
 				@foreach (var container in canvas.Children)
 				{
 					<MudExpansionPanel Text="@container.Name">
-						@if (canvas.CanvasType == CanvasType.Split)
-						{
-							<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-								<MudText Typo="Typo.button">背景图片固定不变</MudText>
-								<MudSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="Color.Primary" />
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row="true" Justify="Justify.FlexStart" Style="align-items: center;">
+								<MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
+								<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Variant="Variant.Filled" Color="Color.Primary" Class="ml-1" OnClick="(()=> SelectImage(container))" Size="Size.Small" />
+								@if (ImagesBase64.TryGetValue(container.ID, out string _))
+								{
+									<MudDivider Vertical="true" FlexItem="true" Class="mx-2" />
+									<MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" OnClick="() => RemoveImage(container)" />
+								}
+								@if (canvas.CanvasType == CanvasType.Split)
+								{
+									<MudDivider Vertical="true" FlexItem="true" Class="mx-2" />
+									<MudText Align="Align.Justify" Typo="Typo.button">固定图片</MudText>
+									<MudSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="Color.Primary" />
+								}
 							</MudStack>
-						}
-						<div class="d-flex justify-space-between mt-5">
-							<MudText Align="Align.Justify" Typo="Typo.button">背景图片</MudText>
+							<MudDivider Class="my-2" />
 							@if (ImagesBase64.TryGetValue(container.ID, out string src))
 							{
-								<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="40" Width="260" Style="float:right" />
-								<MudIcon Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="float:right;margin-top: 10px;cursor: pointer;" Size="Size.Small" @onclick="() => RemoveImage(container)" />
+								<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Height="100" />
+								<MudDivider Class="my-2" />
 							}
-							<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(container))" Style="float:right;max-width:80px;" Size="Size.Small" />
-						</div>
-						<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@container.BackgroundColor" Class="mt-5" />
-
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用阴影</MudText>
-							<MudSwitch @bind-Value="@container.ContainerProperties.EnableShadow" Color="Color.Primary" />
-						</MudStack>
-						<MudColorPicker class="mt-5" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="container.ContainerProperties.ShadowColor" />
-						<MudTextField class="mt-5" @bind-Value="@container.ContainerProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
-
-						<MudStack Row Class="mt-5" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-							<MudText Typo="Typo.button">启用图片圆角</MudText>
-							<MudSwitch @bind-Value="@container.ContainerProperties.EnableRadius" Color="Color.Primary" />
-						</MudStack>
-						<MudTextField class="mt-5" @bind-Value="@container.ContainerProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
-
-						<div class="d-flex justify-space-between mt-5">
-							<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
-							<MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-								<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
-									<MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
-									<MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
-									<MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
-								</MudToggleItem>
-							</MudToggleGroup>
-						</div>
-						<div class="d-flex justify-space-between mt-5">
-							<MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
-							<MudToggleGroup @bind-Value="@container.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-								<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
-									<MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
-									<MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
-									<MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
-								</MudToggleItem>
-							</MudToggleGroup>
-						</div>
-						<div class="d-flex justify-space-between mt-5">
-							<MudText Typo="Typo.button">容器内组件堆叠方向</MudText>
-							<MudToggleGroup @bind-Value="@container.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-								<MudTooltip Text="组件水平方向堆叠" Color="Color.Primary" Placement="Placement.Top">
-									<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
-										<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
+							else 
+							{
+								<MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@container.BackgroundColor" Margin="Margin.Dense" />
+							}
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用阴影</MudText>
+								<MudSwitch @bind-Value="@container.ContainerProperties.EnableShadow" Color="Color.Primary" />
+							</MudStack>
+							<MudDivider Class="my-2" />
+							<MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="container.ContainerProperties.ShadowColor" />
+							<MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+								<MudText Typo="Typo.button">启用图片圆角</MudText>
+								<MudSwitch @bind-Value="@container.ContainerProperties.EnableRadius" Color="Color.Primary" />
+							</MudStack>
+							<MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<div class="d-flex justify-space-between" style="align-items:center;">
+								<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
+								<MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+									<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
+										<MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
 									</MudToggleItem>
-								</MudTooltip>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
-									<MudTooltip Text="组件竖直方向堆叠" Color="Color.Primary" Placement="Placement.Top">
-										<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
+									<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
+										<MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
+										<MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
+									</MudToggleItem>
+								</MudToggleGroup>
+							</div>
+							<MudDivider Class="my-2" />
+							<div class="d-flex justify-space-between" style="align-items:center;">
+								<MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
+								<MudToggleGroup @bind-Value="@container.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+									<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
+										<MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
+										<MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
+										<MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
+									</MudToggleItem>
+								</MudToggleGroup>
+							</div>
+							<MudDivider Class="my-2" />
+							<div class="d-flex justify-space-between" style="align-items:center;">
+								<MudText Typo="Typo.button">容器内组件堆叠方向</MudText>
+								<MudToggleGroup @bind-Value="@container.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+									<MudTooltip Text="组件水平方向堆叠" Color="Color.Primary" Placement="Placement.Top">
+										<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
+											<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
+										</MudToggleItem>
 									</MudTooltip>
-								</MudToggleItem>
-							</MudToggleGroup>
-						</div>
-						<div class="d-flex justify-space-between mt-5">
-							<MudText Typo="Typo.button">容器依靠方向</MudText>
-							<MudToggleGroup @bind-Value="@container.ContainerAlignment" T="Watermark.Shared.Enums.ContainerAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-								<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Top)">
-									<MudIcon Icon="@Icons.Material.Filled.ArrowUpward" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Bottom)">
-									<MudIcon Icon="@Icons.Material.Filled.ArrowDownward" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Left)">
-									<MudIcon Icon="@Icons.Material.Filled.ArrowBack" />
-								</MudToggleItem>
-								<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Right)">
-									<MudIcon Icon="@Icons.Material.Filled.ArrowForward" />
-								</MudToggleItem>
-							</MudToggleGroup>
-						</div>
-						<MudStack Row Class=" mt-5">
-							<MudTextField @bind-Value="@container.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@container.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@container.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@container.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-						</MudStack>
-						<MudStack Row Class=" mt-5">
-							<MudTextField @bind-Value="@container.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-							<MudTextField @bind-Value="@container.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-						</MudStack>
-
+									<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
+										<MudTooltip Text="组件竖直方向堆叠" Color="Color.Primary" Placement="Placement.Top">
+											<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
+										</MudTooltip>
+									</MudToggleItem>
+								</MudToggleGroup>
+							</div>
+							<MudDivider Class="my-2" />
+							<div class="d-flex justify-space-between" style="align-items:center;">
+								<MudText Typo="Typo.button">容器依靠方向</MudText>
+								<MudToggleGroup @bind-Value="@container.ContainerAlignment" T="Watermark.Shared.Enums.ContainerAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+									<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Top)">
+										<MudIcon Icon="@Icons.Material.Filled.ArrowUpward" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Bottom)">
+										<MudIcon Icon="@Icons.Material.Filled.ArrowDownward" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Left)">
+										<MudIcon Icon="@Icons.Material.Filled.ArrowBack" />
+									</MudToggleItem>
+									<MudToggleItem Value="@(Watermark.Shared.Enums.ContainerAlignment.Right)">
+										<MudIcon Icon="@Icons.Material.Filled.ArrowForward" />
+									</MudToggleItem>
+								</MudToggleGroup>
+							</div>
+						</MudPaper>
+						<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+							<MudStack Row>
+								<MudTextField @bind-Value="@container.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@container.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@container.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@container.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+							</MudStack>
+							<MudDivider Class="my-2" />
+							<MudStack Row>
+								<MudTextField @bind-Value="@container.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+								<MudTextField @bind-Value="@container.WidthPercent" Label="宽(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+							</MudStack>
+						</MudPaper>
 						<MudExpansionPanels DisableBorders="true" Elevation="0">
 							@foreach (var ctrl in container.Controls)
 							{
 								@if (ctrl is WMContainer mContainer)
 								{
 									<MudExpansionPanel Text="@mContainer.Name">
-										<div class="d-flex justify-space-between mt-5">
-											<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
-											<MudToggleGroup @bind-Value="@mContainer.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-												<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
-													<MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
-												</MudToggleItem>
-												<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
-													<MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
-												</MudToggleItem>
-												<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
-													<MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
-												</MudToggleItem>
-											</MudToggleGroup>
-										</div>
-										<div class="d-flex justify-space-between mt-5">
-											<MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
-											<MudToggleGroup @bind-Value="@mContainer.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-												<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
-													<MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
-												</MudToggleItem>
-												<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
-													<MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
-												</MudToggleItem>
-												<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
-													<MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
-												</MudToggleItem>
-											</MudToggleGroup>
-										</div>
-										<MudStack Row Class=" mt-5">
-											<MudTextField @bind-Value="@mContainer.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@mContainer.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@mContainer.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@mContainer.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-										</MudStack>
-										<MudStack Row Class=" mt-5">
-											<MudTextField @bind-Value="@mContainer.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例, 0自动计算)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-										</MudStack>
+										<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+											<div class="d-flex justify-space-between" style="align-items:center;">
+												<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
+												<MudToggleGroup @bind-Value="@mContainer.HorizontalAlignment" T="Watermark.Shared.Enums.HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+													<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Left)">
+														<MudIcon Icon="@Icons.Material.Filled.FormatAlignLeft" />
+													</MudToggleItem>
+													<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Center)">
+														<MudIcon Icon="@Icons.Material.Filled.FormatAlignCenter" />
+													</MudToggleItem>
+													<MudToggleItem Value="@(Watermark.Shared.Enums.HorizontalAlignment.Right)">
+														<MudIcon Icon="@Icons.Material.Filled.FormatAlignRight" />
+													</MudToggleItem>
+												</MudToggleGroup>
+											</div>
+
+											<MudDivider Class="my-2" />
+											<div class="d-flex justify-space-between" style="align-items:center;">
+												<MudText Typo="Typo.button">容器内组件竖直对齐</MudText>
+												<MudToggleGroup @bind-Value="@mContainer.VerticalAlignment" T="Watermark.Shared.Enums.VerticalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+													<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Top)">
+														<MudIcon Icon="@Icons.Material.Filled.VerticalAlignTop" />
+													</MudToggleItem>
+													<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Center)">
+														<MudIcon Icon="@Icons.Material.Filled.VerticalAlignCenter" />
+													</MudToggleItem>
+													<MudToggleItem Value="@(Watermark.Shared.Enums.VerticalAlignment.Bottom)">
+														<MudIcon Icon="@Icons.Material.Filled.VerticalAlignBottom" />
+													</MudToggleItem>
+												</MudToggleGroup>
+											</div>
+										</MudPaper>
+										<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+											<MudStack Row>
+												<MudTextField @bind-Value="@mContainer.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@mContainer.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@mContainer.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@mContainer.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+											</MudStack>
+
+											<MudDivider Class="my-2" />
+											<MudStack Row>
+												<MudTextField @bind-Value="@mContainer.HeightPercent" Label="高(比例)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@mContainer.WidthPercent" Label="宽(比例, 0自动计算)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+											</MudStack>
+										</MudPaper>
 										<MudExpansionPanels DisableBorders="true" Elevation="0">
 											@foreach (var c_comp in mContainer.Controls)
 											{
 												<MudExpansionPanel Text="@c_comp.Name">
-													<MudStack Row Class="mt-5">
-														<MudTextField @bind-Value="@c_comp.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-														<MudTextField @bind-Value="@c_comp.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-														<MudTextField @bind-Value="@c_comp.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-														<MudTextField @bind-Value="@c_comp.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-													</MudStack>
-													<MudStack Row class="mt-5">
-														<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
-														<MudTextField @bind-Value="@c_comp.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
-													</MudStack>
+													<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+														<MudStack Row>
+															<MudTextField @bind-Value="@c_comp.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+															<MudTextField @bind-Value="@c_comp.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+															<MudTextField @bind-Value="@c_comp.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+															<MudTextField @bind-Value="@c_comp.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+														</MudStack>
+														<MudDivider Class="my-2" />
+														<MudStack Row Style="align-items:center;">
+															<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
+															<MudTextField @bind-Value="@c_comp.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
+														</MudStack>
+													</MudPaper>
 													@if (c_comp is WMLine mLine)
 													{
-														<MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
-														<div class="d-flex justify-space-between mt-5">
-															<MudText Typo="Typo.button">线方向</MudText>
-															<MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-																<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
-																	<MudTooltip Text="水平" Color="Color.Primary" Placement="Placement.Top">
-																		<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
-																	</MudTooltip>
-																</MudToggleItem>
-																<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
-																	<MudTooltip Text="垂直" Color="Color.Primary" Placement="Placement.Top">
-																		<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
-																	</MudTooltip>
-																</MudToggleItem>
-															</MudToggleGroup>
-														</div>
-														<MudStack Row class="mt-5">
-															<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
-															<MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
-														</MudStack>
+														<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+															<MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
+															<div class="d-flex justify-space-between mt-5" style="align-items:center;">
+																<MudText Typo="Typo.button">线方向</MudText>
+																<MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+																	<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
+																		<MudTooltip Text="水平" Color="Color.Primary" Placement="Placement.Top">
+																			<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
+																		</MudTooltip>
+																	</MudToggleItem>
+																	<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
+																		<MudTooltip Text="垂直" Color="Color.Primary" Placement="Placement.Top">
+																			<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
+																		</MudTooltip>
+																	</MudToggleItem>
+																</MudToggleGroup>
+															</div>
+															<MudDivider Class="my-2" />
+															<MudStack Row Style="align-items:center;">
+																<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
+																<MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
+															</MudStack>
+														</MudPaper>
 													}
 													else if (c_comp is WMLogo mLogo)
 													{
-
-														<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
-															<MudText Typo="Typo.button">白底转透明像素</MudText>
-															<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
-														</MudStack>
-														<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
-															<MudText Typo="Typo.button">自动识别品牌图标</MudText>
-															<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
-														</MudStack>
-														<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
-															<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-															@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
-															{
-																<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
-															}
-															<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
-														</div>
+														<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+															<MudStack Row Justify="Justify.SpaceBetween" Style="align-items:center;">
+																<MudText Typo="Typo.button">白底转透明像素</MudText>
+																<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
+															</MudStack>
+															<MudDivider Class="my-2" />
+															<MudStack Row Justify="Justify.SpaceBetween" Style="align-items:center;">
+																<MudText Typo="Typo.button">自动识别品牌图标</MudText>
+																<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
+															</MudStack>
+															<MudDivider Class="my-2" />
+															<div Style="display:flex;align-items:center;justify-content: space-between;">
+																<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
+																@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
+																{
+																	<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+																}
+																<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Variant="Variant.Filled" Color="Color.Primary" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
+															</div>
+														</MudPaper>
 													}
 													else if (c_comp is WMText mText)
 													{
-														<MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor" Class="mt-5" />
-														<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
-															<MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatItalic" Color="@Color.Error"
-																				 ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
-															<MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatBold" Color="@Color.Error"
-																				 ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
-														</MudButtonGroup>
 
-														<p Class="mt-5" style="font-weight:normal">文字内容</p>
-														<div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
-															<div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
-																@(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+														<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+															<MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor" />
+															<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
+																<MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatItalic" Color="@Color.Error"
+																					 ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
+																<MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatBold" Color="@Color.Error"
+																					 ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
+															</MudButtonGroup>
+															<MudDivider Class="my-2" />
+															<p style="font-weight:normal">文字内容</p>
+															<div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
+																<div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+																	@(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+																</div>
+																<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"/>
 															</div>
-															<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
-														</div>
 
 
-														<MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-														<MudStack Class="mt-5">
-															<MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
-															<MudStack Row>
-																<MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
-																	@foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
-																	{
-																		<MudMenuItem OnClick="()=> mText.FontFamily = font">
-																			@font
-																		</MudMenuItem>
-																	}
-																</MudMenu>
+															<MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+															<MudStack Class="mt-5">
+																<MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+																<MudStack Row>
+																	<MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+																		@foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
+																		{
+																			<MudMenuItem OnClick="()=> mText.FontFamily = font">
+																				@font
+																			</MudMenuItem>
+																		}
+																	</MudMenu>
 
-																<MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
-																<MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+																	<MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
+																	<MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+																</MudStack>
 															</MudStack>
-														</MudStack>
 
-														<MudStack Row class="mt-5" Style="position:relative">
-															<MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
-															<MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
-														</MudStack>
-														<MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-														<MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-														<MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
+														</MudPaper>
+														<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+															<MudStack Row Style="position:relative">
+																<MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
+																<MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
+															</MudStack>
+															<MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+															<MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+															<MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
+
+														</MudPaper>
 													}
 												</MudExpansionPanel>
 											}
@@ -376,98 +430,112 @@
 								else
 								{
 									<MudExpansionPanel Text="@ctrl.Name">
-										<MudStack Row Class="mt-5">
-											<MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											<MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
-										</MudStack>
-										<MudStack Row class="mt-5">
-											<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
-											<MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
-										</MudStack>
+										<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+											<MudStack Row>
+												<MudTextField @bind-Value="@ctrl.Margin.Top" Label="上边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@ctrl.Margin.Bottom" Label="下边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@ctrl.Margin.Left" Label="左边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												<MudTextField @bind-Value="@ctrl.Margin.Right" Label="右边距" Variant="Variant.Outlined" Margin="Margin.Dense" />
+											</MudStack>
+											<MudDivider Class="my-2" />
+											<MudStack Row Style="align-items:center;">
+												<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">组件占容器比例</MudText>
+												<MudTextField @bind-Value="@ctrl.Percent" Label="%" Variant="Variant.Outlined" Margin="Margin.Dense" />
+											</MudStack>
+
+										</MudPaper>
 										@if (ctrl is WMLine mLine)
 										{
-											<MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
-											<div class="d-flex justify-space-between mt-5">
-												<MudText Typo="Typo.button">线方向</MudText>
-												<MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
-													<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
-														<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
-													</MudToggleItem>
-													<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
-														<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
-													</MudToggleItem>
-												</MudToggleGroup>
-											</div>
-											<MudStack Row class="mt-5">
-												<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
-												<MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
-											</MudStack>
+											<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+												<MudColorPicker Label="分割线颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mLine.Color" />
+												<div class="d-flex justify-space-between mt-5" style="align-items:center;">
+													<MudText Typo="Typo.button">线方向</MudText>
+													<MudToggleGroup @bind-Value="@mLine.Orientation" T="Watermark.Shared.Enums.Orientation" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
+														<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Horizontal)">
+															<MudIcon Icon="@Icons.Material.Filled.BorderHorizontal" />
+														</MudToggleItem>
+														<MudToggleItem Value="@(Watermark.Shared.Enums.Orientation.Vertical)">
+															<MudIcon Icon="@Icons.Material.Filled.BorderVertical" />
+														</MudToggleItem>
+													</MudToggleGroup>
+												</div>
+
+												<MudDivider Class="my-2" />
+												<MudStack Row Style="align-items:center;">
+													<MudText Align="Align.Justify" Typo="Typo.button" Style="width:50%">线粗细</MudText>
+													<MudTextField @bind-Value="@mLine.Thickness" Label="px" Variant="Variant.Outlined" Margin="Margin.Dense" />
+												</MudStack>
+											</MudPaper>
 										}
 										else if (ctrl is WMLogo mLogo)
 										{
-											<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
-												<MudText Typo="Typo.button">白底转透明像素</MudText>
-												<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
-											</MudStack>
-											<MudStack Row class="mt-5" Justify="Justify.SpaceBetween">
-												<MudText Typo="Typo.button">自动识别品牌图标</MudText>
-												<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
-											</MudStack>
-											<div Class="mt-5" Style="display:flex;align-items:center;justify-content: space-between;">
-												<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
-												@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
-												{
-													<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
-												}
-												<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Style="float:right;max-width:80px;" />
-											</div>
+											<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+												<MudStack Row Justify="Justify.SpaceBetween" Style="align-items:center;">
+													<MudText Typo="Typo.button">白底转透明像素</MudText>
+													<MudSwitch @bind-Value="@mLogo.White2Transparent" Color="Color.Primary" />
+												</MudStack>
+												<MudDivider Class="my-2" />
+												<MudStack Row Justify="Justify.SpaceBetween" Style="align-items:center;">
+													<MudText Typo="Typo.button">自动识别品牌图标</MudText>
+													<MudSwitch @bind-Value="@mLogo.AutoSetLogo" Color="Color.Primary" />
+												</MudStack>
+												<MudDivider Class="my-2" />
+												<div Style="display:flex;align-items:center;justify-content: space-between;">
+													<MudText Align="Align.Justify" Typo="Typo.button">图片</MudText>
+													@if (ImagesBase64.TryGetValue(mLogo.ID, out string src))
+													{
+														<MudImage Src="@src" ObjectFit="ObjectFit.Contain" Width="40" Style="float:right" />
+													}
+													<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=> SelectImage(mLogo))" Variant="Variant.Filled" Color="Color.Primary" Style="float:right;max-width:80px;" />
+												</div>
+											</MudPaper>
 										}
 										else if (ctrl is WMText mText)
 										{
-											<MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor" Class="mt-5" />
-											<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
-												<MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatItalic" Color="@Color.Error"
-																	 ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
-												<MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatBold" Color="@Color.Error"
-																	 ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
-											</MudButtonGroup>
+											<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+												<MudColorPicker Label="字体颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.FontColor"/>
+												<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Class="mt-5">
+													<MudToggleIconButton @bind-Toggled="@mText.IsItalic" Icon="@Icons.Material.Filled.FormatItalic" Color="@Color.Error"
+																		 ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
+													<MudToggleIconButton @bind-Toggled="@mText.IsBold" Icon="@Icons.Material.Filled.FormatBold" Color="@Color.Error"
+																		 ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
+												</MudButtonGroup>
 
-											<p Class="mt-5" style="font-weight:normal">文字内容</p>
-											<div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
-												<div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
-													@(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+												<MudDivider Class="my-2" />
+												<p style="font-weight:normal">文字内容</p>
+												<div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
+													<div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+														@(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+													</div>
+													<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"/>
 												</div>
-												<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" />
-											</div>
 
-											<MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
-											<MudStack Class="mt-5">
-												<MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
-												<MudStack Row>
-													<MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
-														@foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
-														{
-															<MudMenuItem OnClick="()=> mText.FontFamily = font">
-																@font
-															</MudMenuItem>
-														}
-													</MudMenu>
-
-													<MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
-													<MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+												<MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+												<MudStack Class="mt-5">
+													<MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+													<MudStack Row>
+														<MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
+															@foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
+															{
+																<MudMenuItem OnClick="()=> mText.FontFamily = font">
+																	@font
+																</MudMenuItem>
+															}
+														</MudMenu>
+														<MudButton StartIcon="@Icons.Material.Filled.FontDownload" Variant="Variant.Filled" Color="Color.Primary" Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">字体库</MudButton>
+														<MudButton Variant="Variant.Filled" OnClick="ImportLocalFont" Style="white-space: nowrap;">导入本地</MudButton>
+													</MudStack>
 												</MudStack>
-
-											</MudStack>
-
-											<MudStack Row class="mt-5" Style="position:relative">
-												<MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
-												<MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
-											</MudStack>
-											<MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-											<MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-											<MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
+											</MudPaper>
+											<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+												<MudStack Row Style="position:relative">
+													<MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
+													<MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
+												</MudStack>
+												<MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+												<MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+												<MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
+											</MudPaper>
 										}
 									</MudExpansionPanel>
 								}
@@ -506,6 +574,7 @@
 	bool SrcLoading = false;
 	List<string> Fonts = new List<string>();
 	ConcurrentDictionary<string, string> ImagesBase64 = new();
+	string cardStyle => $"margin:8px 0px;background:{Colors.Grey.Lighten4}";
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -531,7 +600,7 @@
 				};
 			});
 		});
-		foreach(var e in dic)
+		foreach (var e in dic)
 		{
 			ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
 		}
@@ -646,7 +715,7 @@
 	void SelectImage(WMLogo mLogo)
 	{
 		var dic = new ConcurrentDictionary<string, byte[]>();
-		var action = new Action(async() =>
+		var action = new Action(async () =>
 		{
 			ClientInstance.SelectImageAction?.Invoke(canvas, mLogo, dic);
 			foreach (var e in dic)
@@ -664,11 +733,11 @@
 		var action = new Action(async () =>
 		{
 			ClientInstance.SelectContainerImageAction?.Invoke(canvas, mContainer, dic);
-		foreach (var e in dic)
-		{
-			ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-		}
-		PreviewImageRefresh();
+			foreach (var e in dic)
+			{
+				ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+			}
+			PreviewImageRefresh();
 		});
 		OpenWinHelper.Open(action);
 	}
