@@ -348,7 +348,7 @@
 			</div>
 
 			<div class="water-tab-item" style="@(activeTab == 3 ? "overflow-y:auto;height:calc(100% - 70px);margin-top: 28px":"display:none")">
-				<SettingPage />
+				<SettingPage RefreshCollection="LoadCollectTemplate" />
 			</div>
 		</div>
 
@@ -910,6 +910,12 @@
 		var action = new Action(async () =>
 		{
 			var api = new APIHelper();
+			var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
+			if(!auth.success)
+			{
+				ClientInstance.ShowMsg(Snackbar, auth.message?.content ?? "无下载权限", Severity.Error);
+				return;
+			}
 			var w = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
 			var r = await api.Download(watermarkId, w?.UserId ?? "");
 			if (r)

@@ -78,14 +78,7 @@ namespace Watermark.Andorid.Models
                 var login = await helper.LoginIn(result.Item1, result.Item2, true);
                 if (login.success)
                 {
-                    Global.CurrentUser = new WMLoginChildModel
-                    {
-                        ID = login.data.data.ID,
-                        IMG = login.data.data.IMG,
-                        DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-                        USER_NAME = login.data.data.USER_NAME,
-                        EXPIRE_DATE = login.data.data.EXPIRE_DATE
-                    };
+                    Global.CurrentUser = Global.SetUserInfo(login.data.data);
                 }
             }
         }

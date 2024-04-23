@@ -205,6 +205,8 @@ else
 
 	[Inject]
 	private IDialogService DialogService { get; set; }
+	[Parameter]
+	public EventCallback RefreshCollection { get; set; }
 
 	string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
 	bool openVip = false;
@@ -222,14 +224,7 @@ else
 			var login = await api.LoginIn(result.Item1, result.Item2, true);
 			if (login.success)
 			{
-				Global.CurrentUser = new WMLoginChildModel
-					{
-						ID = login.data.data.ID,
-						IMG = login.data.data.IMG,
-						DISPLAY_NAME = login.data.data.DISPLAY_NAME,
-						USER_NAME = login.data.data.USER_NAME,
-						EXPIRE_DATE = login.data.data.EXPIRE_DATE
-					};
+				Global.CurrentUser = Global.SetUserInfo(login.data.data);
 				await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
 				StateHasChanged();
 			}
@@ -286,6 +281,11 @@ else
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{
 			StateHasChanged();
+			if (RefreshCollection.HasDelegate)
+			{
+				await RefreshCollection.InvokeAsync();
+			}
+
 		}
 	}
 
