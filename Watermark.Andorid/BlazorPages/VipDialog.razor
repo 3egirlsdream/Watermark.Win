@@ -8,58 +8,71 @@
 @inject ISnackbar Snackbar
 
 
-<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
-    <MudStack Row style="position:relative;align-items: center">
-        <MudText Typo="Typo.button"> 永久授权 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
-    </MudStack>
+<MudPaper Style="@("display:none;" + boxStyle)" Elevation="0" class="pa-3">
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> 永久授权 </MudText>
+		<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
+	</MudStack>
 </MudPaper>
 <MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
-    <MudStack Row style="position:relative;align-items: center">
-        <MudText Typo="Typo.button"> 年票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
-    </MudStack>
-</MudPaper>
-<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
-    <MudStack Row style="position:relative;align-items: center">
-        <MudText Typo="Typo.button"> 季票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
-    </MudStack>
-</MudPaper>
-<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
-    <MudStack Row style="position:relative;align-items: center">
-        <MudText Typo="Typo.button"> 月票 </MudText>
-        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8</MudChip>
-    </MudStack>
+	<MudStack Justify="Justify.FlexStart">
+		<MudText Typo="Typo.subtitle1"><strong>免费版</strong>  </MudText>
+		<MudText Typo="Typo.subtitle2">基础模板|最高画质|模板编辑|生成照片 </MudText>
+	</MudStack>
 </MudPaper>
 
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
+	<MudStack Justify="Justify.FlexStart">
+		<MudText Typo="Typo.subtitle1"><strong>付费会员</strong>  </MudText>
+		<MudText Typo="Typo.subtitle2">无限制使用付费API<br />无限制批量处理<br />无限制使用付费的高级模板<br />IOS、MAC OS、Windows、Android多端同步<br />持续更新 </MudText>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>年度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>季度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>月度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8 &nbsp;</MudChip>
+	</MudStack>
+</MudPaper>
+
+<MudPaper class="ma-3" Style="margin: 10px 16px;" Elevation="0">
+	<div style="height:10px;width:10px;"></div>
+</MudPaper>
 
 @code {
-    [Parameter]
-    public EventCallback<bool> OnImageTouched { get; set; }
-    string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
-    async void Pay(decimal cost, string tradeName)
-    {
-        try
-        {
-            var result = await PublicMethods.AliPays(cost, tradeName);
-            if (result.success)
-            {
-                ClientInstance.ShowMsg(Snackbar, result.data, Severity.Success);
-                await PublicMethods.ReLogin();
-                if (OnImageTouched.HasDelegate)
-                {
-                    await OnImageTouched.InvokeAsync(true);
-                }
-            }
-            else
-            {
-                ClientInstance.ShowMsg(Snackbar, result?.message?.content ?? "支付失败", Severity.Error);
-            }
-        }
-        catch(Exception ex)
-        {
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-        }
-    }
+	[Parameter]
+	public EventCallback<bool> OnImageTouched { get; set; }
+	string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
+	async void Pay(decimal cost, string tradeName)
+	{
+		try
+		{
+			var result = await PublicMethods.AliPays(cost, tradeName);
+			if (result.success)
+			{
+				ClientInstance.ShowMsg(Snackbar, result.data, Severity.Success);
+				await PublicMethods.ReLogin();
+				if (OnImageTouched.HasDelegate)
+				{
+					await OnImageTouched.InvokeAsync(true);
+				}
+			}
+			else
+			{
+				ClientInstance.ShowMsg(Snackbar, result?.message?.content ?? "支付失败", Severity.Error);
+			}
+		}
+		catch (Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+		}
+	}
 }

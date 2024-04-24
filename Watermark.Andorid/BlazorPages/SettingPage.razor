@@ -42,6 +42,16 @@
 			}
 		</MudStack>
 		<MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
+		<div Style="display:flex;align-items:center;line-height: 32px;">
+			<svg t="1713968662524" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3570" width="24" height="24"><path d="M509.155556 772.266667A273.066667 273.066667 0 1 1 782.222222 499.2a273.066667 273.066667 0 0 1-273.066666 273.066667z m0-500.622223a227.555556 227.555556 0 1 0 227.555555 227.555556 227.555556 227.555556 0 0 0-227.555555-227.555556z" fill="#4D4D4D" p-id="3571"></path><path d="M509.155556 696.888889a196.266667 196.266667 0 1 1 196.266666-196.266667A196.266667 196.266667 0 0 1 509.155556 696.888889z m0-376.888889a182.044444 182.044444 0 1 0 182.044444 180.622222 180.622222 180.622222 0 0 0-182.044444-180.622222z" fill="#4D4D4D" p-id="3572"></path><path d="M573.155556 536.177778h-48.355556v-19.911111h48.355556a18.488889 18.488889 0 1 0 0-36.977778h-28.444445l36.977778-44.088889a18.488889 18.488889 0 1 0-28.444445-25.6l-46.933333 55.466667-45.511111-55.466667a19.911111 19.911111 0 0 0-27.022222-1.422222 18.488889 18.488889 0 0 0-2.844445 25.6l36.977778 45.511111h-28.444444a18.488889 18.488889 0 0 0 0 36.977778h48.355555v19.911111h-48.355555a18.488889 18.488889 0 0 0-18.488889 19.911111 18.488889 18.488889 0 0 0 18.488889 18.488889h48.355555V611.555556a18.488889 18.488889 0 0 0 18.488889 18.488888 18.488889 18.488889 0 0 0 18.488889-18.488888v-36.977778h48.355556a18.488889 18.488889 0 0 0 18.488888-18.488889 18.488889 18.488889 0 0 0-18.488888-19.911111z" fill="#FBAE17" p-id="3573"></path></svg>
+			<MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+				@Global.CurrentUser.COINS
+			</MudText>
+			<MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
+				会员到期时间：@Global.CurrentUser.EXPIRE_DATE
+			</MudText>
+		</div>
+		
 	</MudPaper>
 }
 else
@@ -100,16 +110,21 @@ else
 		<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))" />
 	</MudStack>
 
-	<MudDivider Class="my-2" />
+	@* <MudDivider Class="my-2" />
 	<MudStack Row style="position:relative;align-items: center">
 		<MudText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></MudText>
 		<MudIconButton Icon="@Icons.Material.Filled.ArrowRight" style="position:absolute;right:10px" Size="Size.Small" />
-	</MudStack>
+	</MudStack> *@
 
 	<MudDivider Class="my-2" />
 	<MudStack Row style="position:relative;align-items: center">
 		<MudText Typo="Typo.button"> 交流群：836325187</MudText>
 		<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" style="position:absolute;right:10px" Size="Size.Small" OnClick="@(()=>CopyClipboard("836325187"))" />
+	</MudStack>
+	<MudDivider Class="my-2" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> 常见问题</MudText>
+		<MudIconButton Icon="@Icons.Material.Filled.QuestionMark" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>ShowQuestion = true" />
 	</MudStack>
 </MudPaper>
 
@@ -168,6 +183,55 @@ else
 	}
 </MudDrawer>
 
+<MudDrawer Style="padding:6px" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+	<MudPaper Style="@($"margin: 10px 16px;background:{Colors.Grey.Lighten4}")" Elevation="0" class="pa-3">
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>读取不到元数据</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">确认导出时勾选元数据信息，邮件图片属性可以查看元数据 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>如何使用</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">B站搜索 我家有很多相机，有详细使用教程 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>照片保存到哪里</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">打开相册会显示在相册中 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>怎么批量处理</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">打开图片选择界面，长按多选照片 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>硬币有什么用</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">可以下载需要硬币的用户模板 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>硬币怎么获取</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">其他用户下载你的模板会支付给你相应的硬币，每个用户初始50枚硬币 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>如何制作自己的模板</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">下载Windows版的可以制作模板，后续会支持移动端创建 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>图标可以替换吗</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">每个模板的图标都可以在生成界面二次替换，无需重复制作模板 </MudText>
+		</MudStack>
+		<MudDivider Class="my-2" />
+		<MudStack Justify="Justify.FlexStart">
+			<MudText Typo="Typo.subtitle1"><strong>品牌LOGO可以自动识别吗</strong>  </MudText>
+			<MudText Typo="Typo.subtitle2">在模板编辑界面图标一栏勾选自动识别 </MudText>
+		</MudStack>
+	</MudPaper>
+</MudDrawer>
+
 <MudOverlay Visible="@showUpdateOverlay" DarkBackground="true" Absolute="true" ZIndex="99999">
 	<MudPaper Elevation="0" Class="pa-2" Width="80%" Style="margin:0 10%;">
 		<MudStack Style="text-align:center;">
@@ -214,6 +278,7 @@ else
 	int DownLoadProgress = 0;
 	bool openLogoDialog = false;
 	bool showUpdateOverlay = false;
+	bool ShowQuestion = false;
 
 	protected override async Task OnInitializedAsync()
 	{
