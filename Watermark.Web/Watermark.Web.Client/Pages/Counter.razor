@@ -47,7 +47,6 @@ Welcome to your new app.
                     WMCanvas = canvas,
                     Bitmap = bitmap
                 };
-                src = helper.Generation(canvas, ziped, true);
                 StateHasChanged();
             }
             catch (Exception ex)
@@ -78,7 +77,6 @@ Welcome to your new app.
             {
                 var result = await helper.ExtractZip(ws[0].WatermarkId);
                 var wh = new WatermarkHelper();
-                src = wh.Generation(result.WMCanvas, result, true);
                 StateHasChanged();
             }
         }

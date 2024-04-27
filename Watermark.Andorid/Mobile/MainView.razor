@@ -91,22 +91,6 @@
 		align-items: center;
 	}
 
-	.expandable {
-		width: 30px;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		overflow-x: hidden;
-		height: 30px;
-		transition: width 0.5s; /* 添加过渡效果 */
-		display: flex;
-		align-items: center;
-		cursor: pointer;
-		padding: 0 10px 0 0px;
-	}
-
-		.expandable:hover {
-			width: 100%; /* 鼠标悬停时改变宽度，触发展开效果 */
-		}
 </style>
 
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />

@@ -398,7 +398,7 @@
         string defaultImage = "";
         bool SrcLoading = false;
         List<string> Fonts = new List<string>();
-        ConcurrentDictionary<string, string> ImagesBase64 = new();
+        ConcurrentDictionary<string, byte[]> ImagesBase64 = new();
 
         protected override void OnInitialized()
         {
@@ -432,7 +432,7 @@
                 var helper = new WatermarkHelper();
             return helper.Generation(canvas, null, true);
             });
-            url = await t;
+            var url = await t;
             SrcLoading = false;
             StateHasChanged();
 

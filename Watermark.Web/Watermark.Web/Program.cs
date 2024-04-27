@@ -12,7 +12,7 @@ namespace Watermark.Web
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
-                .AddInteractiveWebAssemblyComponents();
+                .AddInteractiveWebAssemblyComponents().AddInteractiveServerComponents();
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
             var app = builder.Build();
@@ -36,6 +36,7 @@ namespace Watermark.Web
 
             app.MapRazorComponents<App>()
                 .AddInteractiveWebAssemblyRenderMode()
+                .AddInteractiveServerRenderMode()
                 .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
 
             app.Run();

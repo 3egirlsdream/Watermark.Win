@@ -11,6 +11,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Content Remove="BlazorPages\Design.razor" />
+	  <Content Remove="BlazorPages\EditComponentDialog.razor" />
+	  <Content Remove="BlazorPages\ExifConfig.razor" />
+	  <Content Remove="BlazorPages\LoginDialog.razor" />
+	  <Content Remove="BlazorPages\MainView.razor" />
+	  <Content Remove="BlazorPages\MyTemplates.razor" />
+	  <Content Remove="BlazorPages\QiniuManagementDialog.razor" />
+	  <Content Remove="BlazorPages\SignUpDialog.razor" />
+	  <Content Remove="BlazorPages\SignUpPage.razor" />
+	  <Content Remove="BlazorPages\TemplatesMarket.razor" />
+	  <Content Remove="BlazorPages\UploadTemplateDialog.razor" />
+	  <Content Remove="Mobile\TemplatesMarketMobile.razor" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Remove="Dockerfile" />
 	</ItemGroup>
 
@@ -20,6 +35,14 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="SkiaSharp" Version="2.88.7" />
 		<PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.7" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\Watermark.Shared\Watermark.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="BlazorPages\" />
 	</ItemGroup>
 
 </Project>
