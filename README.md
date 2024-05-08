@@ -1,3 +1,4 @@
+# Project Introduce
 A powerfull image template design and process program, you can use template designer design template, the template support layers, each layers can contain image and text, use the template energy you can read image's exif info, and use it on your template, through different layout of components in layers, you can design kinds of image template.
 After designed template, you can import photo to program, and support muilt select, program will read your template config and generate a new image.
 
