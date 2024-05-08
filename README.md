@@ -3,16 +3,16 @@ After designed template, you can import photo to program, and support muilt sele
 
 ![main](https://github.com/3egirlsdream/Watermark.Win/assets/10288638/65e3018e-b4c1-4be0-b419-5f49be15f022)
 
-# framework
+# Framework
 This is a blazor bybird program, Windows platform base WPF, Android and others is depend on MAUI
 
-# development
+# Development
 - .NET 8
 - Visual Studio 2022 or Newer
 - Windows 10 or Newer
 - Android or Newer
 
-# install
+# Install
 - Clone Repo
 - Restore Nuget
 - Set Watermark.Win as default project
