@@ -14,10 +14,10 @@ This is a blazor bybird program, Windows platform base WPF, Android and others i
 - Android or Newer
 
 # Install
+Note: install VS 2022 and MAUI, C# palyload.
 - Clone Repo
 - Restore Nuget
 - Set Watermark.Win as default project
-Note: install VS 2022 and MAUI, C# palyload.
 
 # Features
 - Powerful template designer
