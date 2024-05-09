@@ -556,6 +556,7 @@
 			if(DeviceInfo.Platform == DevicePlatform.MacCatalyst)
 			{
 				navigationManager.NavigateTo("/mac");
+				return;
 			}
 			await Global.InitConfig();
 			APIHelper helper = new APIHelper();

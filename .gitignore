@@ -29,3 +29,11 @@
 /Watermark.Andorid/obj
 /Watermark.Andorid/bin
 /Watermark.Shared
+Watermark.Web/Watermark.Web.Client/Properties/
+Watermark.Web/Watermark.Web/Properties/
+Watermark.Web/Watermark.Web/Properties/launchSettings.json
+Watermark.Andorid/Properties/PublishProfiles/FolderProfile net8.0-maccatalyst.pubxml
+Watermark.Andorid/.DS_Store
+.idea/.idea.Watermark/.idea/
+.DS_Store
+global.json

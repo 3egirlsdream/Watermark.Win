@@ -75,6 +75,7 @@
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
       <ApplicationDisplayVersion>1.2.2.2</ApplicationDisplayVersion>
+      <CreatePackage>false</CreatePackage>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.19041.0|AnyCPU'">
@@ -129,6 +130,9 @@
 
     <ItemGroup>
       <Content Include="BlazorPages\SettingPage.razor.css" />
+      <Content Include="Mobile\ExportDialog.razor">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -155,9 +159,11 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
-      <PackageReference Include="Chi.MauiBinding.Android.AliPay">
-        <Version>15.8.11</Version>
+      <PackageReference Include="Chi.MauiBinding.Android.AliPay" Version="15.8.11">
       </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <RazorComponent Remove="Mobile\ExportDialog.razor" />
+    </ItemGroup>
 </Project>

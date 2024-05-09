@@ -6,7 +6,7 @@
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
-@using LukeMauiFilePicker 
+@using LukeMauiFilePicker
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
@@ -103,7 +103,7 @@
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="ImportLocalImages">导入图片</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">图标库</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.ImportExport">导出</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="OpenExport">导出</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp">退出</MudMenuItem>
             </MudMenu>
@@ -252,10 +252,6 @@
 
         </div>
         <div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
-            @if (SrcLoading)
-            {
-                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;z-index: 1;" />
-            }
             <div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;position:relative">
                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                 {
@@ -336,6 +332,14 @@
                     <b>@MainLoading.Message</b>
                 </MudText>
             </MudStack>
+        </MudPaper>
+    </MudOverlay>
+
+    <MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
+        <MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
+            <MudText Typo="Typo.subtitle1" Color="Color.Default">
+                测试版已过期！
+            </MudText>
         </MudPaper>
     </MudOverlay>
 </div>
@@ -616,13 +620,6 @@
 
         </MudPaper>
     </MudOverlay>
-    <MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Width="200px" Height="200px" Elevation="0" Style="text-align:center;padding-top:calc(50% - 38px)">
-            <MudText Typo="Typo.subtitle1" Color="Color.Default">
-                <b>应用版本过低，请升级！</b><a href="@ClientInstance.LinkPath">下载链接</a>
-            </MudText>
-        </MudPaper>
-    </MudOverlay>
 
 
     <MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999" OnClick="()=>FocusImageShow = false">
@@ -793,23 +790,23 @@
     int start = 1;
     WMZipedTemplate CurrentTemplate;
     WMTemplateList CurrentImage;
-    List<WMTemplateList> Images = new List<WMTemplateList>();
+    List<WMTemplateList> Images = new();
     WMZipedTemplate FocusImage;
     bool _expanded = false;
     protected override async Task OnInitializedAsync()
     {
         try
         {
-
             Global.DeviceType = Shared.Enums.DeviceType.Andorid;
-            var status = await Permissions.RequestAsync<Permissions.StorageWrite>();
-            var status2 = await Permissions.RequestAsync<Permissions.StorageRead>();
+            Global.OutPutPath = Global.AppPath.OutputFolder;
             await Global.InitConfig();
             APIHelper helper = new APIHelper();
-            var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
-            if (isOutOfDate)
+            var isOutOfDate = true;// await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
+            var date = System.Convert.ToDateTime("2024/06/01");
+            if (DateTime.Now > date)
             {
                 ForceUpdate = true;
+                StateHasChanged();
                 return;
             }
             await LoadTemplates();
@@ -828,18 +825,14 @@
     {
         CurrentImage = image;
         SrcLoading = true;
-        var b64 = await Task.Run(() =>
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var ziped = new WMZipedTemplate
         {
-            CurrentImage.Canvas.Path = CurrentImage.Path;
-            var ziped = new WMZipedTemplate
-            {
-                Bitmap = image.Bitmap,
-                WatermarkId = image.ID,
-                WMCanvas = CurrentImage.Canvas,
-            };
-            return helper.Generation(CurrentImage.Canvas, ziped, true);
-        });
-
+            Bitmap = image.Bitmap,
+            WatermarkId = image.ID,
+            WMCanvas = CurrentImage.Canvas,
+        };
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, ziped, true);
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
         SrcLoading = false;
         StateHasChanged();
@@ -1362,7 +1355,7 @@
         try
         {
             Dictionary<DevicePlatform, IEnumerable<string>> types = new()
-            {
+    {
                 {  DevicePlatform.Android, new[] { "text/*" } } ,
                 { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
                 { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
@@ -1530,6 +1523,107 @@
         await LoadTemplates();
     }
 
+    async void OpenExport()
+    {
+        var parameters = new DialogParameters<ExportDialog>();
+        parameters.Add(x => x.Images, Images);
+        var dialog = DialogService.Show<ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is List<WMTemplateList> images)
+        {
+            Export(images.Where(x => x.IsChecked).ToList());
+        }
+    }
+
+    async void Export(List<WMTemplateList> images)
+    {
+        MainLoading.Show = true;
+        MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
+        MainLoading.Value = 0;
+        StateHasChanged();
+        var idx = 1;
+        var option = new ParallelOptions();
+        option.MaxDegreeOfParallelism = Global.MAX_THREAD;
+        foreach (var item in images)
+        {
+            await helper.GenerationAsync(item.Canvas, null, false);
+            MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
+            MainLoading.Value = idx++ * 100.0 / images.Count;
+            StateHasChanged();
+        }
+       
+        MainLoading.Value = 100;
+        MainLoading.Show = false;
+        StateHasChanged();
+
+        Snackbar.Clear();
+        Snackbar.Add("打开输出文件夹？", Severity.Info, config =>
+        {
+            config.Action = "好的";
+            config.ActionColor = Color.Primary;
+            config.Onclick = snackbar =>
+            {
+                return OpenFolder();
+            };
+        });
+
+        GC.Collect();
+    }
+
+    async Task OpenFolder()
+    {
+        var path = Global.OutPutPath;
+        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
+        System.Diagnostics.Process.Start(psi);
+        await Task.CompletedTask;
+    }
+    
+    async void SelectSplitImages(WMTemplateList template)
+    {
+        Dictionary<string, string> exif = ExifHelper.DefaultMeta;
+        
+            // 实例化一个文件选择对象
+            Dictionary<DevicePlatform, IEnumerable<string>> types = new()
+            {
+                {  DevicePlatform.Android, new[] { "text/*" } } ,
+                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
+                { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
+                { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
+            };
+            var result = await picker.PickFilesAsync("pick", types, true);
+            if (result != null)
+            {
+                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+                {
+                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                }
+
+                int c = 0;
+                foreach (var container in template.Canvas.Children)
+                {
+                    if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
+                    {
+                        container.Path = result.ToList()[c++].FileResult.FullPath;
+                        exif = ExifHelper.ReadImage(container.Path);
+                    }
+                }
+            }
+        
+
+        StateHasChanged();
+        var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+        cvs.Exif = exif;
+        var b64 = await helper.GenerationAsync(cvs, null, true, false);
+        CurrentImage = new();
+        CurrentImage.Canvas = cvs;
+        CurrentImage.ID = CurrentImage.Canvas.ID;
+        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate(){ WMCanvas = template.Canvas});
+        Images = [];
+        Images.Add(CurrentImage);
+        SrcLoading = false;
+        StateHasChanged();
+    }
     #region class
 
     class MainLoading
