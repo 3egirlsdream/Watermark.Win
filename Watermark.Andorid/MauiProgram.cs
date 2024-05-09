@@ -19,7 +19,8 @@ namespace Watermark.Andorid
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
 
-            builder.Services.AddMauiBlazorWebView();
+			builder.Services.AddFilePicker();
+			builder.Services.AddMauiBlazorWebView();
 #if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
 #endif

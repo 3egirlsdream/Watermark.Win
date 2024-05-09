@@ -15,10 +15,12 @@ namespace Watermark.Andorid
 				try
 				{
 					var text = error.ExceptionObject.ToString() ?? "";
-					var cur = DeviceInfo.Current;
-					var device = $"{cur.Model}-{cur.Manufacturer}-{cur.Name}-{cur.VersionString}-{cur.Idiom}-{cur.Platform}";
-					var api = new APIHelper();
-					var _ = api.UploadLog(device, text);
+					if (Directory.Exists(Global.AppPath.BasePath + "log"))
+					{
+						Directory.CreateDirectory(Global.AppPath.BasePath + "log");
+
+					}
+					File.WriteAllText(Global.AppPath.BasePath + "log" + Path.DirectorySeparatorChar + DateTime.Now.ToString(), text);
 				}
 				catch { }
 			};
