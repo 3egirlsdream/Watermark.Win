@@ -1139,14 +1139,53 @@
         SrcLoading = false;
         StateHasChanged();
     }
-        
+
 
     public async void OpenMyTemplates()
     {
+
+
         Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
         {   
+            Action<WMLogo> SelectLogo = new(async (mLogo) =>
+            {
+                var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+                if (result != null && result.Count() > 0)
+                {
+                    var p = result.First().FileResult!.FullPath;
+                    var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                    if (!System.IO.Directory.Exists(destFolder))
+                    {
+                        System.IO.Directory.CreateDirectory(destFolder);
+                    }
+
+                    var name = Path.GetFileName(p);
+                    var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+                    System.IO.File.Copy(p, destFile, true);
+                    mLogo.Path = name;
+                }
+            });
+
+            Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
+            {
+                var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+                if (result != null && result.Count() > 0)
+                {
+                    var p = result.First().FileResult!.FullPath;
+                    var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                    if (!System.IO.Directory.Exists(destFolder))
+                    {
+                        System.IO.Directory.CreateDirectory(destFolder);
+                    }
+                    mContainer.Path = p;
+                }
+            });
+
+
             var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
             p1.Add(x => x.CurrentCanvas , x);
+            p1.Add(x => x.SelectLogo, SelectLogo);
+            p1.Add(x => x.SelectContainer, SelectContainer);
             var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true};
             var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
         });

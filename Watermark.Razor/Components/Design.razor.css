@@ -4,3 +4,11 @@
     margin: 1em 0;
     background-image: url('background.png');
 }
+
+.mud-tooltip-root.mud-tooltip-inline {
+    height: 24px;
+}
+
+.mud-dialog .mud-dialog-content {
+    padding: 0;
+}
