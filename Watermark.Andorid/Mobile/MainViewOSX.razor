@@ -114,7 +114,7 @@
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Login">注册账号</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenSignUpDialog">注册账号</MudMenuItem>
             </MudMenu>
             <MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
@@ -190,8 +190,8 @@
                     <MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
                     <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
                     <MudStack Row Style="margin-left:120px;" Class="mt-5">
-                        <MudButton Variant="Variant.Text" Color="Color.Primary">登录</MudButton>
-                        <MudButton Variant="Variant.Text"> 注册</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
+                        <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog"> 注册</MudButton>
                     </MudStack>
                 }
             </MudPopover>
@@ -415,6 +415,7 @@
                 StateHasChanged();
                 return;
             }
+            await Global.Login();
             await LoadTemplates();
             await LoadCollectTemplate();
             await helper.DownloadLogoes();
@@ -433,11 +434,11 @@
         SrcLoading = true;
         CurrentImage.Canvas.Path = CurrentImage.Path;
         var ziped = new WMZipedTemplate
-            {
-                Bitmap = image.Bitmap,
-                WatermarkId = image.ID,
-                WMCanvas = CurrentImage.Canvas,
-            };
+        {
+            Bitmap = image.Bitmap,
+            WatermarkId = image.ID,
+            WMCanvas = CurrentImage.Canvas,
+        };
         var b64 = await helper.GenerationAsync(CurrentImage.Canvas, ziped, true);
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
         SrcLoading = false;
@@ -455,9 +456,9 @@
         try
         {
             var result = await MediaPicker.PickPhotoAsync(new MediaPickerOptions
-                {
-                    Title = "长按多选照片"
-                });
+            {
+                Title = "长按多选照片"
+            });
             if (result is null) return;
             //Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
             MainLoading.Message = "正在生成图片...";
@@ -500,10 +501,10 @@
     {
 
         var result = await FilePicker.PickMultipleAsync(new PickOptions
-            {
-                PickerTitle = "长按多选照片",
-                FileTypes = FilePickerFileType.Images
-            });
+        {
+            PickerTitle = "长按多选照片",
+            FileTypes = FilePickerFileType.Images
+        });
         if (result is null || result.Count() == 0) return;
         MainLoading.Message = "正在生成图片...";
         MainLoading.Show = true;
@@ -529,10 +530,10 @@
         try
         {
             var result = await FilePicker.PickMultipleAsync(new PickOptions
-                {
-                    PickerTitle = "长按多选照片",
-                    FileTypes = FilePickerFileType.Jpeg
-                });
+            {
+                PickerTitle = "长按多选照片",
+                FileTypes = FilePickerFileType.Jpeg
+            });
 
             if (result == null || !result.Any()) return;
             MainLoading.Message = "正在生成图片...";
@@ -906,12 +907,12 @@
                     });
                     var b64 = await Global.GetBase64(canvas.Path);
                     Images.Add(new WMTemplateList
-                        {
-                            Canvas = canvas,
-                            Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
-                            ID = canvas.ID,
-                            Path = canvas.Path
-                        });
+                    {
+                        Canvas = canvas,
+                        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
+                        ID = canvas.ID,
+                        Path = canvas.Path
+                    });
                     var idx = result.ToList().IndexOf(file) + 1;
                     MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第{idx}个...";
                     MainLoading.Value = idx * 100.0 / result.Count();
@@ -1138,22 +1139,22 @@
         SrcLoading = false;
         StateHasChanged();
     }
-
+        
 
     public async void OpenMyTemplates()
     {
         Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
-        {
+        {   
             var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
-            //p1.Add(x => x.EditTemplateEvt, OpenDesigner);
-            var o1 = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
+            p1.Add(x => x.CurrentCanvas , x);
+            var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true};
             var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
         });
 
 
         var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
         parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
-        var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
         var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
         var dialog = await rst.Result;
         await LoadTemplates();
@@ -1190,6 +1191,27 @@
         }
     }
 
+    async void OpenSignUpDialog()
+    {
+        var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+        }
+    }
+
+    async void OpenLoginDialog()
+    {
+        var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+        }
+    }
+
+
     #region class
 
     class MainLoading
@@ -1218,9 +1240,9 @@
             DialogVisible = false;
             var action = new Action(() =>
             {
-                var win = new DesignWin(canvas);
-                win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-                win.ShowDialog();
+                //var win = new DesignWin(canvas);
+                //win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                //win.ShowDialog();
                 ID = Guid.NewGuid().ToString("N").ToUpper();
             });
             OpenWinHelper.Open(action);

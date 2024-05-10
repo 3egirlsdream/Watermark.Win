@@ -16,9 +16,9 @@
 		position: relative;
 	}
 </style>
-<MudDialog Style="min-width:50%;min-height:50%;width:90%; height:90%;overflow-y:hidden">
+<MudDialog Style="min-width:50%;min-height:50%;width:90%; height:90%;overflow-y:hidden;padding:20px 0">
 	<DialogContent>
-		<MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 120px);overflow-y:auto;padding:5px;">
+		<MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 40px);overflow-y:auto;padding:5px;">
 			<MudItem xs="12">
 				<MudText Typo="Typo.h4">
 					我本地的<MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=>InitTemplates()"></MudIconButton>
@@ -112,9 +112,6 @@
 			</MudOverlay>
 		</MudGrid>
 	</DialogContent>
-	<DialogActions>
-		<MudButton Color="Color.Primary" Variant="Variant.Filled" FullWidth="true" OnClick="Submit">Ok</MudButton>
-	</DialogActions>
 </MudDialog>
 
 
