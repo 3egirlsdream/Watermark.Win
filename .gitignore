@@ -37,3 +37,6 @@ Watermark.Andorid/.DS_Store
 .idea/.idea.Watermark/.idea/
 .DS_Store
 global.json
+/.idea
+/Watermark.Razor/bin/Debug/net8.0
+/Watermark.Razor/obj

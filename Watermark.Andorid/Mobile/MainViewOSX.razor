@@ -102,14 +102,14 @@
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
             <MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="ImportLocalImages">导入图片</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev">图标库</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">图标库</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="OpenExport">导出</MudMenuItem>
                 <MudDivider />
-                <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp">退出</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="App.Current.Quit">退出</MudMenuItem>
             </MudMenu>
             <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu">我的模板</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Create">创建模板</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
@@ -342,422 +342,27 @@
             </MudText>
         </MudPaper>
     </MudOverlay>
-</div>
 
-
-
-<div Style="height:100vh;width:100%;display:none;">
-    <div style="@($"height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;display:{(activeTab == 3 ? "":"none")}")">
-        <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
-            <MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
-                你好，
-                @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
-                {
-                    <span>@Global.CurrentUser.DISPLAY_NAME</span>
-                }
-                else
-                {
-                    <span>游客</span>
-                }
-            </MudText>
-            <MudButton OnClick="Click">open</MudButton>
-            <MudStack Row Style="position:absolute;right:15px;">
-                <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-            </MudStack>
-
-
-            <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
-                <MudList Clickable="true" Dense="true">
-                    <MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio" OnClick="OpenSplit">
-                        拼图
-                    </MudListItem>
-                    <MudListItem Icon="@Icons.Material.Filled.DesignServices">
-                        设计模板
-                    </MudListItem>
-                </MudList>
-            </MudPopover>
-        </MudToolBar>
-    </div>
-    <div Style="height:100%;width:100vw;display: flex;" @onclick="()=> ShowUserInfo = false">
-
-        <div style="height: 100%; padding: 0px; width:100%">
-            <MudPaper class="water-tab" Elevation="0">
-                <div class="water-tab-text" @onclick="()=> activeTab = 1">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  &nbsp;<b>我的模板</b>
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="ToSecondPanel">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />   &nbsp;<b>模板市场</b>
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="()=> activeTab = 3">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />   &nbsp;<b>关于</b>
-                    </MudText>
-                </div>
-            </MudPaper>
-
-            <div class="water-tab-item" style="@(activeTab == 1 ? "":"display:none")">
-                <MudStack Row="true" Justify="Justify.Center" class="water-tab" Style="top:0" Elevation="0">
-                    <div style="@($"{( tb1_t1 == 1 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin-right:20px")" @onclick="()=> tb1_t1 = 1">
-                        <MudText Typo="Typo.subtitle1" style="@($"{(tb1_t1 == 1 ? "font-weight: 700;" : "")}display:flex;align-items: center;")" Color="(tb1_t1 == 1 ? Color.Primary: Color.Default)">
-                            我的下载
-                        </MudText>
-                    </div>
-                    <div Style="@($"{( tb1_t1 == 2 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin-left:20px")" @onclick="()=> tb1_t1 = 2">
-                        <MudText Typo="Typo.subtitle1" style="@($"{(tb1_t1 == 2 ? "font-weight: 700;" : "")}display: flex;align-items: center;")" Color="(tb1_t1 == 2 ? Color.Primary: Color.Default)">
-                            我的收藏
-                        </MudText>
-                    </div>
-                </MudStack>
-                <MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
-                    <MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb1_t1 == 1 ? "" : "display:none")">
-                        @if (loading_down)
-                        {
-                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
-                        }
-                        else
-                        {
-                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
-                            {
-                                <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
-                                    </MudCard>
-                                </MudItem>
-                            }
-                            @if (downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split).Count() > 0)
-                            {
-                                <MudItem xs="12" Style="padding:4px;">
-                                    <MudText Typo="Typo.h5"><b>拼图</b></MudText>
-                                </MudItem>
-                            }
-                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
-                            {
-                                <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
-                                    </MudCard>
-                                </MudItem>
-                            }
-                        }
-
-
-                    </MudGrid>
-                    <MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb1_t1 == 2 ? "" : "display:none")">
-                        @foreach (var t in ILikeTemplates)
-                        {
-                            <MudItem xs="6" Style="padding:4px;">
-                                <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
-                                    @if (!string.IsNullOrEmpty(t.Src))
-                                    {
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />
-                                    }
-                                </MudCard>
-                            </MudItem>
-                        }
-                    </MudGrid>
-
-                </MudPaper>
-            </div>
-
-
-            <div class="water-tab-item" style="@(activeTab == 2 ? "":"display:none")">
-                <MudStack Row="true" Justify="Justify.Center" class="water-tab" Style="top:0" Elevation="0">
-                    <div style="@($"{( tb2_t2 == 1 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin:0 10px ")" @onclick="()=> tb2_t2 = 1">
-                        <MudText Typo="Typo.subtitle1" style="@($"{(tb2_t2 == 1 ? "font-weight: 700;" : "")}margin: auto;")" Color="(tb2_t2 == 1 ? Color.Primary: Color.Default)">
-                            推荐
-                        </MudText>
-                    </div>
-                    @foreach (var sub in subscribed)
+    <MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
+        <DialogContent>
+            <MudForm>
+                <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
+                <MudStack Row Class="mt-5">
+                    @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
                     {
-                        <div Style="@($"{( tb2_t2 == subscribed.IndexOf(sub) + 2 ? "border-bottom:5px solid #676767;" : "")}height:40px;display:flex;align-items:center;margin:0 10px ")" @onclick="()=> tb2_t2 = subscribed.IndexOf(sub) + 2">
-                            <MudText Typo="Typo.subtitle1" style="@($"{(tb2_t2 == subscribed.IndexOf(sub) + 2 ? "font-weight: 700;" : "")}margin: auto;")" Color="(tb2_t2 == subscribed.IndexOf(sub) + 2 ? Color.Primary: Color.Default)">
-                                @sub.Item1
-                            </MudText>
-                        </div>
+                        <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                     }
+                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
                 </MudStack>
-                <MudPaper Elevation="0" Class="mud-tab-class" Style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
-                    <MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@(tb2_t2 == 1 ? "" : "display:none")">
-                        @if (ZipedTemplates == null || ZipedTemplates.Count == 0 || ZipedTemplates.Any(x => string.IsNullOrEmpty(x.Src)))
-                        {
-                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
-                        }
-                        @foreach (var t in ZipedTemplates!.Where(x => x.Recommend).OrderByDescending(x => x.DateTimeCreated))
-                        {
-                            <MudItem xs="6" Style="padding:4px;">
-                                <MudCard style="padding:16px;background:#E5E5E5;height:220px;" class="flex-vertical-center" Elevation="0">
-                                    @if (!string.IsNullOrEmpty(t.Src))
-                                    {
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
-                                    }
-                                    else
-                                    {
-                                        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                    }
-                                </MudCard>
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                    <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                        @t.Name
-                                    </MudText>
-                                    <div style="display: flex; align-items: center;">
-                                        <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                        <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                    </div>
-                                </div>
-                                <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                    <div Style="display:flex;align-items:center;">
-                                        <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
-                                        <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                            @t.UserDisplayName
-                                        </MudText>
-                                    </div>
-
-
-                                    <div Style="display:flex;align-items:center;line-height: 32px;">
-                                        <svg t="1713968662524" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3570" width="24" height="24"><path d="M509.155556 772.266667A273.066667 273.066667 0 1 1 782.222222 499.2a273.066667 273.066667 0 0 1-273.066666 273.066667z m0-500.622223a227.555556 227.555556 0 1 0 227.555555 227.555556 227.555556 227.555556 0 0 0-227.555555-227.555556z" fill="#4D4D4D" p-id="3571"></path><path d="M509.155556 696.888889a196.266667 196.266667 0 1 1 196.266666-196.266667A196.266667 196.266667 0 0 1 509.155556 696.888889z m0-376.888889a182.044444 182.044444 0 1 0 182.044444 180.622222 180.622222 180.622222 0 0 0-182.044444-180.622222z" fill="#4D4D4D" p-id="3572"></path><path d="M573.155556 536.177778h-48.355556v-19.911111h48.355556a18.488889 18.488889 0 1 0 0-36.977778h-28.444445l36.977778-44.088889a18.488889 18.488889 0 1 0-28.444445-25.6l-46.933333 55.466667-45.511111-55.466667a19.911111 19.911111 0 0 0-27.022222-1.422222 18.488889 18.488889 0 0 0-2.844445 25.6l36.977778 45.511111h-28.444444a18.488889 18.488889 0 0 0 0 36.977778h48.355555v19.911111h-48.355555a18.488889 18.488889 0 0 0-18.488889 19.911111 18.488889 18.488889 0 0 0 18.488889 18.488889h48.355555V611.555556a18.488889 18.488889 0 0 0 18.488889 18.488888 18.488889 18.488889 0 0 0 18.488889-18.488888v-36.977778h48.355556a18.488889 18.488889 0 0 0 18.488888-18.488889 18.488889 18.488889 0 0 0-18.488888-19.911111z" fill="#FBAE17" p-id="3573"></path></svg>
-                                        <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                                            @t.Coins
-                                        </MudText>
-                                    </div>
-                                </div>
-                            </MudItem>
-                        }
-                    </MudGrid>
-                    @if (subscribed != null)
-                    {
-                        @foreach (var sub in subscribed)
-                        {
-                            <MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@($"{(tb2_t2 == subscribed.IndexOf(sub) + 2 ? "" : "display:none;")}")">
-                                @foreach (var t in sub.Item2)
-                                {
-                                    <MudItem xs="6" Style="padding:4px;">
-                                        <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
-                                            @if (!string.IsNullOrEmpty(t.Src))
-                                            {
-                                                <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
-                                            }
-                                            else
-                                            {
-                                                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                            }
-                                        </MudCard>
-                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                            <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                                @t.Name
-                                            </MudText>
-                                            <div style="display: flex; align-items: center;">
-                                                <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                                <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                            </div>
-                                        </div>
-                                        <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                            <div Style="display:flex;align-items:center;">
-                                                @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
-                                                {
-                                                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
-                                                }
-                                                else
-                                                {
-                                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-                                                }
-                                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                                    @t.UserDisplayName
-                                                </MudText>
-                                            </div>
-                                            <div Style="display:flex;align-items:center;line-height: 32px;">
-                                                <svg t="1713968662524" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3570" width="24" height="24"><path d="M509.155556 772.266667A273.066667 273.066667 0 1 1 782.222222 499.2a273.066667 273.066667 0 0 1-273.066666 273.066667z m0-500.622223a227.555556 227.555556 0 1 0 227.555555 227.555556 227.555556 227.555556 0 0 0-227.555555-227.555556z" fill="#4D4D4D" p-id="3571"></path><path d="M509.155556 696.888889a196.266667 196.266667 0 1 1 196.266666-196.266667A196.266667 196.266667 0 0 1 509.155556 696.888889z m0-376.888889a182.044444 182.044444 0 1 0 182.044444 180.622222 180.622222 180.622222 0 0 0-182.044444-180.622222z" fill="#4D4D4D" p-id="3572"></path><path d="M573.155556 536.177778h-48.355556v-19.911111h48.355556a18.488889 18.488889 0 1 0 0-36.977778h-28.444445l36.977778-44.088889a18.488889 18.488889 0 1 0-28.444445-25.6l-46.933333 55.466667-45.511111-55.466667a19.911111 19.911111 0 0 0-27.022222-1.422222 18.488889 18.488889 0 0 0-2.844445 25.6l36.977778 45.511111h-28.444444a18.488889 18.488889 0 0 0 0 36.977778h48.355555v19.911111h-48.355555a18.488889 18.488889 0 0 0-18.488889 19.911111 18.488889 18.488889 0 0 0 18.488889 18.488889h48.355555V611.555556a18.488889 18.488889 0 0 0 18.488889 18.488888 18.488889 18.488889 0 0 0 18.488889-18.488888v-36.977778h48.355556a18.488889 18.488889 0 0 0 18.488888-18.488889 18.488889 18.488889 0 0 0-18.488888-19.911111z" fill="#FBAE17" p-id="3573"></path></svg>
-                                                <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                                                    @t.Coins
-                                                </MudText>
-                                            </div>
-                                        </div>
-                                    </MudItem>
-                                }
-                                @if (sub.Item1 == "最新")
-                                {
-                                    <MudItem xs="12" Style="padding:4px; text-align:center;">
-                                        @if (loadMore)
-                                        {
-                                            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                                        }
-                                        else
-                                        {
-                                            <MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">加载更多...</MudButton>
-                                        }
-                                    </MudItem>
-                                }
-                            </MudGrid>
-
-                        }
-
-                    }
-
-
-                </MudPaper>
-            </div>
-
-            <div class="water-tab-item" style="@(activeTab == 3 ? "overflow-y:auto;height:calc(100% - 70px);margin-top: 28px":"display:none")">
-                <SettingPage RefreshCollection="LoadCollectTemplate" />
-            </div>
-        </div>
-
-
-
-    </div>
-
-    <MudOverlay Visible="@MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;padding:16px;">
-            <MudStack Style="text-align:center;">
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
-                <MudText Typo="Typo.subtitle1" Color="Color.Default" Class="mt-2">
-                    @MainLoading.Message
-                </MudText>
-            </MudStack>
-
-        </MudPaper>
-    </MudOverlay>
-
-
-    <MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999" OnClick="()=>FocusImageShow = false">
-        <MudPaper Style="position:relative;background:#E5E5E5;padding:16px;box-sizing: content-box;width: 90vw;" Elevation="25">
-            <MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImageSrc" Style="width: 90vw;max-height:90vh" />
-            @if (FocusImageType == 'a')
-            {
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                    <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                        @FocusImage?.Name
-                    </MudText>
-                    <div style="display: flex; align-items: center;">
-                        <span style="font-size: 10px;line-height: 8px;">已下载 @FocusImage?.DownloadTimes</span>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                    <div style="display: flex; align-items: center;">
-                        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-                        <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                            @FocusImage?.UserDisplayName
-                        </MudText>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                            <MudIconButton Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Variant="Variant.Text" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="()=>Subscribe(FocusImage?.UserId)" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
-                        </MudStack>
-                        <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                            <MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
-                        </MudStack>
-                        <MudStack style="text-align: center;gap:0px">
-                            <MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
-                        </MudStack>
-
-                    </div>
-                </div>
-
-            }
-            else if (FocusImageType == 'r')
-            {
-
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                    <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                        @FocusImage?.Name
-                    </MudText>
-                    <div style="display: flex; align-items: center;">
-                        <span style="font-size: 10px;line-height: 8px;">已下载 @FocusImage?.DownloadTimes</span>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                    <div style="display: flex; align-items: center;">
-                        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-                        <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                            @FocusImage?.UserDisplayName
-                        </MudText>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                            <MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="Color.Warning" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">取消收藏</span></MudText>
-                        </MudStack>
-                        <MudStack style="text-align: center;gap:0px">
-                            <MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
-                        </MudStack>
-
-                    </div>
-                </div>
-            }
-            else if (FocusImageType == 'd')
-            {
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                    <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                        @FocusImage?.Name
-                    </MudText>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: flex-end; margin-top:4px;">
-                    <div style="display: flex; align-items: center;">
-                        <MudStack style="text-align: center;gap:0px;margin-right:30px">
-                            <MudIconButton Icon="@Icons.Material.Filled.Camera" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="()=>OpenCamera(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId))" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">拍照</span></MudText>
-                        </MudStack>
-                        <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">删除</span></MudText>
-                        </MudStack>
-                        <MudStack style="text-align: center;gap:0px">
-                            <MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=> GeneratePhoto( downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)) " />
-                            <MudText Typo="Typo.subtitle2"><span style="font-weight:100">使用模板</span></MudText>
-                        </MudStack>
-
-                    </div>
-                </div>
-            }
-        </MudPaper>
-    </MudOverlay>
+            </MudForm>
+        </DialogContent>
+        <DialogActions>
+            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="CreateTemplate.OK">确定</MudButton>
+        </DialogActions>
+    </MudDialog>
 
 </div>
 
-<MudDrawer @bind-Open="@openDrawer" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
-    @if (openDrawer)
-    {
-        <PreviewPage CloseDrawer="()=>openDrawer=false" Images="Images" />
-    }
-</MudDrawer>
-
-
-<MudDrawer @bind-Open="@openSplit" Width="100%" Height="100%" Anchor="Anchor.Bottom" Elevation="0" Variant="@DrawerVariant.Temporary" Color="Color.Default" Style="overflow:hidden;" @onclick="()=>openSave = false">
-    @if (openSplit)
-    {
-        <SplitPage Images="Images.Select(x=>x.Path).ToList()" CloseDrawer="()=> openSplit = false" />
-    }
-</MudDrawer>
-
-
-<MudOverlay Visible="@faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
-    <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
-        <MudStack Style="text-align:center;">
-            <MudText Typo="Typo.subtitle1" Color="Color.Default"> 失败提示</MudText>
-        </MudStack>
-        <br />
-        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-            @failedMessage
-        </MudText>
-        <br />
-
-        <MudText Typo="Typo.subtitle2" Color="Color.Default">
-            <strong>如何获取硬币</strong>
-        </MudText>
-        <MudText Typo="Typo.subtitle2" Color="Color.Default">
-            上传模板，用户下载<br />
-            开通会员
-        </MudText>
-        <MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>faildShow = false" Size="Size.Small" Class="mt-2">确定</MudButton>
-    </MudPaper>
-</MudOverlay>
 
 @code {
     bool SrcLoading = false;
@@ -797,8 +402,9 @@
     {
         try
         {
-            Global.DeviceType = Shared.Enums.DeviceType.Andorid;
+            Global.DeviceType = Shared.Enums.DeviceType.Mac;
             Global.OutPutPath = Global.AppPath.OutputFolder;
+            Global.PrimaryKey = ClientInstance.Key();
             await Global.InitConfig();
             APIHelper helper = new APIHelper();
             var isOutOfDate = true;// await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
@@ -813,7 +419,7 @@
             await LoadCollectTemplate();
             await helper.DownloadLogoes();
 
-            await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+            await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Mac);
         }
         catch (Exception ex)
         {
@@ -827,11 +433,11 @@
         SrcLoading = true;
         CurrentImage.Canvas.Path = CurrentImage.Path;
         var ziped = new WMZipedTemplate
-        {
-            Bitmap = image.Bitmap,
-            WatermarkId = image.ID,
-            WMCanvas = CurrentImage.Canvas,
-        };
+            {
+                Bitmap = image.Bitmap,
+                WatermarkId = image.ID,
+                WMCanvas = CurrentImage.Canvas,
+            };
         var b64 = await helper.GenerationAsync(CurrentImage.Canvas, ziped, true);
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
         SrcLoading = false;
@@ -849,9 +455,9 @@
         try
         {
             var result = await MediaPicker.PickPhotoAsync(new MediaPickerOptions
-            {
-                Title = "长按多选照片"
-            });
+                {
+                    Title = "长按多选照片"
+                });
             if (result is null) return;
             //Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
             MainLoading.Message = "正在生成图片...";
@@ -894,10 +500,10 @@
     {
 
         var result = await FilePicker.PickMultipleAsync(new PickOptions
-        {
-            PickerTitle = "长按多选照片",
-            FileTypes = FilePickerFileType.Images
-        });
+            {
+                PickerTitle = "长按多选照片",
+                FileTypes = FilePickerFileType.Images
+            });
         if (result is null || result.Count() == 0) return;
         MainLoading.Message = "正在生成图片...";
         MainLoading.Show = true;
@@ -923,10 +529,10 @@
         try
         {
             var result = await FilePicker.PickMultipleAsync(new PickOptions
-            {
-                PickerTitle = "长按多选照片",
-                FileTypes = FilePickerFileType.Jpeg
-            });
+                {
+                    PickerTitle = "长按多选照片",
+                    FileTypes = FilePickerFileType.Jpeg
+                });
 
             if (result == null || !result.Any()) return;
             MainLoading.Message = "正在生成图片...";
@@ -1270,105 +876,18 @@
         var dialogResult = await rst.Result;
     }
 
-    async void OpenCamera(WMZipedTemplate template)
-    {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        var result = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
-        {
-            Title = "拍照"
-        });
-
-        if (result is null) return;
-        FocusImageShow = false;
-        if (template.CanvasType == CanvasType.Normal)
-        {
-            MainLoading.Message = "正在生成图片...";
-            MainLoading.Show = true;
-            StateHasChanged();
-            Images = new List<WMTemplateList>();
-            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-            {
-                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-            }
-            var fullpath = result.FullPath;
-            var img = new WMTemplateList();
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-            cvs.Path = fullpath;
-            img.Canvas = cvs;
-            cvs.Exif = await ExifHelper.ReadImageAsync(fullpath);
-            img.ID = cvs.ID;
-            img.Path = fullpath;
-            Global.CheckImageExtension(fullpath);
-            var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(fullpath);
-            await Global.WriteThumbnailImageAsync(fullpath, thumbnail);
-            Images.Add(img);
-
-            CurrentImage = Images.First();
-            var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            MainLoading.Show = false;
-            openDrawer = true;
-            StateHasChanged();
-        }
-        else
-        {
-            MainLoading.Message = "正在生成图片...";
-            MainLoading.Show = true;
-            StateHasChanged();
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-            foreach (var container in cvs.Children)
-            {
-                if (!container.ContainerProperties.FixImage)
-                {
-                    container.Path = result.FullPath;
-                    cvs.Exif = ExifHelper.ReadImage(container.Path);
-                }
-            }
-
-            CurrentImage = new();
-            CurrentImage.Canvas = cvs;
-            CurrentImage.ID = CurrentImage.Canvas.ID;
-            var b64 = await helper.GenerationAsync(cvs, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            Images = [CurrentImage];
-            MainLoading.Show = false;
-            openDrawer = true;
-            StateHasChanged();
-        }
-
-    }
-
-    void CloseDrawer()
-    {
-        openDrawer = false;
-        Vibration.Default.Vibrate(50);
-    }
-
-    async void Click()
-    {
-        await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions() { Title = "" });
-    }
-
-
     async void ImportLocalImages()
     {
         try
         {
-            Dictionary<DevicePlatform, IEnumerable<string>> types = new()
-    {
-                {  DevicePlatform.Android, new[] { "text/*" } } ,
-                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
-                { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
-                { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
-            };
-            var result = await picker.PickFilesAsync("pick", types, true);
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
 
 
             if (result != null)
             {
                 MainLoading.Show = true;
                 Images = new();
-                //MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第1个...";
+                MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第1个...";
                 MainLoading.Value = 0;
                 StateHasChanged();
                 if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
@@ -1387,12 +906,12 @@
                     });
                     var b64 = await Global.GetBase64(canvas.Path);
                     Images.Add(new WMTemplateList
-                    {
-                        Canvas = canvas,
-                        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
-                        ID = canvas.ID,
-                        Path = canvas.Path
-                    });
+                        {
+                            Canvas = canvas,
+                            Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
+                            ID = canvas.ID,
+                            Path = canvas.Path
+                        });
                     var idx = result.ToList().IndexOf(file) + 1;
                     MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第{idx}个...";
                     MainLoading.Value = idx * 100.0 / result.Count();
@@ -1523,6 +1042,7 @@
         await LoadTemplates();
     }
 
+
     async void OpenExport()
     {
         var parameters = new DialogParameters<ExportDialog>();
@@ -1551,7 +1071,7 @@
             MainLoading.Value = idx++ * 100.0 / images.Count;
             StateHasChanged();
         }
-       
+
         MainLoading.Value = 100;
         MainLoading.Show = false;
         StateHasChanged();
@@ -1577,38 +1097,32 @@
         System.Diagnostics.Process.Start(psi);
         await Task.CompletedTask;
     }
-    
+
     async void SelectSplitImages(WMTemplateList template)
     {
         Dictionary<string, string> exif = ExifHelper.DefaultMeta;
-        
-            // 实例化一个文件选择对象
-            Dictionary<DevicePlatform, IEnumerable<string>> types = new()
-            {
-                {  DevicePlatform.Android, new[] { "text/*" } } ,
-                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
-                { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
-                { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
-            };
-            var result = await picker.PickFilesAsync("pick", types, true);
-            if (result != null)
-            {
-                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-                {
-                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-                }
 
-                int c = 0;
-                foreach (var container in template.Canvas.Children)
+        // 实例化一个文件选择对象
+
+        var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+        if (result != null)
+        {
+            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+            {
+                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+            }
+
+            int c = 0;
+            foreach (var container in template.Canvas.Children)
+            {
+                if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
                 {
-                    if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
-                    {
-                        container.Path = result.ToList()[c++].FileResult.FullPath;
-                        exif = ExifHelper.ReadImage(container.Path);
-                    }
+                    container.Path = result.ToList()[c++].FileResult.FullPath;
+                    exif = ExifHelper.ReadImage(container.Path);
                 }
             }
-        
+        }
+
 
         StateHasChanged();
         var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
@@ -1618,12 +1132,64 @@
         CurrentImage.Canvas = cvs;
         CurrentImage.ID = CurrentImage.Canvas.ID;
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate(){ WMCanvas = template.Canvas});
+        await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate() { WMCanvas = template.Canvas });
         Images = [];
         Images.Add(CurrentImage);
         SrcLoading = false;
         StateHasChanged();
     }
+
+
+    public async void OpenMyTemplates()
+    {
+        Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
+        {
+            var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
+            //p1.Add(x => x.EditTemplateEvt, OpenDesigner);
+            var o1 = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
+            var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
+        });
+
+
+        var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
+        parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
+        var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
+        var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
+        var dialog = await rst.Result;
+        await LoadTemplates();
+
+    }
+
+    void ImportLogoes()
+    {
+        var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+    }
+
+    async void SelectExampleImage()
+    {
+        var dic = new ConcurrentDictionary<string, byte[]>();
+
+        var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, false);
+
+        if (result != null && result.Count() > 0)
+        {
+            var p = result.First().FileName;
+            var destFolder = Global.AppPath.TemplatesFolder + CreateTemplate.ID;
+            if (!System.IO.Directory.Exists(destFolder))
+            {
+                System.IO.Directory.CreateDirectory(destFolder);
+            }
+
+            var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+
+            Global.ImageFile2Base64(dic, p, "default");
+            SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+            ClientInstance.WriteThumbnailImage(bitmap, destFile);
+            CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+            StateHasChanged();
+        }
+    }
+
     #region class
 
     class MainLoading
@@ -1632,6 +1198,34 @@
         public static double Value { get; set; }
         public static string Message { get; set; } = "正在加载模板...";
     }
+
+    class CreateTemplate
+    {
+        public static bool DialogVisible { get; set; } = false;
+        public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+        public static string TemplateName { get; set; }
+        public static string Base64Src { get; set; }
+        public static string ID = Guid.NewGuid().ToString("N").ToUpper();
+        public static void OK()
+        {
+            if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
+            var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
+            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            DialogVisible = false;
+            var action = new Action(() =>
+            {
+                var win = new DesignWin(canvas);
+                win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                win.ShowDialog();
+                ID = Guid.NewGuid().ToString("N").ToUpper();
+            });
+            OpenWinHelper.Open(action);
+        }
+    };
 
     #endregion
 }

@@ -15,6 +15,7 @@ namespace Watermark.Shared.Models
 		public static string UpdateVersion { get; set; }
 		public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
+            
         };
 
         public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
@@ -153,6 +154,14 @@ namespace Watermark.Shared.Models
         {
            
         }
+
+        public static Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
+            {
+                {  DevicePlatform.Android, new[] { "text/*" } } ,
+                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
+                { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
+                { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
+            };
     }
 	public static class Ext
 	{

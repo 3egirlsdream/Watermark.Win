@@ -568,6 +568,7 @@
 			}
 
 			Global.DeviceType = Shared.Enums.DeviceType.Andorid;
+			Global.PrimaryKey = ClientInstance.Key();
 			await LoadTemplates();
 			await LoadCollectTemplate();
 			await helper.DownloadLogoes();
@@ -960,7 +961,8 @@
 				FocusImageShow = false;
 				ClientInstance.ShowMsg(Snackbar, "下载完成", Severity.Success);
 				var dir = await LoadSingleTemplates(watermarkId);
-				if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
+				if (!downloadedTemplates.Any()) downloadedTemplates.Add(dir);
+				else if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
 				StateHasChanged();
 			}
 		});
