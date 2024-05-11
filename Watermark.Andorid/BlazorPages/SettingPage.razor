@@ -57,10 +57,7 @@
 else
 {
 	<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-		<MudSkeleton />
-		<MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-		<MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-		<MudStack Row Class="mt-5">
+		<MudStack Row>
 			<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
 			<MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
 		</MudStack>
@@ -340,7 +337,7 @@ else
 
 	async void OpenLoginDialog()
 	{
-		DialogOptions topCenter = new DialogOptions() { Position = DialogPosition.TopCenter };
+		DialogOptions topCenter = new DialogOptions() {NoHeader = true,  FullScreen = true };
 		var rst = DialogService.Show<LoginDialog>("", topCenter);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
@@ -356,7 +353,7 @@ else
 
 	async void OpenSignUpDialog()
 	{
-		DialogOptions topCenter = new DialogOptions() { FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter };
+		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
 		var rst = DialogService.Show<SignUpDialog>("", topCenter);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))

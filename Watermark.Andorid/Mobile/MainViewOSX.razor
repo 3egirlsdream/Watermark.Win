@@ -121,9 +121,9 @@
                 <MudMenuItem> 交流群2：836325187 </MudMenuItem>
             </MudMenu>
             <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Web">网页版</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Star">点个⭐</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.BugReport">提交反馈</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Web" OnClick="@(()=>OpenLink("http://www.thankful.top"))">网页版</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Star" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))">点个⭐</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.BugReport" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))">提交反馈</MudMenuItem>
             </MudMenu>
             <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
@@ -1181,11 +1181,29 @@
                 }
             });
 
+           Func<Task<string>> SelectDefaultImage = new(async Task<string> () =>
+           {
+               var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+               if (result != null && result.Count() > 0)
+               {
+                   var p = result.First().FileResult!.FullPath;
+                   var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                   if (!System.IO.Directory.Exists(destFolder))
+                   {
+                       System.IO.Directory.CreateDirectory(destFolder);
+                   }
+
+                   return p;
+               }
+               return "";
+           });
+
 
             var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
             p1.Add(x => x.CurrentCanvas , x);
             p1.Add(x => x.SelectLogo, SelectLogo);
             p1.Add(x => x.SelectContainer, SelectContainer);
+            p1.Add(x => x.SelectDefaultImageEvt, SelectDefaultImage);
             var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true};
             var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
         });
@@ -1223,7 +1241,8 @@
             var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
 
             Global.ImageFile2Base64(dic, p, "default");
-            SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+            var fullpath = result.First().FileResult!.FullPath;
+            SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(fullpath);
             ClientInstance.WriteThumbnailImage(bitmap, destFile);
             CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
             StateHasChanged();
@@ -1248,6 +1267,12 @@
         {
             StateHasChanged();
         }
+    }
+
+    void OpenLink(string link)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
+        System.Diagnostics.Process.Start(psi);
     }
 
 

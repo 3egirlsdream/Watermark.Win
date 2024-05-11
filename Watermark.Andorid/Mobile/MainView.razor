@@ -969,7 +969,8 @@
 		if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
 		{
 			FocusImageShow = false;
-			var rst = DialogService.Show<LoginDialog>("");
+			DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
+			var rst = DialogService.Show<LoginDialog>("", topCenter);
 			var dialogResult = await rst.Result;
 			if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 			{

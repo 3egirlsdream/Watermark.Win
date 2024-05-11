@@ -546,7 +546,7 @@
 	[Parameter]
 	public Func<WMContainer, Task> SelectContainer { get; set; }
 	[Parameter]
-	public Action SelectDefaultImageEvt { get; set; }
+	public Func<Task<string>> SelectDefaultImageEvt { get; set; }
 	[Parameter]
 	public Action<List<string>> ImportFontEvt { get; set; }
 	[Parameter]
@@ -721,9 +721,16 @@
 		PreviewImageRefresh();
 	}
 
-	void SelectDefaultImage()
+	async void SelectDefaultImage()
 	{
-		SelectDefaultImageEvt?.Invoke();
+		var p = await SelectDefaultImageEvt.Invoke();
+		ConcurrentDictionary<string, byte[]> dic = new();
+		var destFolder = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
+		var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+		SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+		Global.WriteThumbnailImage(bitmap, destFile);
+		Global.ImageFile2Base64(dic, destFile, "default");
+		ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
 		PreviewImageRefresh();
 	}
 
