@@ -157,8 +157,4 @@
       <PackageReference Include="Chi.MauiBinding.Android.AliPay" Version="15.8.11">
       </PackageReference>
     </ItemGroup>
-
-    <ItemGroup>
-      <RazorComponent Remove="Mobile\ExportDialog.razor" />
-    </ItemGroup>
 </Project>

@@ -20,4 +20,10 @@
     <ProjectReference Include="..\..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="Components\TemplatesMarket.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
 </Project>

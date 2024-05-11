@@ -1,7 +1,6 @@
 ﻿@using System.Diagnostics
 @using System.IO
-@using Watermark.Andorid.BlazorPages
-@using Watermark.Andorid.Models
+@using MudBlazor
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
@@ -255,7 +254,7 @@
     void Share(string id)
     {
         string message = "已复制ID到剪贴板";
-        ClientInstance.ShowMsg(Snackbar, message, Severity.Success);
+        Common.ShowMsg(Snackbar, message, Severity.Success);
     }
 
     async void Download(string watermarkId, string userId)
@@ -280,7 +279,7 @@
                 Severity = Severity.Error;
                 message = "下载失败";
             }
-            ClientInstance.ShowMsg(Snackbar, message, Severity);
+            Common.ShowMsg(Snackbar, message, Severity);
         });
 
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
@@ -327,7 +326,7 @@
         }
         else
         {
-            ClientInstance.ShowMsg(Snackbar, result.message?.content, Severity.Error);
+            Common.ShowMsg(Snackbar, result.message?.content, Severity.Error);
         }
         return [];
     }

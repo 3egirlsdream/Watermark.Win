@@ -1038,7 +1038,7 @@
 
     async void OpenTemplateMarket()
     {
-        var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var dialog = DialogService.Show<Watermark.Razor.Components.TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
         var result = await dialog.Result;
         await LoadTemplates();
     }
@@ -1046,9 +1046,9 @@
 
     async void OpenExport()
     {
-        var parameters = new DialogParameters<ExportDialog>();
+        var parameters = new DialogParameters<Watermark.Razor.Components.ExportDialog>();
         parameters.Add(x => x.Images, Images);
-        var dialog = DialogService.Show<ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var dialog = DialogService.Show<Watermark.Razor.Components.ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is List<WMTemplateList> images)
         {
