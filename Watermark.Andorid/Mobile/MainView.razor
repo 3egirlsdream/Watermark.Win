@@ -335,7 +335,7 @@
 										}
 										else
 										{
-											<MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">加载更多...</MudButton>
+											<MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">点击加载更多</MudButton>
 										}
 									</MudItem>
 								}
@@ -553,11 +553,11 @@
 	{
 		try
 		{
-			// if(DeviceInfo.Platform == DevicePlatform.MacCatalyst)
-			// {
+			if(DeviceInfo.Platform == DevicePlatform.MacCatalyst)
+			{
 				navigationManager.NavigateTo("/mac");
 				return;
-			// }
+			}
 			await Global.InitConfig();
 			APIHelper helper = new APIHelper();
 			var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();

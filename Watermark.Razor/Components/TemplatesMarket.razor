@@ -1,6 +1,7 @@
 ﻿@using System.Diagnostics
 @using System.IO
 @using MudBlazor
+@using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
@@ -192,7 +193,7 @@
     [Inject]
     private IDialogService DialogService { get; set; }
     bool loading = false;
-    string loadingMessage = "正在下载模板...";
+    string loadingMessage = "正在加载模板...";
     string Search = "";
     bool FocusImageShow = false;
     string FocusImage = "";
@@ -206,20 +207,34 @@
     string sortCode => sortType == "最热门" ? "countDesc" : "timeDesc";
     protected override async Task OnInitializedAsync()
     {
-        var date = Global.ReadDate();
-        if ((DateTime.Now - date).TotalDays > 5)
+        try
         {
-            if (Directory.Exists(Global.AppPath.MarketFolder))
+            loading = true;
+            StateHasChanged();
+            var date = Global.ReadDate();
+            if ((DateTime.Now - date).TotalDays > 5)
             {
-                Directory.Delete(Global.AppPath.MarketFolder, true);
+                if (Directory.Exists(Global.AppPath.MarketFolder))
+                {
+                    Directory.Delete(Global.AppPath.MarketFolder, true);
+                }
+                Global.WriteDate();
             }
-            Global.WriteDate();
+
+            await LoadTemplates();
+
+            var api = new APIHelper();
+            await api.PageVisitRecord(ProgramPage.Market, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
         }
-
-        await LoadTemplates();
-
-        var api = new APIHelper();
-        await api.PageVisitRecord(ProgramPage.Market, Platform.Win);
+        catch(Exception ex)
+        {
+            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
     }
 
     async Task LoadTemplates()

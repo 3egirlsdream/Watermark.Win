@@ -275,7 +275,7 @@
                                         @if (LogoBase64.TryGetValue(item.Key, out string src))
                                         {
                                             <MudPaper Elevation="25" Style="height:30px;width:30px;">
-                                                <MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" />
+                                                <MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" @onclick="()=>ReplaceLogo(item.Key)" />
                                             </MudPaper>
 
                                         }
@@ -285,7 +285,7 @@
                                 {
                                     foreach (var wmt in i.Controls.Where(x => x is WMText).Cast<WMText>())
                                     {
-                                        <MudPaper Elevation="25" Class="expandable">
+                                        <MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(wmt)">
                                             @(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                         </MudPaper>
                                     }
@@ -293,7 +293,7 @@
                                     {
                                         foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
                                         {
-                                            <MudPaper Elevation="25" Class="expandable">
+                                            <MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
                                                 @(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                             </MudPaper>
                                         }
@@ -352,12 +352,16 @@
                     {
                         <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
                     }
+                    else
+                    {
+                        <MudSkeleton Width="250px" Height="160px"/>
+                    }
                     <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
                 </MudStack>
             </MudForm>
         </DialogContent>
         <DialogActions>
-            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="CreateTemplate.OK">确定</MudButton>
+            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="OpenDesinerDialog" DisableElevation>确定</MudButton>
         </DialogActions>
     </MudDialog>
 
@@ -407,9 +411,8 @@
             Global.PrimaryKey = ClientInstance.Key();
             await Global.InitConfig();
             APIHelper helper = new APIHelper();
-            var isOutOfDate = true;// await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
-            var date = System.Convert.ToDateTime("2024/06/01");
-            if (DateTime.Now > date)
+            var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate("Mac");
+            if (isOutOfDate)
             {
                 ForceUpdate = true;
                 StateHasChanged();
@@ -431,18 +434,13 @@
     async void ClickImage(WMTemplateList image)
     {
         CurrentImage = image;
-        SrcLoading = true;
-        CurrentImage.Canvas.Path = CurrentImage.Path;
-        var ziped = new WMZipedTemplate
-        {
-            Bitmap = image.Bitmap,
-            WatermarkId = image.ID,
-            WMCanvas = CurrentImage.Canvas,
-        };
-        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, ziped, true);
-        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        SrcLoading = false;
-        StateHasChanged();
+		SrcLoading = true;
+		CurrentImage.Canvas.Path = CurrentImage.Path;
+		var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+		CurrentImage.Src = src;
+		SrcLoading = false;
+		StateHasChanged();
     }
     async void GeneratePhoto(WMZipedTemplate template)
     {
@@ -1143,11 +1141,22 @@
 
     public async void OpenMyTemplates()
     {
-
-
         Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
-        {   
-            Action<WMLogo> SelectLogo = new(async (mLogo) =>
+        {
+            OpenDesignAction(x);
+        });
+
+        var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
+        parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
+        var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
+        var dialog = await rst.Result;
+        await LoadTemplates();
+    }
+
+    public void OpenDesignAction(WMCanvas x)
+    {
+        Action<WMLogo> SelectLogo = new(async (mLogo) =>
             {
                 var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
                 if (result != null && result.Count() > 0)
@@ -1166,57 +1175,48 @@
                 }
             });
 
-            Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
+        Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
+        {
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            if (result != null && result.Count() > 0)
             {
-                var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
-                if (result != null && result.Count() > 0)
+                var p = result.First().FileResult!.FullPath;
+                var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                if (!System.IO.Directory.Exists(destFolder))
                 {
-                    var p = result.First().FileResult!.FullPath;
-                    var destFolder = Global.AppPath.TemplatesFolder + x.ID;
-                    if (!System.IO.Directory.Exists(destFolder))
-                    {
-                        System.IO.Directory.CreateDirectory(destFolder);
-                    }
-                    mContainer.Path = p;
+                    System.IO.Directory.CreateDirectory(destFolder);
                 }
-            });
+                mContainer.Path = p;
+            }
+        });
 
-           Func<Task<string>> SelectDefaultImage = new(async Task<string> () =>
-           {
-               var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
-               if (result != null && result.Count() > 0)
-               {
-                   var p = result.First().FileResult!.FullPath;
-                   var destFolder = Global.AppPath.TemplatesFolder + x.ID;
-                   if (!System.IO.Directory.Exists(destFolder))
-                   {
-                       System.IO.Directory.CreateDirectory(destFolder);
-                   }
+        Func<Task<string>> SelectDefaultImage = new(async Task<string> () =>
+        {
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            if (result != null && result.Count() > 0)
+            {
+                var p = result.First().FileResult!.FullPath;
+                var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                if (!System.IO.Directory.Exists(destFolder))
+                {
+                    System.IO.Directory.CreateDirectory(destFolder);
+                }
 
-                   return p;
-               }
-               return "";
-           });
-
-
-            var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
-            p1.Add(x => x.CurrentCanvas , x);
-            p1.Add(x => x.SelectLogo, SelectLogo);
-            p1.Add(x => x.SelectContainer, SelectContainer);
-            p1.Add(x => x.SelectDefaultImageEvt, SelectDefaultImage);
-            var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true};
-            var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
+                return p;
+            }
+            return "";
         });
 
 
-        var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
-        parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
-        var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
-        var dialog = await rst.Result;
-        await LoadTemplates();
-
+        var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
+        p1.Add(x => x.CurrentCanvas, x);
+        p1.Add(x => x.SelectLogo, SelectLogo);
+        p1.Add(x => x.SelectContainer, SelectContainer);
+        p1.Add(x => x.SelectDefaultImageEvt, SelectDefaultImage);
+        var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true };
+        var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
     }
+
 
     void ImportLogoes()
     {
@@ -1231,7 +1231,7 @@
 
         if (result != null && result.Count() > 0)
         {
-            var p = result.First().FileName;
+            var fullpath = result.First().FileResult!.FullPath;
             var destFolder = Global.AppPath.TemplatesFolder + CreateTemplate.ID;
             if (!System.IO.Directory.Exists(destFolder))
             {
@@ -1240,10 +1240,9 @@
 
             var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
 
-            Global.ImageFile2Base64(dic, p, "default");
-            var fullpath = result.First().FileResult!.FullPath;
             SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(fullpath);
             ClientInstance.WriteThumbnailImage(bitmap, destFile);
+            Global.ImageFile2Base64(dic, destFile, "default");
             CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
             StateHasChanged();
         }
@@ -1275,6 +1274,77 @@
         System.Diagnostics.Process.Start(psi);
     }
 
+    async void OpenExifDialog(WMText mText)
+    {
+        var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
+        parameters.Add(x => x.Exifs, mText.Exifs);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+        var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled)
+        {
+            mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+            RefreshImage();
+            StateHasChanged();
+        }
+    }
+
+    async void RefreshImage()
+    {
+        SrcLoading = true;
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    async void ReplaceLogo(string sourceId)
+    {
+        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
+        {
+            var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
+            ChangeLogo(sourceId, p);
+        }
+    }
+
+    async void ChangeLogo(string sourceId, string logoPath)
+    {
+        SrcLoading = true;
+        StateHasChanged();
+        foreach (var c1 in CurrentImage.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo && logo.ID == sourceId)
+                {
+                    logo.AutoSetLogo = false;
+                    logo.Path = logoPath;
+                    break;
+                }
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+                        {
+                            wcLogo.AutoSetLogo = false;
+                            wcLogo.Path = logoPath;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
 
     #region class
 
@@ -1292,26 +1362,20 @@
         public static string TemplateName { get; set; }
         public static string Base64Src { get; set; }
         public static string ID = Guid.NewGuid().ToString("N").ToUpper();
-        public static void OK()
-        {
-            if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
-            var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
-            var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
-            if (!Directory.Exists(basePath))
-            {
-                Directory.CreateDirectory(basePath);
-            }
-            DialogVisible = false;
-            var action = new Action(() =>
-            {
-                //var win = new DesignWin(canvas);
-                //win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-                //win.ShowDialog();
-                ID = Guid.NewGuid().ToString("N").ToUpper();
-            });
-            OpenWinHelper.Open(action);
-        }
     };
+
+    void OpenDesinerDialog()
+    {
+        if (string.IsNullOrEmpty(CreateTemplate.TemplateName) || string.IsNullOrEmpty(CreateTemplate.Base64Src)) return;
+        var canvas = new WMCanvas() { Name = CreateTemplate.TemplateName, ID = CreateTemplate.ID };
+        var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
+        if (!Directory.Exists(basePath))
+        {
+            Directory.CreateDirectory(basePath);
+        }
+        CreateTemplate.DialogVisible = false;
+        OpenDesignAction(canvas);
+    }
 
     #endregion
 }

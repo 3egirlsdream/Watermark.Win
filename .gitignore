@@ -40,3 +40,4 @@ global.json
 /.idea
 /Watermark.Razor/bin/Debug/net8.0
 /Watermark.Razor/obj
+/Watermark.Razor/bin/Release/net8.0
