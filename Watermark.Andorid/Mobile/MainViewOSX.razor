@@ -13,87 +13,6 @@
 @inject IDialogService DialogService
 @inject IWMWatermarkHelper helper
 @inject IFilePickerService picker
-<style>
-    .panel-class {
-        height: calc(100% - 50px);
-    }
-
-    .mud-tab-class
-    ::-webkit-scrollbar {
-        width: 0px;
-        display: none;
-    }
-
-
-    .mud-tab-class {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
-        padding: 0px 16px;
-        height: 100%;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    .water-tab {
-        height: 48px;
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        background: #fff;
-        z-index: 10;
-    }
-
-    .water-tab-text {
-        width: 33.3%;
-        height: 48px;
-        float: left;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .water-tab-item {
-        height: calc(100% - 44px);
-        clear: both;
-    }
-
-    .mud-tab-class .mud-list-item-clickable:focus:not(.mud-selected-item) {
-        transform: scale(1.2);
-    }
-
-    .mud-tab-class .mud-list-item-clickable {
-        transition: transform 0.3s ease;
-    }
-
-
-    .dfm-card-name {
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
-    }
-
-    .dfm-card-user-name {
-        position: relative;
-        display: flex;
-        align-items: center;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
-    }
-
-    .dfm-card-footer {
-        position: relative;
-        height: 30px;
-        display: flex;
-        align-items: center;
-    }
-
-    .flex-vertical-center {
-        display: flex;
-        align-items: center;
-    }
-</style>
-
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -160,11 +79,11 @@
                             <MudText Typo="Typo.body1" Class="px-4" Color="@(Global.CurrentUser.IsVIP ? Color.Warning : Color.Secondary)" Align="Align.Start" Style="display:flex;align-items:center;">
                                 @if (Global.CurrentUser.IsVIP)
                                 {
-                                    <svg t="1711290176266" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="18732" width="22" height="22"><path d="M510.955102 831.738776c-23.510204 0-45.453061-9.926531-61.64898-27.167347L138.971429 468.114286c-28.734694-31.346939-29.779592-79.412245-1.567347-111.804082l117.55102-135.314286c15.673469-18.285714 38.661224-28.734694 63.216327-28.734694H705.306122c24.032653 0 47.020408 10.44898 62.693878 28.734694l118.073469 135.314286c28.212245 32.391837 27.689796 80.457143-1.567347 111.804082L572.081633 804.571429c-15.673469 17.240816-38.138776 27.167347-61.126531 27.167347z" fill="#F2CB51" p-id="18733"></path><path d="M506.77551 642.612245c-5.22449 0-10.971429-2.089796-15.15102-6.269388l-203.755102-208.979592c-7.836735-8.359184-7.836735-21.420408 0.522449-29.779592 8.359184-7.836735 21.420408-7.836735 29.779592 0.522449l189.12653 193.828572 199.053061-194.351021c8.359184-7.836735 21.420408-7.836735 29.779592 0.522449 7.836735 8.359184 7.836735 21.420408-0.522449 29.779592l-214.204081 208.979592c-4.179592 3.657143-9.404082 5.746939-14.628572 5.746939z" fill="#FFF7E1" p-id="18734"></path></svg>
+                                   <Watermark.Razor.Parts.IconVip/>
                                 }
                                 else
                                 {
-                                    <svg t="1711291352641" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19234" width="22" height="22"><path d="M510.955102 831.738776c-23.510204 0-45.453061-9.926531-61.64898-27.167347L138.971429 468.114286c-28.734694-31.346939-29.779592-79.412245-1.567347-111.804082l117.55102-135.314286c15.673469-18.285714 38.661224-28.734694 63.216327-28.734694H705.306122c24.032653 0 47.020408 10.44898 62.693878 28.734694l118.073469 135.314286c28.212245 32.391837 27.689796 80.457143-1.567347 111.804082L572.081633 804.571429c-15.673469 17.240816-38.138776 27.167347-61.126531 27.167347z" fill="#dbdbdb" p-id="19235" data-spm-anchor-id="a313x.search_index.0.i16.50da3a81XxGAGL" class="selected"></path><path d="M506.77551 642.612245c-5.22449 0-10.971429-2.089796-15.15102-6.269388l-203.755102-208.979592c-7.836735-8.359184-7.836735-21.420408 0.522449-29.779592 8.359184-7.836735 21.420408-7.836735 29.779592 0.522449l189.12653 193.828572 199.053061-194.351021c8.359184-7.836735 21.420408-7.836735 29.779592 0.522449 7.836735 8.359184 7.836735 21.420408-0.522449 29.779592l-214.204081 208.979592c-4.179592 3.657143-9.404082 5.746939-14.628572 5.746939z" fill="#FFF7E1" p-id="19236"></path></svg>
+                                    <Watermark.Razor.Parts.IconVipExpired/>
                                 }
                                 @Global.CurrentUser.DISPLAY_NAME
                             </MudText>
@@ -175,7 +94,7 @@
 
                     <div Style="display:flex;align-items:center;line-height: 32px;" Class="px-4 py-1">
                         硬币：
-                        <svg t="1713968662524" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3570" width="24" height="24"><path d="M509.155556 772.266667A273.066667 273.066667 0 1 1 782.222222 499.2a273.066667 273.066667 0 0 1-273.066666 273.066667z m0-500.622223a227.555556 227.555556 0 1 0 227.555555 227.555556 227.555556 227.555556 0 0 0-227.555555-227.555556z" fill="#4D4D4D" p-id="3571"></path><path d="M509.155556 696.888889a196.266667 196.266667 0 1 1 196.266666-196.266667A196.266667 196.266667 0 0 1 509.155556 696.888889z m0-376.888889a182.044444 182.044444 0 1 0 182.044444 180.622222 180.622222 180.622222 0 0 0-182.044444-180.622222z" fill="#4D4D4D" p-id="3572"></path><path d="M573.155556 536.177778h-48.355556v-19.911111h48.355556a18.488889 18.488889 0 1 0 0-36.977778h-28.444445l36.977778-44.088889a18.488889 18.488889 0 1 0-28.444445-25.6l-46.933333 55.466667-45.511111-55.466667a19.911111 19.911111 0 0 0-27.022222-1.422222 18.488889 18.488889 0 0 0-2.844445 25.6l36.977778 45.511111h-28.444444a18.488889 18.488889 0 0 0 0 36.977778h48.355555v19.911111h-48.355555a18.488889 18.488889 0 0 0-18.488889 19.911111 18.488889 18.488889 0 0 0 18.488889 18.488889h48.355555V611.555556a18.488889 18.488889 0 0 0 18.488889 18.488888 18.488889 18.488889 0 0 0 18.488889-18.488888v-36.977778h48.355556a18.488889 18.488889 0 0 0 18.488888-18.488889 18.488889 18.488889 0 0 0-18.488888-19.911111z" fill="#FBAE17" p-id="3573"></path></svg>
+                        <Watermark.Razor.Parts.IconCoin/>
                         <MudText Typo="Typo.body2" Color="Color.Inherit" Style="line-height: 32px;">
                             @Global.CurrentUser.COINS
                         </MudText>
@@ -209,7 +128,7 @@
                                 {
                                     <MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
                                                EndIcon="@Icons.Material.Filled.Download"
-                                               Color="Color.Primary">
+                                               Color="Color.Primary" OnClick="OpenTemplateMarket">
                                         下载模板
                                     </MudButton>
                                 }
@@ -237,7 +156,7 @@
                                 {
                                     @foreach (var pair in downloadedTemplates.Where(x => x.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Name))
                                     {
-                                        <MudTreeViewItem Value="@pair.Name" @onclick="()=>GeneratePhoto(pair)" Style="cursor:pointer; ">
+                                        <MudTreeViewItem Value="@pair.Name" @onclick="()=>SelectSplitImages(pair)" Style="cursor:pointer; ">
                                             <Content>
                                                 <MudImage Style="width:100%" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
                                             </Content>
@@ -261,7 +180,7 @@
                         <MudCollapse Expanded="_expanded">
                             <MudStack>
                                 <MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 2px 3px 0px;" Elevation="25" @onclick="OpenFullExifInfo">
-                                    <svg t="1711715777941" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2452" width="24" height="24"><path d="M332.799002 686.081014m-332.799002 0a332.799002 332.799002 0 1 0 665.598003 0 332.799002 332.799002 0 1 0-665.598003 0Z" fill="#CCE4F2" p-id="2453"></path><path d="M883.19735 1024h-639.99808A141.055577 141.055577 0 0 1 102.399693 883.200422v-742.397772A141.055577 141.055577 0 0 1 243.19927 0.003072h516.350451a89.087733 89.087733 0 0 1 63.231811 25.599923l189.695431 189.695431A38.399885 38.399885 0 0 1 1023.996928 243.202342v639.99808a141.055577 141.055577 0 0 1-140.799578 140.799578zM243.19927 76.802842A63.999808 63.999808 0 0 0 179.199462 140.80265v742.397772A63.999808 63.999808 0 0 0 243.19927 947.20023h639.99808a63.999808 63.999808 0 0 0 63.999808-63.999808V259.074295l-179.199462-179.199463a12.799962 12.799962 0 0 0-8.447975-3.07199z" fill="#434260" p-id="2454"></path><path d="M275.455174 399.105875H409.598771v29.695911h-98.559704v62.975811h82.943751v29.95191h-82.943751v72.959781h102.399693v30.207909h-137.983586zM499.710501 508.417547l-60.671818-109.311672h39.679881l27.391918 52.735841c5.631983 10.495969 10.495969 20.479939 17.151948 34.047898h1.535996c5.887982-13.567959 10.239969-23.551929 15.359954-34.047898l25.599923-52.735841h37.375888l-60.671818 111.103666 65.023805 114.943656h-38.911884l-29.695911-56.063832-18.687944-36.86389c-6.399981 13.823959-12.031964 25.599923-17.407947 36.86389l-28.927914 56.063832H435.198694zM642.814072 399.105875h35.583893v226.047322h-35.583893zM737.789787 399.105875H870.397389v29.695911h-97.023709v69.119792h83.45575v29.695911h-83.45575v97.279708h-35.583893z" fill="#434260" p-id="2455"></path></svg>
+                                    <Watermark.Razor.Parts.IconExif/>
                                 </MudPaper>
                                 <MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
                                     <ButtonTemplate>
@@ -308,9 +227,7 @@
                 }
                 else
                 {
-                    <svg t="1705281144913" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3271" width="128" height="128" style="margin-top: calc(50vh - 64px);">
-                        <path d="M256 298.666667a85.333333 85.333333 0 1 1 85.333333 85.333333 85.333333 85.333333 0 0 1-85.333333-85.333333z m674.133333 415.146666l-256-341.333333a32.426667 32.426667 0 0 0-51.2 0l-170.666666 220.586667a21.333333 21.333333 0 0 1-33.28 0l-93.44-113.493334a32 32 0 0 0-49.92 0l-181.333334 234.24a42.666667 42.666667 0 0 0-8.96 26.026667v38.826667a32.426667 32.426667 0 0 0 32 32h789.333334a32.426667 32.426667 0 0 0 32-32v-39.253334a42.666667 42.666667 0 0 0-8.533334-25.6z" p-id="3272" fill="#e9e9e9"></path>
-                    </svg>
+                    <Watermark.Razor.Parts.IconImage/>
                 }
             </div>
         </div>
@@ -374,34 +291,16 @@
     bool openDrawer = false;
     bool openSplit = false;
     bool openSave = false;
-    int activeTab = 1;
-    int tb1_t1 = 1;
-    int tb2_t2 = 1;
     bool ForceUpdate = false;
-    bool FocusImageShow = false;
-    string FocusImageSrc = "";
-    string FocusImageId = "";
-    char FocusImageType = ' ';
-    bool firstClick2Panel = true;
-    bool loading_down = false;
     bool loadMore = false;
-    bool faildShow = false;
-    string failedMessage = "";
     Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
     ConcurrentDictionary<string, string> LogoBase64 = new();
-    List<WMZipedTemplate> ZipedTemplates = new();
-    List<WMZipedTemplate> hottest = new();
-    List<WMZipedTemplate> newest = new();
-    List<WMZipedTemplate> splits = new();
-    List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
     List<WMZipedTemplate> downloadedTemplates = new();
-    List<WMZipedTemplate> ILikeTemplates = new();
-    int start = 1;
     WMZipedTemplate CurrentTemplate;
     WMTemplateList CurrentImage;
     List<WMTemplateList> Images = new();
-    WMZipedTemplate FocusImage;
     bool _expanded = false;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -420,7 +319,6 @@
             }
             await Global.Login();
             await LoadTemplates();
-            await LoadCollectTemplate();
             await helper.DownloadLogoes();
 
             await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Mac);
@@ -442,175 +340,10 @@
 		SrcLoading = false;
 		StateHasChanged();
     }
-    async void GeneratePhoto(WMZipedTemplate template)
-    {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        FocusImageShow = false;
-        if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
-        else await SelectSplitPhoto(template);
-    }
-    async Task OpenPhoto(WMZipedTemplate template)
-    {
-        try
-        {
-            var result = await MediaPicker.PickPhotoAsync(new MediaPickerOptions
-            {
-                Title = "长按多选照片"
-            });
-            if (result is null) return;
-            //Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
-            MainLoading.Message = "正在生成图片...";
-            MainLoading.Show = true;
-            StateHasChanged();
-            Images = new List<WMTemplateList>();
-            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-            {
-                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-            }
 
-            var img = new WMTemplateList();
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-            cvs.Path = result.FullPath;
-            img.Canvas = cvs;
-            cvs.Exif = await ExifHelper.ReadImageAsync(result.FullPath);
-            img.ID = cvs.ID;
-            img.Path = result.FullPath;
-            //Global.CheckImageExtension(result.FullPath);
-            var thumbnail = Global.AppPath.ThumbnailFolder + result.FileName;
-            await Global.WriteThumbnailImageAsync(result.FullPath, thumbnail);
-            Images.Add(img);
-
-            CurrentImage = Images.First();
-            var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            MainLoading.Show = false;
-            openDrawer = true;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            MainLoading.Show = false;
-
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-        }
-    }
-
-    async void OpenSplit()
-    {
-
-        var result = await FilePicker.PickMultipleAsync(new PickOptions
-        {
-            PickerTitle = "长按多选照片",
-            FileTypes = FilePickerFileType.Images
-        });
-        if (result is null || result.Count() == 0) return;
-        MainLoading.Message = "正在生成图片...";
-        MainLoading.Show = true;
-        StateHasChanged();
-        Images = new List<WMTemplateList>();
-        if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-        {
-            Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-        }
-        foreach (var f in result)
-        {
-            var img = new WMTemplateList();
-            img.Path = f.FullPath;
-            Images.Add(img);
-        }
-        MainLoading.Show = false;
-        openSplit = true;
-        StateHasChanged();
-    }
-
-    async Task SelectSplitPhoto(WMZipedTemplate template)
-    {
-        try
-        {
-            var result = await FilePicker.PickMultipleAsync(new PickOptions
-            {
-                PickerTitle = "长按多选照片",
-                FileTypes = FilePickerFileType.Jpeg
-            });
-
-            if (result == null || !result.Any()) return;
-            MainLoading.Message = "正在生成图片...";
-            MainLoading.Show = true;
-            StateHasChanged();
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-            int c = 0;
-            foreach (var container in cvs.Children)
-            {
-                if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
-                {
-                    container.Path = result.Skip(c++).Take(1).First().FullPath;
-                    cvs.Exif = ExifHelper.ReadImage(container.Path);
-                }
-            }
-
-            CurrentImage = new();
-            CurrentImage.Canvas = cvs;
-            CurrentImage.ID = CurrentImage.Canvas.ID;
-            var b64 = await helper.GenerationAsync(cvs, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            Images = [CurrentImage];
-            MainLoading.Show = false;
-            openDrawer = true;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-        }
-    }
-
-    async Task LoadTemplatesMarket()
-    {
-        loadMore = true;
-        StateHasChanged();
-        var helper = new APIHelper();
-        var allTemplates = (await helper.GetWatermarks("", 1, 999)).Where(x => x.Visible);
-        var recommend = allTemplates.Where(x => x.Recommend);
-        hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
-        newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
-        splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
-        ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
-        var subUser = await IntiSubscribedUserList();
-        subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
-        foreach (var su in subUser)
-        {
-            var tp = ZipedTemplates.Where(x => x.UserId == su).ToList();
-            if (tp.Count > 0)
-            {
-                var tup = Tuple.Create(tp[0].UserDisplayName, tp);
-                subscribed.Add(tup);
-            }
-        }
-
-        subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
-        subscribed.Add(Tuple.Create("拼图", splits));
-
-        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 50).ToList()));
-        ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
-        loadMore = false;
-        StateHasChanged();
-    }
-
-    async Task LoadCollectTemplate()
-    {
-        var api = new APIHelper();
-        var getILike = await api.GetILike(Global.CurrentUser?.ID ?? "");
-        if (getILike != null && getILike.success && getILike.data != null)
-        {
-            ILikeTemplates = getILike.data;
-            ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
-        }
-
-    }
 
     async Task LoadTemplates()
     {
-        loading_down = true;
         StateHasChanged();
         downloadedTemplates = new();
         var api = new APIHelper();
@@ -651,211 +384,13 @@
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
                 tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
             }
-            loading_down = false;
-            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
             MainLoading.Show = false;
             StateHasChanged();
         }
         catch (Exception ex)
         {
             Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-            loading_down = false;
             MainLoading.Show = false;
-        }
-    }
-
-    async Task<WMZipedTemplate> LoadSingleTemplates(string watermarkId)
-    {
-        var api = new APIHelper();
-        if (!Directory.Exists(Global.AppPath.TemplatesFolder))
-        {
-            Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-        }
-
-        try
-        {
-            WMZipedTemplate dirct = new();
-            dirct.WatermarkId = watermarkId;
-            var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
-            if (!System.IO.File.Exists(configPath)) return dirct;
-            var canvas = await Task.Run(() =>
-            {
-                var content = File.ReadAllText(configPath);
-                return Global.ReadConfig(content);
-            });
-            dirct.WMCanvas = canvas;
-            dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
-            dirct.CanvasType = dirct.WMCanvas.CanvasType;
-            await Global.InitFonts([canvas]);
-            var b64 = await helper.GenerationAsync(canvas, null, true, false);
-            dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            return dirct;
-        }
-        catch (Exception ex)
-        {
-            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-            return new WMZipedTemplate();
-        }
-    }
-
-    async Task<List<string>> IntiSubscribedUserList()
-    {
-        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return [];
-        var helper = new APIHelper();
-        var result = await helper.GetISubscribed(Global.CurrentUser.ID);
-        if (result.success)
-        {
-            return result.data;
-        }
-        else
-        {
-            ClientInstance.ShowMsg(Snackbar, result.message?.content ?? "", Severity.Error);
-        }
-        return [];
-    }
-
-    async void Subscribe(string userId)
-    {
-        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        var helper = new APIHelper();
-        var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
-        await LoadTemplatesMarket();
-    }
-
-    void OpenFocus(char t, WMZipedTemplate zip, bool b)
-    {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        FocusImage = zip;
-        FocusImageType = t;
-        FocusImageId = zip.WatermarkId;
-        FocusImageSrc = zip.Src;
-        FocusImageShow = b;
-        StateHasChanged();
-    }
-
-    async void PopupActionBar()
-    {
-        //已下载
-        if (FocusImageType == 'd')
-        {
-            var p = Global.AppPath.TemplatesFolder + FocusImageId + Path.DirectorySeparatorChar;
-            if (Directory.Exists(p))
-            {
-                var _ = Task.Run(() =>
-                {
-                    Directory.Delete(p, true);
-                    var t = downloadedTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
-                    if (t != null)
-                    {
-                        downloadedTemplates.Remove(t);
-                    }
-                    InvokeAsync(StateHasChanged);
-                    ClientInstance.ShowMsg(Snackbar, "删除成功", Severity.Success);
-                });
-
-            }
-        }
-        else if (FocusImageType == 'r')
-        {
-            if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
-            {
-                var helper = new APIHelper();
-                helper.DeleteILike(Global.CurrentUser.ID, FocusImageId);
-                var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
-                if (item != null)
-                {
-                    ILikeTemplates.Remove(item);
-                    ClientInstance.ShowMsg(Snackbar, "取消收藏成功", Severity.Success);
-                }
-            }
-        }
-        else if (FocusImageType == 'a')
-        {
-            if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
-            {
-                var helper = new APIHelper();
-                var r = await helper.AddILike(Global.CurrentUser.ID, FocusImageId);
-                var item = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
-                if (item != null && !ILikeTemplates.Any(x => x.WatermarkId == item.WatermarkId))
-                {
-                    ILikeTemplates.Add(item);
-                    ClientInstance.ShowMsg(Snackbar, "收藏成功", Severity.Success);
-                }
-            }
-        }
-        FocusImageShow = false;
-        StateHasChanged();
-
-    }
-
-    async void DownloadTemplate(string watermarkId)
-    {
-        var action = new Action(async () =>
-        {
-            var api = new APIHelper();
-            if (!Global.CurrentUser.IsVIP)
-            {
-                var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
-                if (!auth.success)
-                {
-                    faildShow = true;
-                    failedMessage = auth.message.content;
-                    await PublicMethods.ReLogin();
-                    return;
-                }
-            }
-
-            var w = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
-            var r = await api.Download(watermarkId, w?.UserId ?? "");
-            if (r)
-            {
-                HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-                FocusImageShow = false;
-                ClientInstance.ShowMsg(Snackbar, "下载完成", Severity.Success);
-                var dir = await LoadSingleTemplates(watermarkId);
-                if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
-                StateHasChanged();
-            }
-        });
-        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
-        {
-            FocusImageShow = false;
-            var rst = DialogService.Show<LoginDialog>("");
-            var dialogResult = await rst.Result;
-            if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-            {
-                FocusImageShow = false;
-                action.Invoke();
-            }
-            return;
-        }
-        var p = Global.AppPath.TemplatesFolder + watermarkId;
-        if (Directory.Exists(p))
-        {
-            FocusImageShow = false;
-            bool? rtl = await DialogService.ShowMessageBox("确认覆盖", (MarkupString)"此模板已存在，确定覆盖？", yesText: "确定", cancelText: "取消");
-            if (rtl == true)
-            {
-                Directory.Delete(p, true);
-                action.Invoke();
-            }
-        }
-        else
-        {
-            action.Invoke();
-        }
-    }
-
-    void ToSecondPanel()
-    {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        activeTab = 2;
-        if (firstClick2Panel)
-        {
-            firstClick2Panel = false;
-            var _ = LoadTemplatesMarket();
-            var api = new APIHelper();
-            var __ = api.PageVisitRecord(ProgramPage.Market, Platform.Andorid);
         }
     }
 
@@ -1097,12 +632,9 @@
         await Task.CompletedTask;
     }
 
-    async void SelectSplitImages(WMTemplateList template)
+    async void SelectSplitImages(WMZipedTemplate template)
     {
         Dictionary<string, string> exif = ExifHelper.DefaultMeta;
-
-        // 实例化一个文件选择对象
-
         var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
         if (result != null)
         {
@@ -1112,7 +644,7 @@
             }
 
             int c = 0;
-            foreach (var container in template.Canvas.Children)
+            foreach (var container in template.WMCanvas.Children)
             {
                 if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
                 {
@@ -1124,14 +656,14 @@
 
 
         StateHasChanged();
-        var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+        var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
         cvs.Exif = exif;
         var b64 = await helper.GenerationAsync(cvs, null, true, false);
         CurrentImage = new();
         CurrentImage.Canvas = cvs;
         CurrentImage.ID = CurrentImage.Canvas.ID;
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate() { WMCanvas = template.Canvas });
+        await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate() { WMCanvas = template.WMCanvas });
         Images = [];
         Images.Add(CurrentImage);
         SrcLoading = false;

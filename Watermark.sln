@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Andorid", "Waterm
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Shared", "..\Watermark.Shared\Watermark.Shared.csproj", "{1D6CFC74-956D-4404-A812-E6BB7C31C619}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark.Razor", "Watermark.Razor\Watermark.Razor.csproj", "{974640B1-0654-4554-A9DF-785A7B9EA7D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Razor", "Watermark.Razor\Watermark.Razor.csproj", "{974640B1-0654-4554-A9DF-785A7B9EA7D5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

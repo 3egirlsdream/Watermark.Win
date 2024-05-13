@@ -1,0 +1,95 @@
+﻿.panel-class {
+    height: calc(100% - 50px);
+}
+
+.mud-tab-class
+::-webkit-scrollbar {
+    width: 0px;
+    display: none;
+}
+
+
+.mud-tab-class {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    padding: 0px 16px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.water-tab {
+    height: 48px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #fff;
+    z-index: 10;
+}
+
+.water-tab-text {
+    width: 33.3%;
+    height: 48px;
+    float: left;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.water-tab-item {
+    height: calc(100% - 44px);
+    clear: both;
+}
+
+.mud-tab-class .mud-list-item-clickable:focus:not(.mud-selected-item) {
+    transform: scale(1.2);
+}
+
+.mud-tab-class .mud-list-item-clickable {
+    transition: transform 0.3s ease;
+}
+
+
+.dfm-card-name {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
+}
+
+.dfm-card-user-name {
+    position: relative;
+    display: flex;
+    align-items: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
+}
+
+.dfm-card-footer {
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.flex-vertical-center {
+    display: flex;
+    align-items: center;
+}
+
+.expandable {
+    width: 30px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden;
+    height: 30px;
+    transition: width 0.5s; /* 添加过渡效果 */
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0 10px 0 0px;
+}
+
+    .expandable:hover {
+        width: 100%; /* 鼠标悬停时改变宽度，触发展开效果 */
+    }
