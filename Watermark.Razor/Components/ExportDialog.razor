@@ -74,7 +74,8 @@
 
     [Parameter]
     public List<WMTemplateList> Images { get; set; }
-
+    [Parameter]
+    public Action OpenFolderAction { get; set; }
 
     bool CheckAll = false;
 
@@ -83,8 +84,10 @@
         MudDialog.Close(Images);
     }
 
-    void OpenFolder()
+    async void OpenFolder()
     {
+        await Task.Run(OpenFolderAction);
+        StateHasChanged();
     }
 
 

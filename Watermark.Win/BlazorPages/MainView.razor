@@ -98,11 +98,11 @@
 							<MudText Typo="Typo.body1" Class="px-4" Color="@(Global.CurrentUser.IsVIP ? Color.Warning : Color.Secondary)" Align="Align.Start" Style="display:flex;align-items:center;">
 								@if (Global.CurrentUser.IsVIP)
 								{
-									<Watermark.Razor.Parts.IconVip/>
+									<Watermark.Razor.Parts.IconVip />
 								}
 								else
 								{
-									<Watermark.Razor.Parts.IconVipExpired/>
+									<Watermark.Razor.Parts.IconVipExpired />
 								}
 								@Global.CurrentUser.DISPLAY_NAME
 							</MudText>
@@ -113,7 +113,7 @@
 
 					<div Style="display:flex;align-items:center;line-height: 32px;" Class="px-4 py-1">
 						硬币：
-						<Watermark.Razor.Parts.IconCoin/>
+						<Watermark.Razor.Parts.IconCoin />
 						<MudText Typo="Typo.body2" Color="Color.Inherit" Style="line-height: 32px;">
 							@Global.CurrentUser.COINS
 						</MudText>
@@ -203,7 +203,7 @@
 						<MudCollapse Expanded="_expanded">
 							<MudStack>
 								<MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 2px 3px 0px;" Elevation="25" @onclick="OpenFullExifInfo">
-									<Watermark.Razor.Parts.IconExif/>
+									<Watermark.Razor.Parts.IconExif />
 								</MudPaper>
 								<MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
 									<ButtonTemplate>
@@ -250,7 +250,7 @@
 				}
 				else
 				{
-					<Watermark.Razor.Parts.IconImage/>
+					<Watermark.Razor.Parts.IconImage />
 				}
 			</div>
 		</div>
@@ -307,13 +307,13 @@
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
 	bool _expanded = false;
-	List<TemplateList> wMTemplates;
-	TemplateList CurrentTemplate;
-	TemplateList CurrentImage;
+	List<WMTemplateList> wMTemplates;
+	WMTemplateList CurrentTemplate;
+	WMTemplateList CurrentImage;
 	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
 	ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
 	List<string> LogoStore = new List<string>();
-	List<TemplateList> Images = new List<TemplateList>();
+	List<WMTemplateList> Images = new List<WMTemplateList>();
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -364,14 +364,31 @@
 
 	public async void OpenMyTemplates()
 	{
+		Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
+		{
+			OpenDesignAction(x);
+		});
 		var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
-
-		var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
+		parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
+		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
 		var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
 		var dialog = await rst.Result;
 		await InitTemplates();
 
 	}
+
+
+	public void OpenDesignAction(WMCanvas x)
+	{
+		var action = new Action(() =>
+		{
+			var win = new Watermark.Win.Views.DesignWin(x, "");
+			win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+			win.ShowDialog();
+		});
+		OpenWinHelper.Open(action);
+	}
+
 
 	void ImportLocalImages()
 	{
@@ -389,7 +406,7 @@
 			if (result == true)
 			{
 				MainLoading.Show = true;
-				Images = new List<TemplateList>();
+				Images = new List<WMTemplateList>();
 				MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
 				MainLoading.Value = 0;
 				StateHasChanged();
@@ -408,7 +425,7 @@
 						Global.WriteThumbnailImage(file, thumbnail);
 					});
 					var b64 = await Global.GetBase64(file);
-					Images.Add(new TemplateList
+					Images.Add(new WMTemplateList
 						{
 							Canvas = canvas,
 							Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
@@ -432,7 +449,7 @@
 		OpenWinHelper.Open(action);
 	}
 
-	async void ClickImage(TemplateList image)
+	async void ClickImage(WMTemplateList image)
 	{
 		CurrentImage = image;
 		SrcLoading = true;
@@ -471,7 +488,7 @@
 				foreach (var w in wMTemplates)
 					await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
 			}
-			wMTemplates = new List<TemplateList>();
+			wMTemplates = new List<WMTemplateList>();
 			var directories = directoryInfo.GetDirectories();
 			MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
 			MainLoading.Value = 0;
@@ -488,7 +505,7 @@
 						await InitFonts([canvas]);
 						var b64 = await helper.GenerationAsync(canvas, null, true);
 						var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-						var wh = new TemplateList
+						var wh = new WMTemplateList
 							{
 								ID = canvas.ID,
 								Canvas = canvas,
@@ -525,7 +542,7 @@
 		}
 	}
 
-	async void ChangeTemplate(TemplateList template)
+	async void ChangeTemplate(WMTemplateList template)
 	{
 		CurrentTemplate = template;
 		if (CurrentImage == null) return;
@@ -567,7 +584,7 @@
 		}
 	}
 
-	async void Export(List<TemplateList> images)
+	async void Export(List<WMTemplateList> images)
 	{
 		MainLoading.Show = true;
 		MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
@@ -629,7 +646,7 @@
 		await InitTemplates();
 	}
 
-	async Task InitLogoCacheDic(string imgId, TemplateList template)
+	async Task InitLogoCacheDic(string imgId, WMTemplateList template)
 	{
 		var logoes = new List<WMLogo>();
 		foreach (var c1 in template.Canvas.Children)
@@ -807,11 +824,24 @@
 
 	async void OpenExport()
 	{
-		var parameters = new DialogParameters<ExportDialog>();
+		var action = new Action(() =>
+				{
+					Microsoft.Win32.OpenFolderDialog dialog = new();
+					var result = dialog.ShowDialog();
+
+					if (result == true)
+					{
+						Global.OutPutPath = dialog.FolderName;
+						InvokeAsync(StateHasChanged);
+					}
+				});
+
+		var parameters = new DialogParameters<Watermark.Razor.Components.ExportDialog>();
+		parameters.Add(x => x.OpenFolderAction, action);
 		parameters.Add(x => x.Images, Images);
-		var dialog = DialogService.Show<ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		var dialog = DialogService.Show<Watermark.Razor.Components.ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
 		var result = await dialog.Result;
-		if (!result.Canceled && result.Data is List<TemplateList> images)
+		if (!result.Canceled && result.Data is List<WMTemplateList> images)
 		{
 			Export(images.Where(x => x.IsChecked).ToList());
 		}
@@ -856,7 +886,7 @@
 		var dialogResult = await rst.Result;
 	}
 
-	async void SelectSplitImages(TemplateList template)
+	async void SelectSplitImages(WMTemplateList template)
 	{
 		Dictionary<string, string> exif = ExifHelper.DefaultMeta;
 		var action = Task.Run(() =>
