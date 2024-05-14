@@ -82,7 +82,7 @@ namespace Watermark.Win.Views
                         checkUpdateBtn.IsEnabled = false;
                         await wc.DownloadFileTaskAsync(new Uri(newPath), path);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                     }
                     finally

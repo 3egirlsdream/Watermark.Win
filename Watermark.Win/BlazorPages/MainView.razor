@@ -120,7 +120,7 @@
 					</div>
 
 					<MudText Typo="Typo.body2" Class="px-4 py-1">@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")</MudText>
-					<MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); IsLoginIn = false; }">退出</MudButton>
+					<MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); }">退出</MudButton>
 				}
 				else
 				{
@@ -306,7 +306,6 @@
 
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
-	bool IsLoginIn = false;
 	bool _expanded = false;
 	List<TemplateList> wMTemplates;
 	TemplateList CurrentTemplate;
@@ -322,18 +321,7 @@
 		await Global.InitConfig();
 		await InitTemplates();
 		await InitLogoStore();
-		var result = await Global.ReadLocalAsync();
-		if (!string.IsNullOrEmpty(result.Item1))
-		{
-			var login = await helper.LoginIn(result.Item1, result.Item2, true);
-			if (login.success)
-			{
-				Global.CurrentUser = Global.SetUserInfo(login.data.data);
-				IsLoginIn = true;
-				await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
-				StateHasChanged();
-			}
-		}
+		await Global.Login();
 		await helper.DownloadLogoes();
 		Global.PrimaryKey = ClientInstance.Key();
 	}
@@ -376,10 +364,10 @@
 
 	public async void OpenMyTemplates()
 	{
-		var parameters = new DialogParameters<MyTemplates>();
+		var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
 
 		var option = new DialogOptions() { NoHeader = false, MaxWidth = MaxWidth.ExtraLarge };
-		var rst = DialogService.Show<MyTemplates>("我的模板", parameters, option);
+		var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
 		var dialog = await rst.Result;
 		await InitTemplates();
 
@@ -561,22 +549,20 @@
 
 	async void OpenLoginDialog()
 	{
-		var rst = DialogService.Show<LoginDialog>("");
+		var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("");
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{
-			IsLoginIn = true;
 			StateHasChanged();
 		}
 	}
 
 	async void OpenSignUpDialog()
 	{
-		var rst = DialogService.Show<SignUpDialog>("");
+		var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("");
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{
-			IsLoginIn = true;
 			StateHasChanged();
 		}
 	}
@@ -630,7 +616,15 @@
 
 	async void OpenTemplateMarket()
 	{
-		var dialog = DialogService.Show<TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		Func<string, Task> func = new((x) =>
+		{
+			System.Windows.Clipboard.SetText(x);
+			return Task.CompletedTask;
+		});
+
+		var p = new DialogParameters<Watermark.Razor.Components.TemplatesMarket>();
+		p.Add(x => x.ClipboardAction, func);
+		var dialog = DialogService.Show<Watermark.Razor.Components.TemplatesMarket>(string.Empty, p, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
 		var result = await dialog.Result;
 		await InitTemplates();
 	}
@@ -739,7 +733,7 @@
 
 	async void ImportLogoes()
 	{
-		var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
 		var result = await dialog.Result;
 		if (!result.Canceled)
 		{
@@ -749,7 +743,7 @@
 
 	async void ReplaceLogo(string sourceId)
 	{
-		var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+		var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
 		{

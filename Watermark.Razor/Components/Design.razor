@@ -560,7 +560,6 @@
 	WMThickness BorderThickness = new WMThickness();
 	WMCanvas canvas;
 	string url = "";
-	string defaultImage = "";
 	bool SrcLoading = false;
 	List<string> Fonts = new List<string>();
 	ConcurrentDictionary<string, string> ImagesBase64 = new();
@@ -779,6 +778,6 @@
 		var xs = 6000 / w;
 		canvas.CustomWidth = 6000;
 		canvas.CustomHeight = (int)(xs * h);
-		StateHasChanged();
+		PreviewImageRefresh();
 	}
 }

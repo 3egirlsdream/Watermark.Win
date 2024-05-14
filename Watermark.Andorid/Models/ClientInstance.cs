@@ -99,6 +99,7 @@ namespace Watermark.Shared.Models
             return AppInfo.Version;
         }
 
+        /// <summary>
         /// 获取设备号
         /// </summary>
         /// <returns></returns>
@@ -125,17 +126,17 @@ namespace Watermark.Shared.Models
             return false;
         }
 
-        public static async Task<bool> CheckUpdate()
+        public static async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
         {
             try
             {
-                var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkAndroid", Encoding.Default);
+                var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={client}", Encoding.Default);
                 if (version != null && version.success && version.data != null && version.data.VERSION != null)
                 {
                     var v1 = GetVersion();
                     var v2 = new Version(version.data.VERSION);
                     LinkPath = version!.data!.PATH!;
-                    UpdateMessage = version!.data!.MEMO;
+                    UpdateMessage = version.data.MEMO ?? "";
                     UpdateVersion = version!.data!.VERSION;
                     return v2 > v1;
                 }
@@ -144,16 +145,12 @@ namespace Watermark.Shared.Models
                     return false;
                 }
             }
-            catch(Exception ex)
+            catch (Exception)
             {
                 return false;
             }
         }
 
-        public static async Task Update(Action<int> action)
-        {
-           
-        }
 
         public static Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
             {

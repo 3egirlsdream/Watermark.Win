@@ -260,6 +260,10 @@
         </MudPaper>
     </MudOverlay>
 
+    <MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
+        <Watermark.Razor.Components.UpdateDialog CloseEvet="()=>ForceUpdate = false" UpdateEvet="@(()=>OpenLink("http://thankful.top/"))" DownLoadProgress="0" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
+    </MudOverlay>
+
     <MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
         <DialogContent>
             <MudForm>
@@ -317,6 +321,15 @@
                 StateHasChanged();
                 return;
             }
+
+
+            var checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate("WatermarkMac");
+            if (checkUpdate)
+            {
+                ForceUpdate = true;
+                StateHasChanged();
+            }
+
             await Global.Login();
             await LoadTemplates();
             await helper.DownloadLogoes();
@@ -332,13 +345,13 @@
     async void ClickImage(WMTemplateList image)
     {
         CurrentImage = image;
-		SrcLoading = true;
-		CurrentImage.Canvas.Path = CurrentImage.Path;
-		var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		CurrentImage.Src = src;
-		SrcLoading = false;
-		StateHasChanged();
+        SrcLoading = true;
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
     }
 
 
@@ -571,7 +584,14 @@
 
     async void OpenTemplateMarket()
     {
-        var dialog = DialogService.Show<Watermark.Razor.Components.TemplatesMarket>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        Func<string, Task> func = new((x) =>
+        {
+            return Clipboard.Default.SetTextAsync(x);
+        });
+
+        var p = new DialogParameters<Watermark.Razor.Components.TemplatesMarket>();
+        p.Add(x => x.ClipboardAction, func);
+        var dialog = DialogService.Show<Watermark.Razor.Components.TemplatesMarket>(string.Empty, p, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
         var result = await dialog.Result;
         await LoadTemplates();
     }
@@ -877,6 +897,7 @@
         SrcLoading = false;
         StateHasChanged();
     }
+
 
     #region class
 

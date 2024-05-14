@@ -1,0 +1,55 @@
+﻿@using MudBlazor
+<MudPaper Elevation="0" Class="pa-2" Width="80%" Style="margin:0 10%;">
+		<MudStack Style="text-align:center;">
+			<MudText Typo="Typo.subtitle1" Color="Color.Secondary"> 升级提醒</MudText>
+		</MudStack>
+		<br />
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			版本:@UpdateVersion
+		</MudText>
+		<br/>
+
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			更新内容
+		</MudText>
+		<MudText Typo="Typo.subtitle2" Color="Color.Default">
+			@UpdateMessage
+		</MudText>
+		@if (DownLoadProgress > 0)
+		{
+			<MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" style="width:auto" class="mt-2"/>
+		}
+		<MudButton Color="Color.Secondary" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Update" Size="Size.Small" Class="mt-2">更新</MudButton>
+		<MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Close" Size="Size.Small" Class="mt-2">以后再说</MudButton>
+		
+		
+	</MudPaper>
+
+@code {
+	[Parameter]
+	public string UpdateVersion { get; set; }
+	[Parameter] 
+	public string UpdateMessage { get; set; }
+	[Parameter]
+	public int DownLoadProgress { get; set; }
+	[Parameter]
+	public EventCallback UpdateEvet { get; set; }
+	[Parameter]
+	public EventCallback CloseEvet { get; set; }
+
+	void Update()
+	{
+		if (UpdateEvet.HasDelegate)
+		{
+			UpdateEvet.InvokeAsync();
+		}
+	}
+
+	void Close()
+	{
+		if (CloseEvet.HasDelegate)
+		{
+			CloseEvet.InvokeAsync();
+		}
+	}
+}

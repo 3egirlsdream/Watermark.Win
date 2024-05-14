@@ -192,6 +192,9 @@
     MudDialogInstance MudDialog { get; set; }
     [Inject]
     private IDialogService DialogService { get; set; }
+    [Parameter]
+    public Func<string, Task> ClipboardAction { get; set; }
+
     bool loading = false;
     string loadingMessage = "正在加载模板...";
     string Search = "";
@@ -266,8 +269,10 @@
         StateHasChanged();
     }
 
-    void Share(string id)
+    async void Share(string id)
     {
+        var t = ClipboardAction.Invoke(id);
+        await t;
         string message = "已复制ID到剪贴板";
         Common.ShowMsg(Snackbar, message, Severity.Success);
     }

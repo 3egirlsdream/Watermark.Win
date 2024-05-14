@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @using Watermark.Andorid.Models
+@using Watermark.Razor.Components
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
@@ -176,88 +177,19 @@ else
 <MudDrawer Style="@($"{(openLogoDialog?"":"display:none;")}")" @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
 	@if (openLogoDialog)
 	{
-		<LogoDialog />
+		<Watermark.Razor.Components.LogoDialog />
 	}
 </MudDrawer>
 
 <MudDrawer Style="padding:6px" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
 	@if(ShowQuestion)
 	{
-		<MudPaper Style="@($"margin: 10px 16px;background:{Colors.Grey.Lighten4}")" Elevation="0" class="pa-3">
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>读取不到元数据</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">确认导出时勾选元数据信息，邮件图片属性可以查看元数据 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>如何使用</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">B站搜索 我家有很多相机，有详细使用教程 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>照片保存到哪里</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">打开相册会显示在相册中 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>怎么批量处理</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">打开图片选择界面，长按多选照片 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>硬币有什么用</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">可以下载需要硬币的用户模板 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>硬币怎么获取</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">其他用户下载你的模板会支付给你相应的硬币，每个用户初始50枚硬币 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>如何制作自己的模板</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">下载Windows版的可以制作模板，后续会支持移动端创建 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>图标可以替换吗</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">每个模板的图标都可以在生成界面二次替换，无需重复制作模板 </MudText>
-			</MudStack>
-			<MudDivider Class="my-2" />
-			<MudStack Justify="Justify.FlexStart">
-				<MudText Typo="Typo.subtitle1"><strong>品牌LOGO可以自动识别吗</strong>  </MudText>
-				<MudText Typo="Typo.subtitle2">在模板编辑界面图标一栏勾选自动识别 </MudText>
-			</MudStack>
-		</MudPaper>
+		<Watermark.Razor.Components.QuestionDialog/>
 	}
 </MudDrawer>
 
 <MudOverlay Visible="@showUpdateOverlay" DarkBackground="true" Absolute="true" ZIndex="99999">
-	<MudPaper Elevation="0" Class="pa-2" Width="80%" Style="margin:0 10%;">
-		<MudStack Style="text-align:center;">
-			<MudText Typo="Typo.subtitle1" Color="Color.Secondary"> 升级提醒</MudText>
-		</MudStack>
-		<br />
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			版本:@ClientInstance.UpdateVersion
-		</MudText>
-		<br/>
-
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			更新内容
-		</MudText>
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			@ClientInstance.UpdateMessage
-		</MudText>
-		@if (DownLoadProgress > 0)
-		{
-			<MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" style="width:auto" class="mt-2"/>
-		}
-		<MudButton Color="Color.Secondary" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Update" Size="Size.Small" Class="mt-2">更新</MudButton>
-		<MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>showUpdateOverlay = false" Size="Size.Small" Class="mt-2">以后再说</MudButton>
-		
-		
-	</MudPaper>
+	<Watermark.Razor.Components.UpdateDialog CloseEvet="()=>showUpdateOverlay = false" UpdateEvet="Update" DownLoadProgress="DownLoadProgress" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
 </MudOverlay>
 
 @code {
@@ -283,17 +215,7 @@ else
 	protected override async Task OnInitializedAsync()
 	{
 		var api = new APIHelper();
-		var result = await Global.ReadLocalAsync();
-		if (!string.IsNullOrEmpty(result.Item1))
-		{
-			var login = await api.LoginIn(result.Item1, result.Item2, true);
-			if (login.success)
-			{
-				Global.CurrentUser = Global.SetUserInfo(login.data.data);
-				await Global.WriteAccount2LocalAsync(result.Item1, result.Item2);
-				StateHasChanged();
-			}
-		}
+		await Global.Login();
 		checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
 		if (checkUpdate)
 		{
