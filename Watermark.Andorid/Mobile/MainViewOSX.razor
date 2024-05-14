@@ -79,11 +79,11 @@
                             <MudText Typo="Typo.body1" Class="px-4" Color="@(Global.CurrentUser.IsVIP ? Color.Warning : Color.Secondary)" Align="Align.Start" Style="display:flex;align-items:center;">
                                 @if (Global.CurrentUser.IsVIP)
                                 {
-                                   <Watermark.Razor.Parts.IconVip/>
+                                    <Watermark.Razor.Parts.IconVip />
                                 }
                                 else
                                 {
-                                    <Watermark.Razor.Parts.IconVipExpired/>
+                                    <Watermark.Razor.Parts.IconVipExpired />
                                 }
                                 @Global.CurrentUser.DISPLAY_NAME
                             </MudText>
@@ -94,7 +94,7 @@
 
                     <div Style="display:flex;align-items:center;line-height: 32px;" Class="px-4 py-1">
                         硬币：
-                        <Watermark.Razor.Parts.IconCoin/>
+                        <Watermark.Razor.Parts.IconCoin />
                         <MudText Typo="Typo.body2" Color="Color.Inherit" Style="line-height: 32px;">
                             @Global.CurrentUser.COINS
                         </MudText>
@@ -180,7 +180,7 @@
                         <MudCollapse Expanded="_expanded">
                             <MudStack>
                                 <MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 2px 3px 0px;" Elevation="25" @onclick="OpenFullExifInfo">
-                                    <Watermark.Razor.Parts.IconExif/>
+                                    <Watermark.Razor.Parts.IconExif />
                                 </MudPaper>
                                 <MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
                                     <ButtonTemplate>
@@ -227,7 +227,7 @@
                 }
                 else
                 {
-                    <Watermark.Razor.Parts.IconImage/>
+                    <Watermark.Razor.Parts.IconImage />
                 }
             </div>
         </div>
@@ -260,8 +260,8 @@
         </MudPaper>
     </MudOverlay>
 
-    <MudOverlay Visible="@ForceUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <Watermark.Razor.Components.UpdateDialog CloseEvet="()=>ForceUpdate = false" UpdateEvet="@(()=>OpenLink("http://thankful.top/"))" DownLoadProgress="0" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
+    <MudOverlay Visible="@openUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
+        <Watermark.Razor.Components.UpdateDialog CloseEvet="()=> openUpdate = false" UpdateEvet="@(()=>OpenLink("http://thankful.top/"))" DownLoadProgress="0" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
     </MudOverlay>
 
     <MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
@@ -275,7 +275,7 @@
                     }
                     else
                     {
-                        <MudSkeleton Width="250px" Height="160px"/>
+                        <MudSkeleton Width="250px" Height="160px" />
                     }
                     <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
                 </MudStack>
@@ -296,6 +296,7 @@
     bool openSplit = false;
     bool openSave = false;
     bool ForceUpdate = false;
+    bool openUpdate = false;
     bool loadMore = false;
     Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
     ConcurrentDictionary<string, string> LogoBase64 = new();
@@ -326,7 +327,7 @@
             var checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate("WatermarkMac");
             if (checkUpdate)
             {
-                ForceUpdate = true;
+                openUpdate = true;
                 StateHasChanged();
             }
 
@@ -772,7 +773,7 @@
 
     void ImportLogoes()
     {
-        var dialog = DialogService.Show<LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
     }
 
     async void SelectExampleImage()
