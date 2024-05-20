@@ -7,6 +7,7 @@
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
 @using LukeMauiFilePicker
+@using Watermark.Razor
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
@@ -430,48 +431,54 @@
         {
             var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
 
-
-            if (result != null)
+            if (result == null) return;
+            MainLoading.Show = true;
+            Images = new();
+            MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第1个...";
+            MainLoading.Value = 0;
+            StateHasChanged();
+            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
             {
-                MainLoading.Show = true;
-                Images = new();
-                MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第1个...";
-                MainLoading.Value = 0;
-                StateHasChanged();
-                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-                {
-                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-                }
-                foreach (var file in result)
-                {
-                    WMCanvas canvas = new WMCanvas();
-                    canvas.Path = file!.FileResult!.FullPath;
-                    canvas.Exif = await ExifHelper.ReadImageAsync(canvas.Path);
-                    await Task.Run(() =>
-                    {
-                        var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(canvas.Path);
-                        Global.WriteThumbnailImage(canvas.Path, thumbnail);
-                    });
-                    var b64 = await Global.GetBase64(canvas.Path);
-                    Images.Add(new WMTemplateList
-                    {
-                        Canvas = canvas,
-                        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
-                        ID = canvas.ID,
-                        Path = canvas.Path
-                    });
-                    var idx = result.ToList().IndexOf(file) + 1;
-                    MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第{idx}个...";
-                    MainLoading.Value = idx * 100.0 / result.Count();
-                    StateHasChanged();
-                }
+                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+            }
 
-                MainLoading.Message = $"导入完成";
-                MainLoading.Value = 100;
-                await Task.Delay(200);
-                MainLoading.Show = false;
+            var source = Global.AppPath.BasePath + "Source" + Path.DirectorySeparatorChar;
+            if (!Directory.Exists(source))
+            {
+                Directory.CreateDirectory(source);
+            }
+            foreach (var file in result)
+            {
+                WMCanvas canvas = new WMCanvas();
+                canvas.Path = file!.FileResult!.FullPath;
+                canvas.Exif = await ExifHelper.ReadImageAsync(canvas.Path);
+                await Task.Run(() =>
+                {
+                    var target = Path.Combine(source, Path.GetFileName(canvas.Path));
+                    File.Copy(canvas.Path, target, true);
+                    canvas.Path = target;
+                    var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(canvas.Path);
+                    Global.WriteThumbnailImage(canvas.Path, thumbnail);
+                });
+                var b64 = await Global.GetBase64(canvas.Path);
+                Images.Add(new WMTemplateList
+                {
+                    Canvas = canvas,
+                    Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
+                    ID = canvas.ID,
+                    Path = canvas.Path
+                });
+                var idx = result.ToList().IndexOf(file) + 1;
+                MainLoading.Message = $"正在导入图片，一共{result.Count()}, 当前第{idx}个...";
+                MainLoading.Value = idx * 100.0 / result.Count();
                 StateHasChanged();
             }
+
+            MainLoading.Message = $"导入完成";
+            MainLoading.Value = 100;
+            await Task.Delay(200);
+            MainLoading.Show = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -555,32 +562,43 @@
         });
     }
 
-    public async Task Help()
+    async Task Help()
     {
-        MainLoading.Show = true;
-        StateHasChanged();
-        int idx = 1;
-        foreach (var img in Images)
+        try
         {
-            MainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
-            MainLoading.Value = idx++ * 100.0 / Images.Count;
+            MainLoading.Show = true;
             StateHasChanged();
-            var b64 = await Task.Run(() =>
+            int idx = 1;
+            foreach (var img in Images)
             {
-                var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.WMCanvas));
-                cvs.Exif = img.Canvas.Exif;
-                img.Canvas = cvs;
-                cvs.Path = img.Path;
-                return helper.Generation(cvs, null, true);
-            });
+                MainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+                MainLoading.Value = idx++ * 100.0 / Images.Count;
+                StateHasChanged();
+                var b64 = await Task.Run(() =>
+                {
+                    var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.WMCanvas));
+                    cvs.Exif = img.Canvas.Exif;
+                    img.Canvas = cvs;
+                    cvs.Path = img.Path;
+                    return helper.Generation(cvs, null, true);
+                });
 
-            var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            img.Src = src;
-            await InitLogoCacheDic(img.ID, CurrentTemplate);
+                var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                img.Src = src;
+                await InitLogoCacheDic(img.ID, CurrentTemplate);
+            }
+
+            MainLoading.Value = 100;
         }
-        MainLoading.Value = 100;
-        MainLoading.Show = false;
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+        finally
+        {
+            MainLoading.Show = false;
+            StateHasChanged();
+        }
     }
 
     async void OpenTemplateMarket()
@@ -645,12 +663,13 @@
         GC.Collect();
     }
 
-    async Task OpenFolder()
+    Task OpenFolder()
     {
-        var path = Global.OutPutPath;
-        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
-        System.Diagnostics.Process.Start(psi);
-        await Task.CompletedTask;
+        return Task.Run(() =>
+        {
+            var path = Global.OutPutPath;
+            System.Diagnostics.Process.Start("open", path);
+        });
     }
 
     async void SelectSplitImages(WMZipedTemplate template)
