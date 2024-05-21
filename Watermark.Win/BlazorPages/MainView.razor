@@ -566,7 +566,10 @@
 
 	async void OpenLoginDialog()
 	{
-		var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("");
+		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
+		var param = new DialogParameters<Watermark.Razor.Components.LoginDialog>();
+		param.Add(x => x.ShowHeader, false);
+		var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", param, topCenter);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{
@@ -576,7 +579,10 @@
 
 	async void OpenSignUpDialog()
 	{
-		var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("");
+		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
+		var param = new DialogParameters<Watermark.Razor.Components.SignUpDialog>();
+		param.Add(x => x.ShowHeader, false);
+		var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("", param, topCenter);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 		{

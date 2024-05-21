@@ -5,9 +5,11 @@
 @using SkiaSharp
 @using Watermark.Razor
 @using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
+@inject WMDesignFunc designFunc
 <MudDialog Style="background:#e3e3e3;">
 	<DialogContent>
 		<div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#fff;">
@@ -567,6 +569,16 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		if(designFunc != null)
+		{
+			CurrentCanvas = designFunc.CurrentCanvas;
+			SelectLogo = designFunc.SelectLogo;
+			SelectContainer = designFunc.SelectContainer;
+			SelectDefaultImageEvt = designFunc.SelectDefaultImageEvt;
+			ImportFontEvt = designFunc.ImportFontEvt;
+			InitFontEvt = designFunc.InitFontEvt;
+		}
+
 		ConcurrentDictionary<string, byte[]> dic = new();
 		canvas = CurrentCanvas;
 		if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
@@ -723,6 +735,7 @@
 	async void SelectDefaultImage()
 	{
 		var p = await SelectDefaultImageEvt.Invoke();
+		if (string.IsNullOrEmpty(p)) return;
 		ConcurrentDictionary<string, byte[]> dic = new();
 		var destFolder = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
 		var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";

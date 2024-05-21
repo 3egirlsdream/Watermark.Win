@@ -127,33 +127,14 @@ else
 </MudPaper>
 
 <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-	@* <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
-		<MudText Typo="Typo.button"> 夜间模式 </MudText>
-		<MudSwitch @bind-Value="@Global.DARK_MODE" Color="Color.Primary" Size="Size.Small" />
-	</MudStack>
-	<MudDivider Class="my-2" /> *@
-	<MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
-		<MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
-		<MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" Size="Size.Small" />
-	</MudStack>
-</MudPaper>
-<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-	<MudStack Row style="position:relative;align-items: center">
-		<MudText Typo="Typo.button">下载缓存</MudText>
-		<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" />
-	</MudStack>
-
-	<MudDivider Class="my-2" />
-	<MudStack Row style="position:relative;align-items: center">
-		<MudText Typo="Typo.button">图标缓存</MudText>
-		<MudIconButton Icon="@Icons.Material.Filled.Delete" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=>  DeleteCache(Global.AppPath.LogoesFolder)" />
-	</MudStack>
-</MudPaper>
-
-<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
 	<MudStack Row style="position:relative;align-items: center">
 		<MudText Typo="Typo.button"> 切换账号</MudText>
 		<MudIconButton Icon="@Icons.Material.Filled.ExitToApp" style="position:absolute;right:10px" Size="Size.Small" OnClick="()=> { Global.CurrentUser = null; }" />
+	</MudStack>
+	<MudDivider Class="my-2" />
+	<MudStack Row style="position:relative;align-items: center" @onclick="OpenSettings">
+		<MudText Typo="Typo.button">设置</MudText>
+		<MudIconButton Icon="@Icons.Material.Filled.Settings" style="position:absolute;right:10px" Size="Size.Small"/>
 	</MudStack>
 	@if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
 	{
@@ -287,15 +268,6 @@ else
 		}
 	}
 
-	void DeleteCache(string p)
-	{
-		if (Directory.Exists(p))
-		{
-			Directory.Delete(p, true);
-			ClientInstance.ShowMsg(Snackbar, "清除完成", Severity.Success);
-		}
-	}
-
 	void OnImageTouched(bool f)
 	{
 		openVip = false;
@@ -311,5 +283,18 @@ else
 	{
 		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 		openVip = true;
+	}
+
+	async void OpenSettings()
+	{
+		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
+		var param = new DialogParameters<AppSetting>();
+		param.Add(x => x.ShowHeader, true);
+		var rst = DialogService.Show<AppSetting>("", param, topCenter);
+		var dialogResult = await rst.Result;
+		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+		{
+			StateHasChanged();
+		}
 	}
 }

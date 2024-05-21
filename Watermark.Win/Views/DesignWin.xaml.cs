@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SkiaSharp;
+using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using Watermark.Shared.Models;
 using Watermark.Win.Models;
 
@@ -22,10 +25,110 @@ namespace Watermark.Win.Views
         }
         public DesignWin(WMCanvas canvas, string cloud = "")
         {
-            var services = IocHelper.GetIoc();
+            var design = new WMDesignFunc();
+            design.CurrentCanvas = canvas;
+			design.SelectLogo = new Action<WMLogo>((x) =>
+			{
+				Microsoft.Win32.OpenFileDialog dialog = new()
+				{
+					DefaultExt = ".png",  // 设置默认类型
+					Multiselect = false,                             // 设置可选格式
+					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+				};
+				// 打开选择框选择
+				var result = dialog.ShowDialog();
+				if (result == true)
+				{
+					var p = dialog.FileName;
+					var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
+					if (!System.IO.Directory.Exists(destFolder))
+					{
+						System.IO.Directory.CreateDirectory(destFolder);
+					}
+					var name = Path.GetFileName(p);
+					var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+					System.IO.File.Copy(p, destFile, true);
+					x.Path = name;
+				}
+			});
+			design.SelectContainer = new Func<WMContainer, Task>((x) =>
+			{
+				Microsoft.Win32.OpenFileDialog dialog = new()
+				{
+					DefaultExt = ".png",  // 设置默认类型
+					Multiselect = false,                             // 设置可选格式
+					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+				};
+				// 打开选择框选择
+				var result = dialog.ShowDialog();
+				if (result == true)
+				{
+					var p = dialog.FileName;
+					x.Path = p;
+				}
+				return Task.CompletedTask;
+			});
+
+			design.SelectDefaultImageEvt = new Func<Task<string>>(() =>
+			{
+				Microsoft.Win32.OpenFileDialog dialog = new()
+				{
+					DefaultExt = ".png",  // 设置默认类型
+					Multiselect = false,                             // 设置可选格式
+					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+				};
+				// 打开选择框选择
+				var result = dialog.ShowDialog();
+				var p = "";
+				if (result == true)
+				{
+					p = dialog.FileName;
+				}
+
+				return Task.Run(() => p);
+			});
+
+			design.ImportFontEvt = new Action<List<string>>((x) =>
+			{
+				var fontPath = Global.AppPath.FontFolder;
+				Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+				dialog.DefaultExt = ".ttf";  // 设置默认类型
+				dialog.Multiselect = false;                             // 设置可选格式
+				dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
+				// 打开选择框选择
+				var result = dialog.ShowDialog();
+				if (result == true)
+				{
+					var f = dialog.FileName;
+					if (!Directory.Exists(fontPath))
+					{
+						Directory.CreateDirectory(fontPath);
+					}
+					var file = new FileInfo(f);
+					if (file.Exists)
+					{
+						try
+						{
+							var target = fontPath + Path.DirectorySeparatorChar + Path.GetFileName(f);
+							file.CopyTo(target, true);
+						}
+						catch { }
+						finally
+						{
+							ClientInstance.InitLocalFontsAction.Invoke(x);
+						}
+					}
+
+				}
+			});
+
+			design.InitFontEvt = new Action<List<string>>((x) => ClientInstance.InitLocalFontsAction(x));
+
+			var services = IocHelper.GetIoc();
 			services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
 			services.AddSingleton(canvas);
             services.AddSingleton(cloud);
+			services.AddSingleton(design);
             Resources.SetIoc(services);
             InitializeComponent();
         }

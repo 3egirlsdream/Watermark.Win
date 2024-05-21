@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Watermark.Win.BlazorPages"
+        xmlns:local="clr-namespace:Watermark.Razor.Components;assembly=Watermark.Razor"
         xmlns:blazor="http://schemas.microsoft.com/winfx/2006/xaml/presentation/blazor"
         mc:Ignorable="d"
         Title="模板设计" Height="750" Width="1200">

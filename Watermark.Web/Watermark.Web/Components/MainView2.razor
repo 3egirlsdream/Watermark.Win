@@ -1,0 +1,320 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using System.IO
+@using System.Collections.Concurrent
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<style>
+    .hide {
+        text-overflow: ellipsis;
+        overflow-x: hidden;
+        white-space: nowrap;
+    }
+</style>
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<div style="height:48px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FAFAFA;">
+    <MudToolBar Style="height:48px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
+        <MudIcon Icon="@Icons.Custom.Brands.GitHub" Color="Color.Default" Style="margin-left:30%;" />
+        <MudMenu Color="Color.Default" DisableElevation Class="mx-2" Label="首页"></MudMenu>
+        <MudSpacer />
+        <MudButton Variant="Variant.Text" Color="Color.Default" DisableElevation OnClick="LogIn">登陆</MudButton>
+    </MudToolBar>
+</div>
+<div Style="background:#FFFFFF;height:calc(100vh);width:100%;padding: 2% calc(50% - 612px);">
+    <MudGrid Style="margin-top:58px;">
+        <MudStack Row Justify="Justify.Center" Style="margin:auto;display:none !important;">
+            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;")" Width="400px">
+                <MudStack>
+                    <svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="48" height="48">
+                        <path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
+                        <path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
+                        <path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
+                        <path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
+                        <path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+                    </svg>
+                </MudStack>
+                <MudStack Row="true" Style="height:32px;display:flex;align-items:center">
+                    <MudText Class="hide" Typo="Typo.h5">Davici Frame Master</MudText>
+                    <MudDivider Vertical="true" Class="ma-2" />
+                    <MudIcon Icon="@Icons.Custom.Brands.Microsoft" />
+                </MudStack>
+                <MudText Typo="Typo.body1" Class="my-2">
+                    ● 免费<br />
+                    ● 适用Windows客户端<br />
+                    ● 模板设计<br />
+                    ● 模板编辑<br />
+                    ● 模板上传<br />
+                    ● 拼图<br />
+                </MudText>
+                <br />
+                <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                    使用 Davici Frame Master 即表示你同意其 许可 & 隐私声明
+                </MudText>
+                <MudButton Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="http://thankful.top:2038/api/public/dl/EMRyVNXX">下载 Davici Frame Master</MudButton>
+            </MudPaper>
+            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;")" Width="400px">
+                <MudStack>
+                    <svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="48" height="48">
+                        <path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
+                        <path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
+                        <path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
+                        <path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
+                        <path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+                    </svg>
+                </MudStack>
+                <MudStack Row="true" Style="height:32px;display:flex;align-items:center">
+                    <MudText Class="hide" Typo="Typo.h5">Davici Frame Master</MudText>
+                    <MudDivider Vertical="true" Class="ma-2" />
+                    <MudIcon Icon="@Icons.Material.Filled.Android" />
+                </MudStack>
+                <MudText Typo="Typo.body1" Class="my-2">
+                    ● 基础功能免费<br />
+                    ● 适用Android手机客户端<br />
+                    ● 模板编辑<br />
+                    ● 拼图<br />
+                    ● 限制的批量处理<br />
+                    ● 部分付费API<br />
+                </MudText>
+                <br />
+                <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                    使用 Davici Frame Master 即表示你同意其 许可 & 隐私声明
+                </MudText>
+                <MudTooltip Color="Color.Default">
+                    <ChildContent>
+                        <MudButton Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation>下载 Davici Frame Master</MudButton>
+                    </ChildContent>
+                    <TooltipContent>
+                        <MudImage Height="200" Width="200" ObjectFit="ObjectFit.Contain" Class="pa-2" Src="https://cdn.thankful.top/downloadpath.png" />
+                    </TooltipContent>
+                </MudTooltip>
+            </MudPaper>
+            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;")" Width="400px">
+                <MudStack>
+                    <svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="48" height="48">
+                        <path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
+                        <path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
+                        <path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
+                        <path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
+                        <path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+                    </svg>
+                </MudStack>
+                <MudStack Row="true" Style="height:32px;display:flex;align-items:center">
+                    <MudText Class="hide" Typo="Typo.h5">Davici Frame Master</MudText>
+                    <MudDivider Vertical="true" Class="ma-2" />
+                    <MudIcon Icon="@Icons.Custom.Brands.Apple" />
+                </MudStack>
+                <MudText Typo="Typo.body1" Class="my-2">
+                    ● 订阅制<br />
+                    ● 会员全平台通用，跨平台同步<br />
+                    ● 适用MacOS,IOS客户端<br />
+                    ● 不损失画质<br />
+                    ● 模板编辑<br />
+                    ● 拼图<br />
+                </MudText>
+                <br />
+                <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                    使用 Davici Frame Master 即表示你同意其 许可 & 隐私声明
+                </MudText>
+                <MudButton Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://cdn.thankful.top/Watermark.Mac.pkg">测试版</MudButton>
+            </MudPaper>
+        </MudStack>
+
+        <MudStack Row Justify="Justify.Center" Style="margin:auto;display:none !important" Class="my-4">
+            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;height:454px")" Width="606px">
+                <svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="48" height="48">
+                    <path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
+                    <path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
+                    <path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
+                    <path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
+                    <path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+                </svg>
+                <MudText Typo="Typo.h5">Davici Frame Master</MudText>
+                <MudText Typo="Typo.h6">水印相框大师</MudText>
+
+                <MudText Typo="Typo.h4" Class="my-3">强大的全功能图片模板编辑工具</MudText>
+
+                <MudText Typo="Typo.body1" Class="my-2">通过模板编辑器制作各式各样的照片模板</MudText>
+
+                <MudText Typo="Typo.body1" Class="my-2">更可以直接获取图片EXIF信息</MudText>
+            </MudPaper>
+            <MudPaper Elevation="0" Style="@($"background:#F5F5F5;padding:24px;")" Width="606px">
+                <MudImage Src="https://cdn.thankful.top/C264A6182FBF486DBD4C755D743E4AB3.jpg" Height="400" Style="width:100%" ObjectFit="ObjectFit.Contain" />
+            </MudPaper>
+        </MudStack>
+        <MudItem xs="12" Style="display:none !important;">
+            <MudPaper Elevation="0" Class="pa-2" Style="@($"background:{Colors.Grey.Lighten4};")" Width="1224px">
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.h5" Class="my-3">下载你喜欢的模板</MudText>
+
+                        <MudText Typo="Typo.body1" Class="my-2">上百款模板供你选择</MudText>
+                        <MudText Typo="Typo.body1" Class="my-2">创作你自己的专属模板</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.h5" Class="my-3">拼图功能实现你的各种图片组合</MudText>
+
+                        <MudText Typo="Typo.body1" Class="my-2">创作你自己的拼图模板</MudText>
+
+                        <MudText Typo="Typo.body1" Class="my-2">更可以直接从市场下载</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="px-2 my-2" Style="overflow:hidden">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudStack Row Style="display:flex;align-items:center;margin:auto;text-align:center;" Justify="Justify.Center">
+                            <svg t="1715841540746" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7654" width="128" height="128"><path d="M110.933333 451.84L357.546667 204.8l72.106666 72.533333c-10.24 36.266667 6.4 75.946667 39.68 95.146667v236.373333c-25.6 14.506667-42.666667 42.24-42.666666 73.813334a85.333333 85.333333 0 0 0 85.333333 85.333333 85.333333 85.333333 0 0 0 85.333333-85.333333c0-31.573333-17.066667-59.306667-42.666666-73.813334V401.493333l88.32 89.173334c-2.986667 6.4-2.986667 13.653333-2.986667 21.333333a85.333333 85.333333 0 0 0 85.333333 85.333333 85.333333 85.333333 0 0 0 85.333334-85.333333 85.333333 85.333333 0 0 0-85.333334-85.333333c-7.68 0-14.933333 0-21.333333 2.986666L594.346667 320a84.48 84.48 0 0 0-49.066667-99.84c-18.346667-6.826667-37.546667-8.533333-54.613333-3.84L418.133333 144.213333l33.706667-33.28c33.28-33.706667 87.04-33.706667 120.32 0l340.906667 340.906667c33.706667 33.28 33.706667 87.04 0 120.32l-340.906667 340.906667c-33.28 33.706667-87.04 33.706667-120.32 0L110.933333 572.16c-33.706667-33.28-33.706667-87.04 0-120.32z" fill="#E64A19" p-id="7655"></path></svg>
+                            <MudText Typo="Typo.h1">
+                                <b>Gogs</b>
+                            </MudText>
+                        </MudStack>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h5" Style="text-align:center;">
+                            <b>一款极易搭建的自助 Git 服务</b>
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6" Class="mt-10">
+                        <MudStack Row Style="text-align:center;align-items:center" Justify="Justify.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.FireTruck" Color="Color.Error"/> 
+                            <MudText Typo="Typo.h6" Style="text-align:center;">
+                                <b>易安装</b>
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Style="text-align:center;">
+                            您除了可以根据操作系统平台通过 二进制运行，还可以通过 Docker 或 Vagrant，以及 包管理 安装。
+                        </MudText>
+                    </MudItem>
+
+                    <MudItem xs="6" Class="mt-10">
+                        <MudStack Row Style="text-align:center;align-items:center" Justify="Justify.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Window" Color="Color.Error" />
+                            <MudText Typo="Typo.h6" Style="text-align:center;">
+                                <b>跨平台</b>
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Style="text-align:center;">
+                            任何 Go 语言 支持的平台都可以运行 Gogs，包括 Windows、Mac、Linux 以及 ARM。挑一个您喜欢的就行！
+                        </MudText>
+                    </MudItem>
+
+                    
+                    <MudItem xs="6" Class="mt-10">
+                        <MudStack Row Style="text-align:center;align-items:center" Justify="Justify.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Light" Color="Color.Error" />
+                            <MudText Typo="Typo.h6" Style="text-align:center;">
+                                <b>轻量级</b>
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Style="text-align:center;">
+                            一个廉价的树莓派的配置足以满足 Gogs 的最低系统硬件要求。最大程度上节省您的服务器资源！
+                        </MudText>
+                    </MudItem>
+
+
+                    <MudItem xs="6" Class="mt-10">
+                        <MudStack Row Style="text-align:center;align-items:center" Justify="Justify.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Code" Color="Color.Error" />
+                            <MudText Typo="Typo.h6" Style="text-align:center;">
+                                <b>开源化</b>
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.h6" Style="text-align:center;">
+                            所有的代码都开源在 GitHub 上，赶快加入我们来共同发展这个伟大的项目！还等什么？成为贡献者吧！
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+
+        @* <MudStack Row Justify="Justify.Center" Style="margin:auto;display:none;">
+        <MudPaper Style="@("display:none;" + boxStyle)" Elevation="0" class="pa-3">
+        <MudStack Row style="position:relative;align-items: center">
+        <MudText Typo="Typo.button"> 永久授权 </MudText>
+        <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
+        </MudStack>
+        </MudPaper>
+        <MudPaper Style="@boxStyle" Elevation="0" class="pa-3" Width="300px">
+        <MudStack Justify="Justify.FlexStart">
+        <MudText Typo="Typo.h6" Align="Align.Center"><strong>免费版</strong>  </MudText>
+        <MudText Typo="Typo.subtitle2">基础模板<br />最高画质<br />模板编辑<br />生成照片 </MudText>
+        </MudStack>
+        </MudPaper>
+
+        <MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
+        <MudStack Justify="Justify.FlexStart">
+        <MudText Typo="Typo.h6" Align="Align.Center"><strong>付费会员</strong>  </MudText>
+        <MudText Typo="Typo.subtitle2">无限制使用付费API<br />无限制批量处理<br />无限制使用付费的高级模板<br />IOS、MAC OS、Windows、Android多端同步<br />持续更新 </MudText>
+        </MudStack>
+        <MudDivider Class="my-4" />
+        <MudStack Row style="position:relative;align-items: center">
+        <MudText Typo="Typo.button"> <strong>年度会员</strong> </MudText>
+        <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
+        </MudStack>
+        <MudDivider Class="my-4" />
+        <MudStack Row style="position:relative;align-items: center">
+        <MudText Typo="Typo.button"> <strong>季度会员</strong> </MudText>
+        <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
+        </MudStack>
+        <MudDivider Class="my-4" />
+        <MudStack Row style="position:relative;align-items: center">
+        <MudText Typo="Typo.button"> <strong>月度会员</strong> </MudText>
+        <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8 &nbsp;</MudChip>
+        </MudStack>
+        </MudPaper>
+        </MudStack>
+        *@
+        <MudItem xs="12" Style="position:absolute;bottom:0;width:100%;left:0">
+            <MudDivider Style="width:100%;"/>
+            <MudStack Justify="Justify.FlexEnd" Style="width:100%;background:#FAFAFA;align-items:center;margin-top:12px;" Row="true">
+                <a href="https://gogs.io/">Gogs官方网址</a> <a href="https://beian.miit.gov.cn/" class="ml-5">粤ICP备2021164431号</a>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</div>
+
+
+@code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
+    List<string> strings = [
+        "43F920046F064B18A4BA0B1C46408F66",
+    "B735DFC73A0B4080B11BBCFD3AE833D6",
+    "19BEBDE6C0C64FCB9919DDCD4A2A3675",
+    "DBF0D1F09CF74F9A8E827EA04543083A",
+    "C01EC81767F04D648CD055A241A61C5B",
+    "D28B8DC23C9747ACBEFEF462BA8CBBCB",
+    "ADD765F4905D45C38FE4A33B29D1200C",
+    "2ED212541CB2403EBC86EDD028EBFEDC",
+    "EF3C623CB9ED4CA68DAAE6064D5F0246",
+    "59C0718464C74C5D8B1CE1FB3894E553",
+    "370071180E1C41DB902C37DB84ED022C",
+    "D940CF2EC7A348119837F7CB418D4CFB"];
+    string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    void Pay(int t, string s)
+    {
+
+    }
+
+    async void LogIn()
+    {
+        var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("");
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+        }
+    }
+}
