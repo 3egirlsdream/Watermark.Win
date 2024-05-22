@@ -51,12 +51,6 @@
             <MudMenu Label="安卓版" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem>  <MudImage Src="https://cdn.thankful.top/andorid.png" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
             </MudMenu>
-            @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
-            {
-                <MudMenu Label="七牛" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-                    <MudMenuItem OnClick="()=>DialogService.Show<QiniuManagementDialog>(string.Empty)">文件管理</MudMenuItem>
-                </MudMenu>
-            }
             <MudSpacer />
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
@@ -779,12 +773,38 @@
             return "";
         });
 
+        Func<Task> ImportFont = new Func<Task>(async Task() =>
+        {
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileFontType, true);
+            if (result != null && result.Count() > 0)
+            {
+                var p = result.First().FileResult!.FullPath;
+                var fontPath = Global.AppPath.FontFolder;
+                if (!System.IO.Directory.Exists(fontPath))
+                {
+                    System.IO.Directory.CreateDirectory(fontPath);
+                }
+
+                var file = new FileInfo(p);
+                if (file.Exists)
+                {
+                    try
+                    {
+                        var target = fontPath + Path.GetFileName(p);
+                        file.CopyTo(target, true);
+                    }
+                    catch { }
+                }
+            }
+        });
+
 
         var p1 = new DialogParameters<Watermark.Razor.Components.Design>();
         p1.Add(x => x.CurrentCanvas, x);
         p1.Add(x => x.SelectLogo, SelectLogo);
         p1.Add(x => x.SelectContainer, SelectContainer);
         p1.Add(x => x.SelectDefaultImageEvt, SelectDefaultImage);
+        p1.Add(x => x.ImportFontEvt, ImportFont);
         var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true };
         var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
     }

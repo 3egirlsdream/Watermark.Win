@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NHotkey.Wpf;
 using SkiaSharp;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using Watermark.Shared.Models;
 using Watermark.Win.Models;
@@ -88,7 +90,7 @@ namespace Watermark.Win.Views
 				return Task.Run(() => p);
 			});
 
-			design.ImportFontEvt = new Action<List<string>>((x) =>
+			design.ImportFontEvt = new Func<Task>(() =>
 			{
 				var fontPath = Global.AppPath.FontFolder;
 				Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
@@ -113,16 +115,18 @@ namespace Watermark.Win.Views
 							file.CopyTo(target, true);
 						}
 						catch { }
-						finally
-						{
-							ClientInstance.InitLocalFontsAction.Invoke(x);
-						}
 					}
-
 				}
+				return Task.CompletedTask;
 			});
-
-			design.InitFontEvt = new Action<List<string>>((x) => ClientInstance.InitLocalFontsAction(x));
+			design.HotKeyEvt = new Action<Action>((x) =>
+			{
+				HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, (e, ee) =>
+				{
+					x.Invoke();
+				});
+			});
+			//design.InitFontEvt = new Action<List<string>>((x) => ClientInstance.InitLocalFontsAction(x));
 
 			var services = IocHelper.GetIoc();
 			services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();

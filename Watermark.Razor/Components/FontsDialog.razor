@@ -63,7 +63,7 @@
     MudDialogInstance MudDialog { get; set; }
 
     [Parameter]
-    public EventCallback<List<string>> ImportFontEvt { get; set; }
+    public Func<Task> ImportFontEvt { get; set; }
 
     DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
     Dictionary<string, string> Fonts = new Dictionary<string, string>();
@@ -79,7 +79,7 @@
 
     async void ImportLocalFont()
     {
-        await ImportFontEvt.InvokeAsync([]);
+        await ImportFontEvt.Invoke();
         Fonts = await Task.Run(() => Global.ReadFont());
         StateHasChanged();
     }

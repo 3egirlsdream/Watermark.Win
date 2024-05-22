@@ -159,6 +159,13 @@ namespace Watermark.Shared.Models
                 { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
                 { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
             };
+        public static Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
+            {
+                { DevicePlatform.Android, new[] { ".ttf", ".otf" } } ,
+                { DevicePlatform.iOS, new[] { ".ttf", ".otf" } },
+                { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
+                { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
+            };
     }
 	public static class Ext
 	{

@@ -969,7 +969,7 @@
 		{
 			FocusImageShow = false;
 			DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-			var rst = DialogService.Show<LoginDialog>("", topCenter);
+			var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
 			var dialogResult = await rst.Result;
 			if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
 			{
