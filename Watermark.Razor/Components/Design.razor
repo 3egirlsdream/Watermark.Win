@@ -34,7 +34,10 @@
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Error" OnClick="Submit">退出</MudButton>
+            @if(designFunc is null) 
+            {
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Error" OnClick="Submit">退出</MudButton>
+            }
         </MudToolBar>
     </div>
     <div Style="height:calc(100vh - 40px);width:100%;display: flex;margin-top:40px;" @onclick="()=>{showDialog = false;}">
@@ -82,31 +85,34 @@
                             </MudStack>
                             <MudDivider Class="my-2" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用边框等宽 (可能导致穿模)</MudText>
+                                <MudText Typo="Typo.button">边框等宽 (可能导致穿模)</MudText>
                                 <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
                             </MudStack>
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用阴影</MudText>
+                                <MudText Typo="Typo.button">阴影</MudText>
                                 <MudSwitch @bind-Value="@canvas.ImageProperties.EnableShadow" Color="Color.Primary" />
                             </MudStack>
-                            <MudColorPicker Class="my-2" Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
-                            <MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDivider Class="my-2" />
+                            <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="canvas.ImageProperties.ShadowColor" />
+                            <MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.ShadowRange" Label="深度" Variant="Variant.Text" Margin="Margin.Dense" />
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用图片圆角</MudText>
+                                <MudText Typo="Typo.button">图片圆角</MudText>
                                 <MudSwitch @bind-Value="@canvas.ImageProperties.EnableRadius" Color="Color.Primary" />
                             </MudStack>
-                            <MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDivider Class="my-2" />
+                            <MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.CornerRadius" Label="圆角度数" Variant="Variant.Text" Margin="Margin.Dense" />
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用背景高斯模糊</MudText>
+                                <MudText Typo="Typo.button">背景高斯模糊</MudText>
                                 <MudSwitch @bind-Value="@canvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
                             </MudStack>
-                            <MudTextField Class="my-2" @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDivider Class="my-2" />
+                            <MudTextField @bind-Value="@canvas.ImageProperties.GaussianDeep" Label="模糊深度" Variant="Variant.Text" Margin="Margin.Dense" />
                         </MudPaper>
                     }
                     else
@@ -162,19 +168,23 @@
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用阴影</MudText>
+                                <MudText Typo="Typo.button">阴影</MudText>
                                 <MudSwitch @bind-Value="@container.ContainerProperties.EnableShadow" Color="Color.Primary" />
                             </MudStack>
                             <MudDivider Class="my-2" />
                             <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="container.ContainerProperties.ShadowColor" />
-                            <MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.ShadowRange" Label="深度" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.ShadowRange" Label="深度" Variant="Variant.Text" Margin="Margin.Dense" />
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">启用图片圆角</MudText>
+                                <MudText Typo="Typo.button">图片圆角</MudText>
                                 <MudSwitch @bind-Value="@container.ContainerProperties.EnableRadius" Color="Color.Primary" />
                             </MudStack>
-                            <MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.CornerRadius" Label="圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDivider Class="my-2" />
+                            <MudTextField class="mt-2" @bind-Value="@container.ContainerProperties.CornerRadius" Label="圆角度数" Variant="Variant.Text" Margin="Margin.Dense" />
+                        </MudPaper>
+                        <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+                            <MudTextField @bind-Value="@container.Angle" Label="旋转角度" Variant="Variant.Text" Margin="Margin.Dense" />
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                             <div class="d-flex justify-space-between" style="align-items:center;">
@@ -385,9 +395,9 @@
                                                             </div>
 
 
-                                                            <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                                            <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" />
                                                             <MudStack Class="mt-5">
-                                                                <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                                <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Text" Margin="Margin.Dense" />
                                                                 <MudStack Row>
                                                                     <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                                         @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
@@ -408,8 +418,9 @@
                                                                 <MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
                                                                 <MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
                                                             </MudStack>
-                                                            <MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-                                                            <MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+                                                            <MudTextField @bind-Value="@mText.BorderPadding" Label="内边距" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
+                                                            <MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
+                                                            <MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
                                                             <MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
 
                                                         </MudPaper>
@@ -502,9 +513,9 @@
                                                     <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" />
                                                 </div>
 
-                                                <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-5" />
+                                                <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" />
                                                 <MudStack Class="mt-5">
-                                                    <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                    <MudTextField @bind-Value="@mText.FontFamily" Label="字体" Variant="Variant.Text" Margin="Margin.Dense" />
                                                     <MudStack Row>
                                                         <MudMenu Label="选择系统字体" Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Style="white-space: nowrap;">
                                                             @foreach (var font in SkiaSharp.SKFontManager.Default.FontFamilies)
@@ -523,8 +534,9 @@
                                                     <MudText Align="Align.Justify" Typo="Typo.button">文字边框</MudText>
                                                     <MudSwitch @bind-Value="@mText.EnableBorder" Color="Color.Primary" Style="position:absolute;right:5px" />
                                                 </MudStack>
-                                                <MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
-                                                <MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Outlined" Margin="Margin.Dense" class="mt-5" />
+                                                <MudTextField @bind-Value="@mText.BorderPadding" Label="内边距" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
+                                                <MudTextField @bind-Value="@mText.BorderWidth" Label="边框宽度" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
+                                                <MudTextField @bind-Value="@mText.BorderRadius" Label="边框圆角度数" Variant="Variant.Text" Margin="Margin.Dense" class="mt-5" />
                                                 <MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" Class="mt-5" />
                                             </MudPaper>
                                         }

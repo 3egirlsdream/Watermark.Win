@@ -790,8 +790,14 @@
                 {
                     try
                     {
-                        var target = fontPath + Path.GetFileName(p);
+                        var target = Path.Combine(fontPath, Path.GetFileName(p));
                         file.CopyTo(target, true);
+                    }
+                    catch { }
+                    try
+                    {
+                        var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, x.ID, Path.GetFileName(p));
+                        file.CopyTo(waterPath, true);
                     }
                     catch { }
                 }

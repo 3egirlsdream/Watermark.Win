@@ -111,8 +111,14 @@ namespace Watermark.Win.Views
 					{
 						try
 						{
-							var target = fontPath + Path.DirectorySeparatorChar + Path.GetFileName(f);
+							var target = Path.Combine(fontPath, Path.GetFileName(f));
 							file.CopyTo(target, true);
+                        }
+                        catch { }
+						try
+						{
+							var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, Path.GetFileName(f));
+							file.CopyTo(waterPath, true);
 						}
 						catch { }
 					}

@@ -21,7 +21,7 @@
 		<MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 40px);overflow-y:auto;padding:5px;">
 			<MudItem xs="12">
 				<MudText Typo="Typo.h4">
-					我本地的<MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=>InitTemplates()"></MudIconButton>
+					<b>我本地的</b><MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=>InitTemplates()"></MudIconButton>
 				</MudText>
 			</MudItem>
 			@foreach (var grid in wMTemplates)
@@ -46,7 +46,7 @@
 			}
 
 			<MudItem xs="12">
-				<MudText Typo="Typo.h4">我收藏的</MudText>
+				<MudText Typo="Typo.h4"><b>我收藏的</b></MudText>
 			</MudItem>
 			@foreach (var t in ILikeTemplates)
 			{
@@ -74,7 +74,7 @@
 			}
 
 			<MudItem xs="12">
-				<MudText Typo="Typo.h4">我上传的</MudText>
+				<MudText Typo="Typo.h4"><b>我上传的</b></MudText>
 			</MudItem>
 			@foreach (var t in ZipedTemplates)
 			{
