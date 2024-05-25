@@ -186,6 +186,10 @@
 					<MudSlider Color="Color.Primary" @bind-Value="@container.ContainerProperties.CornerRadius" ValueLabel="true" />
 				</MudPaper>
 				<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+					<MudText Typo="Typo.subtitle1">旋转角度(@container.Angle)</MudText>
+					<MudSlider Color="Color.Primary" @bind-Value="@container.Angle" ValueLabel="true" Min="0" Max="360" Step="10"/>
+				</MudPaper>
+				<MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
 					<div class="d-flex justify-space-between">
 						<MudText Typo="Typo.button">容器内组件水平对齐</MudText>
 						<MudToggleGroup @bind-Value="@container.HorizontalAlignment" T="HorizontalAlignment" Outline="true" Delimiters="true" Dense="true" Rounded="false" CheckMark="false" FixedContent="false">
@@ -372,6 +376,9 @@
 						<MudDivider Class="my-3" />
 						<MudText Typo="Typo.subtitle1">边框圆角度数(@mText.BorderRadius)</MudText>
 						<MudSlider Color="Color.Primary" @bind-Value="@mText.BorderRadius" ValueLabel="true" />
+						<MudDivider Class="my-3" />
+						<MudText Typo="Typo.subtitle1">内边距(@mText.BorderPadding)</MudText>
+						<MudSlider Color="Color.Primary" @bind-Value="@mText.BorderPadding" ValueLabel="true" />
 						<MudDivider Class="my-3" />
 						<MudColorPicker Label="边框颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="mText.BorderColor" />
 					</MudPaper>
