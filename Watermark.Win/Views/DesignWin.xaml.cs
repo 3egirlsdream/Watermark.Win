@@ -93,12 +93,14 @@ namespace Watermark.Win.Views
 			design.ImportFontEvt = new Func<Task>(() =>
 			{
 				var fontPath = Global.AppPath.FontFolder;
-				Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
-				dialog.DefaultExt = ".ttf";  // 设置默认类型
-				dialog.Multiselect = false;                             // 设置可选格式
-				dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
-				// 打开选择框选择
-				var result = dialog.ShowDialog();
+                Microsoft.Win32.OpenFileDialog dialog = new()
+                {
+                    DefaultExt = ".ttf",  // 设置默认类型
+                    Multiselect = false,                             // 设置可选格式
+                    Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf"
+                };
+                // 打开选择框选择
+                var result = dialog.ShowDialog();
 				if (result == true)
 				{
 					var f = dialog.FileName;
@@ -127,7 +129,7 @@ namespace Watermark.Win.Views
 			});
 			design.HotKeyEvt = new Action<Action>((x) =>
 			{
-				HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, (e, ee) =>
+				HotkeyManager.Current.AddOrReplace("Increment", Key.R, ModifierKeys.Control, (obj, e) =>
 				{
 					x.Invoke();
 				});
