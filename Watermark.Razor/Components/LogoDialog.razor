@@ -8,117 +8,114 @@
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JSRuntime
 <style>
-    .container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        padding: 10px;
-        overflow-y:auto;
-    }
+	.container {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		padding: 10px;
+		overflow-y: auto;
+		scrollbar-width:none;
+	}
 
-    .rectangle {
-        position: relative;
-        width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
-        padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
-        margin-right: 20px; /* 设置右侧间距 */
-        margin-bottom: 20px; /* 设置下方间距 */
-    }
+	.rectangle {
+		position: relative;
+		width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
+		padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
+		margin-right: 20px; /* 设置右侧间距 */
+		margin-bottom: 20px; /* 设置下方间距 */
+	}
 
-        .rectangle .mud-input-control {
-            margin-top: 0px;
-        }
+		.rectangle .mud-input-control {
+			margin-top: 0px;
+		}
 
-        .rectangle .mud-input-control-input-container {
-            position: absolute;
-            height: 100%;
-            width: 100%;
-        }
+		.rectangle .mud-input-control-input-container {
+			position: absolute;
+			height: 100%;
+			width: 100%;
+		}
 
-        .rectangle img {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* 图片填充整个矩形 */
-        }
+		.rectangle img {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			object-fit: contain; /* 图片填充整个矩形 */
+		}
 </style>
 
-<MudDialog Options="DialogOptions" Style="width:80%;height:80%">
-    <DialogContent>
-        <div class="container">
-            <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
-                <MudFileUpload T="IReadOnlyList<IBrowserFile>" Accept=".jpg, .png" FilesChanged="ImportLogo" Style="position: absolute;    margin-top: calc(50% - 30px); margin-left: calc(50% - 30px);">
-                    <ButtonTemplate>
-                        <MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.Add" Size="Size.Large" />
-                    </ButtonTemplate>
-                </MudFileUpload>
-            </div>
-            @foreach (var per in Logoes)
-            {
-                <div class="rectangle">
-                    <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
-                </div>
-            }
-        </div>
-    </DialogContent>
-</MudDialog>
+<div class="container" style="min-width:80%;min-height:80%">
+	<div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
+		<MudFileUpload T="IReadOnlyList<IBrowserFile>" Accept=".jpg, .png" FilesChanged="ImportLogo" Style="position: absolute;    margin-top: calc(50% - 30px); margin-left: calc(50% - 30px);">
+			<ButtonTemplate>
+				<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.Add" Size="Size.Large" />
+			</ButtonTemplate>
+		</MudFileUpload>
+	</div>
+	@foreach (var per in Logoes)
+	{
+		<div class="rectangle">
+			<MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
+		</div>
+	}
+</div>
 
 
 @code {
 
 
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-    ConcurrentDictionary<string, string> Logoes = new();
-    void Click(KeyValuePair<string, string> pair)
-    {
-        MudDialog.Close(pair);
-    }
+	[CascadingParameter]
+	MudDialogInstance MudDialog { get; set; }
+	DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+	ConcurrentDictionary<string, string> Logoes = new();
+	void Click(KeyValuePair<string, string> pair)
+	{
+		MudDialog.Close(pair);
+	}
 
-    protected override async Task OnInitializedAsync()
-    {
-        await Init();
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		await Init();
+	}
 
-    async Task Init()
-    {
-        var folder = Global.AppPath.LogoesFolder;
-        if (!Directory.Exists(folder)) return;
+	async Task Init()
+	{
+		var folder = Global.AppPath.LogoesFolder;
+		if (!Directory.Exists(folder)) return;
 
-        var directory = new DirectoryInfo(folder);
-        var mission = new List<Task>();
+		var directory = new DirectoryInfo(folder);
+		var mission = new List<Task>();
 
-        var dic = new ConcurrentDictionary<string, byte[]>();
-        foreach (var logo in directory.GetFiles())
-        {
-            var t = Task.Run(() => Global.ImageFile2Base64(dic, logo.FullName, logo.Name));
-            mission.Add(t);
-        }
+		var dic = new ConcurrentDictionary<string, byte[]>();
+		foreach (var logo in directory.GetFiles())
+		{
+			var t = Task.Run(() => Global.ImageFile2Base64(dic, logo.FullName, logo.Name));
+			mission.Add(t);
+		}
 
-        await Task.WhenAll(mission);
-        foreach (var e in dic)
-        {
-            Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-        }
-    }
+		await Task.WhenAll(mission);
+		foreach (var e in dic)
+		{
+			Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+		}
+	}
 
-    async void ImportLogo(IReadOnlyList<IBrowserFile> files)
-    {
-        var target = Global.AppPath.LogoesFolder;
-        if (!Directory.Exists(target))
-        {
-            Directory.CreateDirectory(target);
-        }
-        foreach (var file in files)
-        {
-            var end = file.Name.Split('.').LastOrDefault();
-            if (string.IsNullOrEmpty(end) || (end.ToLower() != "png" && end.ToLower() != "jpg")) continue;
-            var id = Guid.NewGuid().ToString();
-            using var fs = File.Create(target + id + "." + end);
-            await file.OpenReadStream(file.Size).CopyToAsync(fs);
-        }
-        await Init();
-        StateHasChanged();
-    }
+	async void ImportLogo(IReadOnlyList<IBrowserFile> files)
+	{
+		var target = Global.AppPath.LogoesFolder;
+		if (!Directory.Exists(target))
+		{
+			Directory.CreateDirectory(target);
+		}
+		foreach (var file in files)
+		{
+			var end = file.Name.Split('.').LastOrDefault();
+			if (string.IsNullOrEmpty(end) || (end.ToLower() != "png" && end.ToLower() != "jpg")) continue;
+			var id = Guid.NewGuid().ToString();
+			using var fs = File.Create(target + id + "." + end);
+			await file.OpenReadStream(file.Size).CopyToAsync(fs);
+		}
+		await Init();
+		StateHasChanged();
+	}
 
 }
