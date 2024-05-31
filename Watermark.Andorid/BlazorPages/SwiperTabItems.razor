@@ -1,0 +1,63 @@
+﻿@inject IJSRuntime JSRuntime
+
+<div class="@("swiper " + Id)" style="height:100%">
+    <div class="swiper-wrapper" style="height:100%">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Value
+    {
+        get => _value;
+        set
+        {
+            if (_value != value)
+            {
+                _value = value;
+                if (AfterFirstRender)
+                {
+                    UpdateSwiper(value);
+                }
+            }
+        }
+    }
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private int _value = 0;
+    private bool AfterFirstRender;
+    private string Id = "swiper" + Guid.NewGuid().ToString();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && ChildContent is not null)
+        {
+            var dotNetCallbackRef = DotNetObjectReference.Create(this);
+            await JSRuntime!.InvokeVoidAsync("swiperInit", new object[4] { dotNetCallbackRef, "UpdateValue", Id, Value });
+            AfterFirstRender = true;
+        }
+    }
+    private async void UpdateSwiper(int value)
+    {
+        await JSRuntime!.InvokeVoidAsync($"{Id}.slideTo", new object[1] { value });
+    }
+    [JSInvokable]
+    public async Task UpdateValue(int value)
+    {
+        _value = value;
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(value);
+        }
+        StateHasChanged();
+    }
+
+    public async void Dispose()
+    {
+        await JSRuntime!.InvokeVoidAsync($"{Id}.destroy", new object[2] { true, true });
+    }
+}
