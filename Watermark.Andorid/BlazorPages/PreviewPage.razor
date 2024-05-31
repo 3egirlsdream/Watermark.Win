@@ -103,15 +103,11 @@
         </MudCollapse>
     </MudStack>
     <MudCard Style="@($"padding:16px;background:#E5E5E5;transition: height 0.5s;height:calc(100% - {(ShowSetting ? (showRadio ? "100px" : "42%") : "100px")})")" Elevation="0">
-        <SwiperTabItems @bind-Value="SelecetedIndex">
-            @foreach(var context in Images) 
-            {
-                <SwiperTabItem>
-                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@context.Src" Elevation="0" Style="width:100%;height:100%" />
-                </SwiperTabItem>
-            }
-        </SwiperTabItems>
-
+        <MudCarousel Class="mud-width-full" ItemsSource="@Images" @bind-SelectedIndex="SelecetedIndex" Style="height:90%;" ShowArrows="true" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="false">
+            <ItemTemplate>
+                <MudImage ObjectFit="@ObjectFit.Contain" Src="@context.Src" Elevation="0" Style="width:100%;height:100%" />
+            </ItemTemplate>
+        </MudCarousel>
     </MudCard>
     <MudStack Row="true" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;width:100%">
         @if (CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split)
@@ -174,7 +170,9 @@
     {
         <MudPaper Style="width:100%;height:100%;overflow-y:auto;padding:20px" Elevation="0">
             <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-                <MudTextField @bind-Value="@CurrentTemplate.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudText Typo="Typo.h5"><b>画布</b></MudText>
+                <MudDivider Class="my-2" />
+                <MudTextField @bind-Value="@CurrentTemplate.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Text" Margin="Margin.Dense" />
                 <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@CurrentTemplate.BackgroundColor" />
             </MudPaper>
             <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
@@ -197,7 +195,7 @@
                     }
                 </MudPaper>
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-                    <MudStack Row>
+                    <MudStack>
                         <MudText Typo="Typo.subtitle1">上边距(@CurrentTemplate.BorderThickness.Top)</MudText>
                         <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.BorderThickness.Top" ValueLabel="true" />
                         <MudText Typo="Typo.subtitle1">下边距(@CurrentTemplate.BorderThickness.Bottom)</MudText>
@@ -220,7 +218,6 @@
                     </MudStack>
                     <MudDivider Class="my-2" />
                     <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplate.ImageProperties.ShadowColor" />
-                    <MudDivider Class="my-2" />
                     <MudText Typo="Typo.subtitle1">深度(@CurrentTemplate.ImageProperties.ShadowRange)</MudText>
                     <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.ImageProperties.ShadowRange" ValueLabel="true" />
                 </MudPaper>

@@ -197,8 +197,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var api = new APIHelper();
-        await Global.Login();
         checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
         if (checkUpdate)
         {

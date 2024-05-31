@@ -297,7 +297,7 @@
                                 {
                                     <SwiperTabItem>
                                         <MudPaper Elevation="0" Class="mud-tab-class">
-                                            <MudGrid Class="pt-2" Justify="Justify.FlexStart" Style="@($"{(tb2_t2 == subscribed.IndexOf(sub) + 1 ? "" : "display:none;")}")">
+                                            <MudGrid Class="pt-2" Justify="Justify.FlexStart">
                                                 @foreach (var t in sub.Item2)
                                                 {
                                                     <MudItem xs="6" Style="padding:4px;">
@@ -593,6 +593,7 @@
 
             Global.DeviceType = Shared.Enums.DeviceType.Andorid;
             Global.PrimaryKey = ClientInstance.Key();
+            await Global.Login();
             await LoadTemplates();
             await LoadCollectTemplate();
             await helper.DownloadLogoes();
@@ -969,9 +970,11 @@
                 var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
                 if (!auth.success)
                 {
+                    FocusImageShow = false;
                     faildShow = true;
                     failedMessage = auth.message.content;
                     await PublicMethods.ReLogin();
+                    StateHasChanged();
                     return;
                 }
             }
