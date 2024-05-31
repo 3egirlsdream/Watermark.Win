@@ -24,6 +24,9 @@ namespace Watermark.Andorid
 #if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
 #endif
+#if MACCATALYST
+            builder.Services.AddSingleton<WMDesignFunc>();
+#endif
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
 

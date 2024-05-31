@@ -11,7 +11,7 @@
 @inject ISnackbar Snackbar
 @inject WMDesignFunc designFunc
 
-@if (designFunc != null)
+@if (designFunc != null && Global.DeviceType != DeviceType.Mac)
 {
     <MudThemeProvider />
     <MudDialogProvider />
@@ -34,7 +34,7 @@
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            @if(designFunc is null) 
+            @if(designFunc is null || Global.DeviceType == DeviceType.Mac) 
             {
                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Error" OnClick="Submit">退出</MudButton>
             }
@@ -585,7 +585,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (designFunc != null)
+        if (designFunc != null && Global.DeviceType != DeviceType.Mac)
         {
             CurrentCanvas = designFunc.CurrentCanvas;
             SelectLogo = designFunc.SelectLogo;
@@ -625,7 +625,7 @@
 
         HotKeyEvt?.Invoke(PreviewImageRefresh);
         var api = new APIHelper();
-        var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Win);
+        var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
     }
 
     private async void PreviewImageRefresh()
