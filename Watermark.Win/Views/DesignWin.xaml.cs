@@ -55,39 +55,43 @@ namespace Watermark.Win.Views
 			});
 			design.SelectContainer = new Func<WMContainer, Task>((x) =>
 			{
-				Microsoft.Win32.OpenFileDialog dialog = new()
+				return Task.Run(() =>
 				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = false,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-				// 打开选择框选择
-				var result = dialog.ShowDialog();
-				if (result == true)
-				{
-					var p = dialog.FileName;
-					x.Path = p;
-				}
-				return Task.CompletedTask;
+					Microsoft.Win32.OpenFileDialog dialog = new()
+					{
+						DefaultExt = ".png",  // 设置默认类型
+						Multiselect = false,                             // 设置可选格式
+						Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+					};
+					// 打开选择框选择
+					var result = dialog.ShowDialog();
+					if (result == true)
+					{
+						var p = dialog.FileName;
+						x.Path = p;
+					}
+				});
 			});
 
 			design.SelectDefaultImageEvt = new Func<Task<string>>(() =>
 			{
-				Microsoft.Win32.OpenFileDialog dialog = new()
+				return Task.Run(() => 
 				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = false,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-				// 打开选择框选择
-				var result = dialog.ShowDialog();
-				var p = "";
-				if (result == true)
-				{
-					p = dialog.FileName;
-				}
-
-				return Task.Run(() => p);
+					Microsoft.Win32.OpenFileDialog dialog = new()
+					{
+						DefaultExt = ".png",  // 设置默认类型
+						Multiselect = false,                             // 设置可选格式
+						Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+					};
+					// 打开选择框选择
+					var result = dialog.ShowDialog();
+					var p = "";
+					if (result == true)
+					{
+						p = dialog.FileName;
+					}
+					return p;
+				});
 			});
 
 			design.ImportFontEvt = new Func<Task>(() =>

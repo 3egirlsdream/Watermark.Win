@@ -502,6 +502,7 @@
 					{
 						var content = File.ReadAllText(configPath);
 						var canvas = Global.ReadConfig(content);
+						canvas.Exif = ExifHelper.DefaultMeta;
 						await InitFonts([canvas]);
 						var b64 = await helper.GenerationAsync(canvas, null, true);
 						var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);

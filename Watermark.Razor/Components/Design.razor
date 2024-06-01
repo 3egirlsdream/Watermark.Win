@@ -740,7 +740,9 @@
         await rs;
         var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + Path.GetFileName(mContainer.Path);
         using var bitmap = SKBitmap.Decode(mContainer.Path);
-        Global.WriteThumbnailImage(bitmap, destFile);
+        var codec = SKCodec.Create(mContainer.Path);
+        using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap);
+        Global.WriteThumbnailImage(bitmap2, destFile);
         ConcurrentDictionary<string, byte[]> dic = [];
         Global.ImageFile2Base64(dic, destFile, mContainer.ID);
         mContainer.Path = Path.GetFileName(mContainer.Path);
@@ -756,6 +758,8 @@
         var destFolder = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
         var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
         SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+        var codec = SKCodec.Create(p);
+        bitmap = WatermarkHelper.AutoOrient(codec, bitmap);
         Global.WriteThumbnailImage(bitmap, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
