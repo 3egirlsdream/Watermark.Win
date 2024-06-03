@@ -160,7 +160,7 @@ else
 <MudDrawer Style="@($"{(openLogoDialog?"":"display:none;")}")" @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
     @if (openLogoDialog)
     {
-        <Watermark.Razor.Components.LogoDialog />
+        <Watermark.Razor.Components.LogoDialogContent />
     }
 </MudDrawer>
 

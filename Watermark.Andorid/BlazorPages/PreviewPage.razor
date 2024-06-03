@@ -591,7 +591,7 @@
 <MudDrawer @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">
     @if (openLogoDialog)
     {
-        <LogoDialog OnImageTouched="SelectLogoCallback" />
+        <Watermark.Razor.Components.LogoDialogContent OnClick="SelectLogoCallback" />
     }
 </MudDrawer>
 <MudDrawer @bind-Open="@openFontsDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary" Color="Color.Default">

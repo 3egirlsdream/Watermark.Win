@@ -34,7 +34,7 @@
                 <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Size="Size.Small" Class="ma-4" />
             }
             <MudSpacer />
-            @if(designFunc is null || Global.DeviceType == DeviceType.Mac) 
+            @if (designFunc is null || Global.DeviceType == DeviceType.Mac)
             {
                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Error" OnClick="Submit">退出</MudButton>
             }
@@ -585,47 +585,61 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (designFunc != null && Global.DeviceType != DeviceType.Mac)
+        try
         {
-            CurrentCanvas = designFunc.CurrentCanvas;
-            SelectLogo = designFunc.SelectLogo;
-            SelectContainer = designFunc.SelectContainer;
-            SelectDefaultImageEvt = designFunc.SelectDefaultImageEvt;
-            ImportFontEvt = designFunc.ImportFontEvt;
-            HotKeyEvt = designFunc.HotKeyEvt;
-        }
-
-        ConcurrentDictionary<string, byte[]> dic = new();
-        canvas = CurrentCanvas;
-        if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-        var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
-        Global.ImageFile2Base64(dic, p, "default");
-        var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
-        canvas.Children.ForEach(c =>
-        {
-            if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
-            c.Controls.ForEach(x =>
+            if (designFunc != null && Global.DeviceType != DeviceType.Mac)
             {
-                if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
-                else if (x is WMContainer mContainer)
+                CurrentCanvas = designFunc.CurrentCanvas;
+                SelectLogo = designFunc.SelectLogo;
+                SelectContainer = designFunc.SelectContainer;
+                SelectDefaultImageEvt = designFunc.SelectDefaultImageEvt;
+                ImportFontEvt = designFunc.ImportFontEvt;
+                HotKeyEvt = designFunc.HotKeyEvt;
+            }
+
+            ConcurrentDictionary<string, byte[]> dic = new();
+            canvas = CurrentCanvas;
+            if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
+            var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
+            Global.ImageFile2Base64(dic, p, "default");
+            var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
+            canvas.Children.ForEach(c =>
+            {
+                if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
+                c.Controls.ForEach(x =>
                 {
-                    mContainer.Controls.ForEach(z =>
+                    if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
+                    else if (x is WMContainer mContainer)
                     {
-                        if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
-                    });
+                        mContainer.Controls.ForEach(z =>
+                        {
+                            if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
+                        });
 
-                };
+                    };
+                });
             });
-        });
-        foreach (var e in dic)
-        {
-            ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-        }
-        PreviewImageRefresh();
+            foreach (var e in dic)
+            {
+                ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            }
 
-        HotKeyEvt?.Invoke(PreviewImageRefresh);
-        var api = new APIHelper();
-        var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
+            PreviewImageRefresh();
+            try
+            {
+                HotKeyEvt?.Invoke(PreviewImageRefresh);
+            }
+            catch (Exception ex)
+            {
+                Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            }
+            var api = new APIHelper();
+            var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
+        }
+        catch (Exception err)
+        {
+            Common.ShowMsg(Snackbar, err.Message, Severity.Error);
+        }
     }
 
     private async void PreviewImageRefresh()

@@ -317,13 +317,20 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		APIHelper helper = new APIHelper();
-		await Global.InitConfig();
-		await InitTemplates();
-		await InitLogoStore();
-		await Global.Login();
-		await helper.DownloadLogoes();
-		Global.PrimaryKey = ClientInstance.Key();
+		try
+		{
+			APIHelper helper = new APIHelper();
+			await Global.InitConfig();
+			await InitTemplates();
+			await InitLogoStore();
+			await Global.Login();
+			await helper.DownloadLogoes();
+			Global.PrimaryKey = ClientInstance.Key();
+		}
+		catch(Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+		}
 	}
 
 	void SelectExampleImage()
