@@ -264,12 +264,12 @@
 		</div>
 	</div>
 
-	<MudOverlay Visible="MainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
+	<MudOverlay Visible="WMMainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
 		<MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
 			<MudStack>
-				<MudProgressLinear Color="Color.Primary" Value="@MainLoading.Value" Class="mt-7" />
+				<MudProgressLinear Color="Color.Primary" Value="@WMMainLoading.Value" Class="mt-7" />
 				<MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
-					<b>@MainLoading.Message</b>
+					<b>@WMMainLoading.Message</b>
 				</MudText>
 			</MudStack>
 		</MudPaper>
@@ -308,11 +308,6 @@
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
-	}
-
-	void SelectExampleImage()
-	{
-
 	}
 
 	public async void OpenMyTemplates()
@@ -358,10 +353,10 @@
 			Nullable<bool> result = dialog.ShowDialog();
 			if (result == true)
 			{
-				MainLoading.Show = true;
+				WMMainLoading.Show = true;
 				Images = new List<WMTemplateList>();
-				MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
-				MainLoading.Value = 0;
+				WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
+				WMMainLoading.Value = 0;
 				StateHasChanged();
 				if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
 				{
@@ -386,16 +381,16 @@
 							Path = file
 						});
 					var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
-					MainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
-					MainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
+					WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
+					WMMainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
 					StateHasChanged();
 				}
 
 
-				MainLoading.Message = $"导入完成";
-				MainLoading.Value = 100;
+				WMMainLoading.Message = $"导入完成";
+				WMMainLoading.Value = 100;
 				await Task.Delay(200);
-				MainLoading.Show = false;
+				WMMainLoading.Show = false;
 				StateHasChanged();
 			}
 		});
@@ -428,7 +423,7 @@
 
 	async Task InitTemplates()
 	{
-		MainLoading.Show = true;
+		WMMainLoading.Show = true;
 		if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
 		{
 			System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
@@ -443,8 +438,8 @@
 			}
 			wMTemplates = new List<WMTemplateList>();
 			var directories = directoryInfo.GetDirectories();
-			MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
-			MainLoading.Value = 0;
+			WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
+			WMMainLoading.Value = 0;
 			int cot = 1;
 			foreach (var dirct in directories)
 			{
@@ -467,8 +462,8 @@
 							};
 						wMTemplates.Add(wh);
 						var idx = directories.ToList().IndexOf(dirct) + 1;
-						MainLoading.Value = cot * 100.0 / directories.Length;
-						MainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
+						WMMainLoading.Value = cot * 100.0 / directories.Length;
+						WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
 						StateHasChanged();
 
 					}
@@ -478,16 +473,16 @@
 					ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 				}
 			}
-			MainLoading.Message = $"处理完成...";
-			MainLoading.Value = 100;
+			WMMainLoading.Message = $"处理完成...";
+			WMMainLoading.Value = 100;
 			await Task.Delay(200);
-			MainLoading.Show = false;
+			WMMainLoading.Show = false;
 			StateHasChanged();
 		}
 		catch (Exception ex)
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-			MainLoading.Show = false;
+			WMMainLoading.Show = false;
 			StateHasChanged();
 		}
 		finally
@@ -546,9 +541,9 @@
 
 	async void Export(List<WMTemplateList> images)
 	{
-		MainLoading.Show = true;
-		MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
-		MainLoading.Value = 0;
+		WMMainLoading.Show = true;
+		WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
+		WMMainLoading.Value = 0;
 		StateHasChanged();
 		var idx = 1;
 		var option = new ParallelOptions();
@@ -558,14 +553,14 @@
 			Parallel.ForEach(images, option, (item) =>
 			{
 				helper.Generation(item.Canvas, null, false);
-				MainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
-				MainLoading.Value = idx++ * 100.0 / images.Count;
+				WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
+				WMMainLoading.Value = idx++ * 100.0 / images.Count;
 				InvokeAsync(StateHasChanged);
 			});
 		});
 
-		MainLoading.Value = 100;
-		MainLoading.Show = false;
+		WMMainLoading.Value = 100;
+		WMMainLoading.Show = false;
 		StateHasChanged();
 
 		Snackbar.Clear();
@@ -746,13 +741,13 @@
 
 	public async Task Help()
 	{
-		MainLoading.Show = true;
+		WMMainLoading.Show = true;
 		StateHasChanged();
 		int idx = 1;
 		foreach (var img in Images)
 		{
-			MainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
-			MainLoading.Value = idx++ * 100.0 / Images.Count;
+			WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+			WMMainLoading.Value = idx++ * 100.0 / Images.Count;
 			StateHasChanged();
 			var b64 = await Task.Run(() =>
 			{
@@ -767,8 +762,8 @@
 			img.Src = src;
 			await InitLogoCacheDic(img.ID, CurrentTemplate);
 		}
-		MainLoading.Value = 100;
-		MainLoading.Show = false;
+		WMMainLoading.Value = 100;
+		WMMainLoading.Show = false;
 		StateHasChanged();
 	}
 
@@ -817,8 +812,8 @@
 
 	async Task InitFonts(List<WMCanvas> mCanvas)
 	{
-		MainLoading.Message = "正在下载字体资源...";
-		MainLoading.Show = true;
+		WMMainLoading.Message = "正在下载字体资源...";
+		WMMainLoading.Show = true;
 		await Global.InitFonts(mCanvas);
 	}
 
@@ -920,13 +915,7 @@
 
 		var ok = new Action<WMCanvas>((x) =>
 		{
-			var action = new Action(() =>
-			{
-				var win = new DesignWin(x);
-				win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-				win.ShowDialog();
-			});
-			OpenWinHelper.Open(action);
+			OpenDesignAction(x);
 		});
 
 
@@ -934,36 +923,9 @@
 		var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
 		parameter.Add(x => x.SelectDefaultImageAction, action);
 		parameter.Add(x => x.Ok, ok);
+		parameter.Add(x => x.ID, Guid.NewGuid().ToString("N").ToUpper());
 		var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
 	}
 
-	class MainLoading
-	{
-		public static bool Show { get; set; } = false;
-		public static double Value { get; set; }
-		public static string Message { get; set; }
-	}
-
-	class CreateTemplate
-	{
-		public static bool DialogVisible { get; set; } = false;
-		public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-		public static string TemplateName { get; set; }
-		public static string Base64Src { get; set; }
-		public static string ID = Guid.NewGuid().ToString("N").ToUpper();
-		public static void OK()
-		{
-			if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
-			var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
-			var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
-			if (!Directory.Exists(basePath))
-			{
-				Directory.CreateDirectory(basePath);
-			}
-			DialogVisible = false;
-			
-		}
-	};
-
-
+	
 }

@@ -29,7 +29,7 @@
             </MudMenu>
             <MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="CreateNewTemplate">创建模板</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
@@ -258,28 +258,6 @@
     <MudOverlay Visible="@openUpdate" DarkBackground="true" Absolute="true" ZIndex="99999">
         <Watermark.Razor.Components.UpdateDialog CloseEvet="()=> openUpdate = false" UpdateEvet="@(()=>OpenLink("http://thankful.top/"))" DownLoadProgress="0" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
     </MudOverlay>
-
-    <MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
-        <DialogContent>
-            <MudForm>
-                <MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
-                <MudStack Row Class="mt-5">
-                    @if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
-                    {
-                        <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
-                    }
-                    else
-                    {
-                        <MudSkeleton Width="250px" Height="160px" />
-                    }
-                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
-                </MudStack>
-            </MudForm>
-        </DialogContent>
-        <DialogActions>
-            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="OpenDesinerDialog" DisableElevation>确定</MudButton>
-        </DialogActions>
-    </MudDialog>
 
 </div>
 
@@ -821,31 +799,6 @@
         var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
     }
 
-    async void SelectExampleImage()
-    {
-        var dic = new ConcurrentDictionary<string, byte[]>();
-
-        var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, false);
-
-        if (result != null && result.Count() > 0)
-        {
-            var fullpath = result.First().FileResult!.FullPath;
-            var destFolder = Global.AppPath.TemplatesFolder + CreateTemplate.ID;
-            if (!System.IO.Directory.Exists(destFolder))
-            {
-                System.IO.Directory.CreateDirectory(destFolder);
-            }
-
-            var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-
-            SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(fullpath);
-            ClientInstance.WriteThumbnailImage(bitmap, destFile);
-            Global.ImageFile2Base64(dic, destFile, "default");
-            CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-            StateHasChanged();
-        }
-    }
-
     async void OpenSignUpDialog()
     {
         var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("");
@@ -944,6 +897,33 @@
         StateHasChanged();
     }
 
+    void CreateNewTemplate()
+    {
+        var action = new Func<Task<string>>(async () =>
+        {
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, false);
+
+            if (result != null && result.Count() > 0)
+            {
+                return result.First().FileResult!.FullPath;
+            }
+            else return "";
+        });
+
+        var ok = new Action<WMCanvas>((x) =>
+        {
+            OpenDesignAction(x);
+        });
+
+
+        var dialog = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+        var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
+        parameter.Add(x => x.SelectDefaultImageAction, action);
+        parameter.Add(x => x.Ok, ok);
+        parameter.Add(x => x.ID, Guid.NewGuid().ToString("N").ToUpper());
+        var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
+    }
+
 
     #region class
 
@@ -954,27 +934,6 @@
         public static string Message { get; set; } = "正在加载模板...";
     }
 
-    class CreateTemplate
-    {
-        public static bool DialogVisible { get; set; } = false;
-        public static DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-        public static string TemplateName { get; set; }
-        public static string Base64Src { get; set; }
-        public static string ID = Guid.NewGuid().ToString("N").ToUpper();
-    };
-
-    void OpenDesinerDialog()
-    {
-        if (string.IsNullOrEmpty(CreateTemplate.TemplateName) || string.IsNullOrEmpty(CreateTemplate.Base64Src)) return;
-        var canvas = new WMCanvas() { Name = CreateTemplate.TemplateName, ID = CreateTemplate.ID };
-        var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
-        if (!Directory.Exists(basePath))
-        {
-            Directory.CreateDirectory(basePath);
-        }
-        CreateTemplate.DialogVisible = false;
-        OpenDesignAction(canvas);
-    }
-
+  
     #endregion
 }

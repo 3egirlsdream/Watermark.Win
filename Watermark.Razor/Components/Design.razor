@@ -85,8 +85,14 @@
                             </MudStack>
                             <MudDivider Class="my-2" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
-                                <MudText Typo="Typo.button">边框等宽 (可能导致穿模)</MudText>
-                                <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" />
+                                <MudText Typo="Typo.button">边框等宽</MudText>
+                                <MudStack Row>
+                                    <MudCheckBox @bind-Value="canvas.BorderSameWidth.Top" Size="Size.Small">上</MudCheckBox>
+                                    <MudCheckBox @bind-Value="canvas.BorderSameWidth.Bottom" Size="Size.Small">下</MudCheckBox>
+                                    <MudCheckBox @bind-Value="canvas.BorderSameWidth.Left" Size="Size.Small">左</MudCheckBox>
+                                    <MudCheckBox @bind-Value="canvas.BorderSameWidth.Right" Size="Size.Small">右</MudCheckBox>
+                                </MudStack>
+                                @* <MudSwitch @bind-Value="@canvas.EnableMarginXS" Color="Color.Primary" /> *@
                             </MudStack>
                         </MudPaper>
                         <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">

@@ -44,14 +44,14 @@
     public Action<WMCanvas> Ok { get; set; }
     [Parameter]
     public Func<Task<string>> SelectDefaultImageAction { get; set; }
+    [Parameter]
+    public string ID { get; set; }
 
     bool _processing = false;
     string TemplateName;
     string Base64Src;
-    string ID;
     void OK()
     {
-        ID = Guid.NewGuid().ToString("N").ToUpper();
         if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;
         var canvas = new WMCanvas() { Name = TemplateName, ID = ID };
         var basePath = Global.AppPath.TemplatesFolder + canvas.ID;
@@ -60,6 +60,7 @@
             Directory.CreateDirectory(basePath);
         }
         Ok?.Invoke(canvas);
+        MudDialog.Close();
     }
 
     async void SelectExampleImage()
@@ -68,6 +69,7 @@
         var p = await SelectDefaultImageAction!.Invoke();
         if (string.IsNullOrEmpty(p)) return;
         _processing = true;
+        StateHasChanged();
         var dic = new ConcurrentDictionary<string, byte[]>();
         var destFolder = Global.AppPath.TemplatesFolder + ID;
         if (!System.IO.Directory.Exists(destFolder))
@@ -77,10 +79,13 @@
 
         var name = p.Substring(p.LastIndexOf('\\') + 1);
         var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+        await Task.Run(() =>
+        {
+            Global.ImageFile2Base64(dic, p, "default");
+            SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+            Global.WriteThumbnailImage(bitmap, destFile);
+        });
 
-        Global.ImageFile2Base64(dic, p, "default");
-        SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-        Global.WriteThumbnailImage(bitmap, destFile);
         Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
         _processing = false;
         StateHasChanged();

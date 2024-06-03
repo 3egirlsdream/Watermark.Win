@@ -28,7 +28,11 @@
 			{
 				<MudItem xs="3">
 					<MudPaper Elevation="25">
-						<MudCard Class="pa-2" Elevation="0" Style="background:#e5e5e5;">
+						<MudCard Class="pa-2" Elevation="0" Style="background:#e5e5e5;position:relative">
+							@if (Versions.TryGetValue(grid.ID, out int v) && v > grid.Version)
+							{
+								<MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+							}
 							<MudImage Src="@(pairs[grid.ID])" Style="width:100%;" Height="200" ObjectFit="ObjectFit.Contain" />
 							<MudCardContent>
 								<MudText Typo="Typo.subtitle1" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
@@ -133,6 +137,7 @@
 	List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
 	List<WMZipedTemplate> ILikeTemplates { get; set; } = new();
 	Dictionary<string, string> pairs;
+	Dictionary<string, int> Versions = [];
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -144,6 +149,11 @@
 
 			var api = new APIHelper();
 			await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Win);
+			var version = await api.GetVersions(wMTemplates.Select(x => x.ID).ToList());
+			if(version.success && version.data != null)
+			{
+				Versions = version.data;
+			}
 		}
 		catch (Exception ex)
 		{

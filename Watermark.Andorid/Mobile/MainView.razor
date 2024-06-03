@@ -175,7 +175,11 @@
                                             @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
                                             {
                                                 <MudItem xs="6" Style="padding:4px;">
-                                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+                                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
+                                                        {
+                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+                                                        }
                                                         <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
                                                     </MudCard>
                                                 </MudItem>
@@ -189,7 +193,11 @@
                                             @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
                                             {
                                                 <MudItem xs="6" Style="padding:4px;">
-                                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+                                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
+                                                        {
+                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+                                                        }
                                                         <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
                                                     </MudCard>
                                                 </MudItem>
@@ -572,6 +580,7 @@
     WMTemplateList CurrentImage;
     List<WMTemplateList> Images = new List<WMTemplateList>();
     WMZipedTemplate FocusImage;
+    Dictionary<string, int> Versions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -597,6 +606,11 @@
             await LoadTemplates();
             await LoadCollectTemplate();
             await helper.DownloadLogoes();
+            var version = await helper.GetVersions(downloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
+            if(version.success && version.data != null)
+            {
+                Versions = version.data;
+            }
 
             await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
         }
