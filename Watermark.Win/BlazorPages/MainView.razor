@@ -47,7 +47,7 @@
 			</MudMenu>
 			<MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
 				<MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="(()=>CreateTemplate.DialogVisible = true)">创建模板</MudMenuItem>
+				<MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="CreateNewTemplate">创建模板</MudMenuItem>
 				<MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
 			</MudMenu>
 			<MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
@@ -277,29 +277,6 @@
 </div>
 
 
-<MudDialog @bind-IsVisible="CreateTemplate.DialogVisible" Options="CreateTemplate.DialogOptions" Style="max-width:400px;">
-	<DialogContent>
-		<MudForm>
-			<MudTextField @bind-Value="CreateTemplate.TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
-			<MudStack Row Class="mt-5">
-				@if (!string.IsNullOrEmpty(CreateTemplate.Base64Src))
-				{
-					<MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@CreateTemplate.Base64Src" />
-				}
-				<MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
-			</MudStack>
-		</MudForm>
-	</DialogContent>
-	<DialogActions>
-		<MudButton FullWidth="true" Variant="Variant.Filled" OnClick="CreateTemplate.OK">确定</MudButton>
-	</DialogActions>
-</MudDialog>
-
-
-
-
-
-
 @code {
 	[Inject]
 	private IDialogService DialogService { get; set; }
@@ -335,38 +312,7 @@
 
 	void SelectExampleImage()
 	{
-		var dic = new ConcurrentDictionary<string, byte[]>();
-		var action = new Action(async () =>
-		{
-			Microsoft.Win32.OpenFileDialog dialog = new()
-				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = false,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-			// 打开选择框选择
-			Nullable<bool> result = dialog.ShowDialog();
 
-			if (result == true)
-			{
-				var p = dialog.FileName;
-				var destFolder = Global.AppPath.TemplatesFolder + CreateTemplate.ID;
-				if (!System.IO.Directory.Exists(destFolder))
-				{
-					System.IO.Directory.CreateDirectory(destFolder);
-				}
-
-				var name = p.Substring(p.LastIndexOf('\\') + 1);
-				var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-
-				Global.ImageFile2Base64(dic, p, "default");
-				SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-				ClientInstance.WriteThumbnailImage(bitmap, destFile);
-				CreateTemplate.Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-				StateHasChanged();
-			}
-		});
-		OpenWinHelper.Open(action);
 	}
 
 	public async void OpenMyTemplates()
@@ -951,6 +897,46 @@
 		StateHasChanged();
 	}
 
+	void CreateNewTemplate()
+	{
+		var action = new Func<Task<string>>(async () =>
+		{
+			var dic = new ConcurrentDictionary<string, byte[]>();
+			Microsoft.Win32.OpenFileDialog dialog = new()
+				{
+					DefaultExt = ".png",  // 设置默认类型
+					Multiselect = false,                             // 设置可选格式
+					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+				};
+			// 打开选择框选择
+			Nullable<bool> result = dialog.ShowDialog();
+
+			if (result == true)
+			{
+				return dialog.FileName;
+			}
+			else return "";
+		});
+
+		var ok = new Action<WMCanvas>((x) =>
+		{
+			var action = new Action(() =>
+			{
+				var win = new DesignWin(x);
+				win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+				win.ShowDialog();
+			});
+			OpenWinHelper.Open(action);
+		});
+
+
+		var dialog = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+		var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
+		parameter.Add(x => x.SelectDefaultImageAction, action);
+		parameter.Add(x => x.Ok, ok);
+		var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
+	}
+
 	class MainLoading
 	{
 		public static bool Show { get; set; } = false;
@@ -975,14 +961,7 @@
 				Directory.CreateDirectory(basePath);
 			}
 			DialogVisible = false;
-			var action = new Action(() =>
-			{
-				var win = new DesignWin(canvas);
-				win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-				win.ShowDialog();
-				ID = Guid.NewGuid().ToString("N").ToUpper();
-			});
-			OpenWinHelper.Open(action);
+			
 		}
 	};
 
