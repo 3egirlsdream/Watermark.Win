@@ -11,6 +11,7 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
+@inject APIHelper api
 <style>
 	.mud-card-actions {
 		position: relative;
@@ -31,7 +32,7 @@
 						<MudCard Class="pa-2" Elevation="0" Style="background:#e5e5e5;position:relative">
 							@if (Versions.TryGetValue(grid.ID, out int v) && v > grid.Version)
 							{
-								<MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+								<MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px;cursor:pointer;" OnClick="()=>Download(grid.ID)">有更新</MudChip>
 							}
 							<MudImage Src="@(pairs[grid.ID])" Style="width:100%;" Height="200" ObjectFit="ObjectFit.Contain" />
 							<MudCardContent>
@@ -146,14 +147,7 @@
 			await InitTemplates();
 			await LoadILikeTemplate();
 			await LoadCloudTemplate();
-
-			var api = new APIHelper();
 			await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Win);
-			var version = await api.GetVersions(wMTemplates.Select(x => x.ID).ToList());
-			if(version.success && version.data != null)
-			{
-				Versions = version.data;
-			}
 		}
 		catch (Exception ex)
 		{
@@ -191,6 +185,12 @@
 					wMTemplates.Add(canvas);
 					StateHasChanged();
 				}
+			}
+
+			var version = await api.GetVersions(wMTemplates.Select(x => x.ID).ToList());
+			if (version.success && version.data != null)
+			{
+				Versions = version.data;
 			}
 			loading = false;
 			StateHasChanged();

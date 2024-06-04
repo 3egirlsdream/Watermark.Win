@@ -566,7 +566,7 @@
     [Parameter]
     public WMCanvas CurrentCanvas { get; set; }
     [Parameter]
-    public Action<WMLogo> SelectLogo { get; set; }
+    public Func<WMLogo, Task> SelectLogo { get; set; }
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
     [Parameter]
@@ -746,7 +746,8 @@
 
     async void SelectImage(WMLogo mLogo)
     {
-        SelectLogo?.Invoke(mLogo);
+        if (SelectLogo is null) return;
+        await SelectLogo.Invoke(mLogo);
         var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + mLogo.Path;
         ConcurrentDictionary<string, byte[]> dic = [];
         Global.ImageFile2Base64(dic, destFile, mLogo.ID);

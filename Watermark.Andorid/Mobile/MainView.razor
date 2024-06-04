@@ -11,6 +11,7 @@
 @inject NavigationManager navigationManager
 @inject IDialogService DialogService
 @inject IWMWatermarkHelper helper
+@inject APIHelper api
 <style>
 	.panel-class {
 		height: calc(100% - 50px);
@@ -178,7 +179,7 @@
                                                     <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
                                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
                                                         {
-                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
                                                         }
                                                         <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
                                                     </MudCard>
@@ -196,7 +197,7 @@
                                                     <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
                                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
                                                         {
-                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px">有更新</MudChip>
+                                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
                                                         }
                                                         <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
                                                     </MudCard>
@@ -592,7 +593,6 @@
                 return;
             }
             await Global.InitConfig();
-            APIHelper helper = new APIHelper();
             var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate();
             if (isOutOfDate)
             {
@@ -605,18 +605,25 @@
             await Global.Login();
             await LoadTemplates();
             await LoadCollectTemplate();
-            await helper.DownloadLogoes();
-            var version = await helper.GetVersions(downloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
-            if(version.success && version.data != null)
-            {
-                Versions = version.data;
-            }
-
-            await helper.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+            await api.DownloadLogoes();
+            await InitVersion(downloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
+            await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
         }
         catch (Exception ex)
         {
             ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+    }
+
+    async Task InitVersion(List<string> ids)
+    {
+        var version = await api.GetVersions(ids);
+        if (version.success && version.data != null)
+        {
+            foreach (var e in version.data)
+            {
+                Versions[e.Key] = e.Value;
+            }
         }
     }
 
@@ -1003,6 +1010,14 @@
                 var dir = await LoadSingleTemplates(watermarkId);
                 if (!downloadedTemplates.Any()) downloadedTemplates.Add(dir);
                 else if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
+                else if (downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
+                {
+                    var idx = downloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
+                    var item = downloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
+                    downloadedTemplates.Remove(item);
+                    downloadedTemplates.Insert(idx, dir);
+                }
+                await InitVersion([watermarkId]);
                 StateHasChanged();
             }
         });

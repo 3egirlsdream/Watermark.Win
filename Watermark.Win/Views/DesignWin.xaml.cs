@@ -29,30 +29,34 @@ namespace Watermark.Win.Views
         {
             var design = new WMDesignFunc();
             design.CurrentCanvas = canvas;
-			design.SelectLogo = new Action<WMLogo>((x) =>
+			design.SelectLogo = new Func<WMLogo, Task>((x) =>
 			{
-				Microsoft.Win32.OpenFileDialog dialog = new()
+				return Task.Run(() =>
 				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = false,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-				// 打开选择框选择
-				var result = dialog.ShowDialog();
-				if (result == true)
-				{
-					var p = dialog.FileName;
-					var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
-					if (!System.IO.Directory.Exists(destFolder))
+					Microsoft.Win32.OpenFileDialog dialog = new()
 					{
-						System.IO.Directory.CreateDirectory(destFolder);
+						DefaultExt = ".png",  // 设置默认类型
+						Multiselect = false,                             // 设置可选格式
+						Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+					};
+					// 打开选择框选择
+					var result = dialog.ShowDialog();
+					if (result == true)
+					{
+						var p = dialog.FileName;
+						var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
+						if (!System.IO.Directory.Exists(destFolder))
+						{
+							System.IO.Directory.CreateDirectory(destFolder);
+						}
+						var name = Path.GetFileName(p);
+						var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+						System.IO.File.Copy(p, destFile, true);
+						x.Path = name;
 					}
-					var name = Path.GetFileName(p);
-					var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
-					System.IO.File.Copy(p, destFile, true);
-					x.Path = name;
-				}
+				});
 			});
+
 			design.SelectContainer = new Func<WMContainer, Task>((x) =>
 			{
 				return Task.Run(() =>
@@ -96,40 +100,42 @@ namespace Watermark.Win.Views
 
 			design.ImportFontEvt = new Func<Task>(() =>
 			{
-				var fontPath = Global.AppPath.FontFolder;
-                Microsoft.Win32.OpenFileDialog dialog = new()
-                {
-                    DefaultExt = ".ttf",  // 设置默认类型
-                    Multiselect = false,                             // 设置可选格式
-                    Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf"
-                };
-                // 打开选择框选择
-                var result = dialog.ShowDialog();
-				if (result == true)
+				return Task.Run(() =>
 				{
-					var f = dialog.FileName;
-					if (!Directory.Exists(fontPath))
-					{
-						Directory.CreateDirectory(fontPath);
-					}
-					var file = new FileInfo(f);
-					if (file.Exists)
-					{
-						try
-						{
-							var target = Path.Combine(fontPath, Path.GetFileName(f));
-							file.CopyTo(target, true);
+                    var fontPath = Global.AppPath.FontFolder;
+                    Microsoft.Win32.OpenFileDialog dialog = new()
+                    {
+                        DefaultExt = ".ttf",  // 设置默认类型
+                        Multiselect = false,                             // 设置可选格式
+                        Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf"
+                    };
+                    // 打开选择框选择
+                    var result = dialog.ShowDialog();
+                    if (result == true)
+                    {
+                        var f = dialog.FileName;
+                        if (!Directory.Exists(fontPath))
+                        {
+                            Directory.CreateDirectory(fontPath);
                         }
-                        catch { }
-						try
-						{
-							var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, Path.GetFileName(f));
-							file.CopyTo(waterPath, true);
-						}
-						catch { }
-					}
-				}
-				return Task.CompletedTask;
+                        var file = new FileInfo(f);
+                        if (file.Exists)
+                        {
+                            try
+                            {
+                                var target = Path.Combine(fontPath, Path.GetFileName(f));
+                                file.CopyTo(target, true);
+                            }
+                            catch { }
+                            try
+                            {
+                                var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, Path.GetFileName(f));
+                                file.CopyTo(waterPath, true);
+                            }
+                            catch { }
+                        }
+                    }
+                });
 			});
 			design.HotKeyEvt = new Action<Action>((x) =>
 			{

@@ -27,7 +27,8 @@ namespace Watermark.Win
             try
             {
                 IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
-                Resources.SetIoc();
+				IocHelper.GetIoc().AddSingleton<APIHelper>();
+				Resources.SetIoc();
                 InitializeComponent();
                 Loaded+=MainWindow_Loaded;
             }

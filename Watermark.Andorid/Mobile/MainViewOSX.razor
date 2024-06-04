@@ -700,7 +700,7 @@
 
     public void OpenDesignAction(WMCanvas x)
     {
-        Action<WMLogo> SelectLogo = new(async (mLogo) =>
+        Func<WMLogo, Task> SelectLogo = new(async Task (mLogo) =>
             {
                 var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
                 if (result != null && result.Count() > 0)

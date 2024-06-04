@@ -33,7 +33,8 @@ namespace Watermark.Andorid
     		builder.Logging.AddDebug();
 #endif
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
-            return builder.Build();
+			builder.Services.AddSingleton<APIHelper>();
+			return builder.Build();
         }
     }
 }
