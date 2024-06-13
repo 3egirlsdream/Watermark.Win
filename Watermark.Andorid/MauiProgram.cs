@@ -21,6 +21,7 @@ namespace Watermark.Andorid
 
 			builder.Services.AddFilePicker();
 			builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddMasaBlazor();
 #if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
 #endif

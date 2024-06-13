@@ -1,11 +1,13 @@
 ﻿@page "/"
 @using System.IO
 @using System.Collections.Concurrent
+@using Masa.Blazor
 @using Watermark.Andorid.BlazorPages
 @using Watermark.Andorid.Models
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
+@using Icons=MudBlazor.Icons
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
@@ -13,6 +15,11 @@
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 <style>
+    .mud-grid-spacing-xs-3 {
+        width: 100%;
+        margin: 0;
+    }
+
 	.panel-class {
 		height: calc(100% - 50px);
 	}
@@ -27,7 +34,7 @@
 	.mud-tab-class {
 		-ms-overflow-style: none; /* IE and Edge */
 		scrollbar-width: none; /* Firefox */
-		padding: 0px 16px;
+		padding: 0px 8px;
 		height: 100%;
 		overflow-y: auto;
 		overflow-x: hidden;
@@ -305,68 +312,69 @@
                                 @foreach (var sub in subscribed)
                                 {
                                     <SwiperTabItem>
-                                        <MudPaper Elevation="0" Class="mud-tab-class">
-                                            <MudGrid Class="pt-2" Justify="Justify.FlexStart">
-                                                @foreach (var t in sub.Item2)
-                                                {
-                                                    <MudItem xs="6" Style="padding:4px;">
-                                                        <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
-                                                            @if (!string.IsNullOrEmpty(t.Src))
-                                                            {
-                                                                <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
-                                                            }
-                                                            else
-                                                            {
-                                                                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                                            }
-                                                        </MudCard>
-                                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                                            <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                                                @t.Name
-                                                            </MudText>
-                                                            <div style="display: flex; align-items: center;">
-                                                                <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                                                <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                                            <div Style="display:flex;align-items:center;">
-                                                                @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                        <MudPaper Elevation="0" Class="mud-tab-class overflow-auto" Id="infinite-scroll-usage">
+                                            <MPullRefresh OnRefresh="OnRefresh">
+                                                <MudGrid Class="pt-2" Justify="Justify.FlexStart">
+                                                    @foreach (var t in sub.Item2)
+                                                    {
+                                                        <MudItem xs="6" Style="padding:4px;">
+                                                            <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+                                                                @if (!string.IsNullOrEmpty(t.Src))
                                                                 {
-                                                                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
+                                                                    <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('a', t, true)" />
                                                                 }
                                                                 else
                                                                 {
-                                                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                                                                    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
                                                                 }
-                                                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                                                    @t.UserDisplayName
+                                                            </MudCard>
+                                                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+                                                                <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+                                                                    @t.Name
                                                                 </MudText>
+                                                                <div style="display: flex; align-items: center;">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
+                                                                    <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
+                                                                </div>
                                                             </div>
-                                                            <div Style="display:flex;align-items:center;line-height: 32px;">
-                                                                <Watermark.Razor.Parts.IconCoin />
-                                                                <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                                                                    @t.Coins
-                                                                </MudText>
+                                                            <div class="dfm-card-user-name" style="justify-content: space-between;">
+                                                                <div Style="display:flex;align-items:center;">
+                                                                    @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                                                    {
+                                                                        <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                                                                    }
+                                                                    <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+                                                                        @t.UserDisplayName
+                                                                    </MudText>
+                                                                </div>
+                                                                <div Style="display:flex;align-items:center;line-height: 32px;">
+                                                                    <Watermark.Razor.Parts.IconCoin />
+                                                                    <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+                                                                        @t.Coins
+                                                                    </MudText>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </MudItem>
-                                                }
-                                                @if (sub.Item1 == "最新")
-                                                {
+                                                        </MudItem>
+                                                    }
+                                                    @if (sub.Item1 == "最新")
+                                                    {
                                                     <MudItem xs="12" Style="padding:4px; text-align:center;">
-                                                        @if (loadMore)
-                                                        {
-                                                            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                                                        }
-                                                        else
-                                                        {
-                                                            <MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">点击加载更多</MudButton>
-                                                        }
+                                                            @if (loadMore)
+                                                            {
+                                                                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">点击加载更多</MudButton>
+                                                            }
                                                     </MudItem>
-                                                }
-                                            </MudGrid>
-
+                                                    }
+                                                </MudGrid>
+                                            </MPullRefresh>
                                         </MudPaper>
                                     </SwiperTabItem>
 
@@ -794,7 +802,7 @@
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
 
-        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 50).ToList()));
+        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 6).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         loadMore = false;
         StateHasChanged();
@@ -1152,6 +1160,12 @@
     {
         openDrawer = false;
         Vibration.Default.Vibrate(50);
+    }
+
+    private async Task OnRefresh()
+    {
+        start = 1;
+        await LoadTemplatesMarket();
     }
 
 
