@@ -12,3 +12,8 @@
 .mud-dialog .mud-dialog-content {
     padding: 0;
 }
+
+.d-c {
+    display: flex;
+    align-items: center;
+}
