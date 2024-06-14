@@ -244,20 +244,62 @@
                     <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplate.ImageProperties.GaussianDeep)</MudText>
                     <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.ImageProperties.GaussianDeep" ValueLabel="true" />
                 </MudPaper>
+                @if (CurrentTemplate.FrameProperties != null)
+                {
+                    <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+                        <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+                            <MudText Typo="Typo.button">画幅调整</MudText>
+                            <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.Enabled" Color="Color.Primary" />
+                        </MudStack>
+                        @if (CurrentTemplate.FrameProperties.Enabled)
+                        {
+                            <MudDivider Class="my-2" />
+                            <MudSelect Value="CurrentTemplate.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
+                                @foreach (var e in radioes)
+                                {
+                                    <MudSelectItem Value="@e" />
+                                }
+                            </MudSelect>
+                            <MudText Typo="Typo.subtitle1">内边距(@CurrentTemplate.FrameProperties.BorderPadding)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.BorderPadding" ValueLabel="true" />
+                            <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+                                <MudText Typo="Typo.button">阴影</MudText>
+                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableShadow" Color="Color.Primary" />
+                            </MudStack>
+                            <MudDivider Class="my-2" />
+                            <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplate.FrameProperties.ShadowColor" />
+                            <MudText Typo="Typo.subtitle1">深度(@CurrentTemplate.FrameProperties.ShadowRange)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.ShadowRange" ValueLabel="true" />
+                            <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+                                <MudText Typo="Typo.button">图片圆角</MudText>
+                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableRadius" Color="Color.Primary" />
+                            </MudStack>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle1">圆角度数(@CurrentTemplate.FrameProperties.CornerRadius)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.CornerRadius" ValueLabel="true" />
+                            <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+                                <MudText Typo="Typo.button">背景高斯模糊</MudText>
+                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableGaussianBlur" Color="Color.Primary" />
+                            </MudStack>
+                            <MudDivider Class="my-2" />
+                            <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplate.FrameProperties.GaussianDeep)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.GaussianDeep" ValueLabel="true" />
+                            <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+                                <MudText Typo="Typo.button">原背景透明</MudText>
+                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.BeforeBkTransparent" Color="Color.Primary" />
+                            </MudStack>
+                        }
+                    </MudPaper>
+                }
             }
             else
             {
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudSelect Value="CurrentTemplate.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
-                        <MudSelectItem Value="@("1:1")" />
-                        <MudSelectItem Value="@("16:9")" />
-                        <MudSelectItem Value="@("9:16")" />
-                        <MudSelectItem Value="@("4:3")" />
-                        <MudSelectItem Value="@("3:4")" />
-                        <MudSelectItem Value="@("21:9")" />
-                        <MudSelectItem Value="@("18:9")" />
-                        <MudSelectItem Value="@("1.85:1")" />
-                        <MudSelectItem Value="@("2.39:1")" />
+                        @foreach (var e in radioes)
+                        {
+                            <MudSelectItem Value="@e" />
+                        }
                     </MudSelect>
                     <MudStack Row Class="mt-5">
                         <MudTextField @bind-Value="@CurrentTemplate.CustomWidth" Label="自定义宽度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -650,7 +692,7 @@
     bool openFontsDialog = false;
     bool openLogoDialog = false;
     ConcurrentDictionary<string, string> ImagesBase64 = new();
-    List<string> radioes = ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "18:9", "1.85:1", "2.39:1"];
+    List<string> radioes = ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "1.85:1", "2.39:1"];
     Dictionary<string, string> RadioBase64;
     WMContainer SelectedContainer;
     int ContainerLevel;
