@@ -42,6 +42,7 @@
         <PackageIcon>logo.png</PackageIcon>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
+        <AssemblyName>DaVinc Frame Master</AssemblyName>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">

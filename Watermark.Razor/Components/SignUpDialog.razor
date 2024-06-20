@@ -42,8 +42,8 @@
                     </MudButton>
                 </MudStack>
             }
-            <MudCheckBox @bind-Value="agreePrivate" T="bool" Size="Size.Small">同意 <a>隐私协议</a></MudCheckBox>
-            <MudCheckBox @bind-Value="agreeUser" T="bool" Size="Size.Small">同意 <a>用户协议</a></MudCheckBox>
+            <MudCheckBox @bind-Value="agreePrivate" T="bool" Size="Size.Small">同意 <a href="http://thankful.top/private">隐私协议</a></MudCheckBox>
+            @* <MudCheckBox @bind-Value="agreeUser" T="bool" Size="Size.Small">同意 <a>用户协议</a></MudCheckBox> *@
             <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="LoginOK" DisableElevation Class="mt-5">确定</MudButton>
         </MudForm>
     </DialogContent>
@@ -74,7 +74,7 @@
 
     bool _processing = false;
     int _processingTime = 0;
-    bool agreeUser = false;
+    //bool agreeUser = false;
     bool agreePrivate = false;
 
 
@@ -101,7 +101,7 @@
         else if (string.IsNullOrEmpty(DisplayName) && FuncType == 0) Error = "展示名不能为空";
         else if (Password != CheckPassword) Error = "密码不一致";
         else if (Password.Length < 9) Error = "密码过短";
-        else if (!agreeUser) Error = "请勾选用户协议";
+        //else if (!agreeUser) Error = "请勾选用户协议";
         else if (!agreePrivate) Error = "请勾选隐私协议";
         if (!string.IsNullOrEmpty(Error))
         {

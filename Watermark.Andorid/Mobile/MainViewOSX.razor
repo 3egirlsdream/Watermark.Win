@@ -33,24 +33,23 @@
                 <MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
             </MudMenu>
             <MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem>
+                @* <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem> *@
                 <MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenSignUpDialog">注册账号</MudMenuItem>
-            </MudMenu>
-            <MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
-                <MudMenuItem> 交流群2：836325187 </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutDialog">注销账号</MudMenuItem>
             </MudMenu>
             <MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem Icon="@Icons.Material.Filled.Web" OnClick="@(()=>OpenLink("http://www.thankful.top"))">网页版</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Web" OnClick="@(()=>OpenLink("http://www.thankful.top"))">官方网址</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Star" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))">点个⭐</MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.BugReport" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))">提交反馈</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Group"> 交流群1：866034817 (已满) </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Group"> 交流群2：836325187 </MudMenuItem>
             </MudMenu>
-            <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+           @*  <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
             </MudMenu>
             <MudMenu Label="安卓版" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
                 <MudMenuItem>  <MudImage Src="https://cdn.thankful.top/andorid.png" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-            </MudMenu>
+            </MudMenu> *@
             <MudSpacer />
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
@@ -95,7 +94,7 @@
                         </MudText>
                     </div>
 
-                    <MudText Typo="Typo.body2" Class="px-4 py-1">@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")</MudText>
+                    @* <MudText Typo="Typo.body2" Class="px-4 py-1">@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")</MudText> *@
                     <MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel();}">退出</MudButton>
                 }
                 else
@@ -801,7 +800,23 @@
 
     async void OpenSignUpDialog()
     {
-        var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("");
+        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
+        var param = new DialogParameters<Watermark.Razor.Components.SignUpDialog>();
+        param.Add(x => x.ShowHeader, false);
+        var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("", param);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        {
+            StateHasChanged();
+        }
+    }
+
+    async void LogoutDialog()
+    {
+        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
+        var param = new DialogParameters<Watermark.Razor.Components.LogoutDialog>();
+        param.Add(x => x.ShowHeader, false);
+        var rst = DialogService.Show<Watermark.Razor.Components.LogoutDialog>("", param);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {
@@ -811,7 +826,10 @@
 
     async void OpenLoginDialog()
     {
-        var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("");
+        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
+        var param = new DialogParameters<Watermark.Razor.Components.LoginDialog>();
+        param.Add(x => x.ShowHeader, false);
+        var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", param);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {
