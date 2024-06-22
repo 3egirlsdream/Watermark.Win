@@ -8,6 +8,7 @@
 @using Watermark.Shared.Models
 @using LukeMauiFilePicker
 @using Watermark.Razor
+@using MudBlazor
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigationManager
@@ -44,12 +45,12 @@
                 <MudMenuItem Icon="@Icons.Material.Filled.Group"> 交流群1：866034817 (已满) </MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Group"> 交流群2：836325187 </MudMenuItem>
             </MudMenu>
-           @*  <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-            </MudMenu>
-            <MudMenu Label="安卓版" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-                <MudMenuItem>  <MudImage Src="https://cdn.thankful.top/andorid.png" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-            </MudMenu> *@
+            @*  <MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                    <MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
+                </MudMenu>
+                <MudMenu Label="安卓版" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
+                    <MudMenuItem>  <MudImage Src="https://cdn.thankful.top/andorid.png" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
+                </MudMenu> *@
             <MudSpacer />
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
@@ -86,7 +87,7 @@
                     </div>
                     <MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
 
-                    <div Style="display:flex;align-items:center;line-height: 32px;" Class="px-4 py-1">
+                    <div Style="display:none;align-items:center;line-height: 32px;" Class="px-4 py-1">
                         硬币：
                         <Watermark.Razor.Parts.IconCoin />
                         <MudText Typo="Typo.body2" Color="Color.Inherit" Style="line-height: 32px;">
@@ -700,23 +701,23 @@
     public void OpenDesignAction(WMCanvas x)
     {
         Func<WMLogo, Task> SelectLogo = new(async Task (mLogo) =>
+        {
+            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            if (result != null && result.Count() > 0)
             {
-                var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
-                if (result != null && result.Count() > 0)
+                var p = result.First().FileResult!.FullPath;
+                var destFolder = Global.AppPath.TemplatesFolder + x.ID;
+                if (!System.IO.Directory.Exists(destFolder))
                 {
-                    var p = result.First().FileResult!.FullPath;
-                    var destFolder = Global.AppPath.TemplatesFolder + x.ID;
-                    if (!System.IO.Directory.Exists(destFolder))
-                    {
-                        System.IO.Directory.CreateDirectory(destFolder);
-                    }
-
-                    var name = Path.GetFileName(p);
-                    var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
-                    System.IO.File.Copy(p, destFile, true);
-                    mLogo.Path = name;
+                    System.IO.Directory.CreateDirectory(destFolder);
                 }
-            });
+
+                var name = Path.GetFileName(p);
+                var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + name;
+                System.IO.File.Copy(p, destFile, true);
+                mLogo.Path = name;
+            }
+        });
 
         Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
         {
@@ -750,7 +751,7 @@
             return "";
         });
 
-        Func<Task> ImportFont = new Func<Task>(async Task() =>
+        Func<Task> ImportFont = new Func<Task>(async Task () =>
         {
             var result = await picker.PickFilesAsync("pick", ClientInstance.FileFontType, true);
             if (result != null && result.Count() > 0)
@@ -837,10 +838,31 @@
         }
     }
 
-    void OpenLink(string link)
+    async void OpenLink(string link)
     {
-        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
-        System.Diagnostics.Process.Start(psi);
+        try
+        {
+            Uri uri = new Uri(link); // 替换为你想要打开的网页URL  
+            await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
+        }
+        catch(Exception ex)
+        {
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+
+    }
+
+    void OpenBrowser_Clicked()
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            // 处理异常，例如设备上没有安装浏览器的情况  
+            Console.WriteLine("无法打开浏览器：" + ex.Message);
+        }
     }
 
     async void OpenExifDialog(WMText mText)
@@ -952,6 +974,6 @@
         public static string Message { get; set; } = "正在加载模板...";
     }
 
-  
+
     #endregion
 }

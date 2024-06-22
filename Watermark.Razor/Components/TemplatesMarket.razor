@@ -302,7 +302,7 @@
             Common.ShowMsg(Snackbar, message, Severity);
         });
 
-        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
+        if (Global.DeviceType != DeviceType.Mac && (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)))
         {
             var rst = DialogService.Show<LoginDialog>("");
             var dialogResult = await rst.Result;
