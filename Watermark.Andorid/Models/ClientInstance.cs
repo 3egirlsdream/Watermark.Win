@@ -155,7 +155,7 @@ namespace Watermark.Shared.Models
         public static Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
             {
                 { DevicePlatform.Android, new[] { "text/*" } } ,
-                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
+                { DevicePlatform.iOS, new[] { "image/jpg", "image/png" } },
                 { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
                 { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
             };

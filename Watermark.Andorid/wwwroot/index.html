@@ -64,6 +64,10 @@
     function revokeUrl(url) {
         (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
+
+    function getSize() {
+        return window.innerWidth + ";" + window.innerHeight
+    };
 </script>
 
 <style>

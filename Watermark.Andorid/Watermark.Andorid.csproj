@@ -43,6 +43,7 @@
         <PlatformTarget>AnyCPU</PlatformTarget>
         <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
         <AssemblyName>DaVinci Frame Master</AssemblyName>
+        <PackageId>DaVinci Frame Master</PackageId>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
@@ -71,6 +72,8 @@
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
       <ApplicationDisplayVersion>1.2.7</ApplicationDisplayVersion>
       <CreatePackage>false</CreatePackage>
+      <CodesignProvision>WatermarkFrameMasterIOS</CodesignProvision>
+      <CodesignKey>iPhone Distribution</CodesignKey>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
@@ -95,6 +98,7 @@
       <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
       <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
       <ApplicationDisplayVersion>1.2.7</ApplicationDisplayVersion>
+      <CreatePackage>false</CreatePackage>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
@@ -114,11 +118,18 @@
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
       <WarningLevel>4</WarningLevel>
       <PlatformTarget>anycpu</PlatformTarget>
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <AssemblyName>DaVinciFrameMaster</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
       <DebugSymbols>true</DebugSymbols>
       <WarningLevel>4</WarningLevel>
       <PlatformTarget>anycpu</PlatformTarget>
+    </PropertyGroup>
+    <PropertyGroup>
+       <MtouchLink>None</MtouchLink>
+       <UseInterpreter>True</UseInterpreter>
+       <MtouchInterpreter>-all,System.Collections.Immutable</MtouchInterpreter>
     </PropertyGroup>
     <ItemGroup>
         <!-- App Icon -->

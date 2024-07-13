@@ -16,7 +16,6 @@
         margin-inline-end: 0px;
         margin-right: 0px;
     }
-
 </style>
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
@@ -67,19 +66,19 @@ else
 
 @* 活动面板 *@
 @* <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-	<MudCarousel Class="mud-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
-		<MudCarouselItem Transition="@Transition.Fade">
-			<div class="d-flex" style="height:100%">
-				<MudImage Src="https://cdn.thankful.top/gonggao.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
-			</div>
-		</MudCarouselItem>
-		<MudCarouselItem Transition="@Transition.Fade">
-			<div class="d-flex" style="height:100%">
-				<MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
-			</div>
-		</MudCarouselItem>
-	</MudCarousel>
-</MudPaper> *@
+        <MudCarousel Class="mud-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+            <MudCarouselItem Transition="@Transition.Fade">
+                <div class="d-flex" style="height:100%">
+                    <MudImage Src="https://cdn.thankful.top/gonggao.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                </div>
+            </MudCarouselItem>
+            <MudCarouselItem Transition="@Transition.Fade">
+                <div class="d-flex" style="height:100%">
+                    <MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+                </div>
+            </MudCarouselItem>
+        </MudCarousel>
+    </MudPaper> *@
 
 
 <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
@@ -178,8 +177,8 @@ else
 @code {
 #if ANDROID
 
-	[Inject]
-	private IUpgradeService UpgradeService { get; set; }
+    [Inject]
+    private IUpgradeService UpgradeService { get; set; }
 #endif
 
     [Inject]
@@ -208,12 +207,12 @@ else
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
 #if ANDROID
-	if (!checkUpdate || DownLoadProgress > 0) return;
-	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
-	await UpgradeService.DownloadFileAsync(ClientInstance.LinkPath, DownloadProgressChanged);
-	UpgradeService.InstallNewVersion();
-	DownLoadProgress = 0;
-	StateHasChanged();
+        if (!checkUpdate || DownLoadProgress > 0) return;
+        Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
+        await UpgradeService.DownloadFileAsync(ClientInstance.LinkPath, DownloadProgressChanged);
+        UpgradeService.InstallNewVersion();
+        DownLoadProgress = 0;
+        StateHasChanged();
 #endif
     }
 
@@ -241,26 +240,41 @@ else
 
 
 
-    async void OpenLoginDialog()
+    async void OpenLoginDialog1()
     {
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var rst = DialogService.Show<LoginDialog>("", topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+        try
         {
-            StateHasChanged();
-            if (RefreshCollection.HasDelegate)
+            DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
+            var rst = DialogService.Show<LoginDialog>("", topCenter);
+            var dialogResult = await rst.Result;
+            if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
             {
-                await RefreshCollection.InvokeAsync();
-            }
+                StateHasChanged();
+                if (RefreshCollection.HasDelegate)
+                {
+                    await RefreshCollection.InvokeAsync();
+                }
 
+            }
         }
+        catch (Exception ex)
+        {
+            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+
+    }
+
+    void OpenLoginDialog()
+    {
+        Task.Run(OpenLoginDialog1);
     }
 
     async void OpenSignUpDialog()
     {
         DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var rst = DialogService.Show<SignUpDialog>("", topCenter);
+        var param = new DialogParameters<SignUpDialog>();
+        param.Add(x => x.ShowHeader, true);
+        var rst = DialogService.Show<SignUpDialog>("", param, topCenter);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
         {

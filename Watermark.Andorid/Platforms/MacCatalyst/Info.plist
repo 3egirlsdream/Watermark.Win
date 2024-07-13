@@ -52,8 +52,6 @@
 	<string>This app needs access to photos gallery for picking photos and videos.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to photos gallery for picking photos and videos.</string>
-
-
 	<key>com.apple.security.assets.movies.read-only</key>
 	<true/>
 	<key>com.apple.security.assets.music.read-only</key>

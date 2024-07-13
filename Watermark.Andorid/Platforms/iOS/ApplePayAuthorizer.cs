@@ -50,7 +50,7 @@ namespace Watermark.Andorid.Platforms.iOS
 
                 // Our merchant identifier needs to match what we previously set up in
                 // the Capabilities window (or the developer portal).
-                paymentRequest.MerchantIdentifier = "merchant.com.MauiApplePayment";
+                paymentRequest.MerchantIdentifier = "com.top.thankful.watermark.andorid";
 
                 // Both country code and currency code are standard ISO formats. Country
                 // should be the region you will process the payment in. Currency should
