@@ -41,3 +41,7 @@ global.json
 /Watermark.Razor/bin/Debug/net8.0
 /Watermark.Razor/obj
 /Watermark.Razor/bin/Release/net8.0
+/Watermark/.vs
+/Watermark/bin/Debug/net8.0-ios/ios-arm64
+/Watermark/obj
+/Watermark/bin/Release/net8.0-ios/ios-arm64

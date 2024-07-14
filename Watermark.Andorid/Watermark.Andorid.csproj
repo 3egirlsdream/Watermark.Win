@@ -131,6 +131,10 @@
        <UseInterpreter>True</UseInterpreter>
        <MtouchInterpreter>-all,System.Collections.Immutable</MtouchInterpreter>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetFramework)'=='net8.0-ios'">
+      <CodesignKey>Apple Development: Created via API (888ZPZG7BF)</CodesignKey>
+      <CodesignProvision>VS: com.top.thankful.watermark.andorid Development</CodesignProvision>
+    </PropertyGroup>
     <ItemGroup>
         <!-- App Icon -->
         <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#512BD4" />

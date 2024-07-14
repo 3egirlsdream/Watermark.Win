@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using Watermark.Andorid.Models
+@using Watermark.Models
+@using Watermark.Shared.Models
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
+
+
+<MudPaper Style="@("display:none;" + boxStyle)" Elevation="0" class="pa-3">
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> 永久授权 </MudText>
+		<MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
+	</MudStack>
+</MudPaper>
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
+	<MudStack Justify="Justify.FlexStart">
+		<MudText Typo="Typo.subtitle1"><strong>免费版</strong>  </MudText>
+		<MudText Typo="Typo.subtitle2">基础模板|最高画质|模板编辑|生成照片 </MudText>
+	</MudStack>
+</MudPaper>
+
+<MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
+	<MudStack Justify="Justify.FlexStart">
+		<MudText Typo="Typo.subtitle1"><strong>付费会员</strong>  </MudText>
+		<MudText Typo="Typo.subtitle2">无限制使用付费API<br />无限制批量处理<br />无限制使用付费的高级模板<br />IOS、MAC OS、Windows、Android多端同步<br />持续更新 </MudText>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>年度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>季度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
+	</MudStack>
+	<MudDivider Class="my-4" />
+	<MudStack Row style="position:relative;align-items: center">
+		<MudText Typo="Typo.button"> <strong>月度会员</strong> </MudText>
+		<MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8 &nbsp;</MudChip>
+	</MudStack>
+</MudPaper>
+
+<MudPaper class="ma-3" Style="margin: 10px 16px;" Elevation="0">
+	<div style="height:10px;width:10px;"></div>
+</MudPaper>
+
+@code {
+	[Parameter]
+	public EventCallback<bool> OnImageTouched { get; set; }
+	string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
+	async void Pay(decimal cost, string tradeName)
+	{
+		try
+		{
+			var pay = new Watermark.Platforms.iOS.ApplePayAuthorizer();
+			pay.AuthorizePayment((double)cost);
+			pay.PaymentSuccess += async (arg) =>
+			{
+				var api = new APIHelper();
+				var id = Guid.NewGuid();
+				var up = await api.RecordBill("200", arg, "com.top.thankful.watermark.ios", "auth_app_id", cost.ToString(), id.ToString(), tradeName, cost + "", "seller_id");
+				if(up.success)
+				{
+					ClientInstance.ShowMsg(Snackbar, "支付成功", Severity.Success);
+					await PublicMethods.ReLogin();
+					if (OnImageTouched.HasDelegate)
+					{
+						await OnImageTouched.InvokeAsync(true);
+					}
+				}
+				else
+				{
+					ClientInstance.ShowMsg(Snackbar, up.message?.content ?? "支付失败", Severity.Error);
+				}
+			};
+			pay.PaymentFailed += async () =>
+			{
+				ClientInstance.ShowMsg(Snackbar, "支付失败", Severity.Error);
+			};
+
+		}
+		catch (Exception ex)
+		{
+			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+		}
+	}
+}

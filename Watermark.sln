@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Shared", "..\Wate
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark.Razor", "Watermark.Razor\Watermark.Razor.csproj", "{974640B1-0654-4554-A9DF-785A7B9EA7D5}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Watermark", "Watermark\Watermark.csproj", "{F061CB81-B793-4E04-911C-A6250C8D9802}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,12 @@ Global
 		{974640B1-0654-4554-A9DF-785A7B9EA7D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{974640B1-0654-4554-A9DF-785A7B9EA7D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{974640B1-0654-4554-A9DF-785A7B9EA7D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F061CB81-B793-4E04-911C-A6250C8D9802}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
