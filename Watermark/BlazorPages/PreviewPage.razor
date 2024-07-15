@@ -802,7 +802,7 @@
             var b64 = await helper.GenerationAsync(cvs, null, false, false);
 #if ANDROID
 	var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
-	Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
+	Watermark.SavePictureService.SavePicture(b64, "DFX_" + fn);
 #endif
 #if IOS
         Platforms.iOS.SavePictureService.SavePicture(b64);

@@ -224,7 +224,7 @@
 		var b64 = await helper.SplitImages(Images, horizon, false);
 #if ANDROID
 		var fn = Guid.NewGuid().ToString();
-		Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
+		Watermark.SavePictureService.SavePicture(b64, "DFX_" + fn);
 #endif
 			StateHasChanged();
 		

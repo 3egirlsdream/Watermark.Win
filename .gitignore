@@ -45,3 +45,8 @@ global.json
 /Watermark/bin/Debug/net8.0-ios/ios-arm64
 /Watermark/obj
 /Watermark/bin/Release/net8.0-ios/ios-arm64
+/Watermark/Watermark/bin/
+/Watermark.Win/Watermark/bin/
+/Watermark/bin/Debug
+
+/Watermark/bin/Release
