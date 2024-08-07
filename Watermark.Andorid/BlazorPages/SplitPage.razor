@@ -149,22 +149,6 @@
 		Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
 	}
 
-
-	async void OpenExifDialog(WMText mText)
-	{
-		var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
-		parameters.Add(x => x.Exifs, mText.Exifs);
-		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-		var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled)
-		{
-			mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
-			RefreshEditImage();
-			StateHasChanged();
-		}
-	}
-
 	async void SelectSourceImageExif()
 	{
 		var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions

@@ -686,7 +686,7 @@
                 var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
                 cvs.Path = f.FullPath;
                 img.Canvas = cvs;
-                cvs.Exif = await ExifHelper.ReadImageAsync(f.FullPath);
+                cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(f.FullPath);
                 img.ID = cvs.ID;
                 img.Path = f.FullPath;
                 Global.CheckImageExtension(f.FullPath);
@@ -750,17 +750,21 @@
             MainLoading.Show = true;
             StateHasChanged();
             var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+
+            Dictionary<string, Dictionary<string, string>> exif = [];
+            exif[cvs.ID] = ExifHelper.DefaultMeta;
             int c = 0;
             foreach (var container in cvs.Children)
             {
                 if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
                 {
                     container.Path = result.Skip(c++).Take(1).First().FullPath;
-                    cvs.Exif = ExifHelper.ReadImage(container.Path);
+                    exif[container.ID] = ExifHelper.ReadImage(container.Path);
                 }
             }
 
             CurrentImage = new();
+            cvs.Exif = exif;
             CurrentImage.Canvas = cvs;
             CurrentImage.ID = CurrentImage.Canvas.ID;
             var b64 = await helper.GenerationAsync(cvs, null, true, false);
@@ -843,7 +847,7 @@
                 {
                     var content = File.ReadAllText(configPath);
                     dirct.WMCanvas = Global.ReadConfig(content);
-                    dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
+                    dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
                     dirct.CanvasType = dirct.WMCanvas.CanvasType;
                     downloadedTemplates.Add(dirct);
                 }
@@ -885,7 +889,7 @@
                 return Global.ReadConfig(content);
             });
             dirct.WMCanvas = canvas;
-            dirct.WMCanvas.Exif = ExifHelper.DefaultMeta;
+            dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
             dirct.CanvasType = dirct.WMCanvas.CanvasType;
             await Global.InitFonts([canvas]);
             var b64 = await helper.GenerationAsync(canvas, null, true, false);
@@ -1076,13 +1080,14 @@
     {
         MemoryStream ms = new MemoryStream();
         await file.OpenReadStream(file.Size).CopyToAsync(ms);
-        CurrentImage.Canvas.Exif = ExifHelper.ReadImage(ms.ToArray());
+        CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
     }
 
     async void OpenFullExifInfo()
     {
         var parameters = new DialogParameters<ExifInfo>();
-        parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif));
+        var meta = CurrentImage.Canvas.Exif.Any() ? CurrentImage.Canvas.Exif.FirstOrDefault().Value : ExifHelper.DefaultMeta;
+        parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(meta));
         var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
         var rst = DialogService.Show<ExifInfo>("", parameters, option);
         var dialogResult = await rst.Result;
@@ -1113,7 +1118,7 @@
             var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
             cvs.Path = fullpath;
             img.Canvas = cvs;
-            cvs.Exif = await ExifHelper.ReadImageAsync(fullpath);
+            cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(fullpath);
             img.ID = cvs.ID;
             img.Path = fullpath;
             Global.CheckImageExtension(fullpath);
@@ -1139,7 +1144,7 @@
                 if (!container.ContainerProperties.FixImage)
                 {
                     container.Path = result.FullPath;
-                    cvs.Exif = ExifHelper.ReadImage(container.Path);
+                    cvs.Exif[container.ID] = ExifHelper.ReadImage(container.Path);
                 }
             }
 

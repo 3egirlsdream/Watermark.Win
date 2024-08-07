@@ -20,7 +20,7 @@ namespace Watermark.Andorid.Models
 #if ANDROID
                     string con = rs.data;
                     var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-                    Com.Alipay.Sdk.App.PayTask pa = new Com.Alipay.Sdk.App.PayTask(act);
+                    var pa = new Com.Alipay.Sdk.App.PayTask(act);
                     var payRs = pa.Pay(con, true);
                     try
                     {
