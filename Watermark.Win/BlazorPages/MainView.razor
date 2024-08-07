@@ -366,7 +366,7 @@
 				{
 					WMCanvas canvas = new WMCanvas();
 					canvas.Path = file;
-					canvas.Exif = await ExifHelper.ReadImageAsync(file);
+					canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
 					await Task.Run(() =>
 					{
 						var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
@@ -450,7 +450,7 @@
 					{
 						var content = File.ReadAllText(configPath);
 						var canvas = Global.ReadConfig(content);
-						canvas.Exif = ExifHelper.DefaultMeta;
+						canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
 						await InitFonts([canvas]);
 						var b64 = await helper.GenerationAsync(canvas, null, true);
 						var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
@@ -806,7 +806,7 @@
 	{
 		MemoryStream ms = new MemoryStream();
 		await file.OpenReadStream(file.Size).CopyToAsync(ms);
-		CurrentImage.Canvas.Exif = ExifHelper.ReadImage(ms.ToArray());
+		CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
 	}
 
 
@@ -819,14 +819,20 @@
 
 	async void OpenExifDialog(WMText mText)
 	{
-		var parameters = new DialogParameters<ExifConfig>();
-		parameters.Add(x => x.Exifs, mText.Exifs);
+		var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
+		parameters.Add(x => x.mText, mText);
+		var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
+		dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
+		parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
+		parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
 		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-		var rst = DialogService.Show<ExifConfig>("", parameters, option);
+		var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
 		var dialogResult = await rst.Result;
 		if (!dialogResult.Canceled)
 		{
-			mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+			WMText text = (WMText)dialogResult.Data;
+			mText.Exifs = text.Exifs;
+			mText.BindedContainerId = text.BindedContainerId;
 			RefreshImage();
 			StateHasChanged();
 		}
@@ -835,7 +841,7 @@
 	async void OpenFullExifInfo()
 	{
 		var parameters = new DialogParameters<ExifInfo>();
-		parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif));
+		parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value));
 		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
 		var rst = DialogService.Show<ExifInfo>("", parameters, option);
 		var dialogResult = await rst.Result;
@@ -843,7 +849,8 @@
 
 	async void SelectSplitImages(WMTemplateList template)
 	{
-		Dictionary<string, string> exif = ExifHelper.DefaultMeta;
+		Dictionary<string, Dictionary<string, string>> exif = [];
+		exif[template.Canvas.ID] = ExifHelper.DefaultMeta;
 		var action = Task.Run(() =>
 				{
 					// 实例化一个文件选择对象
@@ -869,7 +876,7 @@
 							if (c <= dialog.FileNames.Length - 1 && !container.ContainerProperties.FixImage)
 							{
 								container.Path = dialog.FileNames[c++];
-								exif = ExifHelper.ReadImage(container.Path);
+								exif[container.ID] = ExifHelper.ReadImage(container.Path);
 							}
 						}
 					}

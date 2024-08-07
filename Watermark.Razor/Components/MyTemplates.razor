@@ -178,7 +178,7 @@
 						var content = File.ReadAllText(configPath);
 						return Global.ReadConfig(content);
 					});
-					canvas.Exif = ExifHelper.DefaultMeta;
+					canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
 					await Global.InitFonts([canvas]);
 					var b64 = await helper.GenerationAsync(canvas, null, true);
 					pairs[canvas.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);

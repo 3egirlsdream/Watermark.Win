@@ -431,11 +431,11 @@
                                                             </MudButtonGroup>
                                                             <MudDivider Class="my-2" />
                                                             <p style="font-weight:normal">文字内容</p>
-                                                            <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
+                                                            <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;">
                                                                 <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                                     @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                                 </div>
-                                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" />
+                                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="margin-bottom:4px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" />
                                                             </div>
 
 
@@ -549,11 +549,11 @@
 
                                                 <MudDivider Class="my-2" />
                                                 <p style="font-weight:normal">文字内容</p>
-                                                <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal">
+                                                <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;">
                                                     <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                         @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                     </div>
-                                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="float:right;max-width:80px;" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="(()=>OpenExifDialog(mText))" Style="margin-bottom:4px" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" />
                                                 </div>
 
                                                 <MudTextField @bind-Value="@mText.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" />
@@ -700,13 +700,19 @@
     async void OpenExifDialog(WMText mText)
     {
         var parameters = new DialogParameters<ExifConfig>();
-        parameters.Add(x => x.Exifs, mText.Exifs);
+        parameters.Add(x => x.mText, mText);
+        var dic = CurrentCanvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
+        dic[CurrentCanvas.ID] = CurrentCanvas.Name;
+        parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
+        parameters.Add(x => x.CanvasType, CurrentCanvas.CanvasType);
         var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
         var rst = DialogService.Show<ExifConfig>("", parameters, option);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled)
         {
-            mText.Exifs = (List<WMExifConfigInfo>)dialogResult.Data;
+            WMText text = (WMText)dialogResult.Data;
+            mText.Exifs = text.Exifs;
+            mText.BindedContainerId = text.BindedContainerId;
             PreviewImageRefresh();
         }
     }
