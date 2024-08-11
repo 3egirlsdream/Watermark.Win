@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
 	<RootNamespace>Watermark.Win</RootNamespace>
 	<ApplicationIcon>leica.ico</ApplicationIcon>
-	<Version>1.2.8</Version>
+	<Version>1.2.10</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

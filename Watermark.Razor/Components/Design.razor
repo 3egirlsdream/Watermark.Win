@@ -805,6 +805,7 @@
         await rs;
         var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + Path.GetFileName(mContainer.Path);
         using var bitmap = SKBitmap.Decode(mContainer.Path);
+        if (bitmap is null) return;
         var codec = SKCodec.Create(mContainer.Path);
         using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
         Global.WriteThumbnailImage(bitmap2, destFile);

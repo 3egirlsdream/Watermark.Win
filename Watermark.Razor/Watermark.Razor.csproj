@@ -40,4 +40,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\FontStyleComp.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\FontStyleComp.razor" />
+  </ItemGroup>
+
 </Project>
