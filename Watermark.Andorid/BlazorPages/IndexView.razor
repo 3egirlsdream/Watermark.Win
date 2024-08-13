@@ -1,0 +1,196 @@
+﻿@page "/"
+@using Components.Layout
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@using Watermark.Win.Models
+@inject IWMWatermarkHelper helper
+@inject APIHelper api
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@layout MainLayout
+
+<div style="height:100%;">
+    <MTabs SliderColor="black" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
+        @foreach (var e in tab1Head)
+        {
+            <MTab Value="e">
+                @e
+            </MTab>
+        }
+    </MTabs>
+    <div style="@($"height: calc(100% - 30px);")">
+        <SwiperTabItems Value="tab1Head.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tab1Head[e])">
+            <SwiperTabItem>
+                <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
+                    <MudGrid Class="pt-2" Justify="Justify.FlexStart">
+                        @if (loading_down)
+                        {
+                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
+                        }
+                        else
+                        {
+                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
+                            {
+                                <MudItem xs="6" Style="padding:4px;">
+                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
+                                        {
+                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
+                                        }
+                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+                                    </MudCard>
+                                </MudItem>
+                            }
+                            @if (downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split).Count() > 0)
+                            {
+                                <MudItem xs="12" Style="padding:4px;">
+                                    <MudText Typo="Typo.h5"><b>拼图</b></MudText>
+                                </MudItem>
+                            }
+                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
+                            {
+                                <MudItem xs="6" Style="padding:4px;">
+                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
+                                        {
+                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
+                                        }
+                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+                                    </MudCard>
+                                </MudItem>
+                            }
+                        }
+                    </MudGrid>
+                </MudPaper>
+
+            </SwiperTabItem>
+            <SwiperTabItem>
+                <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
+                    <MudGrid Class="pt-2" Justify="Justify.FlexStart">
+                        @foreach (var t in ILikeTemplates)
+                        {
+                            <MudItem xs="6" Style="padding:4px;">
+                                <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+                                    @if (!string.IsNullOrEmpty(t.Src))
+                                    {
+                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />
+                                    }
+                                </MudCard>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudPaper>
+            </SwiperTabItem>
+        </SwiperTabItems>
+    </div>
+</div>
+
+@code {
+
+    bool loading_down = false;
+    StringNumber tab = "我的下载";
+    List<string> tab1Head = ["我的下载", "我的收藏"];
+    List<WMZipedTemplate> downloadedTemplates = new();
+    List<WMZipedTemplate> ILikeTemplates = new();
+    Dictionary<string, int> Versions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Global.InitConfig();
+            Global.DeviceType = Shared.Enums.DeviceType.Andorid;
+            Global.PrimaryKey = ClientInstance.Key();
+            await Global.Login();
+            await LoadTemplates();
+            await LoadCollectTemplate();
+            await api.DownloadLogoes();
+            await InitVersion(downloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
+            await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+        }
+        catch (Exception ex)
+        {
+            //ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+        }
+    }
+
+
+    async Task LoadTemplates()
+    {
+        loading_down = true;
+        StateHasChanged();
+        var api = new APIHelper();
+        if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+        }
+
+        try
+        {
+            var basePath = Global.AppPath.TemplatesFolder;
+            var folder = new DirectoryInfo(basePath);
+            foreach (var tFolder in folder.GetDirectories())
+            {
+                WMZipedTemplate dirct = new();
+                dirct.WatermarkId = tFolder.Name;
+                var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+                if (System.IO.File.Exists(configPath))
+                {
+                    var content = File.ReadAllText(configPath);
+                    dirct.WMCanvas = Global.ReadConfig(content);
+                    dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
+                    dirct.CanvasType = dirct.WMCanvas.CanvasType;
+                    downloadedTemplates.Add(dirct);
+                }
+            }
+            foreach (var tp in downloadedTemplates)
+            {
+                await Global.InitFonts([tp.WMCanvas]);
+                var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
+                tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            }
+            loading_down = false;
+            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            //Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            loading_down = false;
+        }
+    }
+
+    async Task LoadCollectTemplate()
+    {
+        var api = new APIHelper();
+        var getILike = await api.GetILike(Global.CurrentUser?.ID ?? "");
+        if (getILike != null && getILike.success && getILike.data != null)
+        {
+            ILikeTemplates = getILike.data;
+            ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+        }
+
+    }
+
+    async Task InitVersion(List<string> ids)
+    {
+        var version = await api.GetVersions(ids);
+        if (version.success && version.data != null)
+        {
+            foreach (var e in version.data)
+            {
+                Versions[e.Key] = e.Value;
+            }
+        }
+    }
+
+    void DownloadTemplate(string watermarkId)
+    {
+
+    }
+
+    void OpenFocus(char c, WMZipedTemplate zipedTemplate, bool show)
+    {
+        
+    }
+}

@@ -1,4 +1,5 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
+﻿@page "/settings"
+@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @using Watermark.Andorid.Models
 @using Watermark.Razor.Components
@@ -6,8 +7,10 @@
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 @using Watermark.Shared.Models
+@using Components.Layout
 @inject ISnackbar Snackbar
 @inject NavigationManager navigationManager
+@layout MainLayout
 <style>
     .mud-switch {
         margin-left: 0px;
@@ -164,7 +167,7 @@ else
     }
 </MudDrawer>
 
-<MudDrawer Style="padding:6px" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer Style="@($"adding:6px;{(ShowQuestion?"":"display:none;")}")" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
     @if (ShowQuestion)
     {
         <Watermark.Razor.Components.QuestionDialog />

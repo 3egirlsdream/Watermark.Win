@@ -111,11 +111,16 @@
 
     <ItemGroup>
       <None Remove="BlazorPages\SettingPage.razor.css" />
+      <None Remove="BlazorPages\TemplateMarket.razor.css" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="BlazorPages\TemplateMarket.razor.css" />
     </ItemGroup>
 
 
     <ItemGroup>
-		<PackageReference Include="Masa.Blazor" Version="1.5.5" />
+		<PackageReference Include="Masa.Blazor" Version="1.7.0-beta.5" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />

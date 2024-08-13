@@ -1,10 +1,30 @@
-﻿@using Watermark.Win.Models
+﻿@using Masa.Blazor
+@using Watermark.Win.Models
 @inherits LayoutComponentBase
 
-    <div class="page">
-        <div class="sidebar" style="display:none;">
-            @*<NavMenu />*@
-        </div>
+<MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MApp>
+    <MMain>
+        <MErrorHandler>
+            <PPageStack TabbedPatterns="@(["^/$", "/market", "/settings"])">
+                <MContainer Style="padding:0px !important;height:calc(100vh - 56px);overflow:hidden">
+                    @Body
+                </MContainer>
+            </PPageStack>
+        </MErrorHandler>
+    </MMain>
 
-            @Body
-    </div>
+    <MBottomNavigation App Routable Color="primary">
+        <MButton Href="/">Tab 1</MButton>
+        <MButton Href="/market">Tab 2</MButton>
+        <MButton Href="/settings">Tab 3</MButton>
+    </MBottomNavigation>
+</MApp>
+
+@code {
+
+    private string[] _tabbedPatterns = ["/blazor/examples/page-stack/tab*"];
+
+}
