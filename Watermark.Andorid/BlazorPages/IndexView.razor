@@ -1,5 +1,7 @@
 ﻿@page "/"
 @using Components.Layout
+@using Watermark.Andorid.Models
+@using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
@@ -7,6 +9,9 @@
 @inject APIHelper api
 @inject NavigationManager navigationManager
 @inject IJSRuntime JSRuntime
+@inherits PStackPageBase
+@inject IPopupService PopupService
+@inject PageStackNavController NavController
 @layout MainLayout
 
 <div style="height:100%;">
@@ -19,8 +24,8 @@
         }
     </MTabs>
     <div style="@($"height: calc(100% - 30px);")">
-        <SwiperTabItems Value="tab1Head.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tab1Head[e])">
-            <SwiperTabItem>
+        <MSwiper AutoHeight SpaceBetween="24" Index="tab1Head.IndexOf(tab.ToString())" IndexChanged="@((e) => tab = tab1Head[e])">
+            <MSwiperSlide>
                 <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
                     <MudGrid Class="pt-2" Justify="Justify.FlexStart">
                         @if (loading_down)
@@ -62,8 +67,7 @@
                         }
                     </MudGrid>
                 </MudPaper>
-
-            </SwiperTabItem>
+            </MSwiperSlide>
             <SwiperTabItem>
                 <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
                     <MudGrid Class="pt-2" Justify="Justify.FlexStart">
@@ -81,8 +85,49 @@
                     </MudGrid>
                 </MudPaper>
             </SwiperTabItem>
-        </SwiperTabItems>
+        </MSwiper>
     </div>
+    <MDialog @bind-Value="FocusImageShow" Fullscreen>
+        <TemplateLargeView CloseEvent="()=> FocusImageShow = false"
+                           downloadedTemplates="downloadedTemplates"
+                           DownloadEvent="DownloadTemplate"
+                           FocusImage="FocusImage"
+                           FocusImageId="FocusImageId"
+                           FocusImageSrc="FocusImageSrc"
+                           FocusImageType="FocusImageType"
+                           GeneratePhotoEvent="GeneratePhoto"
+                           ILikeTemplates="ILikeTemplates"
+                           OpenCameraEvent="OpenCamera"
+                           subscribed="subscribed"
+                           SubscribeEvent="Subscribe"
+                           ZipedTemplates="ZipedTemplates" />
+    </MDialog>
+
+    <MOverlay Value="loading.Show">
+        <MProgressCircular indeterminate
+                           Size="64"></MProgressCircular>
+    </MOverlay>
+    <MOverlay Value="@faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
+        <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
+            <MudStack Style="text-align:center;">
+                <MudText Typo="Typo.subtitle1" Color="Color.Default"> 失败提示</MudText>
+            </MudStack>
+            <br />
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+                @failedMessage
+            </MudText>
+            <br />
+
+            <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                <strong>如何获取硬币</strong>
+            </MudText>
+            <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                上传模板，用户下载<br />
+                开通会员
+            </MudText>
+            <MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>faildShow = false" Size="Size.Small" Class="mt-2">确定</MudButton>
+        </MudPaper>
+    </MOverlay>
 </div>
 
 @code {
@@ -93,6 +138,18 @@
     List<WMZipedTemplate> downloadedTemplates = new();
     List<WMZipedTemplate> ILikeTemplates = new();
     Dictionary<string, int> Versions = [];
+    bool FocusImageShow = false;
+    WMZipedTemplate FocusImage;
+    char FocusImageType = ' ';
+    List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
+    List<WMZipedTemplate> ZipedTemplates = new();
+    WMainLoading loading = new();
+    WMTemplateList CurrentImage;
+    List<WMTemplateList> Images = new();
+    string FocusImageId = "";
+    bool faildShow = false;
+    string failedMessage = "";
+    string FocusImageSrc = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,6 +171,10 @@
         }
     }
 
+    protected override Task OnPageDeactivatedAsync()
+    {
+        return base.OnPageDeactivatedAsync();
+    }
 
     async Task LoadTemplates()
     {
@@ -184,13 +245,298 @@
         }
     }
 
-    void DownloadTemplate(string watermarkId)
+    async Task<WMZipedTemplate> LoadSingleTemplates(string watermarkId)
     {
+        var api = new APIHelper();
+        if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+        }
+
+        try
+        {
+            WMZipedTemplate dirct = new();
+            dirct.WatermarkId = watermarkId;
+            var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+            if (!System.IO.File.Exists(configPath)) return dirct;
+            var canvas = await Task.Run(() =>
+            {
+                var content = File.ReadAllText(configPath);
+                return Global.ReadConfig(content);
+            });
+            dirct.WMCanvas = canvas;
+            dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
+            dirct.CanvasType = dirct.WMCanvas.CanvasType;
+            await Global.InitFonts([canvas]);
+            var b64 = await helper.GenerationAsync(canvas, null, true, false);
+            dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            return dirct;
+        }
+        catch (Exception ex)
+        {
+           Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+           return new WMZipedTemplate();
+        }
+    }
+
+
+    async void DownloadTemplate(string watermarkId)
+    {
+        var action = new Action(async () =>
+        {
+            var api = new APIHelper();
+            if (!Global.CurrentUser.IsVIP)
+            {
+                var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
+                if (!auth.success)
+                {
+                    FocusImageShow = false;
+                    faildShow = true;
+                    failedMessage = auth.message.content;
+                    await PublicMethods.ReLogin();
+                    StateHasChanged();
+                    return;
+                }
+            }
+
+            var w = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
+            var r = await api.Download(watermarkId, w?.UserId ?? "");
+            if (r)
+            {
+                HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+                FocusImageShow = false;
+                Common.ShowMsg(PopupService, "下载完成", AlertTypes.Success);
+                var dir = await LoadSingleTemplates(watermarkId);
+                if (!downloadedTemplates.Any()) downloadedTemplates.Add(dir);
+                else if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
+                else if (downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
+                {
+                    var idx = downloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
+                    var item = downloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
+                    downloadedTemplates.Remove(item);
+                    downloadedTemplates.Insert(idx, dir);
+                }
+                await InitVersion([watermarkId]);
+                StateHasChanged();
+            }
+        });
+        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
+        {
+            FocusImageShow = false;
+            //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
+            //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
+            NavController.Push("/login");
+            // var dialogResult = await rst.Result;
+            // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+            // {
+            //     FocusImageShow = false;
+            //     action.Invoke();
+            // }
+            // return;
+        }
+        var p = Global.AppPath.TemplatesFolder + watermarkId;
+        if (Directory.Exists(p))
+        {
+            FocusImageShow = false;
+            var confirmed = await PopupService.ConfirmAsync("确认覆盖","此模板已存在，确定覆盖？",AlertTypes.Info);
+            if (confirmed == true)
+            {
+                Directory.Delete(p, true);
+                action.Invoke();
+            }
+        }
+        else
+        {
+            action.Invoke();
+        }
+    }
+
+    void OpenFocus(char t, WMZipedTemplate zip, bool b)
+    {
+        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        FocusImage = zip;
+        FocusImageType = t;
+        FocusImageId = zip.WatermarkId;
+        FocusImageSrc = zip.Src;
+        FocusImageShow = b;
+        StateHasChanged();
+    }
+
+    async Task SelectSplitPhoto(WMZipedTemplate template)
+    {
+        try
+        {
+            var result = await FilePicker.PickMultipleAsync(new PickOptions
+                {
+                    PickerTitle = "长按多选照片",
+                    FileTypes = FilePickerFileType.Jpeg
+                });
+
+            if (result == null || !result.Any()) return;
+            loading.Message = "正在生成图片...";
+            loading.Show = true;
+            StateHasChanged();
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+
+            Dictionary<string, Dictionary<string, string>> exif = [];
+            exif[cvs.ID] = ExifHelper.DefaultMeta;
+            int c = 0;
+            foreach (var container in cvs.Children)
+            {
+                if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
+                {
+                    container.Path = result.Skip(c++).Take(1).First().FullPath;
+                    exif[container.ID] = ExifHelper.ReadImage(container.Path);
+                }
+            }
+
+            CurrentImage = new();
+            cvs.Exif = exif;
+            CurrentImage.Canvas = cvs;
+            CurrentImage.ID = CurrentImage.Canvas.ID;
+            var b64 = await helper.GenerationAsync(cvs, null, true, false);
+            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            Images = [CurrentImage];
+            loading.Show = false;
+            //openDrawer = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
+
+    async Task OpenPhoto(WMZipedTemplate template)
+    {
+        try
+        {
+            var result = await FilePicker.PickMultipleAsync(new PickOptions
+                {
+                    PickerTitle = "长按多选照片",
+                    FileTypes = FilePickerFileType.Images
+                });
+            if (result is null || result.Count() == 0) return;
+            Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
+            loading.Message = "正在生成图片...";
+            loading.Show = true;
+            StateHasChanged();
+            Images = new List<WMTemplateList>();
+            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+            {
+                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+            }
+            foreach (var f in result)
+            {
+                var img = new WMTemplateList();
+                var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+                cvs.Path = f.FullPath;
+                img.Canvas = cvs;
+                cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(f.FullPath);
+                img.ID = cvs.ID;
+                img.Path = f.FullPath;
+                Global.CheckImageExtension(f.FullPath);
+                var thumbnail = Global.AppPath.ThumbnailFolder + f.FileName;
+                await Global.WriteThumbnailImageAsync(f.FullPath, thumbnail);
+                Images.Add(img);
+            }
+            CurrentImage = Images.First();
+            var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            loading.Show = false;
+            //openDrawer = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
+
+
+    async void GeneratePhoto(WMZipedTemplate template)
+    {
+        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        FocusImageShow = false;
+        if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
+        else await SelectSplitPhoto(template);
+    }
+
+    async void OpenCamera(WMZipedTemplate template)
+    {
+        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        var result = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "拍照"
+            });
+
+        if (result is null) return;
+        FocusImageShow = false;
+        if (template.CanvasType == CanvasType.Normal)
+        {
+            loading.Message = "正在生成图片...";
+            loading.Show = true;
+            StateHasChanged();
+            Images = new List<WMTemplateList>();
+            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+            {
+                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+            }
+            var fullpath = result.FullPath;
+            var img = new WMTemplateList();
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+            cvs.Path = fullpath;
+            img.Canvas = cvs;
+            cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(fullpath);
+            img.ID = cvs.ID;
+            img.Path = fullpath;
+            Global.CheckImageExtension(fullpath);
+            var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(fullpath);
+            await Global.WriteThumbnailImageAsync(fullpath, thumbnail);
+            Images.Add(img);
+
+            CurrentImage = Images.First();
+            var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            loading.Show = false;
+            //openDrawer = true;
+            StateHasChanged();
+        }
+        else
+        {
+            loading.Message = "正在生成图片...";
+            loading.Show = true;
+            StateHasChanged();
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
+            foreach (var container in cvs.Children)
+            {
+                if (!container.ContainerProperties.FixImage)
+                {
+                    container.Path = result.FullPath;
+                    cvs.Exif[container.ID] = ExifHelper.ReadImage(container.Path);
+                }
+            }
+
+            CurrentImage = new();
+            CurrentImage.Canvas = cvs;
+            CurrentImage.ID = CurrentImage.Canvas.ID;
+            var b64 = await helper.GenerationAsync(cvs, null, true, false);
+            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            Images = [CurrentImage];
+            loading.Show = false;
+            //openDrawer = true;
+            StateHasChanged();
+        }
 
     }
 
-    void OpenFocus(char c, WMZipedTemplate zipedTemplate, bool show)
+    async void Subscribe(string userId)
     {
-        
+        // if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        // var helper = new APIHelper();
+        // var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
+        // await LoadTemplatesMarket();
     }
+
+
 }

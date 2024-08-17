@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Masa.Blazor.Popup;
+using Masa.Blazor.Presets;
+using Masa.Blazor;
+using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
 using Watermark.Andorid.Models;
@@ -7,7 +10,7 @@ using Watermark.Win.Models;
 
 namespace Watermark.Andorid
 {
-	public static class MauiProgram
+    public static class MauiProgram
     {
         public static MauiApp CreateMauiApp()
         {
@@ -21,8 +24,34 @@ namespace Watermark.Andorid
 
 
             builder.Services.AddFilePicker();
-			builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddMauiBlazorWebView();
             builder.Services.AddMasaBlazor();
+            builder.Services.AddMasaBlazor(options =>
+            {
+                options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
+                {
+                    {
+                        PopupComponents.CONFIRM, new Dictionary<string, object?>()
+                        {
+                            {
+                                nameof(PromptOptions.OkProps), (Action<ModalButtonProps>)(u =>
+                                {
+                                    u.Class = "text-capitalize";
+                                    u.Text = false;
+                                })
+                            },
+                            { nameof(ConfirmOptions.CancelProps), (Action<ModalButtonProps>)(u => u.Class = "text-capitalize") },
+                        }
+                    },
+                    {
+                        PopupComponents.SNACKBAR, new Dictionary<string, object?>()
+                        {
+                            { nameof(PEnqueuedSnackbars.Closeable), true },
+                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.TopRight }
+                        }
+                    }
+                };
+            });
 #if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
 #endif
@@ -32,11 +61,11 @@ namespace Watermark.Andorid
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
-			builder.Services.AddSingleton<APIHelper>();
-			return builder.Build();
+            builder.Services.AddSingleton<APIHelper>();
+            return builder.Build();
         }
     }
 }

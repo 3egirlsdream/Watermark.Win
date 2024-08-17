@@ -1,0 +1,26 @@
+﻿@inherits Masa.Blazor.Popup.Components.PopupComponentBase
+
+<MDialog Value="Visible" ValueChanged="ValueChanged" MaxWidth="360">
+    <div Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;">
+        <MudStack Style="text-align:center;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
+            <MudText Typo="Typo.subtitle1" Color="Color.Default" Class="mt-2">
+                @Messages[0]
+                <br />
+                @Messages[1]
+            </MudText>
+        </MudStack>
+
+    </div>
+</MDialog>
+
+@code {
+    [Parameter, EditorRequired]
+    public string[] Messages { get; set; }
+
+    private async Task ValueChanged(bool val)
+    {
+        await ClosePopupAsync();
+    }
+}
+

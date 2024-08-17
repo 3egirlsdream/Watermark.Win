@@ -1,4 +1,5 @@
 ﻿@page "/settings"
+@using Masa.Blazor.Presets.PageStack.NavController
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @using Watermark.Andorid.Models
@@ -9,7 +10,7 @@
 @using Watermark.Shared.Models
 @using Components.Layout
 @inject ISnackbar Snackbar
-@inject NavigationManager navigationManager
+@inject PageStackNavController NavController
 @layout MainLayout
 <style>
     .mud-switch {
@@ -62,8 +63,12 @@ else
 {
     <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
         <MudStack Row>
-            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-            <MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
+            <PPageStackLink Href="/login">
+                <CustomContent Context="push">
+                    <MButton OnClick="push" Text>登录</MButton>
+                </CustomContent>
+            </PPageStackLink>
+            <MButton OnClick="OpenSignUpDialog" Text>注册</MButton>
         </MudStack>
     </MudPaper>
 }
@@ -107,7 +112,7 @@ else
         <MudText Typo="Typo.button"> 导入图标 </MudText>
         <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
     </MudStack>
-    <MudDivider Class="my-2" />
+    @* <MudDivider Class="my-2" />
     <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))">
         <MudText Typo="Typo.button"> PC客户端 </MudText>
         <MudIcon Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" />
@@ -117,7 +122,7 @@ else
     <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center">
         <MudText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></MudText>
         <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
-    </MudStack>
+    </MudStack> *@
 
     <MudDivider Class="my-2" />
     <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("836325187"))">
@@ -144,8 +149,8 @@ else
     @if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
     {
         <MudDivider Class="my-2" />
-        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>navigationManager.NavigateTo("/dms"))">
-            <MudText Typo="Typo.button"> APP数据</MudText>
+        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>NavController.Push("/dms"))">
+            <MudText Typo="Typo.button">APP数据</MudText>
             <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
         </MudStack>
     }
@@ -179,7 +184,7 @@ else
 </MudOverlay>
 
 @code {
-#if ANDROID
+    #if ANDROID
 
 	[Inject]
 	private IUpgradeService UpgradeService { get; set; }
@@ -205,6 +210,24 @@ else
         {
             showUpdateOverlay = true;
         }
+        NavController.PageClosed += (e, v) =>
+        {
+            #if ANDROID
+            MainActivity.SetColor.Invoke("#FFFFFF");
+            #endif
+            if (v.RelativeUri == @"/login")
+            {
+                if (RefreshCollection.HasDelegate)
+                {
+                    RefreshCollection.InvokeAsync();
+                }
+            }
+            else if(v.RelativeUri == @"/appsetting")
+            {
+
+            }
+            StateHasChanged();
+        };
     }
 
     async void Update()
@@ -242,10 +265,15 @@ else
         Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
     }
 
-
+    private void NavControllerOnPageClosed(object? sender, PageStackPageClosedEventArgs e)
+    {
+        Console.Out.WriteLine($"{e.RelativeUri} closed");
+    }
 
     async void OpenLoginDialog()
     {
+        NavController.Push("/login");
+        return;
         DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
         var rst = DialogService.Show<LoginDialog>("", topCenter);
         var dialogResult = await rst.Result;
@@ -277,27 +305,17 @@ else
         StateHasChanged();
     }
 
-    void ToPreview()
-    {
-        navigationManager.NavigateTo("/preview");
-    }
-
     void OpenVip()
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
         openVip = true;
     }
 
-    async void OpenSettings()
+    void OpenSettings()
     {
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var param = new DialogParameters<AppSetting>();
-        param.Add(x => x.ShowHeader, true);
-        var rst = DialogService.Show<AppSetting>("", param, topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-        {
-            StateHasChanged();
-        }
+        NavController.Push("/appsetting");
+        #if ANDROID
+        MainActivity.SetColor.Invoke(Colors.Grey.Lighten4);
+        #endif
     }
 }

@@ -1,4 +1,5 @@
-﻿using MudBlazor;
+﻿using Masa.Blazor;
+using MudBlazor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,5 +18,12 @@ namespace Watermark.Razor
                 config.ShowCloseIcon = false;
             });
         }
+
+        public static void ShowMsg(IPopupService PopupService, string message, AlertTypes _alertType)
+        {
+            PopupService.Clear();
+            PopupService.EnqueueSnackbarAsync(message, _alertType);
+        }
+        
     }
 }

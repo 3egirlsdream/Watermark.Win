@@ -1,0 +1,23 @@
+﻿@page "/login"
+@using Components.Layout;
+@using Masa.Blazor.Presets.PageStack.NavController
+@layout MainLayout
+@inject PageStackNavController NavController
+@inherits PStackPageBase
+
+<PStackPageBarInit Title="登录" Dense Flat CenterTitle>
+</PStackPageBarInit>
+<div style="padding:24px;text-align:center;">
+    <Watermark.Razor.Components.LoginContent CloseEvent="@((v) => NavController.GoBackToTab("/settings"))" />
+</div>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        #if ANDROID
+        MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
+        #endif
+        base.OnInitialized();
+    }
+}

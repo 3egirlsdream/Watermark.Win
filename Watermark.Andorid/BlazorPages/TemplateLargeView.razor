@@ -1,0 +1,229 @@
+﻿@using Watermark.Win.Models
+@using Watermark.Shared.Models
+@inject ISnackbar Snackbar
+
+<div Style="position:relative;background:#000;width: 100vw;">
+    <MImage Style="width: 100vw;max-height:100vh"
+            Contain
+            Src="@FocusImageSrc"
+            LazySrc="https://picsum.photos/id/11/100/60">
+        <PlaceholderContent>
+            <MRow Class="fill-height ma-0"
+                  Align="@AlignTypes.Center"
+                  Justify="@JustifyTypes.Center">
+                <MProgressCircular Indeterminate></MProgressCircular>
+            </MRow>
+        </PlaceholderContent>
+    </MImage>
+    @if (FocusImageType == 'a')
+    {
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <PBlockText Primary="@FocusImage?.Name"
+                        Secondary="@FocusImage?.Desc"
+                        Tags="@([])">
+            </PBlockText>
+            <div style="display: flex; align-items: center;">
+                <span style="font-size: 10px;line-height: 8px;">已下载 @FocusImage?.DownloadTimes</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <div style="display: flex; align-items: center;">
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+                    @FocusImage?.UserDisplayName
+                </MudText>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <MudStack style="text-align: center;gap:0px;margin-right:20px">
+                    <MudIconButton Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Variant="Variant.Text" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="()=>Subscribe(FocusImage?.UserId)" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
+                </MudStack>
+                <MudStack style="text-align: center;gap:0px;margin-right:20px">
+                    <MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
+                </MudStack>
+                <MudStack style="text-align: center;gap:0px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
+                </MudStack>
+
+            </div>
+        </div>
+
+    }
+    else if (FocusImageType == 'r')
+    {
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+                @FocusImage?.Name
+            </MudText>
+            <div style="display: flex; align-items: center;">
+                <span style="font-size: 10px;line-height: 8px;">已下载 @FocusImage?.DownloadTimes</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <div style="display: flex; align-items: center;">
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+                    @FocusImage?.UserDisplayName
+                </MudText>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <MudStack style="text-align: center;gap:0px;margin-right:20px">
+                    <MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="Color.Warning" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">取消收藏</span></MudText>
+                </MudStack>
+                <MudStack style="text-align: center;gap:0px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
+                </MudStack>
+
+            </div>
+        </div>
+    }
+    else if (FocusImageType == 'd')
+    {
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
+                @FocusImage?.Name
+            </MudText>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: flex-end; margin-top:4px;">
+            <div style="display: flex; align-items: center;">
+                <MudStack style="text-align: center;gap:0px;margin-right:30px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Camera" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="()=>OpenCamera(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId))" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">拍照</span></MudText>
+                </MudStack>
+                <MudStack style="text-align: center;gap:0px;margin-right:20px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Variant="Variant.Text" Color="Color.Default" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">删除</span></MudText>
+                </MudStack>
+                <MudStack style="text-align: center;gap:0px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Image" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=> GeneratePhoto(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)) " />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">使用模板</span></MudText>
+                </MudStack>
+
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] 
+    public char FocusImageType { get; set; }
+    [Parameter]
+    public string FocusImageSrc { get; set; }
+
+    [Parameter]
+    public WMZipedTemplate FocusImage { get; set; }
+
+    [Parameter]
+    public EventCallback<string> DownloadEvent { get; set; }
+    [Parameter]
+    public EventCallback<WMZipedTemplate> OpenCameraEvent { get; set; }
+    [Parameter]
+    public EventCallback<WMZipedTemplate> GeneratePhotoEvent { get; set; }
+    [Parameter]
+    public EventCallback<string> SubscribeEvent { get; set; }
+    [Parameter]
+    public EventCallback CloseEvent { get; set; }
+
+    [Parameter]
+    public List<Tuple<string, List<WMZipedTemplate>>> subscribed { get; set; }
+
+    [Parameter]
+    public List<WMZipedTemplate> downloadedTemplates { get; set; }
+
+    [Parameter]
+    public string FocusImageId { get; set; }
+
+    [Parameter]
+    public List<WMZipedTemplate> ILikeTemplates { get; set; }
+
+    [Parameter]
+    public List<WMZipedTemplate> ZipedTemplates { get; set; }
+
+    void DownloadTemplate(string watermarId)
+    {
+        if(DownloadEvent.HasDelegate)
+        {
+            DownloadEvent.InvokeAsync();
+        }
+    }
+
+    void OpenCamera(WMZipedTemplate zip)
+    {
+        if (OpenCameraEvent.HasDelegate) OpenCameraEvent.InvokeAsync();
+    }
+
+    void GeneratePhoto(WMZipedTemplate zip)
+    {
+        if (GeneratePhotoEvent.HasDelegate) GeneratePhotoEvent.InvokeAsync();
+    }
+
+    void Subscribe(string userId)
+    {
+        if (SubscribeEvent.HasDelegate) SubscribeEvent.InvokeAsync();
+    }
+
+    void Close()
+    {
+        if (CloseEvent.HasDelegate) CloseEvent.InvokeAsync();
+    }
+
+    async void PopupActionBar()
+    {
+        //已下载
+        if (FocusImageType == 'd')
+        {
+            var p = Global.AppPath.TemplatesFolder + FocusImageId + Path.DirectorySeparatorChar;
+            if (Directory.Exists(p))
+            {
+                var _ = Task.Run(() =>
+                {
+                    Directory.Delete(p, true);
+                    var t = downloadedTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
+                    if (t != null)
+                    {
+                        downloadedTemplates.Remove(t);
+                    }
+                    InvokeAsync(StateHasChanged);
+                    ClientInstance.ShowMsg(Snackbar, "删除成功", Severity.Success);
+                });
+
+            }
+        }
+        else if (FocusImageType == 'r')
+        {
+            if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+            {
+                var helper = new APIHelper();
+                helper.DeleteILike(Global.CurrentUser.ID, FocusImageId);
+                var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
+                if (item != null)
+                {
+                    ILikeTemplates.Remove(item);
+                    ClientInstance.ShowMsg(Snackbar, "取消收藏成功", Severity.Success);
+                }
+            }
+        }
+        else if (FocusImageType == 'a')
+        {
+            if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+            {
+                var helper = new APIHelper();
+                var r = await helper.AddILike(Global.CurrentUser.ID, FocusImageId);
+                var item = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == FocusImageId);
+                if (item != null && !ILikeTemplates.Any(x => x.WatermarkId == item.WatermarkId))
+                {
+                    ILikeTemplates.Add(item);
+                    ClientInstance.ShowMsg(Snackbar, "收藏成功", Severity.Success);
+                }
+            }
+        }
+        Close();
+        StateHasChanged();
+
+    }
+}

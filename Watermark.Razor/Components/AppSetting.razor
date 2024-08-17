@@ -1,59 +1,49 @@
-﻿@using MudBlazor
+﻿@page "/appsetting"
+@using Masa.Blazor.Presets
 @using Watermark.Win.Models
-@inject ISnackbar Snackbar
+@using Masa.Blazor
+@using MudBlazor
+@using Icons = MudBlazor.Icons
+@inject IPopupService PopupService
+@inherits PStackPageBase
 
-<MudDialog Style="min-width:400px;">
-    <DialogContent>
-        <MudForm Style="text-align:center">
-            @if (ShowHeader)
-            {
-                <MudToolBar Style="height:40px;padding-left:2px;margin:-8px -24px ;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="()=>{ MudDialog.Close(false);}" />
-                    <MudText Typo="Typo.h6" Align="Align.Center">设置</MudText>
-                </MudToolBar>
-            }
+<PStackPageBarInit Title="设置" Dense Flat CenterTitle>
+</PStackPageBarInit>
 
-            <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-                <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;" @onclick="DeleteAccount">
-                    <MudText Typo="Typo.button"> 注销账号 </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-                </MudStack>
-            </MudPaper>
-            <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-                <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
-                    <MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
-                    <MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" Size="Size.Small" />
-                </MudStack>
-            </MudPaper>
-            <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-                <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
-                    <MudText Typo="Typo.button">下载缓存</MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-                </MudStack>
+<MudForm Style="text-align:center">
+    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
+        <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;" @onclick="DeleteAccount">
+            <MudText Typo="Typo.button"> 注销账号 </MudText>
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
+        </MudStack>
+    </MudPaper>
+    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
+        <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+            <MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
+            <MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" Size="Size.Small" />
+        </MudStack>
+    </MudPaper>
+    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
+        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
+            <MudText Typo="Typo.button">下载缓存</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
+        </MudStack>
 
-                <MudDivider Class="my-2" />
-                <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
-                    <MudText Typo="Typo.button">图标缓存</MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-                </MudStack>
-            </MudPaper>
+        <MudDivider Class="my-2" />
+        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
+            <MudText Typo="Typo.button">图标缓存</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
+        </MudStack>
+    </MudPaper>
 
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-    </DialogActions>
-</MudDialog>
+</MudForm>
 
 
 
 
 @code {
-    [Inject]
-    private IDialogService DialogService { get; set; }
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
     [Parameter]
-    public bool ShowHeader { get; set; } = true;
+    public EventCallback<bool> CloseEvent { get; set; }
     string UserName { get; set; }
     string Password { get; set; }
     bool Loading = false;
@@ -68,60 +58,25 @@
         APIHelper helper = new APIHelper();
         var result = await helper.LoginIn(UserName, Password);
         string message = "";
-        Severity severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-
+        AlertTypes severity = AlertTypes.Success;
         if (result.success)
         {
             Global.CurrentUser = Global.SetUserInfo(result.data.data);
             message = "登录成功";
-            severity = Severity.Success;
+            severity = AlertTypes.Success;
             await Global.WriteAccount2LocalAsync(UserName, helper.GetMD5(Password));
-            MudDialog.Close(true);
+            if (CloseEvent.HasDelegate) await CloseEvent.InvokeAsync(true);
             StateHasChanged();
         }
         else
         {
-            severity = Severity.Error;
+            severity = AlertTypes.Error;
             message = result.message?.content ?? result.data.Message;
         }
 
-        Snackbar.Add(message, severity, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+        Common.ShowMsg(PopupService, message, severity);
         Loading = false;
         StateHasChanged();
-    }
-
-    async void OpenSignUpDialog()
-    {
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = ShowHeader };
-        var param = new DialogParameters<SignUpDialog>();
-        param.Add(x => x.FuncType, 0);
-        param.Add(x => x.ShowHeader, ShowHeader);
-        var rst = DialogService.Show<SignUpDialog>("", param, topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-        {
-            StateHasChanged();
-            MudDialog.Close(true);
-        }
-    }
-    async void OpenForgotSignUpDialog()
-    {
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = ShowHeader };
-        var param = new DialogParameters<SignUpDialog>();
-        param.Add(x => x.FuncType, 1);
-        param.Add(x => x.ShowHeader, ShowHeader);
-        var rst = DialogService.Show<SignUpDialog>("", param, topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-        {
-            StateHasChanged();
-            MudDialog.Close(true);
-        }
     }
 
     void DeleteCache(string p)
@@ -129,7 +84,7 @@
         if (Directory.Exists(p))
         {
             Directory.Delete(p, true);
-            Common.ShowMsg(Snackbar, "清除完成", Severity.Success);
+            Common.ShowMsg(PopupService, "清除完成", AlertTypes.Success);
         }
     }
 

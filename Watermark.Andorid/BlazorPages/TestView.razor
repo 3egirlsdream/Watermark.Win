@@ -1,0 +1,56 @@
+﻿@page "/test"
+@using Components.Layout
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@using Watermark.Win.Models
+@inject IWMWatermarkHelper helper
+@inject APIHelper api
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@layout MainLayout
+
+<div style="height:100%;">
+    <MTabs SliderColor="black" FixedTabs @bind-Value="tab" Height="30" ShowArrows="false">
+        <MTab Value="@("first")">
+            推荐
+        </MTab>
+        @foreach (var sub in subscribed)
+        {
+            <MTab Value="sub.Item1">
+                @sub.Item1
+            </MTab>
+        }
+    </MTabs>
+    <div style="@($"height: calc(100% - 30px);")">
+        <MSwiper Style="height:100%;" SpaceBetween="24" Index="subscribed.Select(x=>x.Item1).ToList().IndexOf(tab.ToString()) + 1" IndexChanged="@((e) => { tab = e == 0 ? "first" : subscribed[e - 1].Item1; })">
+            <MSwiperSlide Style="height:100%">
+                <div style="height:100%;width:100%;background:red;overflow:auto"></div>
+            </MSwiperSlide>
+            @foreach (var sub in subscribed)
+            {
+                <MSwiperSlide Style="height:100%">
+                    <div style="height:100%;width:100%;background:yellow;overflow:auto"></div>
+                </MSwiperSlide>
+            }
+
+        </MSwiper>
+    </div>
+</div>
+
+@code {
+    StringNumber tab = "我的下载";
+    List<string> tab1Head = ["我的下载", "我的收藏"];
+    List<Tuple<string, string>> subscribed = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplatesMarket();
+    }
+    async Task LoadTemplatesMarket()
+    {
+        subscribed = new List<Tuple<string, string>>();
+        subscribed.Add(Tuple.Create("热门", ""));
+        subscribed.Add(Tuple.Create("拼图", ""));
+        subscribed.Add(Tuple.Create("最新", ""));
+        StateHasChanged();
+    }
+}

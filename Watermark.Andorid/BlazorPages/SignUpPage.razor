@@ -1,14 +1,15 @@
 ﻿@page "/dms"
 @using Watermark.Win.Models
 @using static Watermark.Win.Models.APIHelper
-
+@inherits PStackPageBase
 <style>
     .mud-grid-spacing-xs-3 {
         width: 100%;
         margin: 0px;
     }
 </style>
-
+<PStackPageBarInit Title="数据" Dense Flat CenterTitle>
+</PStackPageBarInit>
 <MudGrid>
     <MudItem xs="12">
     <MudText Typo="Typo.h5"><b>每日注册数</b></MudText>

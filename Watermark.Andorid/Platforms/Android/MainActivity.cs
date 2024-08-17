@@ -19,12 +19,20 @@ namespace Watermark.Andorid
 			Window.SetStatusBarColor(Color.White);
 			Window.SetNavigationBarColor(Color.White);
 			Window.DecorView.SystemUiVisibility = (StatusBarVisibility)SystemUiFlags.LightStatusBar;
-#endif
+            Action<string> action = (hex) =>
+            {
+                Window.SetStatusBarColor(Color.ParseColor(hex));
+            };
+            SetColor = action;
+#endif  
 			base.OnCreate(savedInstanceState);
 		}
 		public static MainActivity Instance { get; private set; }
 
+        public static Action<string> SetColor;
+
     }
+
     public static class SavePictureService
     {
         public static bool SavePicture(byte[] arr, string imageName)
