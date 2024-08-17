@@ -1,4 +1,4 @@
-﻿@page "/main"
+﻿@page "/"
 @using System.IO
 @using System.Collections.Concurrent
 @using Masa.Blazor
@@ -20,84 +20,84 @@
         margin: 0;
     }
 
-	.panel-class {
-		height: calc(100% - 50px);
-	}
+    .panel-class {
+        height: calc(100% - 50px);
+    }
 
-	.mud-tab-class
-	::-webkit-scrollbar {
-		width: 0px;
-		display: none;
-	}
-
-
-	.mud-tab-class {
-		-ms-overflow-style: none; /* IE and Edge */
-		scrollbar-width: none; /* Firefox */
-		padding: 0px 8px;
-		height: 100%;
-		overflow-y: auto;
-		overflow-x: hidden;
-	}
-
-	.water-tab {
-		height: 48px;
-		position: absolute;
-		bottom: 0;
-		width: 100%;
-		background: #fff;
-		z-index: 10;
-	}
-
-	.water-tab-text {
-		width: 33.3%;
-		height: 48px;
-		float: left;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.water-tab-item {
-		height: calc(100% - 44px);
-		clear: both;
-	}
-
-	.mud-tab-class .mud-list-item-clickable:focus:not(.mud-selected-item) {
-		transform: scale(1.2);
-	}
-
-	.mud-tab-class .mud-list-item-clickable {
-		transition: transform 0.3s ease;
-	}
+    .mud-tab-class
+    ::-webkit-scrollbar {
+        width: 0px;
+        display: none;
+    }
 
 
-	.dfm-card-name {
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		overflow-x: hidden
-	}
+    .mud-tab-class {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        padding: 0px 8px;
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
 
-	.dfm-card-user-name {
-		position: relative;
-		display: flex;
-		align-items: center;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		overflow-x: hidden
-	}
+    .water-tab {
+        height: 48px;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        background: #fff;
+        z-index: 10;
+    }
 
-	.dfm-card-footer {
-		position: relative;
-		height: 30px;
-		display: flex;
-		align-items: center;
-	}
+    .water-tab-text {
+        width: 33.3%;
+        height: 48px;
+        float: left;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-	.flex-vertical-center {
-		display: flex;
-		align-items: center;
-	}
+    .water-tab-item {
+        height: calc(100% - 44px);
+        clear: both;
+    }
+
+    .mud-tab-class .mud-list-item-clickable:focus:not(.mud-selected-item) {
+        transform: scale(1.2);
+    }
+
+    .mud-tab-class .mud-list-item-clickable {
+        transition: transform 0.3s ease;
+    }
+
+
+    .dfm-card-name {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden
+    }
+
+    .dfm-card-user-name {
+        position: relative;
+        display: flex;
+        align-items: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden
+    }
+
+    .dfm-card-footer {
+        position: relative;
+        height: 30px;
+        display: flex;
+        align-items: center;
+    }
+
+    .flex-vertical-center {
+        display: flex;
+        align-items: center;
+    }
 
 </style>
 
@@ -105,7 +105,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 <div Style="height:100vh;width:100%;">
-    <div style="@($"height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;display:{(activeTab == 3 ? "":"none")}")">
+    <div style="@($"height:40px;position:fixed;width:100%;top:0;left:0;display:{(activeTab == 3 ? "":"none")}")">
         <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
             <MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
                 你好，
@@ -138,23 +138,24 @@
     <div Style="height:100%;width:100vw;display: flex;" @onclick="()=> ShowUserInfo = false">
 
         <div style="height: 100%; padding: 0px; width:100%">
-            <MudPaper class="water-tab" Elevation="0">
-                <div class="water-tab-text" @onclick="()=> activeTab = 1">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 1 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 1 ? Icons.Material.Filled.BrightnessAuto :  Icons.Material.Outlined.BrightnessAuto)" Color="(activeTab == 1 ? Color.Primary: Color.Default)" />  &nbsp;<b>我的模板</b>
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="ToSecondPanel">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 2 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 2 ? Icons.Material.Filled.DashboardCustomize :  Icons.Material.Outlined.DashboardCustomize)" Color="(activeTab == 2 ? Color.Primary: Color.Default)" />   &nbsp;<b>模板市场</b>
-                    </MudText>
-                </div>
-                <div class="water-tab-text" @onclick="()=> activeTab = 3">
-                    <MudText Typo="Typo.button" style="display: flex;align-items: center;" Color="(activeTab == 3 ? Color.Primary: Color.Default)">
-                        <MudIcon Icon="@(activeTab == 3 ? Icons.Material.Filled.Brightness5 :  Icons.Material.Outlined.Brightness5)" Color="(activeTab == 3 ? Color.Primary: Color.Default)" />   &nbsp;<b>关于</b>
-                    </MudText>
-                </div>
-            </MudPaper>
+            <MBottomNavigation @bind-Value="value" 
+                               App
+                               Grow
+                               Shift
+                               Color="teal">
+                <MButton OnClick="()=> activeTab = 1">
+                    <span>我的模板</span>
+                    <MIcon>mdi-download-box</MIcon>
+                </MButton>
+                <MButton OnClick="ToSecondPanel">
+                    <span>模板市场</span>
+                    <MIcon>mdi-shopping</MIcon>
+                </MButton>
+                <MButton OnClick="()=> activeTab = 3">
+                    <span>我</span>
+                    <MIcon>mdi-account</MIcon>
+                </MButton>
+            </MBottomNavigation>
 
             @if (activeTab == 1)
             {
@@ -169,7 +170,7 @@
                             </div>
                         }
                     </MudStack>
-                    <div style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
+                    <div style="@("margin-top:40px;height: calc(100% - 56px); padding-top:10px")">
                         <SwiperTabItems @bind-Value="tb1_t1">
                             <SwiperTabItem>
                                 <MudPaper Elevation="0" Class="mud-tab-class">
@@ -254,7 +255,7 @@
                             </div>
                         }
                     </MudStack>
-                    <div style="@($"background:{Colors.Grey.Lighten5};margin-top:40px;height: calc(100% - 44px); padding-top:10px")">
+                    <div style="@("margin-top:40px;height: calc(100% - 56px); padding-top:10px")">
                         <SwiperTabItems @bind-Value="tb2_t2">
                             <SwiperTabItem>
                                 <MudPaper Elevation="0" Class="mud-tab-class">
@@ -362,7 +363,7 @@
                                                     }
                                                     @if (sub.Item1 == "最新")
                                                     {
-                                                    <MudItem xs="12" Style="padding:4px; text-align:center;">
+                                                        <MudItem xs="12" Style="padding:4px; text-align:center;">
                                                             @if (loadMore)
                                                             {
                                                                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
@@ -371,7 +372,7 @@
                                                             {
                                                                 <MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true" OnClick="()=>{start++;LoadTemplatesMarket();}">点击加载更多</MudButton>
                                                             }
-                                                    </MudItem>
+                                                        </MudItem>
                                                     }
                                                 </MudGrid>
                                             </MPullRefresh>
@@ -590,7 +591,7 @@
     List<WMTemplateList> Images = new List<WMTemplateList>();
     WMZipedTemplate FocusImage;
     Dictionary<string, int> Versions = [];
-
+    StringNumber value = 0;
     protected override async Task OnInitializedAsync()
     {
         try

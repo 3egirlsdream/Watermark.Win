@@ -63,11 +63,8 @@ else
 {
     <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
         <MudStack Row>
-            <PPageStackLink Href="/login">
-                <CustomContent Context="push">
-                    <MButton OnClick="push" Text>登录</MButton>
-                </CustomContent>
-            </PPageStackLink>
+
+            <MButton OnClick="@(() => NavController.Push("/login"))" Text>登录</MButton>
             <MButton OnClick="OpenSignUpDialog" Text>注册</MButton>
         </MudStack>
     </MudPaper>

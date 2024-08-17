@@ -8,7 +8,7 @@
 <PStackPageBarInit Title="登录" Dense Flat CenterTitle>
 </PStackPageBarInit>
 <div style="padding:24px;text-align:center;">
-    <Watermark.Razor.Components.LoginContent CloseEvent="@((v) => NavController.GoBackToTab("/settings"))" />
+    <Watermark.Razor.Components.LoginContent CloseEvent="@((v) => NavController.Pop())" />
 </div>
 
 
