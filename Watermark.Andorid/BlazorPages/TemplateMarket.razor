@@ -3,14 +3,20 @@
 @using Watermark.Andorid.Components.Layout
 @using Watermark.Razor
 @using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
+@using static Watermark.Andorid.BlazorPages.IndexView
 @using static Watermark.Andorid.BlazorPages.TemplateLargeView
 @inject PageStackNavController NavController
 @inject IPopupService PopupService
+@inject IWMWatermarkHelper helper
+@inject IJSRuntime JSRuntime
 @layout MainLayout
 
-<style>
-
+<style scoped>
+    .row--dense > .col, .row--dense > [class*=col-] {
+        padding:2px;
+    }
     .m-slide-group__prev {
         display: none !important;
     }
@@ -46,6 +52,10 @@
     .swiper-wrapper {
         height: 100% !important;
     }
+
+    .m-presets-block-text > div:nth-child(2) {
+        overflow:hidden;
+    }
 </style>
 
 <div style="height:100%;">
@@ -65,7 +75,7 @@
                 <SwiperTabItem>
                     <div style="height:100%;overflow:auto" id="@("infinite-scroll-usage" + subscribed.IndexOf(sub))">
                         <MPullRefresh OnRefresh="OnRefresh" PullingText="刷新中" CanReleaseText="下拉刷新" SuccessText="刷新成功">
-                            <MCard Flat style="padding: 8px 18px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap;">
+                            <MCard Flat style="padding: 6px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap;">
                                 @RenderProductList(sub.Item2)
                                 @if (sub.Item1 == "最新")
                                 {
@@ -91,6 +101,7 @@
                            ILikeTemplates="parameter.ILikeTemplates"
                            subscribed="subscribed"
                            ZipedTemplates="ZipedTemplates"
+                           DownloadEvent="DownloadTemplate"
                            CloseEvent="() => parameter.FocusImageShow = false" />
     </MDialog>
 </div>
@@ -104,7 +115,9 @@
     int start = 1;
     private MInfiniteScroll? _infiniteScroll;
     ViewParameter parameter = new();
-    List<BlockTextTag> tags = new List<BlockTextTag> { new BlockTextTag("TAG", "primary", true) };
+    List<BlockTextTag> tags = new List<BlockTextTag> {};
+    FailedBox failedBox = new();
+
     internal RenderFragment RenderProductList(List<WMZipedTemplate> products) => __builder =>
        {
            <MRow Dense>
@@ -122,33 +135,26 @@
                            }
                            <MCardActions Style="padding:0px;">
                                <div style="width:100%;">
-                                   <div style="display: flex; align-items: flex-start; justify-content: space-between;">
-                                       <PBlockText Primary="@t.Name" Tags="@(tags)" PrimaryStyle="font-size:12px" PrimaryClass="dfm-card-name" Style="text-overflow: ellipsis;overflow: auto;">
-                                       </PBlockText>
-                                       <div style="display: flex; align-items: center;height:18px">
-                                           <MIcon Size="12">mdi-download-box-outline</MIcon>
-                                           <span style="font-size: 10px;line-height: 12px;">@t.DownloadTimes</span>
-                                       </div>
-                                   </div>
+                                   <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="[]"/>
                                    <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                       <div Style="display:flex;align-items:center;">
+                                       <div style="display:flex;align-items:center;">
                                            @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
                                            {
-                                               <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
+                                               <MIcon Color="orange" Size="12">mdi-check-decagram</MIcon>
                                            }
                                            else
                                            {
-                                               <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                                               <MIcon Size="12">mdi-account-circle</MIcon>
                                            }
-                                           <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+                                           <p  style="@($"color:{Colors.Grey.Default};padding-top: 1px;margin-left:2px;font-size:10px;margin-bottom:0")">
                                                @t.UserDisplayName
-                                           </MudText>
+                                           </p>
                                        </div>
-                                       <div Style="display:flex;align-items:center;line-height: 32px;">
+                                       <div style="display:flex;align-items:center;">
                                            <Watermark.Razor.Parts.IconCoin />
-                                           <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+                                           <p style="margin-bottom:0;font-size:10px;">
                                                @t.Coins
-                                           </MudText>
+                                           </p>
                                        </div>
                                    </div>
                                </div>
@@ -247,5 +253,19 @@
         parameter.FocusImageSrc = zip.Src;
         parameter.FocusImageShow = b;
         StateHasChanged();
+    }
+
+    async Task DownloadTemplate(string watermarkId)
+    {
+        await Watermark.Shared.Models.ClientInstance.DownloadTemplate(
+            watermarkId
+            , parameter
+            , PopupService
+            , ZipedTemplates
+            , helper
+            , JSRuntime
+            , []
+            , NavController
+            , failedBox);
     }
 }

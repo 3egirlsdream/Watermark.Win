@@ -1,22 +1,27 @@
 ﻿using Masa.Blazor;
+using Masa.Blazor.Presets;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
+using Watermark.Andorid.Models;
+using Watermark.Razor;
 using Watermark.Win.Models;
+using static Watermark.Andorid.BlazorPages.IndexView;
+using static Watermark.Andorid.BlazorPages.TemplateLargeView;
 
 namespace Watermark.Shared.Models
 {
-	public static class ClientInstance
+    public static class ClientInstance
     {
         public static string LinkPath { get; set; }
         public static string UpdateMessage { get; set; }
-		public static string UpdateVersion { get; set; }
-		public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public static string UpdateVersion { get; set; }
+        public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
-            
+
         };
 
         public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
@@ -167,14 +172,149 @@ namespace Watermark.Shared.Models
                 { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
                 { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
             };
+
+        async static Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
+        {
+            Dictionary<string, int> Versions = [];
+            var version = await api.GetVersions(ids);
+            if (version.success && version.data != null)
+            {
+                foreach (var e in version.data)
+                {
+                    Versions[e.Key] = e.Value;
+                }
+            }
+            return Versions;
+        }
+
+        async static Task<WMZipedTemplate> LoadSingleTemplates(
+            string watermarkId
+            , IWMWatermarkHelper helper
+            , IPopupService PopupService
+            , IJSRuntime JSRuntime
+            , PageStackNavController NavController)
+        {
+            var api = new APIHelper();
+            if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+            {
+                Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+            }
+
+            try
+            {
+                WMZipedTemplate dirct = new();
+                dirct.WatermarkId = watermarkId;
+                var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
+                if (!System.IO.File.Exists(configPath)) return dirct;
+                var canvas = await Task.Run(() =>
+                {
+                    var content = File.ReadAllText(configPath);
+                    return Global.ReadConfig(content);
+                });
+                dirct.WMCanvas = canvas;
+                dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
+                dirct.CanvasType = dirct.WMCanvas.CanvasType;
+                await Global.InitFonts([canvas]);
+                var b64 = await helper.GenerationAsync(canvas, null, true, false);
+                dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                return dirct;
+            }
+            catch (Exception ex)
+            {
+                Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+                return new WMZipedTemplate();
+            }
+        }
+
+
+
+        public async static Task DownloadTemplate(
+            string watermarkId
+            , ViewParameter parameter
+            , IPopupService PopupService
+            , List<WMZipedTemplate> ZipedTemplates
+            , IWMWatermarkHelper helper
+            , IJSRuntime JSRuntime
+            , Dictionary<string, int> Versions
+            , PageStackNavController NavController
+            , FailedBox failedBox)
+        {
+            var action = new Action(async () =>
+            {
+                var api = new APIHelper();
+                if (!Global.CurrentUser.IsVIP)
+                {
+                    var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
+                    if (!auth.success)
+                    {
+                        parameter.FocusImageShow = false;
+                        failedBox.faildShow = true;
+                        failedBox.failedMessage = auth.message.content;
+                        await PublicMethods.ReLogin();
+                        return;
+                    }
+                }
+
+                var w = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
+                var r = await api.Download(watermarkId, w?.UserId ?? "");
+                if (r)
+                {
+                    HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+                    parameter.FocusImageShow = false;
+                    Common.ShowMsg(PopupService, "下载完成", AlertTypes.Success);
+                    var dir = await LoadSingleTemplates(watermarkId, helper, PopupService, JSRuntime, NavController);
+                    if (!GlobalCache.DownloadedTemplates.Any()) GlobalCache.DownloadedTemplates.Add(dir);
+                    else if (!GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) GlobalCache.DownloadedTemplates.Insert(0, dir);
+                    else if (GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
+                    {
+                        var idx = GlobalCache.DownloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
+                        var item = GlobalCache.DownloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
+                        GlobalCache.DownloadedTemplates.Remove(item);
+                        GlobalCache.DownloadedTemplates.Insert(idx, dir);
+                    }
+                    Versions = await InitVersion([watermarkId], api);
+                }
+            });
+            if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
+            {
+                parameter.FocusImageShow = false;
+                //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
+                //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
+                NavController.Push("/login");
+                // var dialogResult = await rst.Result;
+                // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+                // {
+                //     FocusImageShow = false;
+                //     action.Invoke();
+                // }
+                return;
+            }
+            var p = Global.AppPath.TemplatesFolder + watermarkId;
+            if (Directory.Exists(p))
+            {
+                parameter.FocusImageShow = false;
+                var confirmed = await PopupService.ConfirmAsync("确认覆盖", "此模板已存在，确定覆盖？", AlertTypes.Info);
+                if (confirmed == true)
+                {
+                    Directory.Delete(p, true);
+                    action.Invoke();
+                }
+            }
+            else
+            {
+                action.Invoke();
+            }
+        }
+
+
     }
-	public static class Ext
-	{
-		public static void Back(this NavigationManager navigation)
-		{
-			var builder = MauiApp.CreateBuilder();
-			var jsruntime = builder.Services.BuildServiceProvider().GetService<IJSRuntime>();
-			jsruntime!.InvokeVoidAsync("history.back");
-		}
-	}
+    public static class Ext
+    {
+        public static void Back(this NavigationManager navigation)
+        {
+            var builder = MauiApp.CreateBuilder();
+            var jsruntime = builder.Services.BuildServiceProvider().GetService<IJSRuntime>();
+            jsruntime!.InvokeVoidAsync("history.back");
+        }
+    }
 }

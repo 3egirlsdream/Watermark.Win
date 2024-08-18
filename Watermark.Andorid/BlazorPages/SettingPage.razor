@@ -66,19 +66,23 @@
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
         }
         <MudStack Row Style="align-items: center;">
-            <MudText Typo="Typo.body1" Class="px-4" Color="@(Global.CurrentUser.IsVIP ? Color.Warning : Color.Secondary)" Align="Align.Start" Style="display:flex;align-items:center;">
-                @if (Global.CurrentUser.IsVIP)
-                {
-                    <Watermark.Razor.Parts.IconVip />
-                }
-                @Global.CurrentUser.DISPLAY_NAME
-            </MudText>
+            <div>
+                <p class="font-weight-medium" style="@($"color:{(Global.CurrentUser.IsVIP ? "orange" : "black")};display:flex;align-items:center;margin:0px")">
+                    @if (Global.CurrentUser.IsVIP)
+                    {
+                        <Watermark.Razor.Parts.IconVip />
+                    }
+                    @Global.CurrentUser.DISPLAY_NAME
+                </p>
+                <p class="font-weight-light" style="margin:0px 22px">@Global.CurrentUser.USER_NAME</p>
+            </div>
+            
             @if (!Global.CurrentUser.IsVIP)
             {
                 <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
             }
         </MudStack>
-        <MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
+       
         <div Style="display:flex;align-items:center;line-height: 32px;">
             <Watermark.Razor.Parts.IconCoin />
             <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">

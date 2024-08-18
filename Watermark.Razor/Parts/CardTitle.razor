@@ -1,0 +1,48 @@
+﻿@using Masa.Blazor
+@using Masa.Blazor.Presets
+@using Watermark.Win.Models
+<style>
+    .dfm-card-name {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden
+    }
+</style>
+@if(t is not null) 
+{
+    <div style="@("display: flex; align-items: flex-start; justify-content: space-between;" + style)">
+        <PBlockText Primary="@t.Name" Secondary="@desc" Tags="@(Tags)" PrimaryStyle="@($"font-size:{(Small ? "12px" : "")}")" PrimaryClass="dfm-card-name" Style="text-overflow: ellipsis;overflow: auto;">
+        </PBlockText>
+        <div style="@($"display: flex; align-items: center;height:{(Small ? "18px" : "21px")}")">
+            <MIcon Size="@(Small ? 12 : 14)">mdi-download-box-outline</MIcon>
+            <span style="@($"font-size: {(Small ? "10px" : "")} ;line-height: {(Small ? "12px" : "21px")};")">@t.DownloadTimes</span>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public WMZipedTemplate t { get; set; }
+    [Parameter]
+    public List<BlockTextTag> Tags { get; set; } = [];
+    [Parameter]
+    public bool Small { get; set; } = false;
+    [Parameter]
+    public string style { get; set; }
+    [Parameter]
+    public bool ShowDesc { get; set; } = true;
+
+    string desc
+    {
+        get
+        {
+            return ShowDesc ? t.Desc : "";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+}

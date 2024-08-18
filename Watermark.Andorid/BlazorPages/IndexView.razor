@@ -10,7 +10,6 @@
 @inject APIHelper api
 @inject NavigationManager navigationManager
 @inject IJSRuntime JSRuntime
-@inherits PStackPageBase
 @inject IPopupService PopupService
 @inject PageStackNavController NavController
 @layout MainLayout
@@ -109,14 +108,14 @@
         <MProgressCircular indeterminate
                            Size="64"></MProgressCircular>
     </MOverlay>
-    <MOverlay Value="@faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
+    <MOverlay Value="@failedBox.faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
         <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
             <MudStack Style="text-align:center;">
                 <MudText Typo="Typo.subtitle1" Color="Color.Default"> 失败提示</MudText>
             </MudStack>
             <br />
             <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-                @failedMessage
+                @failedBox.failedMessage
             </MudText>
             <br />
 
@@ -127,7 +126,7 @@
                 上传模板，用户下载<br />
                 开通会员
             </MudText>
-            <MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>faildShow = false" Size="Size.Small" Class="mt-2">确定</MudButton>
+            <MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>failedBox.faildShow = false" Size="Size.Small" Class="mt-2">确定</MudButton>
         </MudPaper>
     </MOverlay>
 </div>
@@ -147,10 +146,9 @@
     WMTemplateList CurrentImage;
     List<WMTemplateList> Images = new();
     string FocusImageId = "";
-    bool faildShow = false;
-    string failedMessage = "";
     string FocusImageSrc = "";
     ViewParameter parameter = new();
+    FailedBox failedBox = new();
     protected override async Task OnInitializedAsync()
     {
         try
@@ -171,11 +169,6 @@
         }
     }
 
-    protected override Task OnPageDeactivatedAsync()
-    {
-        return base.OnPageDeactivatedAsync();
-    }
-
     async Task LoadTemplates()
     {
         loading_down = true;
@@ -188,6 +181,7 @@
 
         try
         {
+            GlobalCache.DownloadedTemplates = [];
             var basePath = Global.AppPath.TemplatesFolder;
             var folder = new DirectoryInfo(basePath);
             foreach (var tFolder in folder.GetDirectories())
@@ -274,81 +268,23 @@
         }
         catch (Exception ex)
         {
-           Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
-           return new WMZipedTemplate();
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            return new WMZipedTemplate();
         }
     }
 
-
-    async void DownloadTemplate(string watermarkId)
+    async Task DownloadTemplate(string watermarkId)
     {
-        var action = new Action(async () =>
-        {
-            var api = new APIHelper();
-            if (!Global.CurrentUser.IsVIP)
-            {
-                var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
-                if (!auth.success)
-                {
-                    parameter.FocusImageShow = false;
-                    faildShow = true;
-                    failedMessage = auth.message.content;
-                    await PublicMethods.ReLogin();
-                    StateHasChanged();
-                    return;
-                }
-            }
-
-            var w = ZipedTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
-            var r = await api.Download(watermarkId, w?.UserId ?? "");
-            if (r)
-            {
-                HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-                parameter.FocusImageShow = false;
-                Common.ShowMsg(PopupService, "下载完成", AlertTypes.Success);
-                var dir = await LoadSingleTemplates(watermarkId);
-                if (!GlobalCache.DownloadedTemplates.Any()) GlobalCache.DownloadedTemplates.Add(dir);
-                else if (!GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) GlobalCache.DownloadedTemplates.Insert(0, dir);
-                else if (GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
-                {
-                    var idx = GlobalCache.DownloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
-                    var item = GlobalCache.DownloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
-                    GlobalCache.DownloadedTemplates.Remove(item);
-                    GlobalCache.DownloadedTemplates.Insert(idx, dir);
-                }
-                await InitVersion([watermarkId]);
-                StateHasChanged();
-            }
-        });
-        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
-        {
-            parameter.FocusImageShow = false;
-            //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-            //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
-            NavController.Push("/login");
-            // var dialogResult = await rst.Result;
-            // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-            // {
-            //     FocusImageShow = false;
-            //     action.Invoke();
-            // }
-            return;
-        }
-        var p = Global.AppPath.TemplatesFolder + watermarkId;
-        if (Directory.Exists(p))
-        {
-            parameter.FocusImageShow = false;
-            var confirmed = await PopupService.ConfirmAsync("确认覆盖","此模板已存在，确定覆盖？",AlertTypes.Info);
-            if (confirmed == true)
-            {
-                Directory.Delete(p, true);
-                action.Invoke();
-            }
-        }
-        else
-        {
-            action.Invoke();
-        }
+        await Watermark.Shared.Models.ClientInstance.DownloadTemplate(
+            watermarkId
+            , parameter
+            , PopupService
+            , ZipedTemplates
+            , helper
+            , JSRuntime
+            , Versions
+            , NavController
+            , failedBox);
     }
 
     void OpenFocus(char t, WMZipedTemplate zip, bool b)
@@ -419,34 +355,20 @@
                 });
             if (result is null || result.Count() == 0) return;
             Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
-            loading.Message = "正在生成图片...";
-            loading.Show = true;
-            StateHasChanged();
-            Images = new List<WMTemplateList>();
             if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
             {
                 Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
             }
+
+            string? directoryName = "";
+            List<string> fileNames = [];
             foreach (var f in result)
             {
-                var img = new WMTemplateList();
-                var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-                cvs.Path = f.FullPath;
-                img.Canvas = cvs;
-                cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(f.FullPath);
-                img.ID = cvs.ID;
-                img.Path = f.FullPath;
-                Global.CheckImageExtension(f.FullPath);
-                var thumbnail = Global.AppPath.ThumbnailFolder + f.FileName;
-                await Global.WriteThumbnailImageAsync(f.FullPath, thumbnail);
-                Images.Add(img);
+                directoryName = Path.GetDirectoryName(f.FullPath);
+                fileNames.Add(f.FileName);
             }
-            CurrentImage = Images.First();
-            var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            loading.Show = false;
-            //openDrawer = true;
-            StateHasChanged();
+            var dirc = Uri.EscapeDataString(directoryName);
+            NavController.Push($"/preview/{dirc}/{string.Join(";", fileNames.ToArray())}/{template.WatermarkId}");
         }
         catch (Exception ex)
         {
@@ -539,5 +461,9 @@
         // await LoadTemplatesMarket();
     }
 
-
+    public class FailedBox
+    {
+        public bool faildShow = false;
+        public string failedMessage = "";
+    }
 }

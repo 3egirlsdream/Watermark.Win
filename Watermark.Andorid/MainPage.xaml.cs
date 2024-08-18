@@ -12,8 +12,9 @@ namespace Watermark.Andorid
 		private void blazorWebView_BlazorWebViewInitialized(object sender, Microsoft.AspNetCore.Components.WebView.BlazorWebViewInitializedEventArgs e)
         {
 #if ANDROID
-            e.WebView.Settings.MixedContentMode = Android.Webkit.MixedContentHandling.AlwaysAllow;
+            //e.WebView.Settings.MixedContentMode = Android.Webkit.MixedContentHandling.AlwaysAllow;
 			e.WebView.VerticalScrollBarEnabled = false;
+            e.WebView.ScrollBarSize = 0;
 #endif
 		}
     }

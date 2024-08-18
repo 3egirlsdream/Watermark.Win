@@ -1,6 +1,7 @@
-﻿@page "/preview"
+﻿@page "/preview/{path}/{names}/{templateId}"
 @using System.Collections.Concurrent
 @using LukeMauiFilePicker
+@using Watermark.Razor
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Watermark.Shared.Enums
@@ -8,12 +9,16 @@
 @using VerticalAlignment = Watermark.Shared.Enums.VerticalAlignment
 @using Orientation = Watermark.Shared.Enums.Orientation
 @using static MudBlazor.Colors
+@using Components.Layout
 @inject IDialogService DialogService
 @inject NavigationManager navigationManager
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 @inject IWMWatermarkHelper helper
 @inject IJSRuntime JSRuntime
 @inject IFilePickerService picker
+@inherits PStackPageBase
+@inject PageStackNavController NavController
+@layout MainLayout
 
 <style>
     .preview-box {
@@ -67,21 +72,29 @@
 
 </style>
 
-<div style="height:40px;width:100%;top:0;left:0;z-index:999;">
-    <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="CloseDrawerClick" />
-        <MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="OpenSave" />
+
+<PStackPageBarInit Dense Flat CenterTitle>
+    <ActionContent>
         @if (SrcLoading)
         {
-            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
+            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
         }
-        <MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="RefreshEditImage" />
-    </MudToolBar>
-</div>
+        else
+        {
+            <MButton IconName="mdi-refresh"
+                     OnClick="RefreshEditImage">
+            </MButton>
+        }
+
+        <MButton IconName="mdi-content-save"
+                 OnClick="OpenSave">
+        </MButton>
+    </ActionContent>
+</PStackPageBarInit>
 
 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
 {
-    <MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;z-index:99">
+    <MudStack Spacing="2" Style="position:absolute;margin-top:10px;left:20px;z-index:99">
         <MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="ExpandSwitch" />
         <MudDivider Style="width:30px" />
         <MudCollapse Expanded="_expanded">
@@ -91,7 +104,7 @@
                 </MudPaper>
                 <MudIconButton Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="SelectSourceImageExif" />
 
-                @foreach (var i in CurrentTemplate.Children)
+                @foreach (var i in CurrentTemplateCanvas.Children)
                 {
                     <MudIconButton Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" Variant="Variant.Filled" Style="width:30px;height:30px;" OnClick="()=> SelectContainer(i, 1)" />
                     foreach (var ii in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
@@ -102,12 +115,15 @@
             </MudStack>
         </MudCollapse>
     </MudStack>
-    <MudCard Style="@($"padding:16px;background:#E5E5E5;transition: height 0.5s;height:calc(100% - {(ShowSetting ? (showRadio ? "100px" : "42%") : "100px")})")" Elevation="0">
-        <MudCarousel Class="mud-width-full" ItemsSource="@Images" @bind-SelectedIndex="SelecetedIndex" Style="height:90%;" ShowArrows="true" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="false">
-            <ItemTemplate>
-                <MudImage ObjectFit="@ObjectFit.Contain" Src="@context.Src" Elevation="0" Style="width:100%;height:100%" />
-            </ItemTemplate>
-        </MudCarousel>
+    <MudCard Style="@($"padding:16px;background:#E5E5E5;transition: height 0.5s;height:calc(100% - {(ShowSetting ? (showRadio ? "60px" : "42%") : "60px")})")" Elevation="0">
+        <SwiperTabItems @bind-Value="SelecetedIndex">
+            @foreach (var item in Images)
+            {
+                <SwiperTabItem>
+                    <MudImage ObjectFit="@ObjectFit.Contain" Src="@item.Src" Elevation="0" Style="width:100%;height:100%" />
+                </SwiperTabItem>
+            }
+        </SwiperTabItems>
     </MudCard>
     <MudStack Row="true" Style="white-space: nowrap; overflow-x:auto;position:absolute;bottom:0px;width:100%">
         @if (CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split)
@@ -119,7 +135,7 @@
         }
 
         @* 画布 *@
-        @if (CurrentTemplate != null)
+        @if (CurrentTemplateCanvas != null)
         {
             <MudStack class="config-btn" @onclick="OpenCanvas">
                 <MudIcon Icon="@Icons.Material.Filled.Layers" />
@@ -145,13 +161,13 @@
 }
 
 <MudDrawer @bind-Open="@ShowSetting" Width="100%" Height="@(showRadio ? "" : "40%")" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary">
-    @if (CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split && showRadio)
+    @if (CurrentImage != null && CurrentImage!.Canvas.CanvasType == Shared.Enums.CanvasType.Split && showRadio)
     {
         <MudGrid>
             <MudItem xs="12" Style="width: 100%; overflow-x: auto; white-space: nowrap;">
                 @foreach (var r in radioes)
                 {
-                    <MudPaper Elevation="25" Class="ma-1" Width="60px" Style="@($"display: inline-block;background:{(r == CurrentTemplate.LengthWidthRatio ? Orange.Default : "")}")">
+                    <MudPaper Elevation="25" Class="ma-1" Width="60px" Style="@($"display: inline-block;background:{(r == CurrentTemplateCanvas.LengthWidthRatio ? Orange.Default : "")}")">
                         <MudStack class="preview-box" @onclick="()=>SetLengthWidthRatio(r)">
                             @if (RadioBase64.TryGetValue(r, out string? src))
                             {
@@ -166,27 +182,27 @@
     }
 
     @* 画布 *@
-    @if (ShowSetting && CurrentTemplate != null && showCanvas)
+    @if (ShowSetting && CurrentTemplateCanvas != null && showCanvas)
     {
         <MudPaper Style="width:100%;height:100%;overflow-y:auto;padding:20px" Elevation="0">
             <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                 <MudText Typo="Typo.h5"><b>画布</b></MudText>
                 <MudDivider Class="my-2" />
-                <MudTextField @bind-Value="@CurrentTemplate.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Text" Margin="Margin.Dense" />
-                <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@CurrentTemplate.BackgroundColor" />
+                <MudTextField @bind-Value="@CurrentTemplateCanvas.Name" Label="模板名称" Required ErrorText="模板名称不能为空" Variant="Variant.Text" Margin="Margin.Dense" />
+                <MudColorPicker Label="背景颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="@CurrentTemplateCanvas.BackgroundColor" />
             </MudPaper>
             <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-                <MudRadioGroup @bind-Value="CurrentTemplate.CanvasType" Class="mx-2">
+                <MudRadioGroup @bind-Value="CurrentTemplateCanvas.CanvasType" Class="mx-2">
                     <MudRadio Value="CanvasType.Normal" Color="Color.Secondary" Dense="true">固定主要图片模式</MudRadio>
                     <MudRadio Value="CanvasType.Split" Color="Color.Secondary" Dense="true">自定义比例模式</MudRadio>
                 </MudRadioGroup>
             </MudPaper>
-            @if (CurrentTemplate.CanvasType == CanvasType.Normal)
+            @if (CurrentTemplateCanvas.CanvasType == CanvasType.Normal)
             {
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudStack Row Justify="Justify.FlexStart" Style="display:flex;align-items:center;">
                         <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="SelectDefaultImage" />
-                        <MudToggleIconButton @bind-Toggled="@CurrentTemplate.ImageProperties.Show" Size="Size.Small" ToggledSize="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.VisibilityOff" Color="@Color.Error" ToggledIcon="@Icons.Material.Filled.Visibility" ToggledColor="@Color.Primary" />
+                        <MudToggleIconButton @bind-Toggled="@CurrentTemplateCanvas.ImageProperties.Show" Size="Size.Small" ToggledSize="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.VisibilityOff" Color="@Color.Error" ToggledIcon="@Icons.Material.Filled.Visibility" ToggledColor="@Color.Primary" />
                     </MudStack>
                     <MudDivider Class="my-2" />
                     @if (ImagesBase64.TryGetValue("default", out string? src))
@@ -196,97 +212,97 @@
                 </MudPaper>
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudStack>
-                        <MudText Typo="Typo.subtitle1">上边距(@CurrentTemplate.BorderThickness.Top)</MudText>
-                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.BorderThickness.Top" ValueLabel="true" />
-                        <MudText Typo="Typo.subtitle1">下边距(@CurrentTemplate.BorderThickness.Bottom)</MudText>
-                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.BorderThickness.Bottom" ValueLabel="true" />
-                        <MudText Typo="Typo.subtitle1">左边距(@CurrentTemplate.BorderThickness.Left)</MudText>
-                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.BorderThickness.Left" ValueLabel="true" />
-                        <MudText Typo="Typo.subtitle1">右边距(@CurrentTemplate.BorderThickness.Right)</MudText>
-                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.BorderThickness.Right" ValueLabel="true" />
+                        <MudText Typo="Typo.subtitle1">上边距(@CurrentTemplateCanvas.BorderThickness.Top)</MudText>
+                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.BorderThickness.Top" ValueLabel="true" />
+                        <MudText Typo="Typo.subtitle1">下边距(@CurrentTemplateCanvas.BorderThickness.Bottom)</MudText>
+                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.BorderThickness.Bottom" ValueLabel="true" />
+                        <MudText Typo="Typo.subtitle1">左边距(@CurrentTemplateCanvas.BorderThickness.Left)</MudText>
+                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.BorderThickness.Left" ValueLabel="true" />
+                        <MudText Typo="Typo.subtitle1">右边距(@CurrentTemplateCanvas.BorderThickness.Right)</MudText>
+                        <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.BorderThickness.Right" ValueLabel="true" />
                     </MudStack>
                     <MudDivider Class="my-2" />
                     <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                         <MudText Typo="Typo.button">边框等宽</MudText>
                         <MudStack Row>
-                            <MudCheckBox @bind-Value="CurrentTemplate.BorderSameWidth.Top" Size="Size.Small">上</MudCheckBox>
-                            <MudCheckBox @bind-Value="CurrentTemplate.BorderSameWidth.Bottom" Size="Size.Small">下</MudCheckBox>
-                            <MudCheckBox @bind-Value="CurrentTemplate.BorderSameWidth.Left" Size="Size.Small">左</MudCheckBox>
-                            <MudCheckBox @bind-Value="CurrentTemplate.BorderSameWidth.Right" Size="Size.Small">右</MudCheckBox>
+                            <MudCheckBox @bind-Value="CurrentTemplateCanvas.BorderSameWidth.Top" Size="Size.Small">上</MudCheckBox>
+                            <MudCheckBox @bind-Value="CurrentTemplateCanvas.BorderSameWidth.Bottom" Size="Size.Small">下</MudCheckBox>
+                            <MudCheckBox @bind-Value="CurrentTemplateCanvas.BorderSameWidth.Left" Size="Size.Small">左</MudCheckBox>
+                            <MudCheckBox @bind-Value="CurrentTemplateCanvas.BorderSameWidth.Right" Size="Size.Small">右</MudCheckBox>
                         </MudStack>
                     </MudStack>
                 </MudPaper>
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                         <MudText Typo="Typo.button">阴影</MudText>
-                        <MudSwitch @bind-Value="@CurrentTemplate.ImageProperties.EnableShadow" Color="Color.Primary" />
+                        <MudSwitch @bind-Value="@CurrentTemplateCanvas.ImageProperties.EnableShadow" Color="Color.Primary" />
                     </MudStack>
                     <MudDivider Class="my-2" />
-                    <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplate.ImageProperties.ShadowColor" />
-                    <MudText Typo="Typo.subtitle1">深度(@CurrentTemplate.ImageProperties.ShadowRange)</MudText>
-                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.ImageProperties.ShadowRange" ValueLabel="true" />
+                    <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplateCanvas.ImageProperties.ShadowColor" />
+                    <MudText Typo="Typo.subtitle1">深度(@CurrentTemplateCanvas.ImageProperties.ShadowRange)</MudText>
+                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.ImageProperties.ShadowRange" ValueLabel="true" />
                 </MudPaper>
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                         <MudText Typo="Typo.button">图片圆角</MudText>
-                        <MudSwitch @bind-Value="@CurrentTemplate.ImageProperties.EnableRadius" Color="Color.Primary" />
+                        <MudSwitch @bind-Value="@CurrentTemplateCanvas.ImageProperties.EnableRadius" Color="Color.Primary" />
                     </MudStack>
                     <MudDivider Class="my-2" />
-                    <MudText Typo="Typo.subtitle1">圆角度数(@CurrentTemplate.ImageProperties.CornerRadius)</MudText>
-                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.ImageProperties.CornerRadius" ValueLabel="true" />
+                    <MudText Typo="Typo.subtitle1">圆角度数(@CurrentTemplateCanvas.ImageProperties.CornerRadius)</MudText>
+                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.ImageProperties.CornerRadius" ValueLabel="true" />
                 </MudPaper>
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                     <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                         <MudText Typo="Typo.button">背景高斯模糊</MudText>
-                        <MudSwitch @bind-Value="@CurrentTemplate.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
+                        <MudSwitch @bind-Value="@CurrentTemplateCanvas.ImageProperties.EnableGaussianBlur" Color="Color.Primary" />
                     </MudStack>
                     <MudDivider Class="my-2" />
-                    <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplate.ImageProperties.GaussianDeep)</MudText>
-                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.ImageProperties.GaussianDeep" ValueLabel="true" />
+                    <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplateCanvas.ImageProperties.GaussianDeep)</MudText>
+                    <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.ImageProperties.GaussianDeep" ValueLabel="true" />
                 </MudPaper>
-                @if (CurrentTemplate.FrameProperties != null)
+                @if (CurrentTemplateCanvas.FrameProperties != null)
                 {
                     <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
                         <MudStack Row Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                             <MudText Typo="Typo.button">画幅调整</MudText>
-                            <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.Enabled" Color="Color.Primary" />
+                            <MudSwitch @bind-Value="@CurrentTemplateCanvas.FrameProperties.Enabled" Color="Color.Primary" />
                         </MudStack>
-                        @if (CurrentTemplate.FrameProperties.Enabled)
+                        @if (CurrentTemplateCanvas.FrameProperties.Enabled)
                         {
                             <MudDivider Class="my-2" />
-                            <MudSelect Value="CurrentTemplate.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
+                            <MudSelect Value="CurrentTemplateCanvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
                                 @foreach (var e in radioes)
                                 {
                                     <MudSelectItem Value="@e" />
                                 }
                             </MudSelect>
-                            <MudText Typo="Typo.subtitle1">内边距(@CurrentTemplate.FrameProperties.BorderPadding)</MudText>
-                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.BorderPadding" ValueLabel="true" />
+                            <MudText Typo="Typo.subtitle1">内边距(@CurrentTemplateCanvas.FrameProperties.BorderPadding)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.FrameProperties.BorderPadding" ValueLabel="true" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
                                 <MudText Typo="Typo.button">阴影</MudText>
-                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableShadow" Color="Color.Primary" />
+                                <MudSwitch @bind-Value="@CurrentTemplateCanvas.FrameProperties.EnableShadow" Color="Color.Primary" />
                             </MudStack>
                             <MudDivider Class="my-2" />
-                            <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplate.FrameProperties.ShadowColor" />
-                            <MudText Typo="Typo.subtitle1">深度(@CurrentTemplate.FrameProperties.ShadowRange)</MudText>
-                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.ShadowRange" ValueLabel="true" />
+                            <MudColorPicker Label="阴影颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="CurrentTemplateCanvas.FrameProperties.ShadowColor" />
+                            <MudText Typo="Typo.subtitle1">深度(@CurrentTemplateCanvas.FrameProperties.ShadowRange)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.FrameProperties.ShadowRange" ValueLabel="true" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
                                 <MudText Typo="Typo.button">图片圆角</MudText>
-                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableRadius" Color="Color.Primary" />
+                                <MudSwitch @bind-Value="@CurrentTemplateCanvas.FrameProperties.EnableRadius" Color="Color.Primary" />
                             </MudStack>
                             <MudDivider Class="my-2" />
-                            <MudText Typo="Typo.subtitle1">圆角度数(@CurrentTemplate.FrameProperties.CornerRadius)</MudText>
-                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.CornerRadius" ValueLabel="true" />
+                            <MudText Typo="Typo.subtitle1">圆角度数(@CurrentTemplateCanvas.FrameProperties.CornerRadius)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.FrameProperties.CornerRadius" ValueLabel="true" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
                                 <MudText Typo="Typo.button">背景高斯模糊</MudText>
-                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.EnableGaussianBlur" Color="Color.Primary" />
+                                <MudSwitch @bind-Value="@CurrentTemplateCanvas.FrameProperties.EnableGaussianBlur" Color="Color.Primary" />
                             </MudStack>
                             <MudDivider Class="my-2" />
-                            <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplate.FrameProperties.GaussianDeep)</MudText>
-                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplate.FrameProperties.GaussianDeep" ValueLabel="true" />
+                            <MudText Typo="Typo.subtitle1">模糊深度(@CurrentTemplateCanvas.FrameProperties.GaussianDeep)</MudText>
+                            <MudSlider Color="Color.Primary" @bind-Value="@CurrentTemplateCanvas.FrameProperties.GaussianDeep" ValueLabel="true" />
                             <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
                                 <MudText Typo="Typo.button">原背景透明</MudText>
-                                <MudSwitch @bind-Value="@CurrentTemplate.FrameProperties.BeforeBkTransparent" Color="Color.Primary" />
+                                <MudSwitch @bind-Value="@CurrentTemplateCanvas.FrameProperties.BeforeBkTransparent" Color="Color.Primary" />
                             </MudStack>
                         }
                     </MudPaper>
@@ -295,15 +311,15 @@
             else
             {
                 <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-                    <MudSelect Value="CurrentTemplate.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
+                    <MudSelect Value="CurrentTemplateCanvas.LengthWidthRatio" Dense="true" T="string" Label="画幅比例" Variant="Variant.Text" ValueChanged="ValueChanged2">
                         @foreach (var e in radioes)
                         {
                             <MudSelectItem Value="@e" />
                         }
                     </MudSelect>
                     <MudStack Row Class="mt-5">
-                        <MudTextField @bind-Value="@CurrentTemplate.CustomWidth" Label="自定义宽度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudTextField @bind-Value="@CurrentTemplate.CustomHeight" Label="自定义高度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <MudTextField @bind-Value="@CurrentTemplateCanvas.CustomWidth" Label="自定义宽度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <MudTextField @bind-Value="@CurrentTemplateCanvas.CustomHeight" Label="自定义高度(px)" Variant="Variant.Outlined" Margin="Margin.Dense" />
                     </MudStack>
                 </MudPaper>
             }
@@ -665,8 +681,12 @@
 @code {
     public WMTemplateList CurrentImage { get; set; }
     [Parameter]
-    public EventCallback CloseDrawer { get; set; }
+    public string? path { get; set; }
     [Parameter]
+    public string? names { get; set; }
+    [Parameter]
+    public string? templateId { get; set; }
+
     public List<WMTemplateList> Images { get; set; }
 
     string[] loadingMessage = ["", ""];
@@ -687,17 +707,17 @@
     bool showRadio = false;
     bool showControlSetting = false;
     bool showCanvas = false;
-    WMText selectedText;
-    WMLogo selectedLogo;
+    WMText? selectedText;
+    WMLogo? selectedLogo;
     bool openFontsDialog = false;
     bool openLogoDialog = false;
     ConcurrentDictionary<string, string> ImagesBase64 = new();
     List<string> radioes = ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "1.85:1", "2.39:1"];
-    Dictionary<string, string> RadioBase64;
-    WMContainer SelectedContainer;
+    Dictionary<string, string> RadioBase64 = [];
+    WMContainer? SelectedContainer;
     int ContainerLevel;
-    IWMControl SelectedControl;
-    WMCanvas CurrentTemplate;
+    IWMControl? SelectedControl;
+    WMCanvas? CurrentTemplateCanvas;
     string cardStyle => $"margin:8px 0px;background:{Colors.Grey.Lighten4}";
 
     int selectedIndex = 0;
@@ -714,14 +734,45 @@
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentImage = Images[0];
-        CurrentTemplate = Global.ReadConfig(Global.CanvasSerialize(CurrentImage.Canvas));
+        CurrentTemplateCanvas = Global.GetCanvas(templateId);
+        if (CurrentTemplateCanvas is null) return;
+        await InitImages(names, templateId, path);
         RadioBase64 = Global.GetRadio();
         await InitLogoCacheDic();
-        SelectedContainer = CurrentTemplate.Children.FirstOrDefault();
+        SelectedContainer = CurrentTemplateCanvas.Children.FirstOrDefault();
         var api = new APIHelper();
         var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
     }
+
+    async Task InitImages(string names, string templateId, string path)
+    {
+        var fileNames = names.Split(';');
+        Images = new List<WMTemplateList>();
+        if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+        }
+        foreach (var f in fileNames)
+        {
+            var fullPath = Path.Combine(path, f);
+            var img = new WMTemplateList();
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
+            cvs.Path = fullPath;
+            img.Canvas = cvs;
+            cvs.Exif[cvs.ID] = await ExifHelper.ReadImageAsync(fullPath);
+            img.ID = cvs.ID;
+            img.Path = fullPath;
+            Global.CheckImageExtension(fullPath);
+            var thumbnail = Global.AppPath.ThumbnailFolder + f;
+            await Global.WriteThumbnailImageAsync(fullPath, thumbnail);
+            Images.Add(img);
+        }
+        CurrentImage = Images.First();
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
+        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        StateHasChanged();
+    }
+
 
     async void OpenExifDialog(WMText mText)
     {
@@ -759,7 +810,7 @@
         }
         catch (Exception ex)
         {
-            ClientInstance.ShowMsg(Snackbar, $"不支持的图片格式：{ex.Message}", Severity.Error);
+            Common.ShowMsg(PopupService, $"不支持的图片格式：{ex.Message}", AlertTypes.Error);
         }
     }
 
@@ -777,9 +828,9 @@
     {
         SrcLoading = true;
         StateHasChanged();
-        CurrentTemplate.Exif = CurrentImage.Canvas.Exif;
-        CurrentTemplate.Path = CurrentImage.Path;
-        var b64 = await helper.GenerationAsync(CurrentTemplate, null, true, false);
+        CurrentTemplateCanvas.Exif = CurrentImage.Canvas.Exif;
+        CurrentTemplateCanvas.Path = CurrentImage.Path;
+        var b64 = await helper.GenerationAsync(CurrentTemplateCanvas, null, true, false);
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
         SrcLoading = false;
         StateHasChanged();
@@ -788,7 +839,7 @@
     void CloseDrawerClick()
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        CloseDrawer.InvokeAsync();
+        NavController.Pop();
     }
 
     async void Export()
@@ -802,7 +853,7 @@
         {
             loadingMessage[0] = "导出中";
             loadingMessage[1] = $"共{Images.Count}张，目前第{cot++}张";
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate));
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
             cvs.Path = item.Path;
             cvs.Exif = item.Canvas.Exif;
             var b64 = await helper.GenerationAsync(cvs, null, false, false);
@@ -813,7 +864,7 @@
             StateHasChanged();
         }
         loadingShow = false;
-        Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
+        Common.ShowMsg(PopupService, "保存成功。", AlertTypes.Success);
         openSave = false;
         StateHasChanged();
     }
@@ -821,10 +872,10 @@
     async Task InitLogoCacheDic()
     {
         ConcurrentDictionary<string, byte[]> dic = new();
-        var p = Path.Combine(Global.AppPath.TemplatesFolder, CurrentTemplate.ID, "default.jpg");
+        var p = Path.Combine(Global.AppPath.TemplatesFolder, CurrentTemplateCanvas.ID, "default.jpg");
         Global.ImageFile2Base64(dic, p, "default");
-        var folder = Global.AppPath.TemplatesFolder + CurrentTemplate.ID + System.IO.Path.DirectorySeparatorChar;
-        CurrentTemplate.Children.ForEach(c =>
+        var folder = Global.AppPath.TemplatesFolder + CurrentTemplateCanvas.ID + System.IO.Path.DirectorySeparatorChar;
+        CurrentTemplateCanvas.Children.ForEach(c =>
         {
             if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
             c.Controls.ForEach(x =>
@@ -869,13 +920,13 @@
     void SetLengthWidthRatio(string v)
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        CurrentTemplate.LengthWidthRatio = v;
+        CurrentTemplateCanvas.LengthWidthRatio = v;
         var wh = v.Split(":");
         var w = Convert.ToDouble(wh[0]);
         var h = Convert.ToDouble(wh[1]);
         var xs = 6000 / w;
-        CurrentTemplate.CustomWidth = 6000;
-        CurrentTemplate.CustomHeight = (int)(xs * h);
+        CurrentTemplateCanvas.CustomWidth = 6000;
+        CurrentTemplateCanvas.CustomHeight = (int)(xs * h);
         StateHasChanged();
     }
 
@@ -941,13 +992,13 @@
 
     void ValueChanged2(string v)
     {
-        CurrentTemplate.LengthWidthRatio = v;
+        CurrentTemplateCanvas.LengthWidthRatio = v;
         var wh = v.Split(":");
         var w = Convert.ToDouble(wh[0]);
         var h = Convert.ToDouble(wh[1]);
         var xs = 6000 / w;
-        CurrentTemplate.CustomWidth = 6000;
-        CurrentTemplate.CustomHeight = (int)(xs * h);
+        CurrentTemplateCanvas.CustomWidth = 6000;
+        CurrentTemplateCanvas.CustomHeight = (int)(xs * h);
     }
 
     async void SelectDefaultImage()
@@ -956,7 +1007,7 @@
         if (result != null && result.Count() > 0)
         {
             var p = result.First().FileResult!.FullPath;
-            var destFolder = Global.AppPath.TemplatesFolder + CurrentTemplate.ID;
+            var destFolder = Global.AppPath.TemplatesFolder + CurrentTemplateCanvas.ID;
             if (!System.IO.Directory.Exists(destFolder))
             {
                 System.IO.Directory.CreateDirectory(destFolder);

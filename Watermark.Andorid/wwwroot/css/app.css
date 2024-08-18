@@ -99,3 +99,7 @@ h1:focus {
     flex-direction: column;
     --sk-color: white;
 }
+
+::-webkit-scrollbar {
+    display: none;
+}
