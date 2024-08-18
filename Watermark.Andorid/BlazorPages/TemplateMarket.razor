@@ -1,9 +1,12 @@
 ﻿@page "/market"
 @using Masa.Blazor
 @using Watermark.Andorid.Components.Layout
+@using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
+@using static Watermark.Andorid.BlazorPages.TemplateLargeView
 @inject PageStackNavController NavController
+@inject IPopupService PopupService
 @layout MainLayout
 
 <style>
@@ -46,160 +49,152 @@
 </style>
 
 <div style="height:100%;">
-    <MTabs SliderColor="black" FixedTabs @bind-Value="tab" Height="30" ShowArrows="false">
-        <MTab Value="@("first")">
-            推荐
-        </MTab>
-        @foreach (var sub in subscribed)
+    <MTabs SliderColor="black" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
+        @foreach (var sub in tabs)
         {
-            <MTab Value="sub.Item1">
-                @sub.Item1
+            <MTab Value="sub">
+                @sub
             </MTab>
         }
     </MTabs>
 
     <div style="@($"height: calc(100% - 30px);")">
-        <MSwiper AutoHeight Style="height:100%;" SpaceBetween="24" Index="subscribed.Select(x=>x.Item1).ToList().IndexOf(tab.ToString()) + 1" IndexChanged="@((e) => { tab = e == 0 ? "first" : subscribed[e - 1].Item1; })">
-            <MSwiperSlide Style="height:100%">
-                <div style="padding: 8px 18px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap; background:red">
-                    @if (ZipedTemplates == null || ZipedTemplates.Count == 0 || ZipedTemplates.Any(x => string.IsNullOrEmpty(x.Src)))
-                    {
-                        <MProgressCircular Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
-                    }
-                    @foreach (var t in ZipedTemplates!.Where(x => x.Recommend).OrderByDescending(x => x.DateTimeCreated))
-                    {
-                        <MCard Style="padding:4px; width:calc(50% - 8px); margin:4px;">
-                            <MCard style="padding:16px;background:#E5E5E5;height:220px;" class="flex-vertical-center" Elevation="0">
-                                @if (!string.IsNullOrEmpty(t.Src))
-                                {
-                                    <MImage Style="height:100%;width:100%;" Src="@t.Src" Contain />
-                                }
-                                else
-                                {
-                                    <MProgressCircular Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                }
-                            </MCard>
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                    @t.Name
-                                </MudText>
-                                <div style="display: flex; align-items: center;">
-                                    <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                    <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                </div>
-                            </div>
-                            <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                <div Style="display:flex;align-items:center;">
-                                    <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
-                                    <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                        @t.UserDisplayName
-                                    </MudText>
-                                </div>
-
-
-                                <div Style="display:flex;align-items:center;line-height: 32px;">
-                                    <Watermark.Razor.Parts.IconCoin />
-                                    <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                                        @t.Coins
-                                    </MudText>
-                                </div>
-                            </div>
-                        </MCard>
-                    }
-                </div>
-            </MSwiperSlide>
+        <SwiperTabItems Value="tabs.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tabs[e])">
             @foreach (var sub in subscribed)
             {
-                <MSwiperSlide Style="height:100%;">
-                    <MPullRefresh OnRefresh="OnRefresh">
-                        <div id="infinite-scroll-usage" style="padding: 8px 18px !important;height:100%;overflow: auto; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap">
-                            @foreach (var t in sub.Item2)
-                            {
-                                <MCard Style="padding:4px; width:calc(50% - 8px); margin:4px;">
-                                    <MCard style="padding:16px;background:#E5E5E5;height:220px;" class="flex-vertical-center" Elevation="0">
-                                        @if (!string.IsNullOrEmpty(t.Src))
-                                        {
-                                            <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-                                        }
-                                        else
-                                        {
-                                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                        }
-                                    </MCard>
-                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                        <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                            @t.Name
-                                        </MudText>
-                                        <div style="display: flex; align-items: center;">
-                                            <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                            <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                        </div>
-                                    </div>
-                                    <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                        <div Style="display:flex;align-items:center;">
-                                            @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
-                                            {
-                                                <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
-                                            }
-                                            else
-                                            {
-                                                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-                                            }
-                                            <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                                @t.UserDisplayName
-                                            </MudText>
-                                        </div>
-                                        <div Style="display:flex;align-items:center;line-height: 32px;">
-                                            <Watermark.Razor.Parts.IconCoin />
-                                            <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                                                @t.Coins
-                                            </MudText>
-                                        </div>
-                                    </div>
-                                </MCard>
-                            }
-                            @if (sub.Item1 == "最新")
-                            {
-                                <MCard Style="padding:4px; width:calc(50% - 8px); margin:4px;">
-                                    @if (loadMore)
-                                    {
-                                        <MProgressCircular Indeterminate="true" />
-                                    }
-                                    else
-                                    {
-                                        <MudButton Variant="Variant.Text" Color="Color.Default" FullWidth="true">点击加载更多</MudButton>
-                                    }
-                                </MCard>
-                            }
-                        </div>
-                    </MPullRefresh>
-
-                </MSwiperSlide>
+                <SwiperTabItem>
+                    <div style="height:100%;overflow:auto" id="@("infinite-scroll-usage" + subscribed.IndexOf(sub))">
+                        <MPullRefresh OnRefresh="OnRefresh" PullingText="刷新中" CanReleaseText="下拉刷新" SuccessText="刷新成功">
+                            <MCard Flat style="padding: 8px 18px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap;">
+                                @RenderProductList(sub.Item2)
+                                @if (sub.Item1 == "最新")
+                                {
+                                    <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
+                                                     OnLoad="@HandleOnLoad">
+                                    </MInfiniteScroll>
+                                }
+                            </MCard>
+                        </MPullRefresh>
+                    </div>
+                </SwiperTabItem>
             }
-        </MSwiper>
+        </SwiperTabItems>
     </div>
+    <MOverlay Contained Opacity="0" Value="loadMore">
+        <MProgressCircular Indeterminate Color="primary" />
+    </MOverlay>
+    <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA">
+        <TemplateLargeView FocusImage="parameter.FocusImage"
+                           FocusImageId="@parameter.FocusImageId"
+                           FocusImageSrc="@parameter.FocusImageSrc"
+                           FocusImageType="parameter.FocusImageType"
+                           ILikeTemplates="parameter.ILikeTemplates"
+                           subscribed="subscribed"
+                           ZipedTemplates="ZipedTemplates"
+                           CloseEvent="() => parameter.FocusImageShow = false" />
+    </MDialog>
 </div>
 
 @code {
-    StringNumber tab = "first";
-    bool loadMore = false;
+    StringNumber tab = "推荐";
+    List<string> tabs = new List<string> { "推荐", "热门", "拼图", "最新" };
+    bool loadMore = true;
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
     List<WMZipedTemplate> ZipedTemplates = new();
     int start = 1;
-    void OnRefresh()
-    {
+    private MInfiniteScroll? _infiniteScroll;
+    ViewParameter parameter = new();
+    List<BlockTextTag> tags = new List<BlockTextTag> { new BlockTextTag("TAG", "primary", true) };
+    internal RenderFragment RenderProductList(List<WMZipedTemplate> products) => __builder =>
+       {
+           <MRow Dense>
+               @foreach (var t in products)
+               {
+                   <MCol Cols="6">
+                       <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
+                           @if (!string.IsNullOrEmpty(t.Src))
+                           {
+                               <MudImage Style="width:100%;height:165px;" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                           }
+                           else
+                           {
+                               <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+                           }
+                           <MCardActions Style="padding:0px;">
+                               <div style="width:100%;">
+                                   <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                                       <PBlockText Primary="@t.Name" Tags="@(tags)" PrimaryStyle="font-size:12px" PrimaryClass="dfm-card-name" Style="text-overflow: ellipsis;overflow: auto;">
+                                       </PBlockText>
+                                       <div style="display: flex; align-items: center;height:18px">
+                                           <MIcon Size="12">mdi-download-box-outline</MIcon>
+                                           <span style="font-size: 10px;line-height: 12px;">@t.DownloadTimes</span>
+                                       </div>
+                                   </div>
+                                   <div class="dfm-card-user-name" style="justify-content: space-between;">
+                                       <div Style="display:flex;align-items:center;">
+                                           @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                           {
+                                               <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
+                                           }
+                                           else
+                                           {
+                                               <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                                           }
+                                           <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
+                                               @t.UserDisplayName
+                                           </MudText>
+                                       </div>
+                                       <div Style="display:flex;align-items:center;line-height: 32px;">
+                                           <Watermark.Razor.Parts.IconCoin />
+                                           <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+                                               @t.Coins
+                                           </MudText>
+                                       </div>
+                                   </div>
+                               </div>
 
+                           </MCardActions>
+                       </MCard>
+                   </MCol>
+               }
+           </MRow>
+       };
+
+
+    async Task OnRefresh()
+    {
+        start = 1;
+        await LoadTemplatesMarket();
+    }
+
+    async Task HandleOnLoad(InfiniteScrollLoadEventArgs args)
+    {
+        var c = subscribed.LastOrDefault()?.Item2.Count ?? 0;
+        start++;
+        await LoadTemplatesMarket();
+        var c2 = subscribed.LastOrDefault()?.Item2.Count ?? 0;
+        args.Status = c2 == c ? InfiniteScrollLoadStatus.Empty : InfiniteScrollLoadStatus.Ok;
     }
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadTemplatesMarket();
+        try
+        {
+            await LoadTemplatesMarket();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            StateHasChanged();
+            loadMore = false;
+        }
     }
 
     async Task LoadTemplatesMarket()
     {
-        loadMore = true;
-        StateHasChanged();
         var helper = new APIHelper();
         var allTemplates = (await helper.GetWatermarks("", 1, 999)).Where(x => x.Visible);
         var recommend = allTemplates.Where(x => x.Recommend);
@@ -218,14 +213,13 @@
                 subscribed.Add(tup);
             }
         }
+        subscribed.Add(Tuple.Create("推荐", ZipedTemplates.Where(x => x.Recommend).ToList()));
 
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
 
         subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 6).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
-        loadMore = false;
-        StateHasChanged();
     }
 
     async Task<List<string>> IntiSubscribedUserList()
@@ -239,7 +233,19 @@
         }
         else
         {
+            Common.ShowMsg(PopupService, result.message?.content ?? "", AlertTypes.Error);
         }
         return [];
+    }
+    void OpenFocus(char t, WMZipedTemplate zip, bool b)
+    {
+        parameter = new ViewParameter();
+        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        parameter.FocusImage = zip;
+        parameter.FocusImageType = t;
+        parameter.FocusImageId = zip.WatermarkId;
+        parameter.FocusImageSrc = zip.Src;
+        parameter.FocusImageShow = b;
+        StateHasChanged();
     }
 }

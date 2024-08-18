@@ -2,8 +2,9 @@
 @using Watermark.Shared.Models
 @inject ISnackbar Snackbar
 
-<div Style="position:relative;background:#000;width: 100vw;">
+<div Style="position:relative;">
     <MImage Style="width: 100vw;max-height:100vh"
+            @onclick="CloseEvent"
             Contain
             Src="@FocusImageSrc"
             LazySrc="https://picsum.photos/id/11/100/60">
@@ -33,18 +34,18 @@
                     @FocusImage?.UserDisplayName
                 </MudText>
             </div>
-            <div style="display: flex; align-items: center;">
-                <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                    <MudIconButton Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Variant="Variant.Text" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="()=>Subscribe(FocusImage?.UserId)" />
-                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
+            <div style="display: flex;">
+                <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="()=>Subscribe(FocusImage?.UserId)">
+                    <MudIcon Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
                 </MudStack>
-                <MudStack style="text-align: center;gap:0px;margin-right:20px">
-                    <MudIconButton Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Variant="Variant.Text" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" DisableElevation="true" OnClick="PopupActionBar" />
-                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
+                <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="PopupActionBar">
+                    <MudIcon Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
                 </MudStack>
-                <MudStack style="text-align: center;gap:0px">
-                    <MudIconButton Icon="@Icons.Material.Filled.Download" Style="padding:0px" Variant="Variant.Text" Color="Color.Primary" Size="Size.Medium" DisableElevation="true" OnClick="()=>DownloadTemplate(FocusImage?.WatermarkId)" />
-                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100">下载</span></MudText>
+                <MudStack style="text-align: center;gap:0px;align-items: center;" @onclick="()=>DownloadTemplate(FocusImage?.WatermarkId)">
+                    <MudIcon Icon="@Icons.Material.Filled.Download" Style="padding:0px" Color="Color.Primary" Size="Size.Medium"  />
+                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">下载</span></MudText>
                 </MudStack>
 
             </div>
@@ -130,41 +131,46 @@
     public EventCallback CloseEvent { get; set; }
 
     [Parameter]
-    public List<Tuple<string, List<WMZipedTemplate>>> subscribed { get; set; }
+    public List<Tuple<string, List<WMZipedTemplate>>> subscribed { get; set; } = [];
 
     [Parameter]
-    public List<WMZipedTemplate> downloadedTemplates { get; set; }
+    public List<WMZipedTemplate> downloadedTemplates { get; set; } = [];
 
     [Parameter]
     public string FocusImageId { get; set; }
 
     [Parameter]
-    public List<WMZipedTemplate> ILikeTemplates { get; set; }
+    public List<WMZipedTemplate> ILikeTemplates { get; set; } = [];
 
     [Parameter]
-    public List<WMZipedTemplate> ZipedTemplates { get; set; }
+    public List<WMZipedTemplate> ZipedTemplates { get; set; } = [];
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
 
     void DownloadTemplate(string watermarId)
     {
         if(DownloadEvent.HasDelegate)
         {
-            DownloadEvent.InvokeAsync();
+            DownloadEvent.InvokeAsync(watermarId);
         }
     }
 
     void OpenCamera(WMZipedTemplate zip)
     {
-        if (OpenCameraEvent.HasDelegate) OpenCameraEvent.InvokeAsync();
+        if (OpenCameraEvent.HasDelegate) OpenCameraEvent.InvokeAsync(zip);
     }
 
     void GeneratePhoto(WMZipedTemplate zip)
     {
-        if (GeneratePhotoEvent.HasDelegate) GeneratePhotoEvent.InvokeAsync();
+        if (GeneratePhotoEvent.HasDelegate) GeneratePhotoEvent.InvokeAsync(zip);
     }
 
     void Subscribe(string userId)
     {
-        if (SubscribeEvent.HasDelegate) SubscribeEvent.InvokeAsync();
+        if (SubscribeEvent.HasDelegate) SubscribeEvent.InvokeAsync(userId);
     }
 
     void Close()
@@ -225,5 +231,17 @@
         Close();
         StateHasChanged();
 
+    }
+
+    public class ViewParameter
+    {
+        public char FocusImageType { get; set; }
+        public string FocusImageSrc { get; set; }
+        public WMZipedTemplate FocusImage { get; set; }
+        public string FocusImageId { get; set; }
+        public List<WMZipedTemplate> ZipedTemplates { get; set; } = [];
+        public List<WMZipedTemplate> ILikeTemplates { get; set; } = [];
+        public List<Tuple<string, List<WMZipedTemplate>>> subscribed { get; set; } = [];
+        public bool FocusImageShow { get; set; } = false;
     }
 }

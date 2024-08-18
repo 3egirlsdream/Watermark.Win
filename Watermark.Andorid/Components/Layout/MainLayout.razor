@@ -1,12 +1,42 @@
-﻿@using Watermark.Win.Models
+﻿@using Masa.Blazor
+@using Watermark.Win.Models
 @inherits LayoutComponentBase
 
+<MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
+<MudDialogProvider />
+<MudSnackbarProvider />
 <MApp>
     <MMain>
         <MErrorHandler>
             <PPageStack TabbedPatterns="@(["^/$", "/market", "/settings", "/test"])">
-                @Body
+                <MContainer Style="padding:0px !important;height:calc(100vh - 56px);overflow:hidden">
+                    @Body
+                </MContainer>
             </PPageStack>
         </MErrorHandler>
     </MMain>
+    <MBottomNavigation @bind-Value="value"
+                       App
+                       Grow
+                       Shift
+                       Color="primary">
+        <MButton Href="/">
+            <span>我的模板</span>
+            <MIcon>mdi-download-box</MIcon>
+        </MButton>
+        <MButton Href="/market">
+            <span>模板市场</span>
+            <MIcon>mdi-shopping</MIcon>
+        </MButton>
+        <MButton Href="/settings">
+            <span>我</span>
+            <MIcon>mdi-account</MIcon>
+        </MButton>
+    </MBottomNavigation>
 </MApp>
+
+@code {
+
+    private string[] _tabbedPatterns = ["/blazor/examples/page-stack/tab*"];
+    StringNumber value = 0;
+}

@@ -21,7 +21,39 @@
         margin-right: 0px;
     }
 
+    .mud-drawer.mud-drawer-temporary {
+        margin-bottom: -56px !important;
+    }
+
 </style>
+<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
+    <MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
+        你好，
+        @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
+        {
+            <span>@Global.CurrentUser.DISPLAY_NAME</span>
+        }
+        else
+        {
+            <span>游客</span>
+        }
+    </MudText>
+    <MudStack Row Style="position:absolute;right:15px;">
+        <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
+    </MudStack>
+
+
+    <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
+        <MudList Clickable="true" Dense="true">
+            <MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio" OnClick="OpenSplit">
+                拼图
+            </MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.DesignServices">
+                设计模板
+            </MudListItem>
+        </MudList>
+    </MudPopover>
+</MudToolBar>
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
     <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
@@ -169,7 +201,7 @@ else
     }
 </MudDrawer>
 
-<MudDrawer Style="@($"adding:6px;{(ShowQuestion?"":"display:none;")}")" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
+<MudDrawer Style="@($"padding:6px;{(ShowQuestion?"":"display:none;")}")" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
     @if (ShowQuestion)
     {
         <Watermark.Razor.Components.QuestionDialog />
@@ -199,6 +231,7 @@ else
     bool openLogoDialog = false;
     bool showUpdateOverlay = false;
     bool ShowQuestion = false;
+    bool ShowUserInfo = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -314,5 +347,9 @@ else
         #if ANDROID
         MainActivity.SetColor.Invoke(Colors.Grey.Lighten4);
         #endif
+    }
+
+    void OpenSplit()
+    {
     }
 }

@@ -1,10 +1,11 @@
-﻿@page "/aa"
+﻿@page "/"
 @using Components.Layout
 @using Watermark.Andorid.Models
 @using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
+@using static Watermark.Andorid.BlazorPages.TemplateLargeView
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 @inject NavigationManager navigationManager
@@ -24,8 +25,8 @@
         }
     </MTabs>
     <div style="@($"height: calc(100% - 30px);")">
-        <MSwiper AutoHeight SpaceBetween="24" Index="tab1Head.IndexOf(tab.ToString())" IndexChanged="@((e) => tab = tab1Head[e])">
-            <MSwiperSlide>
+        <SwiperTabItems Value="tab1Head.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tab1Head[e])">
+            <SwiperTabItem>
                 <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
                     <MudGrid Class="pt-2" Justify="Justify.FlexStart">
                         @if (loading_down)
@@ -34,7 +35,7 @@
                         }
                         else
                         {
-                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
+                            @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
                             {
                                 <MudItem xs="6" Style="padding:4px;">
                                     <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
@@ -46,13 +47,13 @@
                                     </MudCard>
                                 </MudItem>
                             }
-                            @if (downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split).Count() > 0)
+                            @if (GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Split).Count() > 0)
                             {
                                 <MudItem xs="12" Style="padding:4px;">
                                     <MudText Typo="Typo.h5"><b>拼图</b></MudText>
                                 </MudItem>
                             }
-                            @foreach (var t in downloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
+                            @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
                             {
                                 <MudItem xs="6" Style="padding:4px;">
                                     <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
@@ -67,7 +68,7 @@
                         }
                     </MudGrid>
                 </MudPaper>
-            </MSwiperSlide>
+            </SwiperTabItem>
             <SwiperTabItem>
                 <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
                     <MudGrid Class="pt-2" Justify="Justify.FlexStart">
@@ -85,22 +86,23 @@
                     </MudGrid>
                 </MudPaper>
             </SwiperTabItem>
-        </MSwiper>
+        </SwiperTabItems>
     </div>
-    <MDialog @bind-Value="FocusImageShow" Fullscreen>
-        <TemplateLargeView CloseEvent="()=> FocusImageShow = false"
-                           downloadedTemplates="downloadedTemplates"
-                           DownloadEvent="DownloadTemplate"
-                           FocusImage="FocusImage"
-                           FocusImageId="FocusImageId"
-                           FocusImageSrc="FocusImageSrc"
-                           FocusImageType="FocusImageType"
+
+    <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px">
+        <TemplateLargeView DownloadEvent="DownloadTemplate"
+                           downloadedTemplates="GlobalCache.DownloadedTemplates"
+            FocusImage="parameter.FocusImage"
+                           FocusImageId="@parameter.FocusImageId"
+                           FocusImageSrc="@parameter.FocusImageSrc"
+                           FocusImageType="parameter.FocusImageType"
                            GeneratePhotoEvent="GeneratePhoto"
-                           ILikeTemplates="ILikeTemplates"
+                           ILikeTemplates="parameter.ILikeTemplates"
                            OpenCameraEvent="OpenCamera"
                            subscribed="subscribed"
                            SubscribeEvent="Subscribe"
-                           ZipedTemplates="ZipedTemplates" />
+                           ZipedTemplates="ZipedTemplates"
+                           CloseEvent="() => parameter.FocusImageShow = false" />
     </MDialog>
 
     <MOverlay Value="loading.Show">
@@ -135,10 +137,8 @@
     bool loading_down = false;
     StringNumber tab = "我的下载";
     List<string> tab1Head = ["我的下载", "我的收藏"];
-    List<WMZipedTemplate> downloadedTemplates = new();
     List<WMZipedTemplate> ILikeTemplates = new();
     Dictionary<string, int> Versions = [];
-    bool FocusImageShow = false;
     WMZipedTemplate FocusImage;
     char FocusImageType = ' ';
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
@@ -150,7 +150,7 @@
     bool faildShow = false;
     string failedMessage = "";
     string FocusImageSrc = "";
-
+    ViewParameter parameter = new();
     protected override async Task OnInitializedAsync()
     {
         try
@@ -162,12 +162,12 @@
             await LoadTemplates();
             await LoadCollectTemplate();
             await api.DownloadLogoes();
-            await InitVersion(downloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
+            await InitVersion(GlobalCache.DownloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
             await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
         }
         catch (Exception ex)
         {
-            //ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
         }
     }
 
@@ -201,10 +201,10 @@
                     dirct.WMCanvas = Global.ReadConfig(content);
                     dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
                     dirct.CanvasType = dirct.WMCanvas.CanvasType;
-                    downloadedTemplates.Add(dirct);
+                    GlobalCache.DownloadedTemplates.Add(dirct);
                 }
             }
-            foreach (var tp in downloadedTemplates)
+            foreach (var tp in GlobalCache.DownloadedTemplates)
             {
                 await Global.InitFonts([tp.WMCanvas]);
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
@@ -216,7 +216,7 @@
         }
         catch (Exception ex)
         {
-            //Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
             loading_down = false;
         }
     }
@@ -290,7 +290,7 @@
                 var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
                 if (!auth.success)
                 {
-                    FocusImageShow = false;
+                    parameter.FocusImageShow = false;
                     faildShow = true;
                     failedMessage = auth.message.content;
                     await PublicMethods.ReLogin();
@@ -304,17 +304,17 @@
             if (r)
             {
                 HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-                FocusImageShow = false;
+                parameter.FocusImageShow = false;
                 Common.ShowMsg(PopupService, "下载完成", AlertTypes.Success);
                 var dir = await LoadSingleTemplates(watermarkId);
-                if (!downloadedTemplates.Any()) downloadedTemplates.Add(dir);
-                else if (!downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) downloadedTemplates.Insert(0, dir);
-                else if (downloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
+                if (!GlobalCache.DownloadedTemplates.Any()) GlobalCache.DownloadedTemplates.Add(dir);
+                else if (!GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId)) GlobalCache.DownloadedTemplates.Insert(0, dir);
+                else if (GlobalCache.DownloadedTemplates.Any(x => x.WatermarkId == dir.WatermarkId))
                 {
-                    var idx = downloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
-                    var item = downloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
-                    downloadedTemplates.Remove(item);
-                    downloadedTemplates.Insert(idx, dir);
+                    var idx = GlobalCache.DownloadedTemplates.FindIndex(x => x.WatermarkId == dir.WatermarkId);
+                    var item = GlobalCache.DownloadedTemplates.First(x => x.WatermarkId == dir.WatermarkId);
+                    GlobalCache.DownloadedTemplates.Remove(item);
+                    GlobalCache.DownloadedTemplates.Insert(idx, dir);
                 }
                 await InitVersion([watermarkId]);
                 StateHasChanged();
@@ -322,7 +322,7 @@
         });
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
         {
-            FocusImageShow = false;
+            parameter.FocusImageShow = false;
             //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
             //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
             NavController.Push("/login");
@@ -332,12 +332,12 @@
             //     FocusImageShow = false;
             //     action.Invoke();
             // }
-            // return;
+            return;
         }
         var p = Global.AppPath.TemplatesFolder + watermarkId;
         if (Directory.Exists(p))
         {
-            FocusImageShow = false;
+            parameter.FocusImageShow = false;
             var confirmed = await PopupService.ConfirmAsync("确认覆盖","此模板已存在，确定覆盖？",AlertTypes.Info);
             if (confirmed == true)
             {
@@ -354,11 +354,12 @@
     void OpenFocus(char t, WMZipedTemplate zip, bool b)
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        FocusImage = zip;
-        FocusImageType = t;
-        FocusImageId = zip.WatermarkId;
-        FocusImageSrc = zip.Src;
-        FocusImageShow = b;
+        parameter = new ViewParameter();
+        parameter.FocusImage = zip;
+        parameter.FocusImageType = t;
+        parameter.FocusImageId = zip.WatermarkId;
+        parameter.FocusImageSrc = zip.Src;
+        parameter.FocusImageShow = b;
         StateHasChanged();
     }
 
@@ -457,7 +458,7 @@
     async void GeneratePhoto(WMZipedTemplate template)
     {
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        FocusImageShow = false;
+        parameter.FocusImageShow = false;
         if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
         else await SelectSplitPhoto(template);
     }
@@ -471,7 +472,7 @@
             });
 
         if (result is null) return;
-        FocusImageShow = false;
+        parameter.FocusImageShow = false;
         if (template.CanvasType == CanvasType.Normal)
         {
             loading.Message = "正在生成图片...";
