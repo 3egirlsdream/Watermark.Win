@@ -91,7 +91,7 @@
     <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px">
         <TemplateLargeView DownloadEvent="DownloadTemplate"
                            downloadedTemplates="GlobalCache.DownloadedTemplates"
-            FocusImage="parameter.FocusImage"
+                           FocusImage="parameter.FocusImage"
                            FocusImageId="@parameter.FocusImageId"
                            FocusImageSrc="@parameter.FocusImageSrc"
                            FocusImageType="parameter.FocusImageType"
@@ -101,7 +101,7 @@
                            subscribed="subscribed"
                            SubscribeEvent="Subscribe"
                            ZipedTemplates="ZipedTemplates"
-                           CloseEvent="() => parameter.FocusImageShow = false" />
+                           CloseEvent="Close" />
     </MDialog>
 
     <MOverlay Value="loading.Show">
@@ -162,12 +162,18 @@
             await api.DownloadLogoes();
             await InitVersion(GlobalCache.DownloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
             await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+
+            navigationManager.LocationChanged += (e, q) =>
+            {
+                StateHasChanged();
+            };
         }
         catch (Exception ex)
         {
             Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
         }
     }
+
 
     async Task LoadTemplates()
     {
@@ -459,6 +465,12 @@
         // var helper = new APIHelper();
         // var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
         // await LoadTemplatesMarket();
+    }
+
+    async Task Close()
+    {
+        parameter.FocusImageShow = false;
+        await InvokeAsync(StateHasChanged);
     }
 
     public class FailedBox

@@ -1,0 +1,183 @@
+﻿@using System.Text.RegularExpressions
+@using Masa.Blazor
+@using MudBlazor
+@using Watermark.Shared.Models
+@using Watermark.Win.Models
+@inject ISnackbar Snackbar
+
+<svg t="1715438131969" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5377" width="128" height="128"><path d="M325.931707 364.643902a218.536585 217.287805 90 1 0 434.57561 0 218.536585 217.287805 90 1 0-434.57561 0Z" fill="#E3EFFF" p-id="5378"></path><path d="M754.263415 621.892683c3.746341-6.243902 1.24878-13.736585-4.995122-17.482927-54.946341-31.219512-116.136585-51.2-179.824391-58.692683C659.356098 513.24878 724.292683 428.331707 724.292683 327.180488 724.292683 199.804878 620.643902 96.156098 493.268293 96.156098S263.492683 199.804878 263.492683 327.180488c0 104.897561 69.931707 193.560976 166.087805 222.282927-186.068293 32.468293-337.170732 172.331707-380.878049 362.146341-1.24878 6.243902 2.497561 13.736585 8.741463 14.985366h2.497561c6.243902 0 11.239024-3.746341 12.487805-9.990244 47.453659-206.04878 228.526829-349.658537 439.570732-349.658537 78.673171 0 156.097561 19.980488 223.531707 58.692683 7.492683 3.746341 14.985366 1.24878 18.731708-3.746341zM288.468293 327.180488c0-113.639024 92.409756-206.04878 204.8-206.048781S699.317073 213.541463 699.317073 327.180488s-92.409756 206.04878-204.8 206.04878-206.04878-92.409756-206.04878-206.04878zM962.809756 779.239024h-111.141463v-111.141463c0-7.492683-4.995122-12.487805-12.487805-12.487805s-12.487805 4.995122-12.487805 12.487805v111.141463h-111.141463c-7.492683 0-12.487805 4.995122-12.487805 12.487805s4.995122 12.487805 12.487805 12.487805h111.141463v111.141464c0 7.492683 4.995122 12.487805 12.487805 12.487804s12.487805-4.995122 12.487805-12.487804v-111.141464h111.141463c7.492683 0 12.487805-4.995122 12.487805-12.487805s-6.243902-12.487805-12.487805-12.487805z" fill="#25232E" p-id="5379"></path></svg>
+<MudTextField @bind-Value="UserName" T="string" Label="邮箱账号" Required="true" RequiredError="邮箱账号不能为空" AutoFocus Margin="Margin.Dense" Class="mt-5" />
+@if (FuncType != 1)
+{
+    <MudTextField @bind-Value="DisplayName" T="string" Label="用户名" Required="true" RequiredError="用户名不能为空" Margin="Margin.Dense" />
+}
+@if (FuncType == 2)
+{
+    <MudTextField @bind-Value="OldPassword" T="string" Label="旧密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" Margin="Margin.Dense" />
+}
+<MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" Margin="Margin.Dense" />
+<MudTextField @bind-Value="CheckPassword" T="string" Label="确认密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" Margin="Margin.Dense" />
+
+@if (FuncType != 2)
+{
+    <MudStack Row="true" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
+        <MudTextField @bind-Value="Code" T="string" Label="验证码" Required="true" RequiredError="验证码不能为空" Margin="Margin.Dense" />
+        <MudButton Disabled="@_processing" OnClick="ProcessSomething" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Style="height:30px;" DisableElevation>
+            @if (_processing)
+            {
+                <MudText Typo="Typo.button">@_processingTime</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.button">发送验证码</MudText>
+            }
+        </MudButton>
+    </MudStack>
+}
+<MCheckbox @bind-Value="agreePrivate" Dense>
+    <LabelContent>
+        同意 <a href="http://thankful.top/private">隐私协议</a>
+    </LabelContent>
+</MCheckbox>
+@* <MudCheckBox @bind-Value="agreeUser" T="bool" Size="Size.Small">同意 <a>用户协议</a></MudCheckBox> *@
+<MudButton FullWidth="true" Variant="Variant.Filled" OnClick="LoginOK" DisableElevation Class="mt-5">确定</MudButton>
+
+
+
+@code {
+    /// <summary>
+    /// 0 默认 1 找回密码 2 修改密码
+    /// </summary>
+    [Parameter]
+    public int FuncType { get; set; } = 0;
+    [Parameter]
+    public EventCallback<bool> CloseEvent { get; set; }
+
+    string UserName { get; set; }
+    string Password { get; set; }
+    string OldPassword { get; set; }
+    string CheckPassword { get; set; }
+    string DisplayName { get; set; }
+    string Error { get; set; }
+    string Code { get; set; }
+
+    bool _processing = false;
+    int _processingTime = 0;
+    //bool agreeUser = false;
+    bool agreePrivate = false;
+
+
+
+
+    public async void LoginOK()
+    {
+        APIHelper helper = new APIHelper();
+        var user = new WMSysUser
+            {
+                PK_ID = Global.PrimaryKey,
+                DISPLAY_NAME = DisplayName,
+                USER_NAME = UserName,
+                PASSWORD = Password,
+                Code = Code
+            };
+        Error = "";
+        if (string.IsNullOrEmpty(UserName)) Error = "邮箱账号不能为空";
+        else if (!Regex.IsMatch(UserName, @"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"))
+        {
+            Error = "邮箱格式不正确";
+        }
+        else if (string.IsNullOrEmpty(Password)) Error = "密码不能为空";
+        else if (string.IsNullOrEmpty(DisplayName) && FuncType == 0) Error = "展示名不能为空";
+        else if (Password != CheckPassword) Error = "密码不一致";
+        else if (Password.Length < 9) Error = "密码过短";
+        //else if (!agreeUser) Error = "请勾选用户协议";
+        else if (!agreePrivate) Error = "请勾选隐私协议";
+        if (!string.IsNullOrEmpty(Error))
+        {
+            Common.ShowMsg(Snackbar, Error, Severity.Error);
+            return;
+        };
+        API<WMSysUser> result;
+        if (FuncType == 0) result = await helper.Register(user);
+        else
+        {
+            user.PASSWORD = OldPassword ?? "";
+            result = await helper.UpdateUserInfo(user, Password);
+        }
+
+
+
+        string message = "";
+        Severity severity = Severity.Success;
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+
+        if (result != null && result.success && result.data != null)
+        {
+            Global.CurrentUser = new WMLoginChildModel
+                {
+                    ID = result!.data!.ID!,
+                    IMG = "",
+                    DISPLAY_NAME = result.data!.DISPLAY_NAME,
+                    USER_NAME = result.data.USER_NAME,
+                    EXPIRE_DATE = result.data.EXPIRE_DATE,
+                    COINS = result.data.COINS
+                };
+            message = FuncType == 0 ? "注册并登录成功" : "修改成功";
+            severity = Severity.Success;
+            if (CloseEvent.HasDelegate) await CloseEvent.InvokeAsync(true);
+            StateHasChanged();
+        }
+        else
+        {
+            severity = Severity.Error;
+            message = result?.message?.content ?? "注册失败";
+        }
+
+        Snackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = false;
+        });
+    }
+
+    async void ProcessSomething()
+    {
+        if (string.IsNullOrEmpty(UserName))
+        {
+            Error = "邮箱不能为空";
+            return;
+        }
+
+        if (!Regex.IsMatch(UserName, @"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"))
+        {
+            Error = "邮箱格式不正确";
+            return;
+        }
+
+        var api = new APIHelper();
+        var rs = await api.SendMail(UserName);
+        if (rs == null || !rs.success)
+        {
+            Common.ShowMsg(Snackbar, rs?.message?.content ?? "", Severity.Error);
+            return;
+        }
+        else
+        {
+            Common.ShowMsg(Snackbar, "发送成功", Severity.Success);
+        }
+
+        _processing = true;
+        _processingTime = 60;
+        await Task.Run(() =>
+        {
+            while (_processingTime > 0)
+            {
+                _processingTime -= 1;
+                Thread.Sleep(1000);
+                InvokeAsync(StateHasChanged);
+            }
+            _processing = false;
+        });
+        StateHasChanged();
+    }
+}

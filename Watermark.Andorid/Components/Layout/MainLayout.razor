@@ -15,7 +15,7 @@
             </PPageStack>
         </MErrorHandler>
     </MMain>
-    <MBottomNavigation @bind-Value="value"
+    <MBottomNavigation @bind-Value="Value"
                        App
                        Grow
                        Shift
@@ -36,7 +36,15 @@
 </MApp>
 
 @code {
-
-    private string[] _tabbedPatterns = ["/blazor/examples/page-stack/tab*"];
-    StringNumber value = 0;
+    StringNumber v = 0;
+    StringNumber Value
+    {
+        get => v;
+        set
+        {
+            v = value;
+            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            StateHasChanged();
+        }
+    }
 }

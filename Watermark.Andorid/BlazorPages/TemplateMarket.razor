@@ -102,13 +102,13 @@
                            subscribed="subscribed"
                            ZipedTemplates="ZipedTemplates"
                            DownloadEvent="DownloadTemplate"
-                           CloseEvent="() => parameter.FocusImageShow = false" />
+                           CloseEvent="Close" />
     </MDialog>
 </div>
 
 @code {
     StringNumber tab = "推荐";
-    List<string> tabs = new List<string> { "推荐", "热门", "拼图", "最新" };
+    List<string> tabs = [];
     bool loadMore = true;
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
     List<WMZipedTemplate> ZipedTemplates = new();
@@ -224,8 +224,9 @@
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
 
-        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 6).ToList()));
+        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 12).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+        tabs = subscribed.Select(x => x.Item1).ToList();
     }
 
     async Task<List<string>> IntiSubscribedUserList()
@@ -267,5 +268,11 @@
             , []
             , NavController
             , failedBox);
+    }
+
+    void Close()
+    {
+        parameter.FocusImageShow = false;
+        StateHasChanged();
     }
 }

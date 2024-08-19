@@ -1,21 +1,13 @@
-﻿@using Watermark.Win.Models
+﻿@using Watermark.Razor
+@using Watermark.Win.Models
 @using Watermark.Shared.Models
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 
 <div Style="position:relative;">
     <MImage Style="width: 100vw;max-height:100vh"
             @onclick="CloseEvent"
             Contain
-            Src="@FocusImageSrc"
-            LazySrc="https://picsum.photos/id/11/100/60">
-        <PlaceholderContent>
-            <MRow Class="fill-height ma-0"
-                  Align="@AlignTypes.Center"
-                  Justify="@JustifyTypes.Center">
-                <MProgressCircular Indeterminate></MProgressCircular>
-            </MRow>
-        </PlaceholderContent>
-    </MImage>
+            Src="@FocusImageSrc"/>
     @if (FocusImageType == 'a')
     {
         <Watermark.Razor.Parts.CardTitle t="FocusImage" Tags="[]" style="margin-top:4px" />
@@ -135,11 +127,12 @@
         base.OnInitialized();
     }
 
-    void DownloadTemplate(string watermarId)
+    async void DownloadTemplate(string watermarId)
     {
         if(DownloadEvent.HasDelegate)
         {
-            DownloadEvent.InvokeAsync(watermarId);
+            await DownloadEvent.InvokeAsync(watermarId);
+            if (CloseEvent.HasDelegate) await CloseEvent.InvokeAsync();
         }
     }
 
@@ -180,7 +173,7 @@
                         downloadedTemplates.Remove(t);
                     }
                     InvokeAsync(StateHasChanged);
-                    ClientInstance.ShowMsg(Snackbar, "删除成功", Severity.Success);
+                    Common.ShowMsg(PopupService, "删除成功", AlertTypes.Success);
                 });
 
             }
@@ -195,7 +188,7 @@
                 if (item != null)
                 {
                     ILikeTemplates.Remove(item);
-                    ClientInstance.ShowMsg(Snackbar, "取消收藏成功", Severity.Success);
+                    Common.ShowMsg(PopupService, "取消收藏成功", AlertTypes.Success);
                 }
             }
         }
@@ -209,7 +202,7 @@
                 if (item != null && !ILikeTemplates.Any(x => x.WatermarkId == item.WatermarkId))
                 {
                     ILikeTemplates.Add(item);
-                    ClientInstance.ShowMsg(Snackbar, "收藏成功", Severity.Success);
+                    Common.ShowMsg(PopupService, "收藏成功", AlertTypes.Success);
                 }
             }
         }

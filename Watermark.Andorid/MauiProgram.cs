@@ -25,7 +25,6 @@ namespace Watermark.Andorid
 
             builder.Services.AddFilePicker();
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddMasaBlazor();
             builder.Services.AddMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
@@ -46,12 +45,12 @@ namespace Watermark.Andorid
                     {
                         PopupComponents.SNACKBAR, new Dictionary<string, object?>()
                         {
-                            { nameof(PEnqueuedSnackbars.Closeable), true },
-                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.TopRight }
+                            { nameof(PEnqueuedSnackbars.Closeable), false },
+                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.TopCenter }
                         }
                     }
                 };
-            });
+            }, ServiceLifetime.Scoped);
 #if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
 #endif

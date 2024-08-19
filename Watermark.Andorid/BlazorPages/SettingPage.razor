@@ -21,10 +21,6 @@
         margin-right: 0px;
     }
 
-    .mud-drawer.mud-drawer-temporary {
-        margin-bottom: -56px !important;
-    }
-
 </style>
 <MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
     <MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
@@ -101,7 +97,7 @@ else
         <MudStack Row>
 
             <MButton OnClick="@(() => NavController.Push("/login"))" Text>登录</MButton>
-            <MButton OnClick="OpenSignUpDialog" Text>注册</MButton>
+            <MButton OnClick="@(() => NavController.Push("/signup/0"))" Text>注册</MButton>
         </MudStack>
     </MudPaper>
 }
@@ -189,28 +185,25 @@ else
     }
 </MudPaper>
 
-<MudDrawer Style="@($"{(openVip?"padding:6px 0":"display:none;")}")" @bind-Open="@openVip" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-    @if (openVip)
-    {
+<MBottomSheet @bind-Value="@openVip" ContentStyle="height:60%;">
+    <MSheet Style="height:100%;overflow:auto">
         <VipDialog OnImageTouched="OnImageTouched" />
-    }
-</MudDrawer>
+    </MSheet>
+</MBottomSheet>
 
 
 
-<MudDrawer Style="@($"{(openLogoDialog?"":"display:none;")}")" @bind-Open="@openLogoDialog" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-    @if (openLogoDialog)
-    {
+<MBottomSheet @bind-Value="@openLogoDialog" ContentStyle="height:60%;">
+    <MSheet Style="height:100%;overflow:auto">
         <Watermark.Razor.Components.LogoDialogContent />
-    }
-</MudDrawer>
+    </MSheet>
+</MBottomSheet>
 
-<MudDrawer Style="@($"padding:6px;{(ShowQuestion?"":"display:none;")}")" @bind-Open="@ShowQuestion" Width="100%" Height="60%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Default">
-    @if (ShowQuestion)
-    {
+<MBottomSheet @bind-Value="@ShowQuestion" ContentStyle="height:60%;">
+    <MSheet Style="height:100%;overflow:auto">
         <Watermark.Razor.Components.QuestionDialog />
-    }
-</MudDrawer>
+    </MSheet>
+</MBottomSheet>
 
 <MudOverlay Visible="@showUpdateOverlay" DarkBackground="true" Absolute="true" ZIndex="99999">
     <Watermark.Razor.Components.UpdateDialog CloseEvet="()=>showUpdateOverlay = false" UpdateEvet="Update" DownLoadProgress="DownLoadProgress" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
@@ -258,7 +251,14 @@ else
             }
             else if(v.RelativeUri == @"/appsetting")
             {
-
+                StateHasChanged();
+            }
+            else if (v.RelativeUri == @"/signup")
+            {
+                if (RefreshCollection.HasDelegate)
+                {
+                    RefreshCollection.InvokeAsync();
+                }
             }
             StateHasChanged();
         };

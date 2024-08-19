@@ -21,8 +21,7 @@ namespace Watermark.Razor
 
         public static void ShowMsg(IPopupService PopupService, string message, AlertTypes _alertType)
         {
-            PopupService.Clear();
-            PopupService.EnqueueSnackbarAsync(message, _alertType);
+            var _ = PopupService.EnqueueSnackbarAsync(message, _alertType);
         }
         
     }

@@ -4,6 +4,7 @@
 @using Masa.Blazor
 @using MudBlazor
 @using Icons = MudBlazor.Icons
+@inject APIHelper api 
 @inject IPopupService PopupService
 @inherits PStackPageBase
 
@@ -12,10 +13,21 @@
 
 <MudForm Style="text-align:center">
     <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-        <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;" @onclick="DeleteAccount">
-            <MudText Typo="Typo.button"> 注销账号 </MudText>
-            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-        </MudStack>
+        <MBottomSheet @bind-Value="sheet">
+            <ActivatorContent>
+                <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
+                    <MudText Typo="Typo.button"> 注销账号 </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
+                </MudStack>
+            </ActivatorContent>
+            <ChildContent>
+                <MSheet Class="text-center" Height="200">
+                    <MudTextField @bind-Value="UserName" T="string" Label="邮箱" Required="true" RequiredError="邮箱不能为空" AutoFocus Class="mt-10" />
+                    <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
+                    <MudButton Variant="Variant.Filled" OnClick="DeleteAccount" FullWidth Class="mt-5" DisableElevation>注销</MudButton>
+                </MSheet>
+            </ChildContent>
+        </MBottomSheet>
     </MudPaper>
     <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
         <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
@@ -47,7 +59,7 @@
     string UserName { get; set; }
     string Password { get; set; }
     bool Loading = false;
-
+    bool sheet;
     string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
 
 
@@ -88,8 +100,23 @@
         }
     }
 
-    void DeleteAccount()
+    async void DeleteAccount()
     {
-
+        if (string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password)) return;
+        var confirmed = await PopupService.ConfirmAsync("确认", "删除后不可还原！确认删除？", AlertTypes.Warning);
+        if (confirmed == true)
+        {
+            var result = await api.DeleteAccount(UserName, Password);
+            if (result != null && result.success)
+            {
+                sheet = false;
+                Global.CurrentUser = null;
+                Common.ShowMsg(PopupService, "注销成功。", AlertTypes.Success);
+            }
+            else
+            {
+                Common.ShowMsg(PopupService, result?.message?.content ?? "注销失败，请稍后重试。", AlertTypes.Error);
+            }
+        }
     }
 }

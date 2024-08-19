@@ -8,7 +8,7 @@
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JSRuntime
 <style>
-	.container {
+	.wm-container {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-start;
@@ -43,7 +43,7 @@
 		}
 </style>
 
-<div class="container">
+<div class="wm-container">
 	<div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
 		<MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="ImportLogo" Style="position: absolute;    margin-top: calc(50% - 30px); margin-left: calc(50% - 30px);">
 			<ButtonTemplate>
