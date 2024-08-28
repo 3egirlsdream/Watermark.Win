@@ -1,0 +1,39 @@
+﻿@using MudBlazor
+@using Watermark.Win.Models
+
+<MudCard Elevation="0">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText></MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudForm>
+            <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem Value="@("default")">原图</MudSelectItem>
+                <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
+                <MudSelectItem Value="@("2160")">4K</MudSelectItem>
+            </MudSelect>
+            <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem Value="@(100)">原图</MudSelectItem>
+                <MudSelectItem Value="@(85)">高</MudSelectItem>
+                <MudSelectItem Value="@(70)">中</MudSelectItem>
+            </MudSelect>
+            @* <MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" /> *@
+        </MudForm>
+    </MudCardContent>
+</MudCard>
+
+            
+@code {
+    [Parameter]
+    public EventCallback ExportEvent { get; set; }
+
+    void Export() 
+    {
+        if (ExportEvent.HasDelegate) ExportEvent.InvokeAsync();
+    }
+}

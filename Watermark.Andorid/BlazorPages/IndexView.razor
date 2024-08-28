@@ -99,7 +99,6 @@
                            ILikeTemplates="parameter.ILikeTemplates"
                            OpenCameraEvent="OpenCamera"
                            subscribed="subscribed"
-                           SubscribeEvent="Subscribe"
                            ZipedTemplates="ZipedTemplates"
                            CloseEvent="Close" />
     </MDialog>
@@ -133,7 +132,7 @@
 
 @code {
 
-    bool loading_down = false;
+    bool loading_down = true;
     StringNumber tab = "我的下载";
     List<string> tab1Head = ["我的下载", "我的收藏"];
     List<WMZipedTemplate> ILikeTemplates = new();
@@ -172,13 +171,16 @@
         {
             Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
         }
+        finally
+        {
+            loading_down = false;
+            StateHasChanged();
+        }
     }
 
 
     async Task LoadTemplates()
     {
-        loading_down = true;
-        StateHasChanged();
         var api = new APIHelper();
         if (!Directory.Exists(Global.AppPath.TemplatesFolder))
         {
@@ -210,14 +212,16 @@
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
                 tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
             }
-            loading_down = false;
             HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-            StateHasChanged();
         }
         catch (Exception ex)
         {
             Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
             loading_down = false;
+            StateHasChanged();
         }
     }
 
@@ -457,14 +461,6 @@
             StateHasChanged();
         }
 
-    }
-
-    async void Subscribe(string userId)
-    {
-        // if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        // var helper = new APIHelper();
-        // var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
-        // await LoadTemplatesMarket();
     }
 
     async Task Close()

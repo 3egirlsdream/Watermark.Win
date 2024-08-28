@@ -14,6 +14,7 @@
 @inject NavigationManager navigationManager
 @inject IPopupService PopupService
 @inject IWMWatermarkHelper helper
+@inject APIHelper api
 @inject IJSRuntime JSRuntime
 @inject IFilePickerService picker
 @inherits PStackPageBase
@@ -45,7 +46,7 @@
 
     .mud-grid-spacing-xs-3 {
         /*    width: 100%;
-                margin: 0px; */
+                        margin: 0px; */
     }
 
     input[type=range] {
@@ -624,31 +625,7 @@
 
 <MBottomSheet @bind-Value="@openSave">
     <MSheet>
-        <MudCard Elevation="0">
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText></MudText>
-                </CardHeaderContent>
-                <CardHeaderActions>
-                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
-                </CardHeaderActions>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudForm>
-                    <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
-                        <MudSelectItem Value="@("default")">原图</MudSelectItem>
-                        <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
-                        <MudSelectItem Value="@("2160")">4K</MudSelectItem>
-                    </MudSelect>
-                    <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
-                        <MudSelectItem Value="@(100)">原图</MudSelectItem>
-                        <MudSelectItem Value="@(85)">高</MudSelectItem>
-                        <MudSelectItem Value="@(70)">中</MudSelectItem>
-                    </MudSelect>
-                    @* <MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" /> *@
-                </MudForm>
-            </MudCardContent>
-        </MudCard>
+        <Watermark.Razor.Components.SavePanel ExportEvent="Export"/>
     </MSheet>
 </MBottomSheet>
 
@@ -681,15 +658,15 @@
 @code {
     public WMTemplateList CurrentImage { get; set; }
     [Parameter]
-    public string? path { get; set; }
+    public string path { get; set; }
     [Parameter]
-    public string? names { get; set; }
+    public string names { get; set; }
     [Parameter]
-    public string? templateId { get; set; }
+    public string templateId { get; set; }
 
     public List<WMTemplateList> Images { get; set; }
 
-    string[] loadingMessage = ["", ""];
+    string[] loadingMessage = ["加载中", ""];
     bool loadingShow = false;
     bool SrcLoading = false;
     bool openSave = false;
@@ -717,7 +694,7 @@
     WMContainer? SelectedContainer;
     int ContainerLevel;
     IWMControl? SelectedControl;
-    WMCanvas? CurrentTemplateCanvas;
+    WMCanvas CurrentTemplateCanvas;
     string cardStyle => $"margin:8px 0px;background:{Colors.Grey.Lighten4}";
 
     int selectedIndex = 0;
@@ -737,14 +714,27 @@
 #if ANDROID
     MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
 #endif
-        CurrentTemplateCanvas = Global.GetCanvas(templateId);
-        if (CurrentTemplateCanvas is null) return;
-        await InitImages(names, templateId, path);
-        RadioBase64 = Global.GetRadio();
-        await InitLogoCacheDic();
-        SelectedContainer = CurrentTemplateCanvas.Children.FirstOrDefault();
-        var api = new APIHelper();
-        var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
+        try
+        {
+            var canvas = await Global.GetCanvas(templateId);
+            if (canvas is null) return;
+            CurrentTemplateCanvas = canvas;
+            await InitImages(names, templateId, path);
+            RadioBase64 = Global.GetRadio();
+            await InitLogoCacheDic();
+            SelectedContainer = CurrentTemplateCanvas.Children.FirstOrDefault();
+            var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            loadingShow = false;
+            StateHasChanged();
+        }
+
     }
 
     async Task InitImages(string names, string templateId, string path)
@@ -785,7 +775,7 @@
                 if (c <= fileNames.Count() - 1 && !container.ContainerProperties.FixImage)
                 {
                     container.Path = Path.Combine(path, fileNames.Skip(c++).Take(1).First());
-                    exif[container.ID] = ExifHelper.ReadImage(container.Path);
+                    exif[container.ID] = await ExifHelper.ReadImageAsync(container.Path);
                 }
             }
 
@@ -797,7 +787,6 @@
         }
         var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
         CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        StateHasChanged();
     }
 
 

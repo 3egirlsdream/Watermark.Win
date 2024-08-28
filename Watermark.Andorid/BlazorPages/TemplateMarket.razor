@@ -102,7 +102,8 @@
                            subscribed="subscribed"
                            ZipedTemplates="ZipedTemplates"
                            DownloadEvent="DownloadTemplate"
-                           CloseEvent="Close" />
+                           CloseEvent="Close"
+                           SubscribeEvent="Subscribe"/>
     </MDialog>
 </div>
 
@@ -274,5 +275,13 @@
     {
         parameter.FocusImageShow = false;
         StateHasChanged();
+    }
+
+    async void Subscribe(string userId)
+    {
+        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var helper = new APIHelper();
+        var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
+        await LoadTemplatesMarket();
     }
 }

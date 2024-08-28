@@ -103,3 +103,8 @@ h1:focus {
 ::-webkit-scrollbar {
     display: none;
 }
+
+.scrolling-touch {
+    -webkit-overflow-scrolling: touch; /* Safari */
+    overflow-scrolling: touch;
+}
