@@ -28,6 +28,7 @@ namespace Watermark.Win.Models
             _services.AddMudServices();
             _services.AddWpfBlazorWebView();
             _services.AddBlazorWebViewDeveloperTools();
+            _services.AddMasaBlazor();
 
             return _services!;
         }

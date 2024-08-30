@@ -1,5 +1,5 @@
 ﻿
-.panel-class {
+::deep .panel-class {
     height: calc(100% - 50px);
 }
 
