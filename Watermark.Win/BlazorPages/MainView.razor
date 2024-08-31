@@ -6,17 +6,13 @@
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
-@using Masa.Blazor
-@using Masa.Blazor.Presets
-@using Icons = MudBlazor.Icons
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-
-<div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
+<div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
 	<div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FFF;">
 		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
 			<MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
@@ -116,82 +112,134 @@
 			</MudPopover>
 		</MudToolBar>
 	</div>
-	<MSplitter Style="margin-top: 40px;height: calc(100% - 40px);width:100vw;display: flex;">
-		<ChildContent>
-			<MSplitterPane Style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
-				<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="panel-class" MinimumTabWidth="150px" Style="height: 100%;width:300px" AlwaysShowScrollButtons="false">
-					<MudTabPanel Text="模板" Style="height:100%;">
-						<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
-							<MudList Clickable="true">
-								<MudTreeView T="string" Hover="true">
-									@if (wMTemplates == null || wMTemplates.Count == 0)
-									{
-										<MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
-												   EndIcon="@Icons.Material.Filled.Download"
-												   Color="Color.Primary" OnClick="OpenTemplateMarket">
-											下载模板
-										</MudButton>
-									}
-									else
-									{
-										@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name))
-										{
-											<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
-												<Content>
-													<MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-													<MudText Class="mx-5">@pair.Canvas.Name</MudText>
-												</Content>
-											</MudTreeViewItem>
-										}
-									}
-								</MudTreeView>
-							</MudList>
-						</MudPaper>
-					</MudTabPanel>
-					<MudTabPanel Text="拼图">
-						<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
-							<MudList Clickable="true">
-								<MudTreeView T="string" Hover="true">
-									@if (wMTemplates != null)
-									{
-										@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name))
-										{
-											<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>SelectSplitImages(pair)" Style="cursor:pointer; ">
-												<Content>
-													<MudImage Style="width:100%" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-												</Content>
-											</MudTreeViewItem>
-										}
-									}
-								</MudTreeView>
-							</MudList>
-						</MudPaper>
-					</MudTabPanel>
-				</MudTabs>
-			</MSplitterPane>
-			<MSplitterPane Style="width:calc(100% - 600px);height:100%;">
-				<MSplitter Row>
-					<ChildContent>
-						<MSplitterPane Style="height:calc(100% - 300px);background:lightgrey;">
-							
-						</MSplitterPane>
-						<MSplitterPane Style="height:300px;background:pink;">
-							<MudList Clickable="true">
-								@foreach (var file in Images)
+	<div Style="height:100%;width:100vw;display: flex;">
+
+		<div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
+			<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="panel-class" MinimumTabWidth="150px" Style="margin-top: 40px;height: calc(100% - 40px);" AlwaysShowScrollButtons="false">
+				<MudTabPanel Text="模板" Style="height:100%">
+					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
+						<MudList Clickable="true">
+							<MudTreeView T="string" Hover="true">
+								@if (wMTemplates == null || wMTemplates.Count == 0)
 								{
-									<MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
+									<MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
+											   EndIcon="@Icons.Material.Filled.Download"
+											   Color="Color.Primary" OnClick="OpenTemplateMarket">
+										下载模板
+									</MudButton>
 								}
-							</MudList>
-						</MSplitterPane>
-					</ChildContent>
-				</MSplitter>
-			</MSplitterPane>
+								else
+								{
+									@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name))
+									{
+										<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
+											<Content>
+												<MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
+												<MudText Class="mx-5">@pair.Canvas.Name</MudText>
+											</Content>
+										</MudTreeViewItem>
+									}
+								}
+							</MudTreeView>
+						</MudList>
+					</MudPaper>
+				</MudTabPanel>
+				<MudTabPanel Text="拼图">
+					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
+						<MudList Clickable="true">
+							<MudTreeView T="string" Hover="true">
+								@if (wMTemplates != null)
+								{
+									@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name))
+									{
+										<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>SelectSplitImages(pair)" Style="cursor:pointer; ">
+											<Content>
+												<MudImage Style="width:100%" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
+											</Content>
+										</MudTreeViewItem>
+									}
+								}
+							</MudTreeView>
+						</MudList>
+					</MudPaper>
+				</MudTabPanel>
+			</MudTabs>
 
-			<MSplitterPane Style="width:300px;background:grey;">
+		</div>
+		<div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
+			@if (SrcLoading)
+			{
+				<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;z-index: 1;" />
+			}
+			<div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;position:relative">
+				@if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
+				{
+					<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
+						<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
+						<MudDivider Style="width:30px" />
+						<MudCollapse Expanded="_expanded">
+							<MudStack>
+								<MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 2px 3px 0px;" Elevation="25" @onclick="OpenFullExifInfo">
+									<Watermark.Razor.Parts.IconExif />
+								</MudPaper>
+								<MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
+									<ButtonTemplate>
+										<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Size="Size.Small" />
+									</ButtonTemplate>
+								</MudFileUpload>
+								@if (LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
+								{
+									foreach (var item in dic)
+									{
+										@if (LogoBase64.TryGetValue(item.Key, out string src))
+										{
+											<MudPaper Elevation="25" Style="height:30px;width:30px;">
+												<MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" @onclick="()=>ReplaceLogo(item.Key)" />
+											</MudPaper>
 
-			</MSplitterPane>
-		</ChildContent>
-	</MSplitter>
+										}
+									}
+								}
+								@foreach (var i in CurrentImage!.Canvas.Children)
+								{
+									foreach (var wmt in i.Controls.Where(x => x is WMText).Cast<WMText>())
+									{
+										<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(wmt)">
+											@(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+										</MudPaper>
+									}
+									foreach (var ctn in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
+									{
+										foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
+										{
+											<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
+												@(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+											</MudPaper>
+										}
+									}
+								}
+
+							</MudStack>
+						</MudCollapse>
+					</MudStack>
+					<MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
+
+				}
+				else
+				{
+					<Watermark.Razor.Parts.IconImage />
+				}
+			</div>
+		</div>
+		<div style="width: 200px; height: calc(100% - 30px);  background: #F5F5F5;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
+			<MudList Clickable="true">
+				@foreach (var file in Images)
+				{
+					<MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
+				}
+			</MudList>
+		</div>
+	</div>
 
 	<MudOverlay Visible="WMMainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
 		<MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
@@ -205,10 +253,11 @@
 	</MudOverlay>
 </div>
 
+
 @code {
 	[Inject]
 	private IDialogService DialogService { get; set; }
-	string Url = "";
+
 	bool SrcLoading = false;
 	bool ShowUserInfo = false;
 	bool _expanded = false;
@@ -232,7 +281,7 @@
 			await helper.DownloadLogoes();
 			Global.PrimaryKey = ClientInstance.Key();
 		}
-		catch(Exception ex)
+		catch (Exception ex)
 		{
 			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
@@ -862,5 +911,5 @@
 		var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
 	}
 
-	
+
 }
