@@ -10,7 +10,7 @@
             Src="@FocusImageSrc"/>
     @if (FocusImageType == 'a')
     {
-        <Watermark.Razor.Parts.CardTitle t="FocusImage" Tags="[]" style="margin-top:4px" />
+        <Watermark.Razor.Parts.CardTitle t="FocusImage" Tags="GetTags(FocusImage.Tags)" style="margin-top:4px" />
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top:0px;">
             <div style="display: flex; align-items: center;">
                 <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
@@ -146,9 +146,13 @@
         if (GeneratePhotoEvent.HasDelegate) GeneratePhotoEvent.InvokeAsync(zip);
     }
 
-    void Subscribe(string userId)
+    async Task Subscribe(string userId)
     {
-        if (SubscribeEvent.HasDelegate) SubscribeEvent.InvokeAsync(userId);
+        if (SubscribeEvent.HasDelegate) 
+        {
+            await SubscribeEvent.InvokeAsync(userId);
+            StateHasChanged();
+        }
     }
 
     void Close()
@@ -209,6 +213,11 @@
         Close();
         StateHasChanged();
 
+    }
+
+    public List<BlockTextTag> GetTags(List<string> tags)
+    {
+        return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
     }
 
     public class ViewParameter

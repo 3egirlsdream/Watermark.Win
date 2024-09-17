@@ -12,6 +12,7 @@
 @inject IWMWatermarkHelper helper
 @inject IJSRuntime JSRuntime
 @layout MainLayout
+@inject APIHelper api
 
 <style scoped>
     .row--dense > .col, .row--dense > [class*=col-] {
@@ -67,33 +68,39 @@
             </MTab>
         }
     </MTabs>
-
-    <div style="@($"height: calc(100% - 30px);")">
-        <SwiperTabItems Value="tabs.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tabs[e])">
-            @foreach (var sub in subscribed)
-            {
-                <SwiperTabItem>
-                    <div style="height:100%;overflow:auto" id="@("infinite-scroll-usage" + subscribed.IndexOf(sub))">
-                        <MPullRefresh OnRefresh="OnRefresh" PullingText="刷新中" CanReleaseText="下拉刷新" SuccessText="刷新成功">
-                            <MCard Flat style="padding: 6px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap;">
-                                @RenderProductList(sub.Item2)
-                                @if (sub.Item1 == "最新")
-                                {
-                                    <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
-                                                     OnLoad="@HandleOnLoad">
-                                    </MInfiniteScroll>
-                                }
-                            </MCard>
-                        </MPullRefresh>
-                    </div>
-                </SwiperTabItem>
-            }
-        </SwiperTabItems>
-    </div>
-    <MOverlay Contained Opacity="0" Value="loadMore">
-        <MProgressCircular Indeterminate Color="primary" />
-    </MOverlay>
-    <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA">
+    @if (!loadMore)
+    {
+        <div style="@($"height: calc(100% - 30px);")">
+            <SwiperTabItems Value="tabs.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tabs[e])">
+                @foreach (var sub in subscribed)
+                {
+                    <SwiperTabItem>
+                        <div style="height:100%;overflow:auto" id="@("infinite-scroll-usage" + subscribed.IndexOf(sub))">
+                            <MPullRefresh OnRefresh="OnRefresh" PullingText="刷新中" CanReleaseText="下拉刷新" SuccessText="刷新成功">
+                                <MCard Flat style="padding: 6px !important;height:100%; scrollbar-width: none; display:flex;justify-content:flex-start;flex-wrap: wrap;">
+                                    @RenderProductList(sub.Item2)
+                                    @if (sub.Item1 == "最新")
+                                    {
+                                        <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
+                                                         OnLoad="@HandleOnLoad">
+                                        </MInfiniteScroll>
+                                    }
+                                </MCard>
+                            </MPullRefresh>
+                        </div>
+                    </SwiperTabItem>
+                }
+            </SwiperTabItems>
+        </div>
+    }
+    else
+    {
+        <MOverlay Contained Opacity="0" Value="loadMore">
+            <MProgressCircular Indeterminate Color="primary" Width="2"/>
+        </MOverlay>
+    }
+   
+    <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
         <TemplateLargeView FocusImage="parameter.FocusImage"
                            FocusImageId="@parameter.FocusImageId"
                            FocusImageSrc="@parameter.FocusImageSrc"
@@ -128,7 +135,7 @@
                        <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
                            @if (!string.IsNullOrEmpty(t.Src))
                            {
-                               <MudImage Style="width:100%;height:165px;" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                               <MudImage Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
                            }
                            else
                            {
@@ -136,7 +143,7 @@
                            }
                            <MCardActions Style="padding:0px;">
                                <div style="width:100%;">
-                                   <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="[]"/>
+                                   <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="GetTags(t.Tags)" />
                                    <div class="dfm-card-user-name" style="justify-content: space-between;">
                                        <div style="display:flex;align-items:center;">
                                            @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
@@ -195,15 +202,13 @@
         }
         finally
         {
-            StateHasChanged();
             loadMore = false;
         }
     }
 
     async Task LoadTemplatesMarket()
     {
-        var helper = new APIHelper();
-        var allTemplates = (await helper.GetWatermarks("", 1, 999)).Where(x => x.Visible);
+        var allTemplates = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
         var recommend = allTemplates.Where(x => x.Recommend);
         var hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
         var newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
@@ -233,8 +238,7 @@
     async Task<List<string>> IntiSubscribedUserList()
     {
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return [];
-        var helper = new APIHelper();
-        var result = await helper.GetISubscribed(Global.CurrentUser.ID);
+        var result = await api.GetISubscribed(Global.CurrentUser.ID);
         if (result.success)
         {
             return result.data;
@@ -280,8 +284,12 @@
     async void Subscribe(string userId)
     {
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        var helper = new APIHelper();
-        var r = await helper.SubscribeUser(Global.CurrentUser.ID, userId);
+        var r = await api.SubscribeUser(Global.CurrentUser.ID, userId);
         await LoadTemplatesMarket();
+    }
+
+    public List<BlockTextTag> GetTags(List<string> tags)
+    {
+        return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
     }
 }

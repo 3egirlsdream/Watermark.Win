@@ -307,7 +307,9 @@
 		if (!r) return;
 
 		var parameters = new DialogParameters<UploadTemplateDialog>();
-		parameters.Add(x => x.Name, wMTemplates.FirstOrDefault(c => c.ID == watermarkId)?.Name ?? "");
+		var tp = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
+		parameters.Add(x => x.Name, tp?.Name ?? "");
+		parameters.Add(x => x.Id, tp?.ID ?? "");
 		var dialog = DialogService.Show<UploadTemplateDialog>("", parameters);
 		var result = await dialog.Result;
 		if (!result.Canceled)
@@ -324,7 +326,7 @@
 				loadingMessage = "正在上传...";
 				StateHasChanged();
 				var helper = new APIHelper();
-				var result = await helper.UploadWatermark(watermarkId, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""));
+				var result = await helper.UploadWatermark(watermarkId, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""), Convert.ToString(data.Tags ?? ""));
 				string message = "";
 				Severity severity = Severity.Success;
 
