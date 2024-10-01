@@ -7,11 +7,20 @@
         white-space: nowrap;
         overflow-x: hidden
     }
+
+    .bt-class {
+        text-overflow: ellipsis;
+        overflow: auto;
+    }
+
+        .bt-class span {
+            padding: 0 4px;
+        }
 </style>
 @if(t is not null) 
 {
     <div style="@("display: flex; align-items: flex-start; justify-content: space-between;" + style)">
-        <PBlockText Primary="@t.Name" Secondary="@desc" Tags="@(Tags)" PrimaryStyle="@($"font-size:{(Small ? "12px" : "")}")" PrimaryClass="dfm-card-name" Style="text-overflow: ellipsis;overflow: auto;">
+        <PBlockText Primary="@t.Name" Secondary="@desc" Tags="@(Tags)" PrimaryStyle="@($"font-size:{(Small ? "12px" : "")}")" PrimaryClass="dfm-card-name" Class="bt-class">
         </PBlockText>
         <div style="@($"display: flex; align-items: center;height:{(Small ? "18px" : "21px")}")">
             <MIcon Size="@(Small ? 12 : 14)">mdi-download-box-outline</MIcon>

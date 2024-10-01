@@ -1,0 +1,58 @@
+﻿@using Masa.Blazor
+
+<style>
+    .expand-style2 {
+        margin-top: 0px !important;
+        padding-top: 0px !important;
+    }
+
+    .flex-start2 {
+        display: flex;
+        justify-content: flex-start;
+    }
+</style>
+
+<MCard Flat Color="@Color" Class="@Class">
+    <div style="display:flex;justify-content:space-between; padding:0px 6px;min-height:40px;align-items:center;">
+        <div style="display:flex;align-content:flex-start;align-items:center;">
+            @if (ShowIcon)
+            {
+                <ToggleButton Elevation="0" On="@("mdi-eye-outline")" Off="@("mdi-eye-off-outline")" Open="@Visible" OpenChanged="VisibleChanged" Class="mr-1"/>
+            }
+            <Label Name="@Desc" Small="false" />
+        </div>
+        <ToggleButton On="@("mdi-arrow-down-drop-circle-outline")" Off="@("mdi-arrow-up-drop-circle-outline")" @bind-Open="@Expanded" />
+    </div>
+    @if (Expanded && ChildContent != null)
+    {
+        <MDivider />
+    }
+    <ExpandTransition>
+        <MCard Show=@Expanded Style="width:100%;height:auto" class="@($"mx-auto {(FlexStart ? "flex-start2" : "")}")" Elevation="0" Flat Color="#fff">
+            @ChildContent
+        </MCard>
+    </ExpandTransition>
+</MCard>
+
+
+@code {
+    bool Expanded { get; set; }
+    [Parameter]
+    public bool ShowIcon { get; set; } = true;
+    [Parameter]
+    public string Class { get; set; }
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    [Parameter]
+    public string Desc { get; set; }
+    [Parameter]
+    public string Color { get; set; } = "#F5F5F5";
+
+    [Parameter]
+    public bool FlexStart { get; set; }
+    [Parameter]
+    public bool Visible { get; set; }
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+}

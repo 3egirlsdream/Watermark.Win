@@ -1,915 +1,929 @@
 ﻿@using System.IO
 @using System.Diagnostics
 @using System.Collections.Concurrent
+@using Masa.Blazor
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
+@using Watermark.Razor
+@using Watermark.Razor.Components
+@using Watermark.Razor.Parts
 @using Watermark.Win.BlazorPages
 @using Watermark.Win.Models
 @using Watermark.Win.Views
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
-<MudThemeProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-<div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
-	<div style="height:40px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FFF;">
-		<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-			<MudMenu Label="文件" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem Icon="@Icons.Material.Filled.Image" OnClick="ImportLocalImages">导入图片</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.LogoDev" OnClick="ImportLogoes">图标库</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.ImportExport" OnClick="OpenExport">导出</MudMenuItem>
-				<MudDivider />
-				<MudMenuItem Icon="@Icons.Material.Filled.ExitToApp" OnClick="()=> System.Windows.Application.Current.Shutdown()">退出</MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="模板" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem Icon="@Icons.Material.Filled.TempleHindu" OnClick="OpenMyTemplates">我的模板</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.Create" OnClick="CreateNewTemplate">创建模板</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.Shop" OnClick="OpenTemplateMarket">模板市场</MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="关于" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ClientInstance.OpenSetting">设置</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.Login" OnClick="OpenSignUpDialog">注册账号</MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="交流群" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem> 交流群1：866034817 (已满) </MudMenuItem>
-				<MudMenuItem> 交流群2：836325187 </MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="更多" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem Icon="@Icons.Material.Filled.Web" OnClick="@(()=>OpenLink("http://www.thankful.top"))">网页版</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.Star" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))">点个⭐</MudMenuItem>
-				<MudMenuItem Icon="@Icons.Material.Filled.BugReport" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))">提交反馈</MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="赞助" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem>  <MudImage Src="http://cdn.thankful.top/wx.jpg" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-			</MudMenu>
-			<MudMenu Label="安卓版" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0" ActivationEvent="MouseEvent.MouseOver">
-				<MudMenuItem>  <MudImage Src="https://cdn.thankful.top/andorid.png" ObjectFit="ObjectFit.Contain" Width="200" /></MudMenuItem>
-			</MudMenu>
-			@if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
-			{
-				<MudMenu Label="七牛" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopCenter" Color="Color.Default" Style="left:0">
-					<MudMenuItem OnClick="()=>DialogService.Show<QiniuManagementDialog>(string.Empty)">文件管理</MudMenuItem>
-				</MudMenu>
-			}
-			<MudSpacer />
-			<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-			@if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
-			{
-				<MudText Typo="Typo.overline" Style="margin: 7px 0px 5px 5px;">@Global.CurrentUser.DISPLAY_NAME</MudText>
-			}
 
-			<MudPopover Style="width:300px;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4">
-				@if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.USER_NAME))
-				{
-					<div style="height:50px">
-						@if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
-						{
-							<MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
-						}
-						else
-						{
-							<MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
-						}
-						<MudStack Row Style="align-items: center;">
-							<MudText Typo="Typo.body1" Class="px-4" Color="@(Global.CurrentUser.IsVIP ? Color.Warning : Color.Secondary)" Align="Align.Start" Style="display:flex;align-items:center;">
-								@if (Global.CurrentUser.IsVIP)
-								{
-									<Watermark.Razor.Parts.IconVip />
-								}
-								else
-								{
-									<Watermark.Razor.Parts.IconVipExpired />
-								}
-								@Global.CurrentUser.DISPLAY_NAME
-							</MudText>
-						</MudStack>
-						<MudText Typo="Typo.overline" Class="px-4" Color="Color.Inherit" Style="margin-left: 0px;">@Global.CurrentUser.USER_NAME</MudText>
-					</div>
-					<MudText Typo="Typo.body2" Class="px-4 py-1" Style="clear:both;">🤩🤗🥵</MudText>
+<style>
+    .d-mw300 {
+        min-width: 300px;
+    }
 
-					<div Style="display:flex;align-items:center;line-height: 32px;" Class="px-4 py-1">
-						硬币：
-						<Watermark.Razor.Parts.IconCoin />
-						<MudText Typo="Typo.body2" Color="Color.Inherit" Style="line-height: 32px;">
-							@Global.CurrentUser.COINS
-						</MudText>
-					</div>
+    .m-treeview-node__level {
+        width: 0px;
+    }
 
-					<MudText Typo="Typo.body2" Class="px-4 py-1">@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")</MudText>
-					<MudButton Variant="Variant.Text" Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); }">退出</MudButton>
-				}
-				else
-				{
-					<MudSkeleton />
-					<MudSkeleton SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-					<MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-					<MudStack Row Style="margin-left:120px;" Class="mt-5">
-						<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="OpenLoginDialog">登录</MudButton>
-						<MudButton Variant="Variant.Text" OnClick="OpenSignUpDialog">注册</MudButton>
-					</MudStack>
-				}
-			</MudPopover>
-		</MudToolBar>
-	</div>
-	<div Style="height:100%;width:100vw;display: flex;">
+    .hover {
+    }
 
-		<div style="width: 300px; height: 100%; padding: 0px; background: #F9FAFC;">
-			<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="panel-class" MinimumTabWidth="150px" Style="margin-top: 40px;height: calc(100% - 40px);" AlwaysShowScrollButtons="false">
-				<MudTabPanel Text="模板" Style="height:100%">
-					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
-						<MudList Clickable="true">
-							<MudTreeView T="string" Hover="true">
-								@if (wMTemplates == null || wMTemplates.Count == 0)
-								{
-									<MudButton Variant="Variant.Outlined" Style="margin-left: calc(50% - 65px);margin-top:30%;"
-											   EndIcon="@Icons.Material.Filled.Download"
-											   Color="Color.Primary" OnClick="OpenTemplateMarket">
-										下载模板
-									</MudButton>
-								}
-								else
-								{
-									@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name))
-									{
-										<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>ChangeTemplate(pair)" Style="cursor:pointer; ">
-											<Content>
-												<MudImage Width="40" Height="40" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-												<MudText Class="mx-5">@pair.Canvas.Name</MudText>
-											</Content>
-										</MudTreeViewItem>
-									}
-								}
-							</MudTreeView>
-						</MudList>
-					</MudPaper>
-				</MudTabPanel>
-				<MudTabPanel Text="拼图">
-					<MudPaper Width="300px" Elevation="0" Style="padding: 0px 10px;height: 100%; overflow-y:auto;overflow-x:hidden;">
-						<MudList Clickable="true">
-							<MudTreeView T="string" Hover="true">
-								@if (wMTemplates != null)
-								{
-									@foreach (var pair in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name))
-									{
-										<MudTreeViewItem Value="@pair.Canvas.Name" @onclick="()=>SelectSplitImages(pair)" Style="cursor:pointer; ">
-											<Content>
-												<MudImage Style="width:100%" ObjectFit="ObjectFit.Contain" Src="@pair.Src" />
-											</Content>
-										</MudTreeViewItem>
-									}
-								}
-							</MudTreeView>
-						</MudList>
-					</MudPaper>
-				</MudTabPanel>
-			</MudTabs>
+        .hover:hover {
+            cursor: pointer;
+        }
+</style>
+<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
+    <MErrorHandler>
+        <Masa.Blazor.MCard Color="grey lighten-4" Flat Tile Style="height:100%">
+            <Masa.Blazor.MToolbar Outlined Dense>
+                <Masa.Blazor.MMenu OffsetY>
+                    <ActivatorContent>
+                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>文件</Masa.Blazor.MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <Masa.Blazor.MList>
+                            <Masa.Blazor.MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
+                            <Masa.Blazor.MListItem OnClick="ImportLogoes" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                            <Masa.Blazor.MListItem OnClick="OpenExport" Title="导出" PrependIcon="@ICONS.Export" />
+                            <Masa.Blazor.MDivider />
+                            <Masa.Blazor.MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
+                        </Masa.Blazor.MList>
+                    </ChildContent>
+                </Masa.Blazor.MMenu>
+                <Masa.Blazor.MMenu OffsetY>
+                    <ActivatorContent>
+                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>模板</Masa.Blazor.MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <Masa.Blazor.MList>
+                            <Masa.Blazor.MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
+                            <Masa.Blazor.MListItem OnClick="CreateNewTemplate" Title="创建模板" PrependIcon="@ICONS.Pencil" />
+                            <Masa.Blazor.MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
+                        </Masa.Blazor.MList>
+                    </ChildContent>
+                </Masa.Blazor.MMenu>
+                <Masa.Blazor.MMenu OffsetY>
+                    <ActivatorContent>
+                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>关于</Masa.Blazor.MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <Masa.Blazor.MList>
+                            <Masa.Blazor.MListItem OnClick="ClientInstance.OpenSetting" Title="设置" PrependIcon="@ICONS.Setting" />
+                            <Masa.Blazor.MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
+                        </Masa.Blazor.MList>
+                    </ChildContent>
+                </Masa.Blazor.MMenu>
+                <Masa.Blazor.MMenu OffsetY>
+                    <ActivatorContent>
+                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>交流群</Masa.Blazor.MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <Masa.Blazor.MList>
+                            <Masa.Blazor.MListItem Title="交流群1：866034817 (已满)" PrependIcon="@ICONS.QQ" />
+                            <Masa.Blazor.MListItem Title="交流群2：836325187" PrependIcon="@ICONS.QQ" />
+                        </Masa.Blazor.MList>
+                    </ChildContent>
+                </Masa.Blazor.MMenu>
+                <Masa.Blazor.MMenu OffsetY>
+                    <ActivatorContent>
+                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>更多</Masa.Blazor.MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <Masa.Blazor.MList>
+                            <Masa.Blazor.MListItem Title="网页版" OnClick="@(()=>OpenLink("http://www.thankful.top"))" PrependIcon="@ICONS.Web" />
+                            <Masa.Blazor.MListItem Title="点个赞" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))" PrependIcon="@ICONS.Star" />
+                            <Masa.Blazor.MListItem Title="提交反馈" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))" PrependIcon="@ICONS.Feedback" />
+                            <Masa.Blazor.MListItem Title="赞助" OnClick="@(()=>OpenCommonDialog("http://cdn.thankful.top/wx.jpg"))" PrependIcon="@ICONS.Wechat" />
+                            <Masa.Blazor.MListItem Title="安卓版" OnClick="@(()=>OpenCommonDialog("https://cdn.thankful.top/andorid.png"))" PrependIcon="@ICONS.Android" />
+                        </Masa.Blazor.MList>
+                    </ChildContent>
+                </Masa.Blazor.MMenu>
+                @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
+                {
+                    <Masa.Blazor.MMenu OffsetY>
+                        <ActivatorContent>
+                            <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>七牛</Masa.Blazor.MButton>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <Masa.Blazor.MList>
+                                <Masa.Blazor.MListItem Title="文件管理" OnClick="()=>DialogService.Show<QiniuManagementDialog>(string.Empty)" />
+                            </Masa.Blazor.MList>
+                        </ChildContent>
+                    </Masa.Blazor.MMenu>
+                }
+                <MSpacer />
+                <MMenu OffsetX CloseOnContentClick="false">
+                    <ActivatorContent>
+                        <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center">
+                            <MIcon Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo">@ICONS.Account</MIcon>
+                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
+                            {
+                                <Label Name="@Global.CurrentUser.DISPLAY_NAME" Class="ml-1" />
+                            }
+                        </div>
+                    </ActivatorContent>
 
-		</div>
-		<div style="width:calc(100% - 500px);height:100%;position:fixed;margin-left:300px;">
-			@if (SrcLoading)
-			{
-				<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="position:absolute;top:50px;right:10px;z-index: 1;" />
-			}
-			<div style="background: #F5F5F5; width: 100%; height: 100%; text-align: center;position:relative">
-				@if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
-				{
-					<MudStack Spacing="2" Style="position:absolute;top:60px;left:20px;">
-						<MudIconButton Icon="@Icons.Material.Filled.AutoAwesomeMotion" Style="width:30px" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" OnClick="()=>_expanded = !_expanded" />
-						<MudDivider Style="width:30px" />
-						<MudCollapse Expanded="_expanded">
-							<MudStack>
-								<MudPaper Style="width:30px;height:30px;cursor:pointer;padding:3px 2px 3px 0px;" Elevation="25" @onclick="OpenFullExifInfo">
-									<Watermark.Razor.Parts.IconExif />
-								</MudPaper>
-								<MudFileUpload T="IBrowserFile" FilesChanged="SelectSourceImageExif" Accept=".ARW, .jpg" Style="width:30px">
-									<ButtonTemplate>
-										<MudIconButton HtmlTag="label" for="@context.Id" Icon="@Icons.Material.Filled.FindReplace" Color="Color.Info" Variant="Variant.Filled" Size="Size.Small" />
-									</ButtonTemplate>
-								</MudFileUpload>
-								@if (LogoCacheDic.TryGetValue(CurrentImage?.ID ?? "", out Dictionary<string, string> dic))
-								{
-									foreach (var item in dic)
-									{
-										@if (LogoBase64.TryGetValue(item.Key, out string src))
-										{
-											<MudPaper Elevation="25" Style="height:30px;width:30px;">
-												<MudImage Style="height:100%;width:100%;cursor:pointer;" ObjectFit="ObjectFit.Contain" Src="@src" @onclick="()=>ReplaceLogo(item.Key)" />
-											</MudPaper>
+                    <ChildContent>
+                        <MCard>
+                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+                            {
+                                <MList>
+                                    <MListItem>
+                                        <MListItemAvatar>
+                                            @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
+                                            {
+                                                <MImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" Contain />
+                                            }
+                                            else
+                                            {
+                                                <img src="https://cdn.masastack.com/stack/images/website/masa-blazor/jack.png" alt="MASA">
+                                            }
+                                        </MListItemAvatar>
 
-										}
-									}
-								}
-								@foreach (var i in CurrentImage!.Canvas.Children)
-								{
-									foreach (var wmt in i.Controls.Where(x => x is WMText).Cast<WMText>())
-									{
-										<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(wmt)">
-											@(string.Join(" ", wmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
-										</MudPaper>
-									}
-									foreach (var ctn in i.Controls.Where(x => x is WMContainer).Cast<WMContainer>())
-									{
-										foreach (var cwmt in ctn.Controls.Where(z => z is WMText).Cast<WMText>())
-										{
-											<MudPaper Elevation="25" Class="expandable" @onclick="()=>OpenExifDialog(cwmt)">
-												@(string.Join(" ", cwmt.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
-											</MudPaper>
-										}
-									}
-								}
+                                        <MListItemContent>
+                                            <MListItemTitle>@Global.CurrentUser.DISPLAY_NAME</MListItemTitle>
+                                            <MListItemSubtitle>@Global.CurrentUser.USER_NAME</MListItemSubtitle>
+                                        </MListItemContent>
 
-							</MudStack>
-						</MudCollapse>
-					</MudStack>
-					<MudImage ObjectFit="@ObjectFit.Contain" Src="@CurrentImage.Src" Elevation="0" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;margin-top:100px;" />
+                                        <MListItemAction>
+                                            @if (Global.CurrentUser.IsVIP)
+                                            {
+                                                <Watermark.Razor.Parts.IconVip />
+                                            }
+                                            else
+                                            {
+                                                <Watermark.Razor.Parts.IconVipExpired />
+                                            }
+                                        </MListItemAction>
+                                    </MListItem>
+                                </MList>
+                                <MDivider />
 
-				}
-				else
-				{
-					<Watermark.Razor.Parts.IconImage />
-				}
-			</div>
-		</div>
-		<div style="width: 200px; height: calc(100% - 30px);  background: #F5F5F5;  position: absolute; right: 0; margin-top: 30px;overflow-y:auto;overflow-x:hidden">
-			<MudList Clickable="true">
-				@foreach (var file in Images)
-				{
-					<MudImage Elevation="2" Src="@file.Src" Width="190" ObjectFit="ObjectFit.Contain" Class="mt-2" Style="cursor: pointer; margin: 0 5px" @onclick="(()=>ClickImage(file))" />
-				}
-			</MudList>
-		</div>
-	</div>
+                                <Label Class="px-4 my-1" Name="🤩🤗🥵" Small="false"></Label>
 
-	<MudOverlay Visible="WMMainLoading.Show" DarkBackground="true" Absolute="true" ZIndex="99999">
-		<MudPaper Style="width:520px;padding:10px 40px 10px 40px;">
-			<MudStack>
-				<MudProgressLinear Color="Color.Primary" Value="@WMMainLoading.Value" Class="mt-7" />
-				<MudText Typo="Typo.subtitle1" Color="Color.Dark" Style="margin:auto">
-					<b>@WMMainLoading.Message</b>
-				</MudText>
-			</MudStack>
-		</MudPaper>
-	</MudOverlay>
-</div>
+                                <div style="display:flex;align-items:center;" class="px-4 py-1">
+                                    <Label Name="硬币：" Small="false" />
+                                    <Watermark.Razor.Parts.IconCoin />
+                                    <Label Name="@Global.CurrentUser.COINS.ToString()" Small="false" />
+                                </div>
+
+                                <Label Class="px-4 py-1" Name="@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")" />
+                                <MCardActions>
+                                    <MSpacer></MSpacer>
+                                    <MButton Plain Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); }">退出</MButton>
+                                </MCardActions>
+                            }
+                            else
+                            {
+                                <MSkeletonLoader Class="mx-auto"
+                                                 MaxWidth="300"
+                                                 Type="article">
+                                </MSkeletonLoader>
+                                <MCardActions>
+                                    <MSpacer />
+                                    <MButton Plain Color="Color.Primary" OnClick="() => showLogin = true">登录</MButton>
+                                    <MButton Plain OnClick="() => showSignUp = true">注册</MButton>
+                                </MCardActions>
+                            }
+
+                        </MCard>
+                    </ChildContent>
+                </MMenu>
+            </Masa.Blazor.MToolbar>
+            <div style="height:calc(100% - 48px);width:100%;display:flex;justify-content:flex-start">
+                <div style="width:300px;height:100%;overflow-y:hidden;">
+                    <MTabs @bind-Value="tab" FixedTabs Height="30">
+                        <MTab Value="@("模板")">
+                            模板
+                        </MTab>
+                        <MTab Value="@("拼图")">
+                            拼图
+                        </MTab>
+                    </MTabs>
+                    <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow:auto">
+                        <MTabItem Value="@("模板")">
+                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
+                                       Activatable
+                                       ItemKey="u => u.ID"
+                                       ItemText="u => null"
+                                       ItemChildren="u => []"
+                                       OpenOnClick>
+                                <PrependContent>
+                                    @if (context.Item != null)
+                                    {
+                                        <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:space-between">
+                                            <MImage Width="40" Height="40" Contain Src="@context.Item.Src" />
+                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" />
+                                        </div>
+
+                                    }
+                                </PrependContent>
+                            </MTreeview>
+                        </MTabItem>
+                        <MTabItem Value="@("拼图")">
+                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name).ToList()"
+                                       Activatable
+                                       ItemKey="u => u.ID"
+                                       ItemText="u => null"
+                                       ItemChildren="u => []"
+                                       OpenOnClick>
+                                <PrependContent>
+                                    @if (context.Item != null)
+                                    {
+                                        <div @onclick="() => SelectSplitImages(context.Item)">
+                                            <MImage Style="width:300px;padding:4px 0" Contain Src="@context.Item.Src" />
+                                        </div>
+                                    }
+                                </PrependContent>
+                            </MTreeview>
+                        </MTabItem>
+                    </MTabsItems>
+                </div>
+                <div style="height:100%;width:calc(100% - 600px)">
+                    <MSplitter Row Style="height: 100%" BarSize="4">
+                        <ChildContent>
+                            <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center" Size="70" Style="position:relative">
+                                @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
+                                {
+                                    <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
+                                    @if(SrcLoading)
+                                    {
+                                        <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
+                                    }
+                                    
+                                }
+                                else
+                                {
+                                    <Watermark.Razor.Parts.IconImage />
+                                }
+                            </MSplitterPane>
+                            <MSplitterPane Style="min-height:100px;" Size="30">
+                                <div style="display:flex;justify-content:flex-start;height:100%;overflow-y:auto;flex-wrap:wrap;">
+                                    @foreach (var file in Images)
+                                    {
+                                        <MCard Elevation="0" Height="190" Width="190" Class="ma-1 hover pa-1">
+                                            <MImage Src="@file.Src" Width="@("100%")" Height="@("100%")" Contain Style="cursor: pointer;" @onclick="(()=>ClickImage(file))" />
+                                        </MCard>
+                                    }
+                                </div>
+                            </MSplitterPane>
+                        </ChildContent>
+                        <BarContent>
+                            <MIcon Small>mdi-drag-horizontal</MIcon>
+                        </BarContent>
+                    </MSplitter>
+                </div>
+                @if (CurrentImage != null && CurrentImage.Canvas != null)
+                {
+                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" />
+                }
+
+            </div>
+        </Masa.Blazor.MCard>
+
+        <MOverlay Dark="false" @bind-Value="WMMainLoading.Show" Absolute="true" ZIndex="99999">
+            <MCard Style="width:520px;height:80px; padding:25px 40px 10px 40px;display:flex;align-items:center;justify-content:center;flex-direction:column">
+                <MProgressLinear Value="@WMMainLoading.Value" Rounded Striped Height="10" Color="light-blue" Class="my-1" />
+                <Watermark.Razor.Parts.Label Name="@WMMainLoading.Message" Small="false" />
+            </MCard>
+        </MOverlay>
+        @if (openMyTemplate)
+        {
+            <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" />
+        }
+
+        <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+            <TemplatesMarket ClipboardAction="ClipboardAction" />
+        </MDialog>
+
+        <MDialog @bind-Value="@CommonDialog.Show" Width="300">
+            <MImage Height="300" Width="300" Contain Src="@CommonDialog.Message" />
+        </MDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
+            <LoginContent CloseEvent="() => showLogin = false" />
+        </MDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showSignUp">
+            <SignUpContent CloseEvent="() => showSignUp = false" />
+        </MDialog>
+    </MErrorHandler>
+</MApp>
 
 
 @code {
-	[Inject]
-	private IDialogService DialogService { get; set; }
+    [Inject]
+    private IDialogService DialogService { get; set; }
 
-	bool SrcLoading = false;
-	bool ShowUserInfo = false;
-	bool _expanded = false;
-	List<WMTemplateList> wMTemplates;
-	WMTemplateList CurrentTemplate;
-	WMTemplateList CurrentImage;
-	Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
-	ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
-	List<string> LogoStore = new List<string>();
-	List<WMTemplateList> Images = new List<WMTemplateList>();
+    WMainLoading CommonDialog = new();
+    StringNumber tab;
+    bool openMarket = false;
+    bool openMyTemplate = false;
+    bool SrcLoading = false;
+    bool ShowUserInfo = false;
+    bool _expanded = false;
+    bool showLogin = false;
+    bool showSignUp = false;
+    List<WMTemplateList> wMTemplates = [];
+    WMTemplateList CurrentTemplate;
+    WMTemplateList CurrentImage;
+    Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
+    ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
+    List<string> LogoStore = new List<string>();
+    List<WMTemplateList> Images = new List<WMTemplateList>();
 
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			APIHelper helper = new APIHelper();
-			await Global.InitConfig();
-			await InitTemplates();
-			await InitLogoStore();
-			await Global.Login();
-			await helper.DownloadLogoes();
-			Global.PrimaryKey = ClientInstance.Key();
-		}
-		catch (Exception ex)
-		{
-			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-		}
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            APIHelper helper = new APIHelper();
+            await Global.InitConfig();
+            await InitTemplates();
+            await InitLogoStore();
+            await Global.Login();
+            await helper.DownloadLogoes();
+            Global.PrimaryKey = ClientInstance.Key();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
 
-	public async void OpenMyTemplates()
-	{
-		Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
-		{
-			OpenDesignAction(x);
-		});
-		var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
-		parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
-		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
-		var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
-		var dialog = await rst.Result;
-		await InitTemplates();
+    public async void OpenMyTemplates()
+    {
+        Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
+        {
+            OpenDesignAction(x);
+        });
+        var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
+        parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
+        var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
+        var dialog = await rst.Result;
+        await InitTemplates();
 
-	}
-
-
-	public void OpenDesignAction(WMCanvas x)
-	{
-		var action = new Action(() =>
-		{
-			var win = new Watermark.Win.Views.DesignWin(x, "");
-			win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
-			win.ShowDialog();
-		});
-		OpenWinHelper.Open(action);
-	}
+    }
 
 
-	void ImportLocalImages()
-	{
-		var action = new Action(async () =>
-		{
-			// 实例化一个文件选择对象
-			Microsoft.Win32.OpenFileDialog dialog = new()
-				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = true,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-			// 打开选择框选择
-			Nullable<bool> result = dialog.ShowDialog();
-			if (result == true)
-			{
-				WMMainLoading.Show = true;
-				Images = new List<WMTemplateList>();
-				WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
-				WMMainLoading.Value = 0;
-				StateHasChanged();
-				if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-				{
-					Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-				}
-				foreach (var file in dialog.FileNames)
-				{
-					WMCanvas canvas = new WMCanvas();
-					canvas.Path = file;
-					canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
-					await Task.Run(() =>
-					{
-						var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
-						Global.WriteThumbnailImage(file, thumbnail);
-					});
-					var b64 = await Global.GetBase64(file);
-					Images.Add(new WMTemplateList
-						{
-							Canvas = canvas,
-							Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
-							ID = canvas.ID,
-							Path = file
-						});
-					var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
-					WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
-					WMMainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
-					StateHasChanged();
-				}
+    public void OpenDesignAction(WMCanvas x)
+    {
+        var action = new Action(() =>
+        {
+            var win = new Watermark.Win.Views.DesignWin(x, "");
+            win.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+            win.ShowDialog();
+        });
+        OpenWinHelper.Open(action);
+    }
 
 
-				WMMainLoading.Message = $"导入完成";
-				WMMainLoading.Value = 100;
-				await Task.Delay(200);
-				WMMainLoading.Show = false;
-				StateHasChanged();
-			}
-		});
-		OpenWinHelper.Open(action);
-	}
-
-	async void ClickImage(WMTemplateList image)
-	{
-		CurrentImage = image;
-		SrcLoading = true;
-		CurrentImage.Canvas.Path = CurrentImage.Path;
-		var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		CurrentImage.Src = src;
-		SrcLoading = false;
-		StateHasChanged();
-	}
-
-	async void RefreshImage()
-	{
-		SrcLoading = true;
-		CurrentImage.Canvas.Path = CurrentImage.Path;
-		var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		CurrentImage.Src = src;
-		SrcLoading = false;
-		StateHasChanged();
-	}
-
-
-	async Task InitTemplates()
-	{
-		WMMainLoading.Show = true;
-		if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
-		{
-			System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-		}
-		try
-		{
-			System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
-			if (wMTemplates != null && wMTemplates.Count > 0)
-			{
-				foreach (var w in wMTemplates)
-					await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
-			}
-			wMTemplates = new List<WMTemplateList>();
-			var directories = directoryInfo.GetDirectories();
-			WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
-			WMMainLoading.Value = 0;
-			int cot = 1;
-			foreach (var dirct in directories)
-			{
-				try
-				{
-					var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-					if (System.IO.File.Exists(configPath))
-					{
-						var content = File.ReadAllText(configPath);
-						var canvas = Global.ReadConfig(content);
-						canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
-						await InitFonts([canvas]);
-						var b64 = await helper.GenerationAsync(canvas, null, true);
-						var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-						var wh = new WMTemplateList
-							{
-								ID = canvas.ID,
-								Canvas = canvas,
-								Src = src
-							};
-						wMTemplates.Add(wh);
-						var idx = directories.ToList().IndexOf(dirct) + 1;
-						WMMainLoading.Value = cot * 100.0 / directories.Length;
-						WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
-						StateHasChanged();
-
-					}
-				}
-				catch (Exception ex)
-				{
-					ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-				}
-			}
-			WMMainLoading.Message = $"处理完成...";
-			WMMainLoading.Value = 100;
-			await Task.Delay(200);
-			WMMainLoading.Show = false;
-			StateHasChanged();
-		}
-		catch (Exception ex)
-		{
-			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
-			WMMainLoading.Show = false;
-			StateHasChanged();
-		}
-		finally
-		{
-			GC.Collect();
-		}
-	}
-
-	async void ChangeTemplate(WMTemplateList template)
-	{
-		CurrentTemplate = template;
-		if (CurrentImage == null) return;
-		SrcLoading = true;
-		var b64 = await Task.Run(() =>
-		{
-			var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
-			cvs.Exif = CurrentImage.Canvas.Exif;
-			CurrentImage.Canvas = cvs;
-			cvs.Path = CurrentImage.Path;
-			return helper.Generation(cvs, null, true);
-		});
-
-		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		CurrentImage.Src = src;
-		await InitLogoCacheDic(CurrentImage.ID, template);
-		SrcLoading = false;
-		EnableAll();
-		StateHasChanged();
-	}
-
-	async void OpenLoginDialog()
-	{
-		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
-		var param = new DialogParameters<Watermark.Razor.Components.LoginDialog>();
-		param.Add(x => x.ShowHeader, false);
-		var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", param, topCenter);
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-		{
-			StateHasChanged();
-		}
-	}
-
-	async void OpenSignUpDialog()
-	{
-		DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
-		var param = new DialogParameters<Watermark.Razor.Components.SignUpDialog>();
-		param.Add(x => x.ShowHeader, false);
-		var rst = DialogService.Show<Watermark.Razor.Components.SignUpDialog>("", param, topCenter);
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-		{
-			StateHasChanged();
-		}
-	}
-
-	async void Export(List<WMTemplateList> images)
-	{
-		WMMainLoading.Show = true;
-		WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
-		WMMainLoading.Value = 0;
-		StateHasChanged();
-		var idx = 1;
-		var option = new ParallelOptions();
-		option.MaxDegreeOfParallelism = Global.MAX_THREAD;
-		await Task.Run(() =>
-		{
-			Parallel.ForEach(images, option, (item) =>
-			{
-				helper.Generation(item.Canvas, null, false);
-				WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
-				WMMainLoading.Value = idx++ * 100.0 / images.Count;
-				InvokeAsync(StateHasChanged);
-			});
-		});
-
-		WMMainLoading.Value = 100;
-		WMMainLoading.Show = false;
-		StateHasChanged();
-
-		Snackbar.Clear();
-		Snackbar.Add("打开输出文件夹？", Severity.Info, config =>
-		{
-			config.Action = "好的";
-			config.ActionColor = Color.Primary;
-			config.Onclick = snackbar =>
-			{
-				return OpenFolder();
-			};
-		});
-
-		GC.Collect();
-	}
-
-	async Task OpenFolder()
-	{
-		var path = Global.OutPutPath;
-		var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
-		System.Diagnostics.Process.Start(psi);
-		await Task.CompletedTask;
-	}
+    void ImportLocalImages()
+    {
+        var action = new Action(async () =>
+        {
+            // 实例化一个文件选择对象
+            Microsoft.Win32.OpenFileDialog dialog = new()
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = true,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+            if (result == true)
+            {
+                WMMainLoading.Show = true;
+                Images = new List<WMTemplateList>();
+                WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
+                WMMainLoading.Value = 0;
+                StateHasChanged();
+                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+                {
+                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                }
+                foreach (var file in dialog.FileNames)
+                {
+                    WMCanvas canvas = new WMCanvas();
+                    canvas.Path = file;
+                    canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
+                    await Task.Run(() =>
+                    {
+                        var thumbnail = Global.AppPath.ThumbnailFolder + file.Substring(file.LastIndexOf('\\') + 1);
+                        Global.WriteThumbnailImage(file, thumbnail);
+                    });
+                    var b64 = await Global.GetBase64(file);
+                    Images.Add(new WMTemplateList
+                        {
+                            Canvas = canvas,
+                            Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
+                            ID = canvas.ID,
+                            Path = file
+                        });
+                    var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
+                    WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
+                    WMMainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
+                    StateHasChanged();
+                }
 
 
-	async void OpenTemplateMarket()
-	{
-		Func<string, Task> func = new((x) =>
-		{
-			System.Windows.Clipboard.SetText(x);
-			return Task.CompletedTask;
-		});
+                WMMainLoading.Message = $"导入完成";
+                WMMainLoading.Value = 100;
+                await Task.Delay(200);
+                WMMainLoading.Show = false;
+                StateHasChanged();
+            }
+        });
+        OpenWinHelper.Open(action);
+    }
 
-		var p = new DialogParameters<Watermark.Razor.Components.TemplatesMarket>();
-		p.Add(x => x.ClipboardAction, func);
-		var dialog = DialogService.Show<Watermark.Razor.Components.TemplatesMarket>(string.Empty, p, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-		var result = await dialog.Result;
-		await InitTemplates();
-	}
+    async void ClickImage(WMTemplateList image)
+    {
+        CurrentImage = image;
+        SrcLoading = true;
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
 
-	async Task InitLogoCacheDic(string imgId, WMTemplateList template)
-	{
-		var logoes = new List<WMLogo>();
-		foreach (var c1 in template.Canvas.Children)
-		{
-			foreach (var cc1 in c1.Controls)
-			{
-				if (cc1 is WMLogo logo) logoes.Add(logo);
-				else if (cc1 is WMContainer wc)
-				{
-					foreach (var wcc in wc.Controls)
-					{
-						if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
-					}
-				}
-			}
-		}
-
-		var dic = new Dictionary<string, string>();
-		var db64 = new ConcurrentDictionary<string, byte[]>();
-		foreach (var logo in logoes)
-		{
-			dic[logo.ID] = logo.Path;
-			var target = logo.Path;
-			if (!File.Exists(target))
-			{
-				target = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
-			}
-			if (File.Exists(target))
-			{
-				Global.ImageFile2Base64(db64, target, logo.ID);
-			}
-		}
-		foreach (var e in db64)
-		{
-			LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-		}
-		LogoCacheDic[imgId] = dic;
-
-	}
-
-	async Task InitLogoStore()
-	{
-		LogoStore = new List<string>();
-		var db64 = new ConcurrentDictionary<string, byte[]>();
-		if (Directory.Exists(Global.AppPath.LogoesFolder))
-		{
-			var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
-			var tasks = new List<Task>();
-			foreach (var file in files.GetFiles())
-			{
-				var t = Task.Run(() =>
-				{
-					LogoStore.Add(file.FullName);
-					Global.ImageFile2Base64(db64, file.FullName, file.FullName);
-				});
-				tasks.Add(t);
-			}
-
-			foreach (var e in db64)
-			{
-				LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-			}
-			await Task.WhenAll(tasks.ToArray());
-		}
-	}
-
-	async void ChangeLogo(string sourceId, string logoPath)
-	{
-		SrcLoading = true;
-		StateHasChanged();
-		foreach (var c1 in CurrentImage.Canvas.Children)
-		{
-			foreach (var cc1 in c1.Controls)
-			{
-				if (cc1 is WMLogo logo && logo.ID == sourceId)
-				{
-					logo.AutoSetLogo = false;
-					logo.Path = logoPath;
-					break;
-				}
-				else if (cc1 is WMContainer wc)
-				{
-					foreach (var wcc in wc.Controls)
-					{
-						if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
-						{
-							wcLogo.AutoSetLogo = false;
-							wcLogo.Path = logoPath;
-							break;
-						}
-					}
-				}
-			}
-		}
-		var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-		var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		CurrentImage.Src = src;
-		SrcLoading = false;
-		StateHasChanged();
-	}
-
-	async void ImportLogoes()
-	{
-		var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-		var result = await dialog.Result;
-		if (!result.Canceled)
-		{
-			await InitLogoStore();
-		}
-	}
-
-	async void ReplaceLogo(string sourceId)
-	{
-		var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-		var result = await dialog.Result;
-		if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
-		{
-			var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
-			ChangeLogo(sourceId, p);
-		}
-	}
+    async void RefreshImage()
+    {
+        SrcLoading = true;
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
 
 
-	void EnableAll()
-	{
-		Snackbar.Clear();
-		Snackbar.Add("当前模板应用全部？", Severity.Info, config =>
-		{
-			config.Action = "应用";
-			config.ActionColor = Color.Primary;
-			config.Onclick = snackbar =>
-			{
-				return Help();
-			};
-		});
-	}
+    async Task InitTemplates()
+    {
+        WMMainLoading.Show = true;
+        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
+        {
+            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+        }
+        try
+        {
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
+            if (wMTemplates != null && wMTemplates.Count > 0)
+            {
+                foreach (var w in wMTemplates)
+                    await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
+            }
+            wMTemplates = new List<WMTemplateList>();
+            var directories = directoryInfo.GetDirectories();
+            WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
+            WMMainLoading.Value = 0;
+            int cot = 1;
+            foreach (var dirct in directories)
+            {
+                try
+                {
+                    var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+                    if (System.IO.File.Exists(configPath))
+                    {
+                        var content = File.ReadAllText(configPath);
+                        var canvas = Global.ReadConfig(content);
+                        canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
+                        await InitFonts([canvas]);
+                        var b64 = await helper.GenerationAsync(canvas, null, true);
+                        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                        var wh = new WMTemplateList
+                            {
+                                ID = canvas.ID,
+                                Canvas = canvas,
+                                Src = src
+                            };
+                        wMTemplates.Add(wh);
+                        var idx = directories.ToList().IndexOf(dirct) + 1;
+                        WMMainLoading.Value = cot * 100.0 / directories.Length;
+                        WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
+                        StateHasChanged();
 
-	public async Task Help()
-	{
-		WMMainLoading.Show = true;
-		StateHasChanged();
-		int idx = 1;
-		foreach (var img in Images)
-		{
-			WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
-			WMMainLoading.Value = idx++ * 100.0 / Images.Count;
-			StateHasChanged();
-			var b64 = await Task.Run(() =>
-			{
-				var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.Canvas));
-				cvs.Exif = img.Canvas.Exif;
-				img.Canvas = cvs;
-				cvs.Path = img.Path;
-				return helper.Generation(cvs, null, true);
-			});
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+                }
+            }
+            WMMainLoading.Message = $"处理完成...";
+            WMMainLoading.Value = 100;
+            await Task.Delay(200);
+            WMMainLoading.Show = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            WMMainLoading.Show = false;
+            StateHasChanged();
+        }
+        finally
+        {
+            GC.Collect();
+        }
+    }
 
-			var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-			img.Src = src;
-			await InitLogoCacheDic(img.ID, CurrentTemplate);
-		}
-		WMMainLoading.Value = 100;
-		WMMainLoading.Show = false;
-		StateHasChanged();
-	}
+    async void ChangeTemplate(WMTemplateList template)
+    {
+        CurrentTemplate = template;
+        if (CurrentImage == null) return;
+        SrcLoading = true;
+        var b64 = await Task.Run(() =>
+        {
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+            cvs.Exif = CurrentImage.Canvas.Exif;
+            CurrentImage.Canvas = cvs;
+            cvs.Path = CurrentImage.Path;
+            return helper.Generation(cvs, null, true);
+        });
 
-	void OpenLink(string link)
-	{
-		var action = new Action(() =>
-		{
-			var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
-			System.Diagnostics.Process.Start(psi);
-		});
-		OpenWinHelper.Open(action);
-	}
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        await InitLogoCacheDic(CurrentImage.ID, template);
+        SrcLoading = false;
+        EnableAll();
+        StateHasChanged();
+    }
 
-	async void OpenExport()
-	{
-		var action = new Action(() =>
-				{
-					Microsoft.Win32.OpenFolderDialog dialog = new();
-					var result = dialog.ShowDialog();
+    async void Export(List<WMTemplateList> images)
+    {
+        WMMainLoading.Show = true;
+        WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
+        WMMainLoading.Value = 0;
+        StateHasChanged();
+        var idx = 1;
+        var option = new ParallelOptions();
+        option.MaxDegreeOfParallelism = Global.MAX_THREAD;
+        await Task.Run(() =>
+        {
+            Parallel.ForEach(images, option, (item) =>
+            {
+                helper.Generation(item.Canvas, null, false);
+                WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
+                WMMainLoading.Value = idx++ * 100.0 / images.Count;
+                InvokeAsync(StateHasChanged);
+            });
+        });
 
-					if (result == true)
-					{
-						Global.OutPutPath = dialog.FolderName;
-						InvokeAsync(StateHasChanged);
-					}
-				});
+        WMMainLoading.Value = 100;
+        WMMainLoading.Show = false;
+        StateHasChanged();
+        Common.ShowMsg(PopupService, "打开输出文件夹？", "好的", async () =>
+        {
+            await OpenFolder();
+        });
+    }
 
-		var parameters = new DialogParameters<Watermark.Razor.Components.ExportDialog>();
-		parameters.Add(x => x.OpenFolderAction, action);
-		parameters.Add(x => x.Images, Images);
-		var dialog = DialogService.Show<Watermark.Razor.Components.ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-		var result = await dialog.Result;
-		if (!result.Canceled && result.Data is List<WMTemplateList> images)
-		{
-			Export(images.Where(x => x.IsChecked).ToList());
-		}
-	}
+    async Task OpenFolder()
+    {
+        var path = Global.OutPutPath;
+        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
+        System.Diagnostics.Process.Start(psi);
+        await Task.CompletedTask;
+    }
 
-	async void SelectSourceImageExif(IBrowserFile file)
-	{
-		MemoryStream ms = new MemoryStream();
-		await file.OpenReadStream(file.Size).CopyToAsync(ms);
-		CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
-	}
-
-
-	async Task InitFonts(List<WMCanvas> mCanvas)
-	{
-		WMMainLoading.Message = "正在下载字体资源...";
-		WMMainLoading.Show = true;
-		await Global.InitFonts(mCanvas);
-	}
-
-	async void OpenExifDialog(WMText mText)
-	{
-		var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
-		parameters.Add(x => x.mText, mText);
-		var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
-		dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
-		parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
-		parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
-		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-		var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
-		var dialogResult = await rst.Result;
-		if (!dialogResult.Canceled)
-		{
-			WMText text = (WMText)dialogResult.Data;
-			mText.Exifs = text.Exifs;
-			mText.BindedContainerId = text.BindedContainerId;
-			RefreshImage();
-			StateHasChanged();
-		}
-	}
-
-	async void OpenFullExifInfo()
-	{
-		var parameters = new DialogParameters<ExifInfo>();
-		parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value));
-		var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-		var rst = DialogService.Show<ExifInfo>("", parameters, option);
-		var dialogResult = await rst.Result;
-	}
-
-	async void SelectSplitImages(WMTemplateList template)
-	{
-		Dictionary<string, Dictionary<string, string>> exif = [];
-		exif[template.Canvas.ID] = ExifHelper.DefaultMeta;
-		var action = Task.Run(() =>
-				{
-					// 实例化一个文件选择对象
-					Microsoft.Win32.OpenFileDialog dialog = new()
-						{
-							DefaultExt = ".jpg",  // 设置默认类型
-							Multiselect = true,                             // 设置可选格式
-							Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-
-						};
-					// 打开选择框选择
-					Nullable<bool> result = dialog.ShowDialog();
-					if (result == true)
-					{
-						if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-						{
-							Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-						}
-
-						int c = 0;
-						foreach (var container in template.Canvas.Children)
-						{
-							if (c <= dialog.FileNames.Length - 1 && !container.ContainerProperties.FixImage)
-							{
-								container.Path = dialog.FileNames[c++];
-								exif[container.ID] = ExifHelper.ReadImage(container.Path);
-							}
-						}
-					}
-				});
-		await action;
-
-		SrcLoading = true;
-		StateHasChanged();
-		var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
-		cvs.Exif = exif;
-		var b64 = await helper.GenerationAsync(cvs, null, true, false);
-		CurrentImage = new();
-		CurrentImage.Canvas = cvs;
-		CurrentImage.ID = CurrentImage.Canvas.ID;
-		CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-		await InitLogoCacheDic(CurrentImage.ID, template);
-		Images = [];
-		Images.Add(CurrentImage);
-		SrcLoading = false;
-		StateHasChanged();
-	}
-
-	void CreateNewTemplate()
-	{
-		var action = new Func<Task<string>>(async () =>
-		{
-			var dic = new ConcurrentDictionary<string, byte[]>();
-			Microsoft.Win32.OpenFileDialog dialog = new()
-				{
-					DefaultExt = ".png",  // 设置默认类型
-					Multiselect = false,                             // 设置可选格式
-					Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-				};
-			// 打开选择框选择
-			Nullable<bool> result = dialog.ShowDialog();
-
-			if (result == true)
-			{
-				return dialog.FileName;
-			}
-			else return "";
-		});
-
-		var ok = new Action<WMCanvas>((x) =>
-		{
-			OpenDesignAction(x);
-		});
+    Func<string, Task> ClipboardAction = new((x) =>
+       {
+           System.Windows.Clipboard.SetText(x);
+           return Task.CompletedTask;
+       });
 
 
-		var dialog = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-		var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
-		parameter.Add(x => x.SelectDefaultImageAction, action);
-		parameter.Add(x => x.Ok, ok);
-		parameter.Add(x => x.ID, Guid.NewGuid().ToString("N").ToUpper());
-		var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
-	}
+    async Task InitLogoCacheDic(string imgId, WMTemplateList template)
+    {
+        var logoes = new List<WMLogo>();
+        foreach (var c1 in template.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo) logoes.Add(logo);
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
+                    }
+                }
+            }
+        }
 
+        var dic = new Dictionary<string, string>();
+        var db64 = new ConcurrentDictionary<string, byte[]>();
+        foreach (var logo in logoes)
+        {
+            dic[logo.ID] = logo.Path;
+            var target = logo.Path;
+            if (!File.Exists(target))
+            {
+                target = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+            }
+            if (File.Exists(target))
+            {
+                Global.ImageFile2Base64(db64, target, logo.ID);
+            }
+        }
+        foreach (var e in db64)
+        {
+            LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+        }
+        LogoCacheDic[imgId] = dic;
+
+    }
+
+    async Task InitLogoStore()
+    {
+        LogoStore = new List<string>();
+        var db64 = new ConcurrentDictionary<string, byte[]>();
+        if (Directory.Exists(Global.AppPath.LogoesFolder))
+        {
+            var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
+            var tasks = new List<Task>();
+            foreach (var file in files.GetFiles())
+            {
+                var t = Task.Run(() =>
+                {
+                    LogoStore.Add(file.FullName);
+                    Global.ImageFile2Base64(db64, file.FullName, file.FullName);
+                });
+                tasks.Add(t);
+            }
+
+            foreach (var e in db64)
+            {
+                LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            }
+            await Task.WhenAll(tasks.ToArray());
+        }
+    }
+
+    async void ChangeLogo(string sourceId, string logoPath)
+    {
+        SrcLoading = true;
+        StateHasChanged();
+        foreach (var c1 in CurrentImage.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo && logo.ID == sourceId)
+                {
+                    logo.AutoSetLogo = false;
+                    logo.Path = logoPath;
+                    break;
+                }
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+                        {
+                            wcLogo.AutoSetLogo = false;
+                            wcLogo.Path = logoPath;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    async void ImportLogoes()
+    {
+        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await InitLogoStore();
+        }
+    }
+
+    async void ReplaceLogo(string sourceId)
+    {
+        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
+        {
+            var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
+            ChangeLogo(sourceId, p);
+        }
+    }
+
+
+    void EnableAll()
+    {
+        Common.ShowMsg(PopupService, "当前模板应用全部？", "应用", async () =>
+        {
+            await Help();
+        });
+    }
+
+    public async Task Help()
+    {
+        WMMainLoading.Show = true;
+        StateHasChanged();
+        int idx = 1;
+        foreach (var img in Images)
+        {
+            WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+            WMMainLoading.Value = idx++ * 100.0 / Images.Count;
+            StateHasChanged();
+            var b64 = await Task.Run(() =>
+            {
+                var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.Canvas));
+                cvs.Exif = img.Canvas.Exif;
+                img.Canvas = cvs;
+                cvs.Path = img.Path;
+                return helper.Generation(cvs, null, true);
+            });
+
+            var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            img.Src = src;
+            await InitLogoCacheDic(img.ID, CurrentTemplate);
+        }
+        WMMainLoading.Value = 100;
+        WMMainLoading.Show = false;
+        StateHasChanged();
+    }
+
+    void OpenLink(string link)
+    {
+        var action = new Action(() =>
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        });
+        OpenWinHelper.Open(action);
+    }
+
+    async void OpenExport()
+    {
+        var action = new Action(() =>
+                {
+                    Microsoft.Win32.OpenFolderDialog dialog = new();
+                    var result = dialog.ShowDialog();
+
+                    if (result == true)
+                    {
+                        Global.OutPutPath = dialog.FolderName;
+                        InvokeAsync(StateHasChanged);
+                    }
+                });
+
+        var parameters = new DialogParameters<Watermark.Razor.Components.ExportDialog>();
+        parameters.Add(x => x.OpenFolderAction, action);
+        parameters.Add(x => x.Images, Images);
+        var dialog = DialogService.Show<Watermark.Razor.Components.ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is List<WMTemplateList> images)
+        {
+            Export(images.Where(x => x.IsChecked).ToList());
+        }
+    }
+
+    async void SelectSourceImageExif(IBrowserFile file)
+    {
+        MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(file.Size).CopyToAsync(ms);
+        CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
+    }
+
+
+    async Task InitFonts(List<WMCanvas> mCanvas)
+    {
+        WMMainLoading.Message = "正在下载字体资源...";
+        WMMainLoading.Show = true;
+        await Global.InitFonts(mCanvas);
+    }
+
+    async void OpenExifDialog(WMText mText)
+    {
+        var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
+        parameters.Add(x => x.mText, mText);
+        var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
+        dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
+        parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
+        parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+        var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
+        var dialogResult = await rst.Result;
+        if (!dialogResult.Canceled)
+        {
+            WMText text = (WMText)dialogResult.Data;
+            mText.Exifs = text.Exifs;
+            mText.BindedContainerId = text.BindedContainerId;
+            RefreshImage();
+            StateHasChanged();
+        }
+    }
+
+    async void OpenFullExifInfo()
+    {
+        var parameters = new DialogParameters<ExifInfo>();
+        parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value));
+        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+        var rst = DialogService.Show<ExifInfo>("", parameters, option);
+        var dialogResult = await rst.Result;
+    }
+
+    async void SelectSplitImages(WMTemplateList template)
+    {
+        Dictionary<string, Dictionary<string, string>> exif = [];
+        exif[template.Canvas.ID] = ExifHelper.DefaultMeta;
+        var action = Task.Run(() =>
+                {
+                    // 实例化一个文件选择对象
+                    Microsoft.Win32.OpenFileDialog dialog = new()
+                        {
+                            DefaultExt = ".jpg",  // 设置默认类型
+                            Multiselect = true,                             // 设置可选格式
+                            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+
+                        };
+                    // 打开选择框选择
+                    Nullable<bool> result = dialog.ShowDialog();
+                    if (result == true)
+                    {
+                        if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+                        {
+                            Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                        }
+
+                        int c = 0;
+                        foreach (var container in template.Canvas.Children)
+                        {
+                            if (c <= dialog.FileNames.Length - 1 && !container.ContainerProperties.FixImage)
+                            {
+                                container.Path = dialog.FileNames[c++];
+                                exif[container.ID] = ExifHelper.ReadImage(container.Path);
+                            }
+                        }
+                    }
+                });
+        await action;
+
+        SrcLoading = true;
+        StateHasChanged();
+        var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+        cvs.Exif = exif;
+        var b64 = await helper.GenerationAsync(cvs, null, true, false);
+        CurrentImage = new();
+        CurrentImage.Canvas = cvs;
+        CurrentImage.ID = CurrentImage.Canvas.ID;
+        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        await InitLogoCacheDic(CurrentImage.ID, template);
+        Images = [];
+        Images.Add(CurrentImage);
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    void CreateNewTemplate()
+    {
+        var action = new Func<Task<string>>(async () =>
+        {
+            var dic = new ConcurrentDictionary<string, byte[]>();
+            Microsoft.Win32.OpenFileDialog dialog = new()
+                {
+                    DefaultExt = ".png",  // 设置默认类型
+                    Multiselect = false,                             // 设置可选格式
+                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                return dialog.FileName;
+            }
+            else return "";
+        });
+
+        var ok = new Action<WMCanvas>((x) =>
+        {
+            OpenDesignAction(x);
+        });
+
+
+        var dialog = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+        var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
+        parameter.Add(x => x.SelectDefaultImageAction, action);
+        parameter.Add(x => x.Ok, ok);
+        parameter.Add(x => x.ID, Guid.NewGuid().ToString("N").ToUpper());
+        var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
+    }
+
+    void OpenCommonDialog(string Src)
+    {
+        CommonDialog.Show = true;
+        CommonDialog.Message = Src;
+    }
 
 }

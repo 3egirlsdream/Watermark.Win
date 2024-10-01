@@ -1,0 +1,82 @@
+﻿@using Masa.Blazor
+@using Watermark.Win.Models
+@typeparam TValue where TValue : struct, IComparable<TValue>
+<style>
+    .slider-input {
+    }
+
+        .slider-input .m-slider__thumb:before {
+            width: auto;
+            height: auto;
+        }
+
+        .slider-input .m-slider__thumb {
+            width: 8px;
+            height: 20px;
+            border-radius: 2px;
+        }
+
+        .slider-input .m-slider__track-container {
+            --m-slider-track-size: 16px !important;
+        }
+
+    .slider-input-main {
+        padding: 8px 0;
+    }
+
+        .slider-input-main .m-input__slot {
+            margin-bottom: 0 !important;
+        }
+
+        .slider-input-main .theme--light.m-messages {
+            display: none !important
+        }
+
+        .slider-input-main .m-text-field.m-text-field--enclosed .m-text-field__details {
+            display: none !important;
+        }
+
+        .slider-input-main .m-text-field.m-text-field--solo.m-input--dense > .m-input__control {
+            min-height: 0 !important;
+        }
+</style>
+
+
+@if (Global.DeviceType == Shared.Enums.DeviceType.Andorid || Global.DeviceType == Shared.Enums.DeviceType.IOS)
+{
+    <div class="slider-input-main ma-1">
+        <Label Name="@Name" Small="small"></Label>
+        <MSlider Class="slider-input mt-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" ValueChanged="ValueChanged"></MSlider>
+    </div>
+}
+else
+{
+    <div style="display:flex;align-content:space-between;align-items:center" class="slider-input-main ma-1">
+        <Label Name="@Name" Small="small"></Label>
+        <MSlider Class="slider-input ml-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" Dense Color="#1976d2" ValueChanged="ValueChanged"></MSlider>
+        <div class="ml-2" style="width:70px">
+            <MTextField Value="@Value" TValue="TValue" Solo Dense Suffix="@Unit" ValueChanged="ValueChanged" />
+        </div>
+
+    </div>
+}
+
+
+
+
+
+
+
+@code {
+    [Parameter]
+    public TValue Value { get; set; }
+    [Parameter]
+    public string Name { get; set; }
+    private bool small = false;
+    [Parameter]
+    public TValue Step { get; set; }
+    [Parameter]
+    public string Unit { get; set; } = "%";
+    [Parameter]
+    public EventCallback<TValue> ValueChanged { get; set; }
+}

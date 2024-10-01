@@ -1,0 +1,13 @@
+﻿<span class="@($"font-weight-light {Class}")" style="@($"display: flex;align-items: center;font-size: {(Small ? "0.8rem" : "0.95rem")};font-weight: 300;")">
+    @Name
+</span>
+@code {
+
+    [Parameter]
+    public string Class { get; set; }
+    [Parameter]
+    public bool Small { get; set; } = true;
+
+    [Parameter]
+    public string Name { get; set; }
+}

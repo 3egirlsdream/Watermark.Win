@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Masa.Blazor.Popup;
+using Masa.Blazor.Presets;
+using Masa.Blazor;
+using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using System;
 using System.Collections.Generic;
@@ -28,7 +31,32 @@ namespace Watermark.Win.Models
             _services.AddMudServices();
             _services.AddWpfBlazorWebView();
             _services.AddBlazorWebViewDeveloperTools();
-            _services.AddMasaBlazor();
+            _services.AddMasaBlazor(options =>
+            {
+                options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
+                {
+                    {
+                        PopupComponents.CONFIRM, new Dictionary<string, object?>()
+                        {
+                            {
+                                nameof(PromptOptions.OkProps), (Action<ModalButtonProps>)(u =>
+                                {
+                                    u.Class = "text-capitalize";
+                                    u.Text = false;
+                                })
+                            },
+                            { nameof(ConfirmOptions.CancelProps), (Action<ModalButtonProps>)(u => u.Class = "text-capitalize") },
+                        }
+                    },
+                    {
+                        PopupComponents.SNACKBAR, new Dictionary<string, object?>()
+                        {
+                            { nameof(PEnqueuedSnackbars.Closeable), false },
+                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.TopCenter }
+                        }
+                    }
+                };
+            }, ServiceLifetime.Scoped);
 
             return _services!;
         }

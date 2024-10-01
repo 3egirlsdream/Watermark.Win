@@ -1,478 +1,424 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
+﻿@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
 @using System.Windows
 @using System.IO
 @using Microsoft.JSInterop
-@using MudBlazor
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 <style>
-	.mud-card-actions {
-		position: relative;
-	}
+    .mud-card-actions {
+        position: relative;
+    }
+    .m-dialog-custom {
+        scrollbar-width: none;
+        height: 90%;
+        border: 15px solid #fff;
+    }
+
 </style>
-<MudDialog Style="min-width:50%;min-height:50%;width:90%; height:90%;overflow-y:hidden;padding:20px 0">
-	<DialogContent>
-		<MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 40px);overflow-y:auto;padding:5px;">
-			<MudItem xs="12">
-				<MudText Typo="Typo.h4">
-					<b>我本地的</b><MudIconButton Icon="@Icons.Material.Rounded.Refresh" Color="Color.Primary" Variant="Variant.Text" OnClick="()=>InitTemplates()"></MudIconButton>
-				</MudText>
-			</MudItem>
-			@foreach (var grid in wMTemplates)
-			{
-				<MudItem xs="3">
-					<MudPaper Elevation="25">
-						<MudCard Class="pa-2" Elevation="0" Style="background:#e5e5e5;position:relative">
-							@if (Versions.TryGetValue(grid.ID, out int v) && v > grid.Version)
-							{
-								<MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px;cursor:pointer;" OnClick="()=>Download(grid.ID)">有更新</MudChip>
-							}
-							<MudImage Src="@(pairs[grid.ID])" Style="width:100%;" Height="200" ObjectFit="ObjectFit.Contain" />
-							<MudCardContent>
-								<MudText Typo="Typo.subtitle1" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
-									@grid.Name
-								</MudText>
-							</MudCardContent>
-							<MudCardActions>
-								<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Default" OnClick="()=>Upload(grid.ID)" />
-								<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Class="ml-2" OnClick="(()=>EditTemplate(grid))" />
-								<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Style="position:absolute;right:0" OnClick="()=>DeleteTemplate(grid.ID)" />
-							</MudCardActions>
-						</MudCard>
-					</MudPaper>
-				</MudItem>
-			}
+<MDialog Style="min-width:50%;min-height:50%;width:90%; overflow-y:hidden;padding:20px 0;" Value="Visible" ValueChanged="VisibleChanged" ContentClass="m-dialog-custom">
+    <MRow Dense Style="overflow-y:auto;padding:5px;">
+        <MCol Cols="12">
+            <div style="font-size:1.5rem;">
+                <b>我本地的</b><IconButton Icon="@ICONS.Refresh" OnClick="()=>InitTemplates()"></IconButton>
+            </div>
+        </MCol>
+        @foreach (var grid in wMTemplates)
+        {
+            <MCol Cols="3">
+                <MarketCard canvas="@grid" DownloadEvt="Download" Versions="@Versions" Name="@grid.Name" Src="@(pairs[grid.ID])">
+                    <IconButton Icon="@ICONS.CloudUpload" OnClick="()=>Upload(grid.ID)" Class="mx-1" Elevation="1" />
+                    <IconButton Icon="@ICONS.Edit" OnClick="(()=>EditTemplate(grid))" Class="mx-1" Elevation="1" />
+                    <MSpacer />
+                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteTemplate(grid.ID)" Class="mx-1" Color="error" Elevation="1" />
+                </MarketCard>
+            </MCol>
+        }
 
-			<MudItem xs="12">
-				<MudText Typo="Typo.h4"><b>我收藏的</b></MudText>
-			</MudItem>
-			@foreach (var t in ILikeTemplates)
-			{
-				<MudItem xs="2">
-					<MudCard Elevation="25" Class="pa-1" Style="background:#e5e5e5;">
-						@if (!string.IsNullOrEmpty(t.Src))
-						{
-							<MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-						}
-						else
-						{
-							<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left: calc(50% - 20px); margin-top: 20px;" />
-						}
-						<MudCardContent>
-							<MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
-								@(t.Name ?? t.Desc)
-							</MudText>
-						</MudCardContent>
-						<MudCardActions Style="position:relative;">
-							<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="MudBlazor.Size.Small" OnClick="()=>DeleteILike(t.WatermarkId)" />
-							<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Style="position:absolute;right:10px" OnClick="()=>Download(t.WatermarkId)" />
-						</MudCardActions>
-					</MudCard>
-				</MudItem>
-			}
+        <MCol Cols="12">
+            <div style="font-size:1.5rem;">
+                <b>我收藏的</b>
+            </div>
+        </MCol>
+        @foreach (var t in ILikeTemplates)
+        {
+            <MCol Cols="3">
+                <MarketCard canvas="@t.WMCanvas" Name="@(t.Name ?? t.Desc)" Src="@(t.Src)">
+                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteILike(t.WatermarkId)" Elevation="1" Color="error"/>
+                        <MSpacer/>
+                    <IconButton Icon="@ICONS.Edit" OnClick="()=>Download(t.WatermarkId)" Elevation="1" />
+                </MarketCard>
+            </MCol>
+        }
+        <MCol Cols="12">
+            <div style="font-size:1.5rem;">
+                <b>我上传的</b>
+            </div>
+        </MCol>
+        @foreach (var t in ZipedTemplates)
+        {
+            <MCol Cols="3">
+                <MarketCard canvas="@t.WMCanvas" Name="@(t.Name ?? t.Desc)" Src="@(t.Src)">
+                    <MButton Color="@(t.Visible ? "" : "warning")" Style="cursor:pointer;" OnClick="()=>TakOffOnShop(t)">
+                        <MIcon Left>mdi-store-off</MIcon>@(t.Visible ? "下架" : "上架")
+                    </MButton>
+                   <MSpacer/>
+                    <IconButton Icon="@ICONS.Download" Color="Color.Default" OnClick="()=>Download(t.WatermarkId)" Class="mx-1" Elevation="1" />
+                    <IconButton Icon="@ICONS.Edit" Color="Color.Default" OnClick="()=>DownloadEdit(t.WatermarkId)" Class="mx-1" Elevation="1" />
+                </MarketCard>
+            </MCol>
+        }
+        <MOverlay @bind-Value="@loading" Dark="false" Absolute="false" ZIndex="9999">
+            <MCard Style="display:flex;flex-direction:column;height:160px;width:160px;align-items:center;justify-content:center">
+                <MProgressCircular Indeterminate="true" Color="primary" Class="my-1"/>
+                <Label Name="@loadingMessage"/>
+            </MCard>
+        </MOverlay>
 
-			<MudItem xs="12">
-				<MudText Typo="Typo.h4"><b>我上传的</b></MudText>
-			</MudItem>
-			@foreach (var t in ZipedTemplates)
-			{
-				<MudItem xs="3">
-					<MudCard Elevation="25" Class="pa-1" Style="background:#e5e5e5;">
-						@if (!string.IsNullOrEmpty(t.Src))
-						{
-							<MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-						}
-						else
-						{
-							<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left: calc(50% - 20px); margin-top: 20px;" />
-						}
-						<MudCardContent>
-							<MudText Typo="Typo.body2" Style="margin: auto;text-overflow:ellipsis;white-space:nowrap;overflow-x:hidden">
-								@(t.Name ?? t.Desc)
-							</MudText>
-						</MudCardContent>
-						<MudCardActions Style="position:relative;">
-							<MudButton EndIcon="@Icons.Material.Filled.LinkOff" Color="@(t.Visible ? Color.Default : Color.Warning)" Style="cursor:pointer;" Size="MudBlazor.Size.Small" OnClick="()=>TakOffOnShop(t)">@(t.Visible ? "下架" : "上架")</MudButton>
-							<MudIconButton Size="MudBlazor.Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="position:absolute;right:50px" OnClick="()=>Download(t.WatermarkId)" />
-							<MudIconButton Variant="Variant.Filled" Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Style="position:absolute;right:10px" OnClick="()=>DownloadEdit(t.WatermarkId)" Size="MudBlazor.Size.Small" />
-						</MudCardActions>
-					</MudCard>
-
-				</MudItem>
-			}
-			<MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
-				<MudStack Justify="Justify.Center">
-					<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
-					<MudText Typo="Typo.subtitle1" Color="Color.Dark">
-						<b>@loadingMessage</b>
-					</MudText>
-				</MudStack>
-			</MudOverlay>
-		</MudGrid>
-	</DialogContent>
-</MudDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
+            <LoginContent CloseEvent="loginClosed"/>
+        </MDialog>
+        <MDialog @bind-Value="showUpload.Show" ContentStyle="width:400px;padding:10px;">
+            <UploadTemplateDialog OnClose="UploadClosed" Id="@showUpload.Id" Name="@showUpload.Name" />
+        </MDialog>
+    </MRow>
+</MDialog>
 
 
 
 @code {
-	[CascadingParameter]
-	MudDialogInstance MudDialog { get; set; }
-	[Inject]
-	private IDialogService DialogService { get; set; }
-	[Parameter]
-	public Action<WMCanvas> EditTemplateEvt { get; set; }
+    [Parameter]
+    public bool Visible { get; set; }
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter]
+    public Action<WMCanvas> EditTemplateEvt { get; set; }
+    bool showLogin = false;
+    UploadTemplateDialog.UploadParameter showUpload = new();
+    bool loading = true;
+    string loadingMessage = "正在加载模板...";
+    List<WMCanvas> wMTemplates { get; set; } = [];
+    List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
+    List<WMZipedTemplate> ILikeTemplates { get; set; } = new();
+    Dictionary<string, string> pairs;
+    Dictionary<string, int> Versions = [];
 
-	void Submit() => MudDialog.Close(DialogResult.Ok(true));
-	void Cancel() => MudDialog.Cancel();
-	private DialogOptions dialogOptions = new() { FullWidth = true };
-	bool loading = true;
-	string loadingMessage = "正在加载模板...";
-	List<WMCanvas> wMTemplates { get; set; }
-	List<WMZipedTemplate> ZipedTemplates { get; set; } = new List<WMZipedTemplate>();
-	List<WMZipedTemplate> ILikeTemplates { get; set; } = new();
-	Dictionary<string, string> pairs;
-	Dictionary<string, int> Versions = [];
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await InitTemplates();
+            await LoadILikeTemplate();
+            await LoadCloudTemplate();
+            await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Win);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
 
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			await InitTemplates();
-			await LoadILikeTemplate();
-			await LoadCloudTemplate();
-			await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Win);
-		}
-		catch (Exception ex)
-		{
-			Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
-		}
-	}
+    async Task InitTemplates()
+    {
+        try
+        {
+            loading = true;
+            pairs = new Dictionary<string, string>();
+            if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
+            {
+                System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+            }
 
-	async Task InitTemplates()
-	{
-		try
-		{
-			loading = true;
-			pairs = new Dictionary<string, string>();
-			if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
-			{
-				System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-			}
+            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
+            wMTemplates = new List<WMCanvas>();
+            foreach (var dirct in directoryInfo.GetDirectories())
+            {
+                var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
+                if (System.IO.File.Exists(configPath))
+                {
+                    var canvas = await Task.Run(() =>
+                    {
+                        var content = File.ReadAllText(configPath);
+                        return Global.ReadConfig(content);
+                    });
+                    canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
+                    await Global.InitFonts([canvas]);
+                    var b64 = await helper.GenerationAsync(canvas, null, true);
+                    pairs[canvas.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                    wMTemplates.Add(canvas);
+                    StateHasChanged();
+                }
+            }
 
-			System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
-			wMTemplates = new List<WMCanvas>();
-			foreach (var dirct in directoryInfo.GetDirectories())
-			{
-				var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-				if (System.IO.File.Exists(configPath))
-				{
-					var canvas = await Task.Run(() =>
-					{
-						var content = File.ReadAllText(configPath);
-						return Global.ReadConfig(content);
-					});
-					canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
-					await Global.InitFonts([canvas]);
-					var b64 = await helper.GenerationAsync(canvas, null, true);
-					pairs[canvas.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-					wMTemplates.Add(canvas);
-					StateHasChanged();
-				}
-			}
+            var version = await api.GetVersions(wMTemplates.Select(x => x.ID).ToList());
+            if (version.success && version.data != null)
+            {
+                Versions = version.data;
+            }
+            loading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            GC.Collect();
+        }
+    }
 
-			var version = await api.GetVersions(wMTemplates.Select(x => x.ID).ToList());
-			if (version.success && version.data != null)
-			{
-				Versions = version.data;
-			}
-			loading = false;
-			StateHasChanged();
-		}
-		catch (Exception ex)
-		{
-			Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
-		}
-		finally
-		{
-			GC.Collect();
-		}
-	}
+    async Task LoadCloudTemplate()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+            var helper = new APIHelper();
+            ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
+            ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            GC.Collect();
+        }
+    }
 
-	async Task LoadCloudTemplate()
-	{
-		try
-		{
-			if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-			var helper = new APIHelper();
-			ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
-			ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
-		}
-		catch (Exception ex)
-		{
-			Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
-		}
-		finally
-		{
-			GC.Collect();
-		}
-	}
+    async Task LoadILikeTemplate()
+    {
+        if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var helper = new APIHelper();
+        if (!Directory.Exists(Global.AppPath.MarketFolder))
+        {
+            Directory.CreateDirectory(Global.AppPath.MarketFolder);
+        }
+        var templateFolderInfo = new DirectoryInfo(Global.AppPath.MarketFolder);
+        var downloadedTemplates = templateFolderInfo.GetDirectories().Select(x => x.Name).ToList();
+        var getILike = await helper.GetILike(Global.CurrentUser.ID);
+        ILikeTemplates = new List<WMZipedTemplate>();
+        if (getILike != null && getILike.success)
+        {
+            ILikeTemplates = getILike.data;
+        }
+        else
+        {
+            Common.ShowMsg(PopupService, getILike?.message?.content, AlertTypes.Error);
+        }
+        ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+    }
 
-	async Task LoadILikeTemplate()
-	{
-		if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-		var helper = new APIHelper();
-		if (!Directory.Exists(Global.AppPath.MarketFolder))
-		{
-			Directory.CreateDirectory(Global.AppPath.MarketFolder);
-		}
-		var templateFolderInfo = new DirectoryInfo(Global.AppPath.MarketFolder);
-		var downloadedTemplates = templateFolderInfo.GetDirectories().Select(x => x.Name).ToList();
-		var getILike = await helper.GetILike(Global.CurrentUser.ID);
-		ILikeTemplates = new List<WMZipedTemplate>();
-		if (getILike != null && getILike.success)
-		{
-			ILikeTemplates = getILike.data;
-		}
-		else
-		{
-			Common.ShowMsg(Snackbar, getILike?.message?.content, Severity.Error);
-		}
-		ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
-	}
+    void EditTemplate(WMCanvas canvas)
+    {
+        EditTemplateEvt.Invoke(canvas);
+    }
 
-	void EditTemplate(WMCanvas canvas)
-	{
-		EditTemplateEvt.Invoke(canvas);
-	}
+    async void DeleteTemplate(string id)
+    {
 
-	async void DeleteTemplate(string id)
-	{
+        bool? result = await PopupService.ConfirmAsync("删除", "确定删除模板？", AlertTypes.Info);
+        if (result == true)
+        {
+            try
+            {
+                loadingMessage = "正在删除...";
+                var path = Global.AppPath.TemplatesFolder + id;
+                System.IO.Directory.Delete(path, true);
+                StateHasChanged();
+            }
+            catch { }
+            finally
+            {
+                loadingMessage = "正在加载...";
+                await InitTemplates();
+            }
+        }
 
-		bool? result = await DialogService.ShowMessageBox(
-		"删除",
-		(MarkupString)"确定删除模板？&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-		yesText: "确定", cancelText: "取消");
-		if (result == true)
-		{
-			try
-			{
-				loadingMessage = "正在删除...";
-				var path = Global.AppPath.TemplatesFolder + id;
-				System.IO.Directory.Delete(path, true);
-				StateHasChanged();
-			}
-			catch { }
-			finally
-			{
-				loadingMessage = "正在加载...";
-				await InitTemplates();
-			}
-		}
+    }
 
-	}
+    async void Upload(string watermarkId)
+    {
+        if (string.IsNullOrEmpty(Global.CurrentUser.ID))
+        {
+            showLogin = true;
+            return;
+        }
 
-	async void Upload(string watermarkId)
-	{
-		async Task<bool> func()
-		{
-			APIHelper api = new APIHelper();
-			var apiResult = await api.TemplateIsExsist(watermarkId, Global.CurrentUser?.ID);
-			if (apiResult.Item1 && apiResult.Item2)
-			{
-				bool? rtl = await DialogService.ShowMessageBox(
-										"确认覆盖",
-										(MarkupString)"此模板已上传，确定覆盖？",
-										yesText: "确定", cancelText: "取消");
-				return rtl == true;
-			}
-			else if (apiResult.Item1 && !apiResult.Item2)
-			{
-				await DialogService.ShowMessageBox(
-									"错误",
-									(MarkupString)"不能覆盖不是自己所有的模板，请另存为后再上传!",
-									yesText: "确定", cancelText: "取消");
-				return false;
-			}
-			return true;
-		}
+        async Task<bool> func()
+        {
+            APIHelper api = new APIHelper();
+            var apiResult = await api.TemplateIsExsist(watermarkId, Global.CurrentUser?.ID);
+            if (apiResult.Item1 && apiResult.Item2)
+            {
+                bool? rtl = await PopupService.ConfirmAsync("确认覆盖", "此模板已上传，确定覆盖？", AlertTypes.Info);
+                return rtl == true;
+            }
+            else if (apiResult.Item1 && !apiResult.Item2)
+            {
+                await PopupService.ConfirmAsync("错误", "不能覆盖不是自己所有的模板，请另存为后再上传!", AlertTypes.Info);
+                return false;
+            }
+            return true;
+        }
 
-		var r = await func();
-		if (!r) return;
+        var r = await func();
+        if (!r) return;
+        var tp = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
+        showUpload.Show = true;
+        showUpload.Id = tp?.ID ?? "";
+        showUpload.Name = tp?.Name ?? "";
+        StateHasChanged();
+    }
 
-		var parameters = new DialogParameters<UploadTemplateDialog>();
-		var tp = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
-		parameters.Add(x => x.Name, tp?.Name ?? "");
-		parameters.Add(x => x.Id, tp?.ID ?? "");
-		var dialog = DialogService.Show<UploadTemplateDialog>("", parameters);
-		var result = await dialog.Result;
-		if (!result.Canceled)
-		{
-			dynamic data = result.Data;
-			if (data == null)
-			{
-				return;
-			}
+    async void Download(string watermarkId)
+    {
+        var helper = new APIHelper();
+        async Task<bool> func()
+        {
+            if (helper!.FolderExsist(watermarkId))
+            {
+                bool? rtl = await PopupService.ConfirmAsync("确认覆盖", "本地已下载模板，确认覆盖？", AlertTypes.Info);
+                return rtl == true;
+            }
+            return true;
+        }
 
-			Action action = new Action(async () =>
-			{
-				loading = true;
-				loadingMessage = "正在上传...";
-				StateHasChanged();
-				var helper = new APIHelper();
-				var result = await helper.UploadWatermark(watermarkId, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""), Convert.ToString(data.Tags ?? ""));
-				string message = "";
-				Severity severity = Severity.Success;
+        var isOK = await func();
+        if (!isOK) return;
+        loading = true;
+        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
+        string message = "";
+        AlertTypes Severity = AlertTypes.Success;
+        if (result)
+        {
+            Severity = AlertTypes.Success;
+            message = "下载成功";
+            await InitTemplates();
+        }
+        else
+        {
+            Severity = AlertTypes.Error;
+            message = "下载失败";
+        }
+        Common.ShowMsg(PopupService, message, Severity);
+        loading = false;
+        StateHasChanged();
+    }
 
-				if (result.success)
-				{
-					message = $"上传成功{(!result.data ? "(缓存刷新失败)" : "")}";
-				}
-				else
-				{
-					severity = Severity.Error;
-					message = result.message?.content;
-				}
+    async void DownloadEdit(string watermarkId)
+    {
+        var helper = new APIHelper();
 
-				var target = Global.AppPath.TemplatesFolder + $"{watermarkId}.zip";
-				if (File.Exists(target)) File.Delete(target);
-				Common.ShowMsg(Snackbar, message, severity);
-				loading = false;
-				StateHasChanged();
-			});
+        async Task<bool> func()
+        {
+            if (helper!.FolderExsist(watermarkId))
+            {
+                bool? rtl = await PopupService.ConfirmAsync("确认覆盖", "本地已下载模板，确认覆盖？", AlertTypes.Info);
+                return rtl == true;
+            }
+            return true;
+        }
 
-			if (string.IsNullOrEmpty(Global.CurrentUser.ID))
-			{
-				var rst = DialogService.Show<LoginDialog>("");
-				var dialogResult = await rst.Result;
-				if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-				{
-					action.Invoke();
-				}
-			}
-			else
-			{
-				action.Invoke();
-			}
-		}
+        var isOK = await func();
+        if (!isOK) return;
+        loading = true;
+        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
+        string message = "";
+        AlertTypes Severity = AlertTypes.Success;
+        if (result)
+        {
+            Severity = AlertTypes.Success;
+            message = "下载成功";
+            await InitTemplates();
+            var canvas = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
+            if (canvas != null)
+            {
+                EditTemplate(canvas);
+            }
+        }
+        else
+        {
+            Severity = AlertTypes.Error;
+            message = "下载失败";
+        }
 
+        Common.ShowMsg(PopupService, message, Severity);
+        loading = false;
+        StateHasChanged();
+    }
 
-	}
+    void DeleteILike(string watermarkId)
+    {
+        if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+        {
+            var helper = new APIHelper();
+            helper.DeleteILike(Global.CurrentUser.ID, watermarkId);
+            var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
+            if (item != null)
+            {
+                ILikeTemplates.Remove(item);
+                StateHasChanged();
+            }
+        }
+    }
 
-	async void Download(string watermarkId)
-	{
-		var helper = new APIHelper();
-		async Task<bool> func()
-		{
-			if (helper!.FolderExsist(watermarkId))
-			{
-				bool? rtl = await DialogService.ShowMessageBox(
-									"确认覆盖",
-									(MarkupString)"本地已下载模板，确认覆盖？",
-									yesText: "确定", cancelText: "取消");
-				return rtl == true;
-			}
-			return true;
-		}
+    async void TakOffOnShop(WMZipedTemplate t)
+    {
+        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var api = new APIHelper();
+        var result = await api.TakeOffOnWatermark(Global.CurrentUser.ID, t.WatermarkId);
+        if (result.success && result.data)
+        {
+            t.Visible = !t.Visible;
+            StateHasChanged();
+        }
+    }
 
-		var isOK = await func();
-		if (!isOK) return;
-		loading = true;
-		var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
-		string message = "";
-		Severity Severity = Severity.Success;
-		if (result)
-		{
-			Severity = Severity.Success;
-			message = "下载成功";
-			await InitTemplates();
-		}
-		else
-		{
-			Severity = Severity.Error;
-			message = "下载失败";
-		}
-		Common.ShowMsg(Snackbar, message, Severity);
-		loading = false;
-		StateHasChanged();
-	}
+    void loginClosed(bool f)
+    {
+        showLogin = false;
+    }
 
-	async void DownloadEdit(string watermarkId)
-	{
-		var helper = new APIHelper();
+    async Task UploadClosed(dynamic data)
+    {
+        if (data == null)
+        {
+            return;
+        }
 
-		async Task<bool> func()
-		{
-			if (helper!.FolderExsist(watermarkId))
-			{
-				bool? rtl = await DialogService.ShowMessageBox(
-									"确认覆盖",
-									(MarkupString)"本地已下载模板，确认覆盖？",
-									yesText: "确定", cancelText: "取消");
-				return rtl == true;
-			}
-			return true;
-		}
+        loading = true;
+        loadingMessage = "正在上传...";
+        StateHasChanged();
+        var helper = new APIHelper();
+        var rst = await helper.UploadWatermark(showUpload.Id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""), Convert.ToString(data.Tags ?? ""));
+        string message = "";
+        AlertTypes severity = AlertTypes.Success;
 
-		var isOK = await func();
-		if (!isOK) return;
-		loading = true;
-		var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
-		string message = "";
-		Severity Severity = Severity.Success;
-		if (result)
-		{
-			Severity = Severity.Success;
-			message = "下载成功";
-			await InitTemplates();
-			var canvas = wMTemplates.FirstOrDefault(c => c.ID == watermarkId);
-			if (canvas != null)
-			{
-				EditTemplate(canvas);
-			}
-		}
-		else
-		{
-			Severity = Severity.Error;
-			message = "下载失败";
-		}
+        if (rst.success)
+        {
+            message = $"上传成功{(!rst.data ? "(缓存刷新失败)" : "")}";
+        }
+        else
+        {
+            severity = AlertTypes.Error;
+            message = rst.message?.content;
+        }
 
-		Common.ShowMsg(Snackbar, message, Severity);
-		loading = false;
-		StateHasChanged();
-	}
-
-	void DeleteILike(string watermarkId)
-	{
-		if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
-		{
-			var helper = new APIHelper();
-			helper.DeleteILike(Global.CurrentUser.ID, watermarkId);
-			var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
-			if (item != null)
-			{
-				ILikeTemplates.Remove(item);
-				StateHasChanged();
-			}
-		}
-	}
-
-	async void TakOffOnShop(WMZipedTemplate t)
-	{
-		if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-		var api = new APIHelper();
-		var result = await api.TakeOffOnWatermark(Global.CurrentUser.ID, t.WatermarkId);
-		if (result.success && result.data)
-		{
-			t.Visible = !t.Visible;
-			StateHasChanged();
-		}
-	}
+        var target = Global.AppPath.TemplatesFolder + $"{showUpload.Id}.zip";
+        if (File.Exists(target)) File.Delete(target);
+        Common.ShowMsg(PopupService, message, severity);
+        loading = false;
+        StateHasChanged();
+    }
 
 }

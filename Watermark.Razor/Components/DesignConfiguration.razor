@@ -1,0 +1,139 @@
+﻿@using Masa.Blazor
+@using System.Collections.Concurrent
+@using Watermark.Win.Models
+@using Shared.Enums
+
+<div style="@Style">
+    <MTabs @bind-Value="tab" Height="30" FixedTabs>
+        @foreach (var sub in tabs)
+        {
+            <MTab Value="sub">
+                @sub
+            </MTab>
+        }
+    </MTabs>
+    <div style="overflow-y: auto; scrollbar-width: none; height:calc(100% - 30px);">
+        <MTabsItems Value="@tab">
+            <MTabItem Value="@("画布")">
+                <MCard Flat>
+                    <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
+                    <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
+
+                    <MRadioGroup @bind-Value="canvas.CanvasType" Column>
+                        <MRadio Label="单图" TValue="CanvasType" Value="@(CanvasType.Normal)" />
+                        <MRadio Label="拼图" TValue="CanvasType" Value="@(CanvasType.Split)" />
+                    </MRadioGroup>
+
+                    @if (canvas.CanvasType == CanvasType.Normal)
+                    {
+                        <Watermark.Razor.Parts.ExpandPanel Desc="基本图片" @bind-Expanded="canvas.ImageProperties.Show" Class="my-1">
+                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" />
+                        </Watermark.Razor.Parts.ExpandPanel>
+                        <Watermark.Razor.Parts.ExpandPanel Desc="边距" Expanded="true" Class="my-1" ShowSwitch="false">
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Top" Step="1" Name="上边距" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Bottom" Step="1" Name="下边距" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Left" Step="1" Name="左边距" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Right" Step="1" Name="右边距" />
+                        </Watermark.Razor.Parts.ExpandPanel>
+                        <Watermark.Razor.Parts.ExpandPanel Desc="边框等宽" Expanded="true" Class="my-1" ShowSwitch="false" FlexStart="true">
+                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Top" Dense HideDetails="true" Label="上"></MCheckbox>
+                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Bottom" Dense HideDetails="true" Label="下"></MCheckbox>
+                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Left" Dense HideDetails="true" Label="左"></MCheckbox>
+                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Right" Dense HideDetails="true" Label="右"></MCheckbox>
+                        </Watermark.Razor.Parts.ExpandPanel>
+
+                        <Watermark.Razor.Parts.ExpandPanel Desc="阴影" @bind-Expanded="canvas.ImageProperties.EnableShadow" Class="my-1">
+                            <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@canvas.ImageProperties.ShadowColor" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.ShadowRange" Step="1" Name="深度" Unit="" />
+                        </Watermark.Razor.Parts.ExpandPanel>
+
+                        <Watermark.Razor.Parts.ExpandPanel Desc="圆角" @bind-Expanded="canvas.ImageProperties.EnableRadius" Class="my-1">
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.CornerRadius" Step="1" Name="度数" Unit="" />
+                        </Watermark.Razor.Parts.ExpandPanel>
+
+                        <Watermark.Razor.Parts.ExpandPanel Desc="背景高斯模糊" @bind-Expanded="canvas.ImageProperties.EnableGaussianBlur" Class="my-1">
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.GaussianDeep" Step="1" Name="深度" Unit="" />
+                        </Watermark.Razor.Parts.ExpandPanel>
+
+
+
+
+                    }
+                    else
+                    {
+                        <MSelect Value="canvas.LengthWidthRatio" Dense Items="Radioes" ItemText="e=>e" ItemValue="e=>e" ValueChanged="Changed" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomWidth" Step="1" Name="自定义宽度" Unit="px" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomHeight" Step="1" Name="自定义高度" Unit="px" />
+                    }
+                </MCard>
+            </MTabItem>
+            <MTabItem Value="@("画幅")">
+
+                <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="#fff">
+                    <MSelect Items="Radioes"
+                             ItemText="e => e"
+                             ItemValue="u => u"
+                             TItem="string"
+                             TValue="string"
+                             TItemValue="string"
+                             @bind-Value="canvas.LengthWidthRatio"
+                             Dense
+                             HideDetails="true"
+                             PersistentHint
+                             Label="" Class="ma-1">
+                    </MSelect>
+                    <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.BorderPadding" Step="1" Name="内边距" Unit="%" />
+                    <Watermark.Razor.Parts.ExpandPanel Desc="阴影" @bind-Expanded="canvas.FrameProperties.EnableShadow" Class="my-1">
+                        <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@canvas.FrameProperties.ShadowColor" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.ShadowRange" Step="1" Name="深度" Unit="" />
+                    </Watermark.Razor.Parts.ExpandPanel>
+
+
+                    <Watermark.Razor.Parts.ExpandPanel Desc="圆角" @bind-Expanded="canvas.FrameProperties.EnableRadius" Class="my-1">
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.CornerRadius" Step="1" Name="度数" Unit="" />
+                    </Watermark.Razor.Parts.ExpandPanel>
+                    <Watermark.Razor.Parts.ExpandPanel Desc="背景高斯模糊" @bind-Expanded="canvas.FrameProperties.EnableGaussianBlur" Class="my-1">
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.GaussianDeep" Step="1" Name="深度" Unit="" />
+                    </Watermark.Razor.Parts.ExpandPanel>
+
+                    <Watermark.Razor.Parts.ExpandPanel Desc="原背景透明" @bind-Expanded="canvas.FrameProperties.BeforeBkTransparent" Class="my-1" />
+                </Watermark.Razor.Parts.ExpandPanel>
+            </MTabItem>
+            <MTabItem Value="@("图层")">
+                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" OpenExifDialogFontEvt="@OpenExifDialogFontEvt" RemoveImageEvt="@RemoveImageEvt" SelectImageEvt="@SelectImageEvt" SelectLocalFontEvt="@SelectLocalFontEvt" />
+            </MTabItem>
+        </MTabsItems>
+    </div>
+
+
+</div>
+
+
+@code {
+    [Parameter]
+    public string Style { get; set; }
+    StringNumber tab = "画布";
+    List<string> tabs = ["画布", "画幅", "图层"];
+    [Parameter]
+    public WMCanvas canvas { get; set; } = new();
+    [Parameter]
+    public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
+
+    [Parameter]
+    public EventCallback<string> Changed { get; set; }
+
+    [Parameter]
+    public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
+
+    List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
+
+    [Parameter]
+    public EventCallback<WMText> SelectLocalFontEvt { get; set; }
+    [Parameter]
+    public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
+    [Parameter]
+    public EventCallback<IWMControl> SelectImageEvt { get; set; }
+    [Parameter]
+    public EventCallback<WMContainer> RemoveImageEvt { get; set; }
+
+}

@@ -14,6 +14,10 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Parts\ColorPicker2.razor.cs" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
@@ -22,7 +26,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.3" />
 	<PackageReference Include="MudBlazor" Version="6.12.0" />
-	<PackageReference Include="Masa.Blazor" Version="1.7.0-beta.5" />
+	<PackageReference Include="Masa.Blazor" Version="1.7.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,6 +49,9 @@
     <Content Update="Components\TemplatesMarket.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+    <Content Update="Parts\ExpandVisiblePanel.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -53,6 +60,10 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="Components\FontStyleComp.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Parts\ColorPicker2.razor.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,291 @@
+@using System.Collections.Concurrent
+@using Masa.Blazor
+@using Watermark.Shared.Enums
+@using Watermark.Win.Models
+@using Watermark.Razor.Parts
+
+@foreach (var container in canvas.Children)
+{
+    <ExpandVisiblePanel Desc="@container.Name" Visible="true" Class="ma-1">
+        <ExpandPanel Desc="图片" ShowSwitch="false" Expanded="true">
+            <div style="align-items: center;display:flex;align-content:flex-start">
+                <Watermark.Razor.Parts.Label Name="背景图片" Small="true"></Watermark.Razor.Parts.Label>
+                <Watermark.Razor.Parts.IconButton Icon="@("mdi-open-in-new")" OnClick="(()=> SelectImage(container))" />
+                @if (ImagesBase64.TryGetValue(container.ID, out string? _))
+                {
+                    <MDivider Vertical="true" Class="mx-2" />
+                    <IconButton Icon="@("mdi-delete")" OnClick="() => RemoveImage(container)" />
+                }
+                @if (canvas.CanvasType == CanvasType.Split)
+                {
+                    <MDivider Vertical="true" Class="mx-2" />
+                    <Label Name="固定图片"></Label>
+                    <MSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="Color.Primary" />
+                }
+            </div>
+            <MDivider Class="my-2" />
+            @if (ImagesBase64.TryGetValue(container.ID, out string? src))
+            {
+                <ImageSelect ImagesBase64="@ImagesBase64" Key="@container.ID" />
+            }
+            else
+            {
+                <ColorPicker Name="背景颜色" @bind-Color="@container.BackgroundColor" />
+            }
+        </ExpandPanel>
+        <ExpandPanel @bind-Expanded="container.ContainerProperties.EnableShadow" Desc="阴影" Class="my-1">
+            <ColorPicker Name="颜色" @bind-Color="container.ContainerProperties.ShadowColor" />
+            <SliderInput @bind-Value="@container.ContainerProperties.ShadowRange" Name="深度" />
+        </ExpandPanel>
+        <ExpandPanel @bind-Expanded="container.ContainerProperties.EnableRadius" Desc="圆角" Class="my-1">
+            <SliderInput @bind-Value="@container.ContainerProperties.CornerRadius" Name="度数" />
+        </ExpandPanel>
+        <ExpandPanel ShowSwitch="false" Desc="旋转角度" Expanded="true">
+            <SliderInput @bind-Value="@container.Angle" />
+        </ExpandPanel>
+        <ExpandPanel Desc="布局" ShowSwitch="false" Expanded="true" Class="my-1">
+            <ExpandPanel Desc="容器内组件水平对齐" ShowSwitch="false" Class="my-1" Expanded="true">
+                <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" ValueChanged="(e) => container.HorizontalAlignment = (Watermark.Shared.Enums.HorizontalAlignment)e" />
+            </ExpandPanel>
+            <ExpandPanel Desc="容器内组件竖直对齐" ShowSwitch="false" Class="my-1" Expanded="true">
+                <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" ValueChanged="(e) => container.VerticalAlignment = (Watermark.Shared.Enums.VerticalAlignment)e" />
+            </ExpandPanel>
+
+            <ExpandPanel Desc="容器内组件堆叠方向" ShowSwitch="false" Class="my-1" Expanded="true">
+                <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => container.Orientation = (Watermark.Shared.Enums.Orientation)e" />
+            </ExpandPanel>
+
+            <ExpandPanel Desc="容器依靠方向" ShowSwitch="false" Class="my-1" Expanded="true">
+                <ButtonGroup Type="ButtonGroup.GroupItemType.TBLR" ValueChanged="(e) => container.ContainerAlignment = (Watermark.Shared.Enums.ContainerAlignment)e" />
+            </ExpandPanel>
+        </ExpandPanel>
+        <ExpandPanel ShowSwitch="false" Desc="边距和比例" Class="my-1" Expanded="true">
+            <SliderInput @bind-Value="@container.Margin.Top" Name="上边距" Unit="%" />
+            <SliderInput @bind-Value="@container.Margin.Bottom" Name="下边距" Unit="%" />
+            <SliderInput @bind-Value="@container.Margin.Left" Name="左边距" Unit="%" />
+            <SliderInput @bind-Value="@container.Margin.Right" Name="右边距" Unit="%" />
+            <SliderInput @bind-Value="@container.HeightPercent" Name="高" Unit="%" />
+            <SliderInput @bind-Value="@container.WidthPercent" Name="宽" Unit="%" />
+        </ExpandPanel>
+        <ExpandVisiblePanel Desc="组件设置" ShowIcon="false">
+            @foreach (var ctrl in container.Controls)
+            {
+                @if (ctrl is WMContainer mContainer)
+                {
+                    <ExpandVisiblePanel Desc="@mContainer.Name" ShowIcon="false">
+                        <ExpandPanel Desc="容器内组件水平对齐" ShowSwitch="false" Expanded="true">
+                            <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" ValueChanged="(e) => container.HorizontalAlignment = (HorizontalAlignment)e" />
+                        </ExpandPanel>
+
+                        <ExpandPanel Desc="容器内组件竖直对齐" ShowSwitch="false" Expanded="true">
+                            <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" ValueChanged="(e) => container.VerticalAlignment = (VerticalAlignment)e" />
+                        </ExpandPanel>
+                        <ExpandPanel Desc="边距和比例">
+                            <SliderInput @bind-Value="@mContainer.Margin.Top" Name="上边距" Unit="%" />
+                            <SliderInput @bind-Value="@mContainer.Margin.Bottom" Name="下边距" Unit="%" />
+                            <SliderInput @bind-Value="@mContainer.Margin.Left" Name="左边距" Unit="%" />
+                            <SliderInput @bind-Value="@mContainer.Margin.Right" Name="右边距" Unit="%" />
+                            <SliderInput @bind-Value="@mContainer.HeightPercent" Name="高" Unit="%" />
+                            <SliderInput @bind-Value="@mContainer.WidthPercent" Name="宽(0自动计算)" Unit="%" />
+                        </ExpandPanel>
+                        @foreach (var c_comp in mContainer.Controls)
+                        {
+                            <ExpandPanel Desc="@c_comp.Name" Expanded="true" ShowSwitch="false">
+                                <ExpandPanel Desc="边距和比例" Expanded="true" ShowSwitch="false">
+                                    <SliderInput @bind-Value="@c_comp.Margin.Top" Name="上边距" Unit="%" />
+                                    <SliderInput @bind-Value="@c_comp.Margin.Bottom" Name="下边距" Unit="%" />
+                                    <SliderInput @bind-Value="@c_comp.Margin.Left" Name="左边距" Unit="%" />
+                                    <SliderInput @bind-Value="@c_comp.Margin.Right" Name="右边距" Unit="%" />
+                                    <SliderInput @bind-Value="@c_comp.Percent" Name="组件占容器比例" Unit="%" />
+                                </ExpandPanel>
+                                @if (c_comp is WMLine mLine)
+                                {
+                                    <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false">
+                                        <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
+                                        <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
+                                            <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
+                                        </ExpandPanel>
+                                        <SliderInput Name="粗细" @bind-Value="@mLine.Thickness" Unit="px" />
+                                    </ExpandPanel>
+                                }
+                                else if (c_comp is WMLogo mLogo)
+                                {
+                                    <ExpandPanel Desc="图片" Expanded="true" ShowSwitch="false">
+                                        <ExpandPanel @bind-Expanded="mLogo.White2Transparent" Desc="白底转透明像素" />
+                                        <ExpandPanel @bind-Expanded="mLogo.AutoSetLogo" Desc="自动识别品牌图标" />
+                                        <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" SelectDefaultImage="()=> SelectImage(mLogo)" />
+                                    </ExpandPanel>
+                                }
+                                else if (c_comp is WMText mText)
+                                {
+
+                                    <ExpandPanel Desc="字体" Expanded="true" ShowSwitch="false">
+                                        <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
+                                        <ToggleButton @bind-Open="@mText.IsItalic" On="@("mdi-format-italic")" Off="@("mdi-format-italic")" />
+                                        <ToggleButton @bind-Open="@mText.IsBold" On="@("mdi-format-bold")" Off="@("mdi-format-bold")" />
+                                        <ExpandPanel Desc="内容" Expanded="true" ShowSwitch="false">
+                                            <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;">
+                                                <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+                                                    @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+                                                </div>
+                                                <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>OpenExifDialog(mText))" />
+                                            </div>
+                                        </ExpandPanel>
+
+
+                                        <SliderInput @bind-Value="@mText.FontSize" Name="字体大小" Unit="px" />
+                                        <ExpandPanel Desc="@("字体：" + mText.FontFamily)" Class="my-1" ShowSwitch="false" Expanded="true" FlexStart="true">
+                                            <MSelect ItemText="e => e"
+                                                     ItemValue="u => u"
+                                                     @bind-Value="mText.FontFamily"
+                                                     Dense="true" TValue="string"
+                                                     TItem="string" TItemValue="string"
+                                                     Items="SkiaSharp.SKFontManager.Default.FontFamilies.ToList()"
+                                                     Label="系统字体"
+                                                     HideDetails="true"
+                                                     Style="white-space: nowrap;" />
+                                            <MButton Small Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">
+                                                <MIcon>mdi-format-font</MIcon>字体库
+                                            </MButton>
+                                        </ExpandPanel>
+
+                                    </ExpandPanel>
+                                    <ExpandPanel @bind-Expanded="mText.EnableBorder" Desc="文字边框">
+                                        <SliderInput @bind-Value="@mText.BorderPadding" Name="内边距" Unit="px" />
+                                        <SliderInput @bind-Value="@mText.BorderWidth" Name="边框宽度" Unit="px" />
+                                        <SliderInput @bind-Value="@mText.BorderRadius" Name="边框圆角度数" Unit="px" />
+                                        <ColorPicker Name="边框颜色" @bind-Color="mText.BorderColor" />
+
+                                    </ExpandPanel>
+                                }
+                            </ExpandPanel>
+                        }
+                    </ExpandVisiblePanel>
+                }
+                else
+                {
+
+                    <ExpandVisiblePanel Desc="@ctrl.Name" ShowIcon="false">
+                        <ExpandPanel Desc="边距和比例" Expanded="true" ShowSwitch="false">
+                            <SliderInput @bind-Value="@ctrl.Margin.Top" Name="上边距" Unit="%" />
+                            <SliderInput @bind-Value="@ctrl.Margin.Bottom" Name="下边距" Unit="%" />
+                            <SliderInput @bind-Value="@ctrl.Margin.Left" Name="左边距" Unit="%" />
+                            <SliderInput @bind-Value="@ctrl.Margin.Right" Name="右边距" Unit="%" />
+                            <SliderInput @bind-Value="@ctrl.Percent" Name="组件占容器比例" Unit="%" />
+                        </ExpandPanel>
+                        @if (ctrl is WMLine mLine)
+                        {
+                            <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false">
+                                <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
+                                <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
+                                    <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
+                                </ExpandPanel>
+                                <SliderInput Name="粗细" @bind-Value="@mLine.Thickness" Unit="px" />
+                            </ExpandPanel>
+                        }
+                        else if (ctrl is WMLogo mLogo)
+                        {
+
+                            <ExpandPanel Desc="图片" Expanded="true" ShowSwitch="false">
+                                <ExpandPanel @bind-Expanded="mLogo.White2Transparent" Desc="白底转透明像素" />
+                                <ExpandPanel @bind-Expanded="mLogo.AutoSetLogo" Desc="自动识别品牌图标" />
+                                <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" SelectDefaultImage="()=> SelectImage(mLogo)" />
+                            </ExpandPanel>
+                        }
+                        else if (ctrl is WMText mText)
+                        {
+                            <ExpandPanel Desc="字体" Expanded="true" ShowSwitch="false">
+                                <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
+                                <ToggleButton @bind-Open="@mText.IsItalic" On="@("mdi-format-italic")" Off="@("mdi-format-italic")" />
+                                <ToggleButton @bind-Open="@mText.IsBold" On="@("mdi-format-bold")" Off="@("mdi-format-bold")" />
+                                <ExpandPanel Desc="内容" Expanded="true" ShowSwitch="false">
+                                    <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;">
+                                        <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+                                            @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
+                                        </div>
+                                        <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>OpenExifDialog(mText))" />
+                                    </div>
+                                </ExpandPanel>
+
+
+                                <SliderInput @bind-Value="@mText.FontSize" Name="字体大小" Unit="px" />
+                                <ExpandPanel Desc="@("字体：" + mText.FontFamily)" Class="my-1" ShowSwitch="false" Expanded="true" FlexStart="true">
+                                    <MSelect ItemText="e => e"
+                                             ItemValue="u => u"
+                                             @bind-Value="mText.FontFamily"
+                                             Dense="true" TValue="string"
+                                             TItem="string" TItemValue="string"
+                                             Items="SkiaSharp.SKFontManager.Default.FontFamilies.ToList()"
+                                             Label="系统字体"
+                                             HideDetails="true"
+                                             Style="white-space: nowrap;" />
+                                    <MButton Small Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">
+                                        <MIcon>mdi-format-font</MIcon>字体库
+                                    </MButton>
+                                </ExpandPanel>
+
+                            </ExpandPanel>
+                            <ExpandPanel @bind-Expanded="mText.EnableBorder" Desc="文字边框">
+                                <SliderInput @bind-Value="@mText.BorderPadding" Name="内边距" Unit="px" />
+                                <SliderInput @bind-Value="@mText.BorderWidth" Name="边框宽度" Unit="px" />
+                                <SliderInput @bind-Value="@mText.BorderRadius" Name="边框圆角度数" Unit="px" />
+                                <ColorPicker Name="边框颜色" @bind-Color="mText.BorderColor" />
+
+                            </ExpandPanel>
+                        }
+                    </ExpandVisiblePanel>
+                }
+            }
+        </ExpandVisiblePanel>
+    </ExpandVisiblePanel>
+}
+@code {
+    [Parameter]
+    public WMCanvas canvas { get; set; }
+
+    [Parameter]
+    public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
+    [Parameter]
+    public EventCallback<WMText> SelectLocalFontEvt { get; set; }
+    [Parameter]
+    public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
+    [Parameter]
+    public EventCallback<IWMControl> SelectImageEvt { get; set; }
+    [Parameter]
+    public EventCallback<WMContainer> RemoveImageEvt { get; set; }
+
+    void SelectLocalFont(WMText mText)
+    {
+        if (SelectLocalFontEvt.HasDelegate)
+        {
+            SelectLocalFontEvt.InvokeAsync(mText);
+        }
+    }
+    void OpenExifDialog(WMText mText)
+    {
+        if (OpenExifDialogFontEvt.HasDelegate)
+        {
+            OpenExifDialogFontEvt.InvokeAsync(mText);
+        }
+    }
+    void SelectImage(IWMControl mLogo)
+    {
+        if (SelectImageEvt.HasDelegate)
+        {
+            SelectImageEvt.InvokeAsync(mLogo);
+        }
+    }
+
+    void RemoveImage(WMContainer container)
+    {
+        if (RemoveImageEvt.HasDelegate)
+        {
+            RemoveImageEvt.InvokeAsync(container);
+        }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+}

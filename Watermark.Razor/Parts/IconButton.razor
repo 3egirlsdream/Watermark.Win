@@ -1,0 +1,31 @@
+﻿@using Masa.Blazor
+
+<style>
+    .icon-button {
+        width: 28px !important;
+        min-width: 0px !important
+    }
+</style>
+
+<MButton Style="@Style" Small Text="@Text" Class="@($"icon-button {Class}")" Elevation="Elevation" OnClick="OnClick" Color="@Color">
+    <MIcon Color="@IconColor">@Icon</MIcon>
+</MButton>
+
+@code {
+    [Parameter]
+    public bool Text { get; set; }
+    [Parameter]
+    public string Color { get; set; }
+    [Parameter]
+    public string IconColor { get; set; }
+    [Parameter]
+    public string Style { get; set; }
+    [Parameter]
+    public string Class { get; set; }
+    [Parameter] 
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter]
+    public string Icon { get; set; }
+    [Parameter]
+    public StringNumber Elevation { get; set; } = 0;
+}

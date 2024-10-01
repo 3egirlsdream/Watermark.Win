@@ -1,0 +1,46 @@
+﻿@using Masa.Blazor
+
+<style>
+    .icon-button {
+        width: 28px;
+        min-width: 0px !important
+    }
+
+        .icon-button .m-btn--icon.m-size--default {
+            height: 28px;
+            width: 28px;
+        }
+
+        .icon-button .m-btn--round {
+            border-radius: 4px;
+        }
+</style>
+
+<MButton Small Class="@($"icon-button {Class}")" Style="@($"color: {(Open ? OnColor : OffColor)}")" Elevation="@Elevation">
+    <MToggle Value="Open" DataOn="@On" DataOff="@Off" ValueChanged="OpenChanged">
+        <MButton OnClick="@context.Toggle" IconName="@context.Data" />
+    </MToggle>
+</MButton>
+
+@code {
+    [Parameter]
+    public string Class { get; set; }
+    [Parameter]
+    public StringNumber Elevation { get; set; } = 0;
+
+    [Parameter]
+    public bool Open { get; set; }
+
+    [Parameter]
+    public string On { get; set; }
+
+    [Parameter]
+    public string Off { get; set; }
+    [Parameter]
+    public string OnColor { get; set; } = "#1976d2";
+    [Parameter]
+    public string OffColor { get; set; } = "red";
+
+    [Parameter]
+    public EventCallback<bool> OpenChanged { get; set; }
+}

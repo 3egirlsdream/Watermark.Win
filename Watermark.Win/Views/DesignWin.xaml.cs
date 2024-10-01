@@ -18,11 +18,14 @@ namespace Watermark.Win.Views
         public DesignWin()
         {
             var services = IocHelper.GetIoc();
-
             services.AddSingleton(new WMCanvas());
             services.AddSingleton("");
 			services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
-			Resources.SetIoc(services);
+
+            var design = new WMDesignFunc();
+			design.CurrentCanvas = new WMCanvas();
+            services.AddSingleton(design);
+            Resources.SetIoc(services);
             InitializeComponent();
         }
         public DesignWin(WMCanvas canvas, string cloud = "")

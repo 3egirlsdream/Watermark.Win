@@ -61,3 +61,19 @@ a, .btn-link {
     flex-direction: column;
     --sk-color: white;
 }
+
+
+.my-1 {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.ma-1 {
+    margin: 4px;
+}
+
+.ml-1 {
+    margin-left:4px;
+}
+.pa-1 {
+    padding: 4px;
+}

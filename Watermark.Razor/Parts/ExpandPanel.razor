@@ -1,0 +1,70 @@
+﻿@using Masa.Blazor
+
+<style>
+    .expand-style {
+        margin-top: 0px !important;
+        padding-top: 0px !important;
+    }
+
+        .expand-style .m-input__slot {
+            margin-bottom: 0;
+        }
+
+        .expand-style .m-input__control .m-input__slot .m-input--selection-controls__wrapper {
+            margin-inline-end: 0px !important;
+        }
+
+        .expand-style .m-messages {
+            min-height:0px;
+            height:0px;
+        }
+
+        .flex-start {
+            display:flex;
+            justify-content:flex-start;
+        }
+</style>
+
+<MCard Flat Color="@Color" Class="@Class">
+    <div style="display:flex;justify-content:space-between; padding:0px 6px;min-height:40px">
+        <Label Name="@Desc" Small="false" />
+        @if (ShowSwitch)
+        {
+            <MSwitch Value="@Expanded" Color="#1976d2" Flat TValue="bool" Class="expand-style" ValueChanged="ExpandedChanged" />
+        }
+    </div>
+    @if (Expanded && ChildContent != null)
+    {
+        <MDivider/>
+    }
+    <ExpandTransition>
+        <div style="width:100%;height:auto;">
+            <MCard Show=@Expanded class="@($"mx-auto py-1 {(FlexStart ? "flex-start" : "")}")" Elevation="0" Flat Color="@Color">
+                @ChildContent
+            </MCard>
+        </div>
+        
+    </ExpandTransition>
+</MCard>
+
+
+@code {
+    [Parameter]
+    public bool ShowSwitch { get; set; } = true;
+    [Parameter]
+    public string Class { get; set; }
+    [Parameter]
+    public bool Expanded { get; set; }
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    [Parameter]
+    public string Desc { get; set; }
+    [Parameter]
+    public string Color { get; set; } = "#F5F5F5";
+    [Parameter]
+    public EventCallback<bool> ExpandedChanged { get; set; }
+
+    [Parameter]
+    public bool FlexStart { get; set; }
+    
+}

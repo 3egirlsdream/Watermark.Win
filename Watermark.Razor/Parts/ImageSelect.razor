@@ -1,0 +1,38 @@
+﻿@using System.Collections.Concurrent
+@using Masa.Blazor
+
+<style>
+    .image-select {
+        border-radius: 5px;
+        border: 1px dashed lightgrey;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2px auto
+    }
+</style>
+
+@if (false && ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
+{
+    @src
+    <MImage Height="@Size" Contain Src="@src" @onclick="SelectDefaultImage" />
+}
+else
+{
+    <div style="@($"width:{Size}px;height:{Size}px;")" @onclick="SelectDefaultImage" class="image-select">
+        <MIcon Size="@("8rem")" Style="color:lightgrey">mdi-image-plus</MIcon>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
+    [Parameter]
+    public string Key { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
+
+    [Parameter]
+    public int Size { get; set; } = 250;
+}

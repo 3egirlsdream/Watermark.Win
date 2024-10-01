@@ -1,11 +1,15 @@
 ﻿@using System.Diagnostics
 @using System.IO
-@using MudBlazor
+@using Masa.Blazor
+@using Masa.Blazor.Presets
 @using Watermark.Razor
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Enums
 @using Watermark.Win.Models
 @using Watermark.Shared.Models
-@inject ISnackbar Snackbar
+@inject APIHelper api
+
+@inject IPopupService PopupService
 @implements IDisposable
 
 <style>
@@ -19,11 +23,11 @@
     .fullscreen {
         opacity: 0;
         position: absolute;
-        right: 0px;
     }
 
         .fullscreen:hover {
             opacity: 1;
+            z-index: 10;
         }
 
     .fullscreen-icon {
@@ -33,6 +37,7 @@
         .fullscreen {
             opacity: 1;
             cursor: pointer;
+            z-index: 10;
         }
 
     .dfm-card-name {
@@ -47,7 +52,8 @@
         align-items: center;
         text-overflow: ellipsis;
         white-space: nowrap;
-        overflow-x: hidden
+        overflow-x: hidden;
+        height: 24px;
     }
 
     .dfm-card-footer {
@@ -57,144 +63,48 @@
         align-items: center;
     }
 </style>
-<MudDialog Style="width:90%; height:90%;overflow-y:hidden">
-    <DialogContent>
-        <MudToolBar Style="padding:0px">
-            <MudSpacer />
-            <MudTextField @bind-Value="Search" Label="搜索" Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Default" @onkeyup="OnKeyDown" />
-        </MudToolBar>
-        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 70px);overflow-y:auto;padding:5px;">
-            @if (ZipedTemplates != null)
-            {
-                <MudItem xs="12">
-                    <MudText Typo="Typo.h4"><b>推荐</b></MudText>
-                </MudItem>
-                @foreach (var t in ZipedTemplates.Where(x => x.Recommend))
-                {
-                    <MudItem xs="2" Style="@($"display:{(t.State ? string.Empty : "none")};")">
-                        <MudPaper Elevation="0" Style="position:relative;" Class="fullscreen-icon">
-                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
+<MCard Flat Style="height:100%">
+    <div style="height:48px;display:flex;justify-content:space-between;align-items: center;">
+        <span style="font-weight:700; font-size:2rem">模板市场</span>
+        <div style="width:220px">
+            <MTextField @bind-Value="Search" Label="搜索" HideDetails="true" Dense AppendIcon="@ICONS.Search" @onkeyup="OnKeyDown" />
+        </div>
+    </div>
+    <div style="height:calc(100% - 48px); overflow:auto;scrollbar-width: none;">
+        @foreach (var sub in subscribed)
+        {
+            <MCol Cols="12">
+                <div style="font-size:1.5rem"><b>@sub.Item1</b></div>
+            </MCol>
+            @RenderProductList(sub.Item2)
+        }
+    </div>
 
-                            <div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;top: 190px;">
-                                <MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
-                                <MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
-                            </div>
-                            <MudCard style="height:232px;padding:16px;background:#E5E5E5" class="flex-vertical-center" Elevation="0">
-                                @if (!string.IsNullOrEmpty(t.Src))
-                                {
-                                    <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-                                }
-                                else
-                                {
-                                    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                }
-                            </MudCard>
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                    @t.Name
-                                </MudText>
-                                <div style="display: flex; align-items: center;">
-                                    <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                    <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                </div>
-                            </div>
-                            <div class="dfm-card-user-name">
-                                <MudIcon Icon="@Icons.Material.Filled.Recommend" Color="Color.Warning" Size="Size.Small" />
-                                <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                    @t.UserDisplayName
-                                </MudText>
-                            </div>
-                        </MudPaper>
-                    </MudItem>
-                }
-            }
 
-            @if (subscribed != null)
-            {
-                @foreach (var sub in subscribed)
-                {
-                    @if (sub.Item2.Count > 0)
-                    {
-                        <MudItem xs="12">
-                            <MudText Typo="Typo.h4"><b>@sub.Item1</b></MudText>
-                        </MudItem>
-                    }
-                    @foreach (var t in sub.Item2)
-                    {
-                        <MudItem xs="2" Style="@($"display:{(t.State ? string.Empty : "none")};")">
-                            <MudPaper Elevation="0" Style="position:relative;" Class="fullscreen-icon">
-                                <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="Color.Default" Size="Size.Small" Style="" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" />
-                                <div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;top: 190px;">
-                                    <MudIconButton Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"background:{Colors.Grey.Lighten5};margin-right:10px")"></MudIconButton>
-                                    <MudIconButton Variant="Variant.Filled" Color="Color.Default" Icon="@Icons.Material.Filled.Share" Size="Size.Small" OnClick="()=>Share(t.WatermarkId)" Style="@($"background:{Colors.Grey.Lighten5};")"></MudIconButton>
-                                </div>
-                                <MudCard style="height:232px;padding:16px;background:#E5E5E5" class="flex-vertical-center" Elevation="0">
-                                    @if (!string.IsNullOrEmpty(t.Src))
-                                    {
-                                        <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-                                    }
-                                    else
-                                    {
-                                        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                                    }
-                                </MudCard>
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
-                                    <MudText Class="dfm-card-name" Typo="Typo.subtitle1">
-                                        @(t.Name ?? t.Desc)
-                                    </MudText>
-                                    <div style="display: flex; align-items: center;">
-                                        <MudIcon Icon="@Icons.Material.Filled.Download" Color="Color.Default" Style="cursor:pointer;height:14px;width:14px;" Size="Size.Small" />
-                                        <span style="font-size: 12px;line-height: 12px;">@t.DownloadTimes</span>
-                                    </div>
-                                </div>
-                                <div class="dfm-card-user-name">
-                                    @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
-                                    {
-                                        <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Warning" Size="Size.Small" />
-                                    }
-                                    else
-                                    {
-                                        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
-                                    }
-                                    <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
-                                        @t.UserDisplayName
-                                    </MudText>
-                                    <MudIconButton Icon="@Icons.Material.Filled.NotificationAdd" Size="Size.Small" Color="@(subscribed.Any(x=>x.Item1 == t.UserDisplayName) ? Color.Default : Color.Warning)" OnClick="()=>Subscribe(t.UserId)" Class="fullscreen" Style="float:right;" />
-                                </div>
-                            </MudPaper>
-                        </MudItem>
-                    }
-                }
-            }
+    <MOverlay @bind-Value="@loading" Dark="false" Absolute="false" ZIndex="9999" Color="#e6e6e6" Opacity="1">
+        <div Style="display:flex;flex-direction:column;height:160px;width:160px;align-items:center;justify-content:center">
+            <MProgressCircular Indeterminate="true" Color="primary" Class="my-1" />
+            <Label Name="@loadingMessage" />
+        </div>
+    </MOverlay>
+    <MDialog @bind-Value="@FocusImageShow" ContentStyle="height:80%;max-width:60%;overflow:hidden;">
+        <MCard Style="position:relative; background:#E5E5E5;margin:auto;padding:30px" Elevation="25" Width="@("100%")" Height="@("100%")">
+            <IconButton Icon="@ICONS.FullScreenExit" Color="#747474" Text="true" OnClick="()=>FocusImageShow = false" Style="position:absolute;right:0px;top:0px;" />
+            <MImage Contain Src="@FocusImage" Style="height: 100%; width:100%; " Class="rounded-lg" />
+        </MCard>
+    </MDialog>
 
-        </MudGrid>
-        <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
-            <MudStack Justify="Justify.Center">
-                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
-                <MudText Typo="Typo.subtitle1" Color="Color.Dark">
-                    <b>@loadingMessage</b>
-                </MudText>
-            </MudStack>
-        </MudOverlay>
-        <MudOverlay Visible="@FocusImageShow" DarkBackground="true" Absolute="false" ZIndex="9999">
-            <MudPaper Style="position:relative;background:#E5E5E5" Elevation="25">
-                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Primary" OnClick="()=>FocusImageShow = false" Style="position:absolute;right:0px;top:0px;" Size="Size.Small" />
-                <MudImage ObjectFit="ObjectFit.Contain" Src="@FocusImage" Style="height: 80vh;padding:30px;width:100%" Class="rounded-lg" />
-            </MudPaper>
-        </MudOverlay>
-    </DialogContent>
-</MudDialog>
+    <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
+        <LoginContent CloseEvent="() => showLogin = false" />
+    </MDialog>
+</MCard>
+
 
 
 @code {
-
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    [Inject]
-    private IDialogService DialogService { get; set; }
     [Parameter]
     public Func<string, Task> ClipboardAction { get; set; }
-
+    bool showLogin = false;
     bool loading = false;
     string loadingMessage = "正在加载模板...";
     string Search = "";
@@ -204,7 +114,7 @@
     List<WMZipedTemplate> hottest;
     List<WMZipedTemplate> newest;
     List<WMZipedTemplate> splits;
-    List<Tuple<string, List<WMZipedTemplate>>> subscribed;
+    List<Tuple<string, List<WMZipedTemplate>>> subscribed = [];
     int start = 1;
     string sortType = "最热门";
     string sortCode => sortType == "最热门" ? "countDesc" : "timeDesc";
@@ -229,9 +139,9 @@
             var api = new APIHelper();
             await api.PageVisitRecord(ProgramPage.Market, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
         }
         finally
         {
@@ -242,13 +152,11 @@
 
     async Task LoadTemplates()
     {
-        var helper = new APIHelper();
-        var allTemplates = (await helper.GetWatermarks("", start, 999, sortCode)).Where(x => x.Visible);
-        List<Task> tasks1 = new List<Task>();
+        var allTemplates = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
         var recommend = allTemplates.Where(x => x.Recommend);
-        hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(12).ToList();
-        newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
-        splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
+        var hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
+        var newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+        var splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
         ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
         var subUser = await IntiSubscribedUserList();
         subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
@@ -261,60 +169,93 @@
                 subscribed.Add(tup);
             }
         }
+        subscribed.Add(Tuple.Create("推荐", ZipedTemplates.Where(x => x.Recommend).ToList()));
 
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
-        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).ToList()));
+
+        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 12).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         StateHasChanged();
     }
+
+    internal RenderFragment RenderProductList(List<WMZipedTemplate> products) => __builder =>
+       {
+           <MRow Dense>
+               @foreach (var t in products)
+               {
+                   <MCol Cols="2" Style="@($"display:{(t.State ? string.Empty : "none")};")">
+                       <MCard Class="pa-2 fullscreen-icon" style="background:#E5E5E5;" Elevation="0" Flat>
+                           <IconButton Text="true" Icon="@ICONS.FullScreen" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" Style="right: 5px;top:5px;" IconColor="#747474" />
+
+                           <div class="dfm-card-footer fullscreen" style="position:absolute;right:10px;bottom: 10px;">
+                               <IconButton Elevation="5" Icon="@ICONS.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"margin-right:10px")" IconColor="#747474"></IconButton>
+                               <IconButton Elevation="5" Icon="@ICONS.Share" OnClick="()=>Share(t.WatermarkId)" IconColor="#747474"></IconButton>
+                           </div>
+                           @if (!string.IsNullOrEmpty(t.Src))
+                           {
+                               <MImage Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "215px" : "232px")};")" Src="@t.Src" Contain />
+                           }
+                           else
+                           {
+                               <MProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+                           }
+
+                           <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="GetTags(t.Tags)" />
+                           <div class="dfm-card-user-name">
+                               @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                               {
+                                   <MIcon Color="orange" Size="12">mdi-check-decagram</MIcon>
+                               }
+                               else
+                               {
+                                   <MIcon Icon="@ICONS.Account" Size="12" />
+                               }
+
+                               <span style="@($"color:#9E9E9E;padding-top: 2px;margin-left:2px;font-size:0.55rem")">
+                                   @t.UserDisplayName
+                               </span>
+                           </div>
+                       </MCard>
+                   </MCol>
+               }
+           </MRow>
+       };
 
     async void Share(string id)
     {
         var t = ClipboardAction.Invoke(id);
         await t;
         string message = "已复制ID到剪贴板";
-        Common.ShowMsg(Snackbar, message, Severity.Success);
+        Common.ShowMsg(PopupService, message, AlertTypes.Success);
     }
 
     async void Download(string watermarkId, string userId)
     {
-        var action = new Action(async () =>
-        {
-            string message = "";
-            Severity Severity = Severity.Success;
-            var helper = new APIHelper();
-            var result = await helper.Download(watermarkId, userId);
-            if (result)
-            {
-                Severity = Severity.Success;
-                message = "下载成功";
-                if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
-                {
-                    var _ = helper.AddILike(Global.CurrentUser.ID, watermarkId);
-                }
-            }
-            else
-            {
-                Severity = Severity.Error;
-                message = "下载失败";
-            }
-            Common.ShowMsg(Snackbar, message, Severity);
-        });
-
         if (Global.DeviceType != DeviceType.Mac && (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)))
         {
-            var rst = DialogService.Show<LoginDialog>("");
-            var dialogResult = await rst.Result;
-            if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
+            showLogin = true;
+            return;
+        }
+        string message = "";
+        AlertTypes Severity = AlertTypes.Success;
+        var helper = new APIHelper();
+        var result = await helper.Download(watermarkId, userId);
+        if (result)
+        {
+            Severity = AlertTypes.Success;
+            message = "下载成功";
+            if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
             {
-                action.Invoke();
+                var _ = helper.AddILike(Global.CurrentUser.ID, watermarkId);
             }
         }
         else
         {
-            action.Invoke();
+            Severity = AlertTypes.Error;
+            message = "下载失败";
         }
+        Common.ShowMsg(PopupService, message, Severity);
     }
 
     void OnKeyDown(KeyboardEventArgs e)
@@ -346,7 +287,7 @@
         }
         else
         {
-            Common.ShowMsg(Snackbar, result.message?.content, Severity.Error);
+            Common.ShowMsg(PopupService, result.message?.content, AlertTypes.Error);
         }
         return [];
     }
@@ -366,5 +307,8 @@
         newest = null;
         subscribed = null;
     }
-
+    public List<BlockTextTag> GetTags(List<string> tags)
+    {
+        return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
+    }
 }

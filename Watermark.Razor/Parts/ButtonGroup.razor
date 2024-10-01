@@ -1,0 +1,107 @@
+﻿@using Masa.Blazor
+@using Watermark.Shared.Enums;
+<MButtonGroup Value="@value" Mandatory ValueChanged="Changed" Dense Borderless Class="ml-1">
+    @if (Type == GroupItemType.TopCenterBottom)
+    {
+        @foreach (var item in TopCenterBottom)
+        {
+            <MButton Value="(int)item.Value">
+                <MIcon>@item.Icon</MIcon>
+            </MButton>
+        }
+    }
+    else if (Type == GroupItemType.HorizonVertical)
+    {
+        @foreach (var item in HorizonVertical)
+        {
+            <MButton Value="(int)item.Value">
+                <MIcon>@item.Icon</MIcon>
+            </MButton>
+        }
+    }
+    else if (Type == GroupItemType.TBLR)
+    {
+        @foreach (var item in TBLR)
+        {
+            <MButton Value="(int)item.Value">
+                <MIcon>@item.Icon</MIcon>
+            </MButton>
+        }
+    }
+    else if (Type == GroupItemType.LeftCenterRight)
+    {
+        @foreach (var item in LeftCenterRight)
+        {
+            <MButton Value="(int)item.Value">
+                <MIcon>@item.Icon</MIcon>
+            </MButton>
+        }
+    }
+</MButtonGroup>
+
+@code {
+    public 
+    StringNumber value;
+    List<GroupItem<VerticalAlignment>> TopCenterBottom = new()
+    {
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Top, "mdi-format-vertical-align-top"),
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Center, "mdi-format-vertical-align-center"),
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Bottom, "mdi-format-vertical-align-bottom")
+    };
+
+    List<GroupItem<Orientation>> HorizonVertical = new()
+    {
+        new GroupItem<Orientation>(Orientation.Horizontal, "mdi-border-horizontal"),
+        new GroupItem<Orientation>(Orientation.Vertical, "mdi-border-vertical"),
+    };
+
+    List<GroupItem<ContainerAlignment>> TBLR = new()
+    {
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Top, "mdi-format-vertical-align-top"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Bottom, "mdi-format-vertical-align-bottom"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Left, "mdi-format-horizontal-align-left"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Right, "mdi-format-horizontal-align-right"),
+    };
+
+    List<GroupItem<HorizontalAlignment>> LeftCenterRight = new()
+    {
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Left, "mdi-format-horizontal-align-left"),
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Center, "mdi-format-horizontal-align-center"),
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Right, "mdi-format-horizontal-align-right"),
+    };
+
+    [Parameter]
+    public GroupItemType Type { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
+    void Changed(StringNumber sn)
+    {
+        value = sn;
+        if(value != null)
+        {
+            ValueChanged.InvokeAsync(sn.AsT1);
+        }
+        
+    }
+
+    public enum GroupItemType
+    {
+        TopCenterBottom = 1,
+        HorizonVertical = 2,
+        TBLR = 3,
+        LeftCenterRight = 4
+    }
+
+    public class GroupItem<T>
+    {
+        public T Value { get; set; }
+        public string Icon { get; set; }
+        public GroupItem(T value, string icon)
+        {
+            Value = value;
+            Icon = icon;
+        }
+    }
+}

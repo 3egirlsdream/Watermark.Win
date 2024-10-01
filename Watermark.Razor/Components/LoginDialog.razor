@@ -1,25 +1,14 @@
-﻿@using MudBlazor
+﻿@using Masa.Blazor
 @using Watermark.Win.Models
-@inject ISnackbar Snackbar
 
-<MudDialog Style="min-width:400px;">
-    <DialogContent>
-        <MudForm Style="text-align:center">
-            <LoginContent CloseEvent="(e) => MudDialog.Close(e)" />
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-    </DialogActions>
-</MudDialog>
+<MDialog Style="min-width:400px;">
+    <LoginContent />
+</MDialog>
 
 
 
 
 @code {
-    [Inject]
-    private IDialogService DialogService { get; set; }
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
     [Parameter]
     public bool ShowHeader { get; set; } = true;
 }

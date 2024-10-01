@@ -1,0 +1,54 @@
+﻿@using MudBlazor
+<style>
+    .color-picker {
+        width: 100px;
+        height:32px;
+        
+        border-radius: 3px !important;
+        flex: none !important;
+    }
+
+        .color-picker .mud-input-control {
+            margin-top: 0px !important;
+        }
+
+            .color-picker .mud-input-control > .mud-input-control-input-container > div.mud-input.mud-input-text {
+                margin-top: 0px;
+                border-radius: 3px !important;
+                border: 1px solid #e3e3e3;
+            }
+
+
+        .color-picker .mud-input.mud-input-underline:before {
+            border: 0 !important;
+        }
+
+        .color-picker .mud-input > input.mud-input-root, div.mud-input-slot.mud-input-root {
+            width: auto;
+            font-weight: 300;
+        }
+
+        .color-picker .mud-input-adornment-end {
+            display: none;
+        }
+
+        .color-picker .mud-input-control-input-container label {
+            display: none;
+        }
+
+</style>
+<div style="display:flex; justify-content:space-between" class="ma-1">
+    <Label Name="@Name" Small/>
+    <ColorPicker2 />
+</div>
+
+@code {
+    [Parameter]
+    public string Color { get; set; } = "#FFFFFF";
+    [Parameter]
+    public string Name { get; set; }
+    [Parameter]
+    public bool Small { get; set; } = true;
+    [Parameter]
+    public EventCallback<string> ColorChanged { get; set; }
+}
