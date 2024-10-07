@@ -1,51 +1,65 @@
-﻿@using Microsoft.JSInterop
+﻿@using Masa.Blazor
+@using Microsoft.JSInterop
 @using MudBlazor
 @using System.Collections.Concurrent
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
-<MudDialog Style="max-width:400px;">
-    <DialogContent>
-        <MudForm>
-            <MudTextField @bind-Value="TemplateName" T="string" Label="模板名称" Required="true" RequiredError="模板名称不能为空" />
-            <MudStack Row Class="mt-5">
-                @if (!string.IsNullOrEmpty(Base64Src))
-                {
-                    <MudImage Width="250" ObjectFit="ObjectFit.Contain" Src="@Base64Src" />
-                }
-                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" OnClick="SelectExampleImage" Style="float:right;width:40px;height:40px;" />
-            </MudStack>
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="OK">
+<style>
+    .image-select1 {
+        border-radius: 5px;
+        border: 1px dashed lightgrey;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2px auto
+    }
+</style>
+
+<Masa.Blazor.MCard Flat>
+    <MTextField @bind-Value="TemplateName" TValue="string" Label="模板名称" Required="true" RequiredMessage="模板名称不能为空" />
+    <div style="display: flex; align-items: center; justify-content: center;">
+        @if (!string.IsNullOrEmpty(Base64Src))
+        {
+            <MImage Width="250" Contain Src="@Base64Src" @onclick="SelectExampleImage"/>
+        }
+        else
+        {
+            <div style="@($"width:{250}px;height:{250}px;")" @onclick="SelectExampleImage" class="image-select1">
+                <MIcon Size="@("8rem")" Style="color:lightgrey">mdi-image-plus</MIcon>
+            </div>
+        }
+    </div>
+    <MCardActions>
+        <MSpacer/>
+        <MButton OnClick="OK" Color="primary">
             @if (_processing)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <MProgressCircular Size="12" Indeterminate="true" />
             }
             else
             {
-                <MudText Typo="Typo.button">确定</MudText>
+                <span>确定</span>
             }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </MButton>
+    </MCardActions>
+</Masa.Blazor.MCard>
 
 
 
 
 @code {
-    [Inject]
-    private IDialogService DialogService { get; set; }
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
     [Parameter]
     public Action<WMCanvas> Ok { get; set; }
     [Parameter]
     public Func<Task<string>> SelectDefaultImageAction { get; set; }
     [Parameter]
     public string ID { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
 
     bool _processing = false;
     string TemplateName;
@@ -60,7 +74,10 @@
             Directory.CreateDirectory(basePath);
         }
         Ok?.Invoke(canvas);
-        MudDialog.Close();
+        if (OnClose.HasDelegate)
+        {
+            OnClose.InvokeAsync(true);
+        }
     }
 
     async void SelectExampleImage()

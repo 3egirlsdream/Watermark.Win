@@ -1,21 +1,16 @@
 @using System.Collections.Concurrent
 @using Masa.Blazor
 @using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Watermark.Razor.Parts
 
 @foreach (var container in canvas.Children)
 {
-    <ExpandVisiblePanel Desc="@container.Name" Visible="true" Class="ma-1">
-        <ExpandPanel Desc="图片" ShowSwitch="false" Expanded="true">
+    <ExpandVisiblePanel Desc="@container.Name" @bind-Visible="container.Enabled" Class="ma-1" Color="primary">
+        <ExpandPanel Desc="图片" ShowSwitch="false" Expanded="true" Rounded="false">
             <div style="align-items: center;display:flex;align-content:flex-start">
                 <Watermark.Razor.Parts.Label Name="背景图片" Small="true"></Watermark.Razor.Parts.Label>
-                <Watermark.Razor.Parts.IconButton Icon="@("mdi-open-in-new")" OnClick="(()=> SelectImage(container))" />
-                @if (ImagesBase64.TryGetValue(container.ID, out string? _))
-                {
-                    <MDivider Vertical="true" Class="mx-2" />
-                    <IconButton Icon="@("mdi-delete")" OnClick="() => RemoveImage(container)" />
-                }
                 @if (canvas.CanvasType == CanvasType.Split)
                 {
                     <MDivider Vertical="true" Class="mx-2" />
@@ -26,7 +21,7 @@
             <MDivider Class="my-2" />
             @if (ImagesBase64.TryGetValue(container.ID, out string? src))
             {
-                <ImageSelect ImagesBase64="@ImagesBase64" Key="@container.ID" />
+                <ImageSelect ImagesBase64="ImagesBase64" Key="@container.ID" Delete="() => RemoveImage(container)" Size="250" SelectDefaultImage="()=> SelectImage(container)" />
             }
             else
             {
@@ -121,14 +116,14 @@
 
                                     <ExpandPanel Desc="字体" Expanded="true" ShowSwitch="false">
                                         <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
-                                        <ToggleButton @bind-Open="@mText.IsItalic" On="@("mdi-format-italic")" Off="@("mdi-format-italic")" />
-                                        <ToggleButton @bind-Open="@mText.IsBold" On="@("mdi-format-bold")" Off="@("mdi-format-bold")" />
+                                        <ToggleButton @bind-Open="@mText.IsItalic" On="@ICONS.Italic" Off="@ICONS.Italic" />
+                                        <ToggleButton @bind-Open="@mText.IsBold" On="@ICONS.Bold" Off="@ICONS.Bold" />
                                         <ExpandPanel Desc="内容" Expanded="true" ShowSwitch="false">
                                             <div Style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;">
                                                 <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                                     @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                                 </div>
-                                                <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>OpenExifDialog(mText))" />
+                                                <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{wMText = mText; showExifConfig = true; })" />
                                             </div>
                                         </ExpandPanel>
 
@@ -144,7 +139,7 @@
                                                      Label="系统字体"
                                                      HideDetails="true"
                                                      Style="white-space: nowrap;" />
-                                            <MButton Small Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">
+                                            <MButton Small Style="white-space: nowrap;" OnClick="()=>{showFontConfig = true; }">
                                                 <MIcon>mdi-format-font</MIcon>字体库
                                             </MButton>
                                         </ExpandPanel>
@@ -203,7 +198,7 @@
                                         <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
                                             @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                         </div>
-                                        <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>OpenExifDialog(mText))" />
+                                        <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />
                                     </div>
                                 </ExpandPanel>
 
@@ -219,7 +214,7 @@
                                              Label="系统字体"
                                              HideDetails="true"
                                              Style="white-space: nowrap;" />
-                                    <MButton Small Style="white-space: nowrap;" OnClick="()=>SelectLocalFont(mText)">
+                                    <MButton Small Style="white-space: nowrap;" OnClick="()=>{showFontConfig = true;}">
                                         <MIcon>mdi-format-font</MIcon>字体库
                                     </MButton>
                                 </ExpandPanel>
@@ -239,35 +234,44 @@
         </ExpandVisiblePanel>
     </ExpandVisiblePanel>
 }
+
+@if (canvas != null && showExifConfig)
+{
+    <MDialog ContentStyle="width:90%;height:90%;" @bind-Value="showExifConfig">
+        <ExifConfig CanvasType="@canvas.CanvasType" ContainerId2Name="@containerId2Name" mText="wMText" OnClose="()=>showExifConfig = false"/>
+    </MDialog>
+}
+
+@if(showFontConfig)
+{
+    <MDialog ContentStyle="width:90%;height:90%;" @bind-Value="showFontConfig">
+        <FontsDialog />
+    </MDialog>
+}
 @code {
     [Parameter]
     public WMCanvas canvas { get; set; }
-
     [Parameter]
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
-    [Parameter]
-    public EventCallback<WMText> SelectLocalFontEvt { get; set; }
-    [Parameter]
-    public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
     [Parameter]
     public EventCallback<IWMControl> SelectImageEvt { get; set; }
     [Parameter]
     public EventCallback<WMContainer> RemoveImageEvt { get; set; }
+    WMText wMText;
+    bool showExifConfig = false;
+    Dictionary<string, string> containerId2Name
+    {
+        get
+        {
+            var dic = canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
+            dic[canvas.ID] = canvas.Name;
+            return dic.Reverse().ToDictionary();
+        }
+    }
 
-    void SelectLocalFont(WMText mText)
-    {
-        if (SelectLocalFontEvt.HasDelegate)
-        {
-            SelectLocalFontEvt.InvokeAsync(mText);
-        }
-    }
-    void OpenExifDialog(WMText mText)
-    {
-        if (OpenExifDialogFontEvt.HasDelegate)
-        {
-            OpenExifDialogFontEvt.InvokeAsync(mText);
-        }
-    }
+    bool showFontConfig = false;
+
+
     void SelectImage(IWMControl mLogo)
     {
         if (SelectImageEvt.HasDelegate)

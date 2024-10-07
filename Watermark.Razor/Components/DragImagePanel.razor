@@ -1,0 +1,70 @@
+﻿@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Text
+@using Watermark.Shared.Models
+@inject IJSRuntime JS
+<div style="display:flex;justify-content:flex-start;height:100%;overflow-y:auto;flex-wrap:wrap;" id="dropArea"
+     @ondragover="(e) => {}"
+     @ondragleave="HandleDragLeave"
+     @ondrop="HandleDrop">
+    @foreach (var file in Images)
+    {
+        <MCard Elevation="0" Height="190" Width="190" Class="ma-1 hover pa-1">
+            <MImage Src="@file.Src" Width="@("100%")" Height="@("100%")" Contain Style="cursor: pointer;" @onclick="(()=>ClickImage(file))" />
+        </MCard>
+    }
+</div>
+
+@code {
+    private ElementReference dropZone;
+    List<WMTemplateList> Images = new();
+    [Parameter] 
+    public EventCallback<WMTemplateList> ClickImageEvt { get; set; }
+    private bool IsDragActive = false;
+
+    void ClickImage(WMTemplateList e)
+    {
+        if(ClickImageEvt.HasDelegate)
+        {
+            ClickImageEvt.InvokeAsync(e);
+        }
+    } 
+
+    private async Task HandleDragOver(DragEventArgs e)
+    {
+       //e.PreventDefault();
+        IsDragActive = true;
+        await JS.InvokeVoidAsync("updateDropAreaStyle", "drag-over");
+    }
+
+    private async Task HandleDragLeave(DragEventArgs e)
+    {
+        //e.PreventDefault();
+        IsDragActive = false;
+        await JS.InvokeVoidAsync("updateDropAreaStyle", "");
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+       // e.PreventDefault();
+        IsDragActive = false;
+        await JS.InvokeVoidAsync("updateDropAreaStyle", "");
+
+        var files = e.DataTransfer.Files;
+        if (files.Length > 0)
+        {
+            var file = files[0];
+            // var fileContent = await ReadFileContentAsync(file);
+            // // Process the file content here
+            // Console.WriteLine($"File content: {fileContent}");
+        }
+    }
+
+    private async Task<string> ReadFileContentAsync(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream(maxAllowedSize: 1048576); // Limit size to 1MB
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync();
+    }
+}

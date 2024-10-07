@@ -1,4 +1,4 @@
-Ôªø@using Masa.Blazor
+@using Masa.Blazor
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
@@ -30,7 +30,7 @@
                  ItemText="u => u.Value"
                  ItemValue="u => u.Key"
                  @bind-Value="mText.BindedContainerId"
-                 Label="ÁªëÂÆöÁöÑÂÖÉÊï∞ÊçÆÊù•Ê∫êÂõæÁâáÂÆπÂô®"
+                 Label="∞Û∂®µƒ‘™ ˝æ›¿¥‘¥Õº∆¨»›∆˜"
                  Style="margin:8px"
                  HideDetails="true"
                  Readonly="@(CanvasType == CanvasType.Normal)" />
@@ -49,7 +49,7 @@
             <MCard Elevation="0" Flat Color="#ECEFF1" Class="ma-2" Style="scrollbar-width:none;overflow:auto;">
                 <MCard Style="display:flex; align-items:center;justify-content:flex-start;position:sticky;top:0;z-index:999;" Color="#ECEFF1">
                     <MIcon>@ICONS.Warning</MIcon>
-                    <Label Name="‰ª•‰∏ãÂùá‰∏∫Á§∫‰æãÊï∞ÊçÆÔºå‰∏çÂèØ‰ª•ÁºñËæëÔºåÂèØ‰ª•Ê∑ªÂä†ÂâçÂêéÁºÄ, ÂØºÂá∫‰ª•ÂõæÁâáÂÆûÈôÖÂÖÉÊï∞ÊçÆ‰∏∫ÂáÜ" />
+                    <Label Name="“‘œ¬æ˘Œ™ æ¿˝ ˝æ›£¨≤ªø…“‘±‡º≠£¨ø…“‘ÃÌº”«∞∫Û◊∫, µº≥ˆ“‘Õº∆¨ µº ‘™ ˝æ›Œ™◊º" />
                 </MCard>
                 <MChipGroup Multiple Style="display:flex;flex-wrap:wrap" Column Class="mx-1" Values="checkedChips" ValuesChanged="CheckedChipsChanged">
                     @foreach (var exif in DefaultExifLists)
@@ -65,7 +65,7 @@
             </MCard>
 
             <div class="px-1 ma-1">
-                <MButton Color="primary" OnClick="Submit" Elevation="0" Block>‰øùÂ≠ò</MButton>
+                <MButton Color="primary" OnClick="Submit" Elevation="0" Block>±£¥Ê</MButton>
             </div>
         </div>
     </div>
@@ -73,27 +73,27 @@
 
 
 <MDialog @bind-Value="detailShow" ContentStyle="@($"height:{(Global.IsMobile ? "100%" : "470px")};width:{(Global.IsMobile ? "100%" : "330px")};")">
-    <MCard Flat Style="overflow:hidden;height:100%;display:flex;flex-direction:column">
+    <MCard Flat Style="overflow:hidden;height:100%;display:flex;flex-direction:column" >
         <div style="display:flex;flex-direction:column;overflow:auto;scrollbar-width:none;" class="pa-2">
             <MCard Elevation="25" Style="padding:8px">
-                <MTextField @bind-Value="CurrentExif.Value" Label="ÂèÇÊï∞" Readonly="true" />
+                <MTextField @bind-Value="CurrentExif.Value" Label="≤Œ ˝" Readonly="true" />
                 <Watermark.Razor.Components.FontStyleComp fStyle="CurrentExif.ValueStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.Prefix" Label="ÂâçÁºÄ" />
+                <MTextField @bind-Value="CurrentExif.Prefix" Label="«∞◊∫" />
                 <FontStyleComp fStyle="CurrentExif.PrefixStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.Suffix" Label="ÂêéÁºÄ" />
+                <MTextField @bind-Value="CurrentExif.Suffix" Label="∫Û◊∫" />
                 <FontStyleComp fStyle="CurrentExif.SuffixStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.RemoveString" Label="Âà†Èô§Â≠óÁ¨¶" />
+                <MTextField @bind-Value="CurrentExif.RemoveString" Label="…æ≥˝◊÷∑˚" />
 
                 @if (CurrentExif.Value.Contains(","))
                 {
                     <MSelect @bind-Value="CurrentExif.LocationType"
-                             Label="ÁªèÁ∫¨Â∫¶ËØÜÂà´"
+                             Label="æ≠Œ≥∂» ∂±"
                              Items="XY"
                              TValue="int"
                              TItemValue="int"
@@ -103,17 +103,17 @@
                 }
                 @if (DateTime.TryParse(CurrentExif.Value, out DateTime dt))
                 {
-                    <MTextField @bind-Value="CurrentExif.DateTimeFormat" Label="Êó•ÊúüÊ†ºÂºèËΩ¨Êç¢" Dense HideDetails="true" />
+                    <MTextField @bind-Value="CurrentExif.DateTimeFormat" Label="»’∆⁄∏Ò Ω◊™ªª" Dense HideDetails="true"/>
 
-                    <MCheckbox @bind-Value="CurrentExif.GanZhi" Label="Âπ≤ÊîØÁ∫™Âπ¥" Dense HideDetails="true"></MCheckbox>
+                    <MCheckbox @bind-Value="CurrentExif.GanZhi" Label="∏…÷ßºÕƒÍ" Dense HideDetails="true"></MCheckbox>
                 }
-                <MCheckbox @bind-Value="CurrentExif.ToLower" Label="ÂÖ®ÈÉ®Â∞èÂÜô" Dense HideDetails="true"></MCheckbox>
-                <MCheckbox @bind-Value="CurrentExif.ToUpper" Label="ÂÖ®ÈÉ®Â§ßÂÜô" Dense HideDetails="true"></MCheckbox>
+                <MCheckbox @bind-Value="CurrentExif.ToLower" Label="»´≤ø–°–¥" Dense HideDetails="true"></MCheckbox>
+                <MCheckbox @bind-Value="CurrentExif.ToUpper" Label="»´≤ø¥Û–¥" Dense HideDetails="true"></MCheckbox>
             </MCard>
         </div>
 
-        <MButton Color="Color.Primary" Elevation="0" OnClick="()=>detailShow = false" Class="ma-2">Á°ÆÂÆö</MButton>
-
+        <MButton Color="Color.Primary" Elevation="0" OnClick="()=>detailShow = false" Class="ma-2">»∑∂®</MButton>
+        
     </MCard>
 </MDialog>
 
@@ -152,14 +152,14 @@
 
     List<KeyValuePair<int, string>> XY = new()
     {
-        new KeyValuePair<int, string>(-1, "ÈªòËÆ§"),
+        new KeyValuePair<int, string>(-1, "ƒ¨»œ"),
         new KeyValuePair<int, string>(0, ExifHelper.GetLocation().result.address),
         new KeyValuePair<int, string>(1, ExifHelper.GetLocation().result.ad_info.name),
         new KeyValuePair<int, string>(2, ExifHelper.GetLocation().result.ad_info.nation),
         new KeyValuePair<int, string>(3, ExifHelper.GetLocation().result.ad_info.province),
         new KeyValuePair<int, string>(4, ExifHelper.GetLocation().result.ad_info.city),
         new KeyValuePair<int, string>(5, ExifHelper.GetLocation().result.ad_info.district),
-        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " ‚óè " + @ExifHelper.GetLocation().result.ad_info.city),
+        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " °Ò " + @ExifHelper.GetLocation().result.ad_info.city),
     };
 
     //"F##4##suffix;"

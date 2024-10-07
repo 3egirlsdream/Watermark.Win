@@ -2,7 +2,6 @@
 @using Masa.Blazor
 @using Microsoft.JSInterop
 @using System.Collections.Concurrent
-@using MudBlazor
 @using SkiaSharp
 @using Watermark.Razor
 @using Watermark.Shared.Enums
@@ -10,32 +9,35 @@
 @using Watermark.Win.Models
 @using Watermark.Razor.Parts
 @inject IJSRuntime JSRuntime
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 @inject WMDesignFunc designFunc
 
 
 <MApp Style="background:#e3e3e3; overflow:hidden">
-        <MToolbar>
-            <IconButton Icon="@("mdi-content-save-outline")" OnClick="SaveTemplate"></IconButton>
-            <IconButton Icon="@("mdi-plus-box")" OnClick="OpenEditDialog"></IconButton>
-            <MButton Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MButton>
-            <MDialog Style="width:300px;" @bind-Value="@showDialog" Class="pa-4">
-                <MTextField @bind-Value="newTemplateName" T="string" Label="模板名称" Required="true" HideDetails="true" />
-                <MButton OnClick="SaveAs" Class="mt-2" Elevation="0">确定</MButton>
-            </MDialog>
-            <MButton Color="Color.Error" OnClick="PreviewImageRefresh">刷 新</MButton>
+    <MToolbar Dense>
+        <IconButton Icon="@("mdi-content-save-outline")" OnClick="SaveTemplate" Class="mx-1"></IconButton>
+
+       
+        <MSpacer />
+        <MButton Color="Color.Secondary" Class="mr-5" OnClick="()=>showDialog = true">另存为</MButton>
+        <MButton Color="Color.Error" OnClick="PreviewImageRefresh">
             @if (SrcLoading)
             {
                 <MProgressCircular Color="Color.Secondary" Indeterminate="true" Class="ma-4" />
             }
-            <MSpacer />
-            @if (designFunc is null || Global.DeviceType == DeviceType.Mac)
+            else
             {
-                <MButton Color="Color.Error" OnClick="Submit">退出</MButton>
+                <MIcon>@ICONS.Refresh</MIcon>
+                @("刷新")
             }
-        </MToolbar>
-    <div Style="height:calc(100vh - 40px);width:100%;display: flex;" @onclick="()=>{showDialog = false;}">
-        <div style="width:calc(100% - 500px);height:100%;position:fixed;">
+        </MButton>
+        @if (designFunc is null || Global.DeviceType == DeviceType.Mac)
+        {
+            <MButton Color="Color.Error" OnClick="Submit">退出</MButton>
+        }
+    </MToolbar>
+    <div Style="height:calc(100vh - 48px);width:100%;display: flex;justify-content:space-between" @onclick="()=>{showDialog = false;}">
+        <div style="width:calc(100% - 300px);height:calc(100% - 48px);">
             <div style="background:#e3e3e3;width:100%;height:100%;padding:10px;">
                 @if (!string.IsNullOrEmpty(url))
                 {
@@ -46,23 +48,23 @@
         </div>
 
 
-        <DesignConfiguration canvas="canvas"
+        <DesignConfiguration canvas="canvas" Style="width:300px;height:100%"
                              Changed="ValueChanged2"
                              ImagesBase64="ImagesBase64"
                              SelectDefaultImage="SelectDefaultImage"
-                             OpenExifDialogFontEvt="OpenExifDialog"
                              RemoveImageEvt="RemoveImage"
-                             SelectImageEvt="SelectImage"
-                             SelectLocalFontEvt="SelectLocalFont" />
+                             SelectImageEvt="SelectImage" />
     </div>
+
+    <MDialog ContentStyle="width:300px;height:100px;" @bind-Value="@showDialog" Class="pa-4">
+        <MTextField @bind-Value="newTemplateName" T="string" Label="模板名称" Required="true" HideDetails="true" />
+        <MButton OnClick="SaveAs" Class="mt-2" Elevation="0">确定</MButton>
+    </MDialog>
+    
 </MApp>
 
 
 @code {
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    [Inject]
-    private IDialogService DialogService { get; set; }
     [Parameter]
     public WMCanvas CurrentCanvas { get; set; }
     [Parameter]
@@ -72,14 +74,16 @@
     [Parameter]
     public Func<Task<string>> SelectDefaultImageEvt { get; set; }
     [Parameter]
-    public Func<Task> ImportFontEvt { get; set; }
-    [Parameter]
     public Action<Action> HotKeyEvt { get; set; }
-
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+    bool showExifConfig = false;
     bool showDialog = false;
     string newTemplateName = "";
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-    void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Submit()
+    {
+        if (OnClose.HasDelegate) OnClose.InvokeAsync();
+    }
 
     WMThickness BorderThickness = new WMThickness();
     WMCanvas canvas;
@@ -87,9 +91,7 @@
     bool SrcLoading = false;
     List<string> Fonts = new List<string>();
     ConcurrentDictionary<string, string> ImagesBase64 = new();
-    string cardStyle => $"margin:8px 0px;background:{Colors.Grey.Lighten4}";
     List<string> Radioes = ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1"];
-
     protected override async Task OnInitializedAsync()
     {
         try
@@ -100,7 +102,6 @@
                 SelectLogo = designFunc.SelectLogo;
                 SelectContainer = designFunc.SelectContainer;
                 SelectDefaultImageEvt = designFunc.SelectDefaultImageEvt;
-                ImportFontEvt = designFunc.ImportFontEvt;
                 HotKeyEvt = designFunc.HotKeyEvt;
             }
 
@@ -138,14 +139,14 @@
             }
             catch (Exception ex)
             {
-                Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
+                Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
             }
             var api = new APIHelper();
             var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
         }
         catch (Exception err)
         {
-            Common.ShowMsg(Snackbar, err.Message, Severity.Error);
+            Common.ShowMsg(PopupService, err.Message, AlertTypes.Error);
         }
     }
 
@@ -160,38 +161,6 @@
 
     }
 
-    async void OpenExifDialog(WMText mText)
-    {
-        var parameters = new DialogParameters<ExifConfig>();
-        parameters.Add(x => x.mText, mText);
-        var dic = CurrentCanvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
-        dic[CurrentCanvas.ID] = CurrentCanvas.Name;
-        parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
-        parameters.Add(x => x.CanvasType, CurrentCanvas.CanvasType);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-        var rst = DialogService.Show<ExifConfig>("", parameters, option);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled)
-        {
-            WMText text = (WMText)dialogResult.Data;
-            mText.Exifs = text.Exifs;
-            mText.BindedContainerId = text.BindedContainerId;
-            PreviewImageRefresh();
-        }
-    }
-
-    async void OpenEditDialog()
-    {
-        var parameters = new DialogParameters<EditComponentDialog>();
-        parameters.Add(x => x.mCanvas, canvas);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-        var rst = DialogService.Show<EditComponentDialog>("编辑模板", parameters, option);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled)
-        {
-            StateHasChanged();
-        }
-    }
 
     void SaveTemplate()
     {
@@ -209,7 +178,7 @@
         finally
         {
             string message = "保存成功！";
-            Common.ShowMsg(Snackbar, message, Severity.Success);
+            Common.ShowMsg(PopupService, message, AlertTypes.Success);
         }
     }
 
@@ -248,7 +217,7 @@
         {
             message = ex.Message;
         }
-        Common.ShowMsg(Snackbar, message, Severity.Success);
+        Common.ShowMsg(PopupService, message, AlertTypes.Success);
     }
 
     async void SelectImage(IWMControl ctrl)
@@ -298,18 +267,6 @@
         PreviewImageRefresh();
     }
 
-    async void SelectLocalFont(WMText mText)
-    {
-        var param = new DialogParameters<FontsDialog>();
-        param.Add(x => x.ImportFontEvt, ImportFontEvt);
-        var dialog = DialogService.Show<FontsDialog>(string.Empty, param, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data is KeyValuePair<string, string> pair)
-        {
-            mText.FontFamily = pair.Key;
-            PreviewImageRefresh();
-        }
-    }
 
     void RemoveImage(WMContainer container)
     {

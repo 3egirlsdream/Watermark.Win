@@ -18,7 +18,7 @@
 
 <MButton Small Class="@($"icon-button {Class}")" Style="@($"color: {(Open ? OnColor : OffColor)}")" Elevation="@Elevation">
     <MToggle Value="Open" DataOn="@On" DataOff="@Off" ValueChanged="OpenChanged">
-        <MButton OnClick="@context.Toggle" IconName="@context.Data" />
+        <MButton OnClick="@context.Toggle" IconName="@context.Data" Color="@($"{(Open ? OnColor : OffColor)}")" />
     </MToggle>
 </MButton>
 

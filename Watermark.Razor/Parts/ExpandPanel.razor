@@ -25,7 +25,7 @@
         }
 </style>
 
-<MCard Flat Color="@Color" Class="@Class">
+<MCard Flat Color="@Color" Class="@Class" Rounded="@Rounded">
     <div style="display:flex;justify-content:space-between; padding:0px 6px;min-height:40px">
         <Label Name="@Desc" Small="false" />
         @if (ShowSwitch)
@@ -49,6 +49,8 @@
 
 
 @code {
+    [Parameter]
+    public bool Rounded { get; set; } = true;
     [Parameter]
     public bool ShowSwitch { get; set; } = true;
     [Parameter]

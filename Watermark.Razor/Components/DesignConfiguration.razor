@@ -1,20 +1,26 @@
 ﻿@using Masa.Blazor
 @using System.Collections.Concurrent
+@using Microsoft.JSInterop
+@using SkiaSharp
 @using Watermark.Win.Models
 @using Shared.Enums
+@inject IJSRuntime JSRuntime
 
 <div style="@Style">
     <MTabs @bind-Value="tab" Height="30" FixedTabs>
         @foreach (var sub in tabs)
         {
-            <MTab Value="sub">
+            <MTab Value="sub" Style="min-width:0px;">
                 @sub
             </MTab>
         }
     </MTabs>
     <div style="overflow-y: auto; scrollbar-width: none; height:calc(100% - 30px);">
         <MTabsItems Value="@tab">
-            <MTabItem Value="@("画布")">
+            <MTabItem Value="@("大纲")">
+                <EditComponentDialog mCanvas="canvas"/>
+            </MTabItem>
+            <MTabItem Value="@("画布")" Class="pa-1">
                 <MCard Flat>
                     <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
                     <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
@@ -100,12 +106,12 @@
                 </Watermark.Razor.Parts.ExpandPanel>
             </MTabItem>
             <MTabItem Value="@("图层")">
-                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" OpenExifDialogFontEvt="@OpenExifDialogFontEvt" RemoveImageEvt="@RemoveImageEvt" SelectImageEvt="@SelectImageEvt" SelectLocalFontEvt="@SelectLocalFontEvt" />
+                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="@RemoveImageEvt" SelectImageEvt="@SelectImageEvt"  />
             </MTabItem>
         </MTabsItems>
     </div>
 
-
+    
 </div>
 
 
@@ -113,7 +119,7 @@
     [Parameter]
     public string Style { get; set; }
     StringNumber tab = "画布";
-    List<string> tabs = ["画布", "画幅", "图层"];
+    List<string> tabs = ["大纲", "画布", "画幅", "图层"];
     [Parameter]
     public WMCanvas canvas { get; set; } = new();
     [Parameter]
@@ -127,13 +133,53 @@
 
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
 
-    [Parameter]
-    public EventCallback<WMText> SelectLocalFontEvt { get; set; }
-    [Parameter]
-    public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
+    //[Parameter]
+    //public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
     [Parameter]
     public EventCallback<IWMControl> SelectImageEvt { get; set; }
     [Parameter]
     public EventCallback<WMContainer> RemoveImageEvt { get; set; }
+    [Parameter]
+    public Func<WMLogo, Task> SelectLogo { get; set; }
+    [Parameter]
+    public Func<WMContainer, Task> SelectContainer { get; set; }
+    [Parameter]
+    public EventCallback Refresh { get; set; }
+    void PreviewImageRefresh()
+    {
+        if (Refresh.HasDelegate)
+        {
+            Refresh.InvokeAsync();
+        }
+    }
 
+    async void SelectImage(IWMControl ctrl)
+    {
+        if (SelectLogo is null) return;
+        if (ctrl is WMLogo mLogo)
+        {
+            await SelectLogo.Invoke(mLogo);
+            var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + mLogo.Path;
+            ConcurrentDictionary<string, byte[]> dic = [];
+            Global.ImageFile2Base64(dic, destFile, mLogo.ID);
+            ImagesBase64[mLogo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+            PreviewImageRefresh();
+        }
+        else if (ctrl is WMContainer mContainer)
+        {
+            var rs = SelectContainer.Invoke(mContainer);
+            await rs;
+            var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + Path.GetFileName(mContainer.Path);
+            using var bitmap = SKBitmap.Decode(mContainer.Path);
+            if (bitmap is null) return;
+            var codec = SKCodec.Create(mContainer.Path);
+            using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
+            Global.WriteThumbnailImage(bitmap2, destFile);
+            ConcurrentDictionary<string, byte[]> dic = [];
+            Global.ImageFile2Base64(dic, destFile, mContainer.ID);
+            mContainer.Path = Path.GetFileName(mContainer.Path);
+            ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+            PreviewImageRefresh();
+        }
+    }
 }

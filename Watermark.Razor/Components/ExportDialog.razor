@@ -1,87 +1,97 @@
 ﻿@using System.Diagnostics
 @using System.IO
-@using MudBlazor
+@using Masa.Blazor
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 
-<MudDialog Style="width:90%; height:90%;overflow-y:hidden">
-    <DialogContent>
-        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(90vh - 70px);overflow-y:hidden;padding:5px;">
-            @if (Images != null)
-            {
-                <MudItem xs="10">
-                    <MudGrid Style="max-height: calc(90vh - 70px); overflow-y: auto">
-                        @foreach (var t in Images)
-                        {
-                            <MudItem xs="3">
-                                <MudPaper Elevation="25" Style="position:relative;">
-                                    <div style="height:200px;">
-                                        @if (!string.IsNullOrEmpty(t.Src))
-                                        {
-                                            <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-                                        }
-                                    </div>
-                                    <div Style="position:relative; height:40px; display: flex; align-items: center;">
-                                        <MudCheckBox @bind-Checked="t.IsChecked" Color="Color.Default" Style="position:absolute;right:10px"></MudCheckBox>
-                                    </div>
-                                </MudPaper>
-                            </MudItem>
-                        }
-                    </MudGrid>
+<Masa.Blazor.MCard Style="height:100%; overflow-y:hidden;padding:5px;justify-content:space-between">
+    @if (Images != null)
+    {
+        <div style="display:flex;justify-content:flex-start;height:calc(100% - 60px);" >
+            <MRow Style="max-height: calc(90vh - 70px); overflow-y: auto;width:calc(100% - 300px); scrollbar-width:none" class="pa-1">
+                @foreach (var t in Images)
+                {
+                    <MCol Cols="3">
+                        <MCard Elevation="1" Style="position:relative;">
+                            <div style="height:200px;">
+                                @if (!string.IsNullOrEmpty(t.Src))
+                                {
+                                    <MImage Style="width:100%" Height="200" Src="@t.Src" Contain />
+                                }
+                            </div>
+                            <div Style="position:relative; height:40px; display: flex; align-items: center;">
+                                <MCheckbox @bind-Value="t.IsChecked" Color="primary" Style="position:absolute;right:10px"></MCheckbox>
+                            </div>
+                        </MCard>
+                    </MCol>
+                }
 
-                </MudItem>
-                <MudItem xs="2">
-                    <MudCard Elevation="0">
-                        <MudCardContent>
-                            <MudForm>
-                                <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
-                                    <MudSelectItem Value="@("default")">原图</MudSelectItem>
-                                    <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
-                                    <MudSelectItem Value="@("2160")">4K</MudSelectItem>
-                                </MudSelect>
-                                <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
-                                    <MudSelectItem Value="@(100)">原图</MudSelectItem>
-                                    <MudSelectItem Value="@(85)">高</MudSelectItem>
-                                    <MudSelectItem Value="@(70)">中</MudSelectItem>
-                                </MudSelect>
-                                <MudStack Row Class="mt-5" Style="position:relative;display:flex;align-items:center;">
-                                    <MudTextField T="string" @bind-Value="@Global.OutPutPath" Label="路径" Variant="Variant.Outlined"  Margin="Margin.Dense" Style="width:calc(100% - 50px)"/>
-                                    <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" OnClick="OpenFolder" Style="position:absolute;right:5px"/>
-                                </MudStack>
-                                
-                            </MudForm>
-                        </MudCardContent>
-                        <MudCardActions>
-                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Save">导出</MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
+            </MRow>
+            <MCard Elevation="0" Width="300">
+                <MSelect @bind-Value="@Global.Resolution"
+                         TItem="KeyValuePair<string, string>"
+                         ItemText="u=> u.Value"
+                         ItemValue="u=> u.Key"
+                         Items="ex"
+                         TItemValue="string"
+                         TValue="string"
+                         Label="分辨率" />
+                <MSelect Items="quality"
+                         @bind-Value="@Global.Quality"
+                         TValue="int"
+                         TItemValue="int"
+                         TItem="KeyValuePair<int, string>"
+                         ItemValue="u=>u.Key"
+                         ItemText="u => u.Value"
+                         Label="图片质量" />
+                <div class="mt-5" style="position:relative;display:flex;align-items:center;justify-content:flex-start">
+                    <MTextField T="string" @bind-Value="@Global.OutPutPath" Label="路径" Dense Style="width:calc(100% - 50px)" HideDetails="true"/>
+                    <IconButton Icon="@ICONS.OpenNew" OnClick="OpenFolder" Style="position:absolute;right:5px" />
+                </div>
 
-            }
-        </MudGrid>
-    </DialogContent>
-    <DialogActions>
-        <MudCheckBox @bind-Checked="CheckAll" Color="Color.Default" T="bool" ValueChanged="Changed" Class="mr-3">选择全部</MudCheckBox>
-    </DialogActions>
-</MudDialog>
+                <MCardActions>
+                    <MButton Color="primary" Class="ml-auto" OnClick="Save">导出</MButton>
+                </MCardActions>
+            </MCard>
+
+        </div>
+       
+    }
+    <div style="height:60px;display:flex;justify-content:flex-end;flex-direction:column">
+        <MCheckbox Value="CheckAll" Color="primary" TValue="bool" ValueChanged="Changed" Class="mr-3" Label="选择全部" HideDetails="true"/>
+    </div>
+</Masa.Blazor.MCard>
 
 
 @code {
 
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-
+    [Parameter]
+    public EventCallback<List<WMTemplateList>> OnClose { get; set; }
     [Parameter]
     public List<WMTemplateList> Images { get; set; }
     [Parameter]
     public Action OpenFolderAction { get; set; }
 
     bool CheckAll = false;
+    List<KeyValuePair<string, string>> ex = new() {
+        new KeyValuePair<string, string>("default", "原图"),
+        new KeyValuePair<string, string>("1080", "1080P"),
+        new KeyValuePair<string, string>("2160", "4K")
+    };
 
+    List<KeyValuePair<int, string>> quality = new() {
+        new KeyValuePair<int, string>(100, "原图"),
+        new KeyValuePair<int, string>(85, "高"),
+        new KeyValuePair<int, string>(70, "中")
+    };
     void Save()
     {
-        MudDialog.Close(Images);
+        if (OnClose.HasDelegate)
+        {
+            OnClose.InvokeAsync(Images);
+        }
     }
 
     async void OpenFolder()
@@ -94,6 +104,7 @@
     public EventCallback<bool> EventCallback { get; set; }
     void Changed(bool e)
     {
+        CheckAll = e;
         Images.ForEach(x => x.IsChecked = e);
         StateHasChanged();
     }

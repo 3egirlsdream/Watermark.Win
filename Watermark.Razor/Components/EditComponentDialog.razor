@@ -1,161 +1,156 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
-@using MudBlazor
+﻿@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 
-<MudDialog Style="min-width:50%;">
-    <DialogContent>
-        <MudButton FullWidth="true" OnClick="OpenAddControl" Variant="Variant.Filled" DisableElevation Size="Size.Small" Class="my-2">新增组件</MudButton>
-        <MudTreeView T="string" Dense="true" Hover="true">
-            @foreach (var container in mCanvas.Children)
+<style>
+    .edit-content-style {
+        width:400px;
+        padding:4px
+    }
+
+    .edit-subtitle-font {
+        font-size: 0.75rem;
+        font-weight: 300;
+    }
+
+    .edit-subtitle-box {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        width: calc(100% - 12px);
+        min-height: 36px;
+    }
+</style>
+
+<div class="pa-1">
+    <div style="display:flex;justify-content:flex-start;width:100%;align-items:center;font-weight:700;">
+        <IconButton OnClick="OpenAddControl" Elevation="0" Class="my-2 mr-1" Icon="@ICONS.Add" />
+        新增组件或者图层
+    </div>
+    
+    @foreach (var container in mCanvas.Children)
+    {
+        <ExpandVisiblePanel Desc="图层" Class="my-1" @bind-Visible="container.Enabled">
+            <div class="edit-subtitle-box">
+                <MTextField @bind-Value="@container.Name" Label="名称" Required="true" HideDetails="true"/>
+                <div style="justify-self: end;">
+                    <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
+                    <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
+                    <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
+                </div>
+            </div>
+            @foreach (var comp in container.Controls)
             {
-                <MudTreeViewItem Value="@(container.Name)" Expanded="true">
-                    <BodyContent>
-                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                            <MudTextField @bind-Value="@container.Name" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                @if (comp is WMContainer wc)
+                {
+                    <div>
+                        <div class="edit-subtitle-box">
+                            <span class="edit-subtitle-font">@wc.Name</span>
                             <div style="justify-self: end;">
-                                @*<MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" />*@
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
+                                <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="()=>Move(container.ID, wc, ContainerLv.Lv2)" />
+                                <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
+                                <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
+                                <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
                             </div>
                         </div>
-                    </BodyContent>
-                    <ChildContent>
-                        @foreach (var comp in container.Controls)
+                        @foreach (var cld_c in wc.Controls)
                         {
-
-                            @if (comp is WMContainer wc)
-                            {
-                                <MudTreeViewItem Value="@(wc.Name)">
-                                    <BodyContent>
-                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                            <MudText Style="justify-self: start;">@($"{wc.Name} ({wc.ID.Substring(27)})")</MudText>
-                                            <div style="justify-self: end;">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(wc, '2')" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
-                                            </div>
-                                        </div>
-                                    </BodyContent>
-                                    <ChildContent>
-                                        @foreach (var cld_c in wc.Controls)
-                                        {
-                                            <MudTreeViewItem Value="@(cld_c.Name)">
-                                                <BodyContent>
-                                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                                        <MudText Style="justify-self: start;">@($"{cld_c.Name} ({cld_c.ID.Substring(27)})")</MudText>
-                                                        <div style="justify-self: end;">
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Move(cld_c, '1')" />
-                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(cld_c.ID)" />
-                                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(cld_c.ID)" />
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>wc.Controls.Remove(cld_c) " />
-                                                        </div>
-                                                    </div>
-                                                </BodyContent>
-                                            </MudTreeViewItem>
-                                        }
-                                    </ChildContent>
-
-                                </MudTreeViewItem>
-                            }
-                            else
-                            {
-                                <MudTreeViewItem Value="@(comp.Name)">
-                                    <BodyContent>
-                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                            <MudText Style="justify-self: start;">@($"{comp.Name} ({comp.ID.Substring(27)})")</MudText>
-                                            <div style="justify-self: end;">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" Color="Color.Inherit" OnClick="() => Move(comp, '1')" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Medium" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Medium" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
-                                            </div>
-                                        </div>
-                                    </BodyContent>
-                                </MudTreeViewItem>
-                            }
-
+                            <div class="edit-subtitle-box ml-3">
+                                <span class="edit-subtitle-font">@cld_c.Name</span>
+                                <div style="justify-self: end;">
+                                    <IconButton Icon="@ICONS.Edit" OnClick="()=>Move(wc.ID, cld_c, ContainerLv.Lv1)" />
+                                    <IconButton Icon="@ICONS.ArrowUpward" OnClick="()=>Upward(cld_c.ID)" />
+                                    <IconButton Icon="@ICONS.ArrowDownward" OnClick="()=>Downward(cld_c.ID)" />
+                                    <IconButton Icon="@ICONS.Delete" OnClick="()=>wc.Controls.Remove(cld_c) " />
+                                </div>
+                            </div>
                         }
+                    </div>
+                }
+                else
+                {
+                    <div class="edit-subtitle-box">
+                        <span class="edit-subtitle-font">@comp.Name</span>
+                        <div style="justify-self: end;">
+                            <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="() => Move(container.ID, comp, ContainerLv.Lv1)" />
+                            <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
+                            <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
+                            <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
+                        </div>
+                    </div>
+                }
 
-                    </ChildContent>
-                </MudTreeViewItem>
             }
 
-            <MudDialog @bind-IsVisible="MoveContainer" Options="dialogOptions">
-                <TitleContent>
-                    <MudText Typo="Typo.h6">
-                        选择父级容器
-                    </MudText>
-                </TitleContent>
-                <DialogContent>
-                    @if (MoveContainer)
-                    {
-                        <MudTextField @bind-Value="@MoveConntainerCtrl.Name" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudSelect @bind-Value="MoveForwardConntainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter">
-                            @foreach (var c in MoveContainers)
-                            {
-                                <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
-                            }
-                        </MudSelect>
+        </ExpandVisiblePanel>
+    }
+
+    <MDialog @bind-Value="MoveContainer" ContentClass="edit-content-style">
+        <div style="font-weight:700; font-size:1rem;">
+            选择父级容器
+        </div>
+        <MDivider />
+        @if (MoveContainer)
+        {
+            <MTextField @bind-Value="@MoveConntainerCtrl.Name" Label="名称" Required="true" />
+            <MSelect Items="MoveContainers"
+                     @bind-Value="MoveForwardConntainerId"
+                     TItem="WMContainer"
+                     TItemValue="string"
+                     TValue="string"
+                     Label="父级容器"
+                     Dense
+                     ItemText="e => e.Name"
+                     ItemValue="u => u.ID">
+            </MSelect>
 
 
-                    }
-                </DialogContent>
-                <DialogActions>
-                    <MudButton FullWidth="true" DisableElevation OnClick="MoveOK" Class="mx-4" Variant="Variant.Filled" Size="Size.Small">确定</MudButton>
-                </DialogActions>
-            </MudDialog>
-            <MudDialog @bind-IsVisible="param.AddControl" Options="dialogOptions">
-                <TitleContent>
-                    <MudText Typo="Typo.h6">
-                        新增组件
-                    </MudText>
-                </TitleContent>
-                <DialogContent>
-                    @if (param.AddControl)
-                    {
-                        <MudStack>
-                            <MudRadioGroup @bind-Value="param.CtrlType">
-                                <MudRadio Value="@CtrlEnum.Container" Color="Color.Primary" Dense="false">容器</MudRadio>
-                                <MudRadio Value="@CtrlEnum.Image" Color="Color.Primary" Dense="true">图片</MudRadio>
-                                <MudRadio Value="@CtrlEnum.Text" Color="Color.Primary" Dense="true">文本</MudRadio>
-                                <MudRadio Value="@CtrlEnum.Line" Color="Color.Primary" Dense="true">线</MudRadio>
-                            </MudRadioGroup>
-                            <MudTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudSelect @bind-Value="param.ParentContainerId" T="string" Label="父级容器" AnchorOrigin="Origin.BottomCenter" Required>
-                                @foreach (var c in mContainers)
-                                {
-                                    <MudSelectItem Value="@(c.ID)">@(c.Name)</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudStack>
-                    }
-                </DialogContent>
-                <DialogActions>
-                    <MudButton FullWidth="true" DisableElevation OnClick="Add" Class="mx-4" Variant="Variant.Filled" Size="Size.Small">确定</MudButton>
-                </DialogActions>
-            </MudDialog>
-        </MudTreeView>
-    </DialogContent>
-    <DialogActions>
-        <MudButton Color="Color.Primary" FullWidth="true" Variant="Variant.Filled" DisableElevation OnClick="Submit" Size="Size.Small" Class="mx-4">Ok</MudButton>
-    </DialogActions>
-</MudDialog>
+        }
+        <MButton Elevation="0" OnClick="MoveOK" Small>确定</MButton>
+    </MDialog>
+    <MDialog @bind-Value="param.AddControl" ContentClass="edit-content-style">
+        <div style="font-weight:700; font-size:1rem;">
+            新增组件
+        </div>
+        <MDivider/>
+        @if (param.AddControl)
+        {
+            <div>
+                <MRadioGroup @bind-Value="param.CtrlType" Row>
+                    <MRadio Value="@CtrlEnum.Container" TValue="CtrlEnum" Label="容器"></MRadio>
+                    <MRadio Value="@CtrlEnum.Image" TValue="CtrlEnum" Label="图片"></MRadio>
+                    <MRadio Value="@CtrlEnum.Text" TValue="CtrlEnum" Label="文本"></MRadio>
+                    <MRadio Value="@CtrlEnum.Line" TValue="CtrlEnum" Label="线"></MRadio>
+                </MRadioGroup>
+                <MTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Dense />
+                <MSelect @bind-Value="param.ParentContainerId"
+                         Items="mContainers"
+                         TValue="string"
+                         TItemValue="string"
+                         TItem="WMContainer"
+                         Label="父级容器"
+                         ItemText="e => e.Name"
+                         ItemValue="u => u.ID"
+                         Dense
+                         Required>
+                </MSelect>
+            </div>
+        }
+        <MButton OnClick="Add" Small Elevation="0">确定</MButton>
+    </MDialog>
+</div>
+
 
 
 
 @code {
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
     [Parameter]
     public WMCanvas mCanvas { get; set; }
-
-    void Submit() => MudDialog.Close(DialogResult.Ok(true));
-    void Cancel() => MudDialog.Cancel();
-    private DialogOptions dialogOptions = new() { FullWidth = true };
     AddParam param;
 
     void Add()
@@ -320,13 +315,13 @@
             }
         }
     }
-    void Move(IWMControl ctrl, char lv)
+    void Move(string parentId, IWMControl ctrl, ContainerLv lv)
     {
         MoveContainer = true;
-        MoveConntainerId = ctrl.ID;
+        MoveForwardConntainerId = parentId;
         MoveConntainerCtrl = ctrl;
         MoveLv = lv;
-        if(lv == '2')
+        if (lv == ContainerLv.Lv2)
         {
             MoveContainers = mCanvas.Children;
         }
@@ -334,16 +329,17 @@
         {
             MoveContainers = new List<WMContainer>(mContainers.Where(c => c.ID != "0"));
         }
+        StateHasChanged();
     }
     void MoveOK()
     {
         MoveContainer = false;
-        if(MoveLv == '2') // container
+        if (MoveLv == ContainerLv.Lv2) // container
         {
             WMContainer mContainer = null;
-            foreach(var c in mCanvas.Children)
+            foreach (var c in mCanvas.Children)
             {
-                foreach(var child in c.Controls)
+                foreach (var child in c.Controls)
                 {
                     if (child.ID == MoveConntainerCtrl.ID)
                     {
@@ -354,7 +350,7 @@
                 }
             }
 
-            if(mContainer != null)
+            if (mContainer != null)
             {
                 var c = mCanvas.Children.Find(c => c.ID == MoveForwardConntainerId);
                 if (c!=null)
@@ -376,11 +372,11 @@
                         c.Controls.Remove(child);
                         break;
                     }
-                    if(child is WMContainer wc)
+                    if (child is WMContainer wc)
                     {
-                        foreach(var cc in wc.Controls)
+                        foreach (var cc in wc.Controls)
                         {
-                            if(cc.ID == MoveConntainerCtrl.ID)
+                            if (cc.ID == MoveConntainerCtrl.ID)
                             {
                                 mCtrl = cc;
                                 wc.Controls.Remove(cc);
@@ -390,9 +386,9 @@
                     }
                 }
             }
-            if(mCtrl != null)
+            if (mCtrl != null)
             {
-                var c = MoveContainers.FirstOrDefault(c=>c.ID == MoveForwardConntainerId);
+                var c = MoveContainers.FirstOrDefault(c => c.ID == MoveForwardConntainerId);
                 if (c!=null)
                 {
                     c.Controls.Add(mCtrl);
@@ -402,14 +398,13 @@
     }
     bool MoveContainer = false;
     IWMControl MoveConntainerCtrl;
-    string MoveConntainerId;
     string MoveForwardConntainerId;
-    char MoveLv;
+    ContainerLv MoveLv;
 
     List<WMContainer> MoveContainers;
     void OpenAddControl()
     {
-        param.AddControl = true; 
+        param.AddControl = true;
         StateHasChanged();
     }
     public enum CtrlEnum
@@ -433,5 +428,11 @@
         list[index1] = list[index2];
         list[index2] = temp;
         return list;
+    }
+
+    enum ContainerLv
+    {
+        Lv1,
+        Lv2
     }
 }

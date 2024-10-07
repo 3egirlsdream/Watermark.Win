@@ -1,38 +1,44 @@
-﻿@using MudBlazor
+﻿@using Masa.Blazor
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
-@if(fStyle != null)
+@if (fStyle != null)
 {
-    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="height:30px;">
-        <MudStack Row AlignItems="AlignItems.Center">
-            <MudText>样式设置</MudText>
-            <MudSwitch Color="Color.Primary" @bind-Value="fStyle.Enabled" Size="Size.Small"/>
-        </MudStack>
-       
-        @if(fStyle.Enabled)
+    <div style="justify-content:space-between;display:flex;align-items:center;height:30px;">
+        <div style="display:flex;align-items:center">
+            <Label Name="样式设置" />
+            <MSwitch Color="primary" @bind-Value="fStyle.Enabled" Class="ml-2" />
+        </div>
+
+        @if (fStyle.Enabled)
         {
-            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">
-                <MudToggleIconButton @bind-Toggled="fStyle.IsItalic" Icon="@Icons.Material.Filled.FormatItalic" Color="@Color.Error" Size="Size.Small"
-                                     ToggledIcon="@Icons.Material.Filled.FormatItalic" ToggledColor="@Color.Primary" />
-                <MudToggleIconButton @bind-Toggled="fStyle.IsBold" Icon="@Icons.Material.Filled.FormatBold" Color="@Color.Error" Size="Size.Small"
-                                     ToggledIcon="@Icons.Material.Filled.FormatBold" ToggledColor="@Color.Primary" />
-            </MudButtonGroup>
+            <div>
+                <ToggleButton @bind-Open="@fStyle.IsItalic" On="@ICONS.Italic" Off="@ICONS.Italic" />
+                <ToggleButton @bind-Open="@fStyle.IsBold" On="@ICONS.Bold" Off="@ICONS.Bold" />
+            </div>
+            
         }
-    </MudStack>
+    </div>
 
     @if (fStyle.Enabled)
     {
-        <MudStack Row>
+        <div style="display:flex;justify-content:space-between;align-items:center">
             @* <MudTextField @bind-Value="fStyle.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" Style="width:80px" /> *@
-            <MudColorPicker Label="颜色" ColorPickerView="ColorPickerView.Grid" @bind-Text="fStyle.FontColor" Margin="Margin.Dense"/>
-            <MudSelect Label="字体" @bind-Value="fStyle.FontFamily" Style="width: 50%" Margin="Margin.Dense">
-                @foreach (var pair in Fonts)
-                {
-                    <MudSelectItem Value="pair.Key">@pair.Key</MudSelectItem>
-                }
-            </MudSelect>
-        </MudStack>
-       
+            <ColorPicker Name="颜色" @bind-Color="fStyle.FontColor" />
+            <MSelect ItemText="u => u.Key"
+                     ItemValue="u => u.Key"
+                     Items="Fonts.ToList()"
+                     TItemValue="string"
+                     TValue="string"
+                     TItem="KeyValuePair<string, string>"
+                     Label="字体"
+                     @bind-Value="fStyle.FontFamily"
+                     Style="width: 50%"
+                     Dense
+                     HideDetails="true">
+            </MSelect>
+        </div>
+
     }
 }
 

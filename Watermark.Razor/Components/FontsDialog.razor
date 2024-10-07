@@ -1,10 +1,12 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
+﻿@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
-@using MudBlazor
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
-
+@inject WMDesignFunc design
 <style>
     .container {
         display: flex;
@@ -39,37 +41,29 @@
         }
 </style>
 
-<MudDialog Options="DialogOptions" Style="width:80%;height:80%">
-    <DialogContent>
-        <div class="container">
-            <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;text-align: center;">
-                <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Large" OnClick="ImportLocalFont" />
-            </div>
-            @foreach (var per in Fonts)
-            {
-                <div class="rectangle">
-                    <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
-                </div>
-            }
+<div class="container">
+    <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;text-align: center;">
+        <IconButton Icon="@ICONS.Add" Size="Size.Large" OnClick="ImportLocalFont" />
+    </div>
+    @foreach (var per in Fonts)
+    {
+        <div class="rectangle">
+            <MImage Contain Src="@per.Value" @onclick="()=>Click(per)" Class="rounded-lg" />
         </div>
-    </DialogContent>
-</MudDialog>
+    }
+</div>
 
 
 @code {
+    public EventCallback<KeyValuePair<string, string>> OnClose { get; set; }
 
-
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-
-    [Parameter]
-    public Func<Task> ImportFontEvt { get; set; }
-
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
     Dictionary<string, string> Fonts = new Dictionary<string, string>();
     void Click(KeyValuePair<string, string> pair)
     {
-        MudDialog.Close(pair);
+        if(OnClose.HasDelegate)
+        {
+            OnClose.InvokeAsync(pair);
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -79,7 +73,8 @@
 
     async void ImportLocalFont()
     {
-        await ImportFontEvt.Invoke();
+        if (design == null) return;
+        await design.ImportFontEvt.Invoke();
         Fonts = await Task.Run(() => Global.ReadFont());
         StateHasChanged();
     }

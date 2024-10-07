@@ -18,6 +18,10 @@
     <Compile Remove="Parts\ColorPicker2.razor.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="Components\ExifDialog.razor" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />

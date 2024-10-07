@@ -1,5 +1,6 @@
 ﻿@using System.Collections.Concurrent
 @using Masa.Blazor
+@using Watermark.Shared.Models
 
 <style>
     .image-select {
@@ -12,9 +13,9 @@
     }
 </style>
 
-@if (false && ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
+@if (ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
 {
-    @src
+    <IconButton Icon="@ICONS.Delete" Text="true" Style="position:absolute;right:4px;top:4px;"/>
     <MImage Height="@Size" Contain Src="@src" @onclick="SelectDefaultImage" />
 }
 else
@@ -33,6 +34,8 @@ else
     [Parameter]
     public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
 
+    [Parameter]
+    public EventCallback Delete { get; set; }
     [Parameter]
     public int Size { get; set; } = 250;
 }

@@ -42,7 +42,7 @@
                         <Masa.Blazor.MList>
                             <Masa.Blazor.MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
                             <Masa.Blazor.MListItem OnClick="ImportLogoes" Title="图标库" PrependIcon="@ICONS.ImageStore" />
-                            <Masa.Blazor.MListItem OnClick="OpenExport" Title="导出" PrependIcon="@ICONS.Export" />
+                            <Masa.Blazor.MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
                             <Masa.Blazor.MDivider />
                             <Masa.Blazor.MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
                         </Masa.Blazor.MList>
@@ -55,7 +55,7 @@
                     <ChildContent>
                         <Masa.Blazor.MList>
                             <Masa.Blazor.MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
-                            <Masa.Blazor.MListItem OnClick="CreateNewTemplate" Title="创建模板" PrependIcon="@ICONS.Pencil" />
+                            <Masa.Blazor.MListItem OnClick="() => openCreateNew = true" Title="创建模板" PrependIcon="@ICONS.Pencil" />
                             <Masa.Blazor.MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
                         </Masa.Blazor.MList>
                     </ChildContent>
@@ -211,7 +211,7 @@
                                     {
                                         <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:space-between">
                                             <MImage Width="40" Height="40" Contain Src="@context.Item.Src" />
-                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" />
+                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1"/>
                                         </div>
 
                                     }
@@ -244,11 +244,11 @@
                                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                                 {
                                     <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
-                                    @if(SrcLoading)
+                                    @if (SrcLoading)
                                     {
                                         <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
                                     }
-                                    
+
                                 }
                                 else
                                 {
@@ -273,7 +273,7 @@
                 </div>
                 @if (CurrentImage != null && CurrentImage.Canvas != null)
                 {
-                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" />
+                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas"/>
                 }
 
             </div>
@@ -303,6 +303,14 @@
         <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showSignUp">
             <SignUpContent CloseEvent="() => showSignUp = false" />
         </MDialog>
+
+        <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
+            <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="CreateNewTemplate" OnClose="() => openCreateNew = false" />
+        </MDialog>
+
+        <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+            <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction" />
+        </MDialog>
     </MErrorHandler>
 </MApp>
 
@@ -310,9 +318,10 @@
 @code {
     [Inject]
     private IDialogService DialogService { get; set; }
-
+    bool openCreateNew = false;
     WMainLoading CommonDialog = new();
     StringNumber tab;
+    bool showExport = false;
     bool openMarket = false;
     bool openMyTemplate = false;
     bool SrcLoading = false;
@@ -327,7 +336,6 @@
     ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
     List<string> LogoStore = new List<string>();
     List<WMTemplateList> Images = new List<WMTemplateList>();
-
     protected override async Task OnInitializedAsync()
     {
         try
@@ -551,6 +559,7 @@
 
     async void Export(List<WMTemplateList> images)
     {
+        showExport = false;
         WMMainLoading.Show = true;
         WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
         WMMainLoading.Value = 0;
@@ -762,10 +771,7 @@
         });
         OpenWinHelper.Open(action);
     }
-
-    async void OpenExport()
-    {
-        var action = new Action(() =>
+    Action OpenFolderAction = new Action(() =>
                 {
                     Microsoft.Win32.OpenFolderDialog dialog = new();
                     var result = dialog.ShowDialog();
@@ -773,20 +779,8 @@
                     if (result == true)
                     {
                         Global.OutPutPath = dialog.FolderName;
-                        InvokeAsync(StateHasChanged);
                     }
                 });
-
-        var parameters = new DialogParameters<Watermark.Razor.Components.ExportDialog>();
-        parameters.Add(x => x.OpenFolderAction, action);
-        parameters.Add(x => x.Images, Images);
-        var dialog = DialogService.Show<Watermark.Razor.Components.ExportDialog>(string.Empty, parameters, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data is List<WMTemplateList> images)
-        {
-            Export(images.Where(x => x.IsChecked).ToList());
-        }
-    }
 
     async void SelectSourceImageExif(IBrowserFile file)
     {
@@ -803,26 +797,26 @@
         await Global.InitFonts(mCanvas);
     }
 
-    async void OpenExifDialog(WMText mText)
-    {
-        var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
-        parameters.Add(x => x.mText, mText);
-        var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
-        dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
-        parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
-        parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-        var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled)
-        {
-            WMText text = (WMText)dialogResult.Data;
-            mText.Exifs = text.Exifs;
-            mText.BindedContainerId = text.BindedContainerId;
-            RefreshImage();
-            StateHasChanged();
-        }
-    }
+    // async void OpenExifDialog(WMText mText)
+    // {
+    //     var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
+    //     parameters.Add(x => x.mText, mText);
+    //     var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
+    //     dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
+    //     parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
+    //     parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
+    //     var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
+    //     var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
+    //     var dialogResult = await rst.Result;
+    //     if (!dialogResult.Canceled)
+    //     {
+    //         WMText text = (WMText)dialogResult.Data;
+    //         mText.Exifs = text.Exifs;
+    //         mText.BindedContainerId = text.BindedContainerId;
+    //         RefreshImage();
+    //         StateHasChanged();
+    //     }
+    // }
 
     async void OpenFullExifInfo()
     {
@@ -884,10 +878,7 @@
         SrcLoading = false;
         StateHasChanged();
     }
-
-    void CreateNewTemplate()
-    {
-        var action = new Func<Task<string>>(async () =>
+    Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(async () =>
         {
             var dic = new ConcurrentDictionary<string, byte[]>();
             Microsoft.Win32.OpenFileDialog dialog = new()
@@ -905,20 +896,6 @@
             }
             else return "";
         });
-
-        var ok = new Action<WMCanvas>((x) =>
-        {
-            OpenDesignAction(x);
-        });
-
-
-        var dialog = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
-        var parameter = new DialogParameters<Watermark.Razor.Components.NewTemplateDialog>();
-        parameter.Add(x => x.SelectDefaultImageAction, action);
-        parameter.Add(x => x.Ok, ok);
-        parameter.Add(x => x.ID, Guid.NewGuid().ToString("N").ToUpper());
-        var result = DialogService.Show<Watermark.Razor.Components.NewTemplateDialog>(string.Empty, parameter, dialog);
-    }
 
     void OpenCommonDialog(string Src)
     {
