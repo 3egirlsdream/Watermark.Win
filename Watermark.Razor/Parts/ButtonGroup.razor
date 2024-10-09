@@ -1,6 +1,6 @@
 ﻿@using Masa.Blazor
 @using Watermark.Shared.Enums;
-<MButtonGroup Value="@value" Mandatory ValueChanged="Changed" Dense Borderless Class="ml-1">
+<MButtonGroup Value="@value" Mandatory ValueChanged="Changed" Dense Class="ml-1" Color="primary">
     @if (Type == GroupItemType.TopCenterBottom)
     {
         @foreach (var item in TopCenterBottom)

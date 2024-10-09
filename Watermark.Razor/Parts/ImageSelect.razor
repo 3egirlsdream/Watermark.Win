@@ -15,8 +15,10 @@
 
 @if (ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
 {
-    <IconButton Icon="@ICONS.Delete" Text="true" Style="position:absolute;right:4px;top:4px;"/>
-    <MImage Height="@Size" Contain Src="@src" @onclick="SelectDefaultImage" />
+    <div style="display:flex;justify-content:flex-end;align-items:center;">
+        <IconButton Icon="@ICONS.Delete" Text="true"/>
+    </div>
+    <MImage Height="@Size" Style="object-fit:cover" Src="@src" @onclick="SelectDefaultImage" Class="mt-1"/>
 }
 else
 {

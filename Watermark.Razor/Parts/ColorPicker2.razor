@@ -55,16 +55,68 @@
     }
 </style>
 <MCard Flat Class="my-1">
-    <div style="display:flex;justify-content:flex-end; padding:0px 6px">
-        <MButton Small OnClick="()=>show = !show"/>
+    <div style="display:flex;justify-content:flex-end;">
+        <MButton Small OnClick="()=>show = !show" Elevation="0" Color="@Color" />
     </div>
     @if (show)
     {
-        <MDivider/>
+        <MDivider />
     }
     <ExpandTransition>
-        <MCard Show=@show Style="width:100%" class="mx-auto secondary" Elevation="0" Flat>
-            @PickerContent
+        <MCard Show="@show" Style="width:100%" class="mx-auto secondary" Elevation="0" Flat>
+            <CascadingValue Value="@this" IsFixed="true">
+                <div>
+                    @if (@ShowColorField)
+                    {
+                        <div class="mud-picker-color-picker">
+                            <div class="mud-picker-color-grid">
+                                @foreach (var item in _gridList)
+                                {
+                                    <div class="dot" style="@($"background: {item};")" />
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mud-picker-color-controls">
+                        @if (ShowSliders || ShowPreview)
+                        {
+                            <div class="mud-picker-color-controls-row">
+                                @if (ShowPreview)
+                                {
+                                    <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
+                                        <div class="mud-picker-color-fill" style="@($"background: {_value};")"></div>
+                                    </div>
+                                    <MSlider Class="mud-picker-color-slider alpha"
+                                             Style="width:220px"
+                                             Value="@_value.Alpha"
+                                             TValue="int"
+                                             Min="0"
+                                             Max="255"
+                                             Step="1" />
+                                }
+                                @if (_collectionOpen)
+                                {
+                                    <div class="mud-picker-color-collection">
+                                        @foreach (var item in Palette.Take(5))
+                                        {
+                                            <div style="@($"background: {item};")"></div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @if (ShowInputs)
+                        {
+                            <div class="mud-picker-color-controls-row">
+                                <div class="mud-picker-color-inputs">
+                                    <MTextField TValue="string" Dense Required="true" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </CascadingValue>
         </MCard>
     </ExpandTransition>
 </MCard>
@@ -88,60 +140,6 @@
     bool _collectionOpen = true;
     bool ShowAlpha = true;
     SKColor _value = new SKColor(0, 0, 0, 0);
-    protected RenderFragment PickerContent =>
-    @<CascadingValue Value="@this" IsFixed="true">
-        <div>
-            @if (ShowColorField)
-        {
-            <div class="mud-picker-color-picker">
-                <div class="mud-picker-color-grid">
-                    @foreach (var item in _gridList)
-                {
-                    <div class="dot" style="@($"background: {item};")"></div>
-                }
-                </div>
-            </div>
-        }
-
-            <div class="mud-picker-color-controls">
-                @if (ShowSliders || ShowPreview)
-            {
-                <div class="mud-picker-color-controls-row">
-                    @if (ShowPreview)
-                {
-                    <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
-                        <div class="mud-picker-color-fill" style="@($"background: {_value};")"></div>
-                    </div>
-                    <Masa.Blazor.MSlider Class="mud-picker-color-slider alpha"
-                               Style="width:220px"
-                               Value="@_value.Alpha"
-                               T="int"
-                               Min="0"
-                               Max="255"
-                               Step="1" />
-                }
-                    @if (_collectionOpen)
-                {
-                    <div class="mud-picker-color-collection">
-                        @foreach (var item in Palette.Take(5))
-                    {
-                        <div style="@($"background: {item};")"></div>
-                    }
-                    </div>
-                }
-                </div>
-            }
-                @if (ShowInputs)
-            {
-                <div class="mud-picker-color-controls-row">
-                    <div class="mud-picker-color-inputs">
-                        <Masa.Blazor.MTextField TValue="string" Dense Required="true" />
-                    </div>
-                </div>
-            }
-            </div>
-        </div>
-    </CascadingValue>;
 
 
     private IEnumerable<string> _gridList = new string[]

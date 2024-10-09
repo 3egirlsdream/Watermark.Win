@@ -54,30 +54,4 @@
     function revokeUrl(url) {
         (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
-
-    function attachDragEvents(element) {
-        console.log(element);
-        alert(1)
-        var elementRef = DotNetReference.invokeMethodAsync('Watermark.Razor.Components', 'HandleFiles', element);
-
-        document.getElementById(element).addEventListener('dragenter', function (e) {
-            e.stopPropagation();
-            e.preventDefault();
-        });
-
-        document.getElementById(element).addEventListener('dragover', function (e) {
-            e.stopPropagation();
-            e.preventDefault();
-        });
-
-        document.getElementById(element).addEventListener('drop', function (e) {
-            e.stopPropagation();
-            e.preventDefault();
-
-            var files = e.dataTransfer.files;
-            elementRef.then(dotNetObject => {
-                dotNetObject.invokeMethodAsync('Watermark.Razor.Components.HandleFiles', files);
-            });
-        });
-    }
 </script>

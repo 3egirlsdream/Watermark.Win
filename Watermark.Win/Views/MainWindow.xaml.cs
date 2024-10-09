@@ -28,6 +28,8 @@ namespace Watermark.Win
             {
                 IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
 				IocHelper.GetIoc().AddSingleton<APIHelper>();
+                var design = DesignProvider.Get(new WMCanvas());
+                IocHelper.GetIoc().AddSingleton(design);
 				Resources.SetIoc();
                 InitializeComponent();
                 Loaded+=MainWindow_Loaded;

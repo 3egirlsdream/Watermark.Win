@@ -106,7 +106,7 @@
                 </Watermark.Razor.Parts.ExpandPanel>
             </MTabItem>
             <MTabItem Value="@("图层")">
-                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="@RemoveImageEvt" SelectImageEvt="@SelectImageEvt"  />
+                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage" />
             </MTabItem>
         </MTabsItems>
     </div>
@@ -122,13 +122,12 @@
     List<string> tabs = ["大纲", "画布", "画幅", "图层"];
     [Parameter]
     public WMCanvas canvas { get; set; } = new();
-    [Parameter]
-    public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
+    // [Parameter]
+    // public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
 
     [Parameter]
     public EventCallback<string> Changed { get; set; }
 
-    [Parameter]
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
 
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
@@ -136,20 +135,83 @@
     //[Parameter]
     //public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
     [Parameter]
-    public EventCallback<IWMControl> SelectImageEvt { get; set; }
-    [Parameter]
-    public EventCallback<WMContainer> RemoveImageEvt { get; set; }
+    public Func<Task<string>> SelectDefaultImageEvt { get; set; }
     [Parameter]
     public Func<WMLogo, Task> SelectLogo { get; set; }
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
     [Parameter]
     public EventCallback Refresh { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ConcurrentDictionary<string, byte[]> dic = new();
+            if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
+            var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
+            Global.ImageFile2Base64(dic, p, "default");
+            var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
+            canvas.Children.ForEach(c =>
+            {
+                if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
+                c.Controls.ForEach(x =>
+                {
+                    if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
+                    else if (x is WMContainer mContainer)
+                    {
+                        mContainer.Controls.ForEach(z =>
+                        {
+                            if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
+                        });
+
+                    };
+                });
+            });
+            foreach (var e in dic)
+            {
+                ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            }
+        }
+        catch (Exception err)
+        {
+            //Common.ShowMsg(PopupService, err.Message, AlertTypes.Error);
+        }
+    }
+
     void PreviewImageRefresh()
     {
         if (Refresh.HasDelegate)
         {
             Refresh.InvokeAsync();
+        }
+    }
+
+    async void SelectDefaultImage()
+    {
+        var p = await SelectDefaultImageEvt.Invoke();
+        if (string.IsNullOrEmpty(p)) return;
+        ConcurrentDictionary<string, byte[]> dic = new();
+        var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
+        var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
+        SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+        var codec = SKCodec.Create(p);
+        bitmap = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
+        Global.WriteThumbnailImage(bitmap, destFile);
+        Global.ImageFile2Base64(dic, destFile, "default");
+        ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        PreviewImageRefresh();
+    }
+
+    void RemoveImage(WMContainer container)
+    {
+        var filename = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
+        if (File.Exists(filename))
+        {
+            File.Delete(filename);
+            container.Path = string.Empty;
+            ImagesBase64.Remove(container.ID, out string v);
+            PreviewImageRefresh();
         }
     }
 

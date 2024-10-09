@@ -50,10 +50,7 @@
 
         <DesignConfiguration canvas="canvas" Style="width:300px;height:100%"
                              Changed="ValueChanged2"
-                             ImagesBase64="ImagesBase64"
-                             SelectDefaultImage="SelectDefaultImage"
-                             RemoveImageEvt="RemoveImage"
-                             SelectImageEvt="SelectImage" />
+                             SelectDefaultImageEvt="SelectDefaultImageEvt" />
     </div>
 
     <MDialog ContentStyle="width:300px;height:100px;" @bind-Value="@showDialog" Class="pa-4">
@@ -90,7 +87,7 @@
     string url = "";
     bool SrcLoading = false;
     List<string> Fonts = new List<string>();
-    ConcurrentDictionary<string, string> ImagesBase64 = new();
+    //ConcurrentDictionary<string, string> ImagesBase64 = new();
     List<string> Radioes = ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1"];
     protected override async Task OnInitializedAsync()
     {
@@ -105,32 +102,32 @@
                 HotKeyEvt = designFunc.HotKeyEvt;
             }
 
-            ConcurrentDictionary<string, byte[]> dic = new();
+            //ConcurrentDictionary<string, byte[]> dic = new();
             canvas = CurrentCanvas;
-            if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
-            var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
-            Global.ImageFile2Base64(dic, p, "default");
-            var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
-            canvas.Children.ForEach(c =>
-            {
-                if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
-                c.Controls.ForEach(x =>
-                {
-                    if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
-                    else if (x is WMContainer mContainer)
-                    {
-                        mContainer.Controls.ForEach(z =>
-                        {
-                            if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
-                        });
+            // if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
+            // var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
+            // Global.ImageFile2Base64(dic, p, "default");
+            // var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
+            // canvas.Children.ForEach(c =>
+            // {
+            //     if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
+            //     c.Controls.ForEach(x =>
+            //     {
+            //         if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
+            //         else if (x is WMContainer mContainer)
+            //         {
+            //             mContainer.Controls.ForEach(z =>
+            //             {
+            //                 if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
+            //             });
 
-                    };
-                });
-            });
-            foreach (var e in dic)
-            {
-                ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-            }
+            //         };
+            //     });
+            // });
+            // foreach (var e in dic)
+            // {
+            //     ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            // }
 
             PreviewImageRefresh();
             try
@@ -220,65 +217,6 @@
         Common.ShowMsg(PopupService, message, AlertTypes.Success);
     }
 
-    async void SelectImage(IWMControl ctrl)
-    {
-        if (SelectLogo is null) return;
-        if (ctrl is WMLogo mLogo)
-        {
-            await SelectLogo.Invoke(mLogo);
-            var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + mLogo.Path;
-            ConcurrentDictionary<string, byte[]> dic = [];
-            Global.ImageFile2Base64(dic, destFile, mLogo.ID);
-            ImagesBase64[mLogo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-            PreviewImageRefresh();
-        }
-        else if (ctrl is WMContainer mContainer)
-        {
-            var rs = SelectContainer.Invoke(mContainer);
-            await rs;
-            var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + Path.GetFileName(mContainer.Path);
-            using var bitmap = SKBitmap.Decode(mContainer.Path);
-            if (bitmap is null) return;
-            var codec = SKCodec.Create(mContainer.Path);
-            using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
-            Global.WriteThumbnailImage(bitmap2, destFile);
-            ConcurrentDictionary<string, byte[]> dic = [];
-            Global.ImageFile2Base64(dic, destFile, mContainer.ID);
-            mContainer.Path = Path.GetFileName(mContainer.Path);
-            ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-            PreviewImageRefresh();
-        }
-    }
-
-
-    async void SelectDefaultImage()
-    {
-        var p = await SelectDefaultImageEvt.Invoke();
-        if (string.IsNullOrEmpty(p)) return;
-        ConcurrentDictionary<string, byte[]> dic = new();
-        var destFolder = Global.AppPath.TemplatesFolder + CurrentCanvas.ID;
-        var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-        SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
-        var codec = SKCodec.Create(p);
-        bitmap = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
-        Global.WriteThumbnailImage(bitmap, destFile);
-        Global.ImageFile2Base64(dic, destFile, "default");
-        ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-        PreviewImageRefresh();
-    }
-
-
-    void RemoveImage(WMContainer container)
-    {
-        var filename = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
-        if (File.Exists(filename))
-        {
-            File.Delete(filename);
-            container.Path = string.Empty;
-            ImagesBase64.Remove(container.ID, out string v);
-            PreviewImageRefresh();
-        }
-    }
 
 
     void ValueChanged2(string v)

@@ -19,7 +19,7 @@
             {
                 <ToggleButton Elevation="0" On="@("mdi-eye-outline")" Off="@("mdi-eye-off-outline")" Open="@Visible" OpenChanged="VisibleChanged" Class="mr-1"/>
             }
-            <Label Name="@Desc" Small="false" />
+            <Label Name="@Desc" Small="false" Bold="@Bold"/>
         </div>
         <ToggleButton On="@("mdi-arrow-down-drop-circle-outline")" Off="@("mdi-arrow-up-drop-circle-outline")" @bind-Open="@Expanded" />
     </div>
@@ -28,7 +28,7 @@
         <MDivider />
     }
     <ExpandTransition>
-        <MCard Show=@Expanded Style="width:100%;height:auto" class="@($"mx-auto {(FlexStart ? "flex-start2" : "")}")" Elevation="0" Flat Color="#fff">
+        <MCard Show=@Expanded Style="width:100%;height:auto" class="@($"mx-auto {(FlexStart ? "flex-start2" : "")}")" Elevation="0" Flat Color="@Color">
             @ChildContent
         </MCard>
     </ExpandTransition>
@@ -48,6 +48,8 @@
     [Parameter]
     public string Color { get; set; } = "#F5F5F5";
 
+    [Parameter]
+    public bool Bold { get; set; } = false;
     [Parameter]
     public bool FlexStart { get; set; }
     [Parameter]

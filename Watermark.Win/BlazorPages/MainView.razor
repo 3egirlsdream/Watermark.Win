@@ -41,7 +41,7 @@
                     <ChildContent>
                         <Masa.Blazor.MList>
                             <Masa.Blazor.MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
-                            <Masa.Blazor.MListItem OnClick="ImportLogoes" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                            <Masa.Blazor.MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
                             <Masa.Blazor.MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
                             <Masa.Blazor.MDivider />
                             <Masa.Blazor.MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
@@ -211,7 +211,7 @@
                                     {
                                         <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:space-between">
                                             <MImage Width="40" Height="40" Contain Src="@context.Item.Src" />
-                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1"/>
+                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1" />
                                         </div>
 
                                     }
@@ -271,9 +271,9 @@
                         </BarContent>
                     </MSplitter>
                 </div>
-                @if (CurrentImage != null && CurrentImage.Canvas != null)
+                @if (CurrentImage != null && CurrentImage.Canvas != null && showConfig)
                 {
-                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas"/>
+                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" />
                 }
 
             </div>
@@ -291,25 +291,46 @@
         }
 
         <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
-            <TemplatesMarket ClipboardAction="ClipboardAction" />
+            @if (openMarket)
+            {
+                <TemplatesMarket ClipboardAction="ClipboardAction" />
+            }
         </MDialog>
 
         <MDialog @bind-Value="@CommonDialog.Show" Width="300">
             <MImage Height="300" Width="300" Contain Src="@CommonDialog.Message" />
         </MDialog>
         <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
-            <LoginContent CloseEvent="() => showLogin = false" />
+            @if (showLogin)
+            {
+                <LoginContent CloseEvent="() => showLogin = false" />
+            }
         </MDialog>
         <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showSignUp">
-            <SignUpContent CloseEvent="() => showSignUp = false" />
+            @if (showSignUp)
+            {
+                <SignUpContent CloseEvent="() => showSignUp = false" />
+            }
         </MDialog>
 
         <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
-            <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="CreateNewTemplate" OnClose="() => openCreateNew = false" />
+            @if (openCreateNew)
+            {
+                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="CreateNewTemplate" OnClose="() => openCreateNew = false" />
+            }
         </MDialog>
 
         <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
-            <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction" />
+            @if (showExport)
+            {
+                <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+            @if (showLogoStore)
+            {
+                <LogoDialogContent />
+            }
         </MDialog>
     </MErrorHandler>
 </MApp>
@@ -321,6 +342,7 @@
     bool openCreateNew = false;
     WMainLoading CommonDialog = new();
     StringNumber tab;
+    bool showLogoStore = false;
     bool showExport = false;
     bool openMarket = false;
     bool openMyTemplate = false;
@@ -329,6 +351,7 @@
     bool _expanded = false;
     bool showLogin = false;
     bool showSignUp = false;
+    bool showConfig = false;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
@@ -537,6 +560,7 @@
 
     async void ChangeTemplate(WMTemplateList template)
     {
+        showConfig = false;
         CurrentTemplate = template;
         if (CurrentImage == null) return;
         SrcLoading = true;
@@ -553,6 +577,7 @@
         CurrentImage.Src = src;
         await InitLogoCacheDic(CurrentImage.ID, template);
         SrcLoading = false;
+        showConfig = true;
         EnableAll();
         StateHasChanged();
     }
