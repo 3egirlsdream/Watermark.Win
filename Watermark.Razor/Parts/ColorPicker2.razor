@@ -10,6 +10,9 @@
         box-shadow: none;
     }
 
+        .dot:hover {
+            cursor:pointer
+        }
     .mud-picker-color-picker {
         width: 312px;
         height: 250px;
@@ -45,80 +48,90 @@
         overflow: hidden;
     }
 
+    .mud-picker-color-fill {
+        width:38px;
+        height: 38px;
+        border-radius: 2px;
+    }
     .mud-picker-color-dot {
         height: 38px;
-        min-width: 38px;
-        width: 100%;
+        width: 38px;
+        border-radius: 2px;
         transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-radius 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
         border-radius: var(--mud-default-borderradius);
         box-shadow: 0 0 6px rgba(127, 130, 134, .18);
     }
 </style>
 <MCard Flat Class="my-1">
-    <div style="display:flex;justify-content:flex-end;">
-        <MButton Small OnClick="()=>show = !show" Elevation="0" Color="@Color" />
-    </div>
-    @if (show)
-    {
-        <MDivider />
-    }
-    <ExpandTransition>
-        <MCard Show="@show" Style="width:100%" class="mx-auto secondary" Elevation="0" Flat>
-            <CascadingValue Value="@this" IsFixed="true">
-                <div>
-                    @if (@ShowColorField)
-                    {
-                        <div class="mud-picker-color-picker">
-                            <div class="mud-picker-color-grid">
-                                @foreach (var item in _gridList)
-                                {
-                                    <div class="dot" style="@($"background: {item};")" />
-                                }
-                            </div>
-                        </div>
-                    }
+    <MMenu OffsetX CloseOnContentClick="false">
+        <ActivatorContent>
+            <div style="display:flex;justify-content:space-between;" class="ma-1">
+                <Label Name="@Name" Small />
+                <MButton @attributes="@context.Attrs" Small OnClick="()=>show = !show" Elevation="0" Color="@Color" />
+            </div>
+        </ActivatorContent>
 
-                    <div class="mud-picker-color-controls">
-                        @if (ShowSliders || ShowPreview)
+        <ChildContent>
+            <MCard Style="width:100%" class="mx-auto" Elevation="0" Flat>
+                <CascadingValue Value="@this" IsFixed="true">
+                    <div>
+                        @if (@ShowColorField)
                         {
-                            <div class="mud-picker-color-controls-row">
-                                @if (ShowPreview)
-                                {
-                                    <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
-                                        <div class="mud-picker-color-fill" style="@($"background: {_value};")"></div>
-                                    </div>
-                                    <MSlider Class="mud-picker-color-slider alpha"
-                                             Style="width:220px"
-                                             Value="@_value.Alpha"
-                                             TValue="int"
-                                             Min="0"
-                                             Max="255"
-                                             Step="1" />
-                                }
-                                @if (_collectionOpen)
-                                {
-                                    <div class="mud-picker-color-collection">
-                                        @foreach (var item in Palette.Take(5))
-                                        {
-                                            <div style="@($"background: {item};")"></div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        }
-                        @if (ShowInputs)
-                        {
-                            <div class="mud-picker-color-controls-row">
-                                <div class="mud-picker-color-inputs">
-                                    <MTextField TValue="string" Dense Required="true" />
+                            <div class="mud-picker-color-picker">
+                                <div class="mud-picker-color-grid">
+                                    @foreach (var item in _gridList)
+                                    {
+                                        <div class="dot" style="@($"background: {item};")" @onclick="() => Click(item)" />
+                                    }
                                 </div>
                             </div>
                         }
+
+                        <div class="mud-picker-color-controls">
+                            @if (ShowSliders || ShowPreview)
+                            {
+                                <div class="mud-picker-color-controls-row">
+                                    @if (ShowPreview)
+                                    {
+                                        <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
+                                            <div class="mud-picker-color-fill" style="@($"background: {Color};")"></div>
+                                        </div>
+                                        <MSlider Class="mud-picker-color-slider alpha ml-1"
+                                                 Style="width:220px"
+                                                 Value="@_value.Alpha"
+                                                 TValue="byte"
+                                                 Min="0"
+                                                 Max="255"
+                                                 TrackSize="8"
+                                                 ValueChanged="SliderChanged"
+                                                 HideDetails="true"
+                                                 Step="1" />
+                                    }
+                                    @if (_collectionOpen)
+                                    {
+                                        <div class="mud-picker-color-collection">
+                                            @foreach (var item in Palette.Take(5))
+                                            {
+                                                <div style="@($"background: {item};")"></div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (ShowInputs)
+                            {
+                                <div class="mud-picker-color-controls-row mt-2">
+                                    <div style="width:100%">
+                                        <MTextField Outlined TValue="string" Dense Required="true" HideDetails="true" Label="HEX" Value="@Color" ValueChanged="ValueChanged" Counter="9"/>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
-            </CascadingValue>
-        </MCard>
-    </ExpandTransition>
+                </CascadingValue>
+            </MCard>
+        </ChildContent>
+    </MMenu>
 </MCard>
 
 
@@ -139,7 +152,7 @@
     bool ShowInputs = true;
     bool _collectionOpen = true;
     bool ShowAlpha = true;
-    SKColor _value = new SKColor(0, 0, 0, 0);
+    WMColor _value = new WMColor(0, 0, 0, 0);
 
 
     private IEnumerable<string> _gridList = new string[]
@@ -164,5 +177,116 @@
           "#585b62", "#17698e", "#17a258", "#d9980d", "#dc3f11",
           "#353940", "#113b53", "#127942", "#bf7d11", "#aa0000"
     };
+
+    void Click(string hex)
+    {
+        _value = WMColor.Parse(hex);
+        Color = _value.Hex;
+        if (ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(Color);
+        }
+    }
+
+    void ValueChanged(string hex)
+    {
+        _value.Hex = hex;
+        Color = hex;
+        if(ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(hex);
+        }
+    }
+    void SliderChanged(byte alpha)
+    {
+        _value.Alpha = alpha;
+        Color = _value.Hex;
+        if (ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(Color);
+        }
+    }
+
+    public class WMColor
+    {
+        public WMColor(byte r, byte g, byte b, byte a)
+        {
+            Alpha = a;
+            Red = r;
+            Green = g;
+            Blue = b;
+        }
+        public byte Alpha { get; set; }
+
+        public byte Red { get; set; }
+
+        public byte Green { get; set; }
+
+        public byte Blue { get; set; }
+
+        public static WMColor Parse(string hex)
+        {
+            var color = ConvertHexToRgba(hex);
+            var wc = new WMColor(color.Red, color.Green, color.Blue, color.Alpha);
+            return wc;
+        }
+
+        string ConvertToHexColor(byte r, byte g, byte b, byte a)
+        {
+            // Convert each byte to its hexadecimal representation, padding with leading zeros if necessary.
+            string hexR = r.ToString("X2");
+            string hexG = g.ToString("X2");
+            string hexB = b.ToString("X2");
+            string hexA = a.ToString("X2");
+
+            // Combine the components into a single string with a "#" prefix.
+            return $"#{hexR}{hexG}{hexB}{hexA}";
+        }
+
+        static WMColor ConvertHexToRgba(string hexColor)
+        {
+            // 去除#前缀
+            if (hexColor.StartsWith("#"))
+            {
+                hexColor = hexColor.Substring(1);
+            }
+
+            // 检查长度，确保是8位（AARRGGBB）或6位（RRGGBB，此时A默认为FF）
+            if (hexColor.Length == 8 || hexColor.Length == 6)
+            {
+                // 解析十六进制分量
+                byte r = byte.Parse(hexColor.Substring(0, 2), NumberStyles.HexNumber);
+                byte g = byte.Parse(hexColor.Substring(2, 2), NumberStyles.HexNumber);
+                byte b = byte.Parse(hexColor.Substring(4, 2), NumberStyles.HexNumber);
+                byte a = byte.Parse(hexColor.Length == 8 ? hexColor.Substring(6, 2) : "FF", NumberStyles.HexNumber); // 如果只有6位，则A默认为FF
+
+                return new WMColor(r, g, b, a);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid hex color format.");
+            }
+        }
+
+        private string hex;
+        public string Hex
+        {
+            get
+            {
+                var c = ConvertToHexColor(Red, Green, Blue, Alpha);
+                hex = c.ToString();
+                return hex;
+            }
+            set
+            {
+                var v = Parse(value);
+                Red = v.Red;
+                Green = v.Green;
+                Blue = v.Blue;
+                Alpha = v.Alpha;
+                hex = value;
+            }
+        }
+    } 
 }
 

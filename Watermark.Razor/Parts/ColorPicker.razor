@@ -1,48 +1,144 @@
-﻿@using MudBlazor
+﻿@using System.Globalization
+@using SkiaSharp
+@using Masa.Blazor
 <style>
-    .color-picker {
-        width: 100px;
-        height:32px;
-        
-        border-radius: 3px !important;
-        flex: none !important;
+    .dot {
+        height: 25px;
+        min-width: 26px;
+        max-width: 26px;
+        border-radius: 0px;
+        box-shadow: none;
     }
 
-        .color-picker .mud-input-control {
-            margin-top: 0px !important;
+        .dot:hover {
+            cursor: pointer
         }
 
-            .color-picker .mud-input-control > .mud-input-control-input-container > div.mud-input.mud-input-text {
-                margin-top: 0px;
-                border-radius: 3px !important;
-                border: 1px solid #e3e3e3;
-            }
+    .mud-picker-color-picker {
+        width: 312px;
+        height: 250px;
+        position: relative;
+        overflow: hidden;
+    }
 
-
-        .color-picker .mud-input.mud-input-underline:before {
-            border: 0 !important;
+        .mud-picker-color-picker .mud-picker-color-grid {
+            display: flex;
+            flex-wrap: wrap;
         }
 
-        .color-picker .mud-input > input.mud-input-root, div.mud-input-slot.mud-input-root {
-            width: auto;
-            font-weight: 300;
+    .mud-picker-color-controls {
+        width: 312px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .mud-picker-color-controls .mud-picker-color-controls-row {
+            display: flex;
+            align-items: center;
         }
 
-        .color-picker .mud-input-adornment-end {
-            display: none;
-        }
+    .mud-picker-color-dot.mud-picker-color-dot-current {
+        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQYlWNgYGCQwoKxgqGgcJA5h3yFAAs8BRWVSwooAAAAAElFTkSuQmCC) repeat;
+    }
 
-        .color-picker .mud-input-control-input-container label {
-            display: none;
-        }
+    .mud-ripple {
+        --mud-ripple-offset-x: 0;
+        --mud-ripple-offset-y: 0;
+        position: relative;
+        overflow: hidden;
+    }
 
+    .mud-picker-color-fill {
+        width: 38px;
+        height: 38px;
+        border-radius: 2px;
+    }
+
+    .mud-picker-color-dot {
+        height: 38px;
+        width: 38px;
+        border-radius: 2px;
+        transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-radius 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+        border-radius: var(--mud-default-borderradius);
+        box-shadow: 0 0 6px rgba(127, 130, 134, .18);
+    }
 </style>
-<div style="display:flex; justify-content:space-between" class="ma-1">
-    <Label Name="@Name" Small/>
-    <ColorPicker2 Color="Color" ColorChanged="ColorChanged" />
-</div>
+<MCard Flat Class="my-1" Style="background: transparent;">
+    <MMenu OffsetX CloseOnContentClick="false">
+        <ActivatorContent>
+            <div style="display:flex;justify-content:space-between;" class="ma-1">
+                <Label Name="@Name" Small="Small" />
+                <MButton @attributes="@context.Attrs" Small OnClick="()=>show = !show" Elevation="0" Color="@Color" />
+            </div>
+        </ActivatorContent>
+
+        <ChildContent>
+            <MCard Style="width:100%" class="mx-auto" Elevation="0" Flat>
+                <CascadingValue Value="@this" IsFixed="true">
+                    <div>
+                        @if (@ShowColorField)
+                        {
+                            <div class="mud-picker-color-picker">
+                                <div class="mud-picker-color-grid">
+                                    @foreach (var item in _gridList)
+                                    {
+                                        <div class="dot" style="@($"background: {item};")" @onclick="() => Click(item)" />
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mud-picker-color-controls">
+                            @if (ShowSliders || ShowPreview)
+                            {
+                                <div class="mud-picker-color-controls-row">
+                                    @if (ShowPreview)
+                                    {
+                                        <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
+                                            <div class="mud-picker-color-fill" style="@($"background: {Color};")"></div>
+                                        </div>
+                                        <MSlider Class="mud-picker-color-slider alpha ml-1"
+                                                 Style="width:220px"
+                                                 Value="@_value.Alpha"
+                                                 TValue="byte"
+                                                 Min="0"
+                                                 Max="255"
+                                                 TrackSize="8"
+                                                 ValueChanged="SliderChanged"
+                                                 HideDetails="true"
+                                                 Step="1" />
+                                    }
+                                    @if (_collectionOpen)
+                                    {
+                                        <div class="mud-picker-color-collection">
+                                            @foreach (var item in Palette.Take(5))
+                                            {
+                                                <div style="@($"background: {item};")"></div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (ShowInputs)
+                            {
+                                <div class="mud-picker-color-controls-row mt-2">
+                                    <div style="width:100%">
+                                        <MTextField Outlined TValue="string" Dense Required="true" HideDetails="true" Label="HEX" Value="@Color" ValueChanged="ValueChanged" Counter="9" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </CascadingValue>
+            </MCard>
+        </ChildContent>
+    </MMenu>
+</MCard>
+
 
 @code {
+
     [Parameter]
     public string Color { get; set; } = "#FFFFFF";
     [Parameter]
@@ -51,4 +147,148 @@
     public bool Small { get; set; } = true;
     [Parameter]
     public EventCallback<string> ColorChanged { get; set; }
+    bool show = false;
+    bool ShowColorField = true;
+    bool ShowSliders = true;
+    bool ShowPreview = true;
+    bool ShowInputs = true;
+    bool _collectionOpen = true;
+    bool ShowAlpha = true;
+    WMColor _value = new WMColor(0, 0, 0, 0);
+
+
+    private IEnumerable<string> _gridList = new string[]
+       {
+            "#FFFFFF","#ebebeb","#d6d6d6","#c2c2c2","#adadad","#999999","#858586","#707070","#5c5c5c","#474747","#333333","#000000",
+            "#133648","#071d53","#0f0638","#2a093b","#370c1b","#541107","#532009","#53350d","#523e0f","#65611b","#505518","#2b3d16",
+            "#1e4c63","#0f2e76","#180b4e","#3f1256","#4e1629","#781e0e","#722f10","#734c16","#73591a","#8c8629","#707625","#3f5623",
+            "#2e6c8c","#1841a3","#280c72","#591e77","#6f223d","#a62c17","#a0451a","#a06b23","#9f7d28","#c3bc3c","#9da436","#587934",
+            "#3c8ab0","#2155ce","#331c8e","#702898","#8d2e4f","#d03a20","#ca5a24","#c8862e","#c99f35","#f3ec4e","#c6d047","#729b44",
+            "#479fd3","#2660f5","#4725ab","#8c33b5","#aa395d","#eb512e","#ed732e","#f3ae3d","#f5c944","#fefb67","#ddeb5c","#86b953",
+            "#59c4f7","#4e85f6","#5733e2","#af43eb","#d44a7a","#ed6c59","#ef8c56","#f3b757","#f6cd5b","#fef881","#e6ee7a","#a3d16e",
+            "#78d3f8","#7fa6f8","#7e52f5","#c45ff6","#de789d","#f09286","#f2a984","#f6c983","#f9da85","#fef9a1","#ebf29b","#badc94",
+            "#a5e1fa","#adc5fa","#ab8df7","#d696f8","#e8a7bf","#f4b8b1","#f6c7af","#f9daae","#fae5af","#fefbc0","#f3f7be","#d2e7ba",
+            "#d2effd","#d6e1fc","#d6c9fa","#e9cbfb","#f3d4df","#f9dcd9","#fae3d8","#fcecd7","#fdf2d8","#fefce0","#f7fade","#e3edd6"
+       };
+    public IEnumerable<string> Palette { get; set; } = new string[]
+    { "#424242", "#2196f3", "#00c853", "#ff9800", "#f44336",
+          "#f6f9fb", "#9df1fa", "#bdffcf", "#fff0a3", "#ffd254",
+          "#e6e9eb", "#27dbf5", "#7ef7a0", "#ffe273", "#ffb31f",
+          "#c9cccf", "#13b8e8", "#14dc71", "#fdd22f", "#ff9102",
+          "#858791", "#0989c2", "#1bbd66", "#ebb323", "#fe6800",
+          "#585b62", "#17698e", "#17a258", "#d9980d", "#dc3f11",
+          "#353940", "#113b53", "#127942", "#bf7d11", "#aa0000"
+    };
+
+    void Click(string hex)
+    {
+        _value = WMColor.Parse(hex);
+        Color = _value.Hex;
+        if (ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(Color);
+        }
+    }
+
+    void ValueChanged(string hex)
+    {
+        _value.Hex = hex;
+        Color = hex;
+        if (ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(hex);
+        }
+    }
+    void SliderChanged(byte alpha)
+    {
+        _value.Alpha = alpha;
+        Color = _value.Hex;
+        if (ColorChanged.HasDelegate)
+        {
+            ColorChanged.InvokeAsync(Color);
+        }
+    }
+
+    public class WMColor
+    {
+        public WMColor(byte r, byte g, byte b, byte a)
+        {
+            Alpha = a;
+            Red = r;
+            Green = g;
+            Blue = b;
+        }
+        public byte Alpha { get; set; }
+
+        public byte Red { get; set; }
+
+        public byte Green { get; set; }
+
+        public byte Blue { get; set; }
+
+        public static WMColor Parse(string hex)
+        {
+            var color = ConvertHexToRgba(hex);
+            var wc = new WMColor(color.Red, color.Green, color.Blue, color.Alpha);
+            return wc;
+        }
+
+        string ConvertToHexColor(byte r, byte g, byte b, byte a)
+        {
+            // Convert each byte to its hexadecimal representation, padding with leading zeros if necessary.
+            string hexR = r.ToString("X2");
+            string hexG = g.ToString("X2");
+            string hexB = b.ToString("X2");
+            string hexA = a.ToString("X2");
+
+            // Combine the components into a single string with a "#" prefix.
+            return $"#{hexR}{hexG}{hexB}{hexA}";
+        }
+
+        static WMColor ConvertHexToRgba(string hexColor)
+        {
+            // 去除#前缀
+            if (hexColor.StartsWith("#"))
+            {
+                hexColor = hexColor.Substring(1);
+            }
+
+            // 检查长度，确保是8位（AARRGGBB）或6位（RRGGBB，此时A默认为FF）
+            if (hexColor.Length == 8 || hexColor.Length == 6)
+            {
+                // 解析十六进制分量
+                byte r = byte.Parse(hexColor.Substring(0, 2), NumberStyles.HexNumber);
+                byte g = byte.Parse(hexColor.Substring(2, 2), NumberStyles.HexNumber);
+                byte b = byte.Parse(hexColor.Substring(4, 2), NumberStyles.HexNumber);
+                byte a = byte.Parse(hexColor.Length == 8 ? hexColor.Substring(6, 2) : "FF", NumberStyles.HexNumber); // 如果只有6位，则A默认为FF
+
+                return new WMColor(r, g, b, a);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid hex color format.");
+            }
+        }
+
+        private string hex;
+        public string Hex
+        {
+            get
+            {
+                var c = ConvertToHexColor(Red, Green, Blue, Alpha);
+                hex = c.ToString();
+                return hex;
+            }
+            set
+            {
+                var v = Parse(value);
+                Red = v.Red;
+                Green = v.Green;
+                Blue = v.Blue;
+                Alpha = v.Alpha;
+                hex = value;
+            }
+        }
+    }
 }
+
