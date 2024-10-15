@@ -29,11 +29,26 @@
         .hover:hover {
             cursor: pointer;
         }
+
+    .exif-selector {
+    }
+
+        .exif-selector .m-input__control {
+            display: none;
+        }
+
+        .exif-selector .m-input__prepend-outer {
+            margin: 0px;
+        }
+
+        .exif-selector .mdi-paperclip::before {
+            font-size: 20px;
+        }
 </style>
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
     <MErrorHandler>
         <Masa.Blazor.MCard Color="grey lighten-4" Flat Tile Style="height:100%">
-            <Masa.Blazor.MToolbar Outlined Dense>
+            <Masa.Blazor.MToolbar Outlined Dense Elevation="0">
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
                         <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>文件</Masa.Blazor.MButton>
@@ -110,7 +125,7 @@
                     </Masa.Blazor.MMenu>
                 }
                 <MSpacer />
-                <ColorPicker2/>
+                <ColorPicker2 />
                 <MMenu OffsetX CloseOnContentClick="false">
                     <ActivatorContent>
                         <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center">
@@ -199,7 +214,7 @@
                             拼图
                         </MTab>
                     </MTabs>
-                    <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow:auto">
+                    <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow-y:overlay">
                         <MTabItem Value="@("模板")">
                             <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
                                        Activatable
@@ -244,6 +259,20 @@
                             <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center" Size="70" Style="position:relative">
                                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                                 {
+                                    <MCard Style="width:50%;height:30px;position:absolute;top:10px;justify-content:flex-start;display:flex;gap:0 4px;align-items:center">
+                                        <MCard Style="width:23px;height:23px;cursor:pointer;" @onclick="OpenFullExifInfo">
+                                            <Watermark.Razor.Parts.IconExif />
+                                        </MCard>
+                                        <MCard Width="23" Height="23">
+                                            <MFileInput TValue="IBrowserFile"
+                                                        Class="exif-selector"
+                                                        OnChange="SelectSourceImageExif"
+                                                        Style="width: 22px !important; padding: 0px !important; margin:0px"
+                                                        HideDetails="true"
+                                                        Label="File input"></MFileInput>
+                                        </MCard>
+
+                                    </MCard>
                                     <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
                                     @if (SrcLoading)
                                     {

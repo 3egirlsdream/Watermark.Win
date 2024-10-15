@@ -114,6 +114,12 @@
     
 </div>
 
+<MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+    @if (showLogoStore)
+    {
+        <LogoDialogContent OnClick="(e) => SelectLogoCallback(e)"/>
+    }
+</MDialog>
 
 @code {
     [Parameter]
@@ -124,20 +130,18 @@
     public WMCanvas canvas { get; set; } = new();
     // [Parameter]
     // public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
-
+    WMLogo Logo;
     [Parameter]
     public EventCallback<string> Changed { get; set; }
 
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
 
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
-
+    bool showLogoStore = false;
     //[Parameter]
     //public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
     [Parameter]
     public Func<Task<string>> SelectDefaultImageEvt { get; set; }
-    [Parameter]
-    public Func<WMLogo, Task> SelectLogo { get; set; }
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
     [Parameter]
@@ -217,15 +221,10 @@
 
     async void SelectImage(IWMControl ctrl)
     {
-        if (SelectLogo is null) return;
         if (ctrl is WMLogo mLogo)
         {
-            await SelectLogo.Invoke(mLogo);
-            var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + mLogo.Path;
-            ConcurrentDictionary<string, byte[]> dic = [];
-            Global.ImageFile2Base64(dic, destFile, mLogo.ID);
-            ImagesBase64[mLogo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-            PreviewImageRefresh();
+            Logo = mLogo;
+            showLogoStore = true;
         }
         else if (ctrl is WMContainer mContainer)
         {
@@ -243,5 +242,17 @@
             ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
             PreviewImageRefresh();
         }
+    }
+
+    async void SelectLogoCallback(KeyValuePair<string, string> pair)
+    {
+        Logo.Path = pair.Key;
+        var destFile = Global.AppPath.LogoesFolder + Path.DirectorySeparatorChar + Logo.Path;
+        ConcurrentDictionary<string, byte[]> dic = [];
+        Global.ImageFile2Base64(dic, destFile, Logo.ID);
+        ImagesBase64[Logo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        showLogoStore = false;
+        StateHasChanged();
+        PreviewImageRefresh();
     }
 }

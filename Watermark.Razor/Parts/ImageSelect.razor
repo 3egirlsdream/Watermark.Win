@@ -11,21 +11,29 @@
         justify-content: center;
         margin: 2px auto
     }
+
+    image-select:hover
+    img:hover {
+        cursor:pointer;
+    }
 </style>
 
-@if (ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
-{
-    <div style="display:flex;justify-content:flex-end;align-items:center;">
-        <IconButton Icon="@ICONS.Delete" Text="true"/>
-    </div>
-    <MImage Height="@Size" Style="object-fit:cover" Src="@src" @onclick="SelectDefaultImage" Class="mt-1"/>
-}
-else
-{
-    <div style="@($"width:{Size}px;height:{Size}px;")" @onclick="SelectDefaultImage" class="image-select">
-        <MIcon Size="@("8rem")" Style="color:lightgrey">mdi-image-plus</MIcon>
-    </div>
-}
+<div style="height:100%;width:100%;display:flex;flex-direction:column;justify-content:center">
+    @if (ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
+    {
+        <div style="display:flex;justify-content:flex-end;align-items:center;">
+            <IconButton Icon="@ICONS.Delete" Text="true" OnClick="Del" />
+        </div>
+        <img style="@($"object-fit:{ObjectFit};margin:auto;width:{Size}px;height:{Size}px;")" src="@src" @onclick="SelectDefaultImage" class="mt-1" />
+    }
+    else
+    {
+        <div style="@($"width:{Size}px;height:{Size}px;")" @onclick="SelectDefaultImage" class="image-select">
+            <MIcon Size="@($"{Size / 2}px")" Style="color:lightgrey">mdi-image-plus</MIcon>
+        </div>
+    }
+</div>
+
 
 @code {
     [Parameter]
@@ -40,4 +48,14 @@ else
     public EventCallback Delete { get; set; }
     [Parameter]
     public int Size { get; set; } = 250;
+    [Parameter]
+    public string ObjectFit { get; set; } = "cover";
+
+    void Del()
+    {
+        if(Delete.HasDelegate)
+        {
+            Delete.InvokeAsync();
+        }
+    }
 }

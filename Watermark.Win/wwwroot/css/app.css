@@ -77,3 +77,15 @@ a, .btn-link {
 .pa-1 {
     padding: 4px;
 }
+
+
+::-webkit-scrollbar {
+    width: 11px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background-color: #4B55634E;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}

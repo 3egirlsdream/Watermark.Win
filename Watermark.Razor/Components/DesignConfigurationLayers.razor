@@ -106,7 +106,7 @@
                                 <ExpandPanel Desc="图片" Expanded="true" ShowSwitch="false">
                                     <ExpandPanel @bind-Expanded="mLogo.White2Transparent" Desc="白底转透明像素" />
                                     <ExpandPanel @bind-Expanded="mLogo.AutoSetLogo" Desc="自动识别品牌图标" />
-                                    <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" SelectDefaultImage="()=> SelectImage(mLogo)" />
+                                    <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" ObjectFit="contain" SelectDefaultImage="()=> SelectImage(mLogo)" />
                                 </ExpandPanel>
                             }
                             else if (c_comp is WMText mText)
@@ -179,10 +179,10 @@
                     else if (ctrl is WMLogo mLogo)
                     {
 
-                        <ExpandPanel Desc="图片" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
+                        <ExpandPanel Desc="图片" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light3" Class="my-1 px-1">
                             <ExpandPanel @bind-Expanded="mLogo.White2Transparent" Desc="白底转透明像素" />
                             <ExpandPanel @bind-Expanded="mLogo.AutoSetLogo" Desc="自动识别品牌图标" />
-                            <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" SelectDefaultImage="()=> SelectImage(mLogo)" />
+                            <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="40" ObjectFit="contain" SelectDefaultImage="()=> SelectImage(mLogo)" Delete="()=>{mLogo.Path = null; ImagesBase64.Remove(mLogo.ID, out string v);}"/>
                         </ExpandPanel>
                     }
                     else if (ctrl is WMText mText)
