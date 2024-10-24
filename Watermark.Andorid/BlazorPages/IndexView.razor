@@ -309,90 +309,40 @@
         StateHasChanged();
     }
 
-    async Task SelectSplitPhoto(WMZipedTemplate template)
+    async Task GeneratePhoto(WMZipedTemplate template)
     {
         try
         {
-            var result = await FilePicker.PickMultipleAsync(new PickOptions
-                {
-                    PickerTitle = "长按多选照片",
-                    FileTypes = FilePickerFileType.Jpeg
-                });
-
-            if (result == null || !result.Any()) return;
-            loading.Message = "正在生成图片...";
-            loading.Show = true;
-            StateHasChanged();
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
-
-            Dictionary<string, Dictionary<string, string>> exif = [];
-            exif[cvs.ID] = ExifHelper.DefaultMeta;
-            int c = 0;
-            foreach (var container in cvs.Children)
-            {
-                if (c <= result.Count() - 1 && !container.ContainerProperties.FixImage)
-                {
-                    container.Path = result.Skip(c++).Take(1).First().FullPath;
-                    exif[container.ID] = ExifHelper.ReadImage(container.Path);
-                }
-            }
-
-            CurrentImage = new();
-            cvs.Exif = exif;
-            CurrentImage.Canvas = cvs;
-            CurrentImage.ID = CurrentImage.Canvas.ID;
-            var b64 = await helper.GenerationAsync(cvs, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-            Images = [CurrentImage];
-            loading.Show = false;
-            //openDrawer = true;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
-        }
-    }
-
-    async Task OpenPhoto(WMZipedTemplate template)
-    {
-        try
-        {
+            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            parameter.FocusImageShow = false;
             var result = await FilePicker.PickMultipleAsync(new PickOptions
                 {
                     PickerTitle = "长按多选照片",
                     FileTypes = FilePickerFileType.Images
                 });
             if (result is null || result.Count() == 0) return;
-            Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
+
             if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
             {
                 Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
             }
 
-            string? directoryName = "";
+            if (template.CanvasType == CanvasType.Normal)
+            {
+                Global.VipFuncPermission(() => result.Count() > 3, "超过3张图片");
+            }
+
             List<string> fileNames = [];
             foreach (var f in result)
             {
-                directoryName = Path.GetDirectoryName(f.FullPath);
-                fileNames.Add(f.FileName);
+                fileNames.Add(Uri.EscapeDataString(f.FullPath));
             }
-            var dirc = Uri.EscapeDataString(directoryName);
-            NavController.Push($"/preview/{dirc}/{string.Join(";", fileNames.ToArray())}/{template.WatermarkId}");
+            NavController.Push($"/preview/{string.Join(";", fileNames.ToArray())}/{template.WatermarkId}");
         }
         catch (Exception ex)
         {
             Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
         }
-    }
-
-
-    async void GeneratePhoto(WMZipedTemplate template)
-    {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        parameter.FocusImageShow = false;
-        if (template.CanvasType == CanvasType.Normal) await OpenPhoto(template);
-        else await SelectSplitPhoto(template);
     }
 
     async void OpenCamera(WMZipedTemplate template)

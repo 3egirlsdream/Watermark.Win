@@ -1,4 +1,4 @@
-﻿@page "/preview/{path}/{names}/{templateId}"
+﻿@page "/preview/{names}/{templateId}"
 @using System.Collections.Concurrent
 @using LukeMauiFilePicker
 @using Watermark.Razor
@@ -658,8 +658,6 @@
 @code {
     public WMTemplateList CurrentImage { get; set; }
     [Parameter]
-    public string path { get; set; }
-    [Parameter]
     public string names { get; set; }
     [Parameter]
     public string templateId { get; set; }
@@ -719,7 +717,7 @@
             var canvas = await Global.GetCanvas(templateId);
             if (canvas is null) return;
             CurrentTemplateCanvas = canvas;
-            await InitImages(names, templateId, path);
+            await InitImages(names, templateId);
             RadioBase64 = Global.GetRadio();
             await InitLogoCacheDic();
             SelectedContainer = CurrentTemplateCanvas.Children.FirstOrDefault();
@@ -737,7 +735,7 @@
 
     }
 
-    async Task InitImages(string names, string templateId, string path)
+    async Task InitImages(string names, string templateId)
     {
         var fileNames = names.Split(';');
         Images = new List<WMTemplateList>();
@@ -748,9 +746,8 @@
 
         if (CurrentTemplateCanvas.CanvasType == CanvasType.Normal)
         {
-            foreach (var f in fileNames)
+            foreach (var fullPath in fileNames)
             {
-                var fullPath = Path.Combine(path, f);
                 var img = new WMTemplateList();
                 var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
                 cvs.Path = fullPath;
@@ -759,7 +756,7 @@
                 img.ID = cvs.ID;
                 img.Path = fullPath;
                 Global.CheckImageExtension(fullPath);
-                var thumbnail = Global.AppPath.ThumbnailFolder + f;
+                var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(fullPath);
                 await Global.WriteThumbnailImageAsync(fullPath, thumbnail);
                 Images.Add(img);
             }
@@ -774,7 +771,7 @@
             {
                 if (c <= fileNames.Count() - 1 && !container.ContainerProperties.FixImage)
                 {
-                    container.Path = Path.Combine(path, fileNames.Skip(c++).Take(1).First());
+                    container.Path = fileNames.Skip(c++).Take(1).First();
                     exif[container.ID] = await ExifHelper.ReadImageAsync(container.Path);
                 }
             }
