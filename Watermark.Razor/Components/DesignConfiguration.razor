@@ -2,10 +2,11 @@
 @using System.Collections.Concurrent
 @using Microsoft.JSInterop
 @using SkiaSharp
+@using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Shared.Enums
 @inject IJSRuntime JSRuntime
-
+@inject IPopupService PopupService
 <div style="@Style">
     <MTabs @bind-Value="tab" Height="30" FixedTabs>
         @foreach (var sub in tabs)
@@ -74,8 +75,7 @@
                 </MCard>
             </MTabItem>
             <MTabItem Value="@("画幅")">
-
-                <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="#fff">
+                <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="@ICONS.Colors.Gray.Light1" Class="ma-1 pa-1">
                     <MSelect Items="Radioes"
                              ItemText="e => e"
                              ItemValue="u => u"
@@ -128,8 +128,6 @@
     List<string> tabs = ["大纲", "画布", "画幅", "图层"];
     [Parameter]
     public WMCanvas canvas { get; set; } = new();
-    // [Parameter]
-    // public EventCallback<MouseEventArgs> SelectDefaultImage { get; set; }
     WMLogo Logo;
     [Parameter]
     public EventCallback<string> Changed { get; set; }
@@ -138,14 +136,10 @@
 
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
     bool showLogoStore = false;
-    //[Parameter]
-    //public EventCallback<WMText> OpenExifDialogFontEvt { get; set; }
     [Parameter]
     public Func<Task<string>> SelectDefaultImageEvt { get; set; }
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
-    [Parameter]
-    public EventCallback Refresh { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,15 +173,7 @@
         }
         catch (Exception err)
         {
-            //Common.ShowMsg(PopupService, err.Message, AlertTypes.Error);
-        }
-    }
-
-    void PreviewImageRefresh()
-    {
-        if (Refresh.HasDelegate)
-        {
-            Refresh.InvokeAsync();
+            Common.ShowMsg(PopupService, err.Message, AlertTypes.Error);
         }
     }
 
@@ -204,7 +190,6 @@
         Global.WriteThumbnailImage(bitmap, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-        PreviewImageRefresh();
     }
 
     void RemoveImage(WMContainer container)
@@ -215,7 +200,6 @@
             File.Delete(filename);
             container.Path = string.Empty;
             ImagesBase64.Remove(container.ID, out string v);
-            PreviewImageRefresh();
         }
     }
 
@@ -240,7 +224,6 @@
             Global.ImageFile2Base64(dic, destFile, mContainer.ID);
             mContainer.Path = Path.GetFileName(mContainer.Path);
             ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
-            PreviewImageRefresh();
         }
     }
 
@@ -253,6 +236,5 @@
         ImagesBase64[Logo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
         showLogoStore = false;
         StateHasChanged();
-        PreviewImageRefresh();
     }
 }

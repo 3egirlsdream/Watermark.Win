@@ -39,11 +39,10 @@
     }
     <ExpandTransition>
         <div style="width:100%;height:auto;">
-            <MCard Show=@Expanded class="@($"mx-auto py-1 {(FlexStart ? "flex-start" : "")}")" Elevation="0" Flat Color="@Color">
+            <MCard Show=@Expanded class="@($"mx-auto py-0 {(FlexStart ? "flex-start" : "")}")" Elevation="0" Flat Color="@Color">
                 @ChildContent
             </MCard>
         </div>
-        
     </ExpandTransition>
 </MCard>
 

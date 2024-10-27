@@ -39,18 +39,18 @@
             <SliderInput @bind-Value="@container.Angle" />
         </ExpandPanel>
         <ExpandPanel Desc="容器内组件水平对齐" ShowSwitch="false" Class="my-1" Expanded="true" Color="@ICONS.Colors.Gray.Light2">
-            <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" ValueChanged="(e) => container.HorizontalAlignment = (HorizontalAlignment)e" />
+            <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" Value="(int)container.HorizontalAlignment" ValueChanged="(e) => container.HorizontalAlignment = (HorizontalAlignment)e" />
         </ExpandPanel>
         <ExpandPanel Desc="容器内组件竖直对齐" ShowSwitch="false" Class="my-1" Expanded="true" Color="@ICONS.Colors.Gray.Light2">
-            <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" ValueChanged="(e) => container.VerticalAlignment = (VerticalAlignment)e" />
+            <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" Value="(int)container.VerticalAlignment" ValueChanged="(e) => container.VerticalAlignment = (VerticalAlignment)e" />
         </ExpandPanel>
 
         <ExpandPanel Desc="容器内组件堆叠方向" ShowSwitch="false" Class="my-1" Expanded="true" Color="@ICONS.Colors.Gray.Light2">
-            <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => container.Orientation = (Orientation)e" />
+            <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)container.Orientation" ValueChanged="(e) => container.Orientation = (Orientation)e" />
         </ExpandPanel>
 
         <ExpandPanel Desc="容器依靠方向" ShowSwitch="false" Class="my-1" Expanded="true" Color="@ICONS.Colors.Gray.Light2">
-            <ButtonGroup Type="ButtonGroup.GroupItemType.TBLR" ValueChanged="(e) => container.ContainerAlignment = (ContainerAlignment)e" />
+            <ButtonGroup Type="ButtonGroup.GroupItemType.TBLR" Value="(int)container.ContainerAlignment" ValueChanged="(e) => container.ContainerAlignment = (ContainerAlignment)e" />
         </ExpandPanel>
         <ExpandPanel ShowSwitch="false" Desc="边距和比例" Class="my-1" Expanded="true" Color="@ICONS.Colors.Gray.Light2">
             <SliderInput @bind-Value="@container.Margin.Top" Name="上边距" Unit="%" />
@@ -67,11 +67,11 @@
             {
                 <ExpandVisiblePanel Desc="@mContainer.Name" ShowIcon="false" Color="@ICONS.Colors.Gray.Light2" Class="pa-1 my-1" Bold="true">
                     <ExpandPanel Desc="容器内组件水平对齐" ShowSwitch="false" Expanded="true" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
-                        <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" ValueChanged="(e) => container.HorizontalAlignment = (HorizontalAlignment)e" />
+                        <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" Value="(int)container.HorizontalAlignment" ValueChanged="(e) => container.HorizontalAlignment = (HorizontalAlignment)e" />
                     </ExpandPanel>
 
                     <ExpandPanel Desc="容器内组件竖直对齐" ShowSwitch="false" Expanded="true" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
-                        <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" ValueChanged="(e) => container.VerticalAlignment = (VerticalAlignment)e" />
+                        <ButtonGroup Type="ButtonGroup.GroupItemType.TopCenterBottom" Value="(int)container.VerticalAlignment" ValueChanged="(e) => container.VerticalAlignment = (VerticalAlignment)e" />
                     </ExpandPanel>
                     <ExpandPanel Desc="边距和比例" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
                         <SliderInput @bind-Value="@mContainer.Margin.Top" Name="上边距" Unit="%" />
@@ -96,7 +96,7 @@
                                 <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false">
                                     <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
                                     <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
-                                        <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
+                                        <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
                                     </ExpandPanel>
                                     <SliderInput Name="粗细" @bind-Value="@mLine.Thickness" Unit="px" />
                                 </ExpandPanel>
@@ -171,7 +171,7 @@
                         <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
                             <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
                             <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
-                                <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
+                                <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
                             </ExpandPanel>
                             <SliderInput Name="粗细" @bind-Value="@mLine.Thickness" Unit="px" />
                         </ExpandPanel>

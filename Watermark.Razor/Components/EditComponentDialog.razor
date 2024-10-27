@@ -34,7 +34,7 @@
     
     @foreach (var container in mCanvas.Children)
     {
-        <ExpandVisiblePanel Desc="图层" Class="my-1" @bind-Visible="container.Enabled">
+        <ExpandVisiblePanel Desc="图层" Class="my-1 pa-1" @bind-Visible="container.Enabled">
             <div class="edit-subtitle-box">
                 <MTextField @bind-Value="@container.Name" Label="名称" Required="true" HideDetails="true"/>
                 <div style="justify-self: end;">

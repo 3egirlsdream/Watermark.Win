@@ -21,7 +21,7 @@
             }
             <Label Name="@Desc" Small="false" Bold="@Bold"/>
         </div>
-        <ToggleButton On="@("mdi-arrow-down-drop-circle-outline")" Off="@("mdi-arrow-up-drop-circle-outline")" @bind-Open="@Expanded" />
+        <ToggleButton On="@("mdi-arrow-down-drop-circle-outline")" Off="@("mdi-arrow-up-drop-circle-outline")" @bind-Open="@Expanded" OffColor="primary"/>
     </div>
     @if (Expanded && ChildContent != null)
     {
