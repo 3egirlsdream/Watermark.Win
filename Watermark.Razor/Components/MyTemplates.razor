@@ -13,6 +13,7 @@
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
+@implements IDisposable
 <style>
     .mud-card-actions {
         position: relative;
@@ -101,6 +102,8 @@
     public EventCallback<bool> VisibleChanged { get; set; }
     [Parameter]
     public Action<WMCanvas> EditTemplateEvt { get; set; }
+    [Parameter]
+    public EventCallback OnCloseEvt { get; set; }
     bool showLogin = false;
     UploadTemplateDialog.UploadParameter showUpload = new();
     bool loading = true;
@@ -418,7 +421,15 @@
         if (File.Exists(target)) File.Delete(target);
         Common.ShowMsg(PopupService, message, severity);
         loading = false;
+        showUpload.Show = false;
         StateHasChanged();
     }
 
+    public void Dispose()
+    {
+        if (OnCloseEvt.HasDelegate)
+        {
+            OnCloseEvt.InvokeAsync();
+        }
+    }
 }

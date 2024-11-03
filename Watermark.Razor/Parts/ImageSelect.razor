@@ -18,13 +18,21 @@
     }
 </style>
 
-<div style="height:100%;width:100%;display:flex;flex-direction:column;justify-content:center">
+<div style="height:100%;width:100%;display:flex;flex-direction:column;justify-content:center;">
     @if (ImagesBase64.TryGetValue(Key, out string? src) && !string.IsNullOrEmpty(src))
     {
-        <div style="display:flex;justify-content:flex-end;align-items:center;">
-            <IconButton Icon="@ICONS.Delete" Text="true" OnClick="Del" />
-        </div>
-        <img style="@($"object-fit:{ObjectFit};margin:auto;width:{Size}px;height:{Size}px;")" src="@src" @onclick="SelectDefaultImage" class="mt-1" />
+        <MCard style="display:flex;justify-content:space-between;align-items:center;position:relative" class="pa-1 my-1" Flat Color="@ICONS.Colors.Gray.Light4">
+            @if (!Simple)
+            {
+                <Label Name="图片" Small="false" />
+            }
+            
+            <div style="@($"width:{Size + 5}px;height:{Size + 5}px;border-radius:5px;")">
+                <MIcon Size="Simple ? 25: 15" OnClick="Del" Style="position:absolute;top:0px;right:0px;" Color="error">@ICONS.Delete</MIcon>
+                <img style="@($"object-fit:{ObjectFit};width:{Size - 5}px;height:{Size - 5}px;margin:auto;width:100%;height:100%;")" src="@src" @onclick="SelectDefaultImage" />
+            </div>
+        </MCard>
+        
     }
     else
     {
@@ -36,6 +44,8 @@
 
 
 @code {
+    [Parameter]
+    public bool Simple { get; set; }
     [Parameter]
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
     [Parameter]

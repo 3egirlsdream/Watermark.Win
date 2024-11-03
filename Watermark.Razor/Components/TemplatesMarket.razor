@@ -104,6 +104,8 @@
 @code {
     [Parameter]
     public Func<string, Task> ClipboardAction { get; set; }
+    [Parameter]
+    public EventCallback OnCloseEvt { get; set; }
     bool showLogin = false;
     bool loading = false;
     string loadingMessage = "正在加载模板...";
@@ -306,6 +308,11 @@
         hottest = null;
         newest = null;
         subscribed = null;
+
+        if (OnCloseEvt.HasDelegate)
+        {
+            OnCloseEvt.InvokeAsync();
+        }
     }
     public List<BlockTextTag> GetTags(List<string> tags)
     {

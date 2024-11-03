@@ -1,5 +1,6 @@
 ﻿@using Masa.Blazor
 @using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
@@ -152,6 +153,8 @@
     [Parameter]
     public WMCanvas mCanvas { get; set; }
     AddParam param;
+    [Parameter]
+    public PropertyChangedEventHandler? PropertyChanged { get; set; }
 
     void Add()
     {
@@ -176,10 +179,16 @@
         {
             control = new WMText();
         }
+        
         control.Name = param.CtrlName;
         control.Margin = new WMThickness(0);
         control.Percent = 70;
 
+        if (PropertyChanged != null)
+        {
+            control.PropertyChanged += PropertyChanged;
+            control.Margin.PropertyChanged += PropertyChanged;
+        }
         if (param.ParentContainerId == "0")
         {
             if (param.CtrlType == CtrlEnum.Container)

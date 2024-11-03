@@ -231,5 +231,24 @@ namespace Watermark.Shared.Models
                     config.ShowCloseIcon = false;
                 });
         }
+
+
+        public static Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(async () =>
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            Nullable<bool> result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                return dialog.FileName;
+            }
+            else return "";
+        });
     }
 }

@@ -1,11 +1,13 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
+﻿@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
 @using Watermark.Win.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 
-<MudDialog Style="min-width:50%;">
-    <DialogContent>
-        <MudSimpleTable Hover="true" Dense="true" FixedHeader="false" Style="height:80%;">
+<MDialog Value="@Value" ValueChanged="ValueChanged" ContentStyle="max-width:450px; height: 90%;scrollbar-width: thin;">
+    @if (Value)
+    {
+        <MSimpleTable Hover="true" Dense="true" FixedHeader="false" Style="height:80%;">
             <thead>
                 <tr>
                     @foreach (var h in headings)
@@ -15,7 +17,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var row in Exifs.OrderBy(x=>x.Key))
+                @foreach (var row in Exifs.OrderBy(x => x.Key))
                 {
                     <tr>
                         <td>@row.Key</td>
@@ -23,15 +25,20 @@
                     </tr>
                 }
             </tbody>
-        </MudSimpleTable>
-    </DialogContent>
-</MudDialog>
+        </MSimpleTable>
+    }
+   
+</MDialog>
 
 
 
 @code {
     [Parameter]
+    public bool Value { get; set; }
+    [Parameter]
     public Dictionary<string, string> Exifs { get; set; } = [];
     List<string> headings = ["EXIF信息摘要", "值"];
 
+    [Parameter]
+    public EventCallback<bool> ValueChanged { get; set; }
 }

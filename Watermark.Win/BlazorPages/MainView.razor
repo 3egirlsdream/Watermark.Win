@@ -49,10 +49,10 @@
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
     <MErrorHandler>
         <Masa.Blazor.MCard Color="grey lighten-4" Flat Tile Style="height:100%">
-            <Masa.Blazor.MToolbar Outlined Dense Elevation="0">
+            <Masa.Blazor.MToolbar Outlined Dense Elevation="0" Height="36">
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>文件</Masa.Blazor.MButton>
+                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
@@ -66,7 +66,7 @@
                 </Masa.Blazor.MMenu>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>模板</Masa.Blazor.MButton>
+                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>模板</Masa.Blazor.MButton>
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
@@ -78,7 +78,7 @@
                 </Masa.Blazor.MMenu>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>关于</Masa.Blazor.MButton>
+                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>关于</Masa.Blazor.MButton>
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
@@ -89,7 +89,7 @@
                 </Masa.Blazor.MMenu>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>交流群</Masa.Blazor.MButton>
+                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>交流群</Masa.Blazor.MButton>
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
@@ -100,7 +100,7 @@
                 </Masa.Blazor.MMenu>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>更多</Masa.Blazor.MButton>
+                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>更多</Masa.Blazor.MButton>
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
@@ -116,7 +116,7 @@
                 {
                     <Masa.Blazor.MMenu OffsetY>
                         <ActivatorContent>
-                            <Masa.Blazor.MButton Color="primary" @attributes="@context.Attrs" Elevation="0" Plain>七牛</Masa.Blazor.MButton>
+                            <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>七牛</Masa.Blazor.MButton>
                         </ActivatorContent>
                         <ChildContent>
                             <Masa.Blazor.MList>
@@ -126,7 +126,6 @@
                     </Masa.Blazor.MMenu>
                 }
                 <MSpacer />
-                <ColorPicker2 />
                 <MMenu OffsetX CloseOnContentClick="false">
                     <ActivatorContent>
                         <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center">
@@ -205,7 +204,7 @@
                     </ChildContent>
                 </MMenu>
             </Masa.Blazor.MToolbar>
-            <div style="height:calc(100% - 48px);width:100%;display:flex;justify-content:flex-start">
+            <div style="height:calc(100% - 36px);width:100%;display:flex;justify-content:flex-start">
                 <div style="width:300px;height:100%;overflow-y:hidden;">
                     <MTabs @bind-Value="tab" FixedTabs Height="30">
                         <MTab Value="@("模板")">
@@ -261,10 +260,10 @@
                                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                                 {
                                     <MCard Style="width:50%;height:30px;position:absolute;top:10px;justify-content:flex-start;display:flex;gap:0 4px;align-items:center">
-                                        <MCard Style="width:23px;height:23px;cursor:pointer;" @onclick="OpenFullExifInfo">
+                                        <MCard Style="width:23px;height:23px;cursor:pointer;display: flex; align-items: center; justify-content: center;" @onclick="() => showExif = true" Flat>
                                             <Watermark.Razor.Parts.IconExif />
                                         </MCard>
-                                        <MCard Width="23" Height="23">
+                                        <MCard Width="23" Height="23" Flat>
                                             <MFileInput TValue="IBrowserFile"
                                                         Class="exif-selector"
                                                         OnChange="SelectSourceImageExif"
@@ -304,7 +303,7 @@
                 </div>
                 @if (CurrentImage != null && CurrentImage.Canvas != null && showConfig)
                 {
-                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" />
+                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
                 }
 
             </div>
@@ -318,13 +317,13 @@
         </MOverlay>
         @if (openMyTemplate)
         {
-            <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" />
+            <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" OnCloseEvt="InitTemplates" />
         }
 
         <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
             @if (openMarket)
             {
-                <TemplatesMarket ClipboardAction="ClipboardAction" />
+                <TemplatesMarket ClipboardAction="ClipboardAction" OnCloseEvt="InitTemplates" />
             }
         </MDialog>
 
@@ -347,7 +346,7 @@
         <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
             @if (openCreateNew)
             {
-                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="CreateNewTemplate" OnClose="() => openCreateNew = false" />
+                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="ClientInstance.CreateNewTemplate" OnClose="() => openCreateNew = false" />
             }
         </MDialog>
 
@@ -363,6 +362,10 @@
                 <LogoDialogContent />
             }
         </MDialog>
+        @if(CurrentImage != null)
+        {
+            <ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
+        }
     </MErrorHandler>
 </MApp>
 
@@ -383,6 +386,7 @@
     bool showLogin = false;
     bool showSignUp = false;
     bool showConfig = false;
+    bool showExif = false;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
@@ -844,6 +848,7 @@
         MemoryStream ms = new MemoryStream();
         await file.OpenReadStream(file.Size).CopyToAsync(ms);
         CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
+        PropertyChanged(null, null);
     }
 
 
@@ -874,15 +879,6 @@
     //         StateHasChanged();
     //     }
     // }
-
-    async void OpenFullExifInfo()
-    {
-        var parameters = new DialogParameters<ExifInfo>();
-        parameters.Add(x => x.Exifs, ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value));
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-        var rst = DialogService.Show<ExifInfo>("", parameters, option);
-        var dialogResult = await rst.Result;
-    }
 
     async void SelectSplitImages(WMTemplateList template)
     {
@@ -935,24 +931,6 @@
         SrcLoading = false;
         StateHasChanged();
     }
-    Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(async () =>
-        {
-            var dic = new ConcurrentDictionary<string, byte[]>();
-            Microsoft.Win32.OpenFileDialog dialog = new()
-                {
-                    DefaultExt = ".png",  // 设置默认类型
-                    Multiselect = false,                             // 设置可选格式
-                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-                };
-            // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                return dialog.FileName;
-            }
-            else return "";
-        });
 
     void OpenCommonDialog(string Src)
     {
@@ -968,5 +946,14 @@
         CurrentImage.Src = src;
         SrcLoading = false;
         StateHasChanged();
+    }
+
+    async Task SelectContainerImage(WMContainer wMContainer)
+    {
+        var result = await ClientInstance.CreateNewTemplate.Invoke();
+        if(!string.IsNullOrEmpty(result))
+        {
+            wMContainer.Path = result;
+        }
     }
 }

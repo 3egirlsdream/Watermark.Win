@@ -2,6 +2,7 @@
 @using System.Collections.Concurrent
 @using Microsoft.JSInterop
 @using SkiaSharp
+@using System.ComponentModel
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
 @using Shared.Enums
@@ -19,7 +20,7 @@
     <div style="overflow-y: auto; scrollbar-width: none; height:calc(100% - 30px);">
         <MTabsItems Value="@tab">
             <MTabItem Value="@("大纲")">
-                <EditComponentDialog mCanvas="canvas"/>
+                <EditComponentDialog mCanvas="canvas" PropertyChanged="PropertyChanged" />
             </MTabItem>
             <MTabItem Value="@("画布")" Class="pa-1">
                 <MCard Flat>
@@ -34,7 +35,7 @@
                     @if (canvas.CanvasType == CanvasType.Normal)
                     {
                         <Watermark.Razor.Parts.ExpandPanel Desc="基本图片" @bind-Expanded="canvas.ImageProperties.Show" Class="my-1">
-                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" />
+                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" Simple="true" Delete="@(() => ImagesBase64.Remove("default", out string v))" SelectDefaultImage="SelectDefaultImage"/>
                         </Watermark.Razor.Parts.ExpandPanel>
                         <Watermark.Razor.Parts.ExpandPanel Desc="边距" Expanded="true" Class="my-1" ShowSwitch="false">
                             <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Top" Step="1" Name="上边距" />
@@ -68,7 +69,7 @@
                     }
                     else
                     {
-                        <MSelect Value="canvas.LengthWidthRatio" Dense Items="Radioes" ItemText="e=>e" ItemValue="e=>e" ValueChanged="Changed" />
+                        <MSelect Value="canvas.LengthWidthRatio" TValue="string" TItemValue="string" TItem="string" Dense Items="Radioes" ItemText="e=>e" ItemValue="e=>e" ValueChanged="ValueChanged2"/>
                         <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomWidth" Step="1" Name="自定义宽度" Unit="px" />
                         <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomHeight" Step="1" Name="自定义高度" Unit="px" />
                     }
@@ -106,7 +107,7 @@
                 </Watermark.Razor.Parts.ExpandPanel>
             </MTabItem>
             <MTabItem Value="@("图层")">
-                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage" />
+                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage"/>
             </MTabItem>
         </MTabsItems>
     </div>
@@ -129,8 +130,8 @@
     [Parameter]
     public WMCanvas canvas { get; set; } = new();
     WMLogo Logo;
-    [Parameter]
-    public EventCallback<string> Changed { get; set; }
+    // [Parameter]
+    // public EventCallback<string> Changed { get; set; }
 
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
 
@@ -140,7 +141,8 @@
     public Func<Task<string>> SelectDefaultImageEvt { get; set; }
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
-
+    [Parameter]
+    public PropertyChangedEventHandler PropertyChanged { get; set; }
     protected override async Task OnInitializedAsync()
     {
         try
@@ -190,6 +192,7 @@
         Global.WriteThumbnailImage(bitmap, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        StateHasChanged();
     }
 
     void RemoveImage(WMContainer container)
@@ -237,4 +240,18 @@
         showLogoStore = false;
         StateHasChanged();
     }
+
+
+    void ValueChanged2(string v)
+    {
+        canvas.LengthWidthRatio = v;
+        if (string.IsNullOrEmpty(v)) return;
+        var wh = v.Split(":");
+        var w = Convert.ToDouble(wh[0]);
+        var h = Convert.ToDouble(wh[1]);
+        var xs = 6000 / w;
+        canvas.CustomWidth = 6000;
+        canvas.CustomHeight = (int)(xs * h);
+    }
+
 }
