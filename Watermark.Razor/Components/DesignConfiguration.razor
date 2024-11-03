@@ -181,6 +181,7 @@
 
     async void SelectDefaultImage()
     {
+        if (SelectDefaultImageEvt is null) return;
         var p = await SelectDefaultImageEvt.Invoke();
         if (string.IsNullOrEmpty(p)) return;
         ConcurrentDictionary<string, byte[]> dic = new();

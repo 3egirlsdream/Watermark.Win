@@ -71,13 +71,22 @@
         </div>
     </div>
     <div style="height:calc(100% - 48px); overflow:auto;scrollbar-width: none;">
-        @foreach (var sub in subscribed)
+        @if (!string.IsNullOrEmpty(Search) && SearchList != null)
         {
-            <MCol Cols="12">
-                <div style="font-size:1.5rem"><b>@sub.Item1</b></div>
-            </MCol>
-            @RenderProductList(sub.Item2)
+            @RenderProductList(SearchList.ToList())
         }
+        else
+        {
+            @foreach (var sub in subscribed)
+            {
+                <MCol Cols="12">
+                    <div style="font-size:1.5rem"><b>@sub.Item1</b></div>
+                </MCol>
+                @RenderProductList(sub.Item2)
+            }
+            <MPagination Value="@start" ValueChanged="PageChanged" Length="@pageCount" TotalVisible="7" Class="mt-2"></MPagination>
+        }
+        
     </div>
 
 
@@ -113,13 +122,16 @@
     bool FocusImageShow = false;
     string FocusImage = "";
     List<WMZipedTemplate> ZipedTemplates;
+    IEnumerable<WMZipedTemplate> SearchList;
     List<WMZipedTemplate> hottest;
     List<WMZipedTemplate> newest;
     List<WMZipedTemplate> splits;
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = [];
     int start = 1;
+    int pageCount;
     string sortType = "最热门";
     string sortCode => sortType == "最热门" ? "countDesc" : "timeDesc";
+    List<string> subUser = [];
     protected override async Task OnInitializedAsync()
     {
         try
@@ -157,10 +169,11 @@
         var allTemplates = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
         var recommend = allTemplates.Where(x => x.Recommend);
         var hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
-        var newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+        newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+        pageCount = newest.Count / 12;
         var splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
         ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
-        var subUser = await IntiSubscribedUserList();
+        subUser = await IntiSubscribedUserList();
         subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
         foreach (var su in subUser)
         {
@@ -176,7 +189,7 @@
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
 
-        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 12).ToList()));
+        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Skip((start - 1) * 12).Take(12).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         StateHasChanged();
     }
@@ -186,7 +199,7 @@
            <MRow Dense>
                @foreach (var t in products)
                {
-                   <MCol Cols="2" Style="@($"display:{(t.State ? string.Empty : "none")};")">
+                   <MCol Cols="2">
                        <MCard Class="pa-2 fullscreen-icon" style="background:#E5E5E5;" Elevation="0" Flat>
                            <IconButton Text="true" Icon="@ICONS.FullScreen" Class="fullscreen" OnClick="@(()=> { FocusImageShow = true; FocusImage = t.Src; })" Style="right: 5px;top:5px;" IconColor="#747474" />
 
@@ -264,15 +277,10 @@
     {
         if (e.Key == "Enter")
         {
-            ZipedTemplates.ForEach(x => x.State = false);
-            var templates = ZipedTemplates.AsEnumerable();
+            SearchList = ZipedTemplates.AsEnumerable();
             if (!string.IsNullOrEmpty(Search))
             {
-                templates = ZipedTemplates.Where(x => x.Desc.Contains(Search) || x.WatermarkId == Search || x.UserDisplayName.Contains(Search));
-            }
-            foreach (var item in templates)
-            {
-                item.State = true;
+                SearchList = ZipedTemplates.Where(x => x.Desc.Contains(Search) || x.WatermarkId == Search || x.UserDisplayName.Contains(Search));
             }
             StateHasChanged();
         }
@@ -317,5 +325,12 @@
     public List<BlockTextTag> GetTags(List<string> tags)
     {
         return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
+    }
+
+    void PageChanged(int t)
+    {
+        start = t;
+        subscribed.RemoveAt(subscribed.Count - 1);
+        subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Skip((start - 1) * 12).Take(12).ToList()));
     }
 }

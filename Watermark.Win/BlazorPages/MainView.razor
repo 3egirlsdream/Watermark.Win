@@ -45,6 +45,13 @@
         .exif-selector .mdi-paperclip::before {
             font-size: 20px;
         }
+
+    .m-treeview-node--click > .m-treeview-node__root, .m-treeview-node--click > .m-treeview-node__root > .m-treeview-node__content > .m-treeview-node__prepend {
+        width: 100%;
+        justify-content: flex-start;
+        display: flex;
+    }
+
 </style>
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
     <MErrorHandler>
@@ -225,8 +232,8 @@
                                 <PrependContent>
                                     @if (context.Item != null)
                                     {
-                                        <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:space-between">
-                                            <MImage Width="40" Height="40" Contain Src="@context.Item.Src" />
+                                        <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:flex-start; width: 100%;">
+                                            <img width="40" height="40" style="object-fit: contain" src="@context.Item.Src" />
                                             <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1" />
                                         </div>
 
@@ -278,7 +285,7 @@
                                     {
                                         <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
                                     }
-                                    
+
                                 }
                                 else
                                 {
@@ -301,7 +308,7 @@
                         </BarContent>
                     </MSplitter>
                 </div>
-                @if (CurrentImage != null && CurrentImage.Canvas != null && showConfig)
+                @if (CurrentImage != null && CurrentImage.Canvas != null && !string.IsNullOrEmpty(CurrentImage.Canvas.Name) && showConfig)
                 {
                     <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
                 }
@@ -362,7 +369,7 @@
                 <LogoDialogContent />
             }
         </MDialog>
-        @if(CurrentImage != null)
+        @if (CurrentImage != null)
         {
             <ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
         }
@@ -951,7 +958,7 @@
     async Task SelectContainerImage(WMContainer wMContainer)
     {
         var result = await ClientInstance.CreateNewTemplate.Invoke();
-        if(!string.IsNullOrEmpty(result))
+        if (!string.IsNullOrEmpty(result))
         {
             wMContainer.Path = result;
         }
