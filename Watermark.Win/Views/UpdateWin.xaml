@@ -43,7 +43,7 @@
                 </Border.Clip>
             </Border>
 
-            <Label Content="软件更新" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Label Content="软件更新" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black"/>
             <Button Height="30" Width="30"  HorizontalAlignment="Right"  Click="WindowMininizeClick" Background="Transparent" BorderThickness="0">
                 ×
             </Button>
@@ -57,8 +57,8 @@
             </Border>
             <Border Grid.Row="3" Padding="5" VerticalAlignment="Top" Height="40">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="  好  的  " Margin="10 0" Height="30" VerticalAlignment="Center" Click="OK_Click" BorderThickness="0"/>
-                    <Button Content=" 下次再说 " Height="30" VerticalAlignment="Center" Click="NextTime_Click" BorderThickness="0"/>
+                    <Button Content="  好  的  " Margin="10 0" Height="30" VerticalAlignment="Center" Click="OK_Click" BorderThickness="0" Background="#e3e3e3"/>
+                    <Button Content=" 下次再说 " Height="30" VerticalAlignment="Center" Click="NextTime_Click" BorderThickness="0" Background="#e3e3e3"/>
                 </StackPanel>
             </Border>
         </Grid>

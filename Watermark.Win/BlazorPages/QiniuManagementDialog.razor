@@ -1,44 +1,38 @@
-﻿@using Qiniu.Http
+﻿@using Masa.Blazor
+@using Qiniu.Http
 @using Qiniu.Storage
 @using Qiniu.Util
+@using Watermark.Razor
 @using Watermark.Win.Models
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 
-<MudDialog Options="DialogOptions" Style="min-width:50%;min-height:50%;width:80%; height:630px;overflow-y:hidden">
-    <DialogContent>
-        <MudTable Items="@rows" FixedHeader="true" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<ListItem,bool>(FilterFunc1)" Height="@("400px")">
-            <ToolBarContent>
-                <MudSpacer />
-                <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-            </ToolBarContent>
-            <HeaderContent>
-                <MudTh>全选</MudTh>
-                <MudTh>名称</MudTh>
-                <MudTh>MimeType</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nr"><MudCheckBox @bind-Value="dic[context.Key]"/></MudTd>
-                    <MudTd DataLabel="名称">@context.Key</MudTd>
-                    <MudTd DataLabel="MimeType">@context.MimeType</MudTd>
-                </RowTemplate>
-                <PagerContent>
-                    <MudTablePager />
-                </PagerContent>
-            </MudTable>
-        </DialogContent>
-        <DialogActions>
-            <MudButton FullWidth="true" Variant="Variant.Filled" OnClick="Delete">删除</MudButton>
-        </DialogActions>
-</MudDialog>
+<MDialog Options="DialogOptions" Style="min-width:50%;min-height:50%;width:80%; height:630px;overflow-y:hidden">
+    <MSimpleTable FixedHeader="true" Dense="true" Height="@("400px")">
+        <thead>
+            <tr>
+                <th>全选</th>
+                <th>名称</th>
+                <th>MimeType</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                <tr>
+                    <td><MCheckbox @bind-Value="dic[row.Key]" /></td>
+                    <td>@row.Key</td>
+                    <td>@row.MimeType</td>
+                </tr>
+            }
+        </tbody>
+    </MSimpleTable>
+    <MButton FullWidth="true" Variant="Variant.Filled" OnClick="Delete">删除</MButton>
+</MDialog>
 
 
 
 
-    @code {
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-
-    DialogOptions DialogOptions { get; set; } = new DialogOptions() { MaxWidth = MaxWidth.Medium, NoHeader = true };
+@code {
     string AccessKey = "", SecretKey = "", Bucket = "oomusic";
     string searchString1 = "";
     List<ListItem> rows = [];
@@ -47,7 +41,7 @@
     protected override Task OnInitializedAsync()
     {
         var result = Global.ReadSYS();
-        if(result != null)
+        if (result != null)
         {
             AccessKey = Convert.ToString(result?.AccessKey ?? "");
             SecretKey = Convert.ToString(result?.SecretKey ?? "");
@@ -83,9 +77,6 @@
 
     void Delete()
     {
-        Severity severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         Config config = new Config();
         config.Zone = Zone.ZONE_CN_South;
         Mac mac = new Mac(AccessKey, SecretKey);
@@ -107,17 +98,11 @@
         {
             if (info.Code == (int)HttpCode.OK)
             {
-                Snackbar.Add("delete success", severity, config =>
-                {
-                    config.ShowCloseIcon = false;
-                });
+                Common.ShowMsg(PopupService, "delete success", AlertTypes.Success);
             }
             else
             {
-                Snackbar.Add(info.Data.Error, severity, config =>
-                {
-                    config.ShowCloseIcon = false;
-                });
+                Common.ShowMsg(PopupService, info.Data.Error, AlertTypes.Success);
             }
         }
         Init();

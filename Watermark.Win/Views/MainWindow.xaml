@@ -5,8 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Watermark.Win.BlazorPages" 
         xmlns:blazor="http://schemas.microsoft.com/winfx/2006/xaml/presentation/blazor"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
+        ui:TitleBar.IsBackButtonVisible="False"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.Style="{DynamicResource AppTitleBarStyle}"
         mc:Ignorable="d"
-        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Title="水印相框大师" Height="850" Width="1280">
     <Grid>

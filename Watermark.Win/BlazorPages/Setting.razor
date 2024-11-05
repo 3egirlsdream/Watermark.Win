@@ -1,0 +1,378 @@
+﻿@using Masa.Blazor
+@using System.Text
+@using System.Net
+@using Microsoft.Win32
+@using System.IO
+@using Watermark.Razor
+@using Watermark.Razor.Parts
+@using Watermark.Win.Models
+@inject IPopupService PopupService
+<MCard Flat>
+    <MToolbar Flat
+              Color="primary"
+              Dark>
+        <MToolbarTitle>设置</MToolbarTitle>
+    </MToolbar>
+    <MTabs Vertical>
+        <MTab>
+            <MIcon Left>
+                mdi-account
+            </MIcon>
+            关于
+        </MTab>
+        <MTab>
+            <MIcon Left>
+                mdi-lock
+            </MIcon>
+            字体
+        </MTab>
+
+        <MTabItem>
+            <MCard Flat Class="pa-1">
+                @if (percent > 0)
+                {
+                    <MProgressLinear @bind-Value="percent" />
+                }
+
+                <Label Small="false" Name="App" />
+                <MDivider />
+                <Label Small="false" Name="@($"当前版本：v{Version}")" />
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:Gray; font-size: 12px">@VersionText</span>
+                    @if (hasNewVersion)
+                    {
+                        <MButton Small OnClick="newVersionClick">点击下载</MButton>
+                    }
+                    else
+                    {
+                        <MButton Small OnClick="CheckVersion">检查更新</MButton>
+                    }
+                </div>
+                
+                <Label Small="false" Name="@($"自动更新")" />
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:Gray; font-size: 12px">点击自动开始更新程序</span>
+                    <MButton Small OnClick="Button_Click">自动更新</MButton>
+                </div>
+               
+            </MCard>
+        </MTabItem>
+        <MTabItem>
+            <MCard Flat Class="pa-1">
+                <div style="height:250px;overflow:auto" class="pa-1">
+                    @foreach (var item in FontsList)
+                    {
+                        <MCard Flat Style="display:flex;justify-content:space-between" Class="mt-1">
+                            <span>@item.NAME</span>
+                            <MButton Small Disabled="@(!item.IsLoading)" OnClick="() => downloadFont(item)">下载</MButton>
+                        </MCard>
+                    }
+                </div>
+
+                <div style="display:flex;justify-content:flex-start;align-items:end;gap:0 10px">
+                    <Label Small="false" Name="@($"导入字体")" />
+                    <span style="color:Gray; font-size: 12px">字体文件格式：xxxx.ttf   xxxx-Bold.ttf</span>
+                </div>
+
+                <div style="display:flex;align-content:flex-start;gap:0 10px">
+                    <div style="width:49%">
+                        <ExpandPanel Expanded="true" ShowSwitch="false" Desc="普通字体">
+                            <div style="display: flex; justify-content:space-between;align-items: center;gap:0 10px" class="pa-1">
+                                <MTextField @bind-Value="@normalText" Readonly/>
+                                <MButton Height="30" Width="30" OnClick="@(() => CmdImportFont("normal"))">导入</MButton>
+                            </div>
+
+                        </ExpandPanel>
+                    </div>
+                    <div style="width:49%">
+                        <ExpandPanel Expanded="true" ShowSwitch="false" Desc="粗体">
+                            <div style="display: flex; justify-content:space-between;align-items: center;gap:0 10px" class="pa-1">
+                                <MTextField @bind-Value="@boldText" Readonly/>
+                                <MButton Cursor="Hand" Height="30" Width="30" OnClick="@(() => CmdImportFont(""))">导入</MButton>
+                            </div>
+                        </ExpandPanel>
+                    </div>
+                </div>
+                
+
+                <div style="display:flex;justify-content:flex-end" class="ma-2">
+                    <MButton Height="30" Width="100" OnClick="CmdSaveFont">保存</MButton>
+                </div>
+               
+                
+
+            </MCard>
+        </MTabItem>
+    </MTabs>
+</MCard>
+
+@code {
+    string Version;
+    string VersionText = "你使用的是最新版本!";
+    string newPath;
+    bool hasNewVersion = false;
+    double percent = 0;
+    public List<WMCloudFont> FontsList = [];
+    public bool ExifIsChecked;
+    public string MaxThread;
+    string normalText;
+    string boldText;
+    protected override void OnInitialized()
+    {
+        Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        InitFontsList();
+        Global.InitConfig().ContinueWith(x =>
+        {
+            ExifIsChecked = Global.SECOND_EXIF;
+            MaxThread = Global.MAX_THREAD.ToString();
+        });
+    }
+
+    private async void CheckVersion()
+    {
+        var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+        if (version != null && version.success && version.data != null && version.data.VERSION != null)
+        {
+            newPath = version.data.PATH;
+            var v1 = new Version(Version);
+            var v2 = new Version(version.data.VERSION);
+            if (v2 > v1)
+            {
+                VersionText = $"有新版本V{version.data.VERSION}点击下载";
+                hasNewVersion = true;
+            }
+            else
+            {
+                VersionText = "你使用的是最新版本!";
+                hasNewVersion = false;
+            }
+        }
+        else
+        {
+
+            hasNewVersion = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private async void newVersionClick()
+    {
+        using (var wc = new WebClient())
+        {
+            var fileName = newPath.Substring(newPath.LastIndexOf('/') + 1);
+            if (!fileName.ToLower().Contains(".zip"))
+            {
+                fileName += ".zip";
+            }
+            SaveFileDialog pSaveFileDialog = new SaveFileDialog
+                {
+                    Title = "保存为:",
+                    FileName = fileName,
+                    RestoreDirectory = true,
+                    Filter = "所有文件(*.*)|*.*"
+                };//同打开文件，也可指定任意类型的文件
+            if (pSaveFileDialog.ShowDialog() == true)
+            {
+                string path = pSaveFileDialog.FileName;
+                try
+                {
+                    wc.DownloadProgressChanged += (ss, e) =>
+                    {
+                        percent = e.ProgressPercentage;
+                        InvokeAsync(StateHasChanged);
+                    };
+                    await wc.DownloadFileTaskAsync(new Uri(newPath), path);
+                }
+                catch (Exception)
+                {
+                }
+                finally
+                {
+                }
+            }
+        }
+    }
+
+    private async void Button_Click()
+    {
+        var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+        if (version != null && version.success && version.data != null && version.data.VERSION != null)
+        {
+            newPath = version.data.PATH;
+            var v1 = new Version(Version);
+            var v2 = new Version(version.data.VERSION);
+            if (v2 > v1)
+            {
+                var filePath = AppDomain.CurrentDomain.BaseDirectory + "Watermark.Win.Update.exe";
+                var file = File.Exists(filePath);
+                if (file)
+                {
+                    File.Delete(filePath);
+                }
+                var result = await ExcuteUpdateProgram();
+                file = File.Exists(filePath);
+                if (result == true && file)
+                {
+                    System.Diagnostics.Process.Start(filePath);
+                }
+            }
+        }
+    }
+    public async Task<bool> ExcuteUpdateProgram()
+    {
+        using (var wc = new WebClient())
+        {
+            var updatePath = "http://thankful.top:2038/api/public/dl/EMRyVNXX";
+            var fileName = "Watermark.Win.Update.exe";
+            string path = AppDomain.CurrentDomain.BaseDirectory + fileName;
+            try
+            {
+                wc.DownloadProgressChanged += (ss, e) =>
+                {
+                    percent = e.ProgressPercentage;
+                    InvokeAsync(StateHasChanged);
+                };
+                await wc.DownloadFileTaskAsync(new Uri(updatePath), path);
+            }
+            catch (Exception ex)
+            {
+                File.Delete(path);
+            }
+
+        }
+        return true;
+    }
+
+    private async void InitFontsList()
+    {
+        var version = await Connections.HttpGetAsync<List<WMCloudFont>>(APIHelper.HOST + "/api/CloudSync/GetFontsList", Encoding.Default);
+        if (version != null && version.success && version.data != null && version.data.Count > 0)
+        {
+            FontsList = version.data;
+            var path = AppDomain.CurrentDomain.BaseDirectory + "fonts";
+            if (Directory.Exists(path))
+            {
+                var files = new DirectoryInfo(path);
+                foreach (var item in files.GetFiles())
+                {
+                    var f = FontsList.FirstOrDefault(c => item.Name.Contains(c.NAME));
+                    if (f != null)
+                    {
+                        f.IsLoading = false;
+                    }
+                }
+            }
+        }
+    }
+
+    void CmdImportFont(string x)
+    {
+
+        // 实例化一个文件选择对象
+        Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+        dialog.DefaultExt = ".ttf";  // 设置默认类型
+        dialog.Multiselect = false;                             // 设置可选格式
+        dialog.Filter = @"字体文件(*.ttf,*.otf)|*ttf;*.otf";
+        // 打开选择框选择
+        Nullable<bool> result = dialog.ShowDialog();
+        if (result == true)
+        {
+            var f = dialog.FileName;
+
+            var file = new FileInfo(f);
+            if (file.Exists)
+            {
+                if ("normal" == x)
+                {
+                    normalText = f;
+                }
+                else
+                {
+                    if (!f.Contains("-Bold"))
+                    {
+                        Common.ShowMsg(PopupService, "字体名称格式不正确！", AlertTypes.Error);
+                        return;
+                    }
+                    boldText = f;
+                }
+
+            }
+
+        }
+    }
+
+    void CmdSaveFont()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(normalText) || string.IsNullOrEmpty(boldText)) { return; }
+
+            if (!boldText.Contains("-Bold"))
+            {
+                Common.ShowMsg(PopupService, "字体名称格式不正确！", AlertTypes.Error);
+                return;
+            }
+            var f = normalText;
+            var filename = f.Substring(f.LastIndexOf('\\') + 1);
+            var prex = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
+            var path = prex + filename;
+            var file = new FileInfo(f);
+            if (file.Exists)
+                file.CopyTo(path, true);
+            f = boldText;
+            filename = f.Substring(f.LastIndexOf('\\') + 1);
+            path = prex + filename;
+            file = new FileInfo(f);
+            if (file.Exists)
+                file.CopyTo(path, true);
+            Common.ShowMsg(PopupService, "保存成功！", AlertTypes.Success);
+            boldText = "";
+            normalText = "";
+
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void downloadFont(WMCloudFont first)
+    {
+        using (var wc = new WebClient())
+        {
+            try
+            {
+                first.IsLoading = false;
+                var path = AppDomain.CurrentDomain.BaseDirectory + "fonts" + Path.DirectorySeparatorChar;
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+                wc.DownloadProgressChanged += (ss, e) =>
+                {
+                    first.Progress = e.ProgressPercentage;
+                };
+                var n1 = first.URL.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                var n2 = first.URL_B.Split(new string[] { "\\", "/" }, StringSplitOptions.RemoveEmptyEntries);
+                await wc.DownloadFileTaskAsync(new Uri(first.URL), path + n1.Last());
+                await wc.DownloadFileTaskAsync(new Uri(first.URL_B), path + n2.Last());
+            }
+            catch (Exception ex)
+            {
+                Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            }
+            finally
+            {
+                first.IsLoading = true;
+                InitFontsList();
+            }
+        }
+
+    }
+
+}

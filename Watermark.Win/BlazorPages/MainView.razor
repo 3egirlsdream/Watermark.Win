@@ -14,6 +14,9 @@
 @inject IPopupService PopupService
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
+@inject IWindowService WindowService
+@inject MainInterop MainInterop
+@inject APIHelper api
 
 <style>
     .d-mw300 {
@@ -52,11 +55,22 @@
         display: flex;
     }
 
+    .m-menu__content {
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px !important;
+    }
+
+    .m-toolbar__content {
+        padding: 0;
+        justify-content: center;
+        user-select:none;
+    }
+
 </style>
-<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
+<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
     <MErrorHandler>
-        <Masa.Blazor.MCard Color="grey lighten-4" Flat Tile Style="height:100%">
-            <Masa.Blazor.MToolbar Outlined Dense Elevation="0" Height="36">
+        <MCard Color="grey lighten-4" Flat Tile Style="height:100%">
+            <MToolbar Dense Elevation="0" Height="36" Id="@appId">
+                <img src="img/leica.ico" height="24" width="24" class="ml-2"/>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
                         <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
@@ -89,7 +103,7 @@
                     </ActivatorContent>
                     <ChildContent>
                         <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem OnClick="ClientInstance.OpenSetting" Title="设置" PrependIcon="@ICONS.Setting" />
+                            <Masa.Blazor.MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
                             <Masa.Blazor.MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
                         </Masa.Blazor.MList>
                     </ChildContent>
@@ -127,16 +141,17 @@
                         </ActivatorContent>
                         <ChildContent>
                             <Masa.Blazor.MList>
-                                <Masa.Blazor.MListItem Title="文件管理" OnClick="()=>DialogService.Show<QiniuManagementDialog>(string.Empty)" />
+                                <Masa.Blazor.MListItem Title="文件管理" />
                             </Masa.Blazor.MList>
                         </ChildContent>
                     </Masa.Blazor.MMenu>
                 }
+                <Label Name="水印相框大师" Style="position:absolute;user-select:none;"/>
                 <MSpacer />
-                <MMenu OffsetX CloseOnContentClick="false">
+                <MMenu OffsetX CloseOnContentClick="false" Class="mr-1">
                     <ActivatorContent>
-                        <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center">
-                            <MIcon Color="Color.Inherit" Style="cursor:pointer" @onclick="()=> ShowUserInfo = !ShowUserInfo">@ICONS.Account</MIcon>
+                        <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center;user-select:none">
+                            <MIcon Color="Color.Inherit" Style="cursor:pointer">@ICONS.Account</MIcon>
                             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
                             {
                                 <Label Name="@Global.CurrentUser.DISPLAY_NAME" Class="ml-1" />
@@ -210,8 +225,26 @@
                         </MCard>
                     </ChildContent>
                 </MMenu>
-            </Masa.Blazor.MToolbar>
-            <div style="height:calc(100% - 36px);width:100%;display:flex;justify-content:flex-start">
+
+
+                <MButton Text OnClick="WindowService.Minimize" Width="36" MinWidth="0" Class="ml-1">
+                    <MIcon Size="12">@ICONS.WindowMinimize</MIcon>
+                </MButton>
+                <MButton Text OnClick="WindowService.Maximize" Width="36" MinWidth="0">
+                    @if (WindowService.IsMaximized())
+                    {
+                        <MIcon Size="12">@ICONS.WindowRestore</MIcon>
+                    }
+                    else
+                    {
+                        <MIcon Size="12">@ICONS.WindowMaximize</MIcon>
+                    }
+                </MButton>
+                <MButton Text OnClick="()=>WindowService.Close(false)" Width="36" MinWidth="0">
+                    <MIcon Size="12">@ICONS.WindowClose</MIcon>
+                </MButton>
+            </MToolbar>
+            <div style="height:calc(100% - 36px);width:100%;display:flex;justify-content:flex-start;">
                 <div style="width:300px;height:100%;overflow-y:hidden;">
                     <MTabs @bind-Value="tab" FixedTabs Height="30">
                         <MTab Value="@("模板")">
@@ -292,15 +325,8 @@
                                     <Watermark.Razor.Parts.IconImage />
                                 }
                             </MSplitterPane>
-                            <MSplitterPane Style="min-height:100px;" Size="30">
-                                <div style="display:flex;justify-content:flex-start;height:100%;overflow-y:auto;flex-wrap:wrap;">
-                                    @foreach (var file in Images)
-                                    {
-                                        <MCard Elevation="0" Height="190" Width="190" Class="ma-1 hover pa-1">
-                                            <MImage Src="@file.Src" Width="@("100%")" Height="@("100%")" Contain Style="cursor: pointer;" @onclick="(()=>ClickImage(file))" />
-                                        </MCard>
-                                    }
-                                </div>
+                            <MSplitterPane Style="min-height:100px;display:flex;" Size="30">
+                                <Upload Images="@Images" ClickImageEvt="(e) => ClickImage(e)" LoadingEvt="(t) => LoadingEvt(t.Item1, t.Item2, t.Item3)" />
                             </MSplitterPane>
                         </ChildContent>
                         <BarContent>
@@ -314,7 +340,7 @@
                 }
 
             </div>
-        </Masa.Blazor.MCard>
+        </MCard>
 
         <MOverlay Dark="false" @bind-Value="WMMainLoading.Show" Absolute="true" ZIndex="99999">
             <MCard Style="width:520px;height:80px; padding:25px 40px 10px 40px;display:flex;align-items:center;justify-content:center;flex-direction:column">
@@ -373,13 +399,19 @@
         {
             <ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
         }
+
+        <MDialog @bind-Value="showSetting" ContentStyle="height:550px;width:800px">
+            @if(showSetting)
+            {
+                <Setting/>
+            }
+        </MDialog>
     </MErrorHandler>
 </MApp>
 
 
 @code {
-    [Inject]
-    private IDialogService DialogService { get; set; }
+    private string appId = Guid.NewGuid().ToString("N");
     bool openCreateNew = false;
     WMainLoading CommonDialog = new();
     StringNumber tab;
@@ -388,12 +420,12 @@
     bool openMarket = false;
     bool openMyTemplate = false;
     bool SrcLoading = false;
-    bool ShowUserInfo = false;
     bool _expanded = false;
     bool showLogin = false;
     bool showSignUp = false;
     bool showConfig = false;
     bool showExif = false;
+    bool showSetting = false;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
@@ -405,12 +437,11 @@
     {
         try
         {
-            APIHelper helper = new APIHelper();
             await Global.InitConfig();
             await InitTemplates();
             await InitLogoStore();
             await Global.Login();
-            await helper.DownloadLogoes();
+            await api.DownloadLogoes();
             Global.PrimaryKey = ClientInstance.Key();
         }
         catch (Exception ex)
@@ -419,20 +450,14 @@
         }
     }
 
-    public async void OpenMyTemplates()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Action<WMCanvas> OpenDesigner = new Action<WMCanvas>((x) =>
+        if (firstRender)
         {
-            OpenDesignAction(x);
-        });
-        var parameters = new DialogParameters<Watermark.Razor.Components.MyTemplates>();
-        parameters.Add(x => x.EditTemplateEvt, OpenDesigner);
-        var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.ExtraLarge };
-        var rst = DialogService.Show<Watermark.Razor.Components.MyTemplates>("我的模板", parameters, option);
-        var dialog = await rst.Result;
-        await InitTemplates();
-
+            await MainInterop.Init(appId);
+        }
     }
+
 
 
     public void OpenDesignAction(WMCanvas x)
@@ -772,28 +797,6 @@
         StateHasChanged();
     }
 
-    async void ImportLogoes()
-    {
-        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-        var result = await dialog.Result;
-        if (!result.Canceled)
-        {
-            await InitLogoStore();
-        }
-    }
-
-    async void ReplaceLogo(string sourceId)
-    {
-        var dialog = DialogService.Show<Watermark.Razor.Components.LogoDialog>(string.Empty, new DialogOptions() { MaxWidth = MaxWidth.ExtraLarge, NoHeader = true });
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data is KeyValuePair<string, string> d)
-        {
-            var p = Path.Combine(Global.AppPath.LogoesFolder, d.Key);
-            ChangeLogo(sourceId, p);
-        }
-    }
-
-
     void EnableAll()
     {
         Common.ShowMsg(PopupService, "当前模板应用全部？", "应用", async () =>
@@ -962,5 +965,13 @@
         {
             wMContainer.Path = result;
         }
+    }
+
+    void LoadingEvt(bool b, string m, int v)
+    {
+        WMMainLoading.Show = b;
+        WMMainLoading.Message = m;
+        WMMainLoading.Value = v;
+        StateHasChanged();
     }
 }

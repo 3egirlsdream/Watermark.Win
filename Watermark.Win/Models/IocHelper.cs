@@ -45,7 +45,9 @@ namespace Watermark.Win.Models
                                     u.Text = false;
                                 })
                             },
+                            { nameof(PromptOptions.OkText), "确定" },
                             { nameof(ConfirmOptions.CancelProps), (Action<ModalButtonProps>)(u => u.Class = "text-capitalize") },
+                            { nameof(ConfirmOptions.CancelText), "取消" }
                         }
                     },
                     {

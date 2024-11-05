@@ -1,0 +1,155 @@
+﻿@using Masa.Blazor
+@using Microsoft.JSInterop
+@using System.IO
+@using Watermark.Razor
+@using Watermark.Win.Models
+@using Microsoft.AspNetCore.Components.Forms
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject IPopupService PopupService
+
+<div @ref="UploadElement" style="flex:1;display:flex;justify-content:flex-start;height:100%;overflow-y:auto;flex-wrap:wrap;">
+    @foreach (var file in Images)
+    {
+        <MCard Elevation="0" Height="190" Width="190" Class="ma-1 hover pa-1">
+            <MImage Src="@file.Src" Width="@("100%")" Height="@("100%")" Contain Style="cursor: pointer;" @onclick="(()=>ClickImage(file))" />
+        </MCard>
+    }
+    <InputFile OnChange="OnChange" class="form-control" multiple @ref="inputFile" style="display:none;" />
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<WMTemplateList> ClickImageEvt { get; set; }
+    [Parameter]
+    public List<WMTemplateList> Images { get; set; } = [];
+    [Parameter]
+    public EventCallback<Tuple<bool, string, int>> LoadingEvt { get; set; }
+    protected ElementReference UploadElement { get; set; }
+    protected InputFile? inputFile { get; set; }
+
+    private DotNetObjectReference<Upload>? wrapper;
+
+    private IJSObjectReference? module;
+    private IJSObjectReference? dropInstance;
+
+    protected override async Task OnInitializedAsync()
+    {
+        WMMainLoading.Show = true;
+        StateHasChanged();
+        module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/init.js");
+        wrapper = DotNetObjectReference.Create(this);
+        dropInstance = await module.InvokeAsync<IJSObjectReference>("init", wrapper, UploadElement, inputFile!.Element);
+    }
+    protected async Task OnChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            int i = 0;
+            var selectedFiles = e.GetMultipleFiles(100);
+            InvokeLoading(true, $"正在导入图片，一共{selectedFiles.Count}, 当前第1个...", 0);
+            if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+            {
+                Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+            }
+            foreach (var item in selectedFiles)
+            {
+                await OnSubmit(item);
+                var idx = ++i;
+                InvokeLoading(true, $"正在导入图片，一共{selectedFiles.Count}, 当前第{idx}个...", (int)(idx * 100.0 / selectedFiles.Count));
+            }
+            InvokeLoading(false, $"导入完成", 100);
+
+
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    protected async Task OnSubmit(IBrowserFile efile)
+    {
+        try
+        {
+            if (efile == null || !efile.Name.ToLower().EndsWith("pg")) return;
+            var file = Path.Combine(Global.AppPath.ThumbnailFolder, "temp", efile.Name);
+            var p = Path.Combine(Global.AppPath.ThumbnailFolder, "temp");
+            if (!Directory.Exists(p))
+            {
+                Directory.CreateDirectory(p);
+            }
+            await using FileStream fs = new(file, FileMode.Create);
+            using var stream = efile.OpenReadStream(efile.Size);
+            await stream.CopyToAsync(fs);
+            WMCanvas canvas = new WMCanvas();
+            canvas.Path = file;
+            canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
+            await Task.Run(() =>
+            {
+                var thumbnail = Global.AppPath.ThumbnailFolder + efile.Name;
+                Global.WriteThumbnailImage(file, thumbnail);
+            });
+            var b64 = await Global.GetBase64(file);
+            Images.Add(new WMTemplateList
+                {
+                    Canvas = canvas,
+                    Src = await JS.InvokeAsync<string>("byteToUrl", b64),
+                    ID = canvas.ID,
+                    Path = file
+                });
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
+
+    void InvokeLoading(bool b, string m, int v)
+    {
+        if (LoadingEvt.HasDelegate)
+        {
+            LoadingEvt.InvokeAsync(Tuple.Create(b, m, v));
+        }
+    }
+
+    [JSInvokable]
+    public void DropAlert(string msg)
+    {
+        StateHasChanged();
+    }
+
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (dropInstance != null)
+        {
+            await dropInstance.InvokeVoidAsync("dispose");
+            await dropInstance.DisposeAsync();
+        }
+
+        if (wrapper != null)
+        {
+            wrapper.Dispose();
+        }
+
+        if (module != null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    void ClickImage(WMTemplateList tp)
+    {
+        if (ClickImageEvt.HasDelegate)
+        {
+            ClickImageEvt.InvokeAsync(tp);
+        }
+    }
+
+
+}

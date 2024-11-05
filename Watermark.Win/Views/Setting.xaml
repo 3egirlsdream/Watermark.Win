@@ -9,6 +9,11 @@
         AllowsTransparency="True"
         WindowStyle="None"
         x:Name="w"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:TitleBar.ExtendViewIntoTitleBar="True"
+        ui:TitleBar.IsBackButtonVisible="False"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.Style="{DynamicResource AppTitleBarStyle}"
         Title="检查更新" Height="500" Width="800">
     <Window.Resources>
         <Style TargetType="Border" x:Key="BorderStyle">
