@@ -1,21 +1,14 @@
 ﻿export function init(wrapper, element, inputFile) {
 
     //阻止浏览器默认行为
-    document.addEventListener("dragleave", function (e) {
+    const evt = (e) => {
         e.preventDefault();
-    }, false);
-    document.addEventListener("drop", function (e) {
-        e.preventDefault();
-    }, false);
-    document.addEventListener("dragenter", function (e) {
-        e.preventDefault();
-    }, false);
-    document.addEventListener("dragover", function (e) {
-        e.preventDefault();
-    }, false);
-
-    element.addEventListener("drop", function (e) {
-
+    }
+    document.addEventListener("dragleave", evt, false);
+    document.addEventListener("drop", evt, false);
+    document.addEventListener("dragenter", evt, false);
+    document.addEventListener("dragover", evt, false);
+    function drop(e) {
         try {
             var fileList = e.dataTransfer.files; //获取文件对象
             //检测是否是拖拽文件到页面的操作
@@ -30,22 +23,27 @@
         catch (e) {
             wrapper.invokeMethodAsync('DropAlert', e);
         }
-    }, false);
-
-    element.addEventListener('paste', function (e) {
-
+    }
+    element.addEventListener("drop", drop, false);
+    function paste(e) {
         inputFile.files = e.clipboardData.files;
         const event = new Event('change', { bubbles: true });
         inputFile.dispatchEvent(event);
-    }, false);
+    }
+    element.addEventListener('paste', paste, false);
 
     return {
         dispose: () => {
-            element.removeEventListener('dragleave', onDragLeave);
-            element.removeEventListener("drop", onDrop);
-            element.removeEventListener('dragenter', onDragHover);
-            element.removeEventListener('dragover', onDragHover);
-            element.removeEventListener('paste', handler);
+            try {
+                element.removeEventListener('dragleave', evt);
+                element.removeEventListener("drop", drop);
+                element.removeEventListener('dragenter', evt);
+                element.removeEventListener('dragover', evt);
+                element.removeEventListener('paste', paste);
+            }
+            catch (err) {
+                console.log(err);
+            }
         }
     }
 }

@@ -218,8 +218,6 @@ namespace Watermark.Shared.Models
                 setting.ShowInTaskbar = false;
                 setting.ShowDialog();
             });
-
-
             OpenWinHelper.Open(action);
         }
 
@@ -233,7 +231,7 @@ namespace Watermark.Shared.Models
         }
 
 
-        public static Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(async () =>
+        public static Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(() =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -242,13 +240,13 @@ namespace Watermark.Shared.Models
                 Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
             };
             // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-
+            var result = dialog.ShowDialog();
+            string v = "";
             if (result == true)
             {
-                return dialog.FileName;
+                v = dialog.FileName;
             }
-            else return "";
+            return Task.Run(() => v);
         });
     }
 }

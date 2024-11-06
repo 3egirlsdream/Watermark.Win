@@ -33,14 +33,16 @@
     private IJSObjectReference? module;
     private IJSObjectReference? dropInstance;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        WMMainLoading.Show = true;
-        StateHasChanged();
-        module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/init.js");
-        wrapper = DotNetObjectReference.Create(this);
-        dropInstance = await module.InvokeAsync<IJSObjectReference>("init", wrapper, UploadElement, inputFile!.Element);
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/init.js");
+            wrapper = DotNetObjectReference.Create(this);
+            dropInstance = await module.InvokeAsync<IJSObjectReference>("init", wrapper, UploadElement, inputFile!.Element);
+        }
     }
+
     protected async Task OnChange(InputFileChangeEventArgs e)
     {
         try

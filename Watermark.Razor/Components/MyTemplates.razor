@@ -184,8 +184,7 @@
         try
         {
             if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-            var helper = new APIHelper();
-            ZipedTemplates = await helper.GetWatermarks(Global.CurrentUser.ID, 1, 100);
+            ZipedTemplates = await api.GetWatermarks(Global.CurrentUser.ID, 1, 100);
             ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         }
         catch (Exception ex)
@@ -201,14 +200,13 @@
     async Task LoadILikeTemplate()
     {
         if (string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        var helper = new APIHelper();
         if (!Directory.Exists(Global.AppPath.MarketFolder))
         {
             Directory.CreateDirectory(Global.AppPath.MarketFolder);
         }
         var templateFolderInfo = new DirectoryInfo(Global.AppPath.MarketFolder);
         var downloadedTemplates = templateFolderInfo.GetDirectories().Select(x => x.Name).ToList();
-        var getILike = await helper.GetILike(Global.CurrentUser.ID);
+        var getILike = await api.GetILike(Global.CurrentUser.ID);
         ILikeTemplates = new List<WMZipedTemplate>();
         if (getILike != null && getILike.success)
         {
@@ -259,7 +257,6 @@
 
         async Task<bool> func()
         {
-            APIHelper api = new APIHelper();
             var apiResult = await api.TemplateIsExsist(watermarkId, Global.CurrentUser?.ID);
             if (apiResult.Item1 && apiResult.Item2)
             {
@@ -285,10 +282,9 @@
 
     async void Download(string watermarkId)
     {
-        var helper = new APIHelper();
         async Task<bool> func()
         {
-            if (helper!.FolderExsist(watermarkId))
+            if (api!.FolderExsist(watermarkId))
             {
                 bool? rtl = await PopupService.ConfirmAsync("确认覆盖", "本地已下载模板，确认覆盖？", AlertTypes.Info);
                 return rtl == true;
@@ -299,7 +295,7 @@
         var isOK = await func();
         if (!isOK) return;
         loading = true;
-        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
+        var result = await api.Download(watermarkId, Global.CurrentUser?.ID ?? "");
         string message = "";
         AlertTypes Severity = AlertTypes.Success;
         if (result)
@@ -320,11 +316,9 @@
 
     async void DownloadEdit(string watermarkId)
     {
-        var helper = new APIHelper();
-
         async Task<bool> func()
         {
-            if (helper!.FolderExsist(watermarkId))
+            if (api!.FolderExsist(watermarkId))
             {
                 bool? rtl = await PopupService.ConfirmAsync("确认覆盖", "本地已下载模板，确认覆盖？", AlertTypes.Info);
                 return rtl == true;
@@ -335,7 +329,7 @@
         var isOK = await func();
         if (!isOK) return;
         loading = true;
-        var result = await helper.Download(watermarkId, Global.CurrentUser?.ID ?? "");
+        var result = await api.Download(watermarkId, Global.CurrentUser?.ID ?? "");
         string message = "";
         AlertTypes Severity = AlertTypes.Success;
         if (result)
@@ -364,8 +358,7 @@
     {
         if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
         {
-            var helper = new APIHelper();
-            helper.DeleteILike(Global.CurrentUser.ID, watermarkId);
+            api.DeleteILike(Global.CurrentUser.ID, watermarkId);
             var item = ILikeTemplates.FirstOrDefault(x => x.WatermarkId == watermarkId);
             if (item != null)
             {
@@ -378,7 +371,6 @@
     async void TakOffOnShop(WMZipedTemplate t)
     {
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
-        var api = new APIHelper();
         var result = await api.TakeOffOnWatermark(Global.CurrentUser.ID, t.WatermarkId);
         if (result.success && result.data)
         {
@@ -402,8 +394,7 @@
         loading = true;
         loadingMessage = "正在上传...";
         StateHasChanged();
-        var helper = new APIHelper();
-        var rst = await helper.UploadWatermark(showUpload.Id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""), Convert.ToString(data.Tags ?? ""));
+        var rst = await api.UploadWatermark(showUpload.Id, Convert.ToString(data.Name ?? ""), Convert.ToInt32(data.Coin ?? "0"), Convert.ToString(data.Desc ?? ""), Convert.ToString(data.Tags ?? ""));
         string message = "";
         AlertTypes severity = AlertTypes.Success;
 

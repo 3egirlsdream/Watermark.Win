@@ -148,13 +148,18 @@
                 }
                 <Label Name="水印相框大师" Style="position:absolute;user-select:none;"/>
                 <MSpacer />
-                <MMenu OffsetX CloseOnContentClick="false" Class="mr-1">
+                <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
                     <ActivatorContent>
                         <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center;user-select:none">
-                            <MIcon Color="Color.Inherit" Style="cursor:pointer">@ICONS.Account</MIcon>
                             @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
                             {
-                                <Label Name="@Global.CurrentUser.DISPLAY_NAME" Class="ml-1" />
+                                <MAvatar Color="primary" Size="22" Style="display:flex;align-items:center;justify-content:center;cursor:pointer">
+                                    <span>@Global.CurrentUser.DISPLAY_NAME.FirstOrDefault()</span>
+                                </MAvatar>
+                            }
+                            else
+                            {
+                                <MButton Small Text>登录</MButton>
                             }
                         </div>
                     </ActivatorContent>
@@ -353,7 +358,7 @@
             <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" OnCloseEvt="InitTemplates" />
         }
 
-        <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+        <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
             @if (openMarket)
             {
                 <TemplatesMarket ClipboardAction="ClipboardAction" OnCloseEvt="InitTemplates" />
@@ -420,7 +425,6 @@
     bool openMarket = false;
     bool openMyTemplate = false;
     bool SrcLoading = false;
-    bool _expanded = false;
     bool showLogin = false;
     bool showSignUp = false;
     bool showConfig = false;
