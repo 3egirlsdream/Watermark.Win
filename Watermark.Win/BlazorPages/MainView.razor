@@ -437,6 +437,7 @@
     ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
     List<string> LogoStore = new List<string>();
     List<WMTemplateList> Images = new List<WMTemplateList>();
+    Debouncer debouncedAction = null;
     protected override async Task OnInitializedAsync()
     {
         try
@@ -537,8 +538,12 @@
 
     async void ClickImage(WMTemplateList image)
     {
+        CurrentImage = null;
+        await Task.Delay(10);
+        StateHasChanged();
         CurrentImage = image;
         SrcLoading = true;
+        StateHasChanged();
         CurrentImage.Canvas.Path = CurrentImage.Path;
         var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
         var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
@@ -546,18 +551,6 @@
         SrcLoading = false;
         StateHasChanged();
     }
-
-    async void RefreshImage()
-    {
-        SrcLoading = true;
-        CurrentImage.Canvas.Path = CurrentImage.Path;
-        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        CurrentImage.Src = src;
-        SrcLoading = false;
-        StateHasChanged();
-    }
-
 
     async Task InitTemplates()
     {
@@ -954,12 +947,20 @@
 
     async void PropertyChanged(object sender, PropertyChangedEventArgs args)
     {
-        SrcLoading = true;
-        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        CurrentImage.Src = src;
-        SrcLoading = false;
-        StateHasChanged();
+        if (debouncedAction is null)
+        {
+            debouncedAction = new(async () =>
+            {
+                SrcLoading = true;
+                await InvokeAsync(StateHasChanged);
+                var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+                var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                CurrentImage.Src = src;
+                SrcLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }, 200);
+        }
+        await debouncedAction.InvokeAsync();
     }
 
     async Task SelectContainerImage(WMContainer wMContainer)
