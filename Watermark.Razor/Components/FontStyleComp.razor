@@ -24,7 +24,7 @@
     {
         <div style="display:flex;justify-content:space-between;align-items:center">
             @* <MudTextField @bind-Value="fStyle.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" Style="width:80px" /> *@
-            <ColorPicker Name="颜色" @bind-Color="fStyle.FontColor" />
+            <ColorPicker Name="颜色" @bind-Color="fStyle.FontColor" Class="mr-1 my-1"/>
             <MSelect ItemText="u => u.Key"
                      ItemValue="u => u.Key"
                      Items="Fonts.ToList()"

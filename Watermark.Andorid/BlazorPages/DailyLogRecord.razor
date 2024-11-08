@@ -60,6 +60,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+#if ANDROID
+    MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
+#endif
         await init();
     }
 

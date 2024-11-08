@@ -22,6 +22,11 @@
 </style>
 
 <MCard Style="width:100%; height:100%;overflow:hidden;" Flat>
+    <MToolbar Flat
+              Color="primary"
+              Dark>
+        <MToolbarTitle>图片元数据配置</MToolbarTitle>
+    </MToolbar>
     <MCard Elevation="0" Style="white-space: nowrap; overflow-x:auto;display:flex;align-items:center;height:80px;" Flat Color="#ECEFF1" Class="mx-2 mt-2">
         <MSelect Items="ContainerId2Name.ToList()"
                  TItem="KeyValuePair<string, string>"
@@ -35,7 +40,7 @@
                  HideDetails="true"
                  Readonly="@(CanvasType == CanvasType.Normal)" />
     </MCard>
-    <div style="height:calc(100% - 80px);width:100%;overflow:hidden;display:flex;flex-direction: column;">
+    <div style="height:calc(100% - 144px);width:100%;overflow:hidden;display:flex;flex-direction: column;">
         <MCard Elevation="0" Style="flex-wrap: wrap; overflow-y:auto;justify-content:flex-start;display:flex;max-height:80px; scrollbar-width:none;min-height: 52px;" Flat Class="pa-1 mx-2 mt-1" Color="#ECEFF1">
             @foreach (var exif in mText.Exifs)
             {

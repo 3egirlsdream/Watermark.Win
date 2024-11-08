@@ -289,8 +289,8 @@
                                 <PrependContent>
                                     @if (context.Item != null)
                                     {
-                                        <div @onclick="() => SelectSplitImages(context.Item)">
-                                            <MImage Style="width:300px;padding:4px 0" Contain Src="@context.Item.Src" />
+                                        <div @onclick="() => SelectSplitImages(context.Item)" style="flex:1">
+                                            <MImage Style="width:100%;padding:4px 0" Contain Src="@context.Item.Src" />
                                         </div>
                                     }
                                 </PrependContent>
@@ -492,11 +492,8 @@
             Nullable<bool> result = dialog.ShowDialog();
             if (result == true)
             {
-                WMMainLoading.Show = true;
                 Images = new List<WMTemplateList>();
-                WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...";
-                WMMainLoading.Value = 0;
-                StateHasChanged();
+                LoadingEvt(true, $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...", 0);
                 if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
                 {
                     Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
@@ -520,17 +517,10 @@
                             Path = file
                         });
                     var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
-                    WMMainLoading.Message = $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...";
-                    WMMainLoading.Value = idx * 100.0 / dialog.FileNames.Length;
-                    StateHasChanged();
+                    LoadingEvt(true, $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...", (int)(idx * 100.0 / dialog.FileNames.Length));
                 }
 
-
-                WMMainLoading.Message = $"导入完成";
-                WMMainLoading.Value = 100;
-                await Task.Delay(200);
-                WMMainLoading.Show = false;
-                StateHasChanged();
+                LoadingEvt(false, $"导入完成", 100);
             }
         });
         OpenWinHelper.Open(action);
@@ -554,30 +544,28 @@
 
     async Task InitTemplates()
     {
-        WMMainLoading.Show = true;
         if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
         {
             System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
         }
         try
         {
-            System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(Global.AppPath.TemplatesFolder);
+            DirectoryInfo directoryInfo = new DirectoryInfo(Global.AppPath.TemplatesFolder);
+            var directories = directoryInfo.GetDirectories();
+            LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第1个...", 0);
             if (wMTemplates != null && wMTemplates.Count > 0)
             {
                 foreach (var w in wMTemplates)
                     await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
             }
             wMTemplates = new List<WMTemplateList>();
-            var directories = directoryInfo.GetDirectories();
-            WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第1个...";
-            WMMainLoading.Value = 0;
             int cot = 1;
             foreach (var dirct in directories)
             {
                 try
                 {
-                    var configPath = dirct.FullName + System.IO.Path.DirectorySeparatorChar + "config.json";
-                    if (System.IO.File.Exists(configPath))
+                    var configPath = Path.Combine(dirct.FullName, "config.json");
+                    if (File.Exists(configPath))
                     {
                         var content = File.ReadAllText(configPath);
                         var canvas = Global.ReadConfig(content);
@@ -593,9 +581,7 @@
                             };
                         wMTemplates.Add(wh);
                         var idx = directories.ToList().IndexOf(dirct) + 1;
-                        WMMainLoading.Value = cot * 100.0 / directories.Length;
-                        WMMainLoading.Message = $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...";
-                        StateHasChanged();
+                        LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...", (int)(cot * 100.0 / directories.Length));
 
                     }
                 }
@@ -604,11 +590,8 @@
                     Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
                 }
             }
-            WMMainLoading.Message = $"处理完成...";
-            WMMainLoading.Value = 100;
             await Task.Delay(200);
-            WMMainLoading.Show = false;
-            StateHasChanged();
+            LoadingEvt(false, $"处理完成...", 100);
         }
         catch (Exception ex)
         {
@@ -650,10 +633,7 @@
     async void Export(List<WMTemplateList> images)
     {
         showExport = false;
-        WMMainLoading.Show = true;
-        WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第1张";
-        WMMainLoading.Value = 0;
-        StateHasChanged();
+        LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第1张", 0);
         var idx = 1;
         var option = new ParallelOptions();
         option.MaxDegreeOfParallelism = Global.MAX_THREAD;
@@ -662,15 +642,10 @@
             Parallel.ForEach(images, option, (item) =>
             {
                 helper.Generation(item.Canvas, null, false);
-                WMMainLoading.Message = $"正在导出图片，一共{images.Count}张，目前第{idx}张";
-                WMMainLoading.Value = idx++ * 100.0 / images.Count;
-                InvokeAsync(StateHasChanged);
+                LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第{idx}张", (int)(idx++ * 100.0 / images.Count));
             });
         });
-
-        WMMainLoading.Value = 100;
-        WMMainLoading.Show = false;
-        StateHasChanged();
+        LoadingEvt(false, "", 100);
         Common.ShowMsg(PopupService, "打开输出文件夹？", "好的", async () =>
         {
             await OpenFolder();
@@ -977,6 +952,6 @@
         WMMainLoading.Show = b;
         WMMainLoading.Message = m;
         WMMainLoading.Value = v;
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 }

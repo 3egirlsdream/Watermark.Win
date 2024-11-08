@@ -64,12 +64,12 @@
         box-shadow: 0 0 6px rgba(127, 130, 134, .18);
     }
 </style>
-<MCard Flat Class="my-1" Style="background: transparent;">
+<MCard Flat Class="@($"my-1 {Class}")" Style="background: transparent;">
     <MMenu OffsetX CloseOnContentClick="false">
         <ActivatorContent>
-            <div style="display:flex;justify-content:space-between;" class="ma-1">
+            <div style="display:flex;justify-content:space-between;">
                 <Label Name="@Name" Small="Small" />
-                <MButton @attributes="@context.Attrs" Small OnClick="()=>show = !show" Elevation="0" Color="@Color" />
+                <MButton @attributes="@context.Attrs" Small OnClick="()=>show = !show" Elevation="0" Color="@Color" Class="ml-1"/>
             </div>
         </ActivatorContent>
 
@@ -139,6 +139,8 @@
 
 @code {
 
+    [Parameter]
+    public string Class { get; set; }
     [Parameter]
     public string Color { get; set; } = "#FFFFFF";
     [Parameter]
