@@ -57,7 +57,7 @@
         </div>
 
 
-        <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+        <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
     </div>
 
     <MDialog ContentStyle="width:300px;" @bind-Value="@showDialog" ContentClass="pa-2">
@@ -132,6 +132,7 @@
             debouncedAction = new(async () =>
             {
                 SrcLoading = true;
+                await InvokeAsync(StateHasChanged);
                 var b64 = await helper.GenerationAsync(CurrentCanvas, null, true, true);
                 url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
                 SrcLoading = false;

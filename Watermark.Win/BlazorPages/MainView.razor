@@ -298,7 +298,7 @@
                         </MTabItem>
                     </MTabsItems>
                 </div>
-                <div style="height:100%;width:calc(100% - 600px)">
+                <div style="height:100%;flex:1">
                     <MSplitter Row Style="height: 100%" BarSize="4">
                         <ChildContent>
                             <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center" Size="70" Style="position:relative">
@@ -532,14 +532,8 @@
         await Task.Delay(10);
         StateHasChanged();
         CurrentImage = image;
-        SrcLoading = true;
-        StateHasChanged();
         CurrentImage.Canvas.Path = CurrentImage.Path;
-        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
-        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        CurrentImage.Src = src;
-        SrcLoading = false;
-        StateHasChanged();
+        PropertyChanged(null, null);
     }
 
     async Task InitTemplates()

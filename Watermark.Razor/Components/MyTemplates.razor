@@ -18,15 +18,27 @@
     .mud-card-actions {
         position: relative;
     }
+
     .m-dialog-custom {
-        scrollbar-width: none;
         height: 90%;
-        border: 15px solid #fff;
     }
 
+        .m-dialog-custom .content {
+            overflow-y: auto;
+            padding: 5px;
+            height: calc(100% - 64px);
+            scrollbar-width: none;
+            margin: 0px;
+            border: 10px solid #fff;
+        }
 </style>
-<MDialog Style="min-width:50%;min-height:50%;width:90%; overflow-y:hidden;padding:20px 0;" Value="Visible" ValueChanged="VisibleChanged" ContentClass="m-dialog-custom">
-    <MRow Dense Style="overflow-y:auto;padding:5px;">
+<MDialog Style="min-width:50%;min-height:50%;width:90%; overflow-y:hidden;" Value="Visible" ValueChanged="VisibleChanged" ContentClass="m-dialog-custom">
+    <MToolbar Flat
+              Color="primary"
+              Dark>
+        <MToolbarTitle Style="position:absolute">我的模板</MToolbarTitle>
+    </MToolbar>
+    <MRow Dense Class="content">
         <MCol Cols="12">
             <div style="font-size:1.5rem;">
                 <b>我本地的</b><IconButton Icon="@ICONS.Refresh" OnClick="()=>InitTemplates()"></IconButton>
@@ -53,8 +65,8 @@
         {
             <MCol Cols="3">
                 <MarketCard canvas="@t.WMCanvas" Name="@(t.Name ?? t.Desc)" Src="@(t.Src)">
-                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteILike(t.WatermarkId)" Elevation="1" Color="error"/>
-                        <MSpacer/>
+                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteILike(t.WatermarkId)" Elevation="1" Color="error" />
+                    <MSpacer />
                     <IconButton Icon="@ICONS.Edit" OnClick="()=>Download(t.WatermarkId)" Elevation="1" />
                 </MarketCard>
             </MCol>
@@ -71,7 +83,7 @@
                     <MButton Color="@(t.Visible ? "" : "warning")" Style="cursor:pointer;" OnClick="()=>TakOffOnShop(t)">
                         <MIcon Left>mdi-store-off</MIcon>@(t.Visible ? "下架" : "上架")
                     </MButton>
-                   <MSpacer/>
+                    <MSpacer />
                     <IconButton Icon="@ICONS.Download" Color="Color.Default" OnClick="()=>Download(t.WatermarkId)" Class="mx-1" Elevation="1" />
                     <IconButton Icon="@ICONS.Edit" Color="Color.Default" OnClick="()=>DownloadEdit(t.WatermarkId)" Class="mx-1" Elevation="1" />
                 </MarketCard>
@@ -79,13 +91,13 @@
         }
         <MOverlay @bind-Value="@loading" Dark="false" Absolute="false" ZIndex="9999">
             <MCard Style="display:flex;flex-direction:column;height:160px;width:160px;align-items:center;justify-content:center">
-                <MProgressCircular Indeterminate="true" Color="primary" Class="my-1"/>
-                <Label Name="@loadingMessage"/>
+                <MProgressCircular Indeterminate="true" Color="primary" Class="my-1" />
+                <Label Name="@loadingMessage" />
             </MCard>
         </MOverlay>
 
         <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
-            <LoginContent CloseEvent="loginClosed"/>
+            <LoginContent CloseEvent="loginClosed" />
         </MDialog>
         <MDialog @bind-Value="showUpload.Show" ContentStyle="width:400px;padding:10px;">
             <UploadTemplateDialog OnClose="UploadClosed" Id="@showUpload.Id" Name="@showUpload.Name" />

@@ -18,12 +18,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Watermark.Razor\Watermark.Razor.csproj" />
     <ProjectReference Include="..\Watermark.Web.Client\Watermark.Web.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.10" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 	  <PackageReference Include="MudBlazor" Version="6.12.0" />
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	  <PackageReference Include="SkiaSharp" Version="2.88.7" />
-	  <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.7" />
+	  <PackageReference Include="SkiaSharp" Version="2.88.9" />
+	  <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.9" />
   </ItemGroup>
 
 </Project>
