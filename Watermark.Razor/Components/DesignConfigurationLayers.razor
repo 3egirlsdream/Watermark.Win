@@ -17,10 +17,10 @@
                 </div>
             }
             <ImageSelect ImagesBase64="ImagesBase64" Key="@container.ID" Delete="() => RemoveImage(container)" Size="250" SelectDefaultImage="()=> SelectImage(container)" Simple="true" />
-            <ColorPicker Name="背景颜色" @bind-Color="@container.BackgroundColor" />
+            <ColorPicker Name="背景颜色" @bind-Color="@container.BackgroundColor" Class="mx-1"/>
         </ExpandPanel>
         <ExpandPanel @bind-Expanded="container.ContainerProperties.EnableShadow" Desc="阴影" Class="my-1" Color="@ICONS.Colors.Gray.Light2">
-            <ColorPicker Name="颜色" @bind-Color="container.ContainerProperties.ShadowColor" />
+            <ColorPicker Name="颜色" @bind-Color="container.ContainerProperties.ShadowColor" Class="mx-1" />
             <SliderInput @bind-Value="@container.ContainerProperties.ShadowRange" Name="深度" />
         </ExpandPanel>
         <ExpandPanel @bind-Expanded="container.ContainerProperties.EnableRadius" Desc="圆角" Class="my-1" Color="@ICONS.Colors.Gray.Light2">
@@ -85,7 +85,7 @@
                             @if (c_comp is WMLine mLine)
                             {
                                 <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false">
-                                    <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
+                                    <ColorPicker Name="颜色" @bind-Color="mLine.Color" Class="mx-1" />
                                     <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
                                         <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
                                     </ExpandPanel>
@@ -104,7 +104,7 @@
                             {
 
                                 <ExpandPanel Desc="字体" Expanded="true" ShowSwitch="false">
-                                    <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
+                                    <ColorPicker Name="颜色" @bind-Color="mText.FontColor" Class="mx-1" />
                                     <div style="display:flex;align-items:center;justify-content:space-between;" class="my-1 px-1">
                                         <Label Name="样式" />
                                         <div style="display:flex;align-items:center;justify-content:flex-end;gap:0 4px">
@@ -145,7 +145,7 @@
                                     <SliderInput @bind-Value="@mText.BorderPadding" Name="内边距" Unit="px" />
                                     <SliderInput @bind-Value="@mText.BorderWidth" Name="边框宽度" Unit="px" />
                                     <SliderInput @bind-Value="@mText.BorderRadius" Name="圆角度数" Unit="px" />
-                                    <ColorPicker Name="边框颜色" @bind-Color="mText.BorderColor" />
+                                    <ColorPicker Name="边框颜色" @bind-Color="mText.BorderColor" Class="mx-1" />
                                 </ExpandPanel>
                             }
                         </ExpandPanel>
@@ -166,7 +166,7 @@
                     @if (ctrl is WMLine mLine)
                     {
                         <ExpandPanel Desc="分割线" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light3" Class="my-1">
-                            <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
+                            <ColorPicker Name="颜色" @bind-Color="mLine.Color" Class="mx-1" />
                             <ExpandPanel Desc="方向" Expanded="true" ShowSwitch="false">
                                 <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
                             </ExpandPanel>
@@ -193,7 +193,7 @@
                                     <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />
                                 </div>
                             </ExpandPanel>
-                            <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
+                            <ColorPicker Name="颜色" @bind-Color="mText.FontColor" Class="mx-1" />
                             <div style="display:flex;align-items:center;justify-content:space-between;" class="my-1 px-1">
                                 <Label Name="样式" />
                                 <div style="display:flex;align-items:center;justify-content:flex-end;gap:0 4px">
@@ -226,7 +226,7 @@
                             <SliderInput @bind-Value="@mText.BorderPadding" Name="内边距" Unit="px" />
                             <SliderInput @bind-Value="@mText.BorderWidth" Name="边框宽度" Unit="px" />
                             <SliderInput @bind-Value="@mText.BorderRadius" Name="圆角度数" Unit="px" />
-                            <ColorPicker Name="边框颜色" @bind-Color="@mText.BorderColor" />
+                            <ColorPicker Name="边框颜色" @bind-Color="@mText.BorderColor" Class="mx-1" />
                         </ExpandPanel>
                     }
                 </ExpandVisiblePanel>
