@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Watermark</title>
+    <base href="/" />
+    <link href="_content/Masa.Blazor/css/masa-blazor.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="Watermark.styles.css" />
+    <link href="https://cdn.masastack.com/npm/@mdi/font@7.1.96/css/materialdesignicons.min.css" rel="stylesheet">
+
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <!--<script src="js/jquery-3.7.1.min.js"></script>-->
+    <link href="css/swiper-bundle.min.css" rel="stylesheet" />
+    <script src="js/swiper-bundle.min.js"></script>
+    <script src="js/init-swiper.js"></script>
+</head>
+
+<body>
+
+    <div class="status-bar-safe-area"></div>
+
+    <div id="app">Loading...</div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="_content/Masa.Blazor/js/masa-blazor.js"></script>
+    <script src="_content/BlazorComponent/js/blazor-component.js"></script>
+
+</body>
+
+</html>
+<script>
+    function byteToUrl(blob) {
+        // 适配webview和web
+        var myBlob = new Blob([blob], { type: "image/jpeg" });
+        return (window.URL || window.webkitURL || window || {}).createObjectURL(myBlob);
+    }
+    /**
+    * 释放url对象，因为createObjectURL创建的对象一直会存在可能会占用过多的内存，请注意释放
+    */
+    function revokeUrl(url) {
+        (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
+    }
+
+    function getSize() {
+        return window.innerWidth + ";" + window.innerHeight
+    };
+</script>
+
+<style>
+    .page {
+        overflow-y: hidden
+    }
+</style>

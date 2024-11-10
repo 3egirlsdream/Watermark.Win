@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>warnings</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
@@ -31,10 +31,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.10" />
 	<PackageReference Include="MudBlazor" Version="6.12.0" />
 	<PackageReference Include="Masa.Blazor" Version="1.7.8" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -68,6 +64,10 @@
 
   <ItemGroup>
     <Content Include="Parts\ColorPicker2.razor.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 
 </Project>

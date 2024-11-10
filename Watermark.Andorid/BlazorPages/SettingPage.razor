@@ -1,18 +1,16 @@
 ﻿@page "/settings"
 @using Masa.Blazor.Presets.PageStack.NavController
-@using Microsoft.AspNetCore.Components.Forms
-@using System.IO
-@using Watermark.Andorid.Models
 @using Watermark.Razor.Components
-@using Watermark.Win.Models
-@using Microsoft.AspNetCore.Components
-@using System.ComponentModel.DataAnnotations
 @using Watermark.Shared.Models
 @using Components.Layout
 @inject ISnackbar Snackbar
 @inject PageStackNavController NavController
 @layout MainLayout
 <style>
+    .mud-overlay .mud-overlay-content {
+        width: 60%;
+    }
+
     .mud-switch {
         margin-left: 0px;
         margin-right: 0px;

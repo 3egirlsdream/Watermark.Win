@@ -1,0 +1,19 @@
+﻿@using Masa.Blazor
+@using Watermark.Shared.Models
+@inherits LayoutComponentBase
+
+<div>123</div>
+
+@code {
+    StringNumber v = 0;
+    StringNumber Value
+    {
+        get => v;
+        set
+        {
+            v = value;
+            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            StateHasChanged();
+        }
+    }
+}

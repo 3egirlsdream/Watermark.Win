@@ -1,5 +1,4 @@
 ﻿@using Watermark.Razor
-@using Watermark.Win.Models
 @using Watermark.Shared.Models
 @inject IPopupService PopupService
 
@@ -220,15 +219,5 @@
         return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
     }
 
-    public class ViewParameter
-    {
-        public char FocusImageType { get; set; }
-        public string FocusImageSrc { get; set; }
-        public WMZipedTemplate FocusImage { get; set; }
-        public string FocusImageId { get; set; }
-        public List<WMZipedTemplate> ZipedTemplates { get; set; } = [];
-        public List<WMZipedTemplate> ILikeTemplates { get; set; } = [];
-        public List<Tuple<string, List<WMZipedTemplate>>> subscribed { get; set; } = [];
-        public bool FocusImageShow { get; set; } = false;
-    }
+    
 }

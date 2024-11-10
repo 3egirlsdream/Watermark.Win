@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Sharpen;
 using System.Text.RegularExpressions;
-using Watermark.Win.Models;
+using Watermark.Shared.Models;
 
 namespace Watermark.Andorid.Models
 {

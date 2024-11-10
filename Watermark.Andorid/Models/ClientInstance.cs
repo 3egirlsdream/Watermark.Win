@@ -8,9 +8,6 @@ using System.Collections.Concurrent;
 using System.Text;
 using Watermark.Andorid.Models;
 using Watermark.Razor;
-using Watermark.Win.Models;
-using static Watermark.Andorid.BlazorPages.IndexView;
-using static Watermark.Andorid.BlazorPages.TemplateLargeView;
 
 namespace Watermark.Shared.Models
 {
@@ -116,7 +113,7 @@ namespace Watermark.Shared.Models
             var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
             return deviceId;
 #endif
-            return "";
+            return Guid.NewGuid().ToString();
         }
 
 

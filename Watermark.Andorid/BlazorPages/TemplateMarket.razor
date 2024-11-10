@@ -1,12 +1,9 @@
 ﻿@page "/market"
 @using Masa.Blazor
-@using Watermark.Andorid.Components.Layout
+@using Components.Layout
 @using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
-@using Watermark.Win.Models
-@using static Watermark.Andorid.BlazorPages.IndexView
-@using static Watermark.Andorid.BlazorPages.TemplateLargeView
 @inject PageStackNavController NavController
 @inject IPopupService PopupService
 @inject IWMWatermarkHelper helper
@@ -15,6 +12,13 @@
 @inject APIHelper api
 
 <style scoped>
+    .m-tabs .div:nth-child(1) {
+        height: 30px
+    }
+
+    .m-item-group {
+        height: 30px;
+    }
     .row--dense > .col, .row--dense > [class*=col-] {
         padding:2px;
     }

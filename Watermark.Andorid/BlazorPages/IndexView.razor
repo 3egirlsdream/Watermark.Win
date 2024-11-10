@@ -1,11 +1,8 @@
 ﻿@page "/"
 @using Components.Layout
-@using Watermark.Andorid.Models
 @using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
-@using Watermark.Win.Models
-@using static Watermark.Andorid.BlazorPages.TemplateLargeView
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 @inject NavigationManager navigationManager
@@ -417,11 +414,5 @@
     {
         parameter.FocusImageShow = false;
         await InvokeAsync(StateHasChanged);
-    }
-
-    public class FailedBox
-    {
-        public bool faildShow = false;
-        public string failedMessage = "";
     }
 }
