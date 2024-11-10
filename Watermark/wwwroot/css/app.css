@@ -99,3 +99,12 @@ h1:focus {
     flex-direction: column;
     --sk-color: white;
 }
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.scrolling-touch {
+    -webkit-overflow-scrolling: touch; /* Safari */
+    overflow-scrolling: touch;
+}
