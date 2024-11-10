@@ -5,11 +5,13 @@
              x:Class="Watermark.MainPage"
              BackgroundColor="{DynamicResource PageBackgroundColor}">
 
-
-    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html" BlazorWebViewInitialized="blazorWebView_BlazorWebViewInitialized">
-        <BlazorWebView.RootComponents>
-            <RootComponent Selector="#app" ComponentType="{x:Type local:Routes}" />
-        </BlazorWebView.RootComponents>
-    </BlazorWebView>
+<Grid>
+     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html" BlazorWebViewInitialized="blazorWebView_BlazorWebViewInitialized">
+            <BlazorWebView.RootComponents>
+                <RootComponent Selector="#app" ComponentType="{x:Type local:Routes}" />
+            </BlazorWebView.RootComponents>
+        </BlazorWebView>
+</Grid>
+   
 
 </ContentPage>

@@ -156,21 +156,6 @@ namespace Watermark.Shared.Models
         }
 
 
-        public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
-      {
-        { DevicePlatform.Android, new[] { "text/*" } } ,
-        { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
-        { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
-        { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
-      };
-        public Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
-      {
-        { DevicePlatform.Android, new[] { ".ttf", ".otf" } } ,
-        { DevicePlatform.iOS, new[] { ".ttf", ".otf" } },
-        { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
-        { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
-      };
-
         async Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
         {
             Dictionary<string, int> Versions = [];

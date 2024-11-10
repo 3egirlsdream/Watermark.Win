@@ -6,6 +6,7 @@ using MudBlazor;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
+using LukeMauiFilePicker;
 using Watermark.Andorid.Models;
 using Watermark.Razor;
 
@@ -13,6 +14,11 @@ namespace Watermark.Shared.Models
 {
     public class ClientInstance : IClientInstance
     {
+        public ClientInstance(IFilePickerService _picker)
+        {
+            picker = _picker;
+        }
+        private IFilePickerService picker;
         public string LinkPath { get; set; }
         public string UpdateMessage { get; set; }
         public string UpdateVersion { get; set; }
@@ -127,6 +133,14 @@ namespace Watermark.Shared.Models
                 if (v2 > v1) return true;
             }
             return false;
+        }
+
+        public bool Save(byte[] b64, string fn)
+        {
+#if IOS
+            Platforms.iOS.SavePictureService.SavePicture(b64);
+#endif
+            return true;
         }
 
         public async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
@@ -294,10 +308,11 @@ namespace Watermark.Shared.Models
             HapticFeedback.Default.Perform(HapticFeedbackType.Click);
         }
 
-		public Task<IEnumerable<string>> PickMultipleAsync()
+		public async Task<IEnumerable<string>> PickMultipleAsync()
 		{
-			throw new NotImplementedException();
-		}
+            var result = await picker.PickFilesAsync("pick", FileType, true);
+            return result.Select(x => x.FileResult.FullPath);
+        }
 
 		public Task<string> PickAsync()
 		{
@@ -329,5 +344,20 @@ namespace Watermark.Shared.Models
 				}
 			}
 		}
+        
+        public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
+        {
+            { DevicePlatform.Android, new[] { "text/*" } } ,
+            { DevicePlatform.iOS, new[] { "image/jpg", "image/jpeg" } },
+            { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
+            { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
+        };
+        public Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
+        {
+            { DevicePlatform.Android, new[] { ".ttf", ".otf" } } ,
+            { DevicePlatform.iOS, new[] { ".ttf", ".otf" } },
+            { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
+            { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
+        };
 	}
 }
