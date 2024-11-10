@@ -59,6 +59,7 @@ namespace Watermark.Andorid
             builder.Services.AddSingleton<WMDesignFunc>();
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
+            builder.Services.AddSingleton<IClientInstance, ClientInstance>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

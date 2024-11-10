@@ -4,7 +4,7 @@ using Android.OS;
 #endif
 using Watermark.Shared.Models;
 
-namespace Watermark.Andorid.Models
+namespace Watermark.Models
 {
     public interface IUpgradeService
     {

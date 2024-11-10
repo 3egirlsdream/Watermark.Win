@@ -12,10 +12,15 @@ namespace Watermark
         }
         private void GoBtn_Clicked(object sender, EventArgs e)
         {
-//#if IOS
-            
+            //#if IOS
 
-//#endif
+
+            //#endif
+        }
+
+        private void blazorWebView_BlazorWebViewInitialized(object sender, Microsoft.AspNetCore.Components.WebView.BlazorWebViewInitializedEventArgs e)
+        {
+
         }
     }
 }

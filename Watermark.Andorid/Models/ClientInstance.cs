@@ -3,6 +3,7 @@ using Masa.Blazor.Presets;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
+using Newtonsoft.Json.Linq;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
@@ -11,23 +12,23 @@ using Watermark.Razor;
 
 namespace Watermark.Shared.Models
 {
-    public static class ClientInstance
+    public class ClientInstance : IClientInstance
     {
-        public static string LinkPath { get; set; }
-        public static string UpdateMessage { get; set; }
-        public static string UpdateVersion { get; set; }
-        public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public string LinkPath { get; set; }
+        public string UpdateMessage { get; set; }
+        public string UpdateVersion { get; set; }
+        public Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
 
         };
 
-        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        public Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
         {
         };
 
 
 
-        public static Action<List<string>> InitLocalFontsAction = (Fonts) =>
+        public Action<List<string>> InitLocalFontsAction = (Fonts) =>
         {
             Fonts ??= [];
             Fonts.Clear();
@@ -43,11 +44,11 @@ namespace Watermark.Shared.Models
         };
 
 
-        public static Action<List<string>> ImportLocalFontAction = (Fonts) =>
+        public Action<List<string>> ImportLocalFontAction = (Fonts) =>
         {
         };
 
-        public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
+        public Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
             var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
@@ -63,11 +64,11 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
+        public void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
         {
         }
 
-        public static void WriteThumbnailImage(SKBitmap source, string target)
+        public void WriteThumbnailImage(SKBitmap source, string target)
         {
             double w = source.Width, h = source.Height;
             var xs = 1080.0 / h;
@@ -77,27 +78,27 @@ namespace Watermark.Shared.Models
             image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
         }
 
-        public static string Key()
+        public string Key()
         {
             var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(GetAndroidId().Replace("-", "") + "CATLNMSL"));
             string result3 = result.Replace("-", "");
             return result3;
         }
 
-        public static void OpenSetting()
+        public void OpenSetting()
         {
         }
 
-        public static void ShowMsg(ISnackbar snackbar, string message, Severity severity)
+        public void ShowMsg(ISnackbar snackbar, string message, Severity severity)
         {
             snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
             snackbar?.Add(message, severity, config =>
-                {
-                    config.ShowCloseIcon = false;
-                });
+              {
+                  config.ShowCloseIcon = false;
+              });
         }
 
-        public static Version GetVersion()
+        public Version GetVersion()
         {
             return AppInfo.Version;
         }
@@ -106,18 +107,18 @@ namespace Watermark.Shared.Models
         /// 获取设备号
         /// </summary>
         /// <returns></returns>
-        public static string GetAndroidId()
+        public string GetAndroidId()
         {
 #if ANDROID
-            var context = Android.App.Application.Context;
-            var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
-            return deviceId;
+      var context = Android.App.Application.Context;
+      var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
+      return deviceId;
 #endif
             return Guid.NewGuid().ToString();
         }
 
 
-        public static async Task<bool> IsOutOfDate(string client = "Watermark_A")
+        public async Task<bool> IsOutOfDate(string client = "Watermark_A")
         {
             var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={client}", Encoding.Default);
             if (version != null && version.success && version.data != null && version.data.VERSION != null)
@@ -129,7 +130,7 @@ namespace Watermark.Shared.Models
             return false;
         }
 
-        public static async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
+        public async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
         {
             try
             {
@@ -155,22 +156,22 @@ namespace Watermark.Shared.Models
         }
 
 
-        public static Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
-            {
-                { DevicePlatform.Android, new[] { "text/*" } } ,
-                { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
-                { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
-                { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
-            };
-        public static Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
-            {
-                { DevicePlatform.Android, new[] { ".ttf", ".otf" } } ,
-                { DevicePlatform.iOS, new[] { ".ttf", ".otf" } },
-                { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
-                { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
-            };
+        public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
+      {
+        { DevicePlatform.Android, new[] { "text/*" } } ,
+        { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
+        { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
+        { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
+      };
+        public Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
+      {
+        { DevicePlatform.Android, new[] { ".ttf", ".otf" } } ,
+        { DevicePlatform.iOS, new[] { ".ttf", ".otf" } },
+        { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
+        { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
+      };
 
-        async static Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
+        async Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
         {
             Dictionary<string, int> Versions = [];
             var version = await api.GetVersions(ids);
@@ -184,12 +185,12 @@ namespace Watermark.Shared.Models
             return Versions;
         }
 
-        async static Task<WMZipedTemplate> LoadSingleTemplates(
-            string watermarkId
-            , IWMWatermarkHelper helper
-            , IPopupService PopupService
-            , IJSRuntime JSRuntime
-            , PageStackNavController NavController)
+        async Task<WMZipedTemplate> LoadSingleTemplates(
+          string watermarkId
+          , IWMWatermarkHelper helper
+          , IPopupService PopupService
+          , IJSRuntime JSRuntime
+          , PageStackNavController NavController)
         {
             var api = new APIHelper();
             if (!Directory.Exists(Global.AppPath.TemplatesFolder))
@@ -223,18 +224,16 @@ namespace Watermark.Shared.Models
             }
         }
 
-
-
-        public async static Task DownloadTemplate(
-            string watermarkId
-            , ViewParameter parameter
-            , IPopupService PopupService
-            , List<WMZipedTemplate> ZipedTemplates
-            , IWMWatermarkHelper helper
-            , IJSRuntime JSRuntime
-            , Dictionary<string, int> Versions
-            , PageStackNavController NavController
-            , FailedBox failedBox)
+        public async Task DownloadTemplate(
+          string watermarkId
+          , ViewParameter parameter
+          , IPopupService PopupService
+          , List<WMZipedTemplate> ZipedTemplates
+          , IWMWatermarkHelper helper
+          , IJSRuntime JSRuntime
+          , Dictionary<string, int> Versions
+          , PageStackNavController NavController
+          , FailedBox failedBox)
         {
             var action = new Action(async () =>
             {
@@ -281,8 +280,8 @@ namespace Watermark.Shared.Models
                 // var dialogResult = await rst.Result;
                 // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
                 // {
-                //     FocusImageShow = false;
-                //     action.Invoke();
+                //   FocusImageShow = false;
+                //   action.Invoke();
                 // }
                 return;
             }
@@ -303,15 +302,117 @@ namespace Watermark.Shared.Models
             }
         }
 
-
-    }
-    public static class Ext
-    {
-        public static void Back(this NavigationManager navigation)
+        public void Haptic()
         {
-            var builder = MauiApp.CreateBuilder();
-            var jsruntime = builder.Services.BuildServiceProvider().GetService<IJSRuntime>();
-            jsruntime!.InvokeVoidAsync("history.back");
+            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        }
+
+        public async Task<IEnumerable<string>> PickMultipleAsync()
+        {
+            var result = await FilePicker.PickMultipleAsync(new PickOptions
+            {
+                PickerTitle = "长按多选照片",
+                FileTypes = FilePickerFileType.Images
+            });
+            return result.Select(x=>x.FullPath);
+        }
+
+        public async Task<string> PickAsync()
+        {
+            var result = await FilePicker.PickAsync(new PickOptions
+            {
+                PickerTitle = "长按多选照片",
+                FileTypes = FilePickerFileType.Images
+            });
+            return result.FullPath;
+        }
+
+        public async Task SetTextAsync(string uri)
+        {
+            await Clipboard.Default.SetTextAsync(uri);
+        }
+
+        public async Task<API<string>> AliPays(decimal cost, string tradeName)
+        {
+
+            var api = new APIHelper();
+            var rs = await api.GetPayToken(cost, tradeName);
+            if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
+            {
+                API<string> jt = await Task.Run(() =>
+                {
+#if ANDROID
+                    string con = rs.data;
+                    var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+                    var pa = new Com.Alipay.Sdk.App.PayTask(act);
+                    var payRs = pa.Pay(con, true);
+                    try
+                    {
+                        string json = payRs.ToString();
+                        if (json.StartsWith("resultStatus={9000}"))
+                        {
+                            var start = json.IndexOf("result={");
+                            var content = json.Substring(start + 8);
+                            var end = content.LastIndexOf("};extendInfo=");
+                            content = content.Substring(0, end);
+                            return new API<string> { success = true, data = content };
+                        }
+                        else return new API<string> { success = false, message = new APISub { content = $"支付失败：错误代码" } };
+                    }
+                    catch (Exception ex)
+                    {
+                        return new API<string> { message = new APISub { content = ex.Message }, success = false };
+
+                    }
+#else
+                    return new API<string> { };
+#endif
+                });
+                if (!jt.success) return jt;
+
+                JObject result = JObject.Parse(jt.data);
+                var r = result?["alipay_trade_app_pay_response"];
+                if (r == null) return new API<string> { success = false, message = new APISub { content = "API返回为空" } };
+                var code = r["code"]?.ToString();
+                var msg = r["msg"]?.ToString();
+                var app_id = r["app_id"]?.ToString();
+                var auth_app_id = r["auth_app_id"]?.ToString();
+                var out_trade_no = r["out_trade_no"]?.ToString(); ;
+                var total_amount = r["total_amount"]?.ToString();
+                var trade_no = r["trade_no"]?.ToString();
+                var seller_id = r["seller_id"]?.ToString();
+                var up = await api.RecordBill(code, msg, app_id, auth_app_id, out_trade_no, trade_no, tradeName, total_amount, seller_id);
+                if (up == null || !up.success) return new API<string> { success = false, message = new APISub { content = up?.message?.content ?? "" } };
+
+                return new API<string> { success = true, data = "支付成功" };
+            }
+            else
+            {
+                return rs;
+            }
+
+        }
+
+        public async Task ReLogin()
+        {
+            APIHelper helper = new APIHelper();
+            var result = await Global.ReadLocalAsync();
+            if (!string.IsNullOrEmpty(result.Item1))
+            {
+                var login = await helper.LoginIn(result.Item1, result.Item2, true);
+                if (login.success)
+                {
+                    Global.CurrentUser = Global.SetUserInfo(login.data.data);
+                }
+            }
+        }
+
+        public bool Save(byte[] b64, string fn)
+        {
+#if ANDROID
+            return Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
+#endif
+            return true;
         }
     }
 }

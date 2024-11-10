@@ -1,10 +1,10 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using System.IO
-@using Watermark.Andorid.Models
 @using Watermark.Shared.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 @inject ISnackbar Snackbar
+@inject IClientInstance ClientInstance
 
 
 <MudPaper Style="@("display:none;" + boxStyle)" Elevation="0" class="pa-3">
@@ -54,11 +54,11 @@
 	{
 		try
 		{
-			var result = await PublicMethods.AliPays(cost, tradeName);
+			var result = await ClientInstance.AliPays(cost, tradeName);
 			if (result.success)
 			{
-				ClientInstance.ShowMsg(Snackbar, result.data, Severity.Success);
-				await PublicMethods.ReLogin();
+				Common.ShowMsg(Snackbar, result.data, Severity.Success);
+				await ClientInstance.ReLogin();
 				if (OnImageTouched.HasDelegate)
 				{
 					await OnImageTouched.InvokeAsync(true);
@@ -66,12 +66,12 @@
 			}
 			else
 			{
-				ClientInstance.ShowMsg(Snackbar, result?.message?.content ?? "支付失败", Severity.Error);
+				Common.ShowMsg(Snackbar, result?.message?.content ?? "支付失败", Severity.Error);
 			}
 		}
 		catch (Exception ex)
 		{
-			ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+			Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
 		}
 	}
 }

@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @inject IWMWatermarkHelper helper
 @inject IJSRuntime JSRuntime
+@inject IClientInstance ClientInstance
 
 <div style="height:40px;width:100%;top:0;left:0;z-index:999;">
 	<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
@@ -144,32 +145,30 @@
 
 	async void SelectSourceImageExif()
 	{
-		var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-			{
-				Title = "选择图片"
-			});
+		var result = await ClientInstance.PickAsync();
 
 		if (result == null) return;
 		try
 		{
-			var target = Global.AppPath.ThumbnailFolder + result.FileName;
-			await Global.WriteThumbnailImageAsync(result.FullPath, target);
+			var filename = Path.GetFileName(result);
+			var target = Global.AppPath.ThumbnailFolder + filename;
+			await Global.WriteThumbnailImageAsync(result, target);
 			var b64 = await Global.GetBase64(target);
 			var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
 			var item = new DropItem
 				{
-					Name = result.FullPath,
+					Name = result,
 					Url = url,
 					Selector = "1"
 				};
 			_items.Add(item);
-			Images.Add(result.FullPath);
+			Images.Add(result);
 			_container.Refresh();
 			RefreshEditImage();
 		}
 		catch (Exception ex)
 		{
-			ClientInstance.ShowMsg(Snackbar, $"不支持的图片格式：{ex.Message}", Severity.Error);
+			Common.ShowMsg(Snackbar, $"不支持的图片格式：{ex.Message}", Severity.Error);
 		}
 	}
 
@@ -186,14 +185,14 @@
 
 	void CloseDrawerClick()
 	{
-		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		ClientInstance.Haptic();
 		CloseDrawer.InvokeAsync();
 	}
 
 
 	async void Export()
 	{
-		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		ClientInstance.Haptic();
 		var helper = new WatermarkHelper();
 		SrcLoading = true;
 		StateHasChanged();
@@ -205,14 +204,14 @@
 			StateHasChanged();
 		
 		SrcLoading = false;
-		Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "保存成功。", Severity.Success);
+		Common.ShowMsg(Snackbar, "保存成功。", Severity.Success);
 		openSave = false;
 		StateHasChanged();
 	}
 
 	void OpenSave()
 	{
-		HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+		ClientInstance.Haptic();
 		openSave = true;
 	}
 }

@@ -10,6 +10,7 @@
 @inject IPopupService PopupService
 @inject PageStackNavController NavController
 @layout MainLayout
+@inject IClientInstance ClientInstance
 
 <div style="height:100%;">
     <MTabs SliderColor="black" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
@@ -209,7 +210,7 @@
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
                 tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
             }
-            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            ClientInstance.Haptic();
         }
         catch (Exception ex)
         {
@@ -282,7 +283,7 @@
 
     async Task DownloadTemplate(string watermarkId)
     {
-        await Watermark.Shared.Models.ClientInstance.DownloadTemplate(
+        await ClientInstance.DownloadTemplate(
             watermarkId
             , parameter
             , PopupService
@@ -296,7 +297,7 @@
 
     void OpenFocus(char t, WMZipedTemplate zip, bool b)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         parameter = new ViewParameter();
         parameter.FocusImage = zip;
         parameter.FocusImageType = t;
@@ -310,13 +311,9 @@
     {
         try
         {
-            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            ClientInstance.Haptic();
             parameter.FocusImageShow = false;
-            var result = await FilePicker.PickMultipleAsync(new PickOptions
-                {
-                    PickerTitle = "长按多选照片",
-                    FileTypes = FilePickerFileType.Images
-                });
+            var result = await ClientInstance.PickMultipleAsync();
             if (result is null || result.Count() == 0) return;
 
             if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
@@ -332,7 +329,7 @@
             List<string> fileNames = [];
             foreach (var f in result)
             {
-                fileNames.Add(Uri.EscapeDataString(f.FullPath));
+                fileNames.Add(Uri.EscapeDataString(f));
             }
             NavController.Push($"/preview/{string.Join(";", fileNames.ToArray())}/{template.WatermarkId}");
         }
@@ -344,11 +341,8 @@
 
     async void OpenCamera(WMZipedTemplate template)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        var result = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
-            {
-                Title = "拍照"
-            });
+        ClientInstance.Haptic();
+        var result = await ClientInstance.PickAsync();
 
         if (result is null) return;
         parameter.FocusImageShow = false;
@@ -362,7 +356,7 @@
             {
                 Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
             }
-            var fullpath = result.FullPath;
+            var fullpath = result;
             var img = new WMTemplateList();
             var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
             cvs.Path = fullpath;
@@ -392,7 +386,7 @@
             {
                 if (!container.ContainerProperties.FixImage)
                 {
-                    container.Path = result.FullPath;
+                    container.Path = result;
                     cvs.Exif[container.ID] = ExifHelper.ReadImage(container.Path);
                 }
             }

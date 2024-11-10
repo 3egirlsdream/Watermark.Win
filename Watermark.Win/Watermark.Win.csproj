@@ -48,7 +48,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Watermark.Shared\Watermark.Shared.csproj" />
     <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj" />
   </ItemGroup>
 

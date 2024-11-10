@@ -1,5 +1,5 @@
 ﻿using Microsoft.Maui.Controls.PlatformConfiguration;
-using Watermark.Win.Models;
+using Watermark.Shared.Models;
 
 namespace Watermark.Andorid
 {

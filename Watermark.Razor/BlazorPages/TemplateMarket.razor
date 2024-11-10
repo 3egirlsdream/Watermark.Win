@@ -10,6 +10,7 @@
 @inject IJSRuntime JSRuntime
 @layout MainLayout
 @inject APIHelper api
+@inject IClientInstance ClientInstance
 
 <style scoped>
     .m-tabs .div:nth-child(1) {
@@ -256,7 +257,7 @@
     void OpenFocus(char t, WMZipedTemplate zip, bool b)
     {
         parameter = new ViewParameter();
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         parameter.FocusImage = zip;
         parameter.FocusImageType = t;
         parameter.FocusImageId = zip.WatermarkId;
@@ -267,7 +268,7 @@
 
     async Task DownloadTemplate(string watermarkId)
     {
-        await Watermark.Shared.Models.ClientInstance.DownloadTemplate(
+        await ClientInstance.DownloadTemplate(
             watermarkId
             , parameter
             , PopupService

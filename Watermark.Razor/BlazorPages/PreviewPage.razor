@@ -1,12 +1,8 @@
 ﻿@page "/preview/{names}/{templateId}"
 @using System.Collections.Concurrent
-@using LukeMauiFilePicker
 @using Watermark.Razor
 @using Watermark.Shared.Models
 @using Watermark.Shared.Enums
-@using HorizontalAlignment = Watermark.Shared.Enums.HorizontalAlignment
-@using VerticalAlignment = Watermark.Shared.Enums.VerticalAlignment
-@using Orientation = Watermark.Shared.Enums.Orientation
 @using static MudBlazor.Colors
 @using Components.Layout
 @inject IDialogService DialogService
@@ -15,7 +11,7 @@
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 @inject IJSRuntime JSRuntime
-@inject IFilePickerService picker
+@inject IClientInstance ClientInstance
 @inherits PStackPageBase
 @inject PageStackNavController NavController
 @layout MainLayout
@@ -809,15 +805,12 @@
 
     async void SelectSourceImageExif()
     {
-        var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-            {
-                Title = "选择图片"
-            });
+        var result = await ClientInstance.PickAsync();
 
         if (result == null) return;
         try
         {
-            CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(result.FullPath);
+            CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(result);
             RefreshEditImage();
         }
         catch (Exception ex)
@@ -850,13 +843,13 @@
 
     void CloseDrawerClick()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         NavController.Pop();
     }
 
     async void Export()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         var helper = new WatermarkHelper();
         loadingShow = true;
         StateHasChanged();
@@ -869,10 +862,8 @@
             cvs.Path = item.Path;
             cvs.Exif = item.Canvas.Exif;
             var b64 = await helper.GenerationAsync(cvs, null, false, false);
-#if ANDROID
-	var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
-	Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
-#endif
+            var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
+            ClientInstance.Save(b64, fn);
             StateHasChanged();
         }
         loadingShow = false;
@@ -911,27 +902,27 @@
 
     void ExpandSwitch()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         _expanded = !_expanded;
     }
 
     void SelectLocalFont(WMText mText)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         selectedText = mText;
         openFontsDialog = true;
     }
 
     void OpenLogoDialog(WMLogo mLogo)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         selectedLogo = mLogo;
         openLogoDialog = true;
     }
 
     void SetLengthWidthRatio(string v)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         CurrentTemplateCanvas.LengthWidthRatio = v;
         var wh = v.Split(":");
         var w = Convert.ToDouble(wh[0]);
@@ -944,7 +935,7 @@
 
     void OpenCanvas()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         showRadio = false;
         showCanvas = true;
         showControlSetting = false;
@@ -953,7 +944,7 @@
 
     void OpenControlSetting(IWMControl control)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         showRadio = false;
         showControlSetting = true;
         SelectedControl = control;
@@ -964,7 +955,7 @@
 
     void SelectFontCallback(KeyValuePair<string, string> pair)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         if (selectedText is null) return;
         selectedText.FontFamily = pair.Key;
         openFontsDialog = false;
@@ -973,7 +964,7 @@
 
     void SelectLogoCallback(KeyValuePair<string, string> pair)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         if (selectedLogo is null) return;
         ImagesBase64[pair.Key] = pair.Value;
         selectedLogo.Path = pair.Key;
@@ -984,13 +975,13 @@
 
     void OpenSave()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         openSave = true;
     }
 
     void OpenRadio()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         ShowSetting = true;
         showRadio = true;
         showControlSetting = false;
@@ -998,7 +989,7 @@
 
     void SelectContainer(WMContainer i, int lv)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         SelectedContainer = i;
         ContainerLevel = lv;
     }
@@ -1016,10 +1007,10 @@
 
     async void SelectDefaultImage()
     {
-        var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
-        if (result != null && result.Count() > 0)
+        var result = await ClientInstance.PickAsync();
+        if (result != null)
         {
-            var p = result.First().FileResult!.FullPath;
+            var p = result;
             var destFolder = Global.AppPath.TemplatesFolder + CurrentTemplateCanvas.ID;
             if (!System.IO.Directory.Exists(destFolder))
             {

@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Watermark.Shared.Models;
 using Watermark.Win.Models;
 
 namespace Watermark.Win.Views

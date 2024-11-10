@@ -1,6 +1,7 @@
 ﻿@using Masa.Blazor
 @using Watermark.Shared.Models
 @inherits LayoutComponentBase
+@inject IClientInstance ClientInstance
 
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
 <MudDialogProvider />
@@ -43,7 +44,7 @@
         set
         {
             v = value;
-            HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+            ClientInstance.Haptic();
             StateHasChanged();
         }
     }

@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject PageStackNavController NavController
 @layout MainLayout
+@inject IClientInstance ClientInstance
 <style>
     .mud-overlay .mud-overlay-content {
         width: 60%;
@@ -230,7 +231,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate();
+        checkUpdate = await ClientInstance.CheckUpdate();
         if (checkUpdate)
         {
             showUpdateOverlay = true;
@@ -264,7 +265,7 @@ else
 
     async void Update()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
 #if ANDROID
 	if (!checkUpdate || DownLoadProgress > 0) return;
 	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
@@ -293,8 +294,8 @@ else
 
     async void CopyClipboard(string uri)
     {
-        await Clipboard.Default.SetTextAsync(uri);
-        Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
+        await ClientInstance.SetTextAsync(uri);
+        Common.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
     }
 
     private void NavControllerOnPageClosed(object? sender, PageStackPageClosedEventArgs e)
@@ -339,7 +340,7 @@ else
 
     void OpenVip()
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        ClientInstance.Haptic();
         openVip = true;
     }
 

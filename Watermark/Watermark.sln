@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watermark", "Watermark.csproj", "{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEAFC4C5-680E-44BE-8B8B-8A29CD229C7D}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FC30B4C4-C29C-4508-A925-45380D080CD6}
+	EndGlobalSection
+EndGlobal

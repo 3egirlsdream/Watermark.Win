@@ -2,9 +2,10 @@
 using Masa.Blazor.Presets;
 using Masa.Blazor;
 using Microsoft.Extensions.Logging;
-using MudBlazor.Services;
 using MudBlazor;
+using MudBlazor.Services;
 using Watermark.Shared.Models;
+//using Watermark.Shared.Models;
 
 namespace Watermark
 {
@@ -19,9 +20,8 @@ namespace Watermark
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
-
-			builder.Services.AddFilePicker();
-			builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddFilePicker();
+            builder.Services.AddMauiBlazorWebView();
             builder.Services.AddMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
@@ -54,15 +54,16 @@ namespace Watermark
             builder.Services.AddSingleton<WMDesignFunc>();
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
+            builder.Services.AddSingleton<IClientInstance, ClientInstance>();
 
 #if DEBUG
-			builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
 
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
-			builder.Services.AddSingleton<APIHelper>();
-			return builder.Build();
+            builder.Services.AddSingleton<APIHelper>();
+            return builder.Build();
         }
     }
 }

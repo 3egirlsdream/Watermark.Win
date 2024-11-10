@@ -1,10 +1,9 @@
 ﻿@page "/mac"
 @using System.IO
 @using System.Collections.Concurrent
-@using Watermark.Andorid.BlazorPages
 @using Watermark.Andorid.Models
+@using Watermark.Razor.BlazorPages
 @using Watermark.Shared.Enums
-@using Watermark.Win.Models
 @using Watermark.Shared.Models
 @using LukeMauiFilePicker
 @using Watermark.Razor
@@ -15,6 +14,7 @@
 @inject IDialogService DialogService
 @inject IWMWatermarkHelper helper
 @inject IFilePickerService picker
+@inject IClientInstance ClientInstance
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -288,7 +288,7 @@
             Global.PrimaryKey = ClientInstance.Key();
             await Global.InitConfig();
             APIHelper helper = new APIHelper();
-            var isOutOfDate = await Watermark.Shared.Models.ClientInstance.IsOutOfDate("Mac");
+            var isOutOfDate = await ClientInstance.IsOutOfDate("Mac");
             if (isOutOfDate)
             {
                 ForceUpdate = true;
@@ -297,7 +297,7 @@
             }
 
 
-            var checkUpdate = await Watermark.Shared.Models.ClientInstance.CheckUpdate("WatermarkMac");
+            var checkUpdate = await ClientInstance.CheckUpdate("WatermarkMac");
             if (checkUpdate)
             {
                 openUpdate = true;
@@ -312,7 +312,7 @@
         }
         catch (Exception ex)
         {
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
         }
     }
 
@@ -376,7 +376,7 @@
         }
         catch (Exception ex)
         {
-            Watermark.Shared.Models.ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
             MainLoading.Show = false;
         }
     }
@@ -402,7 +402,7 @@
     {
         try
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileType, true);
 
             if (result == null) return;
             MainLoading.Show = true;
@@ -649,7 +649,7 @@
     {
         Dictionary<string, Dictionary<string, string>> exif = [];
         exif[template.WMCanvas.ID] = ExifHelper.DefaultMeta;
-        var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+        var result = await picker.PickFilesAsync("pick", MacOS.FileType, true);
         if (result != null)
         {
             if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
@@ -704,7 +704,7 @@
     {
         Func<WMLogo, Task> SelectLogo = new(async Task (mLogo) =>
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileType, true);
             if (result != null && result.Count() > 0)
             {
                 var p = result.First().FileResult!.FullPath;
@@ -723,7 +723,7 @@
 
         Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileType, true);
             if (result != null && result.Count() > 0)
             {
                 var p = result.First().FileResult!.FullPath;
@@ -738,7 +738,7 @@
 
         Func<Task<string>> SelectDefaultImage = new(async Task<string> () =>
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, true);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileType, true);
             if (result != null && result.Count() > 0)
             {
                 var p = result.First().FileResult!.FullPath;
@@ -755,7 +755,7 @@
 
         Func<Task> ImportFont = new Func<Task>(async Task () =>
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileFontType, true);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileFontType, true);
             if (result != null && result.Count() > 0)
             {
                 var p = result.First().FileResult!.FullPath;
@@ -790,7 +790,7 @@
         p1.Add(x => x.SelectLogo, SelectLogo);
         p1.Add(x => x.SelectContainer, SelectContainer);
         p1.Add(x => x.SelectDefaultImageEvt, SelectDefaultImage);
-        p1.Add(x => x.ImportFontEvt, ImportFont);
+        // p1.Add(x => x.ImportFontEvt, ImportFont);
         var o1 = new DialogOptions() { NoHeader = true, FullScreen = true, CloseButton = true };
         var r = DialogService.Show<Watermark.Razor.Components.Design>("模板设计", p1, o1);
     }
@@ -849,7 +849,7 @@
         }
         catch(Exception ex)
         {
-            ClientInstance.ShowMsg(Snackbar, ex.Message, Severity.Error);
+            Common.ShowMsg(Snackbar, ex.Message, Severity.Error);
         }
 
     }
@@ -949,7 +949,7 @@
     {
         var action = new Func<Task<string>>(async () =>
         {
-            var result = await picker.PickFilesAsync("pick", ClientInstance.FileType, false);
+            var result = await picker.PickFilesAsync("pick", MacOS.FileType, false);
 
             if (result != null && result.Count() > 0)
             {
