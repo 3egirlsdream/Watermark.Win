@@ -85,9 +85,14 @@
             {
                 Directory.CreateDirectory(p);
             }
-            await using FileStream fs = new(file, FileMode.Create);
-            using var stream = efile.OpenReadStream(efile.Size);
-            await stream.CopyToAsync(fs);
+            await using (FileStream fs = new(file, FileMode.Create))
+            {
+                using (var stream = efile.OpenReadStream(efile.Size))
+                {
+                    await stream.CopyToAsync(fs);
+                }
+            }
+            
             WMCanvas canvas = new WMCanvas();
             canvas.Path = file;
             canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
