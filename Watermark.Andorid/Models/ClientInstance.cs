@@ -85,19 +85,6 @@ namespace Watermark.Shared.Models
             return result3;
         }
 
-        public void OpenSetting()
-        {
-        }
-
-        public void ShowMsg(ISnackbar snackbar, string message, Severity severity)
-        {
-            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-            snackbar?.Add(message, severity, config =>
-              {
-                  config.ShowCloseIcon = false;
-              });
-        }
-
         public Version GetVersion()
         {
             return AppInfo.Version;

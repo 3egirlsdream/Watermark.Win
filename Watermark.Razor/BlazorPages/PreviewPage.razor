@@ -660,7 +660,7 @@
     public List<WMTemplateList> Images { get; set; }
 
     string[] loadingMessage = ["加载中", ""];
-    bool loadingShow = false;
+    bool loadingShow = true;
     bool SrcLoading = false;
     bool openSave = false;
     bool _expanded = false;
@@ -850,7 +850,7 @@
     async void Export()
     {
         ClientInstance.Haptic();
-        var helper = new WatermarkHelper();
+        openSave = false;
         loadingShow = true;
         StateHasChanged();
         int cot = 1;

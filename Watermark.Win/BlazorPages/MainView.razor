@@ -70,7 +70,7 @@
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
     <MErrorHandler>
         <MCard Color="grey lighten-4" Flat Tile Style="height:100%">
-            <MToolbar Dense Elevation="0" Height="36" Id="@appId">
+            <MToolbar Dense Elevation="0" Height="36" Id="@appId" @ondblclick="WindowService.Maximize">
                 <img src="img/leica.ico" height="24" width="24" class="ml-2"/>
                 <Masa.Blazor.MMenu OffsetY>
                     <ActivatorContent>
@@ -261,7 +261,7 @@
                         </MTab>
                     </MTabs>
                     <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow-y:overlay">
-                        <MTabItem Value="@("模板")">
+                        <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
                             <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
                                        Activatable
                                        ItemKey="u => u.ID"
@@ -280,7 +280,7 @@
                                 </PrependContent>
                             </MTreeview>
                         </MTabItem>
-                        <MTabItem Value="@("拼图")">
+                        <MTabItem Value="@("拼图")" Transition="" ReverseTransition="">
                             <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name).ToList()"
                                        Activatable
                                        ItemKey="u => u.ID"
@@ -389,7 +389,7 @@
             }
         </MDialog>
 
-        <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+        <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
             @if (showExport)
             {
                 <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction" />

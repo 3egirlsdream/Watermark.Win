@@ -51,7 +51,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#FAFAFA" BaseSize="300,300" />
@@ -79,6 +79,7 @@
 		<None Include="wwwroot\js\jquery-3.7.1.min.js" />
 		<None Include="wwwroot\js\swiper-bundle.min.js" />
 		<None Remove="BlazorPage\**" />
+		<None Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -99,35 +100,36 @@
 			<PackagePath>\</PackagePath>
 			<Pack>True</Pack>
 		</None>
-		<None Update="Resources\Resources\Images\logo.png">
-			<PackagePath>\</PackagePath>
-			<Pack>True</Pack>
-		</None>
 	</ItemGroup>
 
 
 	<ItemGroup>
 		<Content Remove="BlazorPage\**" />
+		<Content Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 
 	<ItemGroup>
 		<MauiXaml Remove="BlazorPage\**" />
+		<MauiXaml Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 
 	<ItemGroup>
 		<Compile Remove="BlazorPage\**" />
+		<Compile Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 
 	<ItemGroup>
 		<EmbeddedResource Remove="BlazorPage\**" />
+		<EmbeddedResource Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 
 	<ItemGroup>
 		<AndroidAarLibrary Remove="BlazorPage\**" />
+		<AndroidResource Remove="Resources\Resources\**" />
 	</ItemGroup>
 
 

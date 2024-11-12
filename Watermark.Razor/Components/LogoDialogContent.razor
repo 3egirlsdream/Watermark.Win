@@ -8,148 +8,148 @@
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JSRuntime
 <style>
-	.wm-container {
-		margin-left:10px;
-		height:100%;
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-start;
-		padding: 10px;
-		overflow-y: auto;
-		scrollbar-width:none;
-	}
+    .wm-container {
+        margin-left: 10px;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        padding: 10px;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
 
-	.rectangle {
-		position: relative;
-		width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
-		padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
-		margin-right: 20px; /* 设置右侧间距 */
-		margin-bottom: 20px; /* 设置下方间距 */
-	}
+    .rectangle {
+        position: relative;
+        width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
+        padding-bottom: calc(20% - 20px); /* 确保每个矩形的高度与宽度相等 */
+        margin-right: 20px; /* 设置右侧间距 */
+        margin-bottom: 20px; /* 设置下方间距 */
+    }
 
-		.rectangle .mud-input-control {
-			margin-top: 0px;
-		}
+        .rectangle .mud-input-control {
+            margin-top: 0px;
+        }
 
-		.rectangle .mud-input-control-input-container {
-			position: absolute;
-			height: 100%;
-			width: 100%;
-		}
+        .rectangle .mud-input-control-input-container {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+        }
 
-		.rectangle img {
-			position: absolute;
-			width: 100%;
-			height: 100%;
-			object-fit: contain; /* 图片填充整个矩形 */
-		}
+        .rectangle img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 图片填充整个矩形 */
+        }
 
-		.rectangle:hover {
-			cursor:pointer;
-		}
+        .rectangle:hover {
+            cursor: pointer;
+        }
 
-	.wm-container .mdi-paperclip::before {
-		width: 100%;
-		content: "\F03E2";
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 5rem;
-		margin: 0px;
-		border-radius: 0;
-	}
+    .wm-container .mdi-paperclip::before {
+        width: 100%;
+        content: "\F03E2";
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        margin: 0px;
+        border-radius: 0;
+    }
 
-	.wm-container .m-icon.m-icon::after {
-		transform: scale(1) !important;
-		border-radius: 0 !important;
-	}
+    .wm-container .m-icon.m-icon::after {
+        transform: scale(1) !important;
+        border-radius: 0 !important;
+    }
 
-	.wm-container .m-icon m-icon--link theme--light mdi mdi-paperclip {
-		margin-left: 100px;
-		margin-top: 100px;
-	}
+    .wm-container .m-icon m-icon--link theme--light mdi mdi-paperclip {
+        margin-left: 100px;
+        margin-top: 100px;
+    }
 
-	.wm-container .m-input__control {
-		display:none;
-	}
+    .wm-container .m-input__control {
+        display: none;
+    }
 </style>
 
 <div class="wm-container">
-	<div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
-		<MFileInput TValue="List<IBrowserFile>"
-                Multiple
-					OnChange="ImportLogo"
-					Style="position: absolute;margin-top: calc(50% - 2rem);display:flex;align-items:center;justify-content:center;width:100%"
-					HideDetails="true"
-                Label="File input"></MFileInput>
-	</div>
-	@foreach (var per in Logoes)
-	{
-		<MCard class="rectangle">
-			<img src="@per.Value" @onclick="()=>Click(per)" />
-			@* <MImage Contain Src="per.Value"  Style="width:100%;height:100%" Class="rounded-lg" /> *@
-		</MCard>
-	}
+    <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
+        <MFileInput TValue="List<IBrowserFile>"
+                    Accept="image/*"
+                    Multiple
+                    OnChange="ImportLogo"
+                    Style="position: absolute;margin-top: calc(50% - 2rem);display:flex;align-items:center;justify-content:center;width:100%"
+                    HideDetails="true"
+                    Label="File input"></MFileInput>
+    </div>
+    @foreach (var per in Logoes)
+    {
+        <MCard class="rectangle">
+            <img src="@per.Value" @onclick="()=>Click(per)" />
+        </MCard>
+    }
 </div>
 
 
 @code {
-	[Parameter]
-	public EventCallback<KeyValuePair<string, string>> OnClick { get; set; }
-	ConcurrentDictionary<string, string> Logoes = new();
-	void Click(KeyValuePair<string, string> pair)
-	{
-		if (OnClick.HasDelegate)
-		{
-			OnClick.InvokeAsync(pair);
-		}
-	}
+    [Parameter]
+    public EventCallback<KeyValuePair<string, string>> OnClick { get; set; }
+    ConcurrentDictionary<string, string> Logoes = new();
+    void Click(KeyValuePair<string, string> pair)
+    {
+        if (OnClick.HasDelegate)
+        {
+            OnClick.InvokeAsync(pair);
+        }
+    }
 
-	protected override async Task OnInitializedAsync()
-	{
-		await Init();
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        await Init();
+    }
 
-	async Task Init()
-	{
-		var folder = Global.AppPath.LogoesFolder;
-		if (!Directory.Exists(folder)) return;
+    async Task Init()
+    {
+        var folder = Global.AppPath.LogoesFolder;
+        if (!Directory.Exists(folder)) return;
 
-		var directory = new DirectoryInfo(folder);
-		var mission = new List<Task>();
+        var directory = new DirectoryInfo(folder);
+        var mission = new List<Task>();
 
-		var dic = new ConcurrentDictionary<string, byte[]>();
-		foreach (var logo in directory.GetFiles())
-		{
-			var t = Task.Run(() => Global.ImageFile2Base64(dic, logo.FullName, logo.Name));
-			mission.Add(t);
-		}
+        var dic = new ConcurrentDictionary<string, byte[]>();
+        foreach (var logo in directory.GetFiles())
+        {
+            var t = Task.Run(() => Global.ImageFile2Base64(dic, logo.FullName, logo.Name));
+            mission.Add(t);
+        }
 
-		await Task.WhenAll(mission);
-		foreach (var e in dic)
-		{
-			Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
-		}
-	}
+        await Task.WhenAll(mission);
+        foreach (var e in dic)
+        {
+            Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+        }
+    }
 
-	async void ImportLogo(IReadOnlyList<IBrowserFile> files)
-	{
-		var target = Global.AppPath.LogoesFolder;
-		if (!Directory.Exists(target))
-		{
-			Directory.CreateDirectory(target);
-		}
-		foreach (var file in files)
-		{
-			var end = file.Name.Split('.').LastOrDefault();
-			if (string.IsNullOrEmpty(end) || (end.ToLower() != "png" && end.ToLower() != "jpg")) continue;
-			var id = Guid.NewGuid().ToString();
-			using var fs = File.Create(target + id + "." + end);
-			await file.OpenReadStream(file.Size).CopyToAsync(fs);
-		}
-		await Init();
-		StateHasChanged();
-	}
+    async void ImportLogo(IReadOnlyList<IBrowserFile> files)
+    {
+        var target = Global.AppPath.LogoesFolder;
+        if (!Directory.Exists(target))
+        {
+            Directory.CreateDirectory(target);
+        }
+        foreach (var file in files)
+        {
+            var end = file.Name.Split('.').LastOrDefault();
+            if (string.IsNullOrEmpty(end) || (end.ToLower() != "png" && end.ToLower() != "jpg")) continue;
+            var id = Guid.NewGuid().ToString();
+            using var fs = File.Create(target + id + "." + end);
+            await file.OpenReadStream(file.Size).CopyToAsync(fs);
+        }
+        await Init();
+        StateHasChanged();
+    }
 
 }

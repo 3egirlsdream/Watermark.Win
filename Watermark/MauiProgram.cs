@@ -63,6 +63,7 @@ namespace Watermark
 
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
             builder.Services.AddSingleton<APIHelper>();
+            Global.DeviceType = Shared.Enums.DeviceType.IOS;
             return builder.Build();
         }
     }

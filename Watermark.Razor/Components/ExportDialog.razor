@@ -5,11 +5,16 @@
 @using Watermark.Shared.Models
 @inject IPopupService PopupService
 
-<Masa.Blazor.MCard Style="height:100%; overflow-y:hidden;padding:5px;justify-content:space-between">
+<Masa.Blazor.MCard Style="height:100%;">
+    <MToolbar Flat Style="z-index: 999"
+              Color="primary"
+              Dark>
+        <MToolbarTitle>导出</MToolbarTitle>
+    </MToolbar>
     @if (Images != null)
     {
-        <div style="display:flex;justify-content:flex-start;height:calc(100% - 60px);" >
-            <MRow Style="max-height: calc(90vh - 70px); overflow-y: auto;width:calc(100% - 300px); scrollbar-width:none" class="pa-1">
+        <div style="display:flex;justify-content:flex-start;height:calc(100% - 125px);border: 5px solid #fff;">
+            <MRow Style="overflow-y: auto;width:calc(100% - 300px); scrollbar-width:none" class="pa-1">
                 @foreach (var t in Images)
                 {
                     <MCol Cols="3">

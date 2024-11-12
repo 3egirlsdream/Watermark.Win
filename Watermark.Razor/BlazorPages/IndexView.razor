@@ -151,7 +151,6 @@
         try
         {
             await Global.InitConfig();
-            Global.DeviceType = Shared.Enums.DeviceType.Andorid;
             Global.PrimaryKey = ClientInstance.Key();
             await Global.Login();
             await LoadTemplates();

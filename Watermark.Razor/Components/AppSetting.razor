@@ -1,8 +1,8 @@
 ﻿@page "/appsetting"
 @using Masa.Blazor.Presets
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Masa.Blazor
-@using MudBlazor
 @inject APIHelper api 
 @inject IPopupService PopupService
 @inherits PStackPageBase
@@ -10,44 +10,44 @@
 <PStackPageBarInit Title="设置" Dense Flat CenterTitle>
 </PStackPageBarInit>
 
-<MudForm Style="text-align:center">
-    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
+<div Style="text-align:center">
+    <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
         <MBottomSheet @bind-Value="sheet">
             <ActivatorContent>
-                <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
-                    <MudText Typo="Typo.button"> 注销账号 </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-                </MudStack>
+                <div class="d-space-between" @onclick="() => sheet = true">
+                    <Label Small="false" Name="注销账号"/>
+                    <MIcon Small>@ICONS.Delete</MIcon>
+                </div>
             </ActivatorContent>
             <ChildContent>
-                <MSheet Class="text-center" Height="200">
-                    <MudTextField @bind-Value="UserName" T="string" Label="邮箱" Required="true" RequiredError="邮箱不能为空" AutoFocus Class="mt-10" />
-                    <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
-                    <MudButton Variant="Variant.Filled" OnClick="DeleteAccount" FullWidth Class="mt-5" DisableElevation>注销</MudButton>
+                <MSheet Class="text-center px-2" Height="220">
+                    <MTextField @bind-Value="UserName" TValue="string" Label="邮箱" Required="true" RequiredMessage="邮箱不能为空" Autofocus Class="mt-10" />
+                    <MTextField @bind-Value="Password" TValue="string" Label="密码" Required="true" RequiredMessage="密码不能为空" Class="mt-5" Type="password" />
+                    <MButton Elevation="0" OnClick="DeleteAccount" Width="@("100%")" Class="mt-5">注销</MButton>
                 </MSheet>
             </ChildContent>
         </MBottomSheet>
-    </MudPaper>
-    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-        <MudStack Row Justify="Justify.SpaceBetween" Style="align-items: center;">
-            <MudText Typo="Typo.button"> 增强EXIF解析 </MudText>
-            <MudSwitch @bind-Value="@Global.SECOND_EXIF" Color="Color.Primary" Size="Size.Small" />
-        </MudStack>
-    </MudPaper>
-    <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
-            <MudText Typo="Typo.button">下载缓存</MudText>
-            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-        </MudStack>
+    </MCard>
+    <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
+        <div class="d-space-between">
+            <Label Small="false" Name="增强EXIF解析" />
+            <MSwitch @bind-Value="@Global.SECOND_EXIF" Color="primary" HideDetails="true" Dense/>
+        </div>
+    </MCard>
+    <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
+        <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
+            <Label Small="false" Name="下载缓存" />
+            <MIcon Small>@ICONS.Delete</MIcon>
+        </div>
 
-        <MudDivider Class="my-2" />
-        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
-            <MudText Typo="Typo.button">图标缓存</MudText>
-            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
-        </MudStack>
-    </MudPaper>
+        <MDivider Class="my-2" />
+        <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
+            <Label Small="false" Name="图标缓存" />
+            <MIcon Small>@ICONS.Delete</MIcon>
+        </div>
+    </MCard>
 
-</MudForm>
+</div>
 
 
 
@@ -119,3 +119,12 @@
         }
     }
 }
+
+
+<style scoped>
+    .d-space-between {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+    }
+</style>

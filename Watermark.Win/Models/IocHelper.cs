@@ -30,7 +30,9 @@ namespace Watermark.Win.Models
             _services = new ServiceCollection();
             _services.AddMudServices();
             _services.AddWpfBlazorWebView();
+#if DEBUG
             _services.AddBlazorWebViewDeveloperTools();
+#endif
             _services.AddMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()

@@ -67,6 +67,7 @@ namespace Watermark.Andorid
 #endif
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
             builder.Services.AddSingleton<APIHelper>();
+            Global.DeviceType = Shared.Enums.DeviceType.Andorid;
             return builder.Build();
         }
     }

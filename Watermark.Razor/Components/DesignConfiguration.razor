@@ -18,10 +18,10 @@
     </MTabs>
     <div style="overflow-y: auto; scrollbar-width: none; height:calc(100% - 30px);">
         <MTabsItems Value="@tab">
-            <MTabItem Value="@("大纲")">
+            <MTabItem Value="@("大纲")" Transition="" ReverseTransition="">
                 <EditComponentDialog mCanvas="canvas" PropertyChanged="PropertyChanged" />
             </MTabItem>
-            <MTabItem Value="@("画布")" Class="pa-1">
+            <MTabItem Value="@("画布")" Class="pa-1" Transition="" ReverseTransition="">
                 <MCard Flat>
                     <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
                     <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
@@ -74,7 +74,7 @@
                     }
                 </MCard>
             </MTabItem>
-            <MTabItem Value="@("画幅")">
+            <MTabItem Value="@("画幅")" Transition="" ReverseTransition="">
                 <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="@ICONS.Colors.Gray.Light1" Class="ma-1 pa-1">
                     <MSelect Items="Radioes"
                              ItemText="e => e"
@@ -105,7 +105,7 @@
                     <Watermark.Razor.Parts.ExpandPanel Desc="原背景透明" @bind-Expanded="canvas.FrameProperties.BeforeBkTransparent" Class="my-1" />
                 </Watermark.Razor.Parts.ExpandPanel>
             </MTabItem>
-            <MTabItem Value="@("图层")">
+            <MTabItem Value="@("图层")" Transition="" ReverseTransition="">
                 <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage"/>
             </MTabItem>
         </MTabsItems>
