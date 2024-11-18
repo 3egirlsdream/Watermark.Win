@@ -1,0 +1,52 @@
+﻿@using System.Collections.Concurrent
+@using System.IO
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+<div id="canvas" style="@($"height:{th}px;width:{tw}px;background:{Canvas.BackgroundColor};position:relative;transform:scale(0.05,0.05);margin:50px;transform-origin: top left;")">
+    <div id="main-image" style="@getMainImageStyle()">
+        <img src="@url" style="height:100%;width:100%"/>
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    public WMCanvas Canvas { get; set; }
+    double th;
+    double tw;
+    double imageHeight;
+    double imageWidth;
+    WMThickness Margin;
+    string url;
+    protected override async Task OnInitializedAsync()
+    {
+        var bitmap = SkiaSharp.SKBitmap.Decode(Canvas.Path);
+        imageHeight = bitmap.Height;
+        imageWidth = bitmap.Width;
+
+        var ml = Canvas.BorderThickness.Left * imageWidth / 100.0;
+        var mr = Canvas.BorderThickness.Right * imageWidth / 100.0;
+        var mt = Canvas.BorderThickness.Top * imageHeight / 100.0;
+        var mb = Canvas.BorderThickness.Bottom * imageHeight / 100.0;
+        Margin = new WMThickness(ml, mt, mr, mb);
+        th = imageHeight + Margin.Top + Margin.Bottom;
+        tw = imageWidth + Margin.Left + Margin.Right;
+        ConcurrentDictionary<string, byte[]> dic = new();
+        Global.ImageFile2Base64(dic, Canvas.Path, "default");
+        url = await JSRuntime.InvokeAsync<string>("byteToUrl", dic["default"]);
+    }
+
+    string getMainImageStyle() 
+    {
+        string rst = $"margin:{Margin.Top}px {Margin.Right}px {Margin.Bottom}px {Margin.Left}px;height:{imageHeight}px;width:{imageWidth}px;";
+        if(Canvas.ImageProperties.EnableRadius) 
+        {
+            rst += $"border-radius:{Canvas.ImageProperties.CornerRadius}px;";
+        }
+        if(Canvas.ImageProperties.EnableShadow) 
+        {
+            rst += "box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;";
+        }
+        return rst;
+    }
+}

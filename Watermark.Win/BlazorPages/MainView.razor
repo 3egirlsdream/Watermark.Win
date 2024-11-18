@@ -63,91 +63,107 @@
     .m-toolbar__content {
         padding: 0;
         justify-content: center;
-        user-select:none;
+        user-select: none;
     }
 
+    .toolbar-icon {
+        background: url(img/leica.ico);
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        height: 24px;
+        width: 24px;
+    }
+
+
+    .mud-picker-color-dot {
+            background-color: #f1f1f1;
+            background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%), linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%);
+            background-position: 0 0, 15px 15px;
+            background-size: 30px 30px;
+            background-repeat: repeat
+    }
 </style>
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
     <MErrorHandler>
         <MCard Color="grey lighten-4" Flat Tile Style="height:100%">
             <MToolbar Dense Elevation="0" Height="36" Id="@appId" @ondblclick="WindowService.Maximize">
-                <img src="img/leica.ico" height="24" width="24" class="ml-2"/>
-                <Masa.Blazor.MMenu OffsetY>
+                <div class="ml-2 toolbar-icon" />
+                <MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</MButton>
                     </ActivatorContent>
                     <ChildContent>
-                        <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
-                            <Masa.Blazor.MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
-                            <Masa.Blazor.MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
-                            <Masa.Blazor.MDivider />
-                            <Masa.Blazor.MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
-                        </Masa.Blazor.MList>
+                        <MList>
+                            <MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
+                            <MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                            <MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
+                            <MDivider />
+                            <MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
+                        </MList>
                     </ChildContent>
-                </Masa.Blazor.MMenu>
-                <Masa.Blazor.MMenu OffsetY>
+                </MMenu>
+                <MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>模板</Masa.Blazor.MButton>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>模板</MButton>
                     </ActivatorContent>
                     <ChildContent>
-                        <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
-                            <Masa.Blazor.MListItem OnClick="() => openCreateNew = true" Title="创建模板" PrependIcon="@ICONS.Pencil" />
-                            <Masa.Blazor.MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
-                        </Masa.Blazor.MList>
+                        <MList>
+                            <MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
+                            <MListItem OnClick="() => openCreateNew = true" Title="创建模板" PrependIcon="@ICONS.Pencil" />
+                            <MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
+                        </MList>
                     </ChildContent>
-                </Masa.Blazor.MMenu>
-                <Masa.Blazor.MMenu OffsetY>
+                </MMenu>
+                <MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>关于</Masa.Blazor.MButton>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>关于</MButton>
                     </ActivatorContent>
                     <ChildContent>
-                        <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
-                            <Masa.Blazor.MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
-                        </Masa.Blazor.MList>
+                        <MList>
+                            <MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
+                            <MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
+                        </MList>
                     </ChildContent>
-                </Masa.Blazor.MMenu>
-                <Masa.Blazor.MMenu OffsetY>
+                </MMenu>
+                <MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>交流群</Masa.Blazor.MButton>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>交流群</MButton>
                     </ActivatorContent>
                     <ChildContent>
-                        <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem Title="交流群1：866034817 (已满)" PrependIcon="@ICONS.QQ" />
-                            <Masa.Blazor.MListItem Title="交流群2：836325187" PrependIcon="@ICONS.QQ" />
-                        </Masa.Blazor.MList>
+                        <MList>
+                            <MListItem Title="交流群1：866034817 (已满)" PrependIcon="@ICONS.QQ" />
+                            <MListItem Title="交流群2：836325187" PrependIcon="@ICONS.QQ" />
+                        </MList>
                     </ChildContent>
-                </Masa.Blazor.MMenu>
-                <Masa.Blazor.MMenu OffsetY>
+                </MMenu>
+                <MMenu OffsetY>
                     <ActivatorContent>
-                        <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>更多</Masa.Blazor.MButton>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>更多</MButton>
                     </ActivatorContent>
                     <ChildContent>
-                        <Masa.Blazor.MList>
-                            <Masa.Blazor.MListItem Title="网页版" OnClick="@(()=>OpenLink("http://www.thankful.top"))" PrependIcon="@ICONS.Web" />
-                            <Masa.Blazor.MListItem Title="点个赞" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))" PrependIcon="@ICONS.Star" />
-                            <Masa.Blazor.MListItem Title="提交反馈" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))" PrependIcon="@ICONS.Feedback" />
-                            <Masa.Blazor.MListItem Title="赞助" OnClick="@(()=>OpenCommonDialog("http://cdn.thankful.top/wx.jpg"))" PrependIcon="@ICONS.Wechat" />
-                            <Masa.Blazor.MListItem Title="安卓版" OnClick="@(()=>OpenCommonDialog("https://cdn.thankful.top/andorid.png"))" PrependIcon="@ICONS.Android" />
-                        </Masa.Blazor.MList>
+                        <MList>
+                            <MListItem Title="网页版" OnClick="@(()=>OpenLink("http://www.thankful.top"))" PrependIcon="@ICONS.Web" />
+                            <MListItem Title="点个赞" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))" PrependIcon="@ICONS.Star" />
+                            <MListItem Title="提交反馈" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))" PrependIcon="@ICONS.Feedback" />
+                            <MListItem Title="赞助" OnClick="@(()=>OpenCommonDialog("http://cdn.thankful.top/wx.jpg"))" PrependIcon="@ICONS.Wechat" />
+                            <MListItem Title="安卓版" OnClick="@(()=>OpenCommonDialog("https://cdn.thankful.top/andorid.png"))" PrependIcon="@ICONS.Android" />
+                        </MList>
                     </ChildContent>
-                </Masa.Blazor.MMenu>
+                </MMenu>
                 @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
                 {
-                    <Masa.Blazor.MMenu OffsetY>
+                    <MMenu OffsetY>
                         <ActivatorContent>
-                            <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>七牛</Masa.Blazor.MButton>
+                            <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>七牛</MButton>
                         </ActivatorContent>
                         <ChildContent>
-                            <Masa.Blazor.MList>
-                                <Masa.Blazor.MListItem Title="文件管理" />
-                            </Masa.Blazor.MList>
+                            <MList>
+                                <MListItem Title="文件管理" />
+                            </MList>
                         </ChildContent>
-                    </Masa.Blazor.MMenu>
+                    </MMenu>
                 }
-                <Label Name="水印相框大师" Style="position:absolute;user-select:none;"/>
+                <Label Name="@App.Current.MainWindow.Title" Style="position:absolute;user-select:none;" />
                 <MSpacer />
                 <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
                     <ActivatorContent>
@@ -302,7 +318,7 @@
                 <div style="height:100%;width:calc(100% - 600px)">
                     <MSplitter Row Style="height: 100%" BarSize="4">
                         <ChildContent>
-                            <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center" Size="70" Style="position:relative">
+                            <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center mud-picker-color-dot" Size="70" Style="position:relative;width:100%">
                                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                                 {
                                     <MCard Style="width:50%;height:30px;position:absolute;top:10px;justify-content:flex-start;display:flex;gap:0 4px;align-items:center">
@@ -320,6 +336,10 @@
 
                                     </MCard>
                                     <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
+                                   @*  <div style="width:90%; height:100%; margin-left:5%;margin-right:5%;display:flex;">
+                                        <DesignView Canvas="@CurrentImage.Canvas" />
+                                    </div> *@
+                                    
                                     @if (SrcLoading)
                                     {
                                         <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
@@ -407,9 +427,9 @@
         }
 
         <MDialog @bind-Value="showSetting" ContentStyle="height:550px;width:800px">
-            @if(showSetting)
+            @if (showSetting)
             {
-                <Setting/>
+                <Setting />
             }
         </MDialog>
     </MErrorHandler>

@@ -77,16 +77,16 @@
             <MTabItem Value="@("画幅")" Transition="" ReverseTransition="">
                 <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="@ICONS.Colors.Gray.Light1" Class="ma-1 pa-1">
                     <MSelect Items="Radioes"
-                             ItemText="e => e"
-                             ItemValue="u => u"
-                             TItem="string"
-                             TValue="string"
-                             TItemValue="string"
-                             @bind-Value="canvas.LengthWidthRatio"
-                             Dense
-                             HideDetails="true"
-                             PersistentHint
-                             Label="" Class="ma-1">
+                    ItemText="e => e"
+                    ItemValue="u => u"
+                    TItem="string"
+                    TValue="string"
+                    TItemValue="string"
+                    @bind-Value="canvas.LengthWidthRatio"
+                    Dense
+                    HideDetails="true"
+                    PersistentHint
+                    Label="" Class="ma-1">
                     </MSelect>
                     <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.BorderPadding" Step="1" Name="内边距" Unit="%" />
                     <Watermark.Razor.Parts.ExpandPanel Desc="阴影" @bind-Expanded="canvas.FrameProperties.EnableShadow" Class="my-1">
@@ -111,7 +111,7 @@
         </MTabsItems>
     </div>
 
-    
+
 </div>
 
 <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
@@ -217,6 +217,7 @@
         {
             var rs = SelectContainer.Invoke(mContainer);
             await rs;
+            if (string.IsNullOrEmpty(mContainer.Path)) return;
             var destFile = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + Path.GetFileName(mContainer.Path);
             using var bitmap = SKBitmap.Decode(mContainer.Path);
             if (bitmap is null) return;

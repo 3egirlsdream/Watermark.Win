@@ -9,6 +9,8 @@
 	<RootNamespace>Watermark.Win</RootNamespace>
 	<ApplicationIcon>leica.ico</ApplicationIcon>
 	<Version>1.2.20</Version>
+	<AnalysisLevel>latest</AnalysisLevel>
+	<EnableNETAnalyzers>True</EnableNETAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
