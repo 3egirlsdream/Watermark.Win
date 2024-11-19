@@ -1,4 +1,6 @@
-﻿using MudBlazor;
+﻿using Masa.Blazor.Presets;
+using Microsoft.JSInterop;
+using MudBlazor;
 using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
@@ -15,10 +17,10 @@ using Watermark.Win.Views;
 
 namespace Watermark.Shared.Models
 {
-    public static class ClientInstance
+    public class ClientInstance : IClientInstance
     {
 
-        public static Action<WMCanvas, WMLogo, ConcurrentDictionary<string, byte[]>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
+        public Action<WMCanvas, WMLogo, ConcurrentDictionary<string, byte[]>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -45,7 +47,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static Action<WMCanvas, WMContainer, ConcurrentDictionary<string, byte[]>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
+        public Action<WMCanvas, WMContainer, ConcurrentDictionary<string, byte[]>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -91,7 +93,7 @@ namespace Watermark.Shared.Models
         };
 
 
-        public static Action<List<string>> ImportLocalFontAction = (Fonts) =>
+        public Action<List<string>> ImportLocalFontAction = (Fonts) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
@@ -125,7 +127,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
+        public Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
             var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
@@ -141,7 +143,7 @@ namespace Watermark.Shared.Models
             }
         };
 
-        public static void SelectDefaultImage(string id, ConcurrentDictionary<string, byte[]> dic)
+        public void SelectDefaultImage(string id, ConcurrentDictionary<string, byte[]> dic)
         {
             try
             {
@@ -188,7 +190,7 @@ namespace Watermark.Shared.Models
 			image.Encode(format, 50).SaveTo(writeStream);
         }
 
-        private static string UUID()
+        private string UUID()
         {
             string code = null;
             SelectQuery query = new SelectQuery("select * from Win32_ComputerSystemProduct");
@@ -201,14 +203,14 @@ namespace Watermark.Shared.Models
             }
             return code;
         }
-        public static string Key()
+        public string Key()
         {
             var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(UUID().Replace("-", "") + "CATLNMSL"));
             string result3 = result.Replace("-", "");
             return result3;
         }
 
-        public static void OpenSetting()
+        public void OpenSetting()
         {
             var action = new Action(() =>
             {
@@ -221,17 +223,101 @@ namespace Watermark.Shared.Models
             OpenWinHelper.Open(action);
         }
 
-        public static void ShowMsg(ISnackbar snackbar, string message, Severity severity)
+        public void Haptic()
         {
-            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-            snackbar?.Add(message, severity, config =>
-                {
-                    config.ShowCloseIcon = false;
-                });
+            throw new NotImplementedException();
         }
 
+        public Task DownloadTemplate(string watermarkId, ViewParameter parameter, Masa.Blazor.IPopupService PopupService, List<WMZipedTemplate> ZipedTemplates, IWMWatermarkHelper helper, IJSRuntime JSRuntime, Dictionary<string, int> Versions, PageStackNavController NavController, FailedBox failedBox)
+        {
+            throw new NotImplementedException();
+        }
 
-        public static Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(() =>
+        public Task<IEnumerable<string>> PickMultipleAsync()
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = true,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            var result = dialog.ShowDialog();
+            return Task.Run(() =>
+            {
+                if (result == true) return dialog.FileNames.AsEnumerable();
+                return [];
+            });
+        }
+
+        public Task<string> PickAsync()
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                DefaultExt = ".png",  // 设置默认类型
+                Multiselect = false,                             // 设置可选格式
+                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+            };
+            // 打开选择框选择
+            var result = dialog.ShowDialog();
+            return Task.Run(() =>
+            {
+                if (result == true) return dialog.FileName;
+                return "";
+            });
+        }
+
+        public Version GetVersion()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> CheckUpdate(string platform = "")
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetTextAsync(string uri)
+        {
+            System.Windows.Clipboard.SetText(uri);
+            return Task.CompletedTask;
+        }
+
+        public Task<API<string>> AliPays(decimal cost, string tradeName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReLogin()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> IsOutOfDate(string client = "Watermark_A")
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Save(byte[] b64, string fn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<string> OpenFolder()
+        {
+            Microsoft.Win32.OpenFolderDialog dialog = new();
+            var result = dialog.ShowDialog();
+            return Task.Run(() =>
+            {
+                if (result == true)
+                {
+                    return dialog.FolderName;
+                }
+                return "";
+            });
+        }
+
+        public Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(() =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
@@ -248,5 +334,9 @@ namespace Watermark.Shared.Models
             }
             return Task.Run(() => v);
         });
+
+        public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
 }

@@ -38,11 +38,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\..\Watermark.Shared\Watermark.Shared.csproj" />
+	  <Folder Include="BlazorPages\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="BlazorPages\" />
+	  <ProjectReference Include="..\..\Watermark.Razor\Watermark.Razor.csproj" />
 	</ItemGroup>
 
 </Project>

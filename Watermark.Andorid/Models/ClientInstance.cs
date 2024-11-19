@@ -386,5 +386,10 @@ namespace Watermark.Shared.Models
 #endif
             return true;
         }
+
+        public Task<string> OpenFolder()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

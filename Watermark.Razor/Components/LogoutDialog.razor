@@ -4,19 +4,7 @@
 
 <MudDialog Style="min-width:400px;">
     <DialogContent>
-        <MudForm Style="text-align:center">
-            @if (ShowHeader)
-            {
-                <MudToolBar Style="height:40px;padding-left:2px;margin-left:-24px;">
-                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="()=>{ MudDialog.Close(false);}" />
-                </MudToolBar>
-            }
-            <svg t="1718849865215" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10442" width="128" height="128"><path d="M661.1 292.8c0-61.1-23.8-118.6-66.9-161.8C551 87.8 493.7 64 432.7 64s-118.4 23.8-161.5 67c-43.1 43.2-66.9 100.7-66.9 161.8 0 61.1 23.8 118.6 66.9 161.8 11.5 11.5 24 21.6 37.3 30.3-6.5 2.3-12.9 4.8-19.3 7.6-43.9 18.6-83.3 45.2-117.2 79.1-33.9 33.9-60.4 73.4-79 117.4-19.2 45.6-29 93.9-29 143.8 0 17.7 14.3 32 31.9 32s31.9-14.3 31.9-32c0-168.3 136.7-305.3 304.8-305.3 26.4 0 52.5 3.4 77.8 10 17.1 4.5 34.5-5.7 39-22.8 2.2-8.2 0.9-16.6-2.9-23.5 17.2-9.9 33.2-22.2 47.5-36.6 43.3-43.2 67.1-100.7 67.1-161.8zM432.7 457.5c-90.7 0-164.5-73.9-164.5-164.7S342 128.1 432.7 128.1 597.2 202 597.2 292.8s-73.8 164.7-164.5 164.7z" fill="#727272" p-id="10443"></path><path d="M795.2 728.8L960 532.1 766.6 694.5l-165-197-68.9 69.1 193.1 162.2L532.7 891l68.9 69 165-197L960 925.5z" fill="#CE6043" p-id="10444"></path></svg>
-
-            <MudTextField @bind-Value="UserName" T="string" Label="邮箱" Required="true" RequiredError="邮箱不能为空" AutoFocus Class="mt-10" />
-            <MudTextField @bind-Value="Password" T="string" Label="密码" Required="true" RequiredError="密码不能为空" Class="mt-5" InputType="InputType.Password" />
-            <MudButton Variant="Variant.Filled" OnClick="LoginOK" FullWidth Class="mt-5" Disabled="Disabled" DisableElevation>注销账号</MudButton>
-        </MudForm>
+        <LogoutContent CloseEvent="() => MudDialog.Close(true)" />
     </DialogContent>
     <DialogActions>
     </DialogActions>
@@ -30,47 +18,4 @@
     private IDialogService DialogService { get; set; }
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; }
-    [Parameter]
-    public bool ShowHeader { get; set; } = true;
-    string UserName { get; set; }
-    string Password { get; set; }
-
-
-    public async void LoginOK()
-    {
-        bool? comfirm = await DialogService.ShowMessageBox(
-        "确认删除",
-        "删除后您的账号将被彻底删除无法恢复，确认删除？",
-        yesText: "确定", cancelText: "取消");
-        if (comfirm != true) return;
-
-        APIHelper helper = new APIHelper();
-        var result = await helper.DeleteAccount(UserName, Password);
-        string message = "";
-        Severity severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-
-        if (result.success)
-        {
-            Global.CurrentUser = new WMLoginChildModel();
-            message = "删除成功";
-            severity = Severity.Success;
-            MudDialog.Close(true);
-            StateHasChanged();
-        }
-        else
-        {
-            severity = Severity.Error;
-            message = result.message?.content ?? "删除失败";
-        }
-
-        Common.ShowMsg(Snackbar, message, severity);
-        StateHasChanged();
-    }
-
-    bool Disabled
-    {
-        get => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
-    }
 }

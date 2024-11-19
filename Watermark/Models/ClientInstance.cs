@@ -344,7 +344,12 @@ namespace Watermark.Shared.Models
 				}
 			}
 		}
-        
+
+        public Task<string> OpenFolder()
+        {
+            throw new NotImplementedException();
+        }
+
         public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
         {
             { DevicePlatform.Android, new[] { "text/*" } } ,

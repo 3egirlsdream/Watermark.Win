@@ -7,6 +7,7 @@
     <UserSecretsId>759d644e-37d8-4adf-88ba-4731b46f47cf</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
+    <PublishAot>True</PublishAot>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' " />
@@ -20,10 +21,6 @@
     <ProjectReference Include="..\Watermark.Web.Client\Watermark.Web.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
-	  <PackageReference Include="MudBlazor" Version="6.12.0" />
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	  <PackageReference Include="SkiaSharp" Version="2.88.9" />
-	  <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.9" />
   </ItemGroup>
 
 </Project>

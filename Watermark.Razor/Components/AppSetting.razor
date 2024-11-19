@@ -107,7 +107,7 @@
         var confirmed = await PopupService.ConfirmAsync("确认", "删除后不可还原！确认删除？", AlertTypes.Warning);
         if (confirmed == true)
         {
-            var result = await api.DeleteAccount(UserName, Password);
+            var result = await api.DeleteAccount(UserName, Password, null);
             if (result != null && result.success)
             {
                 sheet = false;

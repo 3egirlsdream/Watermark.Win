@@ -18,7 +18,7 @@
 @inject IWindowService WindowService
 @inject MainInterop MainInterop
 @inject APIHelper api
-
+@inject IClientInstance ClientInstance
 <style>
     .d-mw300 {
         min-width: 300px;
@@ -76,11 +76,11 @@
 
 
     .mud-picker-color-dot {
-            background-color: #f1f1f1;
-            background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%), linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%);
-            background-position: 0 0, 15px 15px;
-            background-size: 30px 30px;
-            background-repeat: repeat
+        background-color: #f1f1f1;
+        background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%), linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%);
+        background-position: 0 0, 15px 15px;
+        background-size: 30px 30px;
+        background-repeat: repeat
     }
 </style>
 <MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
@@ -122,6 +122,7 @@
                         <MList>
                             <MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
                             <MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
+                            <MListItem OnClick="() => showLogout = true" Title="注销账号" PrependIcon="@ICONS.Logout" />
                         </MList>
                     </ChildContent>
                 </MMenu>
@@ -336,10 +337,10 @@
 
                                     </MCard>
                                     <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
-                                   @*  <div style="width:90%; height:100%; margin-left:5%;margin-right:5%;display:flex;">
+                                    @*  <div style="width:90%; height:100%; margin-left:5%;margin-right:5%;display:flex;">
                                         <DesignView Canvas="@CurrentImage.Canvas" />
                                     </div> *@
-                                    
+
                                     @if (SrcLoading)
                                     {
                                         <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
@@ -382,7 +383,7 @@
         <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
             @if (openMarket)
             {
-                <TemplatesMarket ClipboardAction="ClipboardAction" OnCloseEvt="InitTemplates" />
+                <TemplatesMarket ClipboardAction="ClipboardAction()" OnCloseEvt="InitTemplates" />
             }
         </MDialog>
 
@@ -405,14 +406,14 @@
         <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
             @if (openCreateNew)
             {
-                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="ClientInstance.CreateNewTemplate" OnClose="() => openCreateNew = false" />
+                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="ClientInstance.PickAsync" OnClose="() => openCreateNew = false" />
             }
         </MDialog>
 
         <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
             @if (showExport)
             {
-                <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction" />
+                <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction()" />
             }
         </MDialog>
         <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
@@ -430,6 +431,12 @@
             @if (showSetting)
             {
                 <Setting />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showLogout" ContentStyle="width:350px;padding:10px;">
+            @if (showLogout)
+            {
+                <LogoutContent CloseEvent="() => showLogout = false" />
             }
         </MDialog>
     </MErrorHandler>
@@ -451,6 +458,7 @@
     bool showConfig = false;
     bool showExif = false;
     bool showSetting = false;
+    bool showLogout = false;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
@@ -502,24 +510,17 @@
     {
         var action = new Action(async () =>
         {
-            // 实例化一个文件选择对象
-            Microsoft.Win32.OpenFileDialog dialog = new()
-                {
-                    DefaultExt = ".png",  // 设置默认类型
-                    Multiselect = true,                             // 设置可选格式
-                    Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
-                };
-            // 打开选择框选择
-            Nullable<bool> result = dialog.ShowDialog();
-            if (result == true)
+            var result = await ClientInstance.PickMultipleAsync();
+            if (result.Any())
             {
+                var files = result.ToList();
                 Images = new List<WMTemplateList>();
-                LoadingEvt(true, $"正在导入图片，一共{dialog.FileNames.Length}, 当前第1个...", 0);
+                LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第1个...", 0);
                 if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
                 {
                     Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
                 }
-                foreach (var file in dialog.FileNames)
+                foreach (var file in files)
                 {
                     WMCanvas canvas = new WMCanvas();
                     canvas.Path = file;
@@ -537,8 +538,8 @@
                             ID = canvas.ID,
                             Path = file
                         });
-                    var idx = dialog.FileNames.ToList().IndexOf(file) + 1;
-                    LoadingEvt(true, $"正在导入图片，一共{dialog.FileNames.Length}, 当前第{idx}个...", (int)(idx * 100.0 / dialog.FileNames.Length));
+                    var idx = files.IndexOf(file) + 1;
+                    LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第{idx}个...", (int)(idx * 100.0 / files.Count));
                 }
 
                 LoadingEvt(false, $"导入完成", 100);
@@ -675,11 +676,10 @@
         await Task.CompletedTask;
     }
 
-    Func<string, Task> ClipboardAction = new((x) =>
-       {
-           System.Windows.Clipboard.SetText(x);
-           return Task.CompletedTask;
-       });
+    Func<string, Task> ClipboardAction() => new((x) =>
+    {
+        return ClientInstance.SetTextAsync(x);
+    });
 
 
     async Task InitLogoCacheDic(string imgId, WMTemplateList template)
@@ -829,16 +829,10 @@
         });
         OpenWinHelper.Open(action);
     }
-    Action OpenFolderAction = new Action(() =>
-                {
-                    Microsoft.Win32.OpenFolderDialog dialog = new();
-                    var result = dialog.ShowDialog();
-
-                    if (result == true)
-                    {
-                        Global.OutPutPath = dialog.FolderName;
-                    }
-                });
+    Action OpenFolderAction() => new Action(async () =>
+    {
+        Global.OutPutPath = await ClientInstance.OpenFolder();
+    });
 
     async void SelectSourceImageExif(IBrowserFile file)
     {
@@ -856,61 +850,32 @@
         await Global.InitFonts(mCanvas);
     }
 
-    // async void OpenExifDialog(WMText mText)
-    // {
-    //     var parameters = new DialogParameters<Watermark.Razor.Components.ExifConfig>();
-    //     parameters.Add(x => x.mText, mText);
-    //     var dic = CurrentImage.Canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, v => v.Name);
-    //     dic[CurrentImage.Canvas.ID] = CurrentImage.Canvas.Name;
-    //     parameters.Add(x => x.ContainerId2Name, dic.Reverse().ToDictionary());
-    //     parameters.Add(x => x.CanvasType, CurrentImage.Canvas.CanvasType);
-    //     var option = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Medium };
-    //     var rst = DialogService.Show<Watermark.Razor.Components.ExifConfig>("", parameters, option);
-    //     var dialogResult = await rst.Result;
-    //     if (!dialogResult.Canceled)
-    //     {
-    //         WMText text = (WMText)dialogResult.Data;
-    //         mText.Exifs = text.Exifs;
-    //         mText.BindedContainerId = text.BindedContainerId;
-    //         RefreshImage();
-    //         StateHasChanged();
-    //     }
-    // }
-
     async void SelectSplitImages(WMTemplateList template)
     {
         Dictionary<string, Dictionary<string, string>> exif = [];
         exif[template.Canvas.ID] = ExifHelper.DefaultMeta;
+        var result = await ClientInstance.PickMultipleAsync();
         var action = Task.Run(() =>
+        {
+            if (result.Any())
+            {
+                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
                 {
-                    // 实例化一个文件选择对象
-                    Microsoft.Win32.OpenFileDialog dialog = new()
-                        {
-                            DefaultExt = ".jpg",  // 设置默认类型
-                            Multiselect = true,                             // 设置可选格式
-                            Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                }
 
-                        };
-                    // 打开选择框选择
-                    Nullable<bool> result = dialog.ShowDialog();
-                    if (result == true)
+                int c = 0;
+                var files = result.ToList();
+                foreach (var container in template.Canvas.Children)
+                {
+                    if (c <= files.Count - 1 && !container.ContainerProperties.FixImage)
                     {
-                        if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-                        {
-                            Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-                        }
-
-                        int c = 0;
-                        foreach (var container in template.Canvas.Children)
-                        {
-                            if (c <= dialog.FileNames.Length - 1 && !container.ContainerProperties.FixImage)
-                            {
-                                container.Path = dialog.FileNames[c++];
-                                exif[container.ID] = ExifHelper.ReadImage(container.Path);
-                            }
-                        }
+                        container.Path = files[c++];
+                        exif[container.ID] = ExifHelper.ReadImage(container.Path);
                     }
-                });
+                }
+            }
+        });
         await action;
 
         SrcLoading = true;
@@ -955,7 +920,7 @@
 
     async Task SelectContainerImage(WMContainer wMContainer)
     {
-        var result = await ClientInstance.CreateNewTemplate.Invoke();
+        var result = await ClientInstance.PickAsync();
         if (!string.IsNullOrEmpty(result))
         {
             wMContainer.Path = result;

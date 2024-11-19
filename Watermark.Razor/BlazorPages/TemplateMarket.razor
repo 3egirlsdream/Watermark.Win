@@ -11,7 +11,7 @@
 @layout MainLayout
 @inject APIHelper api
 @inject IClientInstance ClientInstance
-
+@inject NavigationManager navigationManager
 <style scoped>
     .m-tabs .div:nth-child(1) {
         height: 30px
@@ -20,9 +20,11 @@
     .m-item-group {
         height: 30px;
     }
+
     .row--dense > .col, .row--dense > [class*=col-] {
-        padding:2px;
+        padding: 2px;
     }
+
     .m-slide-group__prev {
         display: none !important;
     }
@@ -60,7 +62,7 @@
     }
 
     .m-presets-block-text > div:nth-child(2) {
-        overflow:hidden;
+        overflow: hidden;
     }
 </style>
 
@@ -101,11 +103,11 @@
     else
     {
         <MOverlay Contained Opacity="0" Value="loadMore">
-            <MProgressCircular Indeterminate Color="primary" Width="2"/>
+            <MProgressCircular Indeterminate Color="primary" Width="2" />
         </MOverlay>
     }
-   
-    <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
+
+    <MDialog @bind-Value="parameter.FocusImageShow" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
         <TemplateLargeView FocusImage="parameter.FocusImage"
                            FocusImageId="@parameter.FocusImageId"
                            FocusImageSrc="@parameter.FocusImageSrc"
@@ -115,7 +117,7 @@
                            ZipedTemplates="ZipedTemplates"
                            DownloadEvent="DownloadTemplate"
                            CloseEvent="Close"
-                           SubscribeEvent="Subscribe"/>
+                           SubscribeEvent="Subscribe" />
     </MDialog>
 </div>
 
@@ -128,56 +130,56 @@
     int start = 1;
     private MInfiniteScroll? _infiniteScroll;
     ViewParameter parameter = new();
-    List<BlockTextTag> tags = new List<BlockTextTag> {};
+    List<BlockTextTag> tags = new List<BlockTextTag> { };
     FailedBox failedBox = new();
 
     internal RenderFragment RenderProductList(List<WMZipedTemplate> products) => __builder =>
-       {
-           <MRow Dense>
-               @foreach (var t in products)
-               {
-                   <MCol Cols="6">
-                       <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
-                           @if (!string.IsNullOrEmpty(t.Src))
-                           {
-                               <MudImage Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
-                           }
-                           else
-                           {
-                               <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
-                           }
-                           <MCardActions Style="padding:0px;">
-                               <div style="width:100%;">
-                                   <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="GetTags(t.Tags)" />
-                                   <div class="dfm-card-user-name" style="justify-content: space-between;">
-                                       <div style="display:flex;align-items:center;">
-                                           @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
-                                           {
-                                               <MIcon Color="orange" Size="12">mdi-check-decagram</MIcon>
-                                           }
-                                           else
-                                           {
-                                               <MIcon Size="12">mdi-account-circle</MIcon>
-                                           }
-                                           <p  style="@($"color:{Colors.Grey.Default};padding-top: 1px;margin-left:2px;font-size:10px;margin-bottom:0")">
-                                               @t.UserDisplayName
-                                           </p>
-                                       </div>
-                                       <div style="display:flex;align-items:center;">
-                                           <Watermark.Razor.Parts.IconCoin />
-                                           <p style="margin-bottom:0;font-size:10px;">
-                                               @t.Coins
-                                           </p>
-                                       </div>
-                                   </div>
-                               </div>
+    {
+        <MRow Dense>
+            @foreach (var t in products)
+            {
+                <MCol Cols="6">
+                    <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
+                        @if (!string.IsNullOrEmpty(t.Src))
+                        {
+                            <MudImage Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                        }
+                        else
+                        {
+                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+                        }
+                        <MCardActions Style="padding:0px;">
+                            <div style="width:100%;">
+                                <Watermark.Razor.Parts.CardTitle t="t" ShowDesc="false" Small="true" Tags="GetTags(t.Tags)" />
+                                <div class="dfm-card-user-name" style="justify-content: space-between;">
+                                    <div style="display:flex;align-items:center;">
+                                        @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                                        {
+                                            <MIcon Color="orange" Size="12">mdi-check-decagram</MIcon>
+                                        }
+                                        else
+                                        {
+                                            <MIcon Size="12">mdi-account-circle</MIcon>
+                                        }
+                                        <p style="@($"color:{Colors.Grey.Default};padding-top: 1px;margin-left:2px;font-size:10px;margin-bottom:0")">
+                                            @t.UserDisplayName
+                                        </p>
+                                    </div>
+                                    <div style="display:flex;align-items:center;">
+                                        <Watermark.Razor.Parts.IconCoin />
+                                        <p style="margin-bottom:0;font-size:10px;">
+                                            @t.Coins
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-                           </MCardActions>
-                       </MCard>
-                   </MCol>
-               }
-           </MRow>
-       };
+                        </MCardActions>
+                    </MCard>
+                </MCol>
+            }
+        </MRow>
+    };
 
 
     async Task OnRefresh()
@@ -200,6 +202,10 @@
         try
         {
             await LoadTemplatesMarket();
+            navigationManager.LocationChanged += (e, q) =>
+            {
+                parameter.FocusImageShow = false;
+            };
         }
         catch (Exception ex)
         {

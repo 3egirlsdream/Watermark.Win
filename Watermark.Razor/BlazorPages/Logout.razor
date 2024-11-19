@@ -1,0 +1,23 @@
+﻿@page "/logout"
+@using Components.Layout;
+@using Watermark.Razor.Components
+@layout MainLayout
+@inject PageStackNavController NavController
+@inherits PStackPageBase
+
+<PStackPageBarInit Title="注销" Dense Flat CenterTitle>
+</PStackPageBarInit>
+<div style="padding:24px;text-align:center;">
+    <LogoutContent CloseEvent="@((v) => NavController.Pop())" />
+</div>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        #if ANDROID
+        MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
+        #endif
+        base.OnInitialized();
+    }
+}

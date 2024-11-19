@@ -30,6 +30,7 @@ namespace Watermark.Win
 				IocHelper.GetIoc().AddSingleton<APIHelper>();
                 IocHelper.GetIoc().AddSingleton<IWindowService, WindowService>();
                 IocHelper.GetIoc().AddScoped<MainInterop>();
+                IocHelper.GetIoc().AddSingleton<IClientInstance, ClientInstance>();
                 var design = DesignProvider.Get(new WMCanvas());
                 IocHelper.GetIoc().AddSingleton(design);
 				Resources.SetIoc();

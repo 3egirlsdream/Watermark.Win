@@ -1,18 +1,12 @@
 ﻿using SkiaSharp;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text;
-using Watermark.Win.Models;
 using MudBlazor;
 
 namespace Watermark.Shared.Models
 {
     public static class ClientInstance
     {
-
-        public static Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
-        {
-        };
-
 
 
         public static Action<List<string>> InitLocalFontsAction = (Fonts) =>
@@ -22,11 +16,6 @@ namespace Watermark.Shared.Models
 
 
         public static Action<List<string>> ImportLocalFontAction = (Fonts) =>
-        {
-            
-        };
-
-        public static Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
         {
             
         };
