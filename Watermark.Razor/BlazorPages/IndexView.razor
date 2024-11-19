@@ -88,22 +88,22 @@
 
     <MDialog @bind-Value="parameter.FocusImageShow" Transition="dialog-bottom-transition" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px">
         <TemplateLargeView DownloadEvent="DownloadTemplate"
-                           downloadedTemplates="GlobalCache.DownloadedTemplates"
-                           FocusImage="parameter.FocusImage"
-                           FocusImageId="@parameter.FocusImageId"
-                           FocusImageSrc="@parameter.FocusImageSrc"
-                           FocusImageType="parameter.FocusImageType"
-                           GeneratePhotoEvent="GeneratePhoto"
-                           ILikeTemplates="parameter.ILikeTemplates"
-                           OpenCameraEvent="OpenCamera"
-                           subscribed="subscribed"
-                           ZipedTemplates="ZipedTemplates"
-                           CloseEvent="Close" />
+        downloadedTemplates="GlobalCache.DownloadedTemplates"
+        FocusImage="parameter.FocusImage"
+        FocusImageId="@parameter.FocusImageId"
+        FocusImageSrc="@parameter.FocusImageSrc"
+        FocusImageType="parameter.FocusImageType"
+        GeneratePhotoEvent="GeneratePhoto"
+        ILikeTemplates="parameter.ILikeTemplates"
+        OpenCameraEvent="OpenCamera"
+        subscribed="subscribed"
+        ZipedTemplates="ZipedTemplates"
+        CloseEvent="Close" />
     </MDialog>
 
     <MOverlay Value="loading.Show">
         <MProgressCircular indeterminate
-                           Size="64"></MProgressCircular>
+        Size="64"></MProgressCircular>
     </MOverlay>
     <MOverlay Value="@failedBox.faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
         <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
@@ -158,9 +158,9 @@
             await api.DownloadLogoes();
             await InitVersion(GlobalCache.DownloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
             await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
-
             navigationManager.LocationChanged += (e, q) =>
             {
+                parameter.FocusImageShow = false;
                 StateHasChanged();
             };
         }

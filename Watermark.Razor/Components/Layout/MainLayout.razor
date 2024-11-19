@@ -22,7 +22,7 @@
                            Grow
                            Shift
                            Color="primary">
-            <MButton Href="/">
+            <MButton Href="/" Class="h">
                 <span>我的模板</span>
                 <MIcon>mdi-download-box</MIcon>
             </MButton>
@@ -39,16 +39,12 @@
 </div>
 
 <style>
-    .m-ripple__container {
-        display:none !important;
+    .m-btn__content:hover {
+        background: white !important;
     }
 
-    .m-btn--active {
-        background: #fff !important;
-    }
-
-    .m-btn:hover {
-        background: #fff !important;
+    .m-btn:not(.m-btn--round).m-size--default {
+        padding: 0 !important
     }
 </style>
 

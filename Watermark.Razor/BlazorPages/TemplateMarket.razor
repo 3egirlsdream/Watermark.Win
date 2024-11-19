@@ -205,6 +205,7 @@
             navigationManager.LocationChanged += (e, q) =>
             {
                 parameter.FocusImageShow = false;
+                StateHasChanged();
             };
         }
         catch (Exception ex)

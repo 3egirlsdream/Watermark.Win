@@ -818,7 +818,6 @@
     {
         DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = false, MaxWidth = MaxWidth.Medium };
         var param = new DialogParameters<Watermark.Razor.Components.LogoutDialog>();
-        param.Add(x => x.ShowHeader, false);
         var rst = DialogService.Show<Watermark.Razor.Components.LogoutDialog>("", param);
         var dialogResult = await rst.Result;
         if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
