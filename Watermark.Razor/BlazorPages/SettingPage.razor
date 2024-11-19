@@ -3,6 +3,7 @@
 @using Watermark.Razor.Components
 @using Watermark.Shared.Models
 @using Components.Layout
+@using Watermark.Shared.Enums
 @inject ISnackbar Snackbar
 @inject PageStackNavController NavController
 @layout MainLayout
@@ -33,7 +34,7 @@
             <span>游客</span>
         }
     </MudText>
-    <MudStack Row Style="position:absolute;right:15px;">
+    <MudStack Row Style="position:absolute;right:15px;display: none;" >
         <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
     </MudStack>
 
@@ -72,7 +73,7 @@
                 <p class="font-weight-light" style="margin:0px 22px">@Global.CurrentUser.USER_NAME</p>
             </div>
             
-            @if (!Global.CurrentUser.IsVIP)
+            @if (!Global.CurrentUser.IsVIP && Global.DeviceType != DeviceType.IOS)
             {
                 <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
             }
