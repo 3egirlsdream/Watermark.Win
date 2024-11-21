@@ -34,9 +34,9 @@
             <span>游客</span>
         }
     </MudText>
-    <MudStack Row Style="position:absolute;right:15px;display: none;" >
+    @*<MudStack Row Style="position:absolute;right:15px;display: none;" >
         <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-    </MudStack>
+    </MudStack>*@
 
 
     <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
@@ -64,7 +64,7 @@
         <MudStack Row Style="align-items: center;">
             <div>
                 <p class="font-weight-medium" style="@($"color:{(Global.CurrentUser.IsVIP ? "orange" : "black")};display:flex;align-items:center;margin:0px")">
-                    @if (Global.CurrentUser.IsVIP)
+                    @if (Global.CurrentUser.IsVIP && Global.DeviceType != DeviceType.IOS)
                     {
                         <Watermark.Razor.Parts.IconVip />
                     }
@@ -78,17 +78,18 @@
                 <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
             }
         </MudStack>
-       
-        <div Style="display:flex;align-items:center;line-height: 32px;">
-            <Watermark.Razor.Parts.IconCoin />
-            <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                @Global.CurrentUser.COINS
-            </MudText>
-            <MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
-                会员到期时间：@Global.CurrentUser.EXPIRE_DATE
-            </MudText>
-        </div>
-
+       @if (Global.DeviceType != DeviceType.IOS)
+       {
+           <div Style="display:flex;align-items:center;line-height: 32px;">
+               <Watermark.Razor.Parts.IconCoin />
+               <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+                   @Global.CurrentUser.COINS
+               </MudText>
+               <MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
+                   会员到期时间：@Global.CurrentUser.EXPIRE_DATE
+               </MudText>
+           </div>
+       }
     </MudPaper>
 }
 else
