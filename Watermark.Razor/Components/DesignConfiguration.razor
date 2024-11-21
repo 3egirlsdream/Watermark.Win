@@ -188,7 +188,7 @@
         var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
         SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
         var codec = SKCodec.Create(p);
-        bitmap = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
+        bitmap = WatermarkHelper.AutoOrient(codec, bitmap);
         Global.WriteThumbnailImage(bitmap, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
@@ -222,7 +222,7 @@
             using var bitmap = SKBitmap.Decode(mContainer.Path);
             if (bitmap is null) return;
             var codec = SKCodec.Create(mContainer.Path);
-            using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap, bitmap.Info);
+            using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap);
             Global.WriteThumbnailImage(bitmap2, destFile);
             ConcurrentDictionary<string, byte[]> dic = [];
             Global.ImageFile2Base64(dic, destFile, mContainer.ID);
