@@ -111,15 +111,9 @@
 
 
     <ItemGroup>
-		<PackageReference Include="Masa.Blazor" Version="1.7.8" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.93" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.93" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.93" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
-		<PackageReference Include="MudBlazor" Version="6.12.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="SkiaSharp" Version="2.88.9" />
-		<PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.9" />
 		<PackageReference Include="LukeMauiFilePicker" Version="1.1.0" />
     </ItemGroup>
 

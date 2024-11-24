@@ -39,7 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="Masa.Blazor" Version="1.7.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.93" />
     <PackageReference Include="NHotkey.Wpf" Version="3.0.0" />
     <PackageReference Include="SkiaSharp.Views.WPF" Version="2.88.9" />

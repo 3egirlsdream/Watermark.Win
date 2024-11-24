@@ -8,6 +8,8 @@
 @inject APIHelper api 
 @inject IPopupService PopupService
 @inherits PStackPageBase
+@inject IClientInstance ClientInstance
+@inject PageStackNavController NavController
 
 <PStackPageBarInit Title="设置" Dense Flat CenterTitle>
 </PStackPageBarInit>
@@ -16,7 +18,7 @@
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
         <MBottomSheet @bind-Value="sheet">
             <ActivatorContent>
-                <div class="d-space-between" @onclick="() => sheet = true">
+                <div class="d-space-between" @onclick="@(() => NavController.Push("/logout"))">
                     <Label Small="false" Name="注销账号"/>
                     <MIcon Small>@ICONS.Delete</MIcon>
                 </div>
@@ -63,7 +65,10 @@
     bool sheet;
     string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
 
-
+    protected override void OnInitialized()
+    {
+        ClientInstance.SetColor();
+    }
 
     public async void LoginOK()
     {
@@ -101,24 +106,9 @@
         }
     }
 
-    async void DeleteAccount()
+    void DeleteAccount()
     {
-        if (string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password)) return;
-        var confirmed = await PopupService.ConfirmAsync("确认", "删除后不可还原！确认删除？", AlertTypes.Warning);
-        if (confirmed == true)
-        {
-            var result = await api.DeleteAccount(UserName, Password, null);
-            if (result != null && result.success)
-            {
-                sheet = false;
-                Global.CurrentUser = null;
-                Common.ShowMsg(PopupService, "注销成功。", AlertTypes.Success);
-            }
-            else
-            {
-                Common.ShowMsg(PopupService, result?.message?.content ?? "注销失败，请稍后重试。", AlertTypes.Error);
-            }
-        }
+        NavController.Push("/logout");
     }
 }
 

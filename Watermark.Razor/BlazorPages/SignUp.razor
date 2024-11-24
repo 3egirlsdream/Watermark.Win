@@ -1,9 +1,11 @@
 ﻿@page "/signup/{FuncType:int}"
 @using Components.Layout;
 @using Masa.Blazor.Presets.PageStack.NavController
+@using Watermark.Shared.Models
 @layout MainLayout
 @inject PageStackNavController NavController
 @inherits PStackPageBase
+@inject IClientInstance ClientInstance
 
 <PStackPageBarInit Title="注册" Dense Flat CenterTitle>
 </PStackPageBarInit>
@@ -17,9 +19,6 @@
     public int FuncType { get; set; } = 0;
     protected override void OnInitialized()
     {
-        #if ANDROID
-        MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
-        #endif
-        base.OnInitialized();
+        ClientInstance.SetColor();
     }
 }

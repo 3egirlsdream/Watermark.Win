@@ -34,7 +34,6 @@
 		<PackageReference Include="MudBlazor" Version="6.12.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
-		<PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.9" />
 	</ItemGroup>
 
 	<ItemGroup>

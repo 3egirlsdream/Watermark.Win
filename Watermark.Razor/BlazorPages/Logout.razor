@@ -1,9 +1,11 @@
 ﻿@page "/logout"
 @using Components.Layout;
 @using Watermark.Razor.Components
+@using Watermark.Shared.Models
 @layout MainLayout
 @inject PageStackNavController NavController
 @inherits PStackPageBase
+@inject IClientInstance ClientInstance
 
 <PStackPageBarInit Title="注销" Dense Flat CenterTitle>
 </PStackPageBarInit>
@@ -15,9 +17,6 @@
 @code {
     protected override void OnInitialized()
     {
-        #if ANDROID
-        MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
-        #endif
-        base.OnInitialized();
+        ClientInstance.SetColor();
     }
 }

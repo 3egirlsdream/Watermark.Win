@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
+using Watermark.Andorid;
 using Watermark.Andorid.Models;
 using Watermark.Razor;
 
@@ -390,6 +391,13 @@ namespace Watermark.Shared.Models
         public Task<string> OpenFolder()
         {
             throw new NotImplementedException();
+        }
+
+        public void SetColor()
+        {
+#if ANDROID
+            MainActivity.SetColor?.Invoke(ICONS.Colors.Gray.Light4);
+#endif
         }
     }
 }

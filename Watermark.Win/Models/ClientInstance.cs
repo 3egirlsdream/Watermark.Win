@@ -317,6 +317,11 @@ namespace Watermark.Shared.Models
             });
         }
 
+        public void SetColor()
+        {
+            throw new NotImplementedException();
+        }
+
         public Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(() =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()

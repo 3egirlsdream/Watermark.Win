@@ -2,6 +2,7 @@
 @using Watermark.Shared.Models
 @inherits LayoutComponentBase
 @inject IClientInstance ClientInstance
+@inject APIHelper api
 
 <MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
 <MudDialogProvider />
@@ -18,19 +19,19 @@
             </MErrorHandler>
         </MMain>
         <MBottomNavigation @bind-Value="Value"
-                           App
-                           Grow
-                           Shift
-                           Color="primary">
+        App
+        Grow
+        Shift
+        Color="primary">
             <MButton Href="/" Class="h">
                 <span>我的模板</span>
                 <MIcon>mdi-download-box</MIcon>
             </MButton>
-            <MButton Href="/market">
+            <MButton Href="/market" Class="h">
                 <span>模板市场</span>
                 <MIcon>mdi-shopping</MIcon>
             </MButton>
-            <MButton Href="/settings">
+            <MButton Href="/settings" Class="h">
                 <span>我</span>
                 <MIcon>mdi-account</MIcon>
             </MButton>
@@ -39,11 +40,13 @@
 </div>
 
 <style>
-    .m-btn__content:hover {
+    .h {
+    }
+    .page .h .m-btn__content:hover {
         background: white !important;
     }
 
-    .m-btn:not(.m-btn--round).m-size--default {
+    .page .m-btn:not(.m-btn--round).m-size--default {
         padding: 0 !important
     }
 </style>
@@ -59,5 +62,10 @@
             ClientInstance.Haptic();
             StateHasChanged();
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Global.InitTemplateMarket(api);
     }
 }

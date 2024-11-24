@@ -9,8 +9,8 @@
 <MTextField @bind-Value="UserName" TValue="string" Label="邮箱" Required="true" RequiredMessage="邮箱不能为空" Autofocus Class="mt-2" />
 <MTextField @bind-Value="Password" TValue="string" Label="密码" Required="true" RequiredMessage="密码不能为空" Class="mt-2" Type="password" />
 <MButton OnClick="LoginOK" Width="@("100%")" Class="mt-5" Elevation="0">登录</MButton>
-<MButton Color="Color.Default" Width="@("100%")" OnClick="OpenSignUpDialog" Class="mt-5" Elevation="0">注册</MButton>
-<MButton OnClick="OpenForgotSignUpDialog" Small Color="Color.Default" Class="mt-5" Elevation="0" Text>忘记密码</MButton>
+<MButton Color="default" Width="@("100%")" OnClick="OpenSignUpDialog" Class="mt-5" Elevation="0">注册</MButton>
+<MButton OnClick="OpenForgotSignUpDialog" Small Color="default" Class="mt-5" Elevation="0" Text>忘记密码</MButton>
 
 <MDialog @bind-Value="showSignUp.Show" ContentStyle="width:350px;padding:10px;">
     <SignUpContent FuncType="showSignUp.FuncType" />

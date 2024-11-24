@@ -8,6 +8,7 @@
 @inject PageStackNavController NavController
 @layout MainLayout
 @inject IClientInstance ClientInstance
+@inject NavigationManager navigationManager
 <style>
     .mud-overlay .mud-overlay-content {
         width: 60%;
@@ -52,32 +53,36 @@
 </MudToolBar>
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
-    <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-        @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
-        {
-            <MudImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" ObjectFit="ObjectFit.Contain" Style="float:left;" />
-        }
-        else
-        {
-            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
-        }
-        <MudStack Row Style="align-items: center;">
-            <div>
+    <MCard Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+         <div style="display:flex;align-items:center;justify-content: flex-start">
+            @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
+            {
+                <MAvatar Height="50" Width="50">
+                    <MImage Src="@Global.CurrentUser.IMG"></MImage>
+                </MAvatar>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
+            }
+
+
+            <div style="display: flex; align-items: flex-start;flex-direction: column;justify-content: center;" class="ml-2">
                 <p class="font-weight-medium" style="@($"color:{(Global.CurrentUser.IsVIP ? "orange" : "black")};display:flex;align-items:center;margin:0px")">
+                    @Global.CurrentUser.DISPLAY_NAME
                     @if (Global.CurrentUser.IsVIP && Global.DeviceType != DeviceType.IOS)
                     {
                         <Watermark.Razor.Parts.IconVip />
                     }
-                    @Global.CurrentUser.DISPLAY_NAME
+                    else if (Global.DeviceType != DeviceType.IOS)
+                    {
+                        <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
+                    }
                 </p>
-                <p class="font-weight-light" style="margin:0px 22px">@Global.CurrentUser.USER_NAME</p>
+                <p class="font-weight-light ma-0">@Global.CurrentUser.USER_NAME</p>
             </div>
-            
-            @if (!Global.CurrentUser.IsVIP && Global.DeviceType != DeviceType.IOS)
-            {
-                <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
-            }
-        </MudStack>
+         </div>
+       
        @if (Global.DeviceType != DeviceType.IOS)
        {
            <div Style="display:flex;align-items:center;line-height: 32px;">
@@ -90,7 +95,7 @@
                </MudText>
            </div>
        }
-    </MudPaper>
+    </MCard>
 }
 else
 {
@@ -123,7 +128,7 @@ else
 <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
     <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="Update">
         <MudStack Row style="align-items: center">
-            <MudText Typo="Typo.button"> 版本更新 @($" {ClientInstance.GetVersion().ToString()}")</MudText>
+            <MudText Typo="Typo.button"> 当前版本 @($" {ClientInstance.GetVersion().ToString()}")</MudText>
             @if (checkUpdate)
             {
                 <MudChip Size="Size.Small" Color="Color.Error">new</MudChip>
@@ -305,22 +310,9 @@ else
         Console.Out.WriteLine($"{e.RelativeUri} closed");
     }
 
-    async void OpenLoginDialog()
+    void OpenLoginDialog()
     {
         NavController.Push("/login");
-        return;
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var rst = DialogService.Show<LoginDialog>("", topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-        {
-            StateHasChanged();
-            if (RefreshCollection.HasDelegate)
-            {
-                await RefreshCollection.InvokeAsync();
-            }
-
-        }
     }
 
     async void OpenSignUpDialog()

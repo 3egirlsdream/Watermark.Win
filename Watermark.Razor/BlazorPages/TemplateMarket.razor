@@ -1,6 +1,7 @@
 ﻿@page "/market"
 @using Masa.Blazor
 @using Components.Layout
+@using Masa.Blazor.Presets.PageStack.NavController
 @using Watermark.Razor
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
@@ -12,62 +13,63 @@
 @inject APIHelper api
 @inject IClientInstance ClientInstance
 @inject NavigationManager navigationManager
+@implements IDisposable
 <style scoped>
     .m-tabs .div:nth-child(1) {
-        height: 30px
+    height: 30px
     }
 
     .m-item-group {
-        height: 30px;
+    height: 30px;
     }
 
     .row--dense > .col, .row--dense > [class*=col-] {
-        padding: 2px;
+    padding: 2px;
     }
 
     .m-slide-group__prev {
-        display: none !important;
+    display: none !important;
     }
 
     .dfm-card-name {
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
     }
 
     .dfm-card-user-name {
-        position: relative;
-        display: flex;
-        align-items: center;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
+    position: relative;
+    display: flex;
+    align-items: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
     }
 
     .dfm-card-footer {
-        position: relative;
-        height: 30px;
-        display: flex;
-        align-items: center;
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
     }
 
 
     .flex-vertical-center {
-        display: flex;
-        align-items: center;
+    display: flex;
+    align-items: center;
     }
 
     .swiper-wrapper {
-        height: 100% !important;
+    height: 100% !important;
     }
 
     .m-presets-block-text > div:nth-child(2) {
-        overflow: hidden;
+    overflow: hidden;
     }
 </style>
 
 <div style="height:100%;">
-    <MTabs SliderColor="black" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
+    <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var sub in tabs)
         {
             <MTab Value="sub">
@@ -89,7 +91,7 @@
                                     @if (sub.Item1 == "最新")
                                     {
                                         <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
-                                                         OnLoad="@HandleOnLoad">
+                                        OnLoad="@HandleOnLoad">
                                         </MInfiniteScroll>
                                     }
                                 </MCard>
@@ -109,15 +111,15 @@
 
     <MDialog @bind-Value="parameter.FocusImageShow" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
         <TemplateLargeView FocusImage="parameter.FocusImage"
-                           FocusImageId="@parameter.FocusImageId"
-                           FocusImageSrc="@parameter.FocusImageSrc"
-                           FocusImageType="parameter.FocusImageType"
-                           ILikeTemplates="parameter.ILikeTemplates"
-                           subscribed="subscribed"
-                           ZipedTemplates="ZipedTemplates"
-                           DownloadEvent="DownloadTemplate"
-                           CloseEvent="Close"
-                           SubscribeEvent="Subscribe" />
+        FocusImageId="@parameter.FocusImageId"
+        FocusImageSrc="@parameter.FocusImageSrc"
+        FocusImageType="parameter.FocusImageType"
+        ILikeTemplates="parameter.ILikeTemplates"
+        subscribed="subscribed"
+        ZipedTemplates="ZipedTemplates"
+        DownloadEvent="DownloadTemplate"
+        CloseEvent="Close"
+        SubscribeEvent="Subscribe" />
     </MDialog>
 </div>
 
@@ -185,6 +187,7 @@
     async Task OnRefresh()
     {
         start = 1;
+        GlobalCache.AllTempaltes = [];
         await LoadTemplatesMarket();
     }
 
@@ -202,11 +205,7 @@
         try
         {
             await LoadTemplatesMarket();
-            navigationManager.LocationChanged += (e, q) =>
-            {
-                parameter.FocusImageShow = false;
-                StateHasChanged();
-            };
+            NavController.TabChanged += NavControllerOnTabChanged;
         }
         catch (Exception ex)
         {
@@ -220,11 +219,11 @@
 
     async Task LoadTemplatesMarket()
     {
-        var allTemplates = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
-        var recommend = allTemplates.Where(x => x.Recommend);
-        var hottest = allTemplates.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
-        var newest = allTemplates.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
-        var splits = allTemplates.Where(x => x.CanvasType == CanvasType.Split).ToList();
+        if (!GlobalCache.AllTempaltes.Any()) GlobalCache.AllTempaltes = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
+        var recommend = GlobalCache.AllTempaltes.Where(x => x.Recommend);
+        var hottest = GlobalCache.AllTempaltes.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
+        var newest = GlobalCache.AllTempaltes.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
+        var splits = GlobalCache.AllTempaltes.Where(x => x.CanvasType == CanvasType.Split).ToList();
         ZipedTemplates = recommend.UnionBy(hottest, x => x.WatermarkId).UnionBy(newest, x => x.WatermarkId).UnionBy(splits, x => x.WatermarkId).ToList();
         var subUser = await IntiSubscribedUserList();
         subscribed = new List<Tuple<string, List<WMZipedTemplate>>>();
@@ -303,5 +302,15 @@
     public List<BlockTextTag> GetTags(List<string> tags)
     {
         return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
+    }
+    public void Dispose()
+    {
+        NavController.TabChanged -= NavControllerOnTabChanged;
+    }
+
+    private void NavControllerOnTabChanged(object? sender, PageStackTabChangedEventArgs e)
+    { 
+        parameter.FocusImageShow = false;
+        StateHasChanged();
     }
 }
