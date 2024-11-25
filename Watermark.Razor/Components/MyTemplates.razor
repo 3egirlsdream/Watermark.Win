@@ -50,7 +50,7 @@
                     <IconButton Icon="@ICONS.CloudUpload" OnClick="()=>Upload(grid.ID)" Class="mx-1" Elevation="1" />
                     <IconButton Icon="@ICONS.Edit" OnClick="(()=>EditTemplate(grid))" Class="mx-1" Elevation="1" />
                     <MSpacer />
-                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteTemplate(grid.ID)" Class="mx-1" Color="error" Elevation="1" />
+                    <IconButton Icon="@ICONS.DeleteOutline" OnClick="()=>DeleteTemplate(grid.ID)" Class="mx-1" Color="error" Elevation="1" />
                 </MarketCard>
             </MCol>
         }
@@ -64,7 +64,7 @@
         {
             <MCol Cols="3">
                 <MarketCard canvas="@t.WMCanvas" Name="@(t.Name ?? t.Desc)" Src="@(t.Src)">
-                    <IconButton Icon="@ICONS.Delete" OnClick="()=>DeleteILike(t.WatermarkId)" Elevation="1" Color="error" />
+                    <IconButton Icon="@ICONS.DeleteOutline" OnClick="()=>DeleteILike(t.WatermarkId)" Elevation="1" Color="error" />
                     <MSpacer />
                     <IconButton Icon="@ICONS.Edit" OnClick="()=>Download(t.WatermarkId)" Elevation="1" />
                 </MarketCard>

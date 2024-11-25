@@ -471,7 +471,7 @@
     {
         try
         {
-            await Global.InitConfig();
+            await GlobalConfig.InitConfig();
             await InitTemplates();
             await InitLogoStore();
             await Global.Login();
@@ -652,7 +652,7 @@
         LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第1张", 0);
         var idx = 1;
         var option = new ParallelOptions();
-        option.MaxDegreeOfParallelism = Global.MAX_THREAD;
+        option.MaxDegreeOfParallelism = GlobalConfig.MAX_THREAD;
         await Task.Run(() =>
         {
             Parallel.ForEach(images, option, (item) =>

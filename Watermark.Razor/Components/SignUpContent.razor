@@ -34,10 +34,9 @@
 }
 <MCheckbox @bind-Value="agreePrivate" Dense>
     <LabelContent>
-        同意 <a href="http://thankful.top/private">隐私协议</a>
+        请您阅读并同意我们的<a href="http://thankful.top/private" style="color:dodgerblue">《用户协议与隐私协议》</a>。
     </LabelContent>
 </MCheckbox>
-@* <MudCheckBox @bind-Value="agreeUser" T="bool" Size="Size.Small">同意 <a>用户协议</a></MudCheckBox> *@
 <MButton OnClick="LoginOK" Elevation="0" Class="mt-5" Style="width:100%">确定</MButton>
 
 
@@ -170,6 +169,7 @@
                 InvokeAsync(StateHasChanged);
             }
             _processing = false;
+            Common.ShowMsg(PopupService, "收不到验证码？查看邮件是否被拦截或进入垃圾箱。", AlertTypes.Info);
         });
         StateHasChanged();
     }

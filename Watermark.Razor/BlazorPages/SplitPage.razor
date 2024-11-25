@@ -1,217 +1,167 @@
-﻿@page "/split"
+﻿@page "/split/{names}"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
-@inject IDialogService DialogService
-@inject NavigationManager navigationManager
-@inject ISnackbar Snackbar
+@inject PageStackNavController NavController
+@inject IPopupService PopupService
 @inject IWMWatermarkHelper helper
 @inject IJSRuntime JSRuntime
 @inject IClientInstance ClientInstance
+@inherits PStackPageBase
+@layout MainLayout
+<style>
+    .m-sortable {
+    display: flex;
+    }
+</style>
+<PStackPageBarInit Title="拼图" Dense Flat CenterTitle>
+    <ActionContent>
+        @if (SrcLoading)
+        {
+            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+        }
+        else
+        {
+            <MButton IconName="mdi-content-save" OnClick="OpenSave" />
+        }
+    </ActionContent>
+</PStackPageBarInit>
+<div style="padding: 0 24px;text-align:center;display:flex;height:100%;flex-direction:column">
+    <MCard Style="padding:16px;background:#E5E5E5;transition: height 0.5s;display:flex;height:calc(100% - 60px)" Flat>
+        <MImage Contain Src="@Src" style="width:100%;height:100%;" />
+    </MCard>
 
-<div style="height:40px;width:100%;top:0;left:0;z-index:999;">
-	<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-		<MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="CloseDrawerClick" />
-		<MudIconButton Variant="Variant.Text" DisableElevation Icon="@Icons.Material.Filled.Save" Color="Color.Default" Style="margin-right: 10px; position: absolute; right: 10px;" OnClick="OpenSave" />
-		@if (SrcLoading)
-		{
-			<MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="height: 26px;width: 26px;position: absolute; left: calc(50% - 15px);" />
-		}
-	</MudToolBar>
+    @if (!string.IsNullOrEmpty(Src))
+    {
+        <div style="height: 60px;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;">
+            <IconButton Color="primary" IconColor="@($"{(horizon ? "orange" : "")}")" Icon="@ICONS.DragHorizon" Style="width:48px !important;height:48px;" OnClick="()=> {horizon = !horizon; RefreshEditImage();}">
+            </IconButton>
+            <IconButton Icon="@ICONS.Add" Color="primary" Style="height:48px;width:48px !important;" Class="mx-1" OnClick="SelectSourceImageExif" />
+            <MSortable Style="height:100%;align-items: center;gap:4px;overflow-x:auto;scrollbar-width:none;"
+            Items="@Images"
+            ItemKey="@(item => item)"
+            GhostClass="accent"
+            Animation="200"
+            Easing="cubic-bezier(0, 0.55, 0.45, 1)"
+            @bind-Order="Order"
+            Context="name">
+                @if (ImageUrlDic.TryGetValue(name, out string src))
+                {
+                    <MImage Src="@src" Style="height:48px;width:48px;object-fit:cover;border-radius:4px" />
+                }
+
+            </MSortable>
+        </div>
+    }
 </div>
 
-@if (!string.IsNullOrEmpty(Src))
-{
-	<MudCard Style="@($"padding:16px;background:#E5E5E5;transition: height 0.5s;height:calc(100% - 134px)")" Elevation="0">
-		<MudImage ObjectFit="@ObjectFit.Contain" Src="@Src" Elevation="0" Style="width:100%;height:100%" />
-	</MudCard>
-}
-<MudStack Row="true" Style="white-space: nowrap; overflow-x:auto; overflow-y:hidden; width:100%;display:flex;align-items:center;margin-top: 0px;" Class="px-1">
-	<MudPaper Style="@($"width:60px;height:60px;background:#e5e5e5;display:flex;align-items:center; {(horizon ? "transform: rotate(90deg);" : "")} ")" Elevation="0" @onclick="()=> {horizon = !horizon; RefreshEditImage();}">
-		<svg style="margin:auto" t="1713535514129" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7001" width="48" height="48"><path d="M852 335.2H172V202.9c0-18.7 15.3-34 34-34h612c18.7 0 34 15.3 34 34v132.3z" fill="#222222" p-id="7002"></path><path d="M816.8 194.8c5.1 0 9.3 4.3 9.3 9.3v105.2H197.9V204.1c0-5.1 4.3-9.3 9.3-9.3h609.6m0-25.9H207.2c-19.4 0-35.2 15.8-35.2 35.2v131.1h680V204.1c0-19.4-15.8-35.2-35.2-35.2z" fill="#222222" p-id="7003"></path><path d="M826.1 718.7v105.2c0 5.1-4.3 9.3-9.3 9.3H207.2c-5.1 0-9.3-4.3-9.3-9.3V718.7h628.2m25.9-25.9H172v131.1c0 19.4 15.8 35.2 35.2 35.2h609.6c19.4 0 35.2-15.8 35.2-35.2V692.8z" fill="#222222" p-id="7004"></path><path d="M826.1 369.4V484H197.9V369.4h628.2m25.9-25.9H172v166.3h680V343.5z" fill="#222222" p-id="7005"></path><path d="M172 518.1h680v166.3H172z" fill="#222222" p-id="7006"></path><path d="M826.1 544v114.6H197.9V544h628.2m25.9-25.9H172v166.3h680V518.1z" fill="#222222" p-id="7007"></path></svg>
-	</MudPaper>
-	<MudDropContainer T="DropItem" Items="_items" @ref="_container" ItemsSelector="@((item,dropzone) => item.Selector == dropzone)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
-		<ChildContent>
-			<MudPaper Class="ma-4 flex-grow-1" Elevation="0">
-				<MudList Clickable="true" Class="d-flex flex-column mud-height-full" Style="align-items: flex-start;margin-top: 3px;">
-					<MudDropZone T="DropItem" Identifier="@dropzone" Class="flex-grow-1" Style="display:flex;align-items:center;" AllowReorder="true" />
-				</MudList>
-			</MudPaper>
-		</ChildContent>
-		<ItemRenderer>
-			<MudImage Src="@context.Url" Width="60" Height="60" Style="padding:5px;background:#e5e5e5" Class="ml-1 my-1 rounded-lg" ObjectFit="ObjectFit.Contain" />
-		</ItemRenderer>
-	</MudDropContainer>
-	<MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Default" Style="height:60px;width:60px;" Class="ml-1 my-1 rounded-lg" Variant="Variant.Filled" OnClick="SelectSourceImageExif" />
-</MudStack>
 
-
-
-<MudDrawer @bind-Open="@openSave" Width="100%" Anchor="Anchor.Bottom" Elevation="15" Variant="@DrawerVariant.Temporary" Color="Color.Primary">
-	<MudCard Elevation="0">
-		<MudCardHeader>
-			<CardHeaderContent>
-				<MudText></MudText>
-			</CardHeaderContent>
-			<CardHeaderActions>
-				<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
-			</CardHeaderActions>
-		</MudCardHeader>
-		<MudCardContent>
-			<MudForm>
-				<MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
-					<MudSelectItem Value="@("default")">原图</MudSelectItem>
-					<MudSelectItem Value="@("1080")">1080P</MudSelectItem>
-					<MudSelectItem Value="@("2160")">4K</MudSelectItem>
-				</MudSelect>
-				<MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
-					<MudSelectItem Value="@(100)">原图</MudSelectItem>
-					<MudSelectItem Value="@(85)">高</MudSelectItem>
-					<MudSelectItem Value="@(70)">中</MudSelectItem>
-				</MudSelect>
-				<MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" />
-			</MudForm>
-		</MudCardContent>
-	</MudCard>
-</MudDrawer>
+<MBottomSheet @bind-Value="@openSave">
+    <MSheet>
+        <Watermark.Razor.Components.SavePanel ExportEvent="Export" />
+    </MSheet>
+</MBottomSheet>
 
 
 <MudOverlay Visible="@SrcLoading" DarkBackground="true" Absolute="true" ZIndex="99999">
-	<MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;text-align:center;">
-		<MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
-	</MudPaper>
+    <MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;text-align:center;">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
+    </MudPaper>
 </MudOverlay>
 
 @code {
-	private void ItemUpdated(MudItemDropInfo<DropItem> dropItem)
-	{
-		dropItem.Item.Selector = dropItem.DropzoneIdentifier;
-		Images = _items.Select(x => x.Name).ToList();
-		RefreshEditImage();
-	}
+    private List<string> _order = new();
+    public List<string> Order
+    {
+        get => _order;
+        set
+        {
+            _order = value;
+            RefreshEditImage();
+        }
+    }
 
-	private List<DropItem> _items = new()
-	{
-		new DropItem(){ Name = "Item 1", Selector = "1" },
-		new DropItem(){ Name = "Item 2", Selector = "1" },
-		new DropItem(){ Name = "Item 3", Selector = "1" },
-		new DropItem(){ Name = "Item 4", Selector = "2" },
-		new DropItem(){ Name = "Item 5", Selector = "2" },
-	};
+    [Parameter]
+    public string names { get; set; }
 
-	public class DropItem
-	{
-		public string Name { get; init; }
-		public string Url { get; set; }
-		public string Selector { get; set; }
-	}
+    public List<string> Images { get; set; }
+    string dropzone = "1";
+    bool SrcLoading = false;
+    bool openSave = false;
+    bool horizon = false;
+    string Src = "";
+    Dictionary<string, string> ImageUrlDic = new();
 
+    private List<string> _dropzoneItems = new();
 
-	[Parameter]
-	public EventCallback CloseDrawer { get; set; }
-	[Parameter]
-	public List<string> Images { get; set; }
-	private MudDropContainer<DropItem> _container;
-	string dropzone = "1";
-	bool SrcLoading = false;
-	bool openSave = false;
-	bool horizon = false;
-	string Src = "";
-	Dictionary<string, string> ImageUrlDic = new();
+    protected override async Task OnInitializedAsync()
+    {
+        ClientInstance.SetColor();
+        Images = names.Split(';').ToList();
+        foreach (var img in Images)
+        {
+            var target = Global.AppPath.ThumbnailFolder + Path.GetFileName(img);
+            await Global.WriteThumbnailImageAsync(img, target);
+            var b64 = await Global.GetBase64(target);
+            var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            ImageUrlDic[img] = url;
+        }
+        var bs64 = await helper.SplitImages(Images, horizon, true);
+        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
+    }
 
-	private List<string> _dropzoneItems = new();
+    async void SelectSourceImageExif()
+    {
+        var result = await ClientInstance.PickAsync();
 
-	protected override async Task OnInitializedAsync()
-	{
-		_items = new();
-		foreach (var img in Images)
-		{
-			var target = Global.AppPath.ThumbnailFolder + Path.GetFileName(img);
-			await Global.WriteThumbnailImageAsync(img, target);
-			var b64 = await Global.GetBase64(target);
-			var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-			ImageUrlDic[img] = url;
-			var item = new DropItem
-				{
-					Name = img,
-					Url = url,
-					Selector = "1"
-				};
-			_items.Add(item);
-		}
-		StateHasChanged();
-		_container.Refresh();
-		var bs64 = await helper.SplitImages(Images, horizon, true);
-		Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
-	}
-
-	async void SelectSourceImageExif()
-	{
-		var result = await ClientInstance.PickAsync();
-
-		if (result == null) return;
-		try
-		{
-			var filename = Path.GetFileName(result);
-			var target = Global.AppPath.ThumbnailFolder + filename;
-			await Global.WriteThumbnailImageAsync(result, target);
-			var b64 = await Global.GetBase64(target);
-			var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-			var item = new DropItem
-				{
-					Name = result,
-					Url = url,
-					Selector = "1"
-				};
-			_items.Add(item);
-			Images.Add(result);
-			_container.Refresh();
-			RefreshEditImage();
-		}
-		catch (Exception ex)
-		{
-			Common.ShowMsg(Snackbar, $"不支持的图片格式：{ex.Message}", Severity.Error);
-		}
-	}
+        if (string.IsNullOrEmpty(result)) return;
+        try
+        {
+            var filename = Path.GetFileName(result);
+            var target = Global.AppPath.ThumbnailFolder + filename;
+            await Global.WriteThumbnailImageAsync(result, target);
+            var b64 = await Global.GetBase64(target);
+            var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            ImageUrlDic[result] = url;
+            Images.Add(result);
+            RefreshEditImage();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"不支持的图片格式：{ex.Message}", AlertTypes.Error);
+        }
+    }
 
 
-	public async void RefreshEditImage()
-	{
-		SrcLoading = true;
-		StateHasChanged();
-		var bs64 = await helper.SplitImages(Images, horizon, true);
-		Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
-		SrcLoading = false;
-		StateHasChanged();
-	}
-
-	void CloseDrawerClick()
-	{
-		ClientInstance.Haptic();
-		CloseDrawer.InvokeAsync();
-	}
+    public async void RefreshEditImage()
+    {
+        SrcLoading = true;
+        StateHasChanged();
+        //Images = Order.Select(x=>x).ToList();
+        var bs64 = await helper.SplitImages(Order, horizon, true);
+        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
+        SrcLoading = false;
+        StateHasChanged();
+    }
 
 
-	async void Export()
-	{
-		ClientInstance.Haptic();
-		var helper = new WatermarkHelper();
-		SrcLoading = true;
-		StateHasChanged();
-		var b64 = await helper.SplitImages(Images, horizon, false);
-#if ANDROID
-		var fn = Guid.NewGuid().ToString();
-		Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
-#endif
-			StateHasChanged();
-		
-		SrcLoading = false;
-		Common.ShowMsg(Snackbar, "保存成功。", Severity.Success);
-		openSave = false;
-		StateHasChanged();
-	}
+    async void Export()
+    {
+        ClientInstance.Haptic();
+        SrcLoading = true;
+        StateHasChanged();
+        var b64 = await helper.SplitImages(Images, horizon, false);
+        var fn = Guid.NewGuid().ToString();
+        ClientInstance.Save(b64, "DFX_" + fn);
+        SrcLoading = false;
+        Common.ShowMsg(PopupService, "保存成功。", AlertTypes.Success);
+        openSave = false;
+        StateHasChanged();
+    }
 
-	void OpenSave()
-	{
-		ClientInstance.Haptic();
-		openSave = true;
-	}
+    void OpenSave()
+    {
+        ClientInstance.Haptic();
+        openSave = true;
+    }
 }

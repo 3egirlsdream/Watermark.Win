@@ -1,4 +1,4 @@
-﻿<span class="@($"font-weight-light {Class}")" style="@($"display: flex;align-items: center;font-size: {(Small ? "0.8rem" : "0.95rem")};font-weight: {(Bold ? "700" : "300")}!important;{Style}")">
+﻿<span class="@($"font-weight-light {Class}")" style="@($"display: flex;align-items: center;font-size: {(Small ? "0.8rem" : "0.95rem")};font-weight: {(Bold == null ? "500" : (Bold.Value ? "700" : "300"))}!important;{Style}")">
     @Name
 </span>
 @code {
@@ -13,5 +13,5 @@
     [Parameter]
     public string Name { get; set; }
     [Parameter]
-    public bool Bold { get; set; } = false;
+    public bool? Bold { get; set; } = false;
 }

@@ -24,7 +24,6 @@
     public bool ShowHeader { get; set; } = true;
     string UserName { get; set; }
     string Password { get; set; }
-    bool Loading = false;
     SignUpContent.SignUpParameter showSignUp = new();
 
 
@@ -32,7 +31,7 @@
 
     public async void LoginOK()
     {
-        Loading = true;
+        if (string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password)) return;
         APIHelper helper = new APIHelper();
         var result = await helper.LoginIn(UserName, Password);
         string message = "";
@@ -54,7 +53,6 @@
         }
 
         Common.ShowMsg(PopupService, message, severity);
-        Loading = false;
         StateHasChanged();
     }
 

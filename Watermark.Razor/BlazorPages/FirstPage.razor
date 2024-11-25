@@ -1,0 +1,38 @@
+﻿@using Watermark.Razor.Parts
+<div style="display:flex;flex:1;align-items:center;flex-direction:column;padding: 80px 32px 12px 32px;">
+    <LogoIcon />
+    <div style="width:100%;" class="mt-8">
+        &nbsp;&nbsp;&nbsp;&nbsp; 欢迎使用本软件，您可使用本应用处理您的照片，处理过程在您的设备端完成，照片数据不会上传至服务器。在使用本应用的过程中，我们将联网并向您申请以下权限：
+    </div>
+    <div style="width:100%;display:flex;align-items:flex-start;flex-direction:column;flex:1;" class="mt-8">
+        <div style="display:flex;flex-direction:row;align-items:center">
+            <MIcon Size="32" Class="mr-2">mdi-file-image-plus</MIcon>
+            读取本机文件
+        </div>
+        <div style="display:flex;flex-direction:row;align-items:center" class="mt-2">
+            <MIcon Size="32" Class="mr-2">mdi-folder-arrow-down</MIcon>
+            写入文件到本机
+        </div>
+    </div>
+    <div style="width:100%;font-size:12px" class="mt-2">
+        <MDivider Class="my-2" />
+        请您阅读并同意我们的<a href="http://thankful.top/private" style="color:dodgerblue">《用户协议与隐私协议》</a>。
+        <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;width:100%;" class="py-2">
+            <MButton Elevation="0" OnClick="Close" Class="px-2" Style="padding:10px 0">&nbsp;不同意，仅浏览&nbsp;</MButton>
+            <MButton Elevation="0" Color="primary" OnClick="Agree">同意</MButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] 
+    public EventCallback<bool> OnClosed { get; set; }
+    void Close() 
+    {
+        if (OnClosed.HasDelegate) OnClosed.InvokeAsync(false);
+    }
+    void Agree()
+    {
+        if (OnClosed.HasDelegate) OnClosed.InvokeAsync(true);
+    }
+}

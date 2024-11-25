@@ -121,10 +121,10 @@
     {
         Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         InitFontsList();
-        Global.InitConfig().ContinueWith(x =>
+        GlobalConfig.InitConfig().ContinueWith(x =>
         {
-            ExifIsChecked = Global.SECOND_EXIF;
-            MaxThread = Global.MAX_THREAD.ToString();
+            ExifIsChecked = GlobalConfig.SECOND_EXIF;
+            MaxThread = GlobalConfig.MAX_THREAD.ToString();
         });
     }
 

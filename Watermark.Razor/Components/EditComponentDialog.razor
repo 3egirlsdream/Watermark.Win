@@ -40,7 +40,7 @@
                 <div style="justify-self: end;">
                     <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
                     <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
-                    <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
+                    <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
                 </div>
             </div>
             @foreach (var comp in container.Controls)
@@ -55,7 +55,7 @@
                                 <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="()=>Move(container.ID, wc, ContainerLv.Lv2)" />
                                 <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
                                 <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
-                                <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
+                                <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
                             </div>
                         </div>
                         @foreach (var cld_c in wc.Controls)
@@ -66,7 +66,7 @@
                                     <IconButton Icon="@ICONS.Edit" OnClick="()=>Move(wc.ID, cld_c, ContainerLv.Lv1)" />
                                     <IconButton Icon="@ICONS.ArrowUpward" OnClick="()=>Upward(cld_c.ID)" />
                                     <IconButton Icon="@ICONS.ArrowDownward" OnClick="()=>Downward(cld_c.ID)" />
-                                    <IconButton Icon="@ICONS.Delete" OnClick="()=>wc.Controls.Remove(cld_c) " />
+                                    <IconButton Icon="@ICONS.DeleteOutline" OnClick="()=>wc.Controls.Remove(cld_c) " />
                                 </div>
                             </div>
                         }
@@ -80,7 +80,7 @@
                             <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="() => Move(container.ID, comp, ContainerLv.Lv1)" />
                             <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
                             <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
-                            <IconButton Icon="@ICONS.Delete" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
+                            <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
                         </div>
                     </div>
                 }

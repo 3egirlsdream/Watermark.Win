@@ -1,10 +1,12 @@
 ﻿@using Masa.Blazor
+@using Watermark.Razor.BlazorPages
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @inherits LayoutComponentBase
 @inject IClientInstance ClientInstance
 @inject APIHelper api
 
-<MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
+<MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <div class="page">
@@ -19,10 +21,10 @@
             </MErrorHandler>
         </MMain>
         <MBottomNavigation @bind-Value="Value"
-        App
-        Grow
-        Shift
-        Color="primary">
+                           App
+                           Grow
+                           Shift
+                           Color="primary">
             <MButton Href="/" Class="h">
                 <span>我的模板</span>
                 <MIcon>mdi-download-box</MIcon>
@@ -39,9 +41,14 @@
     </MApp>
 </div>
 
+
+<MDialog @bind-Value="OpenPrivate" Fullscreen Transition="" ContentStyle="display:flex;">
+    <FirstPage OnClosed="OnSave" />
+</MDialog>
 <style>
     .h {
     }
+
     .page .h .m-btn__content:hover {
         background: white !important;
     }
@@ -63,9 +70,19 @@
             StateHasChanged();
         }
     }
+    bool OpenPrivate = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await GlobalConfig.InitConfig();
+        if (!GlobalConfig.AGREE_PRIVATE) OpenPrivate = true;
         await Global.InitTemplateMarket(api);
+    }
+
+    void OnSave(bool v)
+    {
+        OpenPrivate = false;
+        StateHasChanged();
+        if (v) GlobalConfig.AGREE_PRIVATE = true;
     }
 }

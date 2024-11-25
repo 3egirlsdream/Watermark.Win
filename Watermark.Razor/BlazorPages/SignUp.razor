@@ -7,7 +7,7 @@
 @inherits PStackPageBase
 @inject IClientInstance ClientInstance
 
-<PStackPageBarInit Title="注册" Dense Flat CenterTitle>
+<PStackPageBarInit Title="@($"{(FuncType == 2 ? "找回密码" : "注册")}")" Dense Flat CenterTitle>
 </PStackPageBarInit>
 <div style="padding:24px;text-align:center;">
     <Watermark.Razor.Components.SignUpContent CloseEvent="@((v) => NavController.Pop())" FuncType="FuncType" />

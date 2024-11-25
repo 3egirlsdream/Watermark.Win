@@ -15,7 +15,7 @@
 @inject IWMWatermarkHelper helper
 @inject IFilePickerService picker
 @inject IClientInstance ClientInstance
-<MudThemeProvider IsDarkMode="@Global.DARK_MODE" />
+<MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <div Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden">
@@ -286,7 +286,7 @@
             Global.DeviceType = Shared.Enums.DeviceType.Mac;
             Global.OutPutPath = Global.AppPath.OutputFolder;
             Global.PrimaryKey = ClientInstance.Key();
-            await Global.InitConfig();
+            await GlobalConfig.InitConfig();
             APIHelper helper = new APIHelper();
             var isOutOfDate = await ClientInstance.IsOutOfDate("Mac");
             if (isOutOfDate)
@@ -609,7 +609,7 @@
         StateHasChanged();
         var idx = 1;
         var option = new ParallelOptions();
-        option.MaxDegreeOfParallelism = Global.MAX_THREAD;
+        option.MaxDegreeOfParallelism = GlobalConfig.MAX_THREAD;
         foreach (var item in images)
         {
             await helper.GenerationAsync(item.Canvas, null, false);

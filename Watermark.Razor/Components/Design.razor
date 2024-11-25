@@ -1,73 +1,101 @@
-﻿@using System.IO
+﻿@page "/design/{cid}"
+@using System.IO
 @using Masa.Blazor
 @using Microsoft.JSInterop
 @using System.Collections.Concurrent
 @using SkiaSharp
 @using System.ComponentModel
 @using Watermark.Razor
+@using Watermark.Razor.Components.Layout
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Razor.Parts
 @inject IJSRuntime JSRuntime
 @inject IPopupService PopupService
 @inject WMDesignFunc designFunc
+@inject IClientInstance ClientInstance
 @inject IWMWatermarkHelper helper
-
-
+@inject APIHelper api
+@inherits PPageStack
+@layout MainLayout
 <MApp Style="background:#e3e3e3; overflow:hidden;display:flex">
-    <MToolbar Dense Height="36" Flat>
-        <Masa.Blazor.MMenu OffsetY>
-            <ActivatorContent>
-                <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
-            </ActivatorContent>
-            <ChildContent>
-                <Masa.Blazor.MList>
-                    <Masa.Blazor.MListItem OnClick="SaveTemplate" Title="保存" PrependIcon="@("mdi-content-save-outline")" />
-                    <Masa.Blazor.MListItem OnClick="() => showDialog = true" Title="另存为" PrependIcon="@ICONS.SaveAs" />
-                    @if (designFunc is null || Global.DeviceType == DeviceType.Mac)
-                    {
-                        <Masa.Blazor.MDivider />
-                        <Masa.Blazor.MListItem OnClick="Submit" Title="退出" PrependIcon="@ICONS.Exit" />
-                    }
-                </Masa.Blazor.MList>
-            </ChildContent>
-        </Masa.Blazor.MMenu>
+    @if (Global.DeviceType != DeviceType.IOS && Global.DeviceType != DeviceType.Andorid)
+    {
+        <MToolbar Dense Height="36" Flat>
+            <Masa.Blazor.MMenu OffsetY>
+                <ActivatorContent>
+                    <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <Masa.Blazor.MList>
+                        <Masa.Blazor.MListItem OnClick="SaveTemplate" Title="保存" PrependIcon="@("mdi-content-save-outline")" />
+                        <Masa.Blazor.MListItem OnClick="() => showDialog = true" Title="另存为" PrependIcon="@ICONS.SaveAs" />
+                        @if (designFunc is null || Global.DeviceType == DeviceType.Mac)
+                        {
+                            <Masa.Blazor.MDivider />
+                            <Masa.Blazor.MListItem OnClick="Submit" Title="退出" PrependIcon="@ICONS.Exit" />
+                        }
+                    </Masa.Blazor.MList>
+                </ChildContent>
+            </Masa.Blazor.MMenu>
 
-        <MSpacer />
-        <MButton Color="error" OnClick="PreviewImageRefresh" Small Plain>
-            @if (SrcLoading)
-            {
-                <MProgressCircular Color="error" Indeterminate="true" Class="ma-4" Size="24" Width="2"/>
-            }
-            else
-            {
-                <MIcon>@ICONS.Refresh</MIcon>
-                @("刷新")
-            }
-        </MButton>
-      
-    </MToolbar>
-    <div style="height:calc(100vh - 36px);width:100%;display: flex;justify-content:space-between" @onclick="()=>{showDialog = false;}">
-        <div style="width:calc(100% - 300px);height:calc(100% - 36px);background:#e3e3e3;padding:10px;">
+            <MSpacer />
+            <MButton Color="error" OnClick="PreviewImageRefresh" Small Plain>
+                @if (SrcLoading)
+                {
+                    <MProgressCircular Color="error" Indeterminate="true" Class="ma-4" Size="24" Width="2" />
+                }
+                else
+                {
+                    <MIcon>@ICONS.Refresh</MIcon>
+                    @("刷新")
+                }
+            </MButton>
+
+        </MToolbar>
+        <div style="height:calc(100vh - 36px);width:100%;display: flex;justify-content:space-between" @onclick="()=>{showDialog = false;}">
+            <div style="width:calc(100% - 300px);height:calc(100% - 36px);background:#e3e3e3;padding:10px;">
+                @if (!string.IsNullOrEmpty(url))
+                {
+                    <MImage Contain Src="@url" Style="height:100%;width:100%" />
+                }
+            </div>
+
+
+            <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+        </div>
+    }
+    else
+    {
+        <PStackPageBarInit Title="模板设计" Dense Flat CenterTitle>
+            <ActionContent>
+                <IconButton OnClick="SaveTemplate" Icon="@ICONS.SaveAs" />
+                @* <Masa.Blazor.MListItem OnClick="() => showDialog = true" Title="另存为" PrependIcon="@ICONS.SaveAs" /> *@
+                <MButton IconName="@ICONS.Setting" OnClick="() => openSetting = true"/>
+            </ActionContent>
+        </PStackPageBarInit>
+        <div style="text-align:center" class="pa-2">
             @if (!string.IsNullOrEmpty(url))
             {
-                <MImage Contain Src="@url" Style="height:100%;width:100%"/>
+                <MImage Contain Src="@url" Style="height:100%;width:100%" />
             }
+            <MNavigationDrawer @bind-Value="@openSetting" App Absolute>
+                <DesignConfiguration canvas="CurrentCanvas" Style="width:100%;height:calc(100% - 36px);background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+            </MNavigationDrawer>
         </div>
+    }
 
-
-        <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
-    </div>
 
     <MDialog ContentStyle="width:300px;" @bind-Value="@showDialog" ContentClass="pa-2">
-        <MTextField @bind-Value="newTemplateName" T="string" Label="模板名称" Required="true" HideDetails="true" />
+        <MTextField @bind-Value="newTemplateName" TValue="string" Label="模板名称" Required="true" HideDetails="true" />
         <MButton OnClick="SaveAs" Class="mt-2" Elevation="0">确定</MButton>
     </MDialog>
-
 </MApp>
 
 
 @code {
+    [Parameter]
+    public string cid { get; set; }
     [Parameter]
     public WMCanvas CurrentCanvas { get; set; }
     [Parameter]
@@ -83,6 +111,7 @@
     bool showDialog = false;
     string newTemplateName = "";
     Debouncer debouncedAction = null;
+    bool? openSetting = false;
     void Submit()
     {
         if (OnClose.HasDelegate) OnClose.InvokeAsync();
@@ -93,10 +122,15 @@
     bool SrcLoading = false;
     List<string> Fonts = new List<string>();
     List<string> Radioes = ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1"];
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         try
         {
+            if (!string.IsNullOrEmpty(cid))
+            {
+                designFunc = await ClientInstance.GetWMDesignFunc(cid);
+            }
+            
             if (designFunc != null && Global.DeviceType != DeviceType.Mac)
             {
                 CurrentCanvas = designFunc.CurrentCanvas;
@@ -115,7 +149,6 @@
             {
                 Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
             }
-            var api = new APIHelper();
             var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
         }
         catch (Exception err)
@@ -126,7 +159,7 @@
 
     private async void PreviewImageRefresh()
     {
-        if(debouncedAction is null)
+        if (debouncedAction is null)
         {
             debouncedAction = new(async () =>
             {

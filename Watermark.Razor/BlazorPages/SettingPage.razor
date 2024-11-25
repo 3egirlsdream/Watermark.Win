@@ -4,22 +4,22 @@
 @using Watermark.Shared.Models
 @using Components.Layout
 @using Watermark.Shared.Enums
-@inject ISnackbar Snackbar
+@inject IPopupService PopupService
 @inject PageStackNavController NavController
 @layout MainLayout
 @inject IClientInstance ClientInstance
 @inject NavigationManager navigationManager
 <style>
     .mud-overlay .mud-overlay-content {
-        width: 60%;
+    width: 60%;
     }
 
     .mud-switch {
-        margin-left: 0px;
-        margin-right: 0px;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
-        margin-right: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    margin-right: 0px;
     }
 
 </style>
@@ -35,17 +35,14 @@
             <span>游客</span>
         }
     </MudText>
-    @*<MudStack Row Style="position:absolute;right:15px;display: none;" >
+    <MudStack Row Style="position:absolute;right:15px;" >
         <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-    </MudStack>*@
+    </MudStack>
 
 
-    <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
+    <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" @bind-Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
         <MudList Clickable="true" Dense="true">
-            <MudListItem Icon="@Icons.Material.Filled.ImageAspectRatio" OnClick="OpenSplit">
-                拼图
-            </MudListItem>
-            <MudListItem Icon="@Icons.Material.Filled.DesignServices">
+            <MudListItem Icon="@Icons.Material.Filled.DesignServices" OnClick="@(()=>NavController.Push("/design/B735DFC73A0B4080B11BBCFD3AE833D6"))">
                 设计模板
             </MudListItem>
         </MudList>
@@ -54,7 +51,7 @@
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
     <MCard Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-         <div style="display:flex;align-items:center;justify-content: flex-start">
+        <div style="display:flex;align-items:center;justify-content: flex-start">
             @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
             {
                 <MAvatar Height="50" Width="50">
@@ -81,20 +78,20 @@
                 </p>
                 <p class="font-weight-light ma-0">@Global.CurrentUser.USER_NAME</p>
             </div>
-         </div>
-       
-       @if (Global.DeviceType != DeviceType.IOS)
-       {
-           <div Style="display:flex;align-items:center;line-height: 32px;">
-               <Watermark.Razor.Parts.IconCoin />
-               <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                   @Global.CurrentUser.COINS
-               </MudText>
-               <MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
-                   会员到期时间：@Global.CurrentUser.EXPIRE_DATE
-               </MudText>
-           </div>
-       }
+        </div>
+
+        @if (Global.DeviceType != DeviceType.IOS)
+        {
+            <div Style="display:flex;align-items:center;line-height: 32px;">
+                <Watermark.Razor.Parts.IconCoin />
+                <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
+                    @Global.CurrentUser.COINS
+                </MudText>
+                <MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
+                    会员到期时间：@Global.CurrentUser.EXPIRE_DATE
+                </MudText>
+            </div>
+        }
     </MCard>
 }
 else
@@ -246,7 +243,7 @@ else
         NavController.PageClosed += (e, v) =>
         {
             #if ANDROID
-            MainActivity.SetColor.Invoke("#FFFFFF");
+    MainActivity.SetColor.Invoke("#FFFFFF");
             #endif
             if (v.RelativeUri == @"/login")
             {
@@ -302,7 +299,7 @@ else
     async void CopyClipboard(string uri)
     {
         await ClientInstance.SetTextAsync(uri);
-        Common.ShowMsg(Snackbar, "已复制到剪贴板", Severity.Success);
+        Common.ShowMsg(PopupService, "已复制到剪贴板", AlertTypes.Success);
     }
 
     private void NavControllerOnPageClosed(object? sender, PageStackPageClosedEventArgs e)
@@ -341,12 +338,6 @@ else
     void OpenSettings()
     {
         NavController.Push("/appsetting");
-        #if ANDROID
-        MainActivity.SetColor.Invoke(Colors.Grey.Lighten4);
-        #endif
-    }
-
-    void OpenSplit()
-    {
+        ClientInstance.SetColor();
     }
 }

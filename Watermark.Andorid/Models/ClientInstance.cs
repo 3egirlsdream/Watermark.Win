@@ -98,9 +98,9 @@ namespace Watermark.Shared.Models
         public string GetAndroidId()
         {
 #if ANDROID
-      var context = Android.App.Application.Context;
-      var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
-      return deviceId;
+            var context = Android.App.Application.Context;
+            var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
+            return deviceId;
 #endif
             return Guid.NewGuid().ToString();
         }
@@ -287,17 +287,17 @@ namespace Watermark.Shared.Models
                 PickerTitle = "长按多选照片",
                 FileTypes = FilePickerFileType.Images
             });
-            return result.Select(x=>x.FullPath);
+            return result?.Select(x => x.FullPath) ?? [];
         }
 
         public async Task<string> PickAsync()
         {
             var result = await FilePicker.PickAsync(new PickOptions
             {
-                PickerTitle = "长按多选照片",
+                PickerTitle = "选择照片",
                 FileTypes = FilePickerFileType.Images
             });
-            return result.FullPath;
+            return result?.FullPath ?? string.Empty;
         }
 
         public async Task SetTextAsync(string uri)
@@ -398,6 +398,45 @@ namespace Watermark.Shared.Models
 #if ANDROID
             MainActivity.SetColor?.Invoke(ICONS.Colors.Gray.Light4);
 #endif
+        }
+
+        public async Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
+        {
+            var canvas = await Global.GetCanvas(canvasId);
+            if (canvas is null) return null;
+            var design = new WMDesignFunc();
+            design.CurrentCanvas = canvas;
+            design.SelectLogo = new Func<WMLogo, Task>(async Task (x) =>
+            {
+                var name = await PickAsync();
+                x.Path = name;
+            });
+
+            design.SelectContainer = new Func<WMContainer, Task>(async Task (x) =>
+            {
+                var name = await PickAsync();
+                x.Path = name;
+            });
+
+            design.SelectDefaultImageEvt = PickAsync;
+
+            design.ImportFontEvt = new Func<Task>(() =>
+            {
+                return Task.Run(() =>
+                { 
+                });
+            });
+            design.ImportFontEvt2 = new Func<string, Task>((id) =>
+            {
+                return Task.Run(() =>
+                {
+                });
+            });
+
+            design.HotKeyEvt = new Action<Action>((x) =>
+            {
+            });
+            return design;
         }
     }
 }

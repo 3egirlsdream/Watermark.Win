@@ -208,10 +208,10 @@ namespace Watermark.Win.Views
             window = check as Setting;
             Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             InitFontsList();
-            Global.InitConfig().ContinueWith(x =>
+            GlobalConfig.InitConfig().ContinueWith(x =>
             {
-                ExifIsChecked = Global.SECOND_EXIF;
-                MaxThread = Global.MAX_THREAD.ToString();
+                ExifIsChecked = GlobalConfig.SECOND_EXIF;
+                MaxThread = GlobalConfig.MAX_THREAD.ToString();
             });
             
         }
@@ -248,7 +248,7 @@ namespace Watermark.Win.Views
             set
             {
                 exifIsChecked = value;
-                Global.SECOND_EXIF = value;
+                GlobalConfig.SECOND_EXIF = value;
                 NotifyPropertyChanged(nameof(ExifIsChecked));
             }
         }
@@ -262,7 +262,7 @@ namespace Watermark.Win.Views
                 maxThread = value;
                 if(int.TryParse(value, out int v))
                 {
-                    Global.MAX_THREAD = v;
+                    GlobalConfig.MAX_THREAD = v;
                 }
                 NotifyPropertyChanged(nameof(MaxThread));
             }

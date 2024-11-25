@@ -16,38 +16,34 @@
 
 <div Style="text-align:center">
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <MBottomSheet @bind-Value="sheet">
-            <ActivatorContent>
-                <div class="d-space-between" @onclick="@(() => NavController.Push("/logout"))">
-                    <Label Small="false" Name="注销账号"/>
-                    <MIcon Small>@ICONS.Delete</MIcon>
-                </div>
-            </ActivatorContent>
-            <ChildContent>
-                <MSheet Class="text-center px-2" Height="220">
-                    <MTextField @bind-Value="UserName" TValue="string" Label="邮箱" Required="true" RequiredMessage="邮箱不能为空" Autofocus Class="mt-10" />
-                    <MTextField @bind-Value="Password" TValue="string" Label="密码" Required="true" RequiredMessage="密码不能为空" Class="mt-5" Type="password" />
-                    <MButton Elevation="0" OnClick="DeleteAccount" Width="@("100%")" Class="mt-5">注销</MButton>
-                </MSheet>
-            </ChildContent>
-        </MBottomSheet>
+        <div class="d-space-between" @onclick="@(() => NavController.Push("/logout"))">
+            <Label Small="false" Bold="null" Name="注销账号" />
+            <MIcon Small>@ICONS.Delete</MIcon>
+        </div>
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
         <div class="d-space-between">
-            <Label Small="false" Name="增强EXIF解析" />
-            <MSwitch @bind-Value="@Global.SECOND_EXIF" Color="primary" HideDetails="true" Dense/>
+            <Label Small="false" Bold="null" Name="增强EXIF解析" />
+            <MSwitch @bind-Value="@GlobalConfig.SECOND_EXIF" Color="primary" HideDetails="true" Dense />
         </div>
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
         <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
-            <Label Small="false" Name="下载缓存" />
+            <Label Small="false" Bold="null" Name="下载缓存" />
             <MIcon Small>@ICONS.Delete</MIcon>
         </div>
 
         <MDivider Class="my-2" />
         <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
-            <Label Small="false" Name="图标缓存" />
+            <Label Small="false" Bold="null" Name="图标缓存" />
             <MIcon Small>@ICONS.Delete</MIcon>
+        </div>
+    </MCard>
+
+    <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
+        <div class="d-space-between" @onclick="RevertArgreement">
+            <Label Small="false" Bold="null" Name="撤回隐私协议" />
+            <MIcon Small>@ICONS.Revert</MIcon>
         </div>
     </MCard>
 
@@ -109,6 +105,14 @@
     void DeleteAccount()
     {
         NavController.Push("/logout");
+    }
+
+    async void RevertArgreement() 
+    {
+        GlobalConfig.AGREE_PRIVATE = false;
+        Global.CurrentUser = null;
+        await Global.WriteAccount2LocalAsync("", "");
+        Common.ShowMsg(PopupService, "撤销完成，当前仅浏览。", AlertTypes.Success);
     }
 }
 
