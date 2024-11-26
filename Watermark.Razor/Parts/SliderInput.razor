@@ -11,13 +11,17 @@
         }
 
         .slider-input .m-slider__thumb {
-            width: 8px;
-            height: 20px;
+            width: 18px;
+            height: 25px;
             border-radius: 2px;
         }
 
         .slider-input .m-slider__track-container {
-            --m-slider-track-size: 16px !important;
+            --m-slider-track-size: 10px !important;
+        }
+
+        .slider-input .m-slider__track-background, .m-slider__track-fill {
+            border-radius: 2px;
         }
 
     .slider-input-main {
@@ -44,21 +48,26 @@
 
 @if (Global.DeviceType == Shared.Enums.DeviceType.Andorid || Global.DeviceType == Shared.Enums.DeviceType.IOS)
 {
-    <div class="slider-input-main ma-1">
-        <Label Name="@Name" Small="small"></Label>
-        <MSlider Class="slider-input mt-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" ValueChanged="ValueChanged"></MSlider>
-    </div>
+        <div class="slider-input-main ma-1">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+                <Label Name="@Name" Small="small"></Label>  
+                <div class="ml-2" style="width:70px">
+                    <MTextField Value="@Value" TValue="TValue" Solo Dense Suffix="@Unit" ValueChanged="ValueChanged" />
+                </div>
+            </div>
+            <MSlider Class="slider-input mt-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" ValueChanged="ValueChanged"></MSlider>
+        </div>
 }
 else
 {
-    <div style="display:flex;align-content:space-between;align-items:center" class="slider-input-main ma-1">
-        <Label Name="@Name" Small="small"></Label>
-        <MSlider Class="slider-input ml-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" Dense Color="#1976d2" ValueChanged="ValueChanged"></MSlider>
-        <div class="ml-2" style="width:70px">
-            <MTextField Value="@Value" TValue="TValue" Solo Dense Suffix="@Unit" ValueChanged="ValueChanged" />
-        </div>
+        <div style="display:flex;align-content:space-between;align-items:center" class="slider-input-main ma-1">
+            <Label Name="@Name" Small="small"></Label>
+            <MSlider Class="slider-input ml-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" Dense Color="#1976d2" ValueChanged="ValueChanged"></MSlider>
+            <div class="ml-2" style="width:70px">
+                <MTextField Value="@Value" TValue="TValue" Solo Dense Suffix="@Unit" ValueChanged="ValueChanged" />
+            </div>
 
-    </div>
+        </div>
 }
 
 

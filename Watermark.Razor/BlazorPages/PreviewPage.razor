@@ -18,48 +18,48 @@
 
 <style>
     .preview-box {
-        gap: 0px;
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: auto;
-        width: 60px;
-        height: 60px;
-        justify-content: center;
+    gap: 0px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: auto;
+    width: 60px;
+    height: 60px;
+    justify-content: center;
     }
 
     .config-btn {
-        gap: 0px;
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: auto;
-        width: 50px;
-        height: 60px;
-        justify-content: center;
+    gap: 0px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: auto;
+    width: 50px;
+    height: 60px;
+    justify-content: center;
     }
 
 
     input[type=range] {
-        pointer-events: none;
+    pointer-events: none;
     }
 
-        input[type=range]::-webkit-slider-thumb { /*Webkit Browsers like Chrome and Safari*/
-            pointer-events: auto;
-        }
+    input[type=range]::-webkit-slider-thumb { /*Webkit Browsers like Chrome and Safari*/
+    pointer-events: auto;
+    }
 
-        input[type=range]::-moz-range-thumb { /*Firefox*/
-            pointer-events: auto;
-        }
+    input[type=range]::-moz-range-thumb { /*Firefox*/
+    pointer-events: auto;
+    }
 
-        input[type=range]::-ms-thumb { /*Internet Explorer*/
-            pointer-events: auto;
-        }
+    input[type=range]::-ms-thumb { /*Internet Explorer*/
+    pointer-events: auto;
+    }
 
 
     ::-webkit-scrollbar {
-        width: 0px;
-        display: none;
+    width: 0px;
+    display: none;
     }
 
 </style>
@@ -74,12 +74,12 @@
         else
         {
             <MButton IconName="mdi-refresh"
-                     OnClick="RefreshEditImage">
+            OnClick="RefreshEditImage">
             </MButton>
         }
 
         <MButton IconName="mdi-content-save"
-                 OnClick="OpenSave">
+        OnClick="OpenSave">
         </MButton>
     </ActionContent>
 </PStackPageBarInit>
@@ -700,9 +700,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-#if ANDROID
-    MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
-#endif
+        ClientInstance.SetColor();
         try
         {
             var canvas = await Global.GetCanvas(templateId);
@@ -712,7 +710,7 @@
             RadioBase64 = Global.GetRadio();
             await InitLogoCacheDic();
             SelectedContainer = CurrentTemplateCanvas.Children.FirstOrDefault();
-            var _ = api.PageVisitRecord(ProgramPage.Design, Platform.Andorid);
+            var _ = api.PageVisitRecord(ProgramPage.Design, DeviceType.Andorid);
         }
         catch (Exception ex)
         {

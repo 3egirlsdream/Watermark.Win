@@ -42,7 +42,7 @@
 </div>
 
 
-<MDialog @bind-Value="OpenPrivate" Fullscreen Transition="" ContentStyle="display:flex;">
+<MDialog Value="!GlobalConfig.AGREE_PRIVATE" Fullscreen Transition="" ContentStyle="display:flex;">
     <FirstPage OnClosed="OnSave" />
 </MDialog>
 <style>
@@ -74,15 +74,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await GlobalConfig.InitConfig();
-        if (!GlobalConfig.AGREE_PRIVATE) OpenPrivate = true;
         await Global.InitTemplateMarket(api);
     }
 
     void OnSave(bool v)
     {
-        OpenPrivate = false;
-        StateHasChanged();
-        if (v) GlobalConfig.AGREE_PRIVATE = true;
+        GlobalConfig.AGREE_PRIVATE = v;
     }
 }

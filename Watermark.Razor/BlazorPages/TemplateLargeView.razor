@@ -1,6 +1,7 @@
 ﻿@using Watermark.Razor
 @using Watermark.Shared.Models
 @inject IPopupService PopupService
+@inject PageStackNavController NavController
 
 <div Style="position:relative;">
     <MImage Style="width: 100vw;max-height:100vh"
@@ -66,12 +67,12 @@
                 @FocusImage?.Name
             </MudText>
         </div>
-        <div style="display: flex; align-items: center; justify-content: flex-end; margin-top:4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
+            <MudStack style="text-align: center;gap:0px;margin-right:30px;align-items: center;" @onclick="@(() => NavController.Push($"/design/{FocusImageId}"))">
+                <MudIcon Icon="@Icons.Material.Filled.EditNote" Style="padding:0px" Color="Color.Default" Size="Size.Medium" />
+                <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">编辑</span></MudText>
+            </MudStack>
             <div style="display: flex;">
-                @* <MudStack style="text-align: center;gap:0px;margin-right:30px;align-items: center;" @onclick="()=>OpenCamera(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId))">
-                    <MudIcon Icon="@Icons.Material.Filled.Camera" Style="padding:0px" Color="Color.Default" Size="Size.Medium" />
-                    <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">拍照</span></MudText>
-                </MudStack> *@
                 <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="PopupActionBar">
                     <MudIcon Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Color="Color.Default" Size="Size.Medium"  />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">删除</span></MudText>

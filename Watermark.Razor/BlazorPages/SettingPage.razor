@@ -9,6 +9,8 @@
 @layout MainLayout
 @inject IClientInstance ClientInstance
 @inject NavigationManager navigationManager
+@inherits PStackPageBase
+
 <style>
     .mud-overlay .mud-overlay-content {
     width: 60%;
@@ -266,7 +268,10 @@ else
             StateHasChanged();
         };
     }
-
+    protected override void OnPageActivated(object? state)
+    {
+        var _stateFromPage4 = state?.ToString();
+    }
     async void Update()
     {
         ClientInstance.Haptic();

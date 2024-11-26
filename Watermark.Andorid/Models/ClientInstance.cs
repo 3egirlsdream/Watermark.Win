@@ -404,6 +404,7 @@ namespace Watermark.Shared.Models
         {
             var canvas = await Global.GetCanvas(canvasId);
             if (canvas is null) return null;
+            canvas.Exif[canvasId] = ExifHelper.DefaultMeta;
             var design = new WMDesignFunc();
             design.CurrentCanvas = canvas;
             design.SelectLogo = new Func<WMLogo, Task>(async Task (x) =>

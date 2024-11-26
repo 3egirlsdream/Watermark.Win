@@ -149,7 +149,7 @@
             }
 
             await LoadTemplates();
-            await api.PageVisitRecord(ProgramPage.Market, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
+            await api.PageVisitRecord(ProgramPage.Market, Global.DeviceType);
         }
         catch (Exception ex)
         {

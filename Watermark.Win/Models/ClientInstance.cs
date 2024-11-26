@@ -322,6 +322,11 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
+        public Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Func<Task<string>> CreateNewTemplate = new Func<Task<string>>(() =>
         {
             Microsoft.Win32.OpenFileDialog dialog = new()

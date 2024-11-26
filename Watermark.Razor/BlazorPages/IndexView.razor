@@ -14,7 +14,7 @@
 @inject IClientInstance ClientInstance
 <style>
     .m-tab:hover {
-        background: transparent !important;
+    background: transparent !important;
     }
 </style>
 <div style="height:100%;">
@@ -95,22 +95,22 @@
 
     <MDialog @bind-Value="parameter.FocusImageShow" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px">
         <TemplateLargeView DownloadEvent="DownloadTemplate"
-                           downloadedTemplates="GlobalCache.DownloadedTemplates"
-                           FocusImage="parameter.FocusImage"
-                           FocusImageId="@parameter.FocusImageId"
-                           FocusImageSrc="@parameter.FocusImageSrc"
-                           FocusImageType="parameter.FocusImageType"
-                           GeneratePhotoEvent="GeneratePhoto"
-                           ILikeTemplates="parameter.ILikeTemplates"
-                           OpenCameraEvent="OpenCamera"
-                           subscribed="subscribed"
-                           ZipedTemplates="ZipedTemplates"
-                           CloseEvent="Close" />
+        downloadedTemplates="GlobalCache.DownloadedTemplates"
+        FocusImage="parameter.FocusImage"
+        FocusImageId="@parameter.FocusImageId"
+        FocusImageSrc="@parameter.FocusImageSrc"
+        FocusImageType="parameter.FocusImageType"
+        GeneratePhotoEvent="GeneratePhoto"
+        ILikeTemplates="parameter.ILikeTemplates"
+        OpenCameraEvent="OpenCamera"
+        subscribed="subscribed"
+        ZipedTemplates="ZipedTemplates"
+        CloseEvent="Close" />
     </MDialog>
 
     <MOverlay Value="loading.Show">
         <MProgressCircular indeterminate
-                           Size="64"></MProgressCircular>
+        Size="64"></MProgressCircular>
     </MOverlay>
     <MOverlay Value="@failedBox.faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
         <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
@@ -158,7 +158,10 @@
         try
         {
             await GlobalConfig.InitConfig();
-            Global.PrimaryKey = ClientInstance.Key();
+            if(GlobalConfig.AGREE_PRIVATE) 
+            {
+                Global.PrimaryKey = ClientInstance.Key();
+            }
             await Global.Login();
             if(!Path.Exists(Global.AppPath.TemplatesFolder)) 
             {
@@ -168,12 +171,13 @@
             await LoadCollectTemplate();
             await api.DownloadLogoes();
             await InitVersion(GlobalCache.DownloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
-            await api.PageVisitRecord(ProgramPage.MyTemplate, Platform.Andorid);
+            await api.PageVisitRecord(ProgramPage.MyTemplate, DeviceType.Andorid);
             navigationManager.LocationChanged += (e, q) =>
             {
                 parameter.FocusImageShow = false;
                 StateHasChanged();
             };
+            Global.Callback = new Action(async () => await InvokeAsync(StateHasChanged));
         }
         catch (Exception ex)
         {

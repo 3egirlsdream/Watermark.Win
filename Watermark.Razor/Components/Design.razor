@@ -1,6 +1,7 @@
 ﻿@page "/design/{cid}"
 @using System.IO
 @using Masa.Blazor
+@using Masa.Blazor.Presets.PageStack.NavController
 @using Microsoft.JSInterop
 @using System.Collections.Concurrent
 @using SkiaSharp
@@ -18,6 +19,7 @@
 @inject APIHelper api
 @inherits PPageStack
 @layout MainLayout
+@inject PageStackNavController NavController
 <MApp Style="background:#e3e3e3; overflow:hidden;display:flex">
     @if (Global.DeviceType != DeviceType.IOS && Global.DeviceType != DeviceType.Andorid)
     {
@@ -69,19 +71,25 @@
     {
         <PStackPageBarInit Title="模板设计" Dense Flat CenterTitle>
             <ActionContent>
-                <IconButton OnClick="SaveTemplate" Icon="@ICONS.SaveAs" />
-                @* <Masa.Blazor.MListItem OnClick="() => showDialog = true" Title="另存为" PrependIcon="@ICONS.SaveAs" /> *@
+                <IconButton OnClick="SaveTemplate" Icon="@ICONS.Save" IconColor="green" />
+                <IconButton OnClick="() => showDialog = true" Icon="@ICONS.SaveAs"/>
                 <MButton IconName="@ICONS.Setting" OnClick="() => openSetting = true"/>
             </ActionContent>
+            <GoBackContent>
+                <MIcon OnClick="@(()=>NavController.Pop())">mdi-arrow-left</MIcon>
+            </GoBackContent>
         </PStackPageBarInit>
         <div style="text-align:center" class="pa-2">
             @if (!string.IsNullOrEmpty(url))
             {
                 <MImage Contain Src="@url" Style="height:100%;width:100%" />
             }
-            <MNavigationDrawer @bind-Value="@openSetting" App Absolute>
-                <DesignConfiguration canvas="CurrentCanvas" Style="width:100%;height:calc(100% - 36px);background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
-            </MNavigationDrawer>
+            @if(CurrentCanvas != null) 
+            {
+                <MNavigationDrawer @bind-Value="@openSetting" App Absolute>
+                    <DesignConfiguration canvas="CurrentCanvas" Style="width:100%;height:calc(100% - 50px);background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+                </MNavigationDrawer>
+            }
         </div>
     }
 
@@ -126,11 +134,12 @@
     {
         try
         {
+            ClientInstance.SetColor();
             if (!string.IsNullOrEmpty(cid))
             {
                 designFunc = await ClientInstance.GetWMDesignFunc(cid);
             }
-            
+
             if (designFunc != null && Global.DeviceType != DeviceType.Mac)
             {
                 CurrentCanvas = designFunc.CurrentCanvas;
@@ -149,7 +158,8 @@
             {
                 Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
             }
-            var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType == DeviceType.Mac ? Platform.Mac : Platform.Win);
+            var _ = api.PageVisitRecord(ProgramPage.Design, Global.DeviceType);
+            NavController.StackPop += Poped;
         }
         catch (Exception err)
         {
@@ -196,7 +206,7 @@
         }
     }
 
-    void SaveAs()
+    async void SaveAs()
     {
         string message = "保存成功！";
         try
@@ -224,6 +234,15 @@
             newCanvas.Name = newTemplateName;
             var newJson = Global.CanvasSerialize(newCanvas);
             System.IO.File.WriteAllText(path + System.IO.Path.DirectorySeparatorChar + "config.json", newJson);
+
+            WMZipedTemplate dirct = new();
+            dirct.WatermarkId = ID;
+            dirct.WMCanvas = newCanvas;
+            dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
+            dirct.CanvasType = dirct.WMCanvas.CanvasType;
+            var b64 = await helper.GenerationAsync(dirct.WMCanvas, null, true, false);
+            dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            GlobalCache.DownloadedTemplates.Add(dirct);
             showDialog = false;
             StateHasChanged();
         }
@@ -237,5 +256,21 @@
     void PropertyChanged(object sender, PropertyChangedEventArgs args)
     {
         PreviewImageRefresh();
+    }
+
+    async void Poped(object obj, PageStackPopEventArgs args)
+    {
+        var idx = GlobalCache.DownloadedTemplates.FindIndex(x => x.WatermarkId == cid);
+        if(idx >= 0) 
+        {
+            var item = GlobalCache.DownloadedTemplates[idx];
+            GlobalCache.DownloadedTemplates.Remove(item);
+            var b64 = await helper.GenerationAsync(CurrentCanvas, null, true, false);
+            item.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            GlobalCache.DownloadedTemplates.Insert(idx, item);
+            await InvokeAsync(StateHasChanged);
+        }
+        Global.Callback?.Invoke();
+        NavController.StackPop -= Poped;
     }
 }

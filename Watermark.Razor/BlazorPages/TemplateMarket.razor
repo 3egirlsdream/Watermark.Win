@@ -15,60 +15,63 @@
 @inject NavigationManager navigationManager
 @implements IDisposable
 <style scoped>
-    .m-tabs .div:nth-child(1) {
-    height: 30px
+    .market-tab {
     }
 
-    .m-item-group {
-    height: 30px;
-    }
+        .market-tab .m-tabs .div:nth-child(1) {
+            height: 30px
+        }
+
+        .market-tab .m-item-group {
+            height: 30px;
+        }
 
     .row--dense > .col, .row--dense > [class*=col-] {
-    padding: 2px;
+        padding: 2px;
     }
 
     .m-slide-group__prev {
-    display: none !important;
+        display: none !important;
     }
 
     .dfm-card-name {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow-x: hidden
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden
     }
 
     .dfm-card-user-name {
-    position: relative;
-    display: flex;
-    align-items: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow-x: hidden
+        position: relative;
+        display: flex;
+        align-items: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-x: hidden
     }
 
     .dfm-card-footer {
-    position: relative;
-    height: 30px;
-    display: flex;
-    align-items: center;
+        position: relative;
+        height: 30px;
+        display: flex;
+        align-items: center;
     }
 
 
     .flex-vertical-center {
-    display: flex;
-    align-items: center;
+        display: flex;
+        align-items: center;
     }
 
     .swiper-wrapper {
-    height: 100% !important;
+        height: 100% !important;
     }
 
     .m-presets-block-text > div:nth-child(2) {
-    overflow: hidden;
+        overflow: hidden;
     }
 </style>
 
-<div style="height:100%;">
+<div style="height:100%;" class="market-tab">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var sub in tabs)
         {
@@ -91,7 +94,7 @@
                                     @if (sub.Item1 == "最新")
                                     {
                                         <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
-                                        OnLoad="@HandleOnLoad">
+                                                         OnLoad="@HandleOnLoad">
                                         </MInfiniteScroll>
                                     }
                                 </MCard>
@@ -111,15 +114,15 @@
 
     <MDialog @bind-Value="parameter.FocusImageShow" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
         <TemplateLargeView FocusImage="parameter.FocusImage"
-        FocusImageId="@parameter.FocusImageId"
-        FocusImageSrc="@parameter.FocusImageSrc"
-        FocusImageType="parameter.FocusImageType"
-        ILikeTemplates="parameter.ILikeTemplates"
-        subscribed="subscribed"
-        ZipedTemplates="ZipedTemplates"
-        DownloadEvent="DownloadTemplate"
-        CloseEvent="Close"
-        SubscribeEvent="Subscribe" />
+                           FocusImageId="@parameter.FocusImageId"
+                           FocusImageSrc="@parameter.FocusImageSrc"
+                           FocusImageType="parameter.FocusImageType"
+                           ILikeTemplates="parameter.ILikeTemplates"
+                           subscribed="subscribed"
+                           ZipedTemplates="ZipedTemplates"
+                           DownloadEvent="DownloadTemplate"
+                           CloseEvent="Close"
+                           SubscribeEvent="Subscribe" />
     </MDialog>
 </div>
 
@@ -309,7 +312,7 @@
     }
 
     private void NavControllerOnTabChanged(object? sender, PageStackTabChangedEventArgs e)
-    { 
+    {
         parameter.FocusImageShow = false;
         StateHasChanged();
     }
