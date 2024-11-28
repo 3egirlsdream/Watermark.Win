@@ -160,8 +160,7 @@
                 {
                     var canvas = await Task.Run(() =>
                     {
-                        var content = File.ReadAllText(configPath);
-                        return Global.ReadConfig(content);
+                        return Global.ReadConfigFromPath(configPath);
                     });
                     canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
                     await Global.InitFonts([canvas]);

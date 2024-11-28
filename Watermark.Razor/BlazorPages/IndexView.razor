@@ -210,8 +210,7 @@
                 var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
                 if (System.IO.File.Exists(configPath))
                 {
-                    var content = File.ReadAllText(configPath);
-                    dirct.WMCanvas = Global.ReadConfig(content);
+                    dirct.WMCanvas = Global.ReadConfigFromPath(configPath);
                     dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
                     dirct.CanvasType = dirct.WMCanvas.CanvasType;
                     GlobalCache.DownloadedTemplates.Add(dirct);
@@ -221,7 +220,7 @@
             {
                 await Global.InitFonts([tp.WMCanvas]);
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
-                tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                tp.Src = await Global.Byte2Url(JSRuntime, b64);
             }
             ClientInstance.Haptic();
         }
@@ -276,15 +275,14 @@
             if (!System.IO.File.Exists(configPath)) return dirct;
             var canvas = await Task.Run(() =>
             {
-                var content = File.ReadAllText(configPath);
-                return Global.ReadConfig(content);
+                return Global.ReadConfigFromPath(configPath);
             });
             dirct.WMCanvas = canvas;
             dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
             dirct.CanvasType = dirct.WMCanvas.CanvasType;
             await Global.InitFonts([canvas]);
             var b64 = await helper.GenerationAsync(canvas, null, true, false);
-            dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            dirct.Src = await Global.Byte2Url(JSRuntime, b64);
             return dirct;
         }
         catch (Exception ex)
@@ -384,7 +382,7 @@
 
             CurrentImage = Images.First();
             var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
             loading.Show = false;
             //openDrawer = true;
             StateHasChanged();
@@ -408,7 +406,7 @@
             CurrentImage.Canvas = cvs;
             CurrentImage.ID = CurrentImage.Canvas.ID;
             var b64 = await helper.GenerationAsync(cvs, null, true, false);
-            CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+            CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
             Images = [CurrentImage];
             loading.Show = false;
             //openDrawer = true;

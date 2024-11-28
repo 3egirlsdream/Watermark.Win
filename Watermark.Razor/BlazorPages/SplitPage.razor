@@ -34,8 +34,7 @@
     @if (!string.IsNullOrEmpty(Src))
     {
         <div style="height: 60px;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;">
-            <IconButton Color="primary" IconColor="@($"{(horizon ? "orange" : "")}")" Icon="@ICONS.DragHorizon" Style="width:48px !important;height:48px;" OnClick="()=> {horizon = !horizon; RefreshEditImage();}">
-            </IconButton>
+            <IconButton Color="primary" IconColor="@($"{(horizon ? "orange" : "")}")" Icon="@ICONS.DragHorizon" Style="width:48px !important;height:48px;" OnClick="ChangeDirection"/>
             <IconButton Icon="@ICONS.Add" Color="primary" Style="height:48px;width:48px !important;" Class="mx-1" OnClick="SelectSourceImageExif" />
             <MSortable Style="height:100%;align-items: center;gap:4px;overflow-x:auto;scrollbar-width:none;"
             Items="@Images"
@@ -98,6 +97,7 @@
     {
         ClientInstance.SetColor();
         Images = names.Split(';').ToList();
+        Order = names.Split(';').ToList();
         foreach (var img in Images)
         {
             var target = Global.AppPath.ThumbnailFolder + Path.GetFileName(img);
@@ -124,7 +124,8 @@
             var url = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
             ImageUrlDic[result] = url;
             Images.Add(result);
-            RefreshEditImage();
+            Order.Add(result);
+            await RefreshEditImage();
         }
         catch (Exception ex)
         {
@@ -133,15 +134,24 @@
     }
 
 
-    public async void RefreshEditImage()
+    public async Task RefreshEditImage()
     {
-        SrcLoading = true;
-        StateHasChanged();
-        //Images = Order.Select(x=>x).ToList();
-        var bs64 = await helper.SplitImages(Order, horizon, true);
-        Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
-        SrcLoading = false;
-        StateHasChanged();
+        try
+        {
+            SrcLoading = true;
+            StateHasChanged();
+            var bs64 = await helper.SplitImages(Order, horizon, true);
+            Src = await JSRuntime.InvokeAsync<string>("byteToUrl", bs64);
+        }
+        catch(Exception ex) 
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            SrcLoading = false;
+            StateHasChanged();
+        }
     }
 
 
@@ -150,7 +160,7 @@
         ClientInstance.Haptic();
         SrcLoading = true;
         StateHasChanged();
-        var b64 = await helper.SplitImages(Images, horizon, false);
+        var b64 = await helper.SplitImages(Order, horizon, false);
         var fn = Guid.NewGuid().ToString();
         ClientInstance.Save(b64, "DFX_" + fn);
         SrcLoading = false;
@@ -163,5 +173,11 @@
     {
         ClientInstance.Haptic();
         openSave = true;
+    }
+
+    async void ChangeDirection() 
+    {
+        horizon = !horizon; 
+        await RefreshEditImage();
     }
 }

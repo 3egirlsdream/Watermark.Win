@@ -37,9 +37,9 @@
             <span>游客</span>
         }
     </MudText>
-    <MudStack Row Style="position:absolute;right:15px;" >
+   @*  <MudStack Row Style="position:absolute;right:15px;" >
         <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-    </MudStack>
+    </MudStack> *@
 
 
     <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" @bind-Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">

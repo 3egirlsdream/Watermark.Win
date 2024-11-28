@@ -15,6 +15,11 @@ namespace Watermark.Shared.Models
 {
     public class ClientInstance : IClientInstance
     {
+        readonly APIHelper api;
+        public ClientInstance(APIHelper api) 
+        {
+            this.api = api;
+        }
         public string LinkPath { get; set; }
         public string UpdateMessage { get; set; }
         public string UpdateVersion { get; set; }
@@ -144,7 +149,7 @@ namespace Watermark.Shared.Models
         }
 
 
-        async Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
+        async Task<Dictionary<string, int>> InitVersion(List<string> ids)
         {
             Dictionary<string, int> Versions = [];
             var version = await api.GetVersions(ids);
@@ -165,7 +170,6 @@ namespace Watermark.Shared.Models
           , IJSRuntime JSRuntime
           , PageStackNavController NavController)
         {
-            var api = new APIHelper();
             if (!Directory.Exists(Global.AppPath.TemplatesFolder))
             {
                 Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
@@ -179,15 +183,14 @@ namespace Watermark.Shared.Models
                 if (!System.IO.File.Exists(configPath)) return dirct;
                 var canvas = await Task.Run(() =>
                 {
-                    var content = File.ReadAllText(configPath);
-                    return Global.ReadConfig(content);
+                    return Global.ReadConfigFromPath(configPath);
                 });
                 dirct.WMCanvas = canvas;
                 dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
                 dirct.CanvasType = dirct.WMCanvas.CanvasType;
                 await Global.InitFonts([canvas]);
                 var b64 = await helper.GenerationAsync(canvas, null, true, false);
-                dirct.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                dirct.Src = await Global.Byte2Url(JSRuntime, b64);
                 return dirct;
             }
             catch (Exception ex)
@@ -210,7 +213,6 @@ namespace Watermark.Shared.Models
         {
             var action = new Action(async () =>
             {
-                var api = new APIHelper();
                 if (!Global.CurrentUser.IsVIP)
                 {
                     var auth = await api.DownloadTemplate(Global.CurrentUser?.ID ?? "", watermarkId);
@@ -241,21 +243,14 @@ namespace Watermark.Shared.Models
                         GlobalCache.DownloadedTemplates.Remove(item);
                         GlobalCache.DownloadedTemplates.Insert(idx, dir);
                     }
-                    Versions = await InitVersion([watermarkId], api);
+                    Versions = await InitVersion([watermarkId]);
+                    Global.Callback?.Invoke();
                 }
             });
             if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
             {
                 parameter.FocusImageShow = false;
-                //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-                //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
                 NavController.Push("/login");
-                // var dialogResult = await rst.Result;
-                // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-                // {
-                //   FocusImageShow = false;
-                //   action.Invoke();
-                // }
                 return;
             }
             var p = Global.AppPath.TemplatesFolder + watermarkId;
@@ -307,8 +302,6 @@ namespace Watermark.Shared.Models
 
         public async Task<API<string>> AliPays(decimal cost, string tradeName)
         {
-
-            var api = new APIHelper();
             var rs = await api.GetPayToken(cost, tradeName);
             if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
             {
@@ -368,11 +361,10 @@ namespace Watermark.Shared.Models
 
         public async Task ReLogin()
         {
-            APIHelper helper = new APIHelper();
             var result = await Global.ReadLocalAsync();
             if (!string.IsNullOrEmpty(result.Item1))
             {
-                var login = await helper.LoginIn(result.Item1, result.Item2, true);
+                var login = await api.LoginIn(result.Item1, result.Item2, true);
                 if (login.success)
                 {
                     Global.CurrentUser = Global.SetUserInfo(login.data.data);

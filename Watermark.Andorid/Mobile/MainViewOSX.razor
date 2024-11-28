@@ -353,8 +353,7 @@
                 var configPath = basePath + dirct.WatermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
                 if (System.IO.File.Exists(configPath))
                 {
-                    var content = File.ReadAllText(configPath);
-                    dirct.WMCanvas = Global.ReadConfig(content);
+                    dirct.WMCanvas = Global.ReadConfigFromPath(configPath);
                     dirct.Name = dirct.WMCanvas.Name;
                     dirct.WMCanvas.Exif[dirct.WMCanvas.ID] = ExifHelper.DefaultMeta;
                     dirct.CanvasType = dirct.WMCanvas.CanvasType;
@@ -369,7 +368,7 @@
                 StateHasChanged();
                 await Global.InitFonts([tp.WMCanvas]);
                 var b64 = await helper.GenerationAsync(tp.WMCanvas, null, true, false);
-                tp.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                tp.Src = await Global.Byte2Url(JSRuntime, b64);
             }
             MainLoading.Show = false;
             StateHasChanged();
@@ -437,7 +436,7 @@
                 Images.Add(new WMTemplateList
                 {
                     Canvas = canvas,
-                    Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64),
+                    Src = await Global.Byte2Url(JSRuntime, b64),
                     ID = canvas.ID,
                     Path = canvas.Path
                 });
@@ -473,7 +472,7 @@
             return helper.Generation(cvs, null, true);
         });
 
-        var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        var src = await Global.Byte2Url(JSRuntime, b64);
         CurrentImage.Src = src;
         await InitLogoCacheDic(CurrentImage.ID, template);
         SrcLoading = false;
@@ -516,7 +515,7 @@
         }
         foreach (var e in db64)
         {
-            LogoBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            LogoBase64[e.Key] = await Global.Byte2Url(JSRuntime, e.Value);
         }
         LogoCacheDic[imgId] = dic;
 
@@ -556,7 +555,7 @@
                     return helper.Generation(cvs, null, true);
                 });
 
-                var src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+                var src = await Global.Byte2Url(JSRuntime, b64);
                 img.Src = src;
                 await InitLogoCacheDic(img.ID, CurrentTemplate);
             }
@@ -676,7 +675,7 @@
         CurrentImage = new();
         CurrentImage.Canvas = cvs;
         CurrentImage.ID = CurrentImage.Canvas.ID;
-        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
+        CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
         await InitLogoCacheDic(CurrentImage.ID, new WMZipedTemplate() { WMCanvas = template.WMCanvas });
         Images = [];
         Images.Add(CurrentImage);

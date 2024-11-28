@@ -19,6 +19,10 @@
         scrollbar-width: none;
     }
 
+        .wm-container .mdi-paperclip::before {
+            color: transparent;
+        }
+
     .rectangle {
         position: relative;
         width: calc(20% - 20px); /* 每个矩形宽度为20%，减去20px的间距 */
@@ -27,26 +31,32 @@
         margin-bottom: 20px; /* 设置下方间距 */
     }
 
-        .rectangle .mud-input-control {
-            margin-top: 0px;
-        }
+    .bk {
+        background-size: 50% 50%;
+        background-position: center;
+        background-image: url("data:image/svg+xml;charset=utf-8;base64,PHN2ZyB0PSIxNzMyNzg1ODAyODQ1IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjI0NDIxIiB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCI+PHBhdGggZD0iTTI5My40NjEzMzMgOTgxLjMzMzMzM2MtNjQuNDY5MzMzIDAtMTI0LjM3MzMzMy0yNC41NzYtMTY4LjkxNzMzMy03MC42MTMzMzNBMjM1LjgxODY2NyAyMzUuODE4NjY3IDAgMCAxIDU1LjQ2NjY2NyA3NDMuMzM4NjY3YzAtNjQuNDY5MzMzIDI0LjU3Ni0xMjQuMzczMzMzIDcwLjYxMzMzMy0xNjguOTE3MzM0bDExOC4yMjkzMzMtMTE4LjE4NjY2NmMxOC40MzItMTguNDMyIDQ3LjYxNi0xOC40MzIgNjQuNTEyIDAgMTguNDMyIDE4LjM4OTMzMyAxOC40MzIgNDcuNTczMzMzIDAgNjQuNDY5MzMzbC0xMTguMjI5MzMzIDExOC4xODY2NjdhMTQ2LjI2MTMzMyAxNDYuMjYxMzMzIDAgMCAwLTQzLjAwOCAxMDQuNDQ4YzAgMzkuOTM2IDE1LjM2IDc1LjIyMTMzMyA0My4wMDggMTA0LjQwNTMzM2ExNDYuMjE4NjY3IDE0Ni4yMTg2NjcgMCAwIDAgMTA0LjQwNTMzMyA0My4wMDhjMzguNCAwIDc1LjIyMTMzMy0xNS4zNiAxMDQuNDA1MzM0LTQzLjAwOGwxNTAuNDg1MzMzLTE1MC40ODUzMzNhMTQ3LjM3MDY2NyAxNDcuMzcwNjY3IDAgMCAwIDAtMjA3LjI3NDY2NyAxNjkuMTMwNjY3IDE2OS4xMzA2NjcgMCAwIDAtNDMuMDA4LTMwLjcyYy0yMy4wNC0xMC43MDkzMzMtMzMuNzkyLTM4LjQtMjMuMDQtNjEuMzk3MzMzIDEwLjc1Mi0yMy4wNCAzOC40LTMzLjc5MiA2MS40NC0yMy4wNCAyNi4xMTIgMTIuMjg4IDUwLjY0NTMzMyAyNy42NDggNzAuNjEzMzMzIDQ5LjE1MmEyMzguMTY1MzMzIDIzOC4xNjUzMzMgMCAwIDEgMCAzMzcuNzkybC0xNTAuNDg1MzMzIDE1MC40ODUzMzNDNDE3LjgzNDY2NyA5NTYuNzU3MzMzIDM1Ny45NzMzMzMgOTgxLjMzMzMzMyAyOTMuNDYxMzMzIDk4MS4zMzMzMzN6IiBmaWxsPSIjMTcyQjREIiBwLWlkPSIyNDQyMiI+PC9wYXRoPjxwYXRoIGQ9Ik01MTMuMDI0IDY2Ni41ODEzMzNhNDAuOTE3MzMzIDQwLjkxNzMzMyAwIDAgMS0xOC40MzItNC42MDhjLTI2LjExMi0xMi4yODgtNTAuNjQ1MzMzLTI3LjY0OC03MC42MTMzMzMtNDkuMTUyYTIzOC4xNjUzMzMgMjM4LjE2NTMzMyAwIDAgMS03MC42NTYtMTY4Ljg3NDY2NmMwLTY0LjUxMiAyNC41NzYtMTI0LjM3MzMzMyA3MC42NTYtMTY4LjkxNzMzNGwxNTAuNDg1MzMzLTE1MC40ODUzMzNhMjM4LjE2NTMzMyAyMzguMTY1MzMzIDAgMCAxIDMzNy43OTIgMCAyMzguMTY1MzMzIDIzOC4xNjUzMzMgMCAwIDEgMCAzMzcuNzkybC0xMTguMjI5MzMzIDExOC4yMjkzMzNjLTE4LjQzMiAxOC40MzItNDcuNjE2IDE4LjQzMi02NC41MTIgMC0xOC40MzItMTguMzg5MzMzLTE4LjQzMi00Ny41NzMzMzMgMC02NC40NjkzMzNsMTE4LjIyOTMzMy0xMTguMjI5MzMzYTE0Ny4zNzA2NjcgMTQ3LjM3MDY2NyAwIDAgMCAwLTIwNy4yNzQ2NjcgMTQ3LjM3MDY2NyAxNDcuMzcwNjY3IDAgMCAwLTIwNy4yNzQ2NjcgMGwtMTUwLjQ4NTMzMyAxNTAuNDg1MzMzYTE0Ni4yNjEzMzMgMTQ2LjI2MTMzMyAwIDAgMC00Mi45NjUzMzMgMTA0LjQwNTMzNGMwIDM5Ljg5MzMzMyAxNS4zNiA3NS4yMjEzMzMgNDIuOTY1MzMzIDEwNC40MDUzMzMgMTIuMjg4IDEyLjI4OCAyNy42NDggMjMuMDQgNDMuMDA4IDMwLjcyIDIzLjA0IDEwLjcwOTMzMyAzMy43OTIgMzguNCAyMy4wNCA2MS4zOTczMzMtOS4yMTYgMTUuMzYtMjYuMTEyIDI0LjU3Ni00My4wMDggMjQuNTc2eiIgZmlsbD0iIzE3MkI0RCIgcC1pZD0iMjQ0MjMiPjwvcGF0aD48L3N2Zz4=")
+    }
 
-        .rectangle .mud-input-control-input-container {
-            position: absolute;
-            height: 100%;
-            width: 100%;
-        }
+    .rectangle .mud-input-control {
+        margin-top: 0px;
+    }
 
-        .rectangle img {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* 图片填充整个矩形 */
-        }
+    .rectangle .mud-input-control-input-container {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+    }
 
-        .rectangle:hover {
-            cursor: pointer;
-        }
+    .rectangle img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* 图片填充整个矩形 */
+    }
+
+    .rectangle:hover {
+        cursor: pointer;
+    }
 
     .wm-container .mdi-paperclip::before {
         width: 100%;
@@ -73,6 +83,7 @@
     .wm-container .m-input__control {
         display: none;
     }
+
     .wm-container .m-application--is-ltr .m-input__prepend-outer {
         margin-right: 0px !important;
     }
@@ -80,18 +91,34 @@
     .wm-container .m-text-field {
         padding-top: 0px;
     }
+
+    .wm-container .m-input__prepend-outer {
+        height: 100% !important;
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+
+        .wm-container .m-input__prepend-outer .m-input__icon {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+            .wm-container .m-input__prepend-outer .m-input__icon button {
+                height: 100% !important;
+                width: 100% !important;
+            }
 </style>
 
 <div class="wm-container">
-    <div class="rectangle" style="border: 1px dashed #e3e3e3;border-radius: 5px;">
+    <MCard Class="rectangle bk">
         <MFileInput TValue="List<IBrowserFile>"
                     Accept="image/*"
                     Multiple
                     OnChange="ImportLogo"
-                    Style="position: absolute;margin-top: calc(50% - 1rem);display:flex;align-items:center;justify-content:center;width:100%"
+                    Style="position: absolute;margin-top: 0;display:flex;align-items:center;justify-content:center;width:100%;height:100%;"
                     HideDetails="true"
                     Label="File input"></MFileInput>
-    </div>
+    </MCard>
     @foreach (var per in Logoes)
     {
         <MCard class="rectangle">
