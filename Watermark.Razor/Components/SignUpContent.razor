@@ -32,12 +32,12 @@
         </MButton>
     </div>
 }
-<MCheckbox @bind-Value="agreePrivate" Dense>
+<MCheckbox @bind-Value="agreePrivate" Dense HideDetails="true">
     <LabelContent>
-        请您阅读并同意我们的<a href="http://thankful.top/private" style="color:dodgerblue">《用户协议与隐私协议》</a>。
+        <span style="font-size:12px">请您阅读并同意我们的<a href="http://thankful.top/private" style="color:dodgerblue">《用户协议与隐私协议》</a>。</span>
     </LabelContent>
 </MCheckbox>
-<MButton OnClick="LoginOK" Elevation="0" Class="mt-5" Style="width:100%">确定</MButton>
+<MButton OnClick="LoginOK" Elevation="0" Class="mt-2" Style="width:100%">确定</MButton>
 
 
 
