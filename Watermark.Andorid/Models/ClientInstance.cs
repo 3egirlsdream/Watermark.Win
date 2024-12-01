@@ -23,67 +23,6 @@ namespace Watermark.Shared.Models
         public string LinkPath { get; set; }
         public string UpdateMessage { get; set; }
         public string UpdateVersion { get; set; }
-        public Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
-        {
-
-        };
-
-        public Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
-        {
-        };
-
-
-
-        public Action<List<string>> InitLocalFontsAction = (Fonts) =>
-        {
-            Fonts ??= [];
-            Fonts.Clear();
-            var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
-            if (Directory.Exists(fontPath))
-            {
-                var files = Directory.GetFiles(fontPath);
-                foreach (var file in files)
-                {
-                    Fonts.Add(System.IO.Path.GetFileName(file));
-                }
-            }
-        };
-
-
-        public Action<List<string>> ImportLocalFontAction = (Fonts) =>
-        {
-        };
-
-        public Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
-        {
-            var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
-            var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
-            var file = new FileInfo(fontPath);
-            if (file.Exists)
-            {
-                try
-                {
-                    file.CopyTo(targetPath, true);
-                    mText.FontFamily = fontName;
-                }
-                catch { }
-            }
-        };
-
-        public void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
-        {
-        }
-
-        public void WriteThumbnailImage(SKBitmap source, string target)
-        {
-            double w = source.Width, h = source.Height;
-            var xs = 1080.0 / h;
-            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
-            using var image = SKImage.FromBitmap(resized);
-            using var writeStream = File.OpenWrite(target);
-            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
-        }
-
         public string Key()
         {
             var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(GetAndroidId().Replace("-", "") + "CATLNMSL"));

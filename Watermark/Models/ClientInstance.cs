@@ -9,6 +9,7 @@ using System.Text;
 using LukeMauiFilePicker;
 using Watermark.Andorid.Models;
 using Watermark.Razor;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 
 namespace Watermark.Shared.Models
 {
@@ -22,85 +23,12 @@ namespace Watermark.Shared.Models
         public string LinkPath { get; set; }
         public string UpdateMessage { get; set; }
         public string UpdateVersion { get; set; }
-        public Action<WMCanvas, WMLogo, Dictionary<string, string>> SelectImageAction = (canvas, mLogo, ImagesBase64) =>
-        {
-
-        };
-
-        public Action<WMCanvas, WMContainer, ConcurrentDictionary<string, string>> SelectContainerImageAction = (canvas, mContainer, ImagesBase64) =>
-        {
-        };
-
-
-
-        public Action<List<string>> InitLocalFontsAction = (Fonts) =>
-        {
-            Fonts ??= [];
-            Fonts.Clear();
-            var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts";
-            if (Directory.Exists(fontPath))
-            {
-                var files = Directory.GetFiles(fontPath);
-                foreach (var file in files)
-                {
-                    Fonts.Add(System.IO.Path.GetFileName(file));
-                }
-            }
-        };
-
-
-        public Action<List<string>> ImportLocalFontAction = (Fonts) =>
-        {
-        };
-
-        public Action<WMCanvas, WMText, string> SelectLocalFontAction = (CurrentCanvas, mText, fontName) =>
-        {
-            var fontPath = AppDomain.CurrentDomain.BaseDirectory + "fonts" + System.IO.Path.DirectorySeparatorChar + fontName;
-            var targetPath = Global.AppPath.TemplatesFolder + CurrentCanvas.ID + Path.DirectorySeparatorChar + fontName;
-            var file = new FileInfo(fontPath);
-            if (file.Exists)
-            {
-                try
-                {
-                    file.CopyTo(targetPath, true);
-                    mText.FontFamily = fontName;
-                }
-                catch { }
-            }
-        };
-
-        public void SelectDefaultImage(string id, ConcurrentDictionary<string, string> dic)
-        {
-        }
-
-        public void WriteThumbnailImage(SKBitmap source, string target)
-        {
-            double w = source.Width, h = source.Height;
-            var xs = 1080.0 / h;
-            var resized = source.Resize(new SkiaSharp.SKImageInfo((int)(w * xs), (int)(h * xs)), SkiaSharp.SKFilterQuality.Low);
-            using var image = SKImage.FromBitmap(resized);
-            using var writeStream = File.OpenWrite(target);
-            image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80).SaveTo(writeStream);
-        }
 
         public string Key()
         {
             var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(GetAndroidId().Replace("-", "") + "CATLNMSL"));
             string result3 = result.Replace("-", "");
             return result3;
-        }
-
-        public void OpenSetting()
-        {
-        }
-
-        public void ShowMsg(ISnackbar snackbar, string message, Severity severity)
-        {
-            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-            snackbar?.Add(message, severity, config =>
-              {
-                  config.ShowCloseIcon = false;
-              });
         }
 
         public Version GetVersion()
@@ -121,7 +49,6 @@ namespace Watermark.Shared.Models
 #endif
             return Guid.NewGuid().ToString();
         }
-
 
         public async Task<bool> IsOutOfDate(string client = "Watermark_A")
         {
@@ -167,7 +94,6 @@ namespace Watermark.Shared.Models
                 return false;
             }
         }
-
 
 
         async Task<Dictionary<string, int>> InitVersion(List<string> ids, APIHelper api)
@@ -222,8 +148,6 @@ namespace Watermark.Shared.Models
                 return new WMZipedTemplate();
             }
         }
-
-
 
         public async Task DownloadTemplate(
           string watermarkId
@@ -311,13 +235,15 @@ namespace Watermark.Shared.Models
 		public async Task<IEnumerable<string>> PickMultipleAsync()
 		{
             var result = await picker.PickFilesAsync("pick", FileType, true);
-            return result.Select(x => x.FileResult.FullPath);
+            if (result == null) return [];
+            return result.Select(x => x.FileResult?.FullPath);
         }
 
-		public Task<string> PickAsync()
+		public async Task<string> PickAsync()
 		{
-			throw new NotImplementedException();
-		}
+            var result = await picker.PickFileAsync("pick", FileType);
+            return result?.FileResult?.FullPath ?? null;
+        }
 
 		public async Task SetTextAsync(string uri)
 		{
@@ -348,6 +274,103 @@ namespace Watermark.Shared.Models
         public Task<string> OpenFolder()
         {
             throw new NotImplementedException();
+        }
+
+        public void SetColor()
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
+        {
+
+            var canvas = await Global.GetCanvas(canvasId);
+            if (canvas is null) return null;
+            canvas.Exif[canvasId] = ExifHelper.DefaultMeta;
+            var design = new WMDesignFunc();
+            design.CurrentCanvas = canvas;
+            Func<WMLogo, Task> SelectLogo = new(async Task (mLogo) =>
+            {
+                var p = await PickAsync();
+                if (!string.IsNullOrEmpty(p))
+                {
+                    var destFolder = Path.Combine(Global.AppPath.TemplatesFolder, canvasId);
+                    if (!Directory.Exists(destFolder))
+                    {
+                        Directory.CreateDirectory(destFolder);
+                    }
+                    var name = Path.GetFileName(p);
+                    var destFile = Path.Combine(destFolder, name);
+                    File.Copy(p, destFile, true);
+                    mLogo.Path = name;
+                }
+            });
+
+            Func<WMContainer, Task> SelectContainer = new(async Task (mContainer) =>
+            {
+                var p = await PickAsync();
+                if (!string.IsNullOrEmpty(p))
+                {
+                    var destFolder = Path.Combine(Global.AppPath.TemplatesFolder, canvasId);
+                    if (!Directory.Exists(destFolder))
+                    {
+                        Directory.CreateDirectory(destFolder);
+                    }
+                    mContainer.Path = p;
+                }
+            });
+
+            Func<Task<string>> SelectDefaultImage = new(async Task<string> () =>
+            {
+                var p = await PickAsync();
+                if (!string.IsNullOrEmpty(p))
+                {
+                    var destFolder = Path.Combine(Global.AppPath.TemplatesFolder, canvasId);
+                    if (!Directory.Exists(destFolder))
+                    {
+                        Directory.CreateDirectory(destFolder);
+                    }
+
+                    return p;
+                }
+                return "";
+            });
+
+            Func<Task> ImportFont = new Func<Task>(async Task () =>
+            {
+                var p = await PickAsync();
+                if (!string.IsNullOrEmpty(p))
+                {
+                    var fontPath = Global.AppPath.FontFolder;
+                    if (!Directory.Exists(fontPath))
+                    {
+                        Directory.CreateDirectory(fontPath);
+                    }
+
+                    var file = new FileInfo(p);
+                    if (file.Exists)
+                    {
+                        try
+                        {
+                            var target = Path.Combine(fontPath, Path.GetFileName(p));
+                            file.CopyTo(target, true);
+                        }
+                        catch { }
+                        try
+                        {
+                            var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, canvasId, Path.GetFileName(p));
+                            file.CopyTo(waterPath, true);
+                        }
+                        catch { }
+                    }
+                }
+            });
+
+            design.SelectLogo = SelectLogo;
+            design.SelectContainer = SelectContainer;
+            design.SelectDefaultImageEvt = SelectDefaultImage;
+            design.ImportFontEvt = ImportFont;
+            return design;
         }
 
         public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()

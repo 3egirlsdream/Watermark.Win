@@ -1,16 +1,9 @@
-﻿using Masa.Blazor.Popup;
+﻿using Masa.Blazor;
+using Masa.Blazor.Popup;
 using Masa.Blazor.Presets;
-using Masa.Blazor;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using Watermark.Win.Views;
-using static MudBlazor.CategoryTypes;
 
 namespace Watermark.Win.Models
 {

@@ -30,7 +30,6 @@ namespace Watermark.Win.Views
         }
         public DesignWin(WMCanvas canvas, string cloud = "")
         {
-
             //design.InitFontEvt = new Action<List<string>>((x) => ClientInstance.InitLocalFontsAction(x));
             var design = DesignProvider.Get(canvas);
 			var services = IocHelper.GetIoc();

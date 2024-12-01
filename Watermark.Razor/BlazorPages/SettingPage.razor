@@ -13,15 +13,15 @@
 
 <style>
     .mud-overlay .mud-overlay-content {
-    width: 60%;
+        width: 60%;
     }
 
     .mud-switch {
-    margin-left: 0px;
-    margin-right: 0px;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
-    margin-right: 0px;
+        margin-left: 0px;
+        margin-right: 0px;
+        margin-inline-start: 0px;
+        margin-inline-end: 0px;
+        margin-right: 0px;
     }
 
 </style>
@@ -37,7 +37,7 @@
             <span>游客</span>
         }
     </MudText>
-   @*  <MudStack Row Style="position:absolute;right:15px;" >
+    @*  <MudStack Row Style="position:absolute;right:15px;" >
         <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
     </MudStack> *@
 
@@ -215,7 +215,7 @@ else
 </MudOverlay>
 
 @code {
-    #if ANDROID
+#if ANDROID
 
 	[Inject]
 	private IUpgradeService UpgradeService { get; set; }
@@ -244,9 +244,9 @@ else
         }
         NavController.PageClosed += (e, v) =>
         {
-            #if ANDROID
+#if ANDROID
     MainActivity.SetColor.Invoke("#FFFFFF");
-            #endif
+#endif
             if (v.RelativeUri == @"/login")
             {
                 if (RefreshCollection.HasDelegate)
@@ -254,7 +254,7 @@ else
                     RefreshCollection.InvokeAsync();
                 }
             }
-            else if(v.RelativeUri == @"/appsetting")
+            else if (v.RelativeUri == @"/appsetting")
             {
                 StateHasChanged();
             }
@@ -315,17 +315,6 @@ else
     void OpenLoginDialog()
     {
         NavController.Push("/login");
-    }
-
-    async void OpenSignUpDialog()
-    {
-        DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-        var rst = DialogService.Show<SignUpDialog>("", topCenter);
-        var dialogResult = await rst.Result;
-        if (!dialogResult.Canceled && dialogResult.Data.Equals(true))
-        {
-            StateHasChanged();
-        }
     }
 
     void OnImageTouched(bool f)
