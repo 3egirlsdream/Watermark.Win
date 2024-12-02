@@ -194,6 +194,7 @@ namespace Watermark.Shared.Models
                         GlobalCache.DownloadedTemplates.Insert(idx, dir);
                     }
                     Versions = await InitVersion([watermarkId], api);
+                    Global.Callback?.Invoke();
                 }
             });
             if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
@@ -278,7 +279,7 @@ namespace Watermark.Shared.Models
 
         public void SetColor()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public async Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
