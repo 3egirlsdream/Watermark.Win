@@ -276,9 +276,8 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
-        public void SetColor()
+        public void SetColor(string color = "#F5F5F5")
         {
-            throw new NotImplementedException();
         }
 
         public async Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
@@ -371,6 +370,11 @@ namespace Watermark.Shared.Models
             design.SelectDefaultImageEvt = SelectDefaultImage;
             design.ImportFontEvt = ImportFont;
             return design;
+        }
+
+        public Task Update(Action<long, long> DownloadProgressChanged)
+        {
+            return Task.CompletedTask;
         }
 
         public Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()

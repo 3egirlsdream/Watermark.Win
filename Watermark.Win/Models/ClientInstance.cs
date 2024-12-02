@@ -1,4 +1,5 @@
-﻿using Masa.Blazor.Presets;
+﻿using Masa.Blazor;
+using Masa.Blazor.Presets;
 using Microsoft.JSInterop;
 using MudBlazor;
 using SkiaSharp;
@@ -134,7 +135,7 @@ namespace Watermark.Shared.Models
             });
         }
 
-        public void SetColor()
+        public void SetColor(string color = "#F5F5F5")
         {
             throw new NotImplementedException();
         }
@@ -143,6 +144,12 @@ namespace Watermark.Shared.Models
         {
             throw new NotImplementedException();
         }
+
+        public Task Update(Action<long, long> DownloadProgressChanged)
+        {
+            throw new NotImplementedException();
+        }
+
         public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

@@ -8,20 +8,19 @@
 @inject PageStackNavController NavController
 @layout MainLayout
 @inject IClientInstance ClientInstance
-@inject NavigationManager navigationManager
 @inherits PStackPageBase
 
 <style>
     .mud-overlay .mud-overlay-content {
-        width: 60%;
+    width: 60%;
     }
 
     .mud-switch {
-        margin-left: 0px;
-        margin-right: 0px;
-        margin-inline-start: 0px;
-        margin-inline-end: 0px;
-        margin-right: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    margin-right: 0px;
     }
 
 </style>
@@ -215,17 +214,6 @@ else
 </MudOverlay>
 
 @code {
-#if ANDROID
-
-	[Inject]
-	private IUpgradeService UpgradeService { get; set; }
-#endif
-
-    [Inject]
-    private IDialogService DialogService { get; set; }
-    [Parameter]
-    public EventCallback RefreshCollection { get; set; }
-
     string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
     bool openVip = false;
     bool checkUpdate = false;
@@ -244,15 +232,10 @@ else
         }
         NavController.PageClosed += (e, v) =>
         {
-#if ANDROID
-    MainActivity.SetColor.Invoke("#FFFFFF");
-#endif
+            ClientInstance.SetColor("#FFFFFF");
             if (v.RelativeUri == @"/login")
             {
-                if (RefreshCollection.HasDelegate)
-                {
-                    RefreshCollection.InvokeAsync();
-                }
+                ClientInstance.ReLogin();
             }
             else if (v.RelativeUri == @"/appsetting")
             {
@@ -260,29 +243,20 @@ else
             }
             else if (v.RelativeUri == @"/signup")
             {
-                if (RefreshCollection.HasDelegate)
-                {
-                    RefreshCollection.InvokeAsync();
-                }
+                ClientInstance.ReLogin();
             }
             StateHasChanged();
         };
     }
-    protected override void OnPageActivated(object? state)
-    {
-        var _stateFromPage4 = state?.ToString();
-    }
+
     async void Update()
     {
         ClientInstance.Haptic();
-#if ANDROID
-	if (!checkUpdate || DownLoadProgress > 0) return;
-	Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
-	await UpgradeService.DownloadFileAsync(ClientInstance.LinkPath, DownloadProgressChanged);
-	UpgradeService.InstallNewVersion();
-	DownLoadProgress = 0;
-	StateHasChanged();
-#endif
+        if (!checkUpdate || DownLoadProgress > 0) return;
+        await ClientInstance.Update(DownloadProgressChanged);
+        DownLoadProgress = 0;
+	    StateHasChanged();
+
     }
 
 

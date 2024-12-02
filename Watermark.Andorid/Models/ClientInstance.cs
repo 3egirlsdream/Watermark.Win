@@ -16,10 +16,12 @@ namespace Watermark.Shared.Models
     public class ClientInstance : IClientInstance
     {
         readonly APIHelper api;
-        public ClientInstance(APIHelper api) 
+        readonly IUpgradeService upgradeService;
+        public ClientInstance(APIHelper api, IUpgradeService upgradeService) 
         {
             this.api = api;
-        }
+            this.upgradeService = upgradeService;
+        }   
         public string LinkPath { get; set; }
         public string UpdateMessage { get; set; }
         public string UpdateVersion { get; set; }
@@ -324,10 +326,10 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
-        public void SetColor()
+        public void SetColor(string color = "#F5F5F5")
         {
 #if ANDROID
-            MainActivity.SetColor?.Invoke(ICONS.Colors.Gray.Light4);
+            MainActivity.SetColor?.Invoke(color);
 #endif
         }
 
@@ -369,6 +371,14 @@ namespace Watermark.Shared.Models
             {
             });
             return design;
+        }
+
+        public async Task Update(Action<long, long> DownloadProgressChanged)
+        {
+            Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
+            await upgradeService.DownloadFileAsync(LinkPath, DownloadProgressChanged);
+            upgradeService.InstallNewVersion();
+
         }
     }
 }

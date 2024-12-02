@@ -12,6 +12,7 @@
 @inject PageStackNavController NavController
 @layout MainLayout
 @inject IClientInstance ClientInstance
+@inherits PStackPageBase
 <style>
     .m-tab:hover {
     background: transparent !important;
@@ -76,7 +77,7 @@
             <SwiperTabItem>
                 <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
                     <MudGrid Class="pt-2" Justify="Justify.FlexStart">
-                        @foreach (var t in ILikeTemplates)
+                        @foreach (var t in GlobalCache.ILikeTemplates)
                         {
                             <MudItem xs="6" Style="padding:4px;">
                                 <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
@@ -140,7 +141,6 @@
     bool loading_down = true;
     StringNumber tab = "我的下载";
     List<string> tab1Head = ["我的下载", "我的收藏"];
-    List<WMZipedTemplate> ILikeTemplates = new();
     Dictionary<string, int> Versions = [];
     WMZipedTemplate FocusImage;
     char FocusImageType = ' ';
@@ -153,6 +153,12 @@
     string FocusImageSrc = "";
     ViewParameter parameter = new();
     FailedBox failedBox = new();
+
+    protected override void OnPageActivated(object state)
+    {
+        base.OnPageActivated(state);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -169,15 +175,15 @@
             }
             await LoadTemplates();
             await LoadCollectTemplate();
-            await api.DownloadLogoes();
             await InitVersion(GlobalCache.DownloadedTemplates.Select(x => x.WMCanvas.ID).ToList());
-            await api.PageVisitRecord(ProgramPage.MyTemplate, DeviceType.Andorid);
             navigationManager.LocationChanged += (e, q) =>
             {
                 parameter.FocusImageShow = false;
                 StateHasChanged();
             };
             Global.Callback = new Action(async () => await InvokeAsync(StateHasChanged));
+            var _ = api.PageVisitRecord(ProgramPage.MyTemplate, DeviceType.Andorid);
+            var __ = api.DownloadLogoes();
         }
         catch (Exception ex)
         {
@@ -241,8 +247,8 @@
         var getILike = await api.GetILike(Global.CurrentUser?.ID ?? "");
         if (getILike != null && getILike.success && getILike.data != null)
         {
-            ILikeTemplates = getILike.data;
-            ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
+            GlobalCache.ILikeTemplates = getILike.data;
+            GlobalCache.ILikeTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         }
 
     }

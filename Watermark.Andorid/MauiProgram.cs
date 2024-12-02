@@ -53,9 +53,7 @@ namespace Watermark.Andorid
                     }
                 };
             }, ServiceLifetime.Scoped);
-#if ANDROID
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
-#endif
             builder.Services.AddSingleton<WMDesignFunc>();
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();

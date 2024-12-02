@@ -14,6 +14,7 @@
 @inject IClientInstance ClientInstance
 @inject NavigationManager navigationManager
 @implements IDisposable
+@inherits PStackPageBase
 <style scoped>
     .market-tab {
     }
@@ -147,7 +148,8 @@
                     <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
                         @if (!string.IsNullOrEmpty(t.Src))
                         {
-                            <MudImage Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                            <MImage Contain Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" LazySrc="./img/loading.png" >
+                            </MImage>
                         }
                         else
                         {
@@ -306,6 +308,7 @@
     {
         return tags.Select(x => new BlockTextTag(x, "#1976d2", "white")).ToList();
     }
+
     public void Dispose()
     {
         NavController.TabChanged -= NavControllerOnTabChanged;

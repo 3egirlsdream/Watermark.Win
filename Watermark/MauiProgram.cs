@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
 using Watermark.Shared.Models;
+using Watermark.Models;
 //using Watermark.Shared.Models;
 
 namespace Watermark
@@ -53,6 +54,7 @@ namespace Watermark
             }, ServiceLifetime.Scoped);
             builder.Services.AddSingleton<WMDesignFunc>();
             builder.Services.AddMudServices();
+            builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IClientInstance, ClientInstance>();
 

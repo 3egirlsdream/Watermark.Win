@@ -71,8 +71,4 @@
     <ProjectReference Include="..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
-  </ItemGroup>
-
 </Project>

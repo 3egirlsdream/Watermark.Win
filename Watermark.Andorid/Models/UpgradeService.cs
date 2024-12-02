@@ -6,34 +6,6 @@ using Watermark.Shared.Models;
 
 namespace Watermark.Andorid.Models
 {
-    public interface IUpgradeService
-    {
-        /// <summary>
-        /// 检查更新
-        /// </summary>
-        /// <param name="url">
-        /// 检查URL
-        /// </param>
-        /// <returns></returns>
-        Task<Dictionary<string, string>> CheckUpdatesAsync(string url);
-
-        /// <summary>
-        /// 下载安装文件
-        /// </summary>
-        /// <param name="url">
-        /// 下载URL
-        /// </param>
-        /// <param name="action">
-        /// 进度条处理方法
-        /// </param>
-        /// <returns></returns>
-        Task DownloadFileAsync(string url, Action<long, long> action);
-
-        /// <summary>
-        /// 安装APK的方法
-        /// </summary>
-        void InstallNewVersion();
-    }
     public class UpgradeService : IUpgradeService
     {
         readonly HttpClient _client;
