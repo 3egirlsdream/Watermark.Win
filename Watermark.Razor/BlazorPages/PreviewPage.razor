@@ -827,12 +827,28 @@
     {
         SrcLoading = true;
         StateHasChanged();
-        CurrentTemplateCanvas.Exif = CurrentImage.Canvas.Exif;
-        CurrentTemplateCanvas.Path = CurrentImage.Path;
-        var b64 = await helper.GenerationAsync(CurrentTemplateCanvas, null, true, false);
-        CurrentImage.Src = await JSRuntime.InvokeAsync<string>("byteToUrl", b64);
-        SrcLoading = false;
-        StateHasChanged();
+        try
+        {
+            CurrentTemplateCanvas.Exif = CurrentImage.Canvas.Exif;
+            CurrentTemplateCanvas.Path = CurrentImage.Path;
+            var b64 = await helper.GenerationAsync(CurrentTemplateCanvas, null, true, false);
+            if (!string.IsNullOrEmpty(CurrentImage.Src))
+            {
+                await Global.RevokeUrl(JSRuntime, CurrentImage.Src);
+            }
+            CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
+            b64 = null;
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            SrcLoading = false;
+            StateHasChanged();
+            GC.Collect();
+        }
     }
 
     void CloseDrawerClick()

@@ -9,12 +9,12 @@
 
 <style>
     .image-select1 {
-        border-radius: 5px;
-        border: 1px dashed lightgrey;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 2px auto
+    border-radius: 5px;
+    border: 1px dashed lightgrey;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px auto
     }
 </style>
 
@@ -72,6 +72,7 @@
         {
             Directory.CreateDirectory(basePath);
         }
+        canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
         Ok?.Invoke(canvas);
         if (OnClose.HasDelegate)
         {

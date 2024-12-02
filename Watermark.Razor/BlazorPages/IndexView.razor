@@ -41,7 +41,7 @@
                             @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
                             {
                                 <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                    <MudCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
                                         {
                                             <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
@@ -54,14 +54,14 @@
                                 <MudText Typo="Typo.h5"><b>拼图</b></MudText>
                             </MudItem>
                             <MudItem xs="6" Style="padding:4px;">
-                                <MCard Style="padding:16px;background:#E5E5E5;height:220px;display:flex;align-items:center;justify-content:center" Flat OnClick="OpenSplit">
+                                <MCard Style="padding:16px;background:#E5E5E5;height:200px;display:flex;align-items:center;justify-content:center" Flat OnClick="OpenSplit">
                                     <Split/>
                                 </MCard>
                             </MudItem>
                             @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
                             {
                                 <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:220px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                    <MudCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
                                         {
                                             <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
@@ -80,7 +80,7 @@
                         @foreach (var t in GlobalCache.ILikeTemplates)
                         {
                             <MudItem xs="6" Style="padding:4px;">
-                                <MudCard style="padding:16px;background:#E5E5E5;height:220px" class="flex-vertical-center" Elevation="0">
+                                <MudCard style="padding:16px;background:#E5E5E5;height:200px" class="flex-vertical-center" Elevation="0">
                                     @if (!string.IsNullOrEmpty(t.Src))
                                     {
                                         <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />

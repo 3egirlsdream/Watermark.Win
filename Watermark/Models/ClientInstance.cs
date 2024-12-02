@@ -194,6 +194,7 @@ namespace Watermark.Shared.Models
                         GlobalCache.DownloadedTemplates.Insert(idx, dir);
                     }
                     Versions = await InitVersion([watermarkId], api);
+                    Global.Callback?.Invoke();
                 }
             });
             if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))

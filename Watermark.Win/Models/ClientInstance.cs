@@ -137,7 +137,6 @@ namespace Watermark.Shared.Models
 
         public void SetColor(string color = "#F5F5F5")
         {
-            throw new NotImplementedException();
         }
 
         public Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
@@ -147,7 +146,7 @@ namespace Watermark.Shared.Models
 
         public Task Update(Action<long, long> DownloadProgressChanged)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
