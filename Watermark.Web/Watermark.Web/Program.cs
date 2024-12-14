@@ -2,6 +2,7 @@ using Watermark.Web.Client.Pages;
 using Watermark.Web.Components;
 using MudBlazor;
 using MudBlazor.Services;
+using Watermark.Shared.Models;
 namespace Watermark.Web
 {
     public class Program
@@ -15,6 +16,9 @@ namespace Watermark.Web
                 .AddInteractiveWebAssemblyComponents().AddInteractiveServerComponents();
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
+            builder.Services.AddSingleton<APIHelper>();
+            builder.Services.AddSingleton<IClientInstance, ClientInstance>();
+            builder.Services.AddMasaBlazor();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

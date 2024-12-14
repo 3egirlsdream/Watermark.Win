@@ -13,11 +13,6 @@
 @layout MainLayout
 @inject IClientInstance ClientInstance
 @inherits PStackPageBase
-<style>
-    .m-tab:hover {
-    background: transparent !important;
-    }
-</style>
 <div style="height:100%;">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var e in tab1Head)
@@ -154,16 +149,10 @@
     ViewParameter parameter = new();
     FailedBox failedBox = new();
 
-    protected override void OnPageActivated(object state)
-    {
-        base.OnPageActivated(state);
-    }
-
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            await GlobalConfig.InitConfig();
             if(GlobalConfig.AGREE_PRIVATE) 
             {
                 Global.PrimaryKey = ClientInstance.Key();

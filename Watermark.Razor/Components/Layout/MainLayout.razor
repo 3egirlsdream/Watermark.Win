@@ -5,6 +5,7 @@
 @inherits LayoutComponentBase
 @inject IClientInstance ClientInstance
 @inject APIHelper api
+@inject PageStackNavController NavController
 
 <MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
 <MudDialogProvider />
@@ -21,19 +22,19 @@
             </MErrorHandler>
         </MMain>
         <MBottomNavigation @bind-Value="Value"
-                           App
-                           Grow
-                           Shift
-                           Color="primary">
-            <MButton Href="/" Class="h">
+        App
+        Grow
+        Shift
+        Color="primary">
+            <MButton OnClick="@(() => NavController.Replace("/"))">
                 <span>我的模板</span>
                 <MIcon>mdi-download-box</MIcon>
             </MButton>
-            <MButton Href="/market" Class="h">
+            <MButton OnClick="@(() => NavController.Replace("/market"))">
                 <span>模板市场</span>
                 <MIcon>mdi-shopping</MIcon>
             </MButton>
-            <MButton Href="/settings" Class="h">
+            <MButton OnClick="@(() => NavController.Replace("/settings"))">
                 <span>我</span>
                 <MIcon>mdi-account</MIcon>
             </MButton>
@@ -42,43 +43,23 @@
 </div>
 
 
-<MDialog Value="!GlobalConfig.AGREE_PRIVATE" Fullscreen Transition="" ContentStyle="display:flex;">
+<MDialog @bind-Value="showPrivate" Fullscreen Transition="" ContentStyle="display:flex;">
     <FirstPage OnClosed="OnSave" />
 </MDialog>
-<style>
-    .h {
-    }
-
-    .page .h .m-btn__content:hover {
-        background: white !important;
-    }
-
-    .page .m-btn:not(.m-btn--round).m-size--default {
-        padding: 0 !important
-    }
-</style>
-
 @code {
-    StringNumber v = 0;
-    StringNumber Value
-    {
-        get => v;
-        set
-        {
-            v = value;
-            ClientInstance.Haptic();
-            StateHasChanged();
-        }
-    }
+    private StringNumber? Value;
     bool OpenPrivate = false;
-
+    private bool showPrivate = false;
     protected override async Task OnInitializedAsync()
     {
+        await GlobalConfig.InitConfig();
+        showPrivate = !GlobalConfig.AGREE_PRIVATE;
         await Global.InitTemplateMarket(api);
     }
 
     void OnSave(bool v)
     {
+        showPrivate = !v;
         GlobalConfig.AGREE_PRIVATE = v;
     }
 }

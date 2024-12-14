@@ -6,6 +6,7 @@ using MudBlazor;
 using Newtonsoft.Json.Linq;
 using SkiaSharp;
 using System.Collections.Concurrent;
+using System.IO.Compression;
 using System.Text;
 using Watermark.Andorid;
 using Watermark.Andorid.Models;
@@ -379,6 +380,42 @@ namespace Watermark.Shared.Models
             await upgradeService.DownloadFileAsync(LinkPath, DownloadProgressChanged);
             upgradeService.InstallNewVersion();
 
+        }
+
+        public async Task<bool> Download(string directory, string fileName, string extension)
+        {
+            try
+            {
+                using (var stream = await FileSystem.OpenAppPackageFileAsync($"{fileName}.{extension}"))
+                {
+                    if (!Directory.Exists(Global.AppPath.TemplatesFolder))
+                    {
+                        Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+                    }
+
+                    if(extension == "zip")
+                    {
+                        var target = Path.Combine(directory, fileName);
+                        if (Directory.Exists(target))
+                        {
+                            Directory.Delete(target, true);
+                        }
+                        Directory.CreateDirectory(target);
+                        await Task.Run(() => ZipFile.ExtractToDirectory(stream, target, true));
+                    }
+                    else if (new string[] { "otf", "ttf" }.Contains(extension))
+                    {
+                        var target = Path.Combine(directory, fileName, extension);
+                        using var fs = new FileStream(target, FileMode.Create);
+                        stream.CopyTo(fs);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 }

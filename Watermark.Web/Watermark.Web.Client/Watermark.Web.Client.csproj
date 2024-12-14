@@ -11,17 +11,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Content Remove="BlazorPages\Design.razor" />
-	  <Content Remove="BlazorPages\EditComponentDialog.razor" />
-	  <Content Remove="BlazorPages\ExifConfig.razor" />
-	  <Content Remove="BlazorPages\LoginDialog.razor" />
-	  <Content Remove="BlazorPages\MainView.razor" />
-	  <Content Remove="BlazorPages\MyTemplates.razor" />
-	  <Content Remove="BlazorPages\QiniuManagementDialog.razor" />
-	  <Content Remove="BlazorPages\SignUpDialog.razor" />
-	  <Content Remove="BlazorPages\SignUpPage.razor" />
-	  <Content Remove="BlazorPages\TemplatesMarket.razor" />
-	  <Content Remove="BlazorPages\UploadTemplateDialog.razor" />
 	  <Content Remove="Mobile\TemplatesMarketMobile.razor" />
 	</ItemGroup>
 
@@ -34,10 +23,6 @@
 		<PackageReference Include="MudBlazor" Version="6.12.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="BlazorPages\" />
 	</ItemGroup>
 
 	<ItemGroup>
