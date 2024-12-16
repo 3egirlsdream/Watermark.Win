@@ -24,7 +24,7 @@
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
         <div class="d-space-between">
             <Label Small="false" Bold="null" Name="增强EXIF解析" />
-            <MSwitch @bind-Value="@GlobalConfig.SECOND_EXIF" Color="primary" HideDetails="true" Dense />
+            <MSwitch @bind-Value="@GlobalConfig.SECOND_EXIF" Color="primary" HideDetails="true" Inset Dense Flat/>
         </div>
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
@@ -41,6 +41,11 @@
     </MCard>
 
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
+        <div class="d-space-between" onclick="window.location.href='http://thankful.top/private';">
+            <Label Small="false" Bold="null" Name="隐私协议" />
+            <MIcon Small>@ICONS.ArrowRight</MIcon>
+        </div>
+        <MDivider Class="my-2" />
         <div class="d-space-between" @onclick="RevertArgreement">
             <Label Small="false" Bold="null" Name="撤回隐私协议" />
             <MIcon Small>@ICONS.Revert</MIcon>

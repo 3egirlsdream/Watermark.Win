@@ -149,6 +149,11 @@ namespace Watermark.Shared.Models
             return Task.CompletedTask;
         }
 
+        public Task<bool> Download(string directory, string fileName, string extension)
+        {
+            throw new NotImplementedException();
+        }
+
         public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

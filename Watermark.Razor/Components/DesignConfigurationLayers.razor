@@ -12,7 +12,7 @@
             {
                 <div style="align-items: center;display:flex;height: 36px" class="mx-1">
                     <Label Name="¹Ì¶¨Í¼Æ¬"></Label>
-                    <MSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="primary" Class="mx-1" />
+                    <MSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="primary" Class="mx-1" Flat Inset/>
                 </div>
             }
             <ImageSelect ImagesBase64="ImagesBase64" Key="@container.ID" Delete="() => RemoveImage(container)" Size="250" SelectDefaultImage="()=> SelectImage(container)" Simple="true" />
