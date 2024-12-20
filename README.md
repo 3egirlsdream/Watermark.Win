@@ -4,6 +4,11 @@ After designed template, you can import photo to program, and support muilt sele
 
 ![main](https://github.com/3egirlsdream/Watermark.Win/assets/10288638/65e3018e-b4c1-4be0-b419-5f49be15f022)
 
+# Support platform
+- Windows 10+
+- Android
+- iOS
+  
 # Framework
 This is a blazor bybird program, Windows platform base WPF, Android and others is depend on MAUI
 
