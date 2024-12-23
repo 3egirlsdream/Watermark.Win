@@ -1,0 +1,58 @@
+﻿@using Watermark.Shared.Models
+<style>
+
+    .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    }
+    .text-style {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500 !important;
+    color:#424242;
+    line-height:1.75;
+    letter-spacing:0.02857em;
+    text-transform:uppercase;
+    }
+</style>
+<div class="setting-row" @onclick="OnClick">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <span class="text-style">
+            @Text
+        </span>
+    }
+    @if (MSwith)
+    {
+        <MSwitch TValue="bool" Value="@Value" ValueChanged="ValueChanged" Color="primary" HideDetails="true" Inset Dense Flat />
+    }
+    else 
+    {
+        <MIcon>@Icon</MIcon>
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+    [Parameter]
+    public string Text { get; set; }
+    [Parameter]
+    public string Icon { get; set; }
+    [Parameter]
+    public bool MSwith { get; set; } = false;
+    [Parameter]
+    public bool Value { get; set; }
+    [Parameter]
+    public EventCallback<bool> ValueChanged { get; set; }
+}

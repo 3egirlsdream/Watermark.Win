@@ -19,56 +19,56 @@
     .market-tab {
     }
 
-        .market-tab .m-tabs .div:nth-child(1) {
-            height: 30px
-        }
+    .market-tab .m-tabs .div:nth-child(1) {
+    height: 30px
+    }
 
-        .market-tab .m-item-group {
-            height: 30px;
-        }
+    .market-tab .m-item-group {
+    height: 30px;
+    }
 
     .row--dense > .col, .row--dense > [class*=col-] {
-        padding: 2px;
+    padding: 2px;
     }
 
     .m-slide-group__prev {
-        display: none !important;
+    display: none !important;
     }
 
     .dfm-card-name {
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
     }
 
     .dfm-card-user-name {
-        position: relative;
-        display: flex;
-        align-items: center;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow-x: hidden
+    position: relative;
+    display: flex;
+    align-items: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden
     }
 
     .dfm-card-footer {
-        position: relative;
-        height: 30px;
-        display: flex;
-        align-items: center;
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
     }
 
 
     .flex-vertical-center {
-        display: flex;
-        align-items: center;
+    display: flex;
+    align-items: center;
     }
 
     .swiper-wrapper {
-        height: 100% !important;
+    height: 100% !important;
     }
 
     .m-presets-block-text > div:nth-child(2) {
-        overflow: hidden;
+    overflow: hidden;
     }
 </style>
 
@@ -95,7 +95,7 @@
                                     @if (sub.Item1 == "最新")
                                     {
                                         <MInfiniteScroll Parent="@("#infinite-scroll-usage" + subscribed.IndexOf(sub))" Style="margin:auto;"
-                                                         OnLoad="@HandleOnLoad">
+                                        OnLoad="@HandleOnLoad">
                                         </MInfiniteScroll>
                                     }
                                 </MCard>
@@ -112,18 +112,20 @@
             <MProgressCircular Indeterminate Color="primary" Width="2" />
         </MOverlay>
     }
-
+    <MOverlay Absolute Contained @bind-Value="showError" Light>
+        <MButton Elevation="0" OnClick="OnRefresh">加载失败，点击重试</MButton>
+    </MOverlay>
     <MDialog @bind-Value="parameter.FocusImageShow" ContentClass="pa-2" ContentStyle="display:flex;align-items:center;background:#EAEAEA;outline:0px;">
         <TemplateLargeView FocusImage="parameter.FocusImage"
-                           FocusImageId="@parameter.FocusImageId"
-                           FocusImageSrc="@parameter.FocusImageSrc"
-                           FocusImageType="parameter.FocusImageType"
-                           ILikeTemplates="parameter.ILikeTemplates"
-                           subscribed="subscribed"
-                           ZipedTemplates="ZipedTemplates"
-                           DownloadEvent="DownloadTemplate"
-                           CloseEvent="Close"
-                           SubscribeEvent="Subscribe" />
+        FocusImageId="@parameter.FocusImageId"
+        FocusImageSrc="@parameter.FocusImageSrc"
+        FocusImageType="parameter.FocusImageType"
+        ILikeTemplates="parameter.ILikeTemplates"
+        subscribed="subscribed"
+        ZipedTemplates="ZipedTemplates"
+        DownloadEvent="DownloadTemplate"
+        CloseEvent="Close"
+        SubscribeEvent="Subscribe" />
     </MDialog>
 </div>
 
@@ -131,6 +133,7 @@
     StringNumber tab = "推荐";
     List<string> tabs = [];
     bool loadMore = true;
+    bool showError = false;
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
     List<WMZipedTemplate> ZipedTemplates = new();
     int start = 1;
@@ -145,15 +148,22 @@
             @foreach (var t in products)
             {
                 <MCol Cols="6">
-                    <MCard Class="pa-2" style="background:#E5E5E5;" Elevation="0" Flat OnClick="()=> OpenFocus('a', t, true)">
+                    <MCard Class="pa-2" Color="#E5E5E5" Flat OnClick="()=> OpenFocus('a', t, true)">
                         @if (!string.IsNullOrEmpty(t.Src))
                         {
-                            <MImage Contain Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src" LazySrc="./img/loading.png" >
+                            <MImage Contain Style="@($"width:100%;height:{(t.Tags != null && t.Tags.Any() ? "165px" : "181px")};")" Src="@t.Src">
+                                <PlaceholderContent>
+                                    <MRow Class="fill-height ma-0"
+                                          Align="@AlignTypes.Center"
+                                          Justify="@JustifyTypes.Center">
+                                        <MProgressCircular Indeterminate Width="2"></MProgressCircular>
+                                    </MRow>
+                                </PlaceholderContent>
                             </MImage>
                         }
                         else
                         {
-                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px)" />
+                            <MProgressCircular Color="primary" Indeterminate Style="margin-left:calc(50% - 20px)" />
                         }
                         <MCardActions Style="padding:0px;">
                             <div style="width:100%;">
@@ -224,7 +234,7 @@
 
     async Task LoadTemplatesMarket()
     {
-        if (!GlobalCache.AllTempaltes.Any()) GlobalCache.AllTempaltes = (await api.GetWatermarks("", 1, 999)).Where(x => x.Visible);
+        if (!GlobalCache.AllTempaltes.Any()) await Global.InitTemplateMarket(api);
         var recommend = GlobalCache.AllTempaltes.Where(x => x.Recommend);
         var hottest = GlobalCache.AllTempaltes.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
         var newest = GlobalCache.AllTempaltes.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
@@ -242,13 +252,15 @@
             }
         }
         subscribed.Add(Tuple.Create("推荐", ZipedTemplates.Where(x => x.Recommend).ToList()));
-
         subscribed.Add(Tuple.Create("热门", hottest.Where(x => !subUser.Contains(x.UserId)).ToList()));
         subscribed.Add(Tuple.Create("拼图", splits));
-
         subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 12).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         tabs = subscribed.Select(x => x.Item1).ToList();
+        if(!GlobalCache.AllTempaltes.Any()) 
+        {
+            showError = true;
+        }
     }
 
     async Task<List<string>> IntiSubscribedUserList()

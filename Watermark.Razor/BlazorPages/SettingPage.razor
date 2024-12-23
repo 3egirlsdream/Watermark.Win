@@ -1,6 +1,7 @@
 ﻿@page "/settings"
 @using Masa.Blazor.Presets.PageStack.NavController
 @using Watermark.Razor.Components
+@using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Components.Layout
 @using Watermark.Shared.Enums
@@ -24,34 +25,15 @@
     }
 
 </style>
-<MudToolBar Style="height:40px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);background:#fff;z-index:10">
-    <MudText Typo="Typo.subtitle1" Style="margin-left:16px;">
-        你好，
-        @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
-        {
-            <span>@Global.CurrentUser.DISPLAY_NAME</span>
-        }
-        else
-        {
-            <span>游客</span>
-        }
-    </MudText>
-    @*  <MudStack Row Style="position:absolute;right:15px;" >
-        <MudIcon Icon="@(ShowUserInfo ? Icons.Material.Filled.Clear : @Icons.Material.Filled.AddCircleOutline)" Style="margin-right: 0px;" @onclick="()=> ShowUserInfo = !ShowUserInfo" />
-    </MudStack> *@
-
-
-    <MudPopover Style="width:200px;padding: 0 !important;" OverflowBehavior="OverflowBehavior.FlipNever" @bind-Open="@ShowUserInfo" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="pa-4" Elevation="25">
-        <MudList Clickable="true" Dense="true">
-            <MudListItem Icon="@Icons.Material.Filled.DesignServices" OnClick="@(()=>NavController.Push("/design/B735DFC73A0B4080B11BBCFD3AE833D6"))">
-                设计模板
-            </MudListItem>
-        </MudList>
-    </MudPopover>
-</MudToolBar>
+<MToolbar Dense Flat>
+    <div style="display:flex;flex-direction:column;">
+        <span>我的</span>
+        <div style="height:2px;border-radius:4px;" class="primary"></div>
+    </div>
+</MToolbar>
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
-    <MCard Style="@($"padding:10px;{cardStyle}")" Elevation="0">
+    <MCard Style="@($"padding:10px;margin:10px 16px 20px 16px;background:{Colors.Grey.Lighten4}")" Flat>
         <div style="display:flex;align-items:center;justify-content: flex-start">
             @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
             {
@@ -61,7 +43,7 @@
             }
             else
             {
-                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Style="float:left;" />
+                <MIcon Color="primary" Style="float:left;">@ICONS.Account</MIcon>
             }
 
 
@@ -74,7 +56,7 @@
                     }
                     else if (Global.DeviceType != DeviceType.IOS)
                     {
-                        <MudButton Variant="Variant.Outlined" Class="ml-5" Size="Size.Small" OnClick="OpenVip">开通会员</MudButton>
+                        <MButton Outlined Class="ml-5" Small OnClick="OpenVip">开通会员</MButton>
                     }
                 </p>
                 <p class="font-weight-light ma-0">@Global.CurrentUser.USER_NAME</p>
@@ -85,25 +67,20 @@
         {
             <div Style="display:flex;align-items:center;line-height: 32px;">
                 <Watermark.Razor.Parts.IconCoin />
-                <MudText Typo="Typo.overline" Color="Color.Inherit" Style="line-height: 32px;">
-                    @Global.CurrentUser.COINS
-                </MudText>
-                <MudText Typo="Typo.overline" Color="Color.Inherit" Class="ml-4">
-                    会员到期时间：@Global.CurrentUser.EXPIRE_DATE
-                </MudText>
+                <Label Name="@(Global.CurrentUser.COINS + "")" />
+                <Label Name="@($"会员到期时间：{Global.CurrentUser.EXPIRE_DATE}")" Class="ml-4" />
             </div>
         }
     </MCard>
 }
 else
 {
-    <MudPaper Style="@($"padding:10px;{cardStyle}")" Elevation="0">
-        <MudStack Row>
-
+    <MCard Style="@($"padding:10px;{cardStyle}")" Flat>
+        <Row>
             <MButton OnClick="@(() => NavController.Push("/login"))" Text>登录</MButton>
             <MButton OnClick="@(() => NavController.Push("/signup/0"))" Text>注册</MButton>
-        </MudStack>
-    </MudPaper>
+        </Row>
+    </MCard>
 }
 
 @* 活动面板 *@
@@ -123,28 +100,24 @@ else
 </MudPaper> *@
 
 
-<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="Update">
-        <MudStack Row style="align-items: center">
-            <MudText Typo="Typo.button"> 当前版本 @($" {ClientInstance.GetVersion().ToString()}")</MudText>
+<MCard Style="@cardStyle" Flat class="pa-3">
+    <SettingPanel OnClick="Update" Icon="@ICONS.ArrowRight">
+        <Row style="align-items: center">
+            @($"当前版本{ClientInstance.GetVersion().ToString()}")
             @if (checkUpdate)
             {
-                <MudChip Size="Size.Small" Color="Color.Error">new</MudChip>
+                <MChip Small Color="error">new</MChip>
             }
-        </MudStack>
-        <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
-    </MudStack>
+        </Row>
+    </SettingPanel>
     @if (DownLoadProgress > 0)
     {
-        <MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" Class="mr-5" style="width:auto" />
+        <MProgressLinear Color="primary" Value="@DownLoadProgress" Class="mr-5" style="width:auto" />
     }
-</MudPaper>
+</MCard>
 
-<MudPaper Elevation="0" Style="@cardStyle" class="pa-3">
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="() => openLogoDialog = true">
-        <MudText Typo="Typo.button"> 导入图标 </MudText>
-        <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
-    </MudStack>
+<MCard Flat Style="@cardStyle" Class="pa-3">
+    <SettingPanel OnClick="() => openLogoDialog = true" Text="导入图标" Icon="@ICONS.ArrowRight" />
     @* <MudDivider Class="my-2" />
     <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))">
         <MudText Typo="Typo.button"> PC客户端 </MudText>
@@ -157,37 +130,22 @@ else
         <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
     </MudStack> *@
 
-    <MudDivider Class="my-2" />
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("836325187"))">
-        <MudText Typo="Typo.button"> 交流群：836325187</MudText>
-        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" />
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=>ShowQuestion = true">
-        <MudText Typo="Typo.button"> 常见问题</MudText>
-        <MudIcon Icon="@Icons.Material.Filled.QuestionMark" Size="Size.Small" />
-    </MudStack>
-</MudPaper>
+    <MDivider Class="my-2" />
+    <SettingPanel OnClick="@(()=>CopyClipboard("836325187"))" Text="交流群：836325187" Icon="@ICONS.ArrowRight" />
+    <MDivider Class="my-2" />
+    <SettingPanel OnClick="()=>ShowQuestion = true" Text="常见问题" Icon="@ICONS.ArrowRight" />
+</MCard>
 
-<MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="()=> { Global.CurrentUser = null; }">
-        <MudText Typo="Typo.button"> 切换账号</MudText>
-        <MudIcon Icon="@Icons.Material.Filled.ExitToApp" Size="Size.Small" />
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="OpenSettings">
-        <MudText Typo="Typo.button">设置</MudText>
-        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Small" />
-    </MudStack>
+<MCard Style="@cardStyle" Flat Class="pa-3">
+    <SettingPanel OnClick="()=> { Global.CurrentUser = null; }" Text="切换账号" Icon="@ICONS.Exit" />
+    <MDivider Class="my-2" />
+    <SettingPanel OnClick="OpenSettings" Text="设置" Icon="@ICONS.Setting" />
     @if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
     {
-        <MudDivider Class="my-2" />
-        <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>NavController.Push("/dms"))">
-            <MudText Typo="Typo.button">APP数据</MudText>
-            <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
-        </MudStack>
+        <MDivider Class="my-2" />
+        <SettingPanel OnClick="@(()=>NavController.Push("/dms"))" Text="数据" Icon="@ICONS.ArrowRight" />
     }
-</MudPaper>
+</MCard>
 
 <MBottomSheet @bind-Value="@openVip" ContentStyle="height:60%;">
     <MSheet Style="height:100%;overflow:auto">
@@ -209,9 +167,9 @@ else
     </MSheet>
 </MBottomSheet>
 
-<MudOverlay Visible="@showUpdateOverlay" DarkBackground="true" Absolute="true" ZIndex="99999">
+<MOverlay @bind-Value="@showUpdateOverlay" Absolute="true" ZIndex="99999">
     <Watermark.Razor.Components.UpdateDialog CloseEvet="()=>showUpdateOverlay = false" UpdateEvet="Update" DownLoadProgress="DownLoadProgress" UpdateMessage="@ClientInstance.UpdateMessage" UpdateVersion="@ClientInstance.UpdateVersion" />
-</MudOverlay>
+</MOverlay>
 
 @code {
     string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
@@ -255,7 +213,7 @@ else
         if (!checkUpdate || DownLoadProgress > 0) return;
         await ClientInstance.Update(DownloadProgressChanged);
         DownLoadProgress = 0;
-	    StateHasChanged();
+        StateHasChanged();
 
     }
 

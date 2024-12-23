@@ -26,15 +26,15 @@
         Grow
         Shift
         Color="primary">
-            <MButton OnClick="@(() => NavController.Replace("/"))">
+            <MButton OnClick="@(() => RouteTo("/"))">
                 <span>我的模板</span>
                 <MIcon>mdi-download-box</MIcon>
             </MButton>
-            <MButton OnClick="@(() => NavController.Replace("/market"))">
+            <MButton OnClick="@(() => RouteTo("/market"))">
                 <span>模板市场</span>
                 <MIcon>mdi-shopping</MIcon>
             </MButton>
-            <MButton OnClick="@(() => NavController.Replace("/settings"))">
+            <MButton OnClick="@(() => RouteTo("/settings"))">
                 <span>我</span>
                 <MIcon>mdi-account</MIcon>
             </MButton>
@@ -61,5 +61,11 @@
     {
         showPrivate = false;
         GlobalConfig.AGREE_PRIVATE = v;
+    }
+
+    void RouteTo(string route) 
+    {
+        ClientInstance.Haptic();
+        NavController.Replace(route);
     }
 }

@@ -30,7 +30,7 @@
         <Label Name="@Desc" Small="false" Bold="@Bold"/>
         @if (ShowSwitch)
         {
-            <MSwitch Value="@Expanded" Color="#1976d2" Flat TValue="bool" Class="expand-style" ValueChanged="ExpandedChanged" />
+            <MSwitch Value="@Expanded" Color="#1976d2" Inset Flat TValue="bool" Class="expand-style" ValueChanged="ExpandedChanged" />
         }
     </div>
     @if (Expanded && ChildContent != null)

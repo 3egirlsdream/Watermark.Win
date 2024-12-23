@@ -5,7 +5,7 @@
 @using Watermark.Shared.Models
 @using Masa.Blazor
 @layout MainLayout
-@inject APIHelper api 
+@inject APIHelper api
 @inject IPopupService PopupService
 @inherits PStackPageBase
 @inject IClientInstance ClientInstance
@@ -16,42 +16,26 @@
 
 <div Style="text-align:center">
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <div class="d-space-between" @onclick="@(() => NavController.Push("/logout"))">
-            <Label Small="false" Bold="null" Name="注销账号" />
-            <MIcon Small>@ICONS.Delete</MIcon>
-        </div>
+        <SettingPanel OnClick="@(() => NavController.Push("/logout"))" Text="注销账号" Icon="@ICONS.ArrowRight" />
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <div class="d-space-between">
-            <Label Small="false" Bold="null" Name="增强EXIF解析" />
-            <MSwitch @bind-Value="@GlobalConfig.SECOND_EXIF" Color="primary" HideDetails="true" Inset Dense Flat/>
-        </div>
+        <SettingPanel Text="增强EXIF解析" @bind-Value="@GlobalConfig.SECOND_EXIF" MSwith="true" />
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.TemplatesFolder)">
-            <Label Small="false" Bold="null" Name="下载缓存" />
-            <MIcon Small>@ICONS.Delete</MIcon>
-        </div>
-
+        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" Text="下载缓存" Icon="@ICONS.ArrowRight" />
         <MDivider Class="my-2" />
-        <div class="d-space-between" @onclick="()=> DeleteCache(Global.AppPath.LogoesFolder)">
-            <Label Small="false" Bold="null" Name="图标缓存" />
-            <MIcon Small>@ICONS.Delete</MIcon>
-        </div>
+        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.LogoesFolder)" Text="图标缓存" Icon="@ICONS.ArrowRight" />
     </MCard>
 
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <div class="d-space-between" onclick="window.location.href='http://thankful.top/private';">
-            <Label Small="false" Bold="null" Name="隐私协议" />
-            <MIcon Small>@ICONS.ArrowRight</MIcon>
-        </div>
+        <SettingPanel Icon="@ICONS.ArrowRight">
+            <div style="flex: 1; display: flex;" onclick="window.location.href='http://thankful.top/private';">
+                隐私协议
+            </div>
+        </SettingPanel>
         <MDivider Class="my-2" />
-        <div class="d-space-between" @onclick="RevertArgreement">
-            <Label Small="false" Bold="null" Name="撤回隐私协议" />
-            <MIcon Small>@ICONS.Revert</MIcon>
-        </div>
+        <SettingPanel OnClick="RevertArgreement" Text="撤回隐私协议" Icon="@ICONS.ArrowRight" />
     </MCard>
-
 </div>
 
 
@@ -112,7 +96,7 @@
         NavController.Push("/logout");
     }
 
-    async void RevertArgreement() 
+    async void RevertArgreement()
     {
         GlobalConfig.AGREE_PRIVATE = false;
         Global.CurrentUser = null;

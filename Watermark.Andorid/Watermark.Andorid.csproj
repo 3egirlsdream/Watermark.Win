@@ -47,7 +47,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
-		<ApplicationTitle>水印相框大师</ApplicationTitle>
+		<ApplicationTitle>水印相框软件</ApplicationTitle>
 		<ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		<ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
 		<AndroidKeyStore>False</AndroidKeyStore>
@@ -57,7 +57,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
-		<ApplicationTitle>水印相框大师</ApplicationTitle>
+		<ApplicationTitle>水印相框软件</ApplicationTitle>
 		<ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		<ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
 		<AndroidKeyStore>False</AndroidKeyStore>
@@ -67,26 +67,32 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-ios|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.19041.0|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.19041.0|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationTitle>水印相框软件</ApplicationTitle>
 	</PropertyGroup>
 	
 	

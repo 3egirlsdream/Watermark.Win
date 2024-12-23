@@ -9,9 +9,9 @@
 
 <style>
     .hide {
-    text-overflow: ellipsis;
-    overflow-x: hidden;
-    white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow-x: hidden;
+        white-space: nowrap;
     }
 </style>
 <MudThemeProvider />
@@ -49,7 +49,7 @@
                     使用 水印相框大师 即表示你同意其 <a href="http://thankful.top/private">许可 & 隐私</a>声明
                 </MudText>
                 <MudButton StartIcon="@Icons.Custom.Brands.Microsoft" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://cdn.thankful.top/Watermark.Win.Update.exe">
-                   Windows下载
+                    Windows下载
                 </MudButton>
 
                 <MudButton StartIcon="@Icons.Material.Filled.Android" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk">Android下载</MudButton>
@@ -108,7 +108,9 @@
         </MudItem>
         <MudItem xs="12">
             <MudStack Justify="Justify.FlexEnd" Style="width:100%" Row="true">
-                <a href="https://beian.miit.gov.cn/">粤ICP备2021164431号</a>
+                <a href="https://beian.miit.gov.cn/">
+                    蜀ICP备2024092556号
+                </a>
             </MudStack>
         </MudItem>
 
@@ -173,7 +175,7 @@
     string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
     protected override void OnAfterRender(bool firstRender)
     {
-        if(firstRender) 
+        if (firstRender)
         {
             APIHelper api = new APIHelper();
             var _ = api.PageVisitRecord(Shared.Enums.ProgramPage.Index, Shared.Enums.DeviceType.Web);
@@ -182,6 +184,6 @@
 
     void Pay(int t, string s)
     {
-        
+
     }
 }
