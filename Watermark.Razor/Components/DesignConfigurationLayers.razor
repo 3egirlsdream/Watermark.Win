@@ -3,7 +3,18 @@
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Razor.Parts
-
+<style>
+    .meta-data-style {
+        border-bottom: 1px solid #808080;
+        height: 40px;
+        font-weight: normal;
+        justify-content: space-between;
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        flex-direction: row
+    }
+</style>
 @foreach (var container in canvas.Children)
 {
     <ExpandVisiblePanel Desc="@container.Name" @bind-Visible="container.Enabled" Class="ma-1 pa-1" Color="@ICONS.Colors.Gray.Light1" Bold="true">
@@ -112,8 +123,8 @@
                                         </div>
                                     </div>
                                     <ExpandPanel Desc="元数据参数" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light4">
-                                        <div style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;font-size:0.75rem;" class="ml-1">
-                                            <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+                                        <div class="ml-1 pa-1 meta-data-style">
+                                            <div style="flex:1;overflow-x:auto;white-space:nowrap">
                                                 @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                             </div>
                                             <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />
@@ -185,8 +196,8 @@
                     {
                         <ExpandPanel Desc="字体" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light3" Class="my-1 pa-1">
                             <ExpandPanel Desc="元数据参数" Expanded="true" ShowSwitch="false" Color="@ICONS.Colors.Gray.Light4">
-                                <div style="line-height:30px;border-bottom:1px solid #808080;height:30px;font-weight:normal;justify-content:space-between;display:flex;align-items:center;font-size:0.75rem;" class="ml-1">
-                                    <div style="width:calc(100% - 80px);float:left;overflow-x:auto;white-space:nowrap">
+                                <div class="ml-1 pa-1 meta-data-style">
+                                    <div style="flex: 1;overflow-x:auto;white-space:nowrap">
                                         @(string.Join(" ", mText.Exifs.Select(x => x.Prefix + x.Value + x.Suffix)))
                                     </div>
                                     <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />

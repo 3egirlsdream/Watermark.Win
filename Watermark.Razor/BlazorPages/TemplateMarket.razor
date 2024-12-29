@@ -235,7 +235,7 @@
     async Task LoadTemplatesMarket()
     {
         if (!GlobalCache.AllTempaltes.Any()) await Global.InitTemplateMarket(api);
-        var recommend = GlobalCache.AllTempaltes.Where(x => x.Recommend);
+        var recommend = GlobalCache.AllTempaltes.Where(x => x.Recommend).OrderByDescending(x => x.DateTimeCreated);
         var hottest = GlobalCache.AllTempaltes.Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).Take(36).ToList();
         var newest = GlobalCache.AllTempaltes.OrderByDescending(x => x.DateTimeCreated).Where(x => !x.Recommend && x.CanvasType == CanvasType.Normal).ToList();
         var splits = GlobalCache.AllTempaltes.Where(x => x.CanvasType == CanvasType.Split).ToList();
