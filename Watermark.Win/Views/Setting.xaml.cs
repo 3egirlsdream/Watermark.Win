@@ -475,7 +475,7 @@ namespace Watermark.Win.Views
         {
             using (var wc = new WebClient())
             {
-                var updatePath = "http://thankful.top:2038/api/public/dl/EMRyVNXX";
+                var updatePath = "https://cdn.thankful.top/Watermark.Win.Update.exe";
                 var fileName = "Watermark.Win.Update.exe";
                 string path = AppDomain.CurrentDomain.BaseDirectory + fileName;
                 try

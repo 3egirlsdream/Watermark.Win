@@ -92,7 +92,7 @@
     </div>
 
 
-    <MOverlay @bind-Value="@loading" Dark="false" Absolute="false" ZIndex="9999" Color="#e6e6e6" Opacity="1">
+    <MOverlay @bind-Value="@loading" Dark="false" Absolute="true" ZIndex="9999" Color="#e6e6e6" Opacity="1">
         <div Style="display:flex;flex-direction:column;height:160px;width:160px;align-items:center;justify-content:center">
             <MProgressCircular Indeterminate="true" Color="primary" Class="my-1" />
             <Label Name="@loadingMessage" />
