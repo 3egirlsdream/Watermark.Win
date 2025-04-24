@@ -397,5 +397,20 @@ namespace Watermark.Shared.Models
         {
             return Task.Run(()=> true);
         }
+
+        public void Exit()
+        {
+        }
+
+        public void OpenDesign(WMCanvas canvas)
+        {
+        }
+
+        public Task InteropInit(string appId)
+        {
+            return Task.CompletedTask;
+        }
+
+        public string AppTitle { get; set; } = "";
 	}
 }

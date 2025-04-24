@@ -14,6 +14,7 @@
 @inject IClientInstance ClientInstance
 @inherits PStackPageBase
 @using Color = MudBlazor.Color
+@inject LoadingService loadingService
 <div style="height:100%;">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var e in tab1Head)
@@ -105,10 +106,6 @@
                            CloseEvent="Close" />
     </MDialog>
 
-    <MOverlay Value="loading.Show">
-        <MProgressCircular indeterminate
-                           Size="64"></MProgressCircular>
-    </MOverlay>
     <MOverlay Value="@failedBox.faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
         <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
             <MudStack Style="text-align:center;">
@@ -154,6 +151,7 @@
     {
         try
         {
+            loadingService.Show("");
             if (GlobalConfig.AGREE_PRIVATE)
             {
                 Global.PrimaryKey = ClientInstance.Key();
@@ -355,6 +353,7 @@
         parameter.FocusImageShow = false;
         if (template.CanvasType == CanvasType.Normal)
         {
+            loadingService.Show("");
             loading.Message = "正在生成图片...";
             loading.Show = true;
             StateHasChanged();
