@@ -99,7 +99,7 @@
     async void RevertArgreement()
     {
         GlobalConfig.AGREE_PRIVATE = false;
-        Global.CurrentUser = null;
+        Global.CurrentUser = new();
         await Global.WriteAccount2LocalAsync("", "");
         Common.ShowMsg(PopupService, "撤销完成，当前仅浏览。", AlertTypes.Success);
     }

@@ -13,22 +13,22 @@
         <Watermark.Razor.Parts.CardTitle t="FocusImage" Tags="GetTags(FocusImage.Tags)" style="margin-top:4px" />
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top:0px;">
             <div style="display: flex; align-items: center;">
-                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="MudBlazor.Color.Default" Size="Size.Small" />
                 <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
                     @FocusImage?.UserDisplayName
                 </MudText>
             </div>
             <div style="display: flex;">
                 <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="()=>Subscribe(FocusImage?.UserId)">
-                    <MudIcon Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? Color.Warning : Color.Default)" Size="Size.Medium" />
+                    <MudIcon Icon="@Icons.Material.Filled.AddAlert" Style="padding:0px" Color="@(subscribed.Any(x=>x.Item1 == FocusImage?.UserDisplayName) ? MudBlazor.Color.Warning : MudBlazor.Color.Default)" Size="Size.Medium" />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">@($"{(subscribed.Any(x => x.Item1 == FocusImage?.UserDisplayName) ? "已订阅" : "订阅")}")</span></MudText>
                 </MudStack>
                 <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="PopupActionBar">
-                    <MudIcon Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? Color.Warning : Color.Default)" Size="Size.Medium" />
+                    <MudIcon Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Color="@(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? MudBlazor.Color.Warning : MudBlazor.Color.Default)" Size="Size.Medium" />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">@($"{(ILikeTemplates.Any(x => x.WatermarkId == FocusImage?.WatermarkId) ? "已收藏" : "收藏")}")</span></MudText>
                 </MudStack>
                 <MudStack style="text-align: center;gap:0px;align-items: center;" @onclick="()=>DownloadTemplate(FocusImage?.WatermarkId)">
-                    <MudIcon Icon="@Icons.Material.Filled.Download" Style="padding:0px" Color="Color.Primary" Size="Size.Medium"  />
+                    <MudIcon Icon="@Icons.Material.Filled.Download" Style="padding:0px" Color="MudBlazor.Color.Primary" Size="Size.Medium"  />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">下载</span></MudText>
                 </MudStack>
 
@@ -42,18 +42,18 @@
         <Watermark.Razor.Parts.CardTitle t="FocusImage" Tags="[]" style="margin-top:4px" />
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top:0px;">
             <div style="display: flex; align-items: center;">
-                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Default" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="MudBlazor.Color.Default" Size="Size.Small" />
                 <MudText Typo="Typo.overline" Style="@($"color:{Colors.Grey.Default};padding-top: 2px;margin-left:2px;")">
                     @FocusImage?.UserDisplayName
                 </MudText>
             </div>
             <div style="display: flex;">
                 <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="PopupActionBar">
-                    <MudIcon Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Color="Color.Warning" Size="Size.Medium" />
+                    <MudIcon Icon="@Icons.Material.Filled.StarBorder" Style="padding:0px" Color="MudBlazor.Color.Warning" Size="Size.Medium" />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">取消收藏</span></MudText>
                 </MudStack>
                 <MudStack style="text-align: center;gap:0px;align-items: center;" @onclick="()=>DownloadTemplate(FocusImage?.WatermarkId)">
-                    <MudIcon Icon="@Icons.Material.Filled.Download" Style="padding:0px" Color="Color.Primary" Size="Size.Medium"/>
+                    <MudIcon Icon="@Icons.Material.Filled.Download" Style="padding:0px" Color="MudBlazor.Color.Primary" Size="Size.Medium"/>
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">下载</span></MudText>
                 </MudStack>
 
@@ -69,16 +69,16 @@
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top:4px;">
             <MudStack style="text-align: center;gap:0px;margin-right:30px;align-items: center;" @onclick="@(() => NavController.Push($"/design/{FocusImageId}"))">
-                <MudIcon Icon="@Icons.Material.Filled.EditNote" Style="padding:0px" Color="Color.Default" Size="Size.Medium" />
+                <MudIcon Icon="@Icons.Material.Filled.EditNote" Style="padding:0px" Color="MudBlazor.Color.Default" Size="Size.Medium" />
                 <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">编辑</span></MudText>
             </MudStack>
             <div style="display: flex;">
                 <MudStack style="text-align: center;gap:0px;margin-right:20px;align-items: center;" @onclick="PopupActionBar">
-                    <MudIcon Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Color="Color.Default" Size="Size.Medium"  />
+                    <MudIcon Icon="@Icons.Material.Filled.Delete" Style="padding:0px" Color="MudBlazor.Color.Default" Size="Size.Medium"  />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">删除</span></MudText>
                 </MudStack>
                 <MudStack style="text-align: center;gap:0px;align-items: center;" @onclick="()=> GeneratePhoto(downloadedTemplates.First(x=>x.WatermarkId == FocusImageId)) ">
-                    <MudIcon Icon="@Icons.Material.Filled.Image" Style="padding:0px" Color="Color.Primary" Size="Size.Medium" />
+                    <MudIcon Icon="@Icons.Material.Filled.Image" Style="padding:0px" Color="MudBlazor.Color.Primary" Size="Size.Medium" />
                     <MudText Typo="Typo.subtitle2"><span style="font-weight:100;font-size: 12px;">使用模板</span></MudText>
                 </MudStack>
 

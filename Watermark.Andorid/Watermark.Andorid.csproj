@@ -140,6 +140,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Mobile\" />
       <Folder Include="wwwroot\resources\" />
     </ItemGroup>
 </Project>

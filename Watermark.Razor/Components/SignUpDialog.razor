@@ -29,7 +29,7 @@
             {
                 <MudStack Row="true" Justify="Justify.SpaceBetween" Style="display:flex;align-items:center;">
                     <MudTextField @bind-Value="Code" T="string" Label="验证码" Required="true" RequiredError="验证码不能为空" Margin="Margin.Dense" />
-                    <MudButton Disabled="@_processing" OnClick="ProcessSomething" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Style="height:30px;" DisableElevation>
+                    <MudButton Disabled="@_processing" OnClick="ProcessSomething" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Small" Style="height:30px;" DisableElevation>
                         @if (_processing)
                         {
                             <MudText Typo="Typo.button">@_processingTime</MudText>

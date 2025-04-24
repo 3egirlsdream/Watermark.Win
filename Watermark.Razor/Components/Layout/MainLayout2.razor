@@ -1,0 +1,32 @@
+﻿@using Masa.Blazor
+@using Watermark.Razor.BlazorPages
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@inherits LayoutComponentBase
+@inject IClientInstance ClientInstance
+@inject APIHelper api
+@inject PageStackNavController NavController
+
+<MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<div class="page">
+    <MApp>
+        <MMain>
+            <MErrorHandler>
+                <MContainer Style="padding:0px !important;height:calc(100vh - 0px);overflow:hidden">
+                    11111
+                </MContainer>
+            </MErrorHandler>
+        </MMain>
+    </MApp>
+</div>
+@code {
+    private StringNumber? Value;
+    bool OpenPrivate = false;
+    private bool showPrivate = false;
+    protected override async Task OnInitializedAsync()
+    {
+    }
+}

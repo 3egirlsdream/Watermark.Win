@@ -257,10 +257,7 @@
         subscribed.Add(Tuple.Create("最新", newest.Where(x => !subUser.Contains(x.UserId)).Take(start * 12).ToList()));
         ZipedTemplates.ForEach(x => x.Src = Global.GetSrc(x.WatermarkId));
         tabs = subscribed.Select(x => x.Item1).ToList();
-        if(!GlobalCache.AllTempaltes.Any()) 
-        {
-            showError = true;
-        }
+        showError = !GlobalCache.AllTempaltes.Any();
     }
 
     async Task<List<string>> IntiSubscribedUserList()

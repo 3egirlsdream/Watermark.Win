@@ -105,7 +105,7 @@ namespace Watermark.Shared.Models
             return Versions;
         }
 
-        async Task<WMZipedTemplate> LoadSingleTemplates(
+        static async Task<WMZipedTemplate> LoadSingleTemplates(
           string watermarkId
           , IWMWatermarkHelper helper
           , IPopupService PopupService
@@ -417,5 +417,20 @@ namespace Watermark.Shared.Models
                 return false;
             }
         }
+
+        public void Exit()
+        {
+        }
+
+        public void OpenDesign(WMCanvas canvas)
+        {
+        }
+
+        public Task InteropInit(string appId)
+        {
+            return Task.CompletedTask;
+        }
+
+        public string AppTitle { get; set; } = "";
     }
 }

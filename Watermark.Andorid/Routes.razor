@@ -1,6 +1,17 @@
-﻿<Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(Watermark.Razor.Components.AppSetting).Assembly])">
+﻿@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@using Watermark.Razor.BlazorPages
+<Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(Watermark.Razor.Components.AppSetting).Assembly])">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Watermark.Razor.Components.Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        @if (Global.DeviceType == DeviceType.Mac)
+        {
+            <MainViewOSX/>
+        }
+        else
+        {
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Watermark.Razor.Components.Layout.MainLayout)"/>
+        }
+        
+        <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
     </Found>
 </Router>

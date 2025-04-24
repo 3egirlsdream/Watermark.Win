@@ -392,5 +392,10 @@ namespace Watermark.Shared.Models
             { DevicePlatform.MacCatalyst, new[] { ".ttf", ".otf" } },
             { DevicePlatform.WinUI, new[] { ".ttf", ".otf" } }
         };
+
+        public Task<bool> Download(string directory, string fileName, string extension)
+        {
+            return Task.Run(()=> true);
+        }
 	}
 }

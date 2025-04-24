@@ -13,6 +13,7 @@
 @layout MainLayout
 @inject IClientInstance ClientInstance
 @inherits PStackPageBase
+@using Color = MudBlazor.Color
 <div style="height:100%;">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var e in tab1Head)
@@ -37,7 +38,7 @@
                             {
                                 <MudItem xs="6" Style="padding:4px;">
                                     <MudCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
-                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
+                                        @if (Versions.TryGetValue(t.WMCanvas.ID, out var v) && v > t.WMCanvas.Version)
                                         {
                                             <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
                                         }

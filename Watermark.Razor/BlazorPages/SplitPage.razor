@@ -18,7 +18,7 @@
     <ActionContent>
         @if (SrcLoading)
         {
-            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+            <MudProgressCircular Color="MudBlazor.Color.Secondary" Indeterminate="true" />
         }
         else
         {
@@ -48,7 +48,6 @@
                 {
                     <MImage Src="@src" Style="height:48px;width:48px;object-fit:cover;border-radius:4px" />
                 }
-
             </MSortable>
         </div>
     }
@@ -64,7 +63,7 @@
 
 <MudOverlay Visible="@SrcLoading" DarkBackground="true" Absolute="true" ZIndex="99999">
     <MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;text-align:center;">
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Style="margin: auto;" />
+        <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" Style="margin: auto;" />
     </MudPaper>
 </MudOverlay>
 
