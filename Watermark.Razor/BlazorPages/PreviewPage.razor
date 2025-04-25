@@ -15,6 +15,7 @@
 @inherits PStackPageBase
 @inject PageStackNavController NavController
 @layout MainLayout
+@inject LoadingService loadingService
 
 <style>
     .preview-box {
@@ -632,19 +633,6 @@
     </MSheet>
 </MBottomSheet>
 
-<MudOverlay Visible="@loadingShow" DarkBackground="true" Absolute="true" ZIndex="99999">
-    <MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;">
-        <MudStack Style="text-align:center;">
-            <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" Style="margin: auto;" />
-            <MudText Typo="Typo.subtitle1" Color="MudBlazor.Color.Default" Class="mt-2">
-                @loadingMessage[0]
-                <br />
-                @loadingMessage[1]
-            </MudText>
-        </MudStack>
-
-    </MudPaper>
-</MudOverlay>
 
 @code {
     public WMTemplateList CurrentImage { get; set; }
@@ -655,8 +643,6 @@
 
     public List<WMTemplateList> Images { get; set; }
 
-    string[] loadingMessage = ["加载中", ""];
-    bool loadingShow = true;
     bool SrcLoading = false;
     bool openSave = false;
     bool _expanded = false;
@@ -718,7 +704,7 @@
         }
         finally
         {
-            loadingShow = false;
+            loadingService.Hide();
             StateHasChanged();
         }
 
@@ -861,13 +847,12 @@
     {
         ClientInstance.Haptic();
         openSave = false;
-        loadingShow = true;
+        loadingService.Show(0, []);
         StateHasChanged();
         int cot = 1;
         foreach (var item in Images)
         {
-            loadingMessage[0] = "导出中";
-            loadingMessage[1] = $"共{Images.Count}张，目前第{cot++}张";
+            loadingService.Show(0, ["导出中", $"共{Images.Count}张，目前第{cot++}张"]);
             var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
             cvs.Path = item.Path;
             cvs.Exif = item.Canvas.Exif;
@@ -876,7 +861,8 @@
             ClientInstance.Save(b64, fn);
             StateHasChanged();
         }
-        loadingShow = false;
+
+        loadingService.Hide();
         Common.ShowMsg(PopupService, "保存成功。", AlertTypes.Success);
         openSave = false;
         StateHasChanged();

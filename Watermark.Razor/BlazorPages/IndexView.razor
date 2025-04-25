@@ -14,7 +14,7 @@
 @inject IClientInstance ClientInstance
 @inherits PStackPageBase
 @using Color = MudBlazor.Color
-@inject LoadingService loadingService
+@inject LoadingService LoadingService
 <div style="height:100%;">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
         @foreach (var e in tab1Head)
@@ -139,7 +139,6 @@
     char FocusImageType = ' ';
     List<Tuple<string, List<WMZipedTemplate>>> subscribed = new();
     List<WMZipedTemplate> ZipedTemplates = new();
-    WMainLoading loading = new();
     WMTemplateList CurrentImage;
     List<WMTemplateList> Images = new();
     string FocusImageId = "";
@@ -151,7 +150,6 @@
     {
         try
         {
-            loadingService.Show("");
             if (GlobalConfig.AGREE_PRIVATE)
             {
                 Global.PrimaryKey = ClientInstance.Key();
@@ -253,39 +251,6 @@
         }
     }
 
-    async Task<WMZipedTemplate> LoadSingleTemplates(string watermarkId)
-    {
-        var api = new APIHelper();
-        if (!Directory.Exists(Global.AppPath.TemplatesFolder))
-        {
-            Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-        }
-
-        try
-        {
-            WMZipedTemplate dirct = new();
-            dirct.WatermarkId = watermarkId;
-            var configPath = Global.AppPath.TemplatesFolder + watermarkId + System.IO.Path.DirectorySeparatorChar + "config.json";
-            if (!System.IO.File.Exists(configPath)) return dirct;
-            var canvas = await Task.Run(() =>
-            {
-                return Global.ReadConfigFromPath(configPath);
-            });
-            dirct.WMCanvas = canvas;
-            dirct.WMCanvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
-            dirct.CanvasType = dirct.WMCanvas.CanvasType;
-            await Global.InitFonts([canvas]);
-            var b64 = await helper.GenerationAsync(canvas, null, true, false);
-            dirct.Src = await Global.Byte2Url(JSRuntime, b64);
-            return dirct;
-        }
-        catch (Exception ex)
-        {
-            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
-            return new WMZipedTemplate();
-        }
-    }
-
     async Task DownloadTemplate(string watermarkId)
     {
         await ClientInstance.DownloadTemplate(
@@ -353,9 +318,7 @@
         parameter.FocusImageShow = false;
         if (template.CanvasType == CanvasType.Normal)
         {
-            loadingService.Show("");
-            loading.Message = "正在生成图片...";
-            loading.Show = true;
+            LoadingService.Show(0, ["正在生成图片..."]);
             StateHasChanged();
             Images = new List<WMTemplateList>();
             if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
@@ -378,14 +341,13 @@
             CurrentImage = Images.First();
             var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true, false);
             CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
-            loading.Show = false;
+            LoadingService.Hide();
             //openDrawer = true;
             StateHasChanged();
         }
         else
         {
-            loading.Message = "正在生成图片...";
-            loading.Show = true;
+            LoadingService.Show(0, ["正在生成图片..."]);
             StateHasChanged();
             var cvs = Global.ReadConfig(Global.CanvasSerialize(template.WMCanvas));
             foreach (var container in cvs.Children)
@@ -403,8 +365,7 @@
             var b64 = await helper.GenerationAsync(cvs, null, true, false);
             CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
             Images = [CurrentImage];
-            loading.Show = false;
-            //openDrawer = true;
+            LoadingService.Hide();
             StateHasChanged();
         }
 

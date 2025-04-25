@@ -22,9 +22,9 @@
         <SettingPanel Text="增强EXIF解析" @bind-Value="@GlobalConfig.SECOND_EXIF" MSwith="true" />
     </MCard>
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
-        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" Text="下载缓存" Icon="@ICONS.ArrowRight" />
+        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.TemplatesFolder)" Text="清除下载缓存" Icon="@ICONS.ArrowRight" />
         <MDivider Class="my-2" />
-        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.LogoesFolder)" Text="图标缓存" Icon="@ICONS.ArrowRight" />
+        <SettingPanel OnClick="()=> DeleteCache(Global.AppPath.LogoesFolder)" Text="清除图标缓存" Icon="@ICONS.ArrowRight" />
     </MCard>
 
     <MCard Flat Style="@cardStyle" Elevation="0" Class="pa-3">
