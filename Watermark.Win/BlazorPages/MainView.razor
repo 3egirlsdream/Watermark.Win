@@ -98,7 +98,7 @@
                             <MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
                             <MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
                             <MDivider />
-                            <MListItem OnClick="()=> System.Windows.Application.Current.Shutdown()" Title="退出" PrependIcon="@ICONS.Exit" />
+                            <MListItem OnClick="ClientInstance.Exit" Title="退出" PrependIcon="@ICONS.Exit" />
                         </MList>
                     </ChildContent>
                 </MMenu>
@@ -164,7 +164,7 @@
                         </ChildContent>
                     </MMenu>
                 }
-                <Label Name="@App.Current.MainWindow.Title" Style="position:absolute;user-select:none;" />
+                <Label Name="@ClientInstance.AppTitle" Style="position:absolute;user-select:none;" />
                 <MSpacer />
                 <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
                     <ActivatorContent>

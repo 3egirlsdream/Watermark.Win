@@ -845,27 +845,35 @@
 
     async void Export()
     {
-        ClientInstance.Haptic();
-        openSave = false;
-        loadingService.Show(0, []);
-        StateHasChanged();
-        int cot = 1;
-        foreach (var item in Images)
+        try 
         {
-            loadingService.Show(0, ["导出中", $"共{Images.Count}张，目前第{cot++}张"]);
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
-            cvs.Path = item.Path;
-            cvs.Exif = item.Canvas.Exif;
-            var b64 = await helper.GenerationAsync(cvs, null, false, false);
-            var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
-            ClientInstance.Save(b64, fn);
+            ClientInstance.Haptic();
+            openSave = false;
+            loadingService.Show(0, []);
+            StateHasChanged();
+            int cot = 1;
+            foreach (var item in Images)
+            {
+                loadingService.Show(0, ["导出中", $"共{Images.Count}张，目前第{cot++}张"]);
+                var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplateCanvas));
+                cvs.Path = item.Path;
+                cvs.Exif = item.Canvas.Exif;
+                var b64 = await helper.GenerationAsync(cvs, null, false, false);
+                var fn = Path.GetFileNameWithoutExtension(item.Canvas.Path) ?? Guid.NewGuid().ToString();
+                ClientInstance.Save(b64, fn);
+                StateHasChanged();
+            }
+
+            loadingService.Hide();
+            Common.ShowMsg(PopupService, "保存成功。", AlertTypes.Success);
+            openSave = false;
             StateHasChanged();
         }
-
-        loadingService.Hide();
-        Common.ShowMsg(PopupService, "保存成功。", AlertTypes.Success);
-        openSave = false;
-        StateHasChanged();
+        catch(Exception ex) 
+        {
+            Common.ShowMsg(PopupService, ex.Message, Masa.Blazor.AlertTypes.Error);
+        }
+       
     }
 
     async Task InitLogoCacheDic()

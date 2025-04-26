@@ -13,6 +13,7 @@ using System.Management;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Watermark.Win;
 using Watermark.Win.Models;
 using Watermark.Win.Views;
 
@@ -154,8 +155,24 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
+        public void Exit()
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        public void OpenDesign(WMCanvas canvas)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task InteropInit(string appId)
+        {
+            throw new NotImplementedException();
+        }
+
         public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string AppTitle { get; set; } = App.Current.MainWindow.Title;
     }
 }

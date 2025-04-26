@@ -1,4 +1,5 @@
 ﻿@using Masa.Blazor
+@using MudBlazor
 @using Watermark.Razor.BlazorPages
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Enums
@@ -45,18 +46,18 @@
 </div>
 
 
-<MOverlay @bind-Value="@loading.Show">
-    <MCard Width="200" Height="200" Elevation="0" Style="justify-content:center;display:flex;align-items:center;">
+<MOverlay @bind-Value="@loading.Show" ZIndex="99999999">
+    <MCard Width="200" Height="200" Elevation="0" Style="justify-content:center;display:flex;align-items:center;opacity:0.9">
         <div style="text-align:center;display:flex;flex-direction: column;justify-content: center;align-items: center">
             <MProgressCircular indeterminate
                                Size="64"></MProgressCircular>
             <MudText Typo="Typo.subtitle1" Color="MudBlazor.Color.Default" Class="mt-2">
-                @loading.Message1[0]
-                @if (!string.IsNullOrEmpty(loading.Message1[1]))
+                @(loading.Message1.Length > 0 ? loading.Message1[0] : "")
+                @if (loading.Message1.Length >= 2 && !string.IsNullOrEmpty(loading.Message1[1]))
                 {
                     <br />
+                    @loading.Message1[1]
                 }
-                @loading.Message1[1]
             </MudText>
         </div>
     </MCard>
