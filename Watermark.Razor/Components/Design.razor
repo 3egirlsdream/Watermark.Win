@@ -140,7 +140,7 @@
                 designFunc = await ClientInstance.GetWMDesignFunc(cid);
             }
 
-            if (designFunc != null && Global.DeviceType != DeviceType.Mac)
+            if (designFunc != null)
             {
                 CurrentCanvas = designFunc.CurrentCanvas;
                 SelectLogo = designFunc.SelectLogo;

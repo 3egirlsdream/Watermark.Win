@@ -206,6 +206,12 @@
 
                                <IconButton Elevation="5" Icon="@ICONS.Download" OnClick="()=>Download(t.WatermarkId, t.UserId)" Style="@($"margin-right:10px")" IconColor="#747474"></IconButton>
                                <IconButton Elevation="5" Icon="@ICONS.Share" OnClick="()=>Share(t.WatermarkId)" IconColor="#747474"></IconButton>
+                               @if (t.UserId == "0BECCA9A-6F10-4A88-8753-921195D08853" || t.UserId == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+                               {
+                                   <MButton Color="@(t.Visible ? "" : "warning")" Style="cursor:pointer;" OnClick="()=>TakOffOnShop(t)">
+                                       <MIcon Left>mdi-store-off</MIcon>@(t.Visible ? "下架" : "上架")
+                                   </MButton>
+                               }
                            </div>
                            @if (!string.IsNullOrEmpty(t.Src))
                            {
@@ -305,6 +311,17 @@
         if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
         var r = await api.SubscribeUser(Global.CurrentUser.ID, userId);
         await LoadTemplates();
+    }
+    
+    async void TakOffOnShop(WMZipedTemplate t)
+    {
+        if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID)) return;
+        var result = await api.TakeOffOnWatermark(Global.CurrentUser.ID, t.WatermarkId);
+        if (result.success && result.data)
+        {
+            t.Visible = !t.Visible;
+            StateHasChanged();
+        }
     }
 
     public void Dispose()

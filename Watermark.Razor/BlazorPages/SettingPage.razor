@@ -137,7 +137,7 @@ else
 </MCard>
 
 <MCard Style="@cardStyle" Flat Class="pa-3">
-    <SettingPanel OnClick="()=> { Global.CurrentUser = null; }" Text="切换账号" Icon="@ICONS.Exit" />
+    <SettingPanel OnClick="()=> { Global.CurrentUser = new(); }" Text="切换账号" Icon="@ICONS.Exit" />
     <MDivider Class="my-2" />
     <SettingPanel OnClick="OpenSettings" Text="设置" Icon="@ICONS.Setting" />
     @if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")

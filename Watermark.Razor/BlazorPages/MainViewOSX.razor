@@ -1,0 +1,939 @@
+﻿@page "/mac"
+@using System.IO
+@using System.Diagnostics
+@using System.Collections.Concurrent
+@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.ComponentModel
+@using Watermark.Razor
+@using Watermark.Razor.Components
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
+@using Watermark.Razor.BlazorPages
+@using Watermark.Shared.Enums
+@*@inject IMainInterop MainInterop*@
+@inject IPopupService PopupService
+@inject IJSRuntime JSRuntime
+@inject IWMWatermarkHelper helper
+@inject APIHelper api
+@inject IClientInstance ClientInstance
+@inject NavigationManager NavController
+<style>
+    .d-mw300 {
+        min-width: 300px;
+    }
+
+    .m-treeview-node__level {
+        width: 0px;
+    }
+
+    .hover {
+    }
+
+        .hover:hover {
+            cursor: pointer;
+        }
+
+    .exif-selector {
+    }
+
+        .exif-selector .m-input__control {
+            display: none;
+        }
+
+        .exif-selector .m-input__prepend-outer {
+            margin: 0px;
+        }
+
+        .exif-selector .mdi-paperclip::before {
+            font-size: 20px;
+        }
+
+    .m-treeview-node--click > .m-treeview-node__root, .m-treeview-node--click > .m-treeview-node__root > .m-treeview-node__content > .m-treeview-node__prepend {
+        width: 100%;
+        justify-content: flex-start;
+        display: flex;
+    }
+
+    .m-menu__content {
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px !important;
+    }
+
+    .m-toolbar__content {
+        padding: 0;
+        justify-content: center;
+        user-select: none;
+    }
+
+    .toolbar-icon {
+        background: url(img/leica.ico);
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        height: 24px;
+        width: 24px;
+    }
+
+
+    .mud-picker-color-dot {
+        background-color: #f1f1f1;
+        background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%), linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%);
+        background-position: 0 0, 15px 15px;
+        background-size: 30px 30px;
+        background-repeat: repeat
+    }
+</style>
+<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
+    <MErrorHandler>
+        <MCard Color="grey lighten-4" Flat Tile Style="height:100%">
+            <MToolbar Dense Elevation="0" Height="36" Id="@appId">
+                <div class="ml-2 toolbar-icon" />
+                <MMenu OffsetY>
+                    <ActivatorContent>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MList>
+                            <MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
+                            <MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                            <MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
+                            <MDivider />
+                            <MListItem OnClick="ClientInstance.Exit" Title="退出" PrependIcon="@ICONS.Exit" /> 
+                        </MList>
+                    </ChildContent>
+                </MMenu>
+                <MMenu OffsetY>
+                    <ActivatorContent>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>模板</MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MList>
+                            <MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
+                            <MListItem OnClick="() => openCreateNew = true" Title="创建模板" PrependIcon="@ICONS.Pencil" />
+                            <MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
+                        </MList>
+                    </ChildContent>
+                </MMenu>
+                <MMenu OffsetY>
+                    <ActivatorContent>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>关于</MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MList>
+                            <MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
+                            <MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
+                            <MListItem OnClick="() => showLogout = true" Title="注销账号" PrependIcon="@ICONS.Logout" />
+                        </MList>
+                    </ChildContent>
+                </MMenu>
+                <MMenu OffsetY>
+                    <ActivatorContent>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>交流群</MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MList>
+                            <MListItem Title="交流群1：866034817 (已满)" PrependIcon="@ICONS.QQ" />
+                            <MListItem Title="交流群2：836325187" PrependIcon="@ICONS.QQ" />
+                        </MList>
+                    </ChildContent>
+                </MMenu>
+                <MMenu OffsetY>
+                    <ActivatorContent>
+                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>更多</MButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MList>
+                            <MListItem Title="网页版" OnClick="@(()=>OpenLink("http://www.thankful.top"))" PrependIcon="@ICONS.Web" />
+                            <MListItem Title="点个赞" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))" PrependIcon="@ICONS.Star" />
+                            <MListItem Title="提交反馈" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))" PrependIcon="@ICONS.Feedback" />
+                            <MListItem Title="赞助" OnClick="@(()=>OpenCommonDialog("http://cdn.thankful.top/wx.jpg"))" PrependIcon="@ICONS.Wechat" />
+                            <MListItem Title="安卓版" OnClick="@(()=>OpenCommonDialog("https://cdn.thankful.top/andorid.png"))" PrependIcon="@ICONS.Android" />
+                        </MList>
+                    </ChildContent>
+                </MMenu>
+                @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
+                {
+                    <MMenu OffsetY>
+                        <ActivatorContent>
+                            <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>七牛</MButton>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MList>
+                                <MListItem Title="文件管理" />
+                            </MList>
+                        </ChildContent>
+                    </MMenu>
+                }
+                <Label Name="@ClientInstance.AppTitle" Style="position:absolute;user-select:none;" />
+                <MSpacer />
+                <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
+                    <ActivatorContent>
+                        <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center;user-select:none">
+                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
+                            {
+                                <MAvatar Color="primary" Size="22" Style="display:flex;align-items:center;justify-content:center;cursor:pointer">
+                                    <span>@Global.CurrentUser.DISPLAY_NAME.FirstOrDefault()</span>
+                                </MAvatar>
+                            }
+                            else
+                            {
+                                <MButton Small Text>登录</MButton>
+                            }
+                        </div>
+                    </ActivatorContent>
+
+                    <ChildContent>
+                        <MCard>
+                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
+                            {
+                                <MList>
+                                    <MListItem>
+                                        <MListItemAvatar>
+                                            @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
+                                            {
+                                                <MImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" Contain />
+                                            }
+                                            else
+                                            {
+                                                <img src="https://cdn.masastack.com/stack/images/website/masa-blazor/jack.png" alt="MASA">
+                                            }
+                                        </MListItemAvatar>
+
+                                        <MListItemContent>
+                                            <MListItemTitle>@Global.CurrentUser.DISPLAY_NAME</MListItemTitle>
+                                            <MListItemSubtitle>@Global.CurrentUser.USER_NAME</MListItemSubtitle>
+                                        </MListItemContent>
+
+                                        <MListItemAction>
+                                            @if (Global.CurrentUser.IsVIP)
+                                            {
+                                                <Watermark.Razor.Parts.IconVip />
+                                            }
+                                            else
+                                            {
+                                                <Watermark.Razor.Parts.IconVipExpired />
+                                            }
+                                        </MListItemAction>
+                                    </MListItem>
+                                </MList>
+                                <MDivider />
+
+                                <Label Class="px-4 my-1" Name="🤩🤗🥵" Small="false"></Label>
+
+                                <div style="display:flex;align-items:center;" class="px-4 py-1">
+                                    <Label Name="硬币：" Small="false" />
+                                    <Watermark.Razor.Parts.IconCoin />
+                                    <Label Name="@Global.CurrentUser.COINS.ToString()" Small="false" />
+                                </div>
+
+                                <Label Class="px-4 py-1" Name="@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")" />
+                                <MCardActions>
+                                    <MSpacer></MSpacer>
+                                    <MButton Plain Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); }">退出</MButton>
+                                </MCardActions>
+                            }
+                            else
+                            {
+                                <MSkeletonLoader Class="mx-auto"
+                                                 MaxWidth="300"
+                                                 Type="article">
+                                </MSkeletonLoader>
+                                <MCardActions>
+                                    <MSpacer />
+                                    <MButton Plain Color="Color.Primary" OnClick="() => showLogin = true">登录</MButton>
+                                    <MButton Plain OnClick="() => showSignUp = true">注册</MButton>
+                                </MCardActions>
+                            }
+
+                        </MCard>
+                    </ChildContent>
+                </MMenu>
+            </MToolbar>
+            <div style="height:calc(100% - 36px);width:100%;display:flex;justify-content:flex-start;">
+                <div style="width:300px;height:100%;overflow-y:hidden;">
+                    <MTabs @bind-Value="tab" FixedTabs Height="30">
+                        <MTab Value="@("模板")">
+                            模板
+                        </MTab>
+                        <MTab Value="@("拼图")">
+                            拼图
+                        </MTab>
+                    </MTabs>
+                    <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow-y:overlay">
+                        <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
+                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
+                                       Activatable
+                                       ItemKey="u => u.ID"
+                                       ItemText="u => null"
+                                       ItemChildren="u => []"
+                                       OpenOnClick>
+                                <PrependContent>
+                                    @if (context.Item != null)
+                                    {
+                                        <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:flex-start; width: 100%;">
+                                            <img width="40" height="40" style="object-fit: contain" src="@context.Item.Src" />
+                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1" />
+                                        </div>
+
+                                    }
+                                </PrependContent>
+                            </MTreeview>
+                        </MTabItem>
+                        <MTabItem Value="@("拼图")" Transition="" ReverseTransition="">
+                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name).ToList()"
+                                       Activatable
+                                       ItemKey="u => u.ID"
+                                       ItemText="u => null"
+                                       ItemChildren="u => []"
+                                       OpenOnClick>
+                                <PrependContent>
+                                    @if (context.Item != null)
+                                    {
+                                        <div @onclick="() => SelectSplitImages(context.Item)" style="flex:1">
+                                            <MImage Style="width:100%;padding:4px 0" Contain Src="@context.Item.Src" />
+                                        </div>
+                                    }
+                                </PrependContent>
+                            </MTreeview>
+                        </MTabItem>
+                    </MTabsItems>
+                </div>
+                <div style="height:100%;width:calc(100% - 600px)">
+                    <MSplitter Row Style="height: 100%" BarSize="4">
+                        <ChildContent>
+                            <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center mud-picker-color-dot" Size="70" Style="position:relative;width:100%">
+                                @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
+                                {
+                                    <MCard Style="width:50%;height:30px;position:absolute;top:10px;justify-content:flex-start;display:flex;gap:0 4px;align-items:center">
+                                        <MCard Style="width:23px;height:23px;cursor:pointer;display: flex; align-items: center; justify-content: center;" @onclick="() => showExif = true" Flat>
+                                            <Watermark.Razor.Parts.IconExif />
+                                        </MCard>
+                                        <MCard Width="23" Height="23" Flat>
+                                            <MFileInput TValue="IBrowserFile"
+                                                        Class="exif-selector"
+                                                        OnChange="SelectSourceImageExif"
+                                                        Style="width: 22px !important; padding: 0px !important; margin:0px"
+                                                        HideDetails="true"
+                                                        Label="File input"></MFileInput>
+                                        </MCard>
+
+                                    </MCard>
+                                    <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
+                                    @*  <div style="width:90%; height:100%; margin-left:5%;margin-right:5%;display:flex;">
+                                        <DesignView Canvas="@CurrentImage.Canvas" />
+                                    </div> *@
+
+                                    @if (SrcLoading)
+                                    {
+                                        <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
+                                    }
+
+                                }
+                                else
+                                {
+                                    <Watermark.Razor.Parts.IconImage />
+                                }
+                            </MSplitterPane>
+                            <MSplitterPane Style="min-height:100px;display:flex;" Size="30">
+                                <Upload Images="@Images" ClickImageEvt="(e) => ClickImage(e)" LoadingEvt="(t) => LoadingEvt(t.Item1, t.Item2, t.Item3)" />
+                            </MSplitterPane>
+                        </ChildContent>
+                        <BarContent>
+                            <MIcon Small>mdi-drag-horizontal</MIcon>
+                        </BarContent>
+                    </MSplitter>
+                </div>
+                @if (CurrentImage != null && CurrentImage.Canvas != null && !string.IsNullOrEmpty(CurrentImage.Canvas.Name) && showConfig)
+                {
+                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
+                }
+
+            </div>
+        </MCard>
+
+        <MOverlay Dark="false" @bind-Value="WMMainLoading.Show" Absolute="true" ZIndex="99999">
+            <MCard Style="width:520px;height:80px; padding:25px 40px 10px 40px;display:flex;align-items:center;justify-content:center;flex-direction:column">
+                <MProgressLinear Value="@WMMainLoading.Value" Rounded Striped Height="10" Color="light-blue" Class="my-1" />
+                <Watermark.Razor.Parts.Label Name="@WMMainLoading.Message" Small="false" />
+            </MCard>
+        </MOverlay>
+        @if (openMyTemplate)
+        {
+            <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" OnCloseEvt="InitTemplates" />
+        }
+
+        <MDialog @bind-Value="openMarket" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
+            @if (openMarket)
+            {
+                <TemplatesMarket ClipboardAction="ClipboardAction()" OnCloseEvt="InitTemplates" />
+            }
+        </MDialog>
+
+        <MDialog @bind-Value="@CommonDialog.Show" Width="300">
+            <MImage Height="300" Width="300" Contain Src="@CommonDialog.Message" />
+        </MDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogin">
+            @if (showLogin)
+            {
+                <LoginContent CloseEvent="() => showLogin = false" />
+            }
+        </MDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showSignUp">
+            @if (showSignUp)
+            {
+                <SignUpContent CloseEvent="() => showSignUp = false" />
+            }
+        </MDialog>
+
+        <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
+            @if (openCreateNew)
+            {
+                <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="ClientInstance.PickAsync" OnClose="() => openCreateNew = false" />
+            }
+        </MDialog>
+
+        <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
+            @if (showExport)
+            {
+                <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction()" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
+            @if (showLogoStore)
+            {
+                <LogoDialogContent />
+            }
+        </MDialog>
+        @if (CurrentImage != null && CurrentImage.Canvas != null && CurrentImage.Canvas.Exif != null)
+        {
+            <ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
+        }
+
+        <MDialog @bind-Value="showSetting" ContentStyle="height:550px;width:800px">
+            @if (showSetting)
+            {
+                <Setting />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showLogout" ContentStyle="width:350px;padding:10px;">
+            @if (showLogout)
+            {
+                <LogoutContent CloseEvent="() => showLogout = false" />
+            }
+        </MDialog>
+
+        <MDialog @bind-Value="showDesign" Fullscreen="true">
+            @if (showDesign)
+            {
+                <Design cid="@watermarkId" OnClose="() => showDesign = false"/>
+            }
+        </MDialog>
+    </MErrorHandler>
+</MApp>
+
+
+@code {
+    private string appId = Guid.NewGuid().ToString("N");
+    bool openCreateNew = false;
+    WMainLoading CommonDialog = new();
+    StringNumber tab;
+    bool showLogoStore = false;
+    bool showExport = false;
+    bool openMarket = false;
+    bool openMyTemplate = false;
+    bool SrcLoading = false;
+    bool showLogin = false;
+    bool showSignUp = false;
+    bool showConfig = false;
+    bool showExif = false;
+    bool showSetting = false;
+    bool showLogout = false;
+    bool showDesign = false;
+    string watermarkId = null;
+    List<WMTemplateList> wMTemplates = [];
+    WMTemplateList CurrentTemplate;
+    WMTemplateList CurrentImage;
+    Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
+    ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
+    List<string> LogoStore = new List<string>();
+    List<WMTemplateList> Images = new List<WMTemplateList>();
+    Debouncer debouncedAction = null;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await GlobalConfig.InitConfig();
+            await InitTemplates();
+            await InitLogoStore();
+            await Global.Login();
+            await api.DownloadLogoes();
+            Global.PrimaryKey = ClientInstance.Key();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ClientInstance.InteropInit(appId);
+        }
+    }
+
+
+
+    public async void OpenDesignAction(WMCanvas x)
+    {
+        if (Global.DeviceType == DeviceType.Win)
+        {
+            ClientInstance.OpenDesign(x);
+        }
+        else
+        {
+            await Global.SaveCanvas(x);
+            watermarkId = x.ID;
+            showDesign = true;
+            StateHasChanged();
+        }
+    }
+
+
+    void ImportLocalImages()
+    {
+        var action = new Action(async () =>
+        {
+            var result = await ClientInstance.PickMultipleAsync();
+            if (result.Any())
+            {
+                try
+                {
+                    var files = result.ToList();
+                    Images = new List<WMTemplateList>();
+                    LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第1个...", 0);
+                    if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+                    {
+                        Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                    }
+                    foreach (var file in files)
+                    {
+                        WMCanvas canvas = new WMCanvas();
+                        canvas.Path = file;
+                        canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
+                        await Task.Run(() =>
+                        {
+                            var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(file);
+                            Global.WriteThumbnailImage(file, thumbnail);
+                        });
+                        var b64 = await Global.GetBase64(file);
+                        Images.Add(new WMTemplateList
+                        {
+                            Canvas = canvas,
+                            Src = await Global.Byte2Url(JSRuntime, b64),
+                            ID = canvas.ID,
+                            Path = file
+                        });
+                        var idx = files.IndexOf(file) + 1;
+                        LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第{idx}个...", (int)(idx * 100.0 / files.Count));
+                    }
+
+                    LoadingEvt(false, $"导入完成", 100);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
+        });
+        OpenWinHelper.Open(action);
+    }
+
+    async void ClickImage(WMTemplateList image)
+    {   
+        CurrentImage = null;
+        await Task.Delay(10);
+        StateHasChanged();
+        CurrentImage = image;
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        PropertyChanged(null, null);
+    }
+
+    async Task InitTemplates()
+    {
+        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
+        {
+            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
+        }
+        try
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(Global.AppPath.TemplatesFolder);
+            var directories = directoryInfo.GetDirectories();
+            LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第1个...", 0);
+            if (wMTemplates != null && wMTemplates.Count > 0)
+            {
+                foreach (var w in wMTemplates)
+                    await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
+            }
+            wMTemplates = new List<WMTemplateList>();
+            int cot = 1;
+            foreach (var dirct in directories)
+            {
+                try
+                {
+                    var configPath = Path.Combine(dirct.FullName, "config.json");
+                    if (File.Exists(configPath))
+                    {
+                        var canvas = Global.ReadConfigFromPath(configPath);
+                        canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
+                        await InitFonts([canvas]);
+                        var b64 = await helper.GenerationAsync(canvas, null, true);
+                        var src = await Global.Byte2Url(JSRuntime, b64);
+                        var wh = new WMTemplateList
+                            {
+                                ID = canvas.ID,
+                                Canvas = canvas,
+                                Src = src
+                            };
+                        wMTemplates.Add(wh);
+                        var idx = directories.ToList().IndexOf(dirct) + 1;
+                        LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...", (int)(cot * 100.0 / directories.Length));
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+                }
+            }
+            await Task.Delay(200);
+            LoadingEvt(false, $"处理完成...", 100);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            WMMainLoading.Show = false;
+            StateHasChanged();
+        }
+        finally
+        {
+            GC.Collect();
+        }
+    }
+
+    async void ChangeTemplate(WMTemplateList template)
+    {
+        showConfig = false;
+        CurrentTemplate = template;
+        if (CurrentImage == null) return;
+        SrcLoading = true;
+        var b64 = await Task.Run(() =>
+        {
+            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+            cvs.Exif = CurrentImage.Canvas.Exif;
+            CurrentImage.Canvas = cvs;
+            Global.Subscribe(CurrentImage.Canvas, PropertyChanged);
+            cvs.Path = CurrentImage.Path;
+            return helper.Generation(cvs, null, true);
+        });
+
+        var src = await Global.Byte2Url(JSRuntime, b64);
+        CurrentImage.Src = src;
+        await InitLogoCacheDic(CurrentImage.ID, template);
+        SrcLoading = false;
+        showConfig = true;
+        EnableAll();
+        StateHasChanged();
+    }
+
+    async void Export(List<WMTemplateList> images)
+    {
+        showExport = false;
+        LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第1张", 0);
+        var idx = 1;
+        var option = new ParallelOptions();
+        option.MaxDegreeOfParallelism = GlobalConfig.MAX_THREAD;
+        await Task.Run(() =>
+        {
+            Parallel.ForEach(images, option, (item) =>
+            {
+                helper.Generation(item.Canvas, null, false);
+                LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第{idx}张", (int)(idx++ * 100.0 / images.Count));
+            });
+        });
+        LoadingEvt(false, "", 100);
+        Common.ShowMsg(PopupService, "打开输出文件夹？", "好的", async () =>
+        {
+            await OpenFolder();
+        });
+    }
+
+    async Task OpenFolder()
+    {
+        var path = Global.OutPutPath;
+        var psi = new System.Diagnostics.ProcessStartInfo() { FileName = path, UseShellExecute = true };
+        System.Diagnostics.Process.Start(psi);
+        await Task.CompletedTask;
+    }
+
+    Func<string, Task> ClipboardAction() => new((x) =>
+    {
+        return ClientInstance.SetTextAsync(x);
+    });
+
+
+    async Task InitLogoCacheDic(string imgId, WMTemplateList template)
+    {
+        var logoes = new List<WMLogo>();
+        foreach (var c1 in template.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo) logoes.Add(logo);
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo) logoes.Add(wcLogo);
+                    }
+                }
+            }
+        }
+
+        var dic = new Dictionary<string, string>();
+        var db64 = new ConcurrentDictionary<string, byte[]>();
+        foreach (var logo in logoes)
+        {
+            dic[logo.ID] = logo.Path;
+            var target = logo.Path;
+            if (!File.Exists(target))
+            {
+                target = Global.AppPath.TemplatesFolder + template.ID + Path.DirectorySeparatorChar + logo.Path;
+            }
+            if (File.Exists(target))
+            {
+                Global.ImageFile2Base64(db64, target, logo.ID);
+            }
+        }
+        foreach (var e in db64)
+        {
+            LogoBase64[e.Key] = await Global.Byte2Url(JSRuntime, e.Value);
+        }
+        LogoCacheDic[imgId] = dic;
+
+    }
+
+    async Task InitLogoStore()
+    {
+        LogoStore = new List<string>();
+        var db64 = new ConcurrentDictionary<string, byte[]>();
+        if (Directory.Exists(Global.AppPath.LogoesFolder))
+        {
+            var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
+            var tasks = new List<Task>();
+            foreach (var file in files.GetFiles())
+            {
+                var t = Task.Run(() =>
+                {
+                    LogoStore.Add(file.FullName);
+                    Global.ImageFile2Base64(db64, file.FullName, file.FullName);
+                });
+                tasks.Add(t);
+            }
+
+            foreach (var e in db64)
+            {
+                LogoBase64[e.Key] = await Global.Byte2Url(JSRuntime, e.Value);
+            }
+            await Task.WhenAll(tasks.ToArray());
+        }
+    }
+
+    async void ChangeLogo(string sourceId, string logoPath)
+    {
+        SrcLoading = true;
+        StateHasChanged();
+        foreach (var c1 in CurrentImage.Canvas.Children)
+        {
+            foreach (var cc1 in c1.Controls)
+            {
+                if (cc1 is WMLogo logo && logo.ID == sourceId)
+                {
+                    logo.AutoSetLogo = false;
+                    logo.Path = logoPath;
+                    break;
+                }
+                else if (cc1 is WMContainer wc)
+                {
+                    foreach (var wcc in wc.Controls)
+                    {
+                        if (wcc is WMLogo wcLogo && wcLogo.ID == sourceId)
+                        {
+                            wcLogo.AutoSetLogo = false;
+                            wcLogo.Path = logoPath;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+        var src = await Global.Byte2Url(JSRuntime, b64);
+        CurrentImage.Src = src;
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    void EnableAll()
+    {
+        Common.ShowMsg(PopupService, "当前模板应用全部？", "应用", async () =>
+        {
+            await Help();
+        });
+    }
+
+    public async Task Help()
+    {
+        WMMainLoading.Show = true;
+        StateHasChanged();
+        int idx = 1;
+        foreach (var img in Images)
+        {
+            WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+            WMMainLoading.Value = idx++ * 100.0 / Images.Count;
+            StateHasChanged();
+            var b64 = await Task.Run(() =>
+            {
+                var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.Canvas));
+                cvs.Exif = img.Canvas.Exif;
+                img.Canvas = cvs;
+                cvs.Path = img.Path;
+                return helper.Generation(cvs, null, true);
+            });
+
+            var src = await Global.Byte2Url(JSRuntime, b64);
+            img.Src = src;
+            await InitLogoCacheDic(img.ID, CurrentTemplate);
+        }
+        WMMainLoading.Value = 100;
+        WMMainLoading.Show = false;
+        StateHasChanged();
+    }
+
+    void OpenLink(string link)
+    {
+        var action = new Action(() =>
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo() { FileName = link, UseShellExecute = true };
+            System.Diagnostics.Process.Start(psi);
+        });
+        OpenWinHelper.Open(action);
+    }
+    Action OpenFolderAction() => new Action(async () =>
+    {
+        Global.OutPutPath = await ClientInstance.OpenFolder();
+    });
+
+    async void SelectSourceImageExif(IBrowserFile file)
+    {
+        MemoryStream ms = new MemoryStream();
+        await file.OpenReadStream(file.Size).CopyToAsync(ms);
+        CurrentImage.Canvas.Exif[CurrentImage.Canvas.ID] = ExifHelper.ReadImage(ms.ToArray());
+        PropertyChanged(null, null);
+    }
+
+
+    async Task InitFonts(List<WMCanvas> mCanvas)
+    {
+        WMMainLoading.Message = "正在下载字体资源...";
+        WMMainLoading.Show = true;
+        await Global.InitFonts(mCanvas);
+    }
+
+    async void SelectSplitImages(WMTemplateList template)
+    {
+        Dictionary<string, Dictionary<string, string>> exif = [];
+        exif[template.Canvas.ID] = ExifHelper.DefaultMeta;
+        var result = await ClientInstance.PickMultipleAsync();
+        var action = Task.Run(() =>
+        {
+            if (result.Any())
+            {
+                if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
+                {
+                    Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
+                }
+
+                int c = 0;
+                var files = result.ToList();
+                foreach (var container in template.Canvas.Children)
+                {
+                    if (c <= files.Count - 1 && !container.ContainerProperties.FixImage)
+                    {
+                        container.Path = files[c++];
+                        exif[container.ID] = ExifHelper.ReadImage(container.Path);
+                    }
+                }
+            }
+        });
+        await action;
+
+        SrcLoading = true;
+        StateHasChanged();
+        var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
+        cvs.Exif = exif;
+        var b64 = await helper.GenerationAsync(cvs, null, true, false);
+        CurrentImage = new();
+        CurrentImage.Canvas = cvs;
+        CurrentImage.ID = CurrentImage.Canvas.ID;
+        CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
+        await InitLogoCacheDic(CurrentImage.ID, template);
+        Images = [];
+        Images.Add(CurrentImage);
+        SrcLoading = false;
+        StateHasChanged();
+    }
+
+    void OpenCommonDialog(string Src)
+    {
+        CommonDialog.Show = true;
+        CommonDialog.Message = Src;
+    }
+
+    async void PropertyChanged(object sender, PropertyChangedEventArgs args)
+    {
+        if (debouncedAction is null)
+        {
+            debouncedAction = new(async () =>
+            {
+                SrcLoading = true;
+                await InvokeAsync(StateHasChanged);
+                var b64 = await helper.GenerationAsync(CurrentImage.Canvas, null, true);
+                var src = await Global.Byte2Url(JSRuntime, b64);
+                CurrentImage.Src = src;
+                SrcLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }, 200);
+        }
+        await debouncedAction.InvokeAsync();
+    }
+
+    async Task SelectContainerImage(WMContainer wMContainer)
+    {
+        var result = await ClientInstance.PickAsync();
+        if (!string.IsNullOrEmpty(result))
+        {
+            wMContainer.Path = result;
+        }
+    }
+
+    void LoadingEvt(bool b, string m, int v)
+    {
+        WMMainLoading.Show = b;
+        WMMainLoading.Message = m;
+        WMMainLoading.Value = v;
+        InvokeAsync(StateHasChanged);
+    }
+}

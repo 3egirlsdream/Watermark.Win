@@ -57,6 +57,7 @@ namespace Watermark
             builder.Services.AddSingleton<IUpgradeService, UpgradeService>();
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IClientInstance, ClientInstance>();
+            builder.Services.AddSingleton<LoadingService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

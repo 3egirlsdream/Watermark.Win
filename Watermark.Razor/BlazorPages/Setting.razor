@@ -1,0 +1,92 @@
+﻿@using Masa.Blazor
+@using System.Text
+@using System.Net
+@using Microsoft.Win32
+@using System.IO
+@using Watermark.Razor
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
+@inject IPopupService PopupService
+<MCard Flat>
+    <MToolbar Flat
+              Color="primary"
+              Dark>
+        <MToolbarTitle>设置</MToolbarTitle>
+    </MToolbar>
+    <MTabs Vertical>
+        <MTab>
+            <MIcon Left>
+                @ICONS.Setting
+            </MIcon>
+            关于
+        </MTab>
+
+        <MTabItem Transition="" ReverseTransition="">
+            <MCard Flat Class="pa-1">
+                @if (percent > 0)
+                {
+                    <MProgressLinear @bind-Value="percent" />
+                }
+
+                <Label Small="false" Name="App" />
+                <MDivider />
+                <Label Small="false" Name="@($"当前版本：v{Version}")" />
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:Gray; font-size: 12px">@VersionText</span>
+                    <MButton Small OnClick="CheckVersion">检查更新</MButton>
+                </div>
+            </MCard>
+        </MTabItem>
+    </MTabs>
+</MCard>
+
+@code {
+    string Version;
+    string VersionText = "你使用的是最新版本!";
+    string newPath;
+    bool hasNewVersion = false;
+    double percent = 0;
+    public List<WMCloudFont> FontsList = [];
+    public bool ExifIsChecked;
+    public string MaxThread;
+    string normalText;
+    string boldText;
+    protected override void OnInitialized()
+    {
+        Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        GlobalConfig.InitConfig().ContinueWith(x =>
+        {
+            ExifIsChecked = GlobalConfig.SECOND_EXIF;
+            MaxThread = GlobalConfig.MAX_THREAD.ToString();
+        });
+    }
+
+    private async void CheckVersion()
+    {
+        var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
+        if (version != null && version.success && version.data != null && version.data.VERSION != null)
+        {
+            newPath = version.data.PATH;
+            var v1 = new Version(Version);
+            var v2 = new Version(version.data.VERSION);
+            if (v2 > v1)
+            {
+                VersionText = $"有新版本V{version.data.VERSION}点击下载";
+                hasNewVersion = true;
+            }
+            else
+            {
+                VersionText = "你使用的是最新版本!";
+                hasNewVersion = false;
+            }
+        }
+        else
+        {
+
+            hasNewVersion = false;
+        }
+
+        StateHasChanged();
+    }
+
+}

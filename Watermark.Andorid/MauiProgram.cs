@@ -6,6 +6,7 @@ using MudBlazor;
 using MudBlazor.Services;
 using Watermark.Andorid.Models;
 using Watermark.Shared.Models;
+using DeviceType = Watermark.Shared.Enums.DeviceType;
 
 namespace Watermark.Andorid
 {
@@ -58,6 +59,7 @@ namespace Watermark.Andorid
             builder.Services.AddMudServices();
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IClientInstance, ClientInstance>();
+            builder.Services.AddSingleton<LoadingService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
@@ -66,6 +68,9 @@ namespace Watermark.Andorid
             builder.Services.AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
             builder.Services.AddSingleton<APIHelper>();
             Global.DeviceType = Shared.Enums.DeviceType.Andorid;
+#if MACCATALYST
+            Global.DeviceType = DeviceType.Mac;
+#endif
             return builder.Build();
         }
     }

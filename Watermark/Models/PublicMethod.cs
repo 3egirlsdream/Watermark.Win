@@ -17,32 +17,7 @@ namespace Watermark.Andorid.Models
             {
                 API<string> jt = await Task.Run(() =>
                 {
-#if ANDROID
-                    string con = rs.data;
-                    var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-                    var pa = new Com.Alipay.Sdk.App.PayTask(act);
-                    var payRs = pa.Pay(con, true);
-                    try
-                    {
-                        string json = payRs.ToString();
-                        if (json.StartsWith("resultStatus={9000}"))
-                        {
-                            var start = json.IndexOf("result={");
-                            var content = json.Substring(start + 8);
-                            var end = content.LastIndexOf("};extendInfo=");
-                            content = content.Substring(0, end);
-                            return new API<string> { success = true, data = content };
-                        }
-                        else return new API<string> { success = false, message = new APISub { content = $"支付失败：错误代码" } };
-                    }
-                    catch (Exception ex)
-                    {
-                        return new API<string> { message = new APISub { content = ex.Message }, success = false };
-
-                    }
-#else
                     return new API<string> { };
-#endif
                 });
                 if (!jt.success) return jt;
 

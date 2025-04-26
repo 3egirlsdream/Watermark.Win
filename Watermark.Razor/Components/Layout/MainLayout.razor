@@ -1,11 +1,13 @@
 ﻿@using Masa.Blazor
 @using Watermark.Razor.BlazorPages
 @using Watermark.Razor.Parts
+@using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @inherits LayoutComponentBase
 @inject IClientInstance ClientInstance
 @inject APIHelper api
 @inject PageStackNavController NavController
+@inject LoadingService LoadingService
 
 <MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
 <MudDialogProvider />
@@ -43,15 +45,33 @@
 </div>
 
 
+<MOverlay @bind-Value="@loading.Show">
+    <MCard Width="200" Height="200" Elevation="0" Style="justify-content:center;display:flex;align-items:center;">
+        <div style="text-align:center;display:flex;flex-direction: column;justify-content: center;align-items: center">
+            <MProgressCircular indeterminate
+                               Size="64"></MProgressCircular>
+            <MudText Typo="Typo.subtitle1" Color="MudBlazor.Color.Default" Class="mt-2">
+                @loading.Message1[0]
+                @if (!string.IsNullOrEmpty(loading.Message1[1]))
+                {
+                    <br />
+                }
+                @loading.Message1[1]
+            </MudText>
+        </div>
+    </MCard>
+</MOverlay>
 <MDialog @bind-Value="showPrivate" Fullscreen Transition="" ContentStyle="display:flex;">
     <FirstPage OnClosed="OnSave" />
 </MDialog>
 @code {
+    readonly WMainLoading loading = new();
     private StringNumber? Value;
-    bool OpenPrivate = false;
     private bool showPrivate = false;
     protected override async Task OnInitializedAsync()
     {
+        LoadingService.OnShow += ShowLoader;
+        LoadingService.OnHide += HideLoader;
         await GlobalConfig.InitConfig();
         showPrivate = !GlobalConfig.AGREE_PRIVATE;
         await Global.InitTemplateMarket(api);
@@ -68,4 +88,18 @@
         ClientInstance.Haptic();
         NavController.Replace(route);
     }
+    
+    private void ShowLoader(int p, string[] s) => InvokeAsync(() => 
+    {
+        loading.Show = true;
+        loading.Value = p;
+        loading.Message1 = s;
+        StateHasChanged();
+    });
+
+    private void HideLoader() => InvokeAsync(() =>
+    {
+        loading.Show = false;
+        StateHasChanged();
+    });
 }
