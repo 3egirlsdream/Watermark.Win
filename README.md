@@ -8,6 +8,7 @@ After designed template, you can import photo to program, and support muilt sele
 - Windows 10+
 - Android
 - iOS
+- macOS
   
 # Framework
 This is a blazor bybird program, Windows platform base WPF, Android and others is depend on MAUI
@@ -15,8 +16,10 @@ This is a blazor bybird program, Windows platform base WPF, Android and others i
 # Development
 - .NET 8
 - Visual Studio 2022 or Newer
+- Jetbrains Rider
 - Windows 10 or Newer
 - Android or Newer
+- macOS 14 or Newer
 
 # Install
 Note: install VS 2022 and MAUI, C# palyload.

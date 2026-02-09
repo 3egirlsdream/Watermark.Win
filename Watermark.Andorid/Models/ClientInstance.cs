@@ -1,4 +1,4 @@
-﻿using Masa.Blazor;
+using Masa.Blazor;
 using Masa.Blazor.Presets;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -8,6 +8,7 @@ using SkiaSharp;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Text;
+using CommunityToolkit.Maui.Storage;
 using Watermark.Andorid;
 using Watermark.Andorid.Models;
 using Watermark.Razor;
@@ -322,9 +323,22 @@ namespace Watermark.Shared.Models
             return true;
         }
 
-        public Task<string> OpenFolder()
+        public async Task<string> OpenFolder()
         {
-            throw new NotImplementedException();
+            try
+            {
+                var result = await FolderPicker.Default.PickAsync();
+        
+                if (result != null)
+                {
+                    return result.IsSuccessful ? result.Folder.Path : "";
+                }
+            }
+            catch (Exception e)
+            {
+            }
+
+            return null;
         }
 
         public void SetColor(string color = "#F5F5F5")

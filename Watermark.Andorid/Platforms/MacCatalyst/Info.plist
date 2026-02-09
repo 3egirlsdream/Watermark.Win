@@ -52,7 +52,19 @@
 	<string>This app needs access to photos gallery for picking photos and videos.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to photos gallery for picking photos and videos.</string>
+	
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>需要访问文档文件夹来选择文件</string>
 
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>需要访问下载文件夹来选择文件</string>
+
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>需要访问桌面文件夹来选择文件</string>
+
+	<!-- 如果需要访问所有文件夹，添加以下权限 -->
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>需要访问文件系统来选择文件夹</string>
 
 	<key>com.apple.security.assets.movies.read-only</key>
 	<true/>

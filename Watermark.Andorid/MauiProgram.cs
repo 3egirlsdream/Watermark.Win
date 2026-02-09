@@ -1,4 +1,5 @@
-﻿using Masa.Blazor.Popup;
+﻿using CommunityToolkit.Maui;
+using Masa.Blazor.Popup;
 using Masa.Blazor.Presets;
 using Masa.Blazor;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace Watermark.Andorid
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

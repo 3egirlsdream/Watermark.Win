@@ -90,6 +90,13 @@
         new KeyValuePair<int, string>(85, "高"),
         new KeyValuePair<int, string>(70, "中")
     };
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Global.OutPutPath = Global.AppPath.OutputFolder;
+    }
+
     void Save()
     {
         if (OnClose.HasDelegate)
@@ -98,9 +105,9 @@
         }
     }
 
-    async void OpenFolder()
+    void OpenFolder()
     {
-        await Task.Run(OpenFolderAction);
+        OpenFolderAction.Invoke();
         StateHasChanged();
     }
 

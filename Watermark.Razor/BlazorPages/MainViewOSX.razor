@@ -406,7 +406,7 @@
         </MDialog>
         @if (CurrentImage != null && CurrentImage.Canvas != null && CurrentImage.Canvas.Exif != null)
         {
-            <ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
+            //<ExifInfo @bind-Value="showExif" Exifs="ExifHelper.ReadAllExif(CurrentImage.Canvas.Exif.FirstOrDefault().Value)" />
         }
 
         <MDialog @bind-Value="showSetting" ContentStyle="height:550px;width:800px">
@@ -552,13 +552,20 @@
     }
 
     async void ClickImage(WMTemplateList image)
-    {   
-        CurrentImage = null;
-        await Task.Delay(10);
-        StateHasChanged();
-        CurrentImage = image;
-        CurrentImage.Canvas.Path = CurrentImage.Path;
-        PropertyChanged(null, null);
+    {
+        try
+        {
+            CurrentImage = null;
+            await Task.Delay(10);
+            StateHasChanged();
+            CurrentImage = image;
+            CurrentImage.Canvas.Path = CurrentImage.Path;
+            PropertyChanged(null, null);
+        }
+        catch (Exception e)
+        {
+            throw e;
+        }
     }
 
     async Task InitTemplates()
@@ -664,6 +671,7 @@
             });
         });
         LoadingEvt(false, "", 100);
+        await InvokeAsync(StateHasChanged);
         Common.ShowMsg(PopupService, "打开输出文件夹？", "好的", async () =>
         {
             await OpenFolder();
