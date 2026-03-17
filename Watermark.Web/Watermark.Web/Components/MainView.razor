@@ -4,186 +4,165 @@
 @using System.Collections.Concurrent
 @using Watermark.Shared.Models
 @using Watermark.Web.Components.Pages
+@using Color = MudBlazor.Color
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
-<style>
-    .hide {
-        text-overflow: ellipsis;
-        overflow-x: hidden;
-        white-space: nowrap;
-    }
-</style>
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-<div style="height:48px;position:fixed;width:100%;top:0;left:0;z-index:999;background:#FAFAFA;display:none">
-    <MudToolBar Style="height:48px;padding-left:2px;box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);">
-        <MudSpacer />
-        <MudButton Variant="Variant.Filled" Color="Color.Default" DisableElevation>下  载</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation Class="mx-2">订  阅</MudButton>
-    </MudToolBar>
-</div>
-<div Style="background:#FFFFFF;height:calc(100% - 0px);width:100%;padding: 2% calc(50% - 612px);">
-    <MudGrid Style="margin-top:58px;">
-        <MudStack Row Justify="Justify.Center" Style="margin: 16px auto;">
-            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;")" Width="1224px">
-                <MudStack Row="true" Style="height:32px;display:flex;align-items:center">
-                    <LogoIcon />
-                    <MudText Class="hide" Typo="Typo.h5">水印相框大师</MudText>
-                    <MudDivider Vertical="true" Class="ma-2" />
-                    <MudIcon Icon="@Icons.Custom.Brands.Microsoft" />
-                </MudStack>
-                <MudText Typo="Typo.body1" Class="my-2">
-                    ● 基础功能免费<br />
-                    ● 会员全平台通用，跨平台同步<br />
-                    ● 不损失画质<br />
-                    ● 模板设计<br />
-                    ● 模板编辑<br />
-                    ● 模板上传<br />
-                    ● 拼图<br />
-                    ● 订阅制<br />
-                </MudText>
-                <br />
-                <MudText Typo="Typo.subtitle2" Color="Color.Default">
-                    使用 水印相框大师 即表示你同意其 <a href="http://thankful.top/private">许可 & 隐私</a>声明
-                </MudText>
-                <MudButton StartIcon="@Icons.Custom.Brands.Microsoft" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://cdn.thankful.top/Watermark.Win.Update.exe">
-                    Windows下载
-                </MudButton>
 
-                <MudButton StartIcon="@Icons.Material.Filled.Android" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk">Android下载</MudButton>
+@* ===== 3.1: 固定导航栏 ===== *@
+<nav class="sticky-nav" id="stickyNav">
+    <div class="nav-brand">
+        <LogoIcon />
+        <span>水印相框大师</span>
+    </div>
+    <a href="#downloadSection" class="nav-download-btn">下载</a>
+</nav>
 
-                <MudButton StartIcon="@Icons.Custom.Brands.Apple" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://apps.apple.com/cn/app/davinci-frame-master/id6504527992?mt=12">macOS下载</MudButton>
+@* ===== 3.1: Hero Section ===== *@
+<section class="hero-section" id="heroSection">
+    <h1 class="hero-title scroll-animate slide-up">水印相框大师</h1>
+    <p class="hero-subtitle scroll-animate slide-up stagger-delay-1">Davici Frame Master</p>
+    <p class="hero-tagline scroll-animate slide-up stagger-delay-2">强大的全功能图片模板编辑工具</p>
+    <a href="#downloadSection" class="hero-cta scroll-animate slide-up stagger-delay-3">立即下载</a>
+</section>
 
-                <MudButton StartIcon="@Icons.Custom.Brands.Apple" Class="mt-2" Color="Color.Default" Variant="Variant.Filled" DisableElevation Href="https://apps.apple.com/cn/app/%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88/id6541761957">iPhone下载</MudButton>
-            </MudPaper>
-        </MudStack>
-        <MudStack Row Justify="Justify.Center" Style="margin:auto;" Class="my-4">
-            <MudPaper Elevation="0" Style="@($"background:{Colors.Grey.Lighten4};padding:24px;height:454px")" Width="606px">
-                <LogoIcon />
-                <MudText Typo="Typo.h5">Davici Frame Master</MudText>
-                <MudText Typo="Typo.h6">水印相框大师</MudText>
-
-                <MudText Typo="Typo.h4" Class="my-3">强大的全功能图片模板编辑工具</MudText>
-
-                <MudText Typo="Typo.body1" Class="my-2">通过模板编辑器制作各式各样的照片模板</MudText>
-
-                <MudText Typo="Typo.body1" Class="my-2">更可以直接获取图片EXIF信息</MudText>
-            </MudPaper>
-            <MudPaper Elevation="0" Style="@($"background:#F5F5F5;padding:24px;")" Width="606px">
-                <MudImage Src="https://cdn.thankful.top/C264A6182FBF486DBD4C755D743E4AB3.jpg" Height="400" Style="width:100%" ObjectFit="ObjectFit.Contain" />
-            </MudPaper>
-        </MudStack>
-        <MudItem xs="12">
-            <MudPaper Elevation="0" Class="pa-2" Style="@($"background:{Colors.Grey.Lighten4};")" Width="1224px">
-                <MudGrid>
-                    <MudItem xs="6">
-                        <MudText Typo="Typo.h5" Class="my-3">下载你喜欢的模板</MudText>
-
-                        <MudText Typo="Typo.body1" Class="my-2">上百款模板供你选择</MudText>
-                        <MudText Typo="Typo.body1" Class="my-2">创作你自己的专属模板</MudText>
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudText Typo="Typo.h5" Class="my-3">拼图功能实现你的各种图片组合</MudText>
-
-                        <MudText Typo="Typo.body1" Class="my-2">创作你自己的拼图模板</MudText>
-
-                        <MudText Typo="Typo.body1" Class="my-2">更可以直接从市场下载</MudText>
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12">
-            <MudPaper Elevation="0" Class="px-2 my-2" Style="@($"background:{Colors.Grey.Lighten4}")">
-                <MudGrid>
-                    @foreach (var src in strings)
-                    {
-                        <MudItem xs="2">
-                            <MudImage Src="@($"https://cdn.thankful.top/{src}.jpg")" Class="pa-1" Style="width:100%;max-height:270px" ObjectFit="ObjectFit.Contain" />
-                        </MudItem>
-                    }
-                </MudGrid>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12">
-            <MudStack Justify="Justify.FlexEnd" Style="width:100%" Row="true">
-                <a href="https://beian.miit.gov.cn/">
-                    蜀ICP备2024092556号
-                </a>
-            </MudStack>
-        </MudItem>
-
-
-        @* <MudStack Row Justify="Justify.Center" Style="margin:auto;display:none;">
-            <MudPaper Style="@("display:none;" + boxStyle)" Elevation="0" class="pa-3">
-                <MudStack Row style="position:relative;align-items: center">
-                    <MudText Typo="Typo.button"> 永久授权 </MudText>
-                    <MudChip Size="Size.Medium" Color="Color.Warning" style="position:absolute;right:10px" OnClick="@(()=>Pay(38, "永久会员"))">¥38</MudChip>
-                </MudStack>
-            </MudPaper>
-            <MudPaper Style="@boxStyle" Elevation="0" class="pa-3" Width="300px">
-                <MudStack Justify="Justify.FlexStart">
-                    <MudText Typo="Typo.h6" Align="Align.Center"><strong>免费版</strong>  </MudText>
-                    <MudText Typo="Typo.subtitle2">基础模板<br />最高画质<br />模板编辑<br />生成照片 </MudText>
-                </MudStack>
-            </MudPaper>
-
-            <MudPaper Style="@boxStyle" Elevation="0" class="pa-3">
-                <MudStack Justify="Justify.FlexStart">
-                    <MudText Typo="Typo.h6" Align="Align.Center"><strong>付费会员</strong>  </MudText>
-                    <MudText Typo="Typo.subtitle2">无限制使用付费API<br />无限制批量处理<br />无限制使用付费的高级模板<br />IOS、MAC OS、Windows、Android多端同步<br />持续更新 </MudText>
-                </MudStack>
-                <MudDivider Class="my-4" />
-                <MudStack Row style="position:relative;align-items: center">
-                    <MudText Typo="Typo.button"> <strong>年度会员</strong> </MudText>
-                    <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(28, "年度会员"))">¥28</MudChip>
-                </MudStack>
-                <MudDivider Class="my-4" />
-                <MudStack Row style="position:relative;align-items: center">
-                    <MudText Typo="Typo.button"> <strong>季度会员</strong> </MudText>
-                    <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(18, "季度会员"))">¥18</MudChip>
-                </MudStack>
-                <MudDivider Class="my-4" />
-                <MudStack Row style="position:relative;align-items: center">
-                    <MudText Typo="Typo.button"> <strong>月度会员</strong> </MudText>
-                    <MudChip Size="Size.Small" Color="Color.Warning" Label="true" style="position:absolute;right:10px" OnClick="@(()=>Pay(8, "月度会员"))">¥8 &nbsp;</MudChip>
-                </MudStack>
-            </MudPaper>
-        </MudStack>
- *@
+@* ===== 3.2: Feature Section 功能卡片区 ===== *@
+<section class="feature-section">
+    <h2 class="section-title scroll-animate fade-in">产品特色</h2>
+    <MudGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;">
+        @for (int i = 0; i < features.Count; i++)
+        {
+            var feature = features[i];
+            var delay = i + 1;
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="0" Class="@($"scroll-animate fade-in stagger-delay-{delay}")" Style="text-align:center;padding:32px 16px;background:#f5f5f7;border-radius:16px;">
+                    <MudIcon Icon="@feature.Icon" Style="font-size:2.5rem;color:#0071e3;" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Style="font-weight:600;margin-bottom:8px;">@feature.Title</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#6e6e73;">@feature.Description</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
     </MudGrid>
-</div>
+</section>
 
+@* ===== 3.3: 产品截图展示区 ===== *@
+<section class="showcase-section">
+    <MudGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;align-items:center;">
+        <MudItem xs="12" sm="6">
+            <div class="scroll-animate slide-left">
+                <h2 class="section-title">强大的模板编辑器</h2>
+                <p class="section-desc">通过模板编辑器制作各式各样的照片模板</p>
+                <p class="section-desc">更可以直接获取图片EXIF信息</p>
+                <p class="section-desc">上百款模板供你选择，创作你自己的专属模板</p>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <div class="scroll-animate slide-right">
+                <img src="https://cdn.thankful.top/C264A6182FBF486DBD4C755D743E4AB3.jpg"
+                     alt="产品截图"
+                     style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);"
+                     onerror="this.style.display='none';this.parentElement.style.background='#e8e8ed';this.parentElement.style.minHeight='300px';this.parentElement.style.borderRadius='12px';" />
+            </div>
+        </MudItem>
+    </MudGrid>
+</section>
 
+@* ===== 3.4: Download Section 下载区 ===== *@
+<section class="download-section" id="downloadSection">
+    <h2 class="section-title scroll-animate fade-in">下载水印相框大师</h2>
+    <div class="download-buttons scroll-animate slide-up stagger-delay-1">
+        <a href="https://cdn.thankful.top/Watermark.Win.Update.exe" class="download-btn">
+            <MudIcon Icon="@Icons.Custom.Brands.Microsoft" /> Windows
+        </a>
+        <a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk" class="download-btn">
+            <MudIcon Icon="@Icons.Material.Filled.Android" /> Android
+        </a>
+        <a href="https://apps.apple.com/cn/app/davinci-frame-master/id6504527992?mt=12" class="download-btn">
+            <MudIcon Icon="@Icons.Custom.Brands.Apple" /> macOS
+        </a>
+        <a href="https://apps.apple.com/cn/app/%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88/id6541761957" class="download-btn">
+            <MudIcon Icon="@Icons.Custom.Brands.Apple" /> iPhone
+        </a>
+    </div>
+    <p class="privacy-text scroll-animate fade-in stagger-delay-2">
+        使用水印相框大师即表示你同意其<a href="http://thankful.top/private">许可 &amp; 隐私</a>声明
+    </p>
+</section>
+
+@* ===== 3.5: Template Gallery Section 模板画廊 ===== *@
+<section class="gallery-section">
+    <h2 class="section-title scroll-animate fade-in">精选模板</h2>
+    <div class="gallery-grid">
+        @for (int i = 0; i < strings.Count; i++)
+        {
+            var src = strings[i];
+            var delay = (i % 12) + 1;
+            <div class="@($"gallery-item scroll-animate scale-in stagger-delay-{delay}")">
+                <img src="@($"https://cdn.thankful.top/{src}.jpg")"
+                     alt="模板预览"
+                     loading="lazy"
+                     onerror="this.style.display='none';this.parentElement.style.background='#e8e8ed';this.parentElement.style.minHeight='150px';" />
+            </div>
+        }
+    </div>
+</section>
+
+@* ===== 3.6: Footer Section 页脚 ===== *@
+<footer class="footer-section">
+    <a href="https://beian.miit.gov.cn/">蜀ICP备2024092556号</a>
+</footer>
+
+@* ===== 3.2 & 3.7: Code block ===== *@
 @code {
-    [Inject]
-    private IDialogService DialogService { get; set; }
-    List<string> strings = [
+    record FeatureItem(string Icon, string Title, string Description);
+
+    List<FeatureItem> features =
+    [
+        new(Icons.Material.Filled.CardGiftcard, "基础功能免费", "核心功能完全免费使用"),
+        new(Icons.Material.Filled.Devices, "会员全平台通用", "跨平台同步，一次订阅多端使用"),
+        new(Icons.Material.Filled.HighQuality, "不损失画质", "原图质量输出，无压缩损失"),
+        new(Icons.Material.Filled.Dashboard, "模板设计与编辑", "丰富模板库，自由创作编辑"),
+        new(Icons.Material.Filled.GridView, "拼图功能", "多种拼图布局，灵活组合照片")
+    ];
+
+    List<string> strings =
+    [
         "43F920046F064B18A4BA0B1C46408F66",
-    "B735DFC73A0B4080B11BBCFD3AE833D6",
-    "19BEBDE6C0C64FCB9919DDCD4A2A3675",
-    "DBF0D1F09CF74F9A8E827EA04543083A",
-    "C01EC81767F04D648CD055A241A61C5B",
-    "D28B8DC23C9747ACBEFEF462BA8CBBCB",
-    "ADD765F4905D45C38FE4A33B29D1200C",
-    "2ED212541CB2403EBC86EDD028EBFEDC",
-    "EF3C623CB9ED4CA68DAAE6064D5F0246",
-    "59C0718464C74C5D8B1CE1FB3894E553",
-    "370071180E1C41DB902C37DB84ED022C",
-    "D940CF2EC7A348119837F7CB418D4CFB"];
-    string boxStyle = $"margin: 10px 16px;background:{Colors.Grey.Lighten4}";
-    protected override void OnAfterRender(bool firstRender)
+        "B735DFC73A0B4080B11BBCFD3AE833D6",
+        "19BEBDE6C0C64FCB9919DDCD4A2A3675",
+        "DBF0D1F09CF74F9A8E827EA04543083A",
+        "C01EC81767F04D648CD055A241A61C5B",
+        "D28B8DC23C9747ACBEFEF462BA8CBBCB",
+        "ADD765F4905D45C38FE4A33B29D1200C",
+        "2ED212541CB2403EBC86EDD028EBFEDC",
+        "EF3C623CB9ED4CA68DAAE6064D5F0246",
+        "59C0718464C74C5D8B1CE1FB3894E553",
+        "370071180E1C41DB902C37DB84ED022C",
+        "D940CF2EC7A348119837F7CB418D4CFB"
+    ];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // Initialize scroll animation engine
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("HomepageAnimations.init");
+            }
+            catch
+            {
+                // JS load failure - CSS fallback will auto-show elements after 3s
+            }
+
+            // Keep existing page visit record logic
             APIHelper api = new APIHelper();
             var _ = api.PageVisitRecord(Shared.Enums.ProgramPage.Index, Shared.Enums.DeviceType.Web);
         }
-    }
-
-    void Pay(int t, string s)
-    {
-
     }
 }

@@ -1,0 +1,478 @@
+/* ============================================
+   homepage.css - 首页专用样式和动画定义
+   ============================================ */
+
+/* --- 平滑滚动 --- */
+html {
+    scroll-behavior: smooth;
+}
+
+/* --- 强制页面容器垂直布局 --- */
+.page {
+    display: flex;
+    flex-direction: column !important;
+    overflow-y: auto;
+}
+
+/* ============================================
+   Task 1.1: 滚动动画基类和动画关键帧
+   ============================================ */
+
+/* 滚动动画基类 - 初始隐藏 */
+.scroll-animate {
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+/* 3秒超时 fallback：JS 加载失败时自动显示 */
+@keyframes fallback-show {
+    to {
+        opacity: 1;
+    }
+}
+
+.scroll-animate:not(.animated) {
+    animation: fallback-show 0.6s ease-out 3s forwards;
+}
+
+/* --- 淡入动画 --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in.animated {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* --- 从下方滑入 --- */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up.animated {
+    animation: slideUp 0.6s ease-out forwards;
+}
+
+/* --- 从左侧滑入 --- */
+@keyframes slideLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-left.animated {
+    animation: slideLeft 0.6s ease-out forwards;
+}
+
+/* --- 从右侧滑入 --- */
+@keyframes slideRight {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-right.animated {
+    animation: slideRight 0.6s ease-out forwards;
+}
+
+/* --- 缩放出现 --- */
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.scale-in.animated {
+    animation: scaleIn 0.6s ease-out forwards;
+}
+
+/* --- 交错延迟类 (stagger-delay-1 ~ stagger-delay-12) --- */
+.stagger-delay-1 { animation-delay: 0.1s; }
+.stagger-delay-2 { animation-delay: 0.2s; }
+.stagger-delay-3 { animation-delay: 0.3s; }
+.stagger-delay-4 { animation-delay: 0.4s; }
+.stagger-delay-5 { animation-delay: 0.5s; }
+.stagger-delay-6 { animation-delay: 0.6s; }
+.stagger-delay-7 { animation-delay: 0.7s; }
+.stagger-delay-8 { animation-delay: 0.8s; }
+.stagger-delay-9 { animation-delay: 0.9s; }
+.stagger-delay-10 { animation-delay: 1.0s; }
+.stagger-delay-11 { animation-delay: 1.1s; }
+.stagger-delay-12 { animation-delay: 1.2s; }
+
+/* ============================================
+   Task 1.2: 固定导航栏样式
+   ============================================ */
+
+.sticky-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    transform: translateY(-100%);
+    transition: transform 0.4s ease-out;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sticky-nav.visible {
+    transform: translateY(0);
+}
+
+.sticky-nav .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sticky-nav .nav-brand span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+.sticky-nav .nav-download-btn {
+    background: #0071e3;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.sticky-nav .nav-download-btn:hover {
+    background: #0077ed;
+}
+
+/* ============================================
+   Task 1.3: 各 Section 样式
+   ============================================ */
+
+/* --- Hero Section --- */
+.hero-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
+    text-align: center;
+    padding: 80px 24px 60px;
+    position: relative;
+}
+
+.hero-section .hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #1d1d1f;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.hero-section .hero-subtitle {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #6e6e73;
+    margin: 8px 0 0;
+}
+
+.hero-section .hero-tagline {
+    font-size: 1.25rem;
+    color: #86868b;
+    margin: 24px 0 0;
+}
+
+.hero-section .hero-cta {
+    display: inline-block;
+    margin-top: 40px;
+    padding: 14px 36px;
+    background: #0071e3;
+    color: #fff;
+    border-radius: 28px;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: background 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.hero-section .hero-cta:hover {
+    background: #0077ed;
+}
+
+/* --- Feature Section --- */
+.feature-section {
+    padding: 100px 24px;
+    background: #ffffff;
+    text-align: center;
+}
+
+.feature-section .section-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 60px;
+}
+
+/* --- Showcase Section (产品截图展示区) --- */
+.showcase-section {
+    padding: 100px 24px;
+    background: #f5f5f7;
+}
+
+.showcase-section .section-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 16px;
+}
+
+.showcase-section .section-desc {
+    font-size: 1.1rem;
+    color: #6e6e73;
+    margin-bottom: 8px;
+}
+
+/* --- Download Section --- */
+.download-section {
+    padding: 100px 24px;
+    background: #ffffff;
+    text-align: center;
+}
+
+.download-section .section-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 48px;
+}
+
+.download-section .download-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.download-section .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid #d2d2d7;
+}
+
+.download-section .download-btn:hover {
+    background: #e8e8ed;
+    transform: translateY(-2px);
+}
+
+.download-section .privacy-text {
+    font-size: 0.85rem;
+    color: #86868b;
+}
+
+.download-section .privacy-text a {
+    color: #0071e3;
+    text-decoration: none;
+}
+
+.download-section .privacy-text a:hover {
+    text-decoration: underline;
+}
+
+/* --- Gallery Section (模板画廊) --- */
+.gallery-section {
+    padding: 100px 24px;
+    background: #f5f5f7;
+    text-align: center;
+}
+
+.gallery-section .section-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #1d1d1f;
+    margin-bottom: 60px;
+}
+
+.gallery-section .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.gallery-section .gallery-item {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery-section .gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.gallery-section .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* --- Footer Section --- */
+.footer-section {
+    padding: 40px 24px;
+    background: #1d1d1f;
+    text-align: center;
+}
+
+.footer-section a {
+    color: #86868b;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.footer-section a:hover {
+    color: #d2d2d7;
+}
+
+/* ============================================
+   Task 1.4: 响应式媒体查询
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Hero 文字缩小 */
+    .hero-section .hero-title {
+        font-size: 2.2rem;
+    }
+
+    .hero-section .hero-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .hero-section .hero-tagline {
+        font-size: 1rem;
+    }
+
+    .hero-section .hero-cta {
+        padding: 12px 28px;
+        font-size: 1rem;
+    }
+
+    /* Section 内边距缩小 */
+    .feature-section,
+    .showcase-section,
+    .download-section,
+    .gallery-section {
+        padding: 60px 16px;
+    }
+
+    /* 功能卡片单列 */
+    .feature-section .mud-grid-item {
+        flex-basis: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* 产品截图展示区单列 */
+    .showcase-section .mud-grid-item {
+        flex-basis: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* 下载按钮单列 */
+    .download-section .download-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .download-section .download-btn {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+    }
+
+    /* 模板画廊从 6 列调整为 2 列 */
+    .gallery-section .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    /* 导航栏移动端适配 */
+    .sticky-nav {
+        padding: 0 12px;
+        height: 48px;
+    }
+
+    .sticky-nav .nav-brand span {
+        font-size: 0.85rem;
+    }
+
+    .sticky-nav .nav-download-btn {
+        padding: 5px 14px;
+        font-size: 0.8rem;
+    }
+
+    /* Section 标题缩小 */
+    .feature-section .section-title,
+    .download-section .section-title,
+    .gallery-section .section-title {
+        font-size: 1.6rem;
+        margin-bottom: 36px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* 模板画廊中等屏幕 3 列 */
+    .gallery-section .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
