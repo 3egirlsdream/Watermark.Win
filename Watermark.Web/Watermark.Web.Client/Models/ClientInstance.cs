@@ -151,5 +151,22 @@ namespace Watermark.Shared.Models
         {
             throw new NotImplementedException();
         }
+
+        public void Exit()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OpenDesign(WMCanvas canvas)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task InteropInit(string appId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string AppTitle { get; set; }
     }
 }
