@@ -411,7 +411,7 @@ namespace Watermark.Shared.Models
             return Task.CompletedTask;
         }
 
-        public string AppTitle { get; set; } = "";
+        public string AppTitle { get; set; } = "轻影";
         public void WindowMinimize() { }
         public void WindowZoom() { }
         public void WindowClose() { }
