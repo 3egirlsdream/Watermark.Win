@@ -63,8 +63,10 @@
                 }
             </div>
 
-
-            <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+            @if (CurrentCanvas != null)
+            {
+                <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+            }
         </div>
     }
     else
@@ -140,7 +142,7 @@
                 designFunc = await ClientInstance.GetWMDesignFunc(cid);
             }
 
-            if (designFunc != null)
+            if (designFunc != null && designFunc.CurrentCanvas != null)
             {
                 CurrentCanvas = designFunc.CurrentCanvas;
                 SelectLogo = designFunc.SelectLogo;
@@ -148,6 +150,13 @@
                 SelectDefaultImageEvt = designFunc.SelectDefaultImageEvt;
                 HotKeyEvt = designFunc.HotKeyEvt;
             }
+
+            if (CurrentCanvas == null)
+            {
+                Common.ShowMsg(PopupService, "模板加载失败，请重试", AlertTypes.Error);
+                return;
+            }
+
             Global.Subscribe(CurrentCanvas, PropertyChanged);
             PreviewImageRefresh();
             try
@@ -169,6 +178,7 @@
 
     private async void PreviewImageRefresh()
     {
+        if (CurrentCanvas == null) return;
         if (debouncedAction is null)
         {
             debouncedAction = new(async () =>

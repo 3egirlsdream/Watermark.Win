@@ -49,9 +49,47 @@ namespace Watermark.Shared.Models
             var context = Android.App.Application.Context;
             var deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId);
             return deviceId;
-#endif
+#elif MACCATALYST
+            return GetMacSerialNumber();
+#else
             return Guid.NewGuid().ToString();
+#endif
         }
+
+#if MACCATALYST
+        private static string GetMacSerialNumber()
+        {
+            try
+            {
+                var process = new System.Diagnostics.Process();
+                process.StartInfo.FileName = "/usr/sbin/ioreg";
+                process.StartInfo.Arguments = "-l | grep IOPlatformSerialNumber";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.CreateNoWindow = true;
+
+                // ioreg doesn't support piping, use shell
+                process.StartInfo.FileName = "/bin/bash";
+                process.StartInfo.Arguments = "-c \"ioreg -l | grep IOPlatformSerialNumber\"";
+                process.Start();
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                // Parse: "IOPlatformSerialNumber" = "XXXXXXXXXXXX"
+                if (!string.IsNullOrEmpty(output))
+                {
+                    var parts = output.Split('=');
+                    if (parts.Length > 1)
+                    {
+                        return parts[1].Trim().Trim('"').Trim();
+                    }
+                }
+            }
+            catch { }
+            // Fallback to a stable identifier based on machine name
+            return Environment.MachineName + "-" + Environment.UserName;
+        }
+#endif
 
 
         public async Task<bool> IsOutOfDate(string client = "Watermark_A")
@@ -70,6 +108,9 @@ namespace Watermark.Shared.Models
         {
             try
             {
+#if MACCATALYST
+                client = "WatermarkMac";
+#endif
                 var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={client}", Encoding.Default);
                 if (version != null && version.success && version.data != null && version.data.VERSION != null)
                 {
@@ -173,7 +214,9 @@ namespace Watermark.Shared.Models
                 var r = await api.Download(watermarkId, w?.UserId ?? "");
                 if (r)
                 {
+#if ANDROID || IOS
                     HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+#endif
                     parameter.FocusImageShow = false;
                     Common.ShowMsg(PopupService, "下载完成", AlertTypes.Success);
                     var dir = await LoadSingleTemplates(watermarkId, helper, PopupService, JSRuntime, NavController);
@@ -215,7 +258,10 @@ namespace Watermark.Shared.Models
 
         public void Haptic()
         {
+#if ANDROID || IOS
             HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+#endif
+            // macOS doesn't have haptic feedback
         }
 
         public async Task<IEnumerable<string>> PickMultipleAsync()
@@ -245,12 +291,12 @@ namespace Watermark.Shared.Models
 
         public async Task<API<string>> AliPays(decimal cost, string tradeName)
         {
+#if ANDROID
             var rs = await api.GetPayToken(cost, tradeName);
             if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
             {
                 API<string> jt = await Task.Run(() =>
                 {
-#if ANDROID
                     string con = rs.data;
                     var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
                     var pa = new Com.Alipay.Sdk.App.PayTask(act);
@@ -271,11 +317,7 @@ namespace Watermark.Shared.Models
                     catch (Exception ex)
                     {
                         return new API<string> { message = new APISub { content = ex.Message }, success = false };
-
                     }
-#else
-                    return new API<string> { };
-#endif
                 });
                 if (!jt.success) return jt;
 
@@ -299,7 +341,10 @@ namespace Watermark.Shared.Models
             {
                 return rs;
             }
-
+#else
+            // macOS/iOS: payment not supported in this build
+            return new API<string> { success = false, message = new APISub { content = "当前平台暂不支持支付" } };
+#endif
         }
 
         public async Task ReLogin()
@@ -319,8 +364,23 @@ namespace Watermark.Shared.Models
         {
 #if ANDROID
             return Watermark.Andorid.SavePictureService.SavePicture(b64, "DFX_" + fn);
-#endif
+#elif MACCATALYST
+            try
+            {
+                var outputPath = Global.OutPutPath;
+                if (!Directory.Exists(outputPath))
+                    Directory.CreateDirectory(outputPath);
+                var filePath = Path.Combine(outputPath, "DFX_" + fn);
+                File.WriteAllBytes(filePath, b64);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+#else
             return true;
+#endif
         }
 
         public async Task<string> OpenFolder()
@@ -346,6 +406,7 @@ namespace Watermark.Shared.Models
 #if ANDROID
             MainActivity.SetColor?.Invoke(color);
 #endif
+            // macOS doesn't need status bar color changes
         }
 
         public async Task<WMDesignFunc> GetWMDesignFunc(string canvasId)
@@ -358,42 +419,110 @@ namespace Watermark.Shared.Models
             design.SelectLogo = new Func<WMLogo, Task>(async Task (x) =>
             {
                 var name = await PickAsync();
-                x.Path = name;
+                if (!string.IsNullOrEmpty(name))
+                {
+#if MACCATALYST
+                    var destFolder = Path.Combine(Global.AppPath.TemplatesFolder, canvasId);
+                    if (!Directory.Exists(destFolder))
+                        Directory.CreateDirectory(destFolder);
+                    var fileName = Path.GetFileName(name);
+                    var destFile = Path.Combine(destFolder, fileName);
+                    File.Copy(name, destFile, true);
+                    x.Path = fileName;
+#else
+                    x.Path = name;
+#endif
+                }
             });
 
             design.SelectContainer = new Func<WMContainer, Task>(async Task (x) =>
             {
                 var name = await PickAsync();
-                x.Path = name;
+                if (!string.IsNullOrEmpty(name))
+                    x.Path = name;
             });
 
             design.SelectDefaultImageEvt = PickAsync;
 
-            design.ImportFontEvt = new Func<Task>(() =>
+            design.ImportFontEvt = new Func<Task>(async () =>
             {
-                return Task.Run(() =>
-                { 
-                });
-            });
-            design.ImportFontEvt2 = new Func<string, Task>((id) =>
-            {
-                return Task.Run(() =>
+#if MACCATALYST
+                try
                 {
-                });
+                    var result = await FilePicker.PickAsync(new PickOptions
+                    {
+                        PickerTitle = "选择字体文件",
+                        FileTypes = new FilePickerFileType(MacOS.FileFontType)
+                    });
+                    if (result != null)
+                    {
+                        var fontPath = Global.AppPath.FontFolder;
+                        if (!Directory.Exists(fontPath))
+                            Directory.CreateDirectory(fontPath);
+                        var target = Path.Combine(fontPath, Path.GetFileName(result.FullPath));
+                        File.Copy(result.FullPath, target, true);
+                        try
+                        {
+                            var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, canvasId, Path.GetFileName(result.FullPath));
+                            File.Copy(result.FullPath, waterPath, true);
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+#endif
+                await Task.CompletedTask;
+            });
+            design.ImportFontEvt2 = new Func<string, Task>(async (id) =>
+            {
+#if MACCATALYST
+                try
+                {
+                    var result = await FilePicker.PickAsync(new PickOptions
+                    {
+                        PickerTitle = "选择字体文件",
+                        FileTypes = new FilePickerFileType(MacOS.FileFontType)
+                    });
+                    if (result != null)
+                    {
+                        var fontPath = Global.AppPath.FontFolder;
+                        if (!Directory.Exists(fontPath))
+                            Directory.CreateDirectory(fontPath);
+                        var target = Path.Combine(fontPath, Path.GetFileName(result.FullPath));
+                        File.Copy(result.FullPath, target, true);
+                        try
+                        {
+                            var waterPath = Path.Combine(Global.AppPath.TemplatesFolder, id, Path.GetFileName(result.FullPath));
+                            File.Copy(result.FullPath, waterPath, true);
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+#endif
+                await Task.CompletedTask;
             });
 
             design.HotKeyEvt = new Action<Action>((x) =>
             {
+                // macOS hotkey registration not needed in MAUI Blazor Hybrid
             });
             return design;
         }
 
         public async Task Update(Action<long, long> DownloadProgressChanged)
         {
+#if ANDROID
             Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
             await upgradeService.DownloadFileAsync(LinkPath, DownloadProgressChanged);
             upgradeService.InstallNewVersion();
-
+#elif MACCATALYST
+            // On macOS, open the download link in browser
+            if (!string.IsNullOrEmpty(LinkPath))
+            {
+                await Browser.Default.OpenAsync(LinkPath, BrowserLaunchMode.SystemPreferred);
+            }
+#endif
         }
 
         public async Task<bool> Download(string directory, string fileName, string extension)
@@ -434,6 +563,9 @@ namespace Watermark.Shared.Models
 
         public void Exit()
         {
+#if MACCATALYST
+            WindowHelper.Close();
+#endif
         }
 
         public void OpenDesign(WMCanvas canvas)
@@ -445,6 +577,48 @@ namespace Watermark.Shared.Models
             return Task.CompletedTask;
         }
 
-        public string AppTitle { get; set; } = "";
+        public string AppTitle { get; set; } = "水印相框";
+
+        public void WindowMinimize()
+        {
+#if MACCATALYST
+            WindowHelper.Minimize();
+#endif
+        }
+
+        public void WindowZoom()
+        {
+#if MACCATALYST
+            WindowHelper.Zoom();
+#endif
+        }
+
+        public void WindowClose()
+        {
+#if MACCATALYST
+            WindowHelper.Close();
+#endif
+        }
+
+        public void WindowStartDrag()
+        {
+#if MACCATALYST
+            WindowHelper.StartDrag();
+#endif
+        }
+
+        public void WindowDragMove()
+        {
+#if MACCATALYST
+            WindowHelper.DragMove();
+#endif
+        }
+
+        public void WindowEndDrag()
+        {
+#if MACCATALYST
+            WindowHelper.EndDrag();
+#endif
+        }
     }
 }

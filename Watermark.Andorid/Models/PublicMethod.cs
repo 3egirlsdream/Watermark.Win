@@ -11,13 +11,13 @@ namespace Watermark.Andorid.Models
     {
         public static async Task<API<string>> AliPays(decimal cost, string tradeName)
         {
+#if ANDROID
             var api = new APIHelper();
             var rs = await api.GetPayToken(cost, tradeName);
             if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
             {
                 API<string> jt = await Task.Run(() =>
                 {
-#if ANDROID
                     string con = rs.data;
                     var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
                     var pa = new Com.Alipay.Sdk.App.PayTask(act);
@@ -38,11 +38,7 @@ namespace Watermark.Andorid.Models
                     catch (Exception ex)
                     {
                         return new API<string> { message = new APISub { content = ex.Message }, success = false };
-
                     }
-#else
-                    return new API<string> { };
-#endif
                 });
                 if (!jt.success) return jt;
 
@@ -66,7 +62,9 @@ namespace Watermark.Andorid.Models
             {
                 return rs;
             }
-
+#else
+            return new API<string> { success = false, message = new APISub { content = "当前平台暂不支持支付" } };
+#endif
         }
 
         public static async Task ReLogin()

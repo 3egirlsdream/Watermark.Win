@@ -412,5 +412,11 @@ namespace Watermark.Shared.Models
         }
 
         public string AppTitle { get; set; } = "";
+        public void WindowMinimize() { }
+        public void WindowZoom() { }
+        public void WindowClose() { }
+        public void WindowStartDrag() { }
+        public void WindowDragMove() { }
+        public void WindowEndDrag() { }
 	}
 }

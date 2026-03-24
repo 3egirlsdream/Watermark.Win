@@ -174,5 +174,11 @@ namespace Watermark.Shared.Models
         public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string AppTitle { get; set; } = App.Current.MainWindow.Title;
+        public void WindowMinimize() { }
+        public void WindowZoom() { }
+        public void WindowClose() { }
+        public void WindowStartDrag() { }
+        public void WindowDragMove() { }
+        public void WindowEndDrag() { }
     }
 }

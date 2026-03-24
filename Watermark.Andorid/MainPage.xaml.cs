@@ -15,6 +15,11 @@ namespace Watermark.Andorid
             //e.WebView.Settings.MixedContentMode = Android.Webkit.MixedContentHandling.AlwaysAllow;
 			e.WebView.VerticalScrollBarEnabled = false;
             e.WebView.ScrollBarSize = 0;
+#elif MACCATALYST
+            // Configure WKWebView for macOS
+            e.WebView.Configuration.Preferences.SetValueForKey(
+                Foundation.NSObject.FromObject(true), 
+                new Foundation.NSString("developerExtrasEnabled"));
 #endif
 		}
     }

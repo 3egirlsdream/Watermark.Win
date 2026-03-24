@@ -28,65 +28,291 @@
         width: 0px;
     }
 
-    .hover {
+    .hover:hover {
+        cursor: pointer;
     }
 
-        .hover:hover {
-            cursor: pointer;
-        }
-
-    .exif-selector {
+    .exif-selector .m-input__control {
+        display: none;
     }
 
-        .exif-selector .m-input__control {
-            display: none;
-        }
+    .exif-selector .m-input__prepend-outer {
+        margin: 0px;
+    }
 
-        .exif-selector .m-input__prepend-outer {
-            margin: 0px;
-        }
+    .exif-selector .mdi-paperclip::before {
+        font-size: 20px;
+    }
 
-        .exif-selector .mdi-paperclip::before {
-            font-size: 20px;
-        }
-
-    .m-treeview-node--click > .m-treeview-node__root, .m-treeview-node--click > .m-treeview-node__root > .m-treeview-node__content > .m-treeview-node__prepend {
+    .m-treeview-node--click > .m-treeview-node__root,
+    .m-treeview-node--click > .m-treeview-node__root > .m-treeview-node__content > .m-treeview-node__prepend {
         width: 100%;
         justify-content: flex-start;
         display: flex;
     }
 
     .m-menu__content {
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px !important;
+        box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px, rgba(0, 0, 0, 0.04) 0px 1px 3px !important;
+        border-radius: 8px !important;
     }
 
     .m-toolbar__content {
         padding: 0;
         justify-content: center;
         user-select: none;
+        cursor: grab;
+    }
+
+    .m-toolbar__content:active {
+        cursor: grabbing;
     }
 
     .toolbar-icon {
-        background: url(img/leica.ico);
+        background: url(img/app-icon.svg);
         background-repeat: no-repeat;
         background-size: 100% 100%;
         height: 24px;
         width: 24px;
     }
 
+    /* === 三栏布局 === */
+    .main-workspace {
+        height: calc(100% - 36px);
+        width: 100%;
+        display: flex;
+        background: #F0F1F3;
+    }
 
-    .mud-picker-color-dot {
-        background-color: #f1f1f1;
-        background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%), linear-gradient(45deg, #f1f1f1 25%, transparent 25%, transparent 75%, #f1f1f1 75%);
-        background-position: 0 0, 15px 15px;
-        background-size: 30px 30px;
-        background-repeat: repeat
+    .panel-left {
+        width: 240px;
+        min-width: 200px;
+        max-width: 300px;
+        height: 100%;
+        background: #FFFFFF;
+        border-right: 1px solid rgba(0,0,0,0.06);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .panel-center {
+        flex: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .panel-right {
+        width: 280px;
+        min-width: 240px;
+        max-width: 320px;
+        height: 100%;
+        background: #FFFFFF;
+        border-left: 1px solid rgba(0,0,0,0.06);
+        overflow-y: auto;
+    }
+
+    /* === 左侧面板 === */
+    .panel-left .m-tabs {
+        flex-shrink: 0;
+    }
+
+    .template-list {
+        padding: 8px;
+    }
+
+    .template-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .template-list::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.12);
+        border-radius: 2px;
+    }
+
+    .template-item {
+        display: flex;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+        gap: 10px;
+    }
+
+    .template-item:hover {
+        background: rgba(0,0,0,0.04);
+    }
+
+    .template-item:active {
+        background: rgba(0,0,0,0.07);
+    }
+
+    .template-item img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .template-item-name {
+        font-size: 13px;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .split-template-item {
+        padding: 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .split-template-item:hover {
+        background: rgba(0,0,0,0.04);
+    }
+
+    /* === 中间预览区 === */
+    .preview-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        color: #999;
+        font-size: 13px;
+    }
+
+    .preview-toolbar {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 8px;
+        padding: 4px 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        z-index: 10;
+    }
+
+    .preview-image {
+        width: 90%;
+        height: calc(100% - 60px);
+        object-fit: contain;
+    }
+
+    /* === 底部图片列表 === */
+    .upload-strip {
+        min-height: 100px;
+        display: flex;
+        background: #FFFFFF;
+    }
+
+    /* === 右侧面板滚动条 === */
+    .panel-right::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .panel-right::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.12);
+        border-radius: 2px;
+    }
+
+    .traffic-lights {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px 0 14px;
+        height: 100%;
+        -webkit-app-region: no-drag;
+    }
+
+    .traffic-light {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        cursor: default;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: filter 0.15s;
+    }
+
+    .traffic-light:hover {
+        filter: brightness(0.9);
+    }
+
+    .traffic-light:active {
+        filter: brightness(0.8);
+    }
+
+    .traffic-light svg {
+        width: 6px;
+        height: 6px;
+        opacity: 0;
+        transition: opacity 0.12s;
+    }
+
+    .traffic-lights:hover .traffic-light svg {
+        opacity: 1;
+    }
+
+    .tl-close {
+        background: #FF5F57;
+    }
+
+    .tl-close svg {
+        stroke: #4D0000;
+        stroke-width: 1.5;
+    }
+
+    .tl-minimize {
+        background: #FEBC2E;
+    }
+
+    .tl-minimize svg {
+        stroke: #995700;
+        stroke-width: 2;
+    }
+
+    .tl-zoom {
+        background: #28C840;
+    }
+
+    .tl-zoom svg {
+        stroke: #006500;
+        stroke-width: 1.2;
     }
 </style>
-<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow-x:hidden;">
+<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow:hidden;border-radius:10px;">
     <MErrorHandler>
-        <MCard Color="grey lighten-4" Flat Tile Style="height:100%">
-            <MToolbar Dense Elevation="0" Height="36" Id="@appId">
+        <MCard Color="white" Flat Tile Style="height:100%;border-radius:10px;overflow:hidden;">
+            <MToolbar Dense Elevation="0" Height="36" Id="@appId" Style="background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid rgba(0,0,0,0.1);">
+                @if (Global.DeviceType == DeviceType.Mac)
+                {
+                    <div class="traffic-lights">
+                        <div class="traffic-light tl-close" @onclick="ClientInstance.WindowClose" title="关闭">
+                            <svg viewBox="0 0 6 6"><line x1="0.5" y1="0.5" x2="5.5" y2="5.5"/><line x1="5.5" y1="0.5" x2="0.5" y2="5.5"/></svg>
+                        </div>
+                        <div class="traffic-light tl-minimize" @onclick="ClientInstance.WindowMinimize" title="最小化">
+                            <svg viewBox="0 0 6 6"><line x1="0" y1="3" x2="6" y2="3"/></svg>
+                        </div>
+                        <div class="traffic-light tl-zoom" @onclick="ClientInstance.WindowZoom" title="最大化">
+                            <svg viewBox="0 0 6 6"><polyline points="1,5.5 1,1 5.5,1" fill="none"/><polyline points="5,0.5 5,5 0.5,5" fill="none"/></svg>
+                        </div>
+                    </div>
+                }
                 <div class="ml-2 toolbar-icon" />
                 <MMenu OffsetY>
                     <ActivatorContent>
@@ -164,7 +390,7 @@
                         </ChildContent>
                     </MMenu>
                 }
-                <Label Name="@ClientInstance.AppTitle" Style="position:absolute;user-select:none;" />
+                <Label Name="@ClientInstance.AppTitle" Style="position:absolute;left:50%;transform:translateX(-50%);user-select:none;-webkit-user-select:none;pointer-events:none;font-size:13px;color:#333;font-weight:500;" />
                 <MSpacer />
                 <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
                     <ActivatorContent>
@@ -249,92 +475,73 @@
                     </ChildContent>
                 </MMenu>
             </MToolbar>
-            <div style="height:calc(100% - 36px);width:100%;display:flex;justify-content:flex-start;">
-                <div style="width:300px;height:100%;overflow-y:hidden;">
-                    <MTabs @bind-Value="tab" FixedTabs Height="30">
-                        <MTab Value="@("模板")">
-                            模板
-                        </MTab>
-                        <MTab Value="@("拼图")">
-                            拼图
-                        </MTab>
+            <div class="main-workspace">
+                @* === 左侧模板面板 === *@
+                <div class="panel-left">
+                    <MTabs @bind-Value="tab" FixedTabs Height="36" Style="border-bottom:1px solid rgba(0,0,0,0.06);">
+                        <MTab Value="@("模板")">模板</MTab>
+                        <MTab Value="@("拼图")">拼图</MTab>
                     </MTabs>
-                    <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow-y:overlay">
+                    <MTabsItems Value="@tab" Style="height:calc(100% - 36px);overflow-y:auto;">
                         <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
-                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
-                                       Activatable
-                                       ItemKey="u => u.ID"
-                                       ItemText="u => null"
-                                       ItemChildren="u => []"
-                                       OpenOnClick>
-                                <PrependContent>
-                                    @if (context.Item != null)
-                                    {
-                                        <div @onclick="() => ChangeTemplate(context.Item)" style="display:flex;align-items:center;justify-content:flex-start; width: 100%;">
-                                            <img width="40" height="40" style="object-fit: contain" src="@context.Item.Src" />
-                                            <Watermark.Razor.Parts.Label Name="@context.Item.Canvas.Name" Small="false" Class="ml-1" />
-                                        </div>
-
-                                    }
-                                </PrependContent>
-                            </MTreeview>
+                            <div class="template-list">
+                                @foreach (var item in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name))
+                                {
+                                    <div class="template-item" @onclick="() => ChangeTemplate(item)">
+                                        <img src="@item.Src" alt="@item.Canvas.Name" />
+                                        <span class="template-item-name">@item.Canvas.Name</span>
+                                    </div>
+                                }
+                            </div>
                         </MTabItem>
                         <MTabItem Value="@("拼图")" Transition="" ReverseTransition="">
-                            <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name).ToList()"
-                                       Activatable
-                                       ItemKey="u => u.ID"
-                                       ItemText="u => null"
-                                       ItemChildren="u => []"
-                                       OpenOnClick>
-                                <PrependContent>
-                                    @if (context.Item != null)
-                                    {
-                                        <div @onclick="() => SelectSplitImages(context.Item)" style="flex:1">
-                                            <MImage Style="width:100%;padding:4px 0" Contain Src="@context.Item.Src" />
-                                        </div>
-                                    }
-                                </PrependContent>
-                            </MTreeview>
+                            <div class="template-list">
+                                @foreach (var item in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name))
+                                {
+                                    <div class="split-template-item" @onclick="() => SelectSplitImages(item)">
+                                        <MImage Style="width:100%;padding:4px 0" Contain Src="@item.Src" />
+                                    </div>
+                                }
+                            </div>
                         </MTabItem>
                     </MTabsItems>
                 </div>
-                <div style="height:100%;width:calc(100% - 600px)">
-                    <MSplitter Row Style="height: 100%" BarSize="4">
+
+                @* === 中间预览区 === *@
+                <div class="panel-center">
+                    <MSplitter Row Style="height:100%" BarSize="4">
                         <ChildContent>
-                            <MSplitterPane Class="grey lighten-2 d-flex align-center justify-center mud-picker-color-dot" Size="70" Style="position:relative;width:100%">
+                            <MSplitterPane Class="d-flex align-center justify-center" Size="70" Style="position:relative;background:#F0F1F3;">
                                 @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
                                 {
-                                    <MCard Style="width:50%;height:30px;position:absolute;top:10px;justify-content:flex-start;display:flex;gap:0 4px;align-items:center">
-                                        <MCard Style="width:23px;height:23px;cursor:pointer;display: flex; align-items: center; justify-content: center;" @onclick="() => showExif = true" Flat>
+                                    <div class="preview-toolbar">
+                                        <MCard Style="width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;" @onclick="() => showExif = true" Flat>
                                             <Watermark.Razor.Parts.IconExif />
                                         </MCard>
-                                        <MCard Width="23" Height="23" Flat>
+                                        <MCard Width="26" Height="26" Flat>
                                             <MFileInput TValue="IBrowserFile"
                                                         Class="exif-selector"
                                                         OnChange="SelectSourceImageExif"
-                                                        Style="width: 22px !important; padding: 0px !important; margin:0px"
+                                                        Style="width:22px !important;padding:0px !important;margin:0px"
                                                         HideDetails="true"
-                                                        Label="File input"></MFileInput>
+                                                        Label="File input" />
                                         </MCard>
-
-                                    </MCard>
-                                    <MImage Src="@CurrentImage.Src" Style="width:90%; height:calc(100% - 200px); margin-left:5%;margin-right:5%;" Contain />
-                                    @*  <div style="width:90%; height:100%; margin-left:5%;margin-right:5%;display:flex;">
-                                        <DesignView Canvas="@CurrentImage.Canvas" />
-                                    </div> *@
-
+                                    </div>
+                                    <MImage Src="@CurrentImage.Src" Class="preview-image" Contain />
                                     @if (SrcLoading)
                                     {
-                                        <MProgressCircular Indeterminate="true" Style="position:absolute;top:10px;right:10px" Color="primary" />
+                                        <MProgressCircular Indeterminate="true" Style="position:absolute;top:12px;right:12px" Color="primary" Size="20" Width="2" />
                                     }
-
                                 }
                                 else
                                 {
-                                    <Watermark.Razor.Parts.IconImage />
+                                    <div class="preview-empty">
+                                        <Watermark.Razor.Parts.IconImage />
+                                        <span>导入图片开始编辑</span>
+                                    </div>
                                 }
                             </MSplitterPane>
-                            <MSplitterPane Style="min-height:100px;display:flex;" Size="30">
+                            <MSplitterPane Class="upload-strip" Size="30">
                                 <Upload Images="@Images" ClickImageEvt="(e) => ClickImage(e)" LoadingEvt="(t) => LoadingEvt(t.Item1, t.Item2, t.Item3)" />
                             </MSplitterPane>
                         </ChildContent>
@@ -343,11 +550,14 @@
                         </BarContent>
                     </MSplitter>
                 </div>
+
+                @* === 右侧配置面板 === *@
                 @if (CurrentImage != null && CurrentImage.Canvas != null && !string.IsNullOrEmpty(CurrentImage.Canvas.Name) && showConfig)
                 {
-                    <Watermark.Razor.Components.DesignConfiguration Style="width:300px;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
+                    <div class="panel-right">
+                        <Watermark.Razor.Components.DesignConfiguration Style="width:100%;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
+                    </div>
                 }
-
             </div>
         </MCard>
 
@@ -480,8 +690,21 @@
         if (firstRender)
         {
             await ClientInstance.InteropInit(appId);
+            if (Global.DeviceType == DeviceType.Mac)
+            {
+                await JSRuntime.InvokeVoidAsync("initToolbarDrag", appId, DotNetObjectReference.Create(this));
+            }
         }
     }
+
+    [JSInvokable]
+    public void OnDragStart() => ClientInstance.WindowStartDrag();
+
+    [JSInvokable]
+    public void OnDragMove() => ClientInstance.WindowDragMove();
+
+    [JSInvokable]
+    public void OnDragEnd() => ClientInstance.WindowEndDrag();
 
 
 

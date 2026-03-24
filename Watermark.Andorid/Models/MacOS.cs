@@ -11,10 +11,10 @@ namespace Watermark.Andorid.Models
 
         public static Dictionary<DevicePlatform, IEnumerable<string>> FileType = new()
           {
-            { DevicePlatform.Android, new[] { "text/*" } } ,
-            { DevicePlatform.iOS, new[] { "public.json", "public.plain-text" } },
-            { DevicePlatform.MacCatalyst, new[] { "image/jpg", "image/png" } },
-            { DevicePlatform.WinUI, new[] { ".jpg", ".jepg" } }
+            { DevicePlatform.Android, new[] { "image/*" } } ,
+            { DevicePlatform.iOS, new[] { "public.jpeg", "public.png", "public.image" } },
+            { DevicePlatform.MacCatalyst, new[] { "public.jpeg", "public.png", "public.image" } },
+            { DevicePlatform.WinUI, new[] { ".jpg", ".jpeg", ".png" } }
           };
         public static Dictionary<DevicePlatform, IEnumerable<string>> FileFontType = new()
           {

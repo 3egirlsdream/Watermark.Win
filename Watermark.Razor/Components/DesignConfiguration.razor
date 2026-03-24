@@ -146,6 +146,7 @@
     {
         try
         {
+            if (canvas == null) return;
             ConcurrentDictionary<string, byte[]> dic = new();
             if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
             var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");

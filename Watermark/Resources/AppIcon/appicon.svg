@@ -1,8 +1,46 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="128" height="128">
-	<path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
-	<path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
-	<path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
-	<path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
-	<path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- 浅色纯色背景 -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="#F1F5F9"/>
+
+  <!-- ===== 扁平相机 ===== -->
+  <!-- 机身 -->
+  <rect x="260" y="290" width="504" height="310" rx="32" ry="32" fill="#CBD5E1"/>
+  <!-- 取景器凸起 -->
+  <rect x="420" y="254" width="130" height="50" rx="14" ry="14" fill="#CBD5E1"/>
+  <!-- 快门按钮 -->
+  <circle cx="590" cy="272" r="14" fill="#E2E8F0"/>
+
+  <!-- 镜头外圈 -->
+  <circle cx="512" cy="445" r="110" fill="#94A3B8"/>
+  <!-- 镜头内圈 -->
+  <circle cx="512" cy="445" r="90" fill="#E2E8F0"/>
+  <!-- 镜头玻璃 -->
+  <circle cx="512" cy="445" r="68" fill="#93C5FD"/>
+  <!-- 镜头中心 -->
+  <circle cx="512" cy="445" r="36" fill="#BFDBFE"/>
+  <!-- 镜头高光 -->
+  <circle cx="490" cy="422" r="14" fill="white" opacity="0.6"/>
+
+  <!-- 闪光灯 -->
+  <rect x="300" y="316" width="40" height="16" rx="8" ry="8" fill="#E2E8F0"/>
+
+  <!-- ===== EXIF 信息条 ===== -->
+  <rect x="240" y="650" width="544" height="100" rx="18" ry="18" fill="white"/>
+
+  <!-- f/1.8 -->
+  <text x="330" y="698" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="32" font-weight="600" fill="#64748B" text-anchor="middle">f/1.8</text>
+  <text x="330" y="728" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#94A3B8" text-anchor="middle">光圈</text>
+
+  <line x1="420" y1="670" x2="420" y2="735" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- 1/250 -->
+  <text x="512" y="698" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="32" font-weight="600" fill="#64748B" text-anchor="middle">1/250</text>
+  <text x="512" y="728" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#94A3B8" text-anchor="middle">快门</text>
+
+  <line x1="604" y1="670" x2="604" y2="735" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- ISO -->
+  <text x="694" y="698" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="32" font-weight="600" fill="#64748B" text-anchor="middle">ISO</text>
+  <text x="694" y="728" font-family="-apple-system, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#94A3B8" text-anchor="middle">100</text>
 </svg>

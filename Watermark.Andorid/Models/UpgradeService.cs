@@ -50,6 +50,8 @@ namespace Watermark.Andorid.Models
 
             //激活一个新的Activity
             Android.App.Application.Context.StartActivity(intent);
+#elif MACCATALYST
+            // On macOS, updates are handled via browser download
 #endif
         }
 

@@ -60,6 +60,44 @@
     function revokeUrl(url) {
         (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
+
+    /**
+     * 初始化工具栏拖动 - 在 toolbar 上 mousedown 时开始拖动，
+     * 在 document 上监听 mousemove/mouseup 以确保拖出 toolbar 区域也能继续
+     */
+    function initToolbarDrag(toolbarId, dotnetRef) {
+        var toolbar = document.getElementById(toolbarId);
+        if (!toolbar) return;
+        var dragging = false;
+        var rafId = null;
+
+        toolbar.addEventListener('mousedown', function(e) {
+            // 忽略按钮、菜单等交互元素上的点击
+            var tag = e.target.tagName.toLowerCase();
+            if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select') return;
+            if (e.target.closest('.m-btn') || e.target.closest('.m-menu') || e.target.closest('.traffic-light')) return;
+
+            dragging = true;
+            dotnetRef.invokeMethodAsync('OnDragStart');
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            if (rafId) return; // 节流：每帧只处理一次
+            rafId = requestAnimationFrame(function() {
+                dotnetRef.invokeMethodAsync('OnDragMove');
+                rafId = null;
+            });
+        });
+
+        document.addEventListener('mouseup', function(e) {
+            if (!dragging) return;
+            dragging = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            dotnetRef.invokeMethodAsync('OnDragEnd');
+        });
+    }
 </script>
 
 <style>

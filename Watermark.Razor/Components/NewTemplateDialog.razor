@@ -94,7 +94,7 @@
             System.IO.Directory.CreateDirectory(destFolder);
         }
 
-        var name = p.Substring(p.LastIndexOf('\\') + 1);
+        var name = Path.GetFileName(p);
         var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
         await Task.Run(() =>
         {
