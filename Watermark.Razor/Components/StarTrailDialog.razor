@@ -1,0 +1,65 @@
+@using Masa.Blazor
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@using Watermark.Razor.Parts
+
+<Masa.Blazor.MCard Flat Style="padding:16px;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">星轨合成设置</div>
+
+    <div style="font-size:13px;color:#666;margin-bottom:8px;">混合模式</div>
+    <MRadioGroup @bind-Value="selectedMode" Column>
+        <MRadio Value="@StarTrailBlendMode.Lighten" Label="Lighten (变亮) - 推荐，显示最亮的星轨" />
+        <MRadio Value="@StarTrailBlendMode.Additive" Label="Additive (叠加) - 亮度叠加，明亮星轨" />
+        <MRadio Value="@StarTrailBlendMode.Screen" Label="Screen (滤色) - 平滑的星轨效果" />
+        <MRadio Value="@StarTrailBlendMode.Average" Label="Average (平均) - 适合静态星空" />
+        <MRadio Value="@StarTrailBlendMode.Maximum" Label="Maximum (最大值) - 更强烈的效果" />
+    </MRadioGroup>
+
+    <div style="font-size:13px;color:#666;margin-top:12px;margin-bottom:4px;">亮度调整: @(brightness)%</div>
+    <MSlider @bind-Value="brightness"
+             TValue="int"
+             Min="50"
+             Max="200"
+             Step="5"
+             ThumbLabel="@("always")"
+             HideDetails="true" />
+
+    <MCardActions>
+        <MSpacer />
+        <MButton OnClick="Cancel" Plain>取消</MButton>
+        <MButton OnClick="Confirm" Color="primary">开始合成</MButton>
+    </MCardActions>
+</Masa.Blazor.MCard>
+
+@code {
+    [Parameter]
+    public EventCallback<(StarTrailBlendMode Mode, float Brightness)> OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    StarTrailBlendMode selectedMode = StarTrailBlendMode.Lighten;
+    int brightness = 100;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Global.OutPutPath = Global.AppPath.OutputFolder;
+    }
+
+    async Task Confirm()
+    {
+        if (OnConfirm.HasDelegate)
+        {
+            await OnConfirm.InvokeAsync((selectedMode, brightness));
+        }
+    }
+
+    async Task Cancel()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+}

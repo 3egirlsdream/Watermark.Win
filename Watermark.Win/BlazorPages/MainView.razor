@@ -279,6 +279,10 @@
                     </MTabs>
                     <MTabsItems Value="@tab" Style="height:calc(100% - 30px); overflow-y:overlay">
                         <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
+                            <div @onclick="OpenStarTrailDialog" style="display:flex;align-items:center;padding:4px 8px;cursor:pointer;">
+                                <img width="40" height="40" style="object-fit:contain;border-radius:4px;flex-shrink:0;border:1px solid rgba(0,0,0,0.08);" src="img/star-trail.svg" alt="星轨合成" />
+                                <Watermark.Razor.Parts.Label Name="星轨合成" Small="false" Class="ml-1" />
+                            </div>
                             <MTreeview Items="wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name).ToList()"
                                        Activatable
                                        ItemKey="u => u.ID"
@@ -439,6 +443,13 @@
                 <LogoutContent CloseEvent="() => showLogout = false" />
             }
         </MDialog>
+
+        <MDialog @bind-Value="showStarTrailDialog" Width="420" ContentStyle="padding:4px;">
+            @if (showStarTrailDialog)
+            {
+                <Watermark.Razor.Components.StarTrailDialog OnConfirm="StartStarTrailComposition" OnCancel="() => showStarTrailDialog = false" />
+            }
+        </MDialog>
     </MErrorHandler>
 </MApp>
 
@@ -459,6 +470,7 @@
     bool showExif = false;
     bool showSetting = false;
     bool showLogout = false;
+    bool showStarTrailDialog = false;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
@@ -932,5 +944,85 @@
         WMMainLoading.Message = m;
         WMMainLoading.Value = v;
         InvokeAsync(StateHasChanged);
+    }
+
+    void OpenStarTrailDialog()
+    {
+        if (Images == null || Images.Count < 2)
+        {
+            Common.ShowMsg(PopupService, "至少需要导入2张图片才能进行星轨合成", AlertTypes.Warning);
+            return;
+        }
+        showStarTrailDialog = true;
+    }
+
+    async Task StartStarTrailComposition((Shared.Enums.StarTrailBlendMode Mode, float Brightness) args)
+    {
+        showStarTrailDialog = false;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var paths = Images.Where(x => !string.IsNullOrEmpty(x.Path)).Select(x => x.Path).ToList();
+            if (paths.Count < 2)
+            {
+                Common.ShowMsg(PopupService, "可用图片少于2张，无法合成", AlertTypes.Warning);
+                return;
+            }
+            WMMainLoading.Show = true;
+            WMMainLoading.Message = "正在合成星轨...";
+            WMMainLoading.Value = 0;
+            await InvokeAsync(StateHasChanged);
+            int lastProgress = -1;
+            byte[] resultBytes = null;
+            await Task.Run(() =>
+            {
+                resultBytes = SkiaSharpStarTrailGenerator.ComposeAsync(
+                    paths,
+                    args.Mode,
+                    args.Brightness / 100f,
+                    (current, total, msg) =>
+                    {
+                        var progress = total > 0 ? (int)(current * 100.0 / total) : 0;
+                        if (progress != lastProgress)
+                        {
+                            lastProgress = progress;
+                            InvokeAsync(() =>
+                            {
+                                WMMainLoading.Message = msg;
+                                WMMainLoading.Value = progress;
+                                StateHasChanged();
+                            }).GetAwaiter().GetResult();
+                        }
+                    }
+                ).GetAwaiter().GetResult();
+            });
+            WMMainLoading.Message = "正在保存图片...";
+            WMMainLoading.Value = 95;
+            await InvokeAsync(StateHasChanged);
+            var fileName = $"星轨合成_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+            var outputPath = Path.Combine(Global.OutPutPath, fileName);
+            await File.WriteAllBytesAsync(outputPath, resultBytes);
+            var src = await Global.Byte2Url(JSRuntime, resultBytes);
+            CurrentImage = new WMTemplateList
+            {
+                Canvas = new WMCanvas(),
+                Src = src,
+                ID = Guid.NewGuid().ToString("N"),
+                Path = outputPath
+            };
+            WMMainLoading.Show = false;
+            WMMainLoading.Value = 100;
+            await InvokeAsync(StateHasChanged);
+            Common.ShowMsg(PopupService, "星轨合成完成，是否打开输出文件夹？", "打开", async () =>
+            {
+                await OpenFolder();
+            });
+        }
+        catch (Exception ex)
+        {
+            WMMainLoading.Show = false;
+            await InvokeAsync(StateHasChanged);
+            Common.ShowMsg(PopupService, $"星轨合成失败: {ex.Message}", AlertTypes.Error);
+        }
     }
 }
