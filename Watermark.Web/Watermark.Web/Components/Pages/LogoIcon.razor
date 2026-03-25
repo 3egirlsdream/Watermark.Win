@@ -1,7 +1,66 @@
-﻿<svg t="1709559526146" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1538" width="48" height="48">
-    <path d="M788.14 928.23h-550c-77.32 0-140-62.68-140-140v-550c0-77.32 62.68-140 140-140h550c77.32 0 140 62.68 140 140v550c0 77.32-62.68 140-140 140z" fill="#FFC757" p-id="1539"></path>
-    <path d="M770.19 644.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 432.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 644.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#EF9F2B" p-id="1540"></path>
-    <path d="M595.103921 388.209544a55.27 55.27 0 1 0 100.661393-45.676862 55.27 55.27 0 1 0-100.661393 45.676862Z" fill="#EF9F2B" p-id="1541"></path>
-    <path d="M770.19 632.92l-67.56-117.01c-15.4-26.68-53.91-26.68-69.31 0l-64.01 110.88L450.3 420.65c-15.4-26.67-53.89-26.67-69.29 0L258.45 632.94c-15.4 26.67 3.85 60.01 34.65 60.01h442.44c30.8-0.01 50.05-33.35 34.65-60.03z" fill="#FFFFFF" p-id="1542"></path>
-    <path d="M595.104335 376.209454a55.27 55.27 0 1 0 100.661392-45.676862 55.27 55.27 0 1 0-100.661392 45.676862Z" fill="#FFFFFF" p-id="1543"></path>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <!-- 白色背景 -->
+    <rect width="1024" height="1024" rx="224" ry="224" fill="#FFFFFF" />
+
+    <defs>
+        <linearGradient id="camGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FF6B6B" />
+            <stop offset="25%" stop-color="#FF9F43" />
+            <stop offset="50%" stop-color="#FECA57" />
+            <stop offset="75%" stop-color="#1DD1A1" />
+            <stop offset="100%" stop-color="#54A0FF" />
+        </linearGradient>
+        <linearGradient id="lensRing" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FF6B6B" />
+            <stop offset="20%" stop-color="#FF9F43" />
+            <stop offset="40%" stop-color="#FECA57" />
+            <stop offset="60%" stop-color="#1DD1A1" />
+            <stop offset="80%" stop-color="#54A0FF" />
+            <stop offset="100%" stop-color="#5F27CD" />
+        </linearGradient>
+    </defs>
+
+    <!-- 整体内容居中：下移60px -->
+    <g transform="translate(0, 60)">
+        <!-- 机身 -->
+        <rect x="120" y="130" width="784" height="520" rx="52" ry="52" fill="url(#camGrad)" opacity="0.12" />
+        <rect x="120" y="130" width="784" height="520" rx="52" ry="52" fill="none" stroke="url(#camGrad)" stroke-width="4" />
+        <!-- 取景器 -->
+        <rect x="340" y="76" width="200" height="72" rx="20" ry="20" fill="none" stroke="url(#camGrad)" stroke-width="4" />
+        <rect x="340" y="76" width="200" height="72" rx="20" ry="20" fill="url(#camGrad)" opacity="0.12" />
+        <!-- 快门 -->
+        <circle cx="590" cy="106" r="20" fill="none" stroke="#FF6B6B" stroke-width="3.5" />
+        <circle cx="590" cy="106" r="10" fill="#FF6B6B" opacity="0.3" />
+        <!-- 闪光灯 -->
+        <rect x="176" y="172" width="56" height="24" rx="10" ry="10" fill="none" stroke="#FECA57" stroke-width="3" />
+
+        <!-- 镜头 - 彩虹光谱环 -->
+        <circle cx="512" cy="390" r="190" fill="none" stroke="url(#lensRing)" stroke-width="18" />
+        <circle cx="512" cy="390" r="166" fill="white" />
+        <circle cx="512" cy="390" r="140" fill="none" stroke="url(#lensRing)" stroke-width="6" opacity="0.4" />
+
+        <!-- 镜头内 - Apple Photos 风格花瓣 -->
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#FF6B6B" opacity="0.7" transform="rotate(0,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#FF9F43" opacity="0.7" transform="rotate(45,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#FECA57" opacity="0.7" transform="rotate(90,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#1DD1A1" opacity="0.7" transform="rotate(135,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#54A0FF" opacity="0.7" transform="rotate(180,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#5F27CD" opacity="0.7" transform="rotate(225,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#C44569" opacity="0.7" transform="rotate(270,512,390)" />
+        <ellipse cx="512" cy="310" rx="36" ry="70" fill="#F8B500" opacity="0.7" transform="rotate(315,512,390)" />
+        <!-- 中心白点 -->
+        <circle cx="512" cy="390" r="24" fill="white" />
+
+        <!-- EXIF 信息条 -->
+        <rect x="140" y="700" width="744" height="130" rx="26" ry="26" fill="#EEF0F2" />
+        <text x="280" y="762" font-family="-apple-system, sans-serif" font-size="42" font-weight="700" fill="#FF6B6B" text-anchor="middle">f/1.8</text>
+        <text x="280" y="800" font-family="-apple-system, sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">光圈</text>
+        <line x1="392" y1="722" x2="392" y2="812" stroke="#CCC" stroke-width="2" />
+        <text x="512" y="762" font-family="-apple-system, sans-serif" font-size="42" font-weight="700" fill="#1DD1A1" text-anchor="middle">1/250</text>
+        <text x="512" y="800" font-family="-apple-system, sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">快门</text>
+        <line x1="632" y1="722" x2="632" y2="812" stroke="#CCC" stroke-width="2" />
+        <text x="744" y="762" font-family="-apple-system, sans-serif" font-size="42" font-weight="700" fill="#54A0FF" text-anchor="middle">ISO</text>
+        <text x="744" y="800" font-family="-apple-system, sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">100</text>
+    </g>
 </svg>
