@@ -20,6 +20,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <Nullable>enable</Nullable>
+        <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
 
         <!-- Display name -->
         <ApplicationTitle>轻影</ApplicationTitle>
@@ -28,11 +29,12 @@
         <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.2.7</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.2.17</ApplicationDisplayVersion>
+		<ApplicationVersion>3</ApplicationVersion>
+		<ApplicationBuildNumber>1</ApplicationBuildNumber>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.2</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">12.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
@@ -68,6 +70,7 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
 	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
+	  <RuntimeIdentifier>maccatalyst-arm64</RuntimeIdentifier>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-ios|AnyCPU'">
@@ -82,8 +85,15 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>1.2.17</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
+	  <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
+	  <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
+	  <SelfContained>true</SelfContained>
+	  <PublishTrimmed>true</PublishTrimmed>
+	  <MtouchLink>None</MtouchLink>
+	  <EnableAppSandbox>true</EnableAppSandbox>
+	  <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
@@ -120,6 +130,7 @@
 
     <ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.93" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.93" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.93" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
@@ -147,4 +158,14 @@
       <Folder Include="Mobile\" />
       <Folder Include="wwwroot\resources\" />
     </ItemGroup>
+
+	<!-- Remove com.apple.quarantine attribute from all files before bundling -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">
+		<PrepareForRunDependsOn>RemoveQuarantineAttribute</PrepareForRunDependsOn>
+	</PropertyGroup>
+
+	<Target Name="RemoveQuarantineAttribute" Condition="'$(Configuration)' == 'Release'">
+		<Exec Command="xattr -r -d com.apple.quarantine &quot;$(IntermediateOutputPath)&quot; 2>/dev/null || true" Condition="'$(OS)' == 'Unix'" />
+	</Target>
+
 </Project>
