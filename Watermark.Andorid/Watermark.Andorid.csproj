@@ -21,6 +21,7 @@
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <Nullable>enable</Nullable>
         <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
+                <CheckEolTargetFramework>false</CheckEolTargetFramework>
 
         <!-- Display name -->
         <ApplicationTitle>轻影</ApplicationTitle>
@@ -34,7 +35,7 @@
 		<ApplicationBuildNumber>1</ApplicationBuildNumber>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">12.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">18.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
@@ -88,12 +89,15 @@
 	  <ApplicationDisplayVersion>1.2.17</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
-	  <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
+	  <SupportedOSPlatformVersion>18.0</SupportedOSPlatformVersion>
 	  <SelfContained>true</SelfContained>
 	  <PublishTrimmed>true</PublishTrimmed>
 	  <MtouchLink>None</MtouchLink>
-	  <EnableAppSandbox>true</EnableAppSandbox>
+	  <EnableAppSandbox>false</EnableAppSandbox>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>Developer ID Application: XinJi Jiang (AXBYDPHN88)</CodesignKey>
 	  <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
+	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
@@ -134,7 +138,7 @@
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.93" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.93" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
-		<PackageReference Include="LukeMauiFilePicker" Version="1.1.0" />
+		<PackageReference Include="LukeMauiFilePicker" Version="1.2.0" />
     </ItemGroup>
 
     <ItemGroup>

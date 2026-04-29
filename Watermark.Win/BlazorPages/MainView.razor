@@ -12,6 +12,7 @@
 @using Watermark.Shared.Models
 @using Watermark.Win.Views
 @using Watermark.Win.Models
+@using SkiaSharp
 @inject IPopupService PopupService
 @inject IJSRuntime JSRuntime
 @inject IWMWatermarkHelper helper
@@ -426,6 +427,7 @@
                     <MTabs @bind-Value="tab" FixedTabs Height="36" Style="border-bottom:1px solid rgba(0,0,0,0.06);">
                         <MTab Value="@("模板")">模板</MTab>
                         <MTab Value="@("拼图")">拼图</MTab>
+                        <MTab Value="@("仿色")">仿色</MTab>
                     </MTabs>
                     <MTabsItems Value="@tab" Style="height:calc(100% - 36px);overflow-y:auto;">
                         <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
@@ -452,6 +454,9 @@
                                     </div>
                                 }
                             </div>
+                        </MTabItem>
+                        <MTabItem Value="@("仿色")" Transition="" ReverseTransition="">
+                            <ColorPresetView OnPresetApplied="ApplyColorPreset" />
                         </MTabItem>
                     </MTabsItems>
                 </div>
@@ -1160,6 +1165,38 @@
             WMMainLoading.Show = false;
             await InvokeAsync(StateHasChanged);
             Common.ShowMsg(PopupService, $"星轨合成失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
+
+    private async Task ApplyColorPreset(WMColorPreset preset)
+    {
+        if (CurrentImage == null || string.IsNullOrEmpty(CurrentImage.Path))
+        {
+            return;
+        }
+
+        try
+        {
+            using var originalBitmap = SKBitmap.Decode(CurrentImage.Path);
+            if (originalBitmap == null) return;
+
+            var resultBitmap = ColorApplier.Apply(originalBitmap, preset);
+
+            using var image = SKImage.FromBitmap(resultBitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            var bytes = data.ToArray();
+            var src = await Global.Byte2Url(JSRuntime, bytes);
+
+            CurrentImage.Src = src;
+
+            resultBitmap.Dispose();
+            originalBitmap.Dispose();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"应用预设失败: {ex.Message}", AlertTypes.Error);
         }
     }
 }

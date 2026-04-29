@@ -1,0 +1,390 @@
+@using System.IO
+@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Shared.Models
+@using SkiaSharp
+@inject IClientInstance ClientInstance
+
+<div class="color-preset-panel">
+    <div class="preset-header">
+        <span class="preset-title">仿色预设</span>
+        <MButton Icon Small @onclick="LoadPresets">
+            <MIcon>mdi-refresh</MIcon>
+        </MButton>
+    </div>
+
+    <div class="preset-actions">
+        <MButton Block Small Color="primary" OnClick="SelectReferenceImage">
+            <MIcon Left>mdi-image-plus</MIcon>
+            选择参考图
+        </MButton>
+    </div>
+
+    @if (!string.IsNullOrEmpty(referenceImageSrc))
+    {
+        <div class="reference-preview">
+            <img src="@referenceImageSrc" alt="参考图预览" class="reference-thumbnail" />
+        </div>
+    }
+
+    @if (currentPreset != null)
+    {
+        <div class="preset-preview-section">
+            <div class="preview-label">当前预设: @currentPreset.Name</div>
+        </div>
+
+        <div class="preset-sliders">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>转移强度</span>
+                    <span class="slider-value">@currentPreset.Strength.ToString("F0")%</span>
+                </div>
+                <MSlider @bind-Value="currentPreset.Strength" Min="0" Max="100" Step="1" Dense />
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>转移模式</span>
+                </div>
+                <MButtonGroup @bind-Value="transferModeIndex" Dense Mandatory Class="mode-button-group">
+                    <MButton Small Value="0" @onclick='() => currentPreset.Mode = ColorTransferMode.Full'>全局</MButton>
+                    <MButton Small Value="1" @onclick='() => currentPreset.Mode = ColorTransferMode.RegionalAdaptive'>分区域自适应</MButton>
+                </MButtonGroup>
+            </div>
+
+            <div class="slider-group switch-group">
+                <div class="switch-header">
+                    <span>保留原图亮度</span>
+                    <MSwitch @bind-Value="currentPreset.PreserveLuminance" Dense HideDetails="true" />
+                </div>
+            </div>
+        </div>
+
+        <div class="preset-apply">
+            <MButton Block Color="success" OnClick="ApplyPreset">
+                <MIcon Left>mdi-check</MIcon>
+                应用到当前图片
+            </MButton>
+        </div>
+
+        <div class="preset-save">
+            <MButton Block Small OnClick="SaveCurrentPreset">
+                <MIcon Left>mdi-content-save</MIcon>
+                保存为预设
+            </MButton>
+        </div>
+    }
+
+    <div class="preset-list-section">
+        <div class="section-title">已保存的预设</div>
+        @if (presets.Count == 0)
+        {
+            <div class="empty-message">暂无保存的预设</div>
+        }
+        else
+        {
+            @foreach (var preset in presets)
+            {
+                <div class="preset-item @(currentPreset?.Id == preset.Id ? "active" : "")" @onclick="() => SelectPreset(preset)">
+                    <div class="preset-item-info">
+                        <div class="preset-item-name">@preset.Name</div>
+                        <div class="preset-item-date">@preset.CreatedAt.ToString("MM/dd HH:mm")</div>
+                    </div>
+                    <span @onclick:stopPropagation="true">
+                        <MButton Icon Small OnClick="() => DeletePreset(preset)">
+                            <MIcon Small>mdi-delete</MIcon>
+                        </MButton>
+                    </span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<style>
+    .color-preset-panel {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .preset-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .preset-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .preset-actions {
+        margin-top: 4px;
+    }
+
+    .reference-preview {
+        display: flex;
+        justify-content: center;
+        padding: 8px;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .reference-thumbnail {
+        max-width: 120px;
+        max-height: 80px;
+        border-radius: 4px;
+        object-fit: cover;
+    }
+
+    .preset-preview-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .preview-label {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .preset-sliders {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .slider-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .slider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #333;
+    }
+
+    .slider-value {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .switch-group .switch-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .mode-button-group {
+        width: 100%;
+    }
+
+    .mode-button-group .m-btn {
+        flex: 1;
+    }
+
+    .preset-apply {
+        margin-top: 8px;
+    }
+
+    .preset-save {
+        margin-top: 4px;
+    }
+
+    .preset-list-section {
+        margin-top: 8px;
+        border-top: 1px solid #eee;
+        padding-top: 12px;
+    }
+
+    .section-title {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .empty-message {
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+        padding: 16px 0;
+    }
+
+    .preset-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .preset-item:hover {
+        background: #f5f5f5;
+    }
+
+    .preset-item.active {
+        background: #e3f2fd;
+    }
+
+    .preset-item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .preset-item-name {
+        font-size: 13px;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .preset-item-date {
+        font-size: 11px;
+        color: #999;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<WMColorPreset> OnPresetApplied { get; set; }
+
+    private List<WMColorPreset> presets = new();
+    private WMColorPreset currentPreset;
+    private string referenceImageSrc;
+    private StringNumber transferModeIndex = "0";
+
+    protected override void OnInitialized()
+    {
+        LoadPresets();
+    }
+
+    private void LoadPresets()
+    {
+        presets = PresetManager.LoadAll();
+        StateHasChanged();
+    }
+
+    private async Task SelectReferenceImage()
+    {
+        var path = await ClientInstance.PickAsync();
+        if (!string.IsNullOrEmpty(path))
+        {
+            try
+            {
+                // 分析参考图
+                currentPreset = ColorAnalyzer.Analyze(path);
+                currentPreset.Name = "参考图预设";
+                transferModeIndex = currentPreset.Mode == ColorTransferMode.Full ? "0" : "1";
+
+                // 生成缩略图预览
+                using var bitmap = SKBitmap.Decode(path);
+                if (bitmap != null)
+                {
+                    var scale = Math.Min(120f / bitmap.Width, 80f / bitmap.Height);
+                    var newWidth = (int)(bitmap.Width * scale);
+                    var newHeight = (int)(bitmap.Height * scale);
+                    var info = new SKImageInfo(newWidth, newHeight);
+                    using var resized = bitmap.Resize(info, SKFilterQuality.Medium);
+                    if (resized != null)
+                    {
+                        using var image = SKImage.FromBitmap(resized);
+                        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80);
+                        var bytes = data.ToArray();
+                        referenceImageSrc = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+                    }
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                // 处理错误
+                Console.WriteLine($"分析参考图失败: {ex.Message}");
+            }
+        }
+    }
+
+    private void SelectPreset(WMColorPreset preset)
+    {
+        // 深拷贝预设
+        currentPreset = new WMColorPreset
+        {
+            Id = preset.Id,
+            Name = preset.Name,
+            CreatedAt = preset.CreatedAt,
+            Strength = preset.Strength,
+            PreserveLuminance = preset.PreserveLuminance,
+            Mode = preset.Mode,
+            GlobalL = new ChannelStats { Mean = preset.GlobalL.Mean, StdDev = preset.GlobalL.StdDev },
+            GlobalA = new ChannelStats { Mean = preset.GlobalA.Mean, StdDev = preset.GlobalA.StdDev },
+            GlobalB = new ChannelStats { Mean = preset.GlobalB.Mean, StdDev = preset.GlobalB.StdDev },
+            Shadows = new RegionStats
+            {
+                L = new ChannelStats { Mean = preset.Shadows.L.Mean, StdDev = preset.Shadows.L.StdDev },
+                A = new ChannelStats { Mean = preset.Shadows.A.Mean, StdDev = preset.Shadows.A.StdDev },
+                B = new ChannelStats { Mean = preset.Shadows.B.Mean, StdDev = preset.Shadows.B.StdDev },
+                PixelCount = preset.Shadows.PixelCount
+            },
+            Midtones = new RegionStats
+            {
+                L = new ChannelStats { Mean = preset.Midtones.L.Mean, StdDev = preset.Midtones.L.StdDev },
+                A = new ChannelStats { Mean = preset.Midtones.A.Mean, StdDev = preset.Midtones.A.StdDev },
+                B = new ChannelStats { Mean = preset.Midtones.B.Mean, StdDev = preset.Midtones.B.StdDev },
+                PixelCount = preset.Midtones.PixelCount
+            },
+            Highlights = new RegionStats
+            {
+                L = new ChannelStats { Mean = preset.Highlights.L.Mean, StdDev = preset.Highlights.L.StdDev },
+                A = new ChannelStats { Mean = preset.Highlights.A.Mean, StdDev = preset.Highlights.A.StdDev },
+                B = new ChannelStats { Mean = preset.Highlights.B.Mean, StdDev = preset.Highlights.B.StdDev },
+                PixelCount = preset.Highlights.PixelCount
+            }
+        };
+        transferModeIndex = currentPreset.Mode == ColorTransferMode.Full ? "0" : "1";
+        referenceImageSrc = null; // 清除参考图预览
+        StateHasChanged();
+    }
+
+    private async Task SaveCurrentPreset()
+    {
+        if (currentPreset == null) return;
+
+        if (string.IsNullOrEmpty(currentPreset.Name) || currentPreset.Name == "参考图预设")
+        {
+            currentPreset.Name = "预设 " + DateTime.Now.ToString("HH:mm:ss");
+        }
+
+        await PresetManager.SaveAsync(currentPreset);
+        LoadPresets();
+    }
+
+    private async Task ApplyPreset()
+    {
+        if (currentPreset != null && OnPresetApplied.HasDelegate)
+        {
+            await OnPresetApplied.InvokeAsync(currentPreset);
+        }
+    }
+
+    private void DeletePreset(WMColorPreset preset)
+    {
+        PresetManager.Delete(preset.Id);
+        LoadPresets();
+        if (currentPreset?.Id == preset.Id)
+        {
+            currentPreset = null;
+            referenceImageSrc = null;
+        }
+    }
+}
