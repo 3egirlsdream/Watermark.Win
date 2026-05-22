@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Watermark.Andorid (Mac Catalyst)": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

@@ -29,12 +29,12 @@
         <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.2.17</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>1.2.19</ApplicationDisplayVersion>
 		<ApplicationVersion>3</ApplicationVersion>
 		<ApplicationBuildNumber>1</ApplicationBuildNumber>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">12.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
@@ -85,7 +85,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.17</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>1.2.19</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
 	  <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
@@ -93,6 +93,7 @@
 	  <PublishTrimmed>true</PublishTrimmed>
 	  <MtouchLink>None</MtouchLink>
 	  <EnableAppSandbox>true</EnableAppSandbox>
+	  <UseInterpreter>true</UseInterpreter>
 	  <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
