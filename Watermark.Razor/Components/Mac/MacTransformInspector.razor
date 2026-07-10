@@ -1,0 +1,99 @@
+@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Shared.Models
+
+<section class="transform-inspector inspector-group">
+    <div class="inspector-group-heading">
+        <h3>变换</h3>
+        <button type="button" class="inspector-text-command" disabled="@ReadOnly" @onclick="Reset">重置</button>
+    </div>
+
+    <MacInspectorSlider Label="水平偏移" Value="@Transform.OffsetXPercent" Min="-500" Max="500" Step="0.1" Unit="%"
+                        Disabled="@ReadOnly" ValueChanged="SetOffsetX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+    <MacInspectorSlider Label="垂直偏移" Value="@Transform.OffsetYPercent" Min="-500" Max="500" Step="0.1" Unit="%"
+                        Disabled="@ReadOnly" ValueChanged="SetOffsetY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+
+    <label class="inspector-check-row">
+        <input type="checkbox" checked="@keepRatio" disabled="@ReadOnly" @onchange="ToggleKeepRatio" />
+        <span>保持宽高比例</span>
+    </label>
+
+    <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.05" Max="20" Step="0.01"
+                        Disabled="@ReadOnly" ValueChanged="SetScaleX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+    <MacInspectorSlider Label="垂直缩放" Value="@Transform.ScaleY" Min="0.05" Max="20" Step="0.01"
+                        Disabled="@ReadOnly" ValueChanged="SetScaleY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+    <MacInspectorSlider Label="旋转" Value="@Transform.Rotation" Min="-180" Max="179.9" Step="0.1" Unit="°"
+                        Disabled="@ReadOnly" ValueChanged="SetRotation" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
+    [Parameter] public bool ReadOnly { get; set; }
+
+    private static readonly WMTransform Identity = new();
+    private bool keepRatio = true;
+    private bool interactionActive;
+    private WMTransform Transform => Control.Transform ?? Identity;
+
+    private Task BeginInteractionAsync()
+    {
+        if (ReadOnly || interactionActive) return Task.CompletedTask;
+        Editor.BeginTransaction("调整变换");
+        interactionActive = true;
+        return Task.CompletedTask;
+    }
+
+    private Task EndInteractionAsync()
+    {
+        if (!interactionActive) return Task.CompletedTask;
+        interactionActive = false;
+        Editor.CommitTransaction();
+        return Task.CompletedTask;
+    }
+
+    private void ToggleKeepRatio(ChangeEventArgs args) => keepRatio = args.Value is true;
+
+    private void SetOffsetX(double value) => Mutate(transform => transform.OffsetXPercent = value);
+    private void SetOffsetY(double value) => Mutate(transform => transform.OffsetYPercent = value);
+
+    private void SetScaleX(double value) => Mutate(transform =>
+    {
+        transform.ScaleX = value;
+        if (keepRatio) transform.ScaleY = value;
+    });
+
+    private void SetScaleY(double value) => Mutate(transform =>
+    {
+        transform.ScaleY = value;
+        if (keepRatio) transform.ScaleX = value;
+    });
+
+    private void SetRotation(double value) => Mutate(transform =>
+    {
+        transform.Rotation = value;
+        if (Control is WMContainer container)
+            container.Angle = (int)Math.Round(transform.Rotation);
+    });
+
+    private void Mutate(Action<WMTransform> mutation)
+    {
+        if (ReadOnly) return;
+        Editor.Mutate("调整变换", () => mutation(Control.EnsureTransform()));
+    }
+
+    private void Reset()
+    {
+        if (ReadOnly) return;
+        Editor.Mutate("重置变换", () =>
+        {
+            var transform = Control.EnsureTransform();
+            transform.OffsetXPercent = 0;
+            transform.OffsetYPercent = 0;
+            transform.ScaleX = 1;
+            transform.ScaleY = 1;
+            transform.Rotation = 0;
+            if (Control is WMContainer container)
+                container.Angle = 0;
+        });
+    }
+}

@@ -1,0 +1,521 @@
+@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@implements IDisposable
+
+<aside class="mac-selection-inspector" aria-label="属性检查器">
+    <header class="selection-header">
+        <div class="selection-heading-row">
+            <input class="selection-name-input" value="@CurrentName" disabled="@IsReadOnly" @onchange="RenameCurrent" aria-label="名称" />
+            <span class="selection-type">@CurrentTypeName</span>
+        </div>
+        <div class="selection-breadcrumb" title="@Breadcrumb">@Breadcrumb</div>
+        @if (SelectedControl is not null)
+        {
+            <div class="selection-header-actions">
+                <button type="button" title="显示或隐藏" aria-label="显示或隐藏图层" @onclick="ToggleSelectedVisible">
+                    <MIcon Size="15">@(SelectedControl.Enabled ? "mdi-eye-outline" : "mdi-eye-off-outline")</MIcon>
+                </button>
+                <button type="button" title="锁定或解锁" aria-label="锁定或解锁图层" @onclick="ToggleSelectedLocked">
+                    <MIcon Size="15">@(SelectedControl.IsLocked ? "mdi-lock-outline" : "mdi-lock-open-variant-outline")</MIcon>
+                </button>
+                <button type="button" title="复制" aria-label="复制图层" @onclick="DuplicateSelected">
+                    <MIcon Size="15">mdi-content-copy</MIcon>
+                </button>
+                <button type="button" title="删除" aria-label="删除图层" @onclick="RequestDeleteSelected">
+                    <MIcon Size="15">mdi-trash-can-outline</MIcon>
+                </button>
+            </div>
+        }
+    </header>
+
+    <div class="selection-inspector-scroll">
+        @if (SelectedControl is null)
+        {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>画布</h3></div>
+                <label class="inspector-field">
+                    <span>类型</span>
+                    <select value="@Editor.Draft.CanvasType" @onchange="SetCanvasType">
+                        @foreach (var value in Enum.GetValues<CanvasType>())
+                        {
+                            <option value="@value">@CanvasTypeName(value)</option>
+                        }
+                    </select>
+                </label>
+                <label class="inspector-field">
+                    <span>背景颜色</span>
+                    <div class="color-field">
+                        <span style="background:@Editor.Draft.BackgroundColor"></span>
+                        <input value="@Editor.Draft.BackgroundColor" @onchange="SetCanvasBackground" />
+                    </div>
+                </label>
+                <div class="resource-field">
+                    <div><span>默认图片</span><small>@ResourceName(Editor.Draft.Path)</small></div>
+                    <button type="button" @onclick="PickCanvasImageAsync">选择</button>
+                    <button type="button" disabled="@string.IsNullOrWhiteSpace(Editor.Draft.Path)" @onclick="ClearCanvasImage">清除</button>
+                </div>
+                <div class="inspector-two-column">
+                    <label class="inspector-field"><span>宽度</span><input type="number" value="@Editor.Draft.CustomWidth" min="1" @onchange="SetCanvasWidth" /></label>
+                    <label class="inspector-field"><span>高度</span><input type="number" value="@Editor.Draft.CustomHeight" min="1" @onchange="SetCanvasHeight" /></label>
+                </div>
+                <label class="inspector-field"><span>画布比例</span><input value="@Editor.Draft.LengthWidthRatio" placeholder="例如 3:2" @onchange="SetCanvasRatio" /></label>
+            </section>
+
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>边距</h3></div>
+                <MacInspectorSlider Label="上" Value="@Editor.Draft.BorderThickness.Top" Min="0" Max="500" Step="1" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="右" Value="@Editor.Draft.BorderThickness.Right" Min="0" Max="500" Step="1" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="下" Value="@Editor.Draft.BorderThickness.Bottom" Min="0" Max="500" Step="1" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="左" Value="@Editor.Draft.BorderThickness.Left" Min="0" Max="500" Step="1" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>外框</h3></div>
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.FrameProperties.Enabled" @onchange='args => Mutate("切换外框", () => Editor.Draft.FrameProperties.Enabled = BoolValue(args))' /><span>启用外框</span></label>
+                <MacInspectorSlider Label="外框留白" Value="@Editor.Draft.FrameProperties.BorderPadding" Min="0" Max="500" Step="1" ValueChanged='value => SetSlider("调整外框留白", () => Editor.Draft.FrameProperties.BorderPadding = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.FrameProperties.BeforeBkTransparent" @onchange='args => Mutate("切换外框背景", () => Editor.Draft.FrameProperties.BeforeBkTransparent = BoolValue(args))' /><span>背景透明</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.FrameProperties.EnableRadius" @onchange='args => Mutate("切换外框圆角", () => Editor.Draft.FrameProperties.EnableRadius = BoolValue(args))' /><span>圆角</span></label>
+                @if (Editor.Draft.FrameProperties.EnableRadius)
+                {
+                    <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.FrameProperties.CornerRadius" Min="0" Max="300" Step="1" ValueChanged='value => SetSlider("调整外框圆角", () => Editor.Draft.FrameProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.FrameProperties.EnableShadow" @onchange='args => Mutate("切换外框阴影", () => Editor.Draft.FrameProperties.EnableShadow = BoolValue(args))' /><span>阴影</span></label>
+                @if (Editor.Draft.FrameProperties.EnableShadow)
+                {
+                    <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.FrameProperties.ShadowRange" Min="0" Max="300" Step="1" ValueChanged='value => SetSlider("调整外框阴影", () => Editor.Draft.FrameProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <label class="inspector-field"><span>阴影颜色</span><div class="color-field"><span style="background:@Editor.Draft.FrameProperties.ShadowColor"></span><input value="@Editor.Draft.FrameProperties.ShadowColor" @onchange='args => Mutate("修改外框阴影颜色", () => Editor.Draft.FrameProperties.ShadowColor = TextValue(args))' /></div></label>
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.FrameProperties.EnableGaussianBlur" @onchange='args => Mutate("切换外框模糊", () => Editor.Draft.FrameProperties.EnableGaussianBlur = BoolValue(args))' /><span>背景模糊</span></label>
+                @if (Editor.Draft.FrameProperties.EnableGaussianBlur)
+                {
+                    <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.FrameProperties.GaussianDeep" Min="0" Max="100" Step="1" ValueChanged='value => SetSlider("调整外框模糊", () => Editor.Draft.FrameProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+            </section>
+
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>图片效果</h3></div>
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.ImageProperties.Show" @onchange='args => Mutate("切换默认图片", () => Editor.Draft.ImageProperties.Show = BoolValue(args))' /><span>显示图片</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.ImageProperties.EnableShadow" @onchange='args => Mutate("切换阴影", () => Editor.Draft.ImageProperties.EnableShadow = BoolValue(args))' /><span>阴影</span></label>
+                @if (Editor.Draft.ImageProperties.EnableShadow)
+                {
+                    <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.ImageProperties.ShadowRange" Min="0" Max="300" Step="1" ValueChanged='value => SetSlider("调整阴影", () => Editor.Draft.ImageProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <label class="inspector-field"><span>阴影颜色</span><div class="color-field"><span style="background:@Editor.Draft.ImageProperties.ShadowColor"></span><input value="@Editor.Draft.ImageProperties.ShadowColor" @onchange='args => Mutate("修改阴影颜色", () => Editor.Draft.ImageProperties.ShadowColor = TextValue(args))' /></div></label>
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.ImageProperties.EnableRadius" @onchange='args => Mutate("切换圆角", () => Editor.Draft.ImageProperties.EnableRadius = BoolValue(args))' /><span>圆角</span></label>
+                @if (Editor.Draft.ImageProperties.EnableRadius)
+                {
+                    <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.ImageProperties.CornerRadius" Min="0" Max="300" Step="1" ValueChanged='value => SetSlider("调整圆角", () => Editor.Draft.ImageProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@Editor.Draft.ImageProperties.EnableGaussianBlur" @onchange='args => Mutate("切换模糊", () => Editor.Draft.ImageProperties.EnableGaussianBlur = BoolValue(args))' /><span>高斯模糊</span></label>
+                @if (Editor.Draft.ImageProperties.EnableGaussianBlur)
+                {
+                    <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.ImageProperties.GaussianDeep" Min="0" Max="100" Step="1" ValueChanged='value => SetSlider("调整模糊", () => Editor.Draft.ImageProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+            </section>
+        }
+        else if (SelectedControl is WMContainer container)
+        {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>容器</h3></div>
+                <div class="resource-field">
+                    <div><span>图片</span><small>@ResourceName(container.Path)</small></div>
+                    <button type="button" disabled="@IsReadOnly" @onclick="() => PickContainerImageAsync(container)">选择</button>
+                    <button type="button" disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(container.Path))" @onclick='() => Mutate("清除容器图片", () => container.Path = string.Empty)'>清除</button>
+                </div>
+                @if (Editor.Draft.CanvasType == CanvasType.Split)
+                {
+                    <label class="inspector-check-row"><input type="checkbox" checked="@container.ContainerProperties.FixImage" disabled="@IsReadOnly" @onchange='args => Mutate("切换固定图片", () => container.ContainerProperties.FixImage = BoolValue(args))' /><span>固定图片</span></label>
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@container.EnableCrop" disabled="@IsReadOnly" @onchange='args => Mutate("切换图片裁切", () => container.EnableCrop = BoolValue(args))' /><span>裁切图片</span></label>
+                <label class="inspector-field"><span>背景颜色</span><div class="color-field"><span style="background:@container.BackgroundColor"></span><input value="@container.BackgroundColor" disabled="@IsReadOnly" @onchange='args => Mutate("修改容器背景", () => container.BackgroundColor = TextValue(args))' /></div></label>
+                <label class="inspector-field">
+                    <span>方向</span>
+                    <select value="@container.Orientation" disabled="@IsReadOnly" @onchange='args => Mutate("修改容器方向", () => container.Orientation = EnumValue(args, container.Orientation))'>
+                        @foreach (var value in Enum.GetValues<Orientation>()) { <option value="@value">@EnumDisplayName(value)</option> }
+                    </select>
+                </label>
+                <label class="inspector-field">
+                    <span>水平对齐</span>
+                    <select value="@container.HorizontalAlignment" disabled="@IsReadOnly" @onchange='args => Mutate("修改水平对齐", () => container.HorizontalAlignment = EnumValue(args, container.HorizontalAlignment))'>
+                        @foreach (var value in Enum.GetValues<HorizontalAlignment>()) { <option value="@value">@EnumDisplayName(value)</option> }
+                    </select>
+                </label>
+                <label class="inspector-field">
+                    <span>垂直对齐</span>
+                    <select value="@container.VerticalAlignment" disabled="@IsReadOnly" @onchange='args => Mutate("修改垂直对齐", () => container.VerticalAlignment = EnumValue(args, container.VerticalAlignment))'>
+                        @foreach (var value in Enum.GetValues<VerticalAlignment>()) { <option value="@value">@EnumDisplayName(value)</option> }
+                    </select>
+                </label>
+                <label class="inspector-field">
+                    <span>画布位置</span>
+                    <select value="@container.ContainerAlignment" disabled="@IsReadOnly" @onchange='args => Mutate("修改画布位置", () => container.ContainerAlignment = EnumValue(args, container.ContainerAlignment))'>
+                        @foreach (var value in Enum.GetValues<ContainerAlignment>()) { <option value="@value">@EnumDisplayName(value)</option> }
+                    </select>
+                </label>
+                <MacInspectorSlider Label="宽度" Value="@container.WidthPercent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整容器宽度", () => container.WidthPercent = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="高度" Value="@container.HeightPercent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整容器高度", () => container.HeightPercent = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>外边距</h3></div>
+                <MacInspectorSlider Label="上" Value="@container.Margin.Top" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => container.Margin.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="右" Value="@container.Margin.Right" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => container.Margin.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="下" Value="@container.Margin.Bottom" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => container.Margin.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="左" Value="@container.Margin.Left" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => container.Margin.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>容器效果</h3></div>
+                <label class="inspector-check-row"><input type="checkbox" checked="@container.ContainerProperties.Show" disabled="@IsReadOnly" @onchange='args => Mutate("切换容器图片", () => container.ContainerProperties.Show = BoolValue(args))' /><span>显示图片</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@container.ContainerProperties.EnableShadow" disabled="@IsReadOnly" @onchange='args => Mutate("切换阴影", () => container.ContainerProperties.EnableShadow = BoolValue(args))' /><span>阴影</span></label>
+                @if (container.ContainerProperties.EnableShadow)
+                {
+                    <MacInspectorSlider Label="阴影范围" Value="@container.ContainerProperties.ShadowRange" Min="0" Max="300" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整阴影", () => container.ContainerProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <label class="inspector-field"><span>阴影颜色</span><div class="color-field"><span style="background:@container.ContainerProperties.ShadowColor"></span><input value="@container.ContainerProperties.ShadowColor" disabled="@IsReadOnly" @onchange='args => Mutate("修改阴影颜色", () => container.ContainerProperties.ShadowColor = TextValue(args))' /></div></label>
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@container.ContainerProperties.EnableRadius" disabled="@IsReadOnly" @onchange='args => Mutate("切换圆角", () => container.ContainerProperties.EnableRadius = BoolValue(args))' /><span>圆角</span></label>
+                @if (container.ContainerProperties.EnableRadius)
+                {
+                    <MacInspectorSlider Label="圆角半径" Value="@container.ContainerProperties.CornerRadius" Min="0" Max="300" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整圆角", () => container.ContainerProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                <label class="inspector-check-row"><input type="checkbox" checked="@container.ContainerProperties.EnableGaussianBlur" disabled="@IsReadOnly" @onchange='args => Mutate("切换模糊", () => container.ContainerProperties.EnableGaussianBlur = BoolValue(args))' /><span>高斯模糊</span></label>
+                @if (container.ContainerProperties.EnableGaussianBlur)
+                {
+                    <MacInspectorSlider Label="模糊强度" Value="@container.ContainerProperties.GaussianDeep" Min="0" Max="100" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整模糊", () => container.ContainerProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+            </section>
+            <MacTransformInspector Editor="@Editor" Control="@container" ReadOnly="@IsReadOnly" />
+        }
+        else if (SelectedControl is WMText text)
+        {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>文字</h3></div>
+                <div class="resource-field">
+                    <div><span>EXIF 配置</span><small>@text.Exifs.Count 项</small></div>
+                    <button type="button" disabled="@IsReadOnly" @onclick="() => OpenExifEditor(text)">配置</button>
+                </div>
+                <label class="inspector-field">
+                    <span>字体</span>
+                    <select value="@text.FontFamily" disabled="@IsReadOnly" @onchange='args => Mutate("修改字体", () => text.FontFamily = TextValue(args))'>
+                        <option value="@Global.DefaultFont">默认字体</option>
+                        @foreach (var font in fontNames) { <option value="@font">@font</option> }
+                    </select>
+                </label>
+                <button type="button" class="wide-secondary-command" disabled="@IsReadOnly" @onclick="ImportFontAsync">导入字体</button>
+                <MacInspectorSlider Label="字号" Value="@text.FontSize" Min="6" Max="300" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整字号", () => text.FontSize = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <label class="inspector-field"><span>文字颜色</span><div class="color-field"><span style="background:@text.FontColor"></span><input value="@text.FontColor" disabled="@IsReadOnly" @onchange='args => Mutate("修改文字颜色", () => text.FontColor = TextValue(args))' /></div></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@text.IsBold" disabled="@IsReadOnly" @onchange='args => Mutate("切换粗体", () => text.IsBold = BoolValue(args))' /><span>粗体</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@text.IsItalic" disabled="@IsReadOnly" @onchange='args => Mutate("切换斜体", () => text.IsItalic = BoolValue(args))' /><span>斜体</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@text.TextWrap" disabled="@IsReadOnly" @onchange='args => Mutate("切换文字换行", () => text.TextWrap = BoolValue(args))' /><span>自动换行</span></label>
+                <label class="inspector-field">
+                    <span>关联容器</span>
+                    <select value="@text.BindedContainerId" disabled="@IsReadOnly" @onchange='args => Mutate("修改关联容器", () => text.BindedContainerId = TextValue(args))'>
+                        <option value="">不关联</option>
+                        @foreach (var item in ContainerNames) { <option value="@item.Key">@item.Value</option> }
+                    </select>
+                </label>
+            </section>
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>文字边框</h3></div>
+                <label class="inspector-check-row"><input type="checkbox" checked="@text.EnableBorder" disabled="@IsReadOnly" @onchange='args => Mutate("切换文字边框", () => text.EnableBorder = BoolValue(args))' /><span>启用边框</span></label>
+                @if (text.EnableBorder)
+                {
+                    <MacInspectorSlider Label="边框宽度" Value="@text.BorderWidth" Min="0" Max="30" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整文字边框", () => text.BorderWidth = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <MacInspectorSlider Label="内边距" Value="@text.BorderPadding" Min="0" Max="100" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整文字内边距", () => text.BorderPadding = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <MacInspectorSlider Label="圆角" Value="@text.BorderRadius" Min="0" Max="100" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整文字圆角", () => text.BorderRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <label class="inspector-field"><span>边框颜色</span><div class="color-field"><span style="background:@text.BorderColor"></span><input value="@text.BorderColor" disabled="@IsReadOnly" @onchange='args => Mutate("修改边框颜色", () => text.BorderColor = TextValue(args))' /></div></label>
+                }
+            </section>
+            <MacTransformInspector Editor="@Editor" Control="@text" ReadOnly="@IsReadOnly" />
+        }
+        else if (SelectedControl is WMLogo logo)
+        {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>Logo</h3></div>
+                <div class="resource-field">
+                    <div><span>图片</span><small>@ResourceName(logo.Path)</small></div>
+                    <button type="button" disabled="@IsReadOnly" @onclick="() => PickLogoImageAsync(logo)">选择</button>
+                    <button type="button" disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" @onclick='() => Mutate("清除 Logo", () => logo.Path = string.Empty)'>清除</button>
+                </div>
+                <label class="inspector-check-row"><input type="checkbox" checked="@logo.White2Transparent" disabled="@IsReadOnly" @onchange='args => Mutate("切换白色转透明", () => logo.White2Transparent = BoolValue(args))' /><span>白色转透明</span></label>
+                <label class="inspector-check-row"><input type="checkbox" checked="@logo.AutoSetLogo" disabled="@IsReadOnly" @onchange='args => Mutate("切换自动品牌色", () => logo.AutoSetLogo = BoolValue(args))' /><span>自动品牌色</span></label>
+                <MacInspectorSlider Label="尺寸" Value="@logo.Percent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整 Logo 尺寸", () => logo.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>外边距</h3></div>
+                <MacInspectorSlider Label="上" Value="@logo.Margin.Top" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => logo.Margin.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="右" Value="@logo.Margin.Right" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => logo.Margin.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="下" Value="@logo.Margin.Bottom" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => logo.Margin.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="左" Value="@logo.Margin.Left" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => logo.Margin.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+            <MacTransformInspector Editor="@Editor" Control="@logo" ReadOnly="@IsReadOnly" />
+        }
+        else if (SelectedControl is WMLine line)
+        {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>分割线</h3></div>
+                <label class="inspector-field">
+                    <span>方向</span>
+                    <select value="@line.Orientation" disabled="@IsReadOnly" @onchange='args => Mutate("修改分割线方向", () => line.Orientation = EnumValue(args, line.Orientation))'>
+                        @foreach (var value in Enum.GetValues<Orientation>()) { <option value="@value">@EnumDisplayName(value)</option> }
+                    </select>
+                </label>
+                <MacInspectorSlider Label="粗细" Value="@line.Thickness" Min="1" Max="100" Step="1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线粗细", () => line.Thickness = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="长度" Value="@line.Percent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线长度", () => line.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <label class="inspector-field"><span>颜色</span><div class="color-field"><span style="background:@line.Color"></span><input value="@line.Color" disabled="@IsReadOnly" @onchange='args => Mutate("修改分割线颜色", () => line.Color = TextValue(args))' /></div></label>
+            </section>
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>外边距</h3></div>
+                <MacInspectorSlider Label="上" Value="@line.Margin.Top" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => line.Margin.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="右" Value="@line.Margin.Right" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => line.Margin.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="下" Value="@line.Margin.Bottom" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => line.Margin.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="左" Value="@line.Margin.Left" Min="-500" Max="500" Step="0.1" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => line.Margin.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+            </section>
+            <MacTransformInspector Editor="@Editor" Control="@line" ReadOnly="@IsReadOnly" />
+        }
+    </div>
+
+    @if (pendingDelete is not null)
+    {
+        <div class="inspector-confirm-scrim">
+            <section class="inspector-confirm" role="dialog" aria-modal="true" aria-labelledby="inspector-delete-title">
+                <h3 id="inspector-delete-title">删除“@ControlName(pendingDelete)”？</h3>
+                <p>将同时删除 @pendingDescendantCount 个子图层，此操作可以撤销。</p>
+                <div>
+                    <button type="button" class="secondary" @onclick="CancelDelete">取消</button>
+                    <button type="button" class="danger" @onclick="ConfirmDelete">删除</button>
+                </div>
+            </section>
+        </div>
+    }
+
+    @if (showExifEditor && SelectedControl is WMText exifText)
+    {
+        <MDialog Persistent @bind-Value="showExifEditor" ContentStyle="width:min(920px,92vw);height:min(700px,88vh);">
+            <div class="exif-editor-shell">
+                <button type="button" class="exif-cancel-command" @onclick="CancelExifEditor">取消</button>
+                <ExifConfig mText="@exifText"
+                            CanvasType="@Editor.Draft.CanvasType"
+                            ContainerId2Name="@ContainerNames"
+                            OnClose="CompleteExifEditor" />
+            </div>
+        </MDialog>
+    }
+</aside>
+
+@code {
+    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignFunc DesignFunc { get; set; }
+
+    private bool sliderInteractionActive;
+    private bool showExifEditor;
+    private IWMControl pendingDelete;
+    private int pendingDescendantCount;
+    private List<string> fontNames = [];
+
+    private IWMControl SelectedControl => string.IsNullOrWhiteSpace(Editor.SelectedControlId)
+        ? null
+        : MacControlTree.Find(Editor.Draft, Editor.SelectedControlId);
+    private bool IsReadOnly => SelectedControl?.IsLocked == true;
+    private string CurrentName => SelectedControl is null ? Editor.Draft.Name : ControlName(SelectedControl);
+    private string CurrentTypeName => SelectedControl is null ? "画布" : TypeName(SelectedControl);
+    private string Breadcrumb => SelectedControl is null
+        ? "模板 / 画布"
+        : $"模板 / {(MacControlTree.FindParent(Editor.Draft, SelectedControl.ID) is { } parent ? ControlName(parent) + " / " : string.Empty)}{ControlName(SelectedControl)}";
+    private Dictionary<string, string> ContainerNames => Editor.Draft.Children
+        .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
+        .GroupBy(container => container.ID)
+        .ToDictionary(group => group.Key, group => ControlName(group.First()));
+
+    protected override void OnInitialized() => ReloadFonts();
+
+    private Task BeginSliderAsync()
+    {
+        if (sliderInteractionActive) return Task.CompletedTask;
+        Editor.BeginTransaction("调整属性");
+        sliderInteractionActive = true;
+        return Task.CompletedTask;
+    }
+
+    private Task EndSliderAsync()
+    {
+        if (!sliderInteractionActive) return Task.CompletedTask;
+        sliderInteractionActive = false;
+        Editor.CommitTransaction();
+        return Task.CompletedTask;
+    }
+
+    private void SetSlider(string label, Action mutation)
+    {
+        if (IsReadOnly) return;
+        Editor.Mutate(label, mutation);
+    }
+
+    private void Mutate(string label, Action mutation)
+    {
+        if (IsReadOnly && SelectedControl is not null) return;
+        Editor.Mutate(label, mutation);
+    }
+
+    private void RenameCurrent(ChangeEventArgs args)
+    {
+        var name = TextValue(args).Trim();
+        if (string.IsNullOrWhiteSpace(name) || IsReadOnly) return;
+        if (SelectedControl is { } control) Mutate("重命名图层", () => control.Name = name);
+        else Editor.Mutate("重命名模板", () => Editor.Draft.Name = name);
+    }
+
+    private void ToggleSelectedVisible()
+    {
+        if (SelectedControl is { } control) Editor.Mutate("切换图层可见性", () => control.Enabled = !control.Enabled);
+    }
+
+    private void ToggleSelectedLocked()
+    {
+        if (SelectedControl is { } control) Editor.Mutate("切换图层锁定", () => control.IsLocked = !control.IsLocked);
+    }
+
+    private void DuplicateSelected()
+    {
+        if (SelectedControl is not { } control) return;
+        IWMControl copy = null;
+        Editor.Mutate("复制图层", () =>
+        {
+            copy = MacControlTree.Duplicate(Editor.Draft, control.ID);
+            copy.Name = $"{ControlName(control)} 副本";
+        });
+        if (copy is not null) Editor.Select(copy.ID);
+    }
+
+    private void RequestDeleteSelected()
+    {
+        if (SelectedControl is not { } control) return;
+        var descendants = DescendantCount(control);
+        if (control is WMContainer && descendants > 0)
+        {
+            pendingDelete = control;
+            pendingDescendantCount = descendants;
+            return;
+        }
+        DeleteSelected(control);
+    }
+
+    private void ConfirmDelete()
+    {
+        var control = pendingDelete;
+        pendingDelete = null;
+        pendingDescendantCount = 0;
+        if (control is not null) DeleteSelected(control);
+    }
+
+    private void CancelDelete()
+    {
+        pendingDelete = null;
+        pendingDescendantCount = 0;
+    }
+
+    private void DeleteSelected(IWMControl control)
+    {
+        var parentId = MacControlTree.FindParent(Editor.Draft, control.ID)?.ID;
+        Editor.Mutate("删除图层", () =>
+        {
+            if (!MacControlTree.Remove(Editor.Draft, control.ID))
+                throw new InvalidOperationException($"无法删除图层 {control.ID}。");
+        });
+        Editor.Select(parentId);
+    }
+
+    private void SetCanvasType(ChangeEventArgs args) => Editor.Mutate("修改画布类型", () => Editor.Draft.CanvasType = EnumValue(args, Editor.Draft.CanvasType));
+    private void SetCanvasBackground(ChangeEventArgs args) => Editor.Mutate("修改画布背景", () => Editor.Draft.BackgroundColor = TextValue(args));
+    private void SetCanvasWidth(ChangeEventArgs args) => Editor.Mutate("修改画布宽度", () => Editor.Draft.CustomWidth = IntValue(args, Editor.Draft.CustomWidth, 1));
+    private void SetCanvasHeight(ChangeEventArgs args) => Editor.Mutate("修改画布高度", () => Editor.Draft.CustomHeight = IntValue(args, Editor.Draft.CustomHeight, 1));
+    private void SetCanvasRatio(ChangeEventArgs args) => Editor.Mutate("修改画布比例", () => Editor.Draft.LengthWidthRatio = TextValue(args));
+
+    private async Task PickCanvasImageAsync()
+    {
+        if (DesignFunc?.SelectDefaultImageEvt is null) return;
+        var path = await DesignFunc.SelectDefaultImageEvt();
+        if (!string.IsNullOrWhiteSpace(path)) Editor.Mutate("选择默认图片", () => Editor.Draft.Path = path);
+    }
+
+    private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () => Editor.Draft.Path = string.Empty);
+
+    private async Task PickContainerImageAsync(WMContainer container) =>
+        await RunPickerTransactionAsync("选择容器图片", () => DesignFunc?.SelectContainer?.Invoke(container) ?? Task.CompletedTask);
+
+    private async Task PickLogoImageAsync(WMLogo logo) =>
+        await RunPickerTransactionAsync("选择 Logo", () => DesignFunc?.SelectLogo?.Invoke(logo) ?? Task.CompletedTask);
+
+    private async Task RunPickerTransactionAsync(string label, Func<Task> picker)
+    {
+        if (IsReadOnly) return;
+        Editor.BeginTransaction(label);
+        try
+        {
+            await picker();
+            Editor.CommitTransaction();
+        }
+        catch
+        {
+            Editor.CancelTransaction();
+            throw;
+        }
+    }
+
+    private async Task ImportFontAsync()
+    {
+        if (DesignFunc?.ImportFontEvt is null || IsReadOnly) return;
+        await DesignFunc.ImportFontEvt();
+        ReloadFonts();
+    }
+
+    private void ReloadFonts() => fontNames = Global.ReadFont().Keys.OrderBy(name => name).ToList();
+
+    private void OpenExifEditor(WMText text)
+    {
+        if (IsReadOnly || showExifEditor) return;
+        Editor.BeginTransaction("配置 EXIF");
+        showExifEditor = true;
+    }
+
+    private void CompleteExifEditor(WMText text)
+    {
+        showExifEditor = false;
+        Editor.CommitTransaction();
+    }
+
+    private void CancelExifEditor()
+    {
+        showExifEditor = false;
+        Editor.CancelTransaction();
+    }
+
+    private static string TextValue(ChangeEventArgs args) => args.Value?.ToString() ?? string.Empty;
+    private static bool BoolValue(ChangeEventArgs args) => args.Value is true;
+    private static int IntValue(ChangeEventArgs args, int fallback, int minimum = int.MinValue) => int.TryParse(TextValue(args), out var value) ? Math.Max(value, minimum) : fallback;
+    private static T EnumValue<T>(ChangeEventArgs args, T fallback) where T : struct, Enum => Enum.TryParse<T>(TextValue(args), out var value) ? value : fallback;
+    private static string ResourceName(string path) => string.IsNullOrWhiteSpace(path) ? "未选择" : Path.GetFileName(path);
+    private static string ControlName(IWMControl control) => string.IsNullOrWhiteSpace(control.Name) ? TypeName(control) : control.Name;
+    private static string TypeName(IWMControl control) => control switch { WMContainer => "容器", WMText => "文字", WMLogo => "Logo", WMLine => "分割线", _ => "图层" };
+    private static string CanvasTypeName(CanvasType type) => type switch { CanvasType.Normal => "普通", CanvasType.Split => "拼图", _ => type.ToString() };
+    private static string EnumDisplayName<T>(T value) where T : struct, Enum => value.ToString();
+
+    private static int DescendantCount(IWMControl control)
+    {
+        if (control is not WMContainer container) return 0;
+        var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
+        var stack = new Stack<IWMControl>(container.Controls);
+        while (stack.TryPop(out var current))
+        {
+            if (!visited.Add(current)) continue;
+            if (current is WMContainer nested)
+                foreach (var child in nested.Controls) stack.Push(child);
+        }
+        return visited.Count;
+    }
+
+    public void Dispose()
+    {
+        if (sliderInteractionActive) Editor.CancelTransaction();
+        if (showExifEditor) Editor.CancelTransaction();
+    }
+}
