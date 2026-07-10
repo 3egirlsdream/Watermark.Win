@@ -1,0 +1,78 @@
+@using Masa.Blazor
+
+<header class="designer-toolbar" aria-label="模板编辑工具栏">
+    <div class="toolbar-command-group toolbar-leading">
+        <button type="button" class="icon-command" title="退出编辑" aria-label="退出编辑" @onclick="async () => await Exit.InvokeAsync()">
+            <MIcon Small>mdi-close</MIcon>
+        </button>
+        <span class="toolbar-divider" aria-hidden="true"></span>
+        <button type="button" class="icon-command" title="撤销" aria-label="撤销" disabled="@(!CanUndo)" @onclick="async () => await Undo.InvokeAsync()">
+            <MIcon Small>mdi-undo</MIcon>
+        </button>
+        <button type="button" class="icon-command" title="重做" aria-label="重做" disabled="@(!CanRedo)" @onclick="async () => await Redo.InvokeAsync()">
+            <MIcon Small>mdi-redo</MIcon>
+        </button>
+    </div>
+
+    <div class="template-identity" title="@TemplateName">
+        <span class="template-name">@TemplateName</span>
+        @if (IsDirty)
+        {
+            <span class="unsaved-dot" aria-label="有未保存的更改"></span>
+        }
+    </div>
+
+    <div class="toolbar-command-group toolbar-trailing">
+        <button type="button" class="icon-command" title="适合窗口" aria-label="适合窗口" @onclick="async () => await Fit.InvokeAsync()">
+            <MIcon Small>mdi-fit-to-screen-outline</MIcon>
+        </button>
+        <div class="zoom-control" role="group" aria-label="画布缩放">
+            <button type="button" class="icon-command compact" title="缩小" aria-label="缩小" disabled="@(Zoom <= MinimumZoom)" @onclick="ZoomOutAsync">
+                <MIcon Small>mdi-minus</MIcon>
+            </button>
+            <span class="zoom-readout" aria-live="polite">@ZoomLabel</span>
+            <button type="button" class="icon-command compact" title="放大" aria-label="放大" disabled="@(Zoom >= MaximumZoom)" @onclick="ZoomInAsync">
+                <MIcon Small>mdi-plus</MIcon>
+            </button>
+        </div>
+        <button type="button" class="save-command" disabled="@IsSaving" @onclick="async () => await Save.InvokeAsync()">
+            @if (IsSaving)
+            {
+                <span class="save-spinner" aria-hidden="true"></span>
+                <span>保存中</span>
+            }
+            else
+            {
+                <MIcon Small>mdi-content-save-outline</MIcon>
+                <span>保存模板</span>
+            }
+        </button>
+    </div>
+</header>
+
+@code {
+    private const double MinimumZoom = 0.25;
+    private const double MaximumZoom = 3;
+    private const double ZoomStep = 0.1;
+
+    [Parameter] public string TemplateName { get; set; } = "未命名模板";
+    [Parameter] public bool IsDirty { get; set; }
+    [Parameter] public bool CanUndo { get; set; }
+    [Parameter] public bool CanRedo { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public double Zoom { get; set; } = 1;
+    [Parameter] public EventCallback Exit { get; set; }
+    [Parameter] public EventCallback Save { get; set; }
+    [Parameter] public EventCallback Undo { get; set; }
+    [Parameter] public EventCallback Redo { get; set; }
+    [Parameter] public EventCallback Fit { get; set; }
+    [Parameter] public EventCallback<double> ZoomChanged { get; set; }
+
+    private string ZoomLabel => $"{Math.Round(Zoom * 100):0}%";
+
+    private Task ZoomOutAsync() => SetZoomAsync(Zoom - ZoomStep);
+    private Task ZoomInAsync() => SetZoomAsync(Zoom + ZoomStep);
+
+    private Task SetZoomAsync(double value) =>
+        ZoomChanged.InvokeAsync(Math.Clamp(Math.Round(value, 2), MinimumZoom, MaximumZoom));
+}
