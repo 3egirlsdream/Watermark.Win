@@ -1,0 +1,547 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Shared.Models
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="mac-canvas-viewport @(spacePressed ? "pan-ready" : null) @(panPointerId is not null ? "panning" : null)"
+     tabindex="0"
+     aria-label="模板画布"
+     @ref="viewportElement"
+     @onwheel="HandleWheelAsync"
+     @onwheel:preventDefault
+     @onkeydown="HandleKeyDownAsync"
+     @onkeydown:stopPropagation
+     @onkeyup="HandleKeyUpAsync"
+     @onkeyup:stopPropagation
+     @onblur="HandleBlurAsync"
+     @onpointerdown="HandlePointerDownAsync"
+     @onpointermove="HandlePointerMove"
+     @onpointerup="HandlePointerUpAsync"
+     @onpointercancel="HandlePointerCancelAsync">
+    @if (HasScene)
+    {
+        <div class="mac-canvas-surface" style="@SurfaceStyle">
+            <img class="mac-canvas-preview"
+                 src="@PreviewUrl"
+                 alt="@Editor.Draft.Name 模板预览"
+                 draggable="false" />
+            <div class="mac-canvas-overlay-root" style="@OverlayStyle" @ref="overlayElement"></div>
+        </div>
+    }
+    else
+    {
+        <div class="mac-canvas-empty" role="status">
+            <span class="mac-canvas-empty-spinner" aria-hidden="true"></span>
+            <span>正在准备画布</span>
+        </div>
+    }
+</div>
+
+@code {
+#nullable enable
+    private const double MinimumZoom = 0.1;
+    private const double MaximumZoom = 4;
+    private const double ZoomStep = 0.1;
+
+    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
+    [Parameter] public string PreviewUrl { get; set; } = string.Empty;
+    [Parameter] public double Zoom { get; set; } = 1;
+    [Parameter] public EventCallback<double> ZoomChanged { get; set; }
+    [Parameter] public EventCallback SaveRequested { get; set; }
+
+    private ElementReference viewportElement;
+    private ElementReference overlayElement;
+    private IJSObjectReference? module;
+    private IJSObjectReference? editorReference;
+    private DotNetObjectReference<MacCanvasEditor>? dotNetReference;
+    private WMDesignRenderResult? appliedRenderResult;
+    private string? appliedSelectionId;
+    private double appliedZoom = double.NaN;
+    private bool initialFitPending = true;
+    private bool disposed;
+    private bool spacePressed;
+    private bool keyboardMoveActive;
+    private string? keyboardMoveControlId;
+    private bool canvasInteractionActive;
+    private string? canvasInteractionControlId;
+    private long? panPointerId;
+    private double panStartX;
+    private double panStartY;
+    private double panOriginX;
+    private double panOriginY;
+    private double panX;
+    private double panY;
+
+    private bool HasScene => RenderResult is { CanvasWidth: > 0, CanvasHeight: > 0 }
+        && !string.IsNullOrWhiteSpace(PreviewUrl);
+
+    private string SurfaceStyle => string.Create(CultureInfo.InvariantCulture,
+        $"width:{RenderResult?.CanvasWidth * Zoom ?? 0:0.###}px;height:{RenderResult?.CanvasHeight * Zoom ?? 0:0.###}px;--pan-x:{panX:0.###}px;--pan-y:{panY:0.###}px;");
+
+    private string OverlayStyle
+    {
+        get
+        {
+            var viewport = RenderResult?.ContentViewport ?? new WMDesignViewport(0, 0, 0, 0);
+            return string.Create(CultureInfo.InvariantCulture,
+                $"left:{viewport.X * Zoom:0.###}px;top:{viewport.Y * Zoom:0.###}px;width:{viewport.Width * Zoom:0.###}px;height:{viewport.Height * Zoom:0.###}px;");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (disposed || !HasScene) return;
+
+        try
+        {
+            module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/Watermark.Razor/js/mac-template-canvas.js");
+            if (editorReference is null)
+            {
+                dotNetReference = DotNetObjectReference.Create(this);
+                editorReference = await module.InvokeAsync<IJSObjectReference>(
+                    "createEditor", overlayElement, dotNetReference);
+            }
+
+            if (initialFitPending)
+            {
+                initialFitPending = false;
+                await FitAsync();
+            }
+
+            await SynchronizeSceneAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    public async Task FitAsync()
+    {
+        if (disposed || RenderResult is not { CanvasWidth: > 0, CanvasHeight: > 0 }) return;
+        if (module is null)
+        {
+            initialFitPending = true;
+            return;
+        }
+
+        var fit = await module.InvokeAsync<double>(
+            "getFitScale", viewportElement, RenderResult.CanvasWidth, RenderResult.CanvasHeight, 64);
+        panX = 0;
+        panY = 0;
+        await SetZoomAsync(fit);
+    }
+
+    private async Task SynchronizeSceneAsync()
+    {
+        if (editorReference is null || RenderResult is null) return;
+
+        if (!ReferenceEquals(appliedRenderResult, RenderResult))
+        {
+            var nextResult = RenderResult;
+            var nextSelectionId = Editor.SelectedControlId;
+            var nextZoom = Zoom;
+            var items = nextResult.Bounds.Select(ToSceneItem).ToArray();
+            await editorReference.InvokeVoidAsync(
+                "setScene",
+                nextResult.ContentViewport.Width,
+                nextResult.ContentViewport.Height,
+                nextZoom,
+                items,
+                nextSelectionId);
+            appliedRenderResult = nextResult;
+            appliedSelectionId = nextSelectionId;
+            appliedZoom = nextZoom;
+            await ScrollSelectionIntoViewAsync();
+            return;
+        }
+
+        if (Math.Abs(appliedZoom - Zoom) > 0.0001)
+        {
+            await editorReference.InvokeVoidAsync("setViewScale", Zoom);
+            appliedZoom = Zoom;
+        }
+
+        if (!string.Equals(appliedSelectionId, Editor.SelectedControlId, StringComparison.Ordinal))
+        {
+            await editorReference.InvokeVoidAsync("setSelected", Editor.SelectedControlId);
+            appliedSelectionId = Editor.SelectedControlId;
+            await ScrollSelectionIntoViewAsync();
+        }
+    }
+
+    private static MacCanvasSceneItem ToSceneItem(WMDesignBounds bounds)
+    {
+        var transform = bounds.Transform ?? new WMTransform();
+        return new MacCanvasSceneItem(
+            bounds.ControlId,
+            bounds.ParentId,
+            bounds.ControlType,
+            bounds.X,
+            bounds.Y,
+            bounds.Width,
+            bounds.Height,
+            bounds.ParentWidth,
+            bounds.ParentHeight,
+            transform.OffsetXPercent,
+            transform.OffsetYPercent,
+            transform.ScaleX,
+            transform.ScaleY,
+            transform.Rotation,
+            bounds.IsLocked,
+            bounds.IsVisible);
+    }
+
+    [JSInvokable]
+    public Task SelectCanvasControl(string controlId)
+    {
+        Editor.Select(controlId);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task BeginCanvasInteraction(string controlId)
+    {
+        if (canvasInteractionActive) return Task.CompletedTask;
+        var control = MacControlTree.Find(Editor.Draft, controlId);
+        if (control is null || control.IsLocked || !control.Enabled) return Task.CompletedTask;
+
+        Editor.Select(controlId);
+        Editor.BeginTransaction("画布变换");
+        canvasInteractionActive = true;
+        canvasInteractionControlId = controlId;
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task CommitCanvasInteraction(MacCanvasInteraction interaction)
+    {
+        if (!canvasInteractionActive
+            || !string.Equals(canvasInteractionControlId, interaction.ControlId, StringComparison.Ordinal))
+            return Task.CompletedTask;
+
+        try
+        {
+            var control = MacControlTree.Find(Editor.Draft, interaction.ControlId);
+            if (control is null || control.IsLocked || !control.Enabled)
+            {
+                Editor.CancelTransaction();
+                return Task.CompletedTask;
+            }
+
+            MacCanvasTransform.Apply(control, interaction);
+            Editor.CommitTransaction();
+        }
+        finally
+        {
+            canvasInteractionActive = false;
+            canvasInteractionControlId = null;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task CancelCanvasInteraction()
+    {
+        if (!canvasInteractionActive) return Task.CompletedTask;
+        canvasInteractionActive = false;
+        canvasInteractionControlId = null;
+        Editor.CancelTransaction();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleWheelAsync(WheelEventArgs args)
+    {
+        if (args.MetaKey || args.CtrlKey)
+        {
+            var factor = Math.Pow(1.0018, -args.DeltaY);
+            await SetZoomAsync(Zoom * factor);
+            return;
+        }
+
+        panX -= args.DeltaX;
+        panY -= args.DeltaY;
+    }
+
+    private async Task HandlePointerDownAsync(PointerEventArgs args)
+    {
+        await viewportElement.FocusAsync(preventScroll: true);
+        if (!spacePressed || args.Button != 0)
+        {
+            Editor.Select(null);
+            return;
+        }
+
+        panPointerId = args.PointerId;
+        panStartX = args.ClientX;
+        panStartY = args.ClientY;
+        panOriginX = panX;
+        panOriginY = panY;
+        if (module is not null)
+            await module.InvokeVoidAsync("capturePointer", viewportElement, args.PointerId);
+    }
+
+    private void HandlePointerMove(PointerEventArgs args)
+    {
+        if (panPointerId != args.PointerId) return;
+        panX = panOriginX + args.ClientX - panStartX;
+        panY = panOriginY + args.ClientY - panStartY;
+    }
+
+    private Task HandlePointerUpAsync(PointerEventArgs args) => EndPanAsync(args.PointerId);
+
+    private Task HandlePointerCancelAsync(PointerEventArgs args) => EndPanAsync(args.PointerId);
+
+    private async Task EndPanAsync(long pointerId)
+    {
+        if (panPointerId != pointerId) return;
+        panPointerId = null;
+        if (module is not null)
+            await module.InvokeVoidAsync("releasePointer", viewportElement, pointerId);
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (IsSpace(args.Key))
+        {
+            if (!spacePressed)
+            {
+                spacePressed = true;
+                if (editorReference is not null)
+                    await editorReference.InvokeVoidAsync("setPanMode", true);
+            }
+            return;
+        }
+
+        if (args.Key == "Alt")
+        {
+            if (editorReference is not null)
+                await editorReference.InvokeVoidAsync("setSnappingEnabled", false);
+            return;
+        }
+
+        if (IsArrow(args.Key))
+        {
+            MoveSelected(args.Key, args.ShiftKey ? 10 : 1);
+            return;
+        }
+
+        if (args.Key == "Escape")
+        {
+            await CancelActiveInteractionAsync();
+            return;
+        }
+
+        if (args.Key is "Delete" or "Backspace")
+        {
+            CommitKeyboardMove();
+            await DeleteSelectedAsync();
+            return;
+        }
+
+        if (args.Key == "Enter")
+        {
+            CommitKeyboardMove();
+            if (module is not null)
+                await module.InvokeVoidAsync("focusSelectionName");
+            return;
+        }
+
+        if (!(args.MetaKey || args.CtrlKey)) return;
+        CommitKeyboardMove();
+        if (string.Equals(args.Key, "s", StringComparison.OrdinalIgnoreCase))
+            await SaveRequested.InvokeAsync();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase) && args.ShiftKey)
+            Editor.Redo();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase))
+            Editor.Undo();
+        else if (string.Equals(args.Key, "d", StringComparison.OrdinalIgnoreCase))
+            DuplicateSelected();
+        else if (args.Key is "+" or "=")
+            await SetZoomAsync(Zoom + ZoomStep);
+        else if (args.Key == "-")
+            await SetZoomAsync(Zoom - ZoomStep);
+        else if (args.Key == "0")
+            await FitAsync();
+    }
+
+    private async Task HandleKeyUpAsync(KeyboardEventArgs args)
+    {
+        if (IsSpace(args.Key))
+        {
+            spacePressed = false;
+            if (panPointerId is { } pointerId)
+                await EndPanAsync(pointerId);
+            if (editorReference is not null)
+                await editorReference.InvokeVoidAsync("setPanMode", false);
+        }
+        else if (args.Key == "Alt" && editorReference is not null)
+        {
+            await editorReference.InvokeVoidAsync("setSnappingEnabled", true);
+        }
+
+        if (IsArrow(args.Key)) CommitKeyboardMove();
+    }
+
+    private async Task HandleBlurAsync()
+    {
+        spacePressed = false;
+        CommitKeyboardMove();
+        if (editorReference is not null)
+        {
+            await editorReference.InvokeVoidAsync("setPanMode", false);
+            await editorReference.InvokeVoidAsync("setSnappingEnabled", true);
+        }
+    }
+
+    private void MoveSelected(string key, double step)
+    {
+        if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
+        var control = MacControlTree.Find(Editor.Draft, selectedId);
+        if (control is null || control.IsLocked || !control.Enabled) return;
+
+        if (!keyboardMoveActive)
+        {
+            Editor.BeginTransaction("键盘移动");
+            keyboardMoveActive = true;
+            keyboardMoveControlId = selectedId;
+        }
+        else if (!string.Equals(keyboardMoveControlId, selectedId, StringComparison.Ordinal))
+        {
+            CommitKeyboardMove();
+            Editor.BeginTransaction("键盘移动");
+            keyboardMoveActive = true;
+            keyboardMoveControlId = selectedId;
+        }
+
+        Editor.Mutate("键盘移动", () =>
+        {
+            var transform = control.EnsureTransform();
+            if (key == "ArrowLeft") transform.OffsetXPercent = Math.Max(-500, transform.OffsetXPercent - step);
+            else if (key == "ArrowRight") transform.OffsetXPercent = Math.Min(500, transform.OffsetXPercent + step);
+            else if (key == "ArrowUp") transform.OffsetYPercent = Math.Max(-500, transform.OffsetYPercent - step);
+            else if (key == "ArrowDown") transform.OffsetYPercent = Math.Min(500, transform.OffsetYPercent + step);
+        });
+    }
+
+    private void CommitKeyboardMove()
+    {
+        if (!keyboardMoveActive) return;
+        keyboardMoveActive = false;
+        keyboardMoveControlId = null;
+        Editor.CommitTransaction();
+    }
+
+    private async Task CancelActiveInteractionAsync()
+    {
+        if (keyboardMoveActive)
+        {
+            keyboardMoveActive = false;
+            keyboardMoveControlId = null;
+            Editor.CancelTransaction();
+        }
+
+        if (editorReference is not null)
+            await editorReference.InvokeVoidAsync("cancelInteraction");
+    }
+
+    private void DuplicateSelected()
+    {
+        if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
+        IWMControl? copy = null;
+        Editor.Mutate("复制图层", () => copy = MacControlTree.Duplicate(Editor.Draft, selectedId));
+        if (copy is not null) Editor.Select(copy.ID);
+    }
+
+    private async Task DeleteSelectedAsync()
+    {
+        if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
+        var control = MacControlTree.Find(Editor.Draft, selectedId);
+        if (control is null) return;
+
+        var descendants = DescendantCount(control);
+        if (descendants > 0)
+        {
+            var confirmed = await JSRuntime.InvokeAsync<bool>(
+                "confirm", $"删除“{DisplayName(control)}”及其 {descendants} 个子图层？此操作可以撤销。");
+            if (!confirmed) return;
+        }
+
+        var parentId = MacControlTree.FindParent(Editor.Draft, selectedId)?.ID;
+        Editor.Mutate("删除图层", () =>
+        {
+            if (!MacControlTree.Remove(Editor.Draft, selectedId))
+                throw new InvalidOperationException("无法删除图层。");
+        });
+        Editor.Select(parentId);
+    }
+
+    private async Task SetZoomAsync(double value)
+    {
+        var next = Math.Clamp(Math.Round(value, 3), MinimumZoom, MaximumZoom);
+        await ZoomChanged.InvokeAsync(next);
+    }
+
+    private async Task ScrollSelectionIntoViewAsync()
+    {
+        if (module is null || string.IsNullOrWhiteSpace(Editor.SelectedControlId)) return;
+        await module.InvokeVoidAsync("scrollSelectedLayerIntoView");
+    }
+
+    private static bool IsSpace(string key) => key is " " or "Spacebar";
+    private static bool IsArrow(string key) => key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown";
+    private static string DisplayName(IWMControl control) => string.IsNullOrWhiteSpace(control.Name) ? control.GetType().Name : control.Name;
+
+    private static int DescendantCount(IWMControl control)
+    {
+        if (control is not WMContainer container) return 0;
+        var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
+        var stack = new Stack<IWMControl>(container.Controls);
+        while (stack.TryPop(out var current))
+        {
+            if (!visited.Add(current)) continue;
+            if (current is WMContainer nested)
+                foreach (var child in nested.Controls) stack.Push(child);
+        }
+        return visited.Count;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+
+        if (keyboardMoveActive || canvasInteractionActive)
+        {
+            keyboardMoveActive = false;
+            canvasInteractionActive = false;
+            Editor.CancelTransaction();
+        }
+
+        try
+        {
+            if (editorReference is not null)
+                await editorReference.InvokeVoidAsync("dispose");
+            if (editorReference is not null)
+                await editorReference.DisposeAsync();
+            if (module is not null)
+                await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        finally
+        {
+            dotNetReference?.Dispose();
+        }
+    }
+#nullable restore
+}

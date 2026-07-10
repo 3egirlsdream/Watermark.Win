@@ -55,11 +55,13 @@
                 {
                     <div class="canvas-render-indicator" aria-label="正在更新预览"></div>
                 }
-                <MacCanvasEditor Editor="@editor"
+                <MacCanvasEditor @ref="canvasEditor"
+                                 Editor="@editor"
                                  RenderResult="@renderResult"
                                  PreviewUrl="@previewUrl"
                                  Zoom="@zoom"
-                                 ZoomChanged="SetZoomAsync" />
+                                 ZoomChanged="SetZoomAsync"
+                                 SaveRequested="SaveAsync" />
             </div>
             <MacSelectionInspector Editor="@editor" DesignFunc="@designFunc" />
         </div>
@@ -90,6 +92,7 @@
     [Parameter] public EventCallback<string> OnSaved { get; set; }
 
     private MacTemplateEditorState? editor;
+    private MacCanvasEditor? canvasEditor;
     private WMDesignFunc? designFunc;
     private WMDesignRenderResult? renderResult;
     private string previewUrl = string.Empty;
@@ -120,6 +123,7 @@
         await RevokePreviewAsync(previewUrl);
         previewUrl = string.Empty;
         renderResult = null;
+        canvasEditor = null;
         designFunc = null;
         loadError = string.Empty;
         renderError = string.Empty;
@@ -300,11 +304,15 @@
         return Task.CompletedTask;
     }
 
-    private Task FitAsync() => SetZoomAsync(1);
+    private async Task FitAsync()
+    {
+        if (canvasEditor is not null)
+            await canvasEditor.FitAsync();
+    }
 
     private Task SetZoomAsync(double value)
     {
-        zoom = Math.Clamp(value, 0.25, 3);
+        zoom = Math.Clamp(value, 0.1, 4);
         StateHasChanged();
         return Task.CompletedTask;
     }

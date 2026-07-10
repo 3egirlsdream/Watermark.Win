@@ -43,6 +43,46 @@ function relativeResizeSize(size, startSize) {
   return size / startSize;
 }
 
+function inputEventFor(event) {
+  return event?.inputEvent || event?.lastEvent?.inputEvent || null;
+}
+
+function snapMovement(value, event) {
+  return inputEventFor(event)?.shiftKey ? Math.round(value / 10) * 10 : value;
+}
+
+export function getFitScale(element, canvasWidth, canvasHeight, padding = 56) {
+  if (!element || canvasWidth <= 0 || canvasHeight <= 0) return 1;
+  const availableWidth = Math.max(1, element.clientWidth - padding);
+  const availableHeight = Math.max(1, element.clientHeight - padding);
+  return Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight);
+}
+
+export function capturePointer(element, pointerId) {
+  if (element?.setPointerCapture && Number.isFinite(pointerId)) {
+    element.setPointerCapture(pointerId);
+  }
+}
+
+export function releasePointer(element, pointerId) {
+  if (element?.releasePointerCapture && Number.isFinite(pointerId) && element.hasPointerCapture?.(pointerId)) {
+    element.releasePointerCapture(pointerId);
+  }
+}
+
+export function focusSelectionName() {
+  const input = document.querySelector(".mac-selection-inspector .selection-name-input:not(:disabled)");
+  if (!input) return false;
+  input.focus();
+  input.select?.();
+  return true;
+}
+
+export function scrollSelectedLayerIntoView() {
+  document.querySelector(".mac-layer-tree .layer-row.selected")
+    ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
 export async function createEditor(root, callback) {
   await loadMoveable();
 
@@ -65,6 +105,8 @@ export async function createEditor(root, callback) {
   let scenePending = false;
   let disposePromise = null;
   let disposed = false;
+  let panMode = false;
+  let snappingEnabled = true;
 
   function invoke(method, ...args) {
     try {
@@ -82,7 +124,7 @@ export async function createEditor(root, callback) {
   }
 
   function beginInteraction(kind, event) {
-    if (disposed || scenePending || interactionBusy) {
+    if (disposed || scenePending || interactionBusy || panMode) {
       event.stop?.();
       return false;
     }
@@ -131,14 +173,16 @@ export async function createEditor(root, callback) {
 
   function updateDrag(event) {
     if (!interaction) return;
+    moveable.snappable = snappingEnabled && !inputEventFor(event)?.altKey;
     const [cssDeltaX, cssDeltaY] = pair(event.beforeDist ?? event.dist);
-    interaction.deltaX = cssDeltaX / viewScale;
-    interaction.deltaY = cssDeltaY / viewScale;
+    interaction.deltaX = snapMovement(cssDeltaX / viewScale, event);
+    interaction.deltaY = snapMovement(cssDeltaY / viewScale, event);
     updateOverlay();
   }
 
   function updateResize(event) {
     if (!interaction) return;
+    moveable.snappable = snappingEnabled && !inputEventFor(event)?.altKey;
     const [cssDeltaX, cssDeltaY] = pair(event.drag?.beforeDist ?? event.drag?.dist);
     const relativeWidth = relativeResizeSize(event.width, interaction.layoutWidth);
     const relativeHeight = relativeResizeSize(event.height, interaction.layoutHeight);
@@ -157,7 +201,9 @@ export async function createEditor(root, callback) {
 
   function updateRotate(event) {
     if (!interaction) return;
-    interaction.rotation = interaction.start.rotation + asFinite(event.beforeRotate ?? event.rotate, 0);
+    moveable.snappable = snappingEnabled && !inputEventFor(event)?.altKey;
+    const rotation = interaction.start.rotation + asFinite(event.beforeRotate ?? event.rotate, 0);
+    interaction.rotation = inputEventFor(event)?.shiftKey ? Math.round(rotation / 15) * 15 : rotation;
     updateOverlay();
   }
 
@@ -180,6 +226,7 @@ export async function createEditor(root, callback) {
     const active = interaction;
     if (!active) return interactionLifecycle;
     interaction = null;
+    moveable.snappable = snappingEnabled;
     const target = overlays.get(active.start.id);
     if (target) target.style.transform = compose(active.start);
     return finishInteraction(active, () => invoke("CancelCanvasInteraction"));
@@ -195,6 +242,7 @@ export async function createEditor(root, callback) {
     if (kind === "drag") updateDrag(event.lastEvent);
     if (kind === "resize") updateResize(event.lastEvent);
     if (kind === "rotate") updateRotate(event.lastEvent);
+    moveable.snappable = snappingEnabled;
 
     interaction = null;
     const { start } = active;
@@ -251,6 +299,9 @@ export async function createEditor(root, callback) {
     const item = itemsById.get(id);
     const target = overlays.get(id) || null;
     moveable.target = item && item.visible && !item.locked ? target : null;
+    moveable.elementGuidelines = Array.from(overlays.entries())
+      .filter(([key]) => key !== id && itemsById.get(key)?.visible)
+      .map(([, element]) => element);
     if (item) moveable.keepRatio = item.type !== "WMContainer";
     moveable.updateRect();
   }
@@ -288,7 +339,9 @@ export async function createEditor(root, callback) {
       element.style.transform = compose(item);
       element.style.display = item.visible ? "block" : "none";
       element.addEventListener("pointerdown", event => {
+        if (panMode) return;
         event.stopPropagation();
+        root.closest(".mac-canvas-viewport")?.focus({ preventScroll: true });
         void invoke("SelectCanvasControl", item.id);
       });
       overlays.set(item.id, element);
@@ -323,6 +376,18 @@ export async function createEditor(root, callback) {
       viewScale = asPositiveScale(value);
       stage.style.transform = `scale(${viewScale})`;
       moveable.updateRect();
+    },
+    setPanMode(value) {
+      panMode = Boolean(value);
+      if (panMode) moveable.target = null;
+      else select(selectedId);
+    },
+    setSnappingEnabled(value) {
+      snappingEnabled = Boolean(value);
+      moveable.snappable = snappingEnabled;
+    },
+    cancelInteraction() {
+      return cancelInteraction();
     },
     dispose() {
       if (disposePromise) return disposePromise;

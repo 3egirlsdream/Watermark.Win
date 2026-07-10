@@ -6,7 +6,7 @@
 <aside class="mac-selection-inspector" aria-label="属性检查器">
     <header class="selection-header">
         <div class="selection-heading-row">
-            <input class="selection-name-input" value="@CurrentName" disabled="@IsReadOnly" @onchange="RenameCurrent" aria-label="名称" />
+            <input class="selection-name-input" value="@CurrentName" disabled="@IsReadOnly" @onchange="RenameCurrent" @onkeydown:stopPropagation aria-label="名称" />
             <span class="selection-type">@CurrentTypeName</span>
         </div>
         <div class="selection-breadcrumb" title="@Breadcrumb">@Breadcrumb</div>
@@ -29,7 +29,7 @@
         }
     </header>
 
-    <div class="selection-inspector-scroll">
+    <div class="selection-inspector-scroll" @onkeydown:stopPropagation>
         @if (SelectedControl is null)
         {
             <section class="inspector-group">
