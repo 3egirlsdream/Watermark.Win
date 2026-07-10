@@ -60,7 +60,7 @@ public sealed class MacControlTreeTests
         canvas.Children.AddRange([moving, targetRoot]);
 
         Assert.False(MacControlTree.CanMove(canvas, moving.ID, targetNested.ID, out var error));
-        Assert.NotEmpty(error);
+        Assert.Contains("两级", error);
     }
 
     [Fact]

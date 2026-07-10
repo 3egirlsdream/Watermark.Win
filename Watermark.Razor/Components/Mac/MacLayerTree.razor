@@ -1,0 +1,511 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Shared.Models
+@implements IDisposable
+
+<aside class="mac-layer-tree" aria-label="模板图层">
+    <header class="layer-panel-header">
+        <div>
+            <h2>图层</h2>
+            <span>@LayerCount</span>
+        </div>
+        <details class="add-layer-menu">
+            <summary title="添加图层" aria-label="添加图层">
+                <MIcon Small>mdi-plus</MIcon>
+                <span>添加</span>
+            </summary>
+            <div class="add-layer-options">
+                <button type="button" @onclick="() => AddControl(typeof(WMContainer))">
+                    <MIcon Size="15">mdi-folder-outline</MIcon><span>容器</span>
+                </button>
+                <button type="button" @onclick="() => AddControl(typeof(WMText))">
+                    <MIcon Size="15">mdi-format-text</MIcon><span>文字</span>
+                </button>
+                <button type="button" @onclick="() => AddControl(typeof(WMLogo))">
+                    <MIcon Size="15">mdi-image-outline</MIcon><span>Logo</span>
+                </button>
+                <button type="button" @onclick="() => AddControl(typeof(WMLine))">
+                    <MIcon Size="15">mdi-minus</MIcon><span>分割线</span>
+                </button>
+            </div>
+        </details>
+    </header>
+
+    <div class="layer-tree-scroll" role="tree" aria-label="模板图层结构" @onclick="CloseContextMenu">
+        @if (Editor.Draft.Children.Count == 0)
+        {
+            <div class="layer-empty-state">
+                <MIcon>mdi-layers-outline</MIcon>
+                <span>暂无图层</span>
+            </div>
+        }
+        else
+        {
+            @for (var index = 0; index < Editor.Draft.Children.Count; index++)
+            {
+                var root = Editor.Draft.Children[index];
+                @RenderNode(root, 0, null, index)
+            }
+            @RenderDropSlot(null, Editor.Draft.Children.Count, 0)
+        }
+    </div>
+
+    @if (pendingDelete is not null)
+    {
+        <div class="layer-confirm-scrim">
+            <section class="layer-confirm" role="dialog" aria-modal="true" aria-labelledby="layer-delete-title">
+                <h3 id="layer-delete-title">删除“@DisplayName(pendingDelete)”？</h3>
+                <p>此容器包含 @pendingDescendantCount 个子图层，删除后仍可通过撤销恢复。</p>
+                <div class="layer-confirm-actions">
+                    <button type="button" class="secondary" @onclick="CancelDelete">取消</button>
+                    <button type="button" class="danger" @onclick="ConfirmDelete">删除</button>
+                </div>
+            </section>
+        </div>
+    }
+</aside>
+
+@code {
+    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+
+    private readonly HashSet<string> collapsedIds = new(StringComparer.Ordinal);
+    private string editingId;
+    private string editingName = string.Empty;
+    private string contextId;
+    private string draggedId;
+    private string dropParentId;
+    private int dropIndex = -1;
+    private bool dropOnContainer;
+    private IWMControl pendingDelete;
+    private int pendingDescendantCount;
+    private string hoverExpandId;
+    private CancellationTokenSource hoverExpandCancellation;
+
+    private int LayerCount => MacControlTree.Flatten(Editor.Draft).Count;
+
+    private RenderFragment RenderNode(IWMControl control, int depth, string parentId, int index) => @<div class="layer-node-group">
+        @RenderDropSlot(parentId, index, depth)
+        <div class="layer-node @(IsContainerTarget(control.ID) ? "drop-target" : null)"
+             style="--layer-depth:@depth"
+             @ondragover="() => DragOverContainer(control)"
+             @ondragover:preventDefault="@CanDropOnContainer(control)"
+             @ondrop="() => DropAsync(control.ID, TargetCount(control.ID))">
+            <div class="layer-row @(Editor.SelectedControlId == control.ID ? "selected" : null) @(control.Enabled ? null : "hidden-layer")"
+                 role="treeitem"
+                 aria-level="@(depth + 1)"
+                 aria-selected="@(Editor.SelectedControlId == control.ID)"
+                 tabindex="0"
+                 @onclick="() => Select(control)"
+                 @onkeydown="args => HandleRowKeyDown(control, args)"
+                 @oncontextmenu="() => OpenContextMenu(control)"
+                 @oncontextmenu:preventDefault>
+                @if (control is WMContainer)
+                {
+                    <button type="button" class="tree-toggle" title="@(IsCollapsed(control.ID) ? "展开" : "收起")" aria-label="@(IsCollapsed(control.ID) ? "展开容器" : "收起容器")" @onclick:stopPropagation @onclick="() => ToggleCollapsed(control.ID)">
+                        <MIcon Size="14">@(IsCollapsed(control.ID) ? "mdi-chevron-right" : "mdi-chevron-down")</MIcon>
+                    </button>
+                }
+                else
+                {
+                    <span class="tree-toggle-spacer"></span>
+                }
+
+                <span class="drag-handle @(control.IsLocked ? "disabled" : null)"
+                      title="@(control.IsLocked ? "图层已锁定" : "拖动图层")"
+                      aria-label="@(control.IsLocked ? "图层已锁定" : "拖动图层")"
+                      draggable="@(!control.IsLocked)"
+                      @onclick:stopPropagation
+                      @ondragstart="() => BeginDrag(control)"
+                      @ondragend="EndDrag">⋮⋮</span>
+
+                <MIcon Size="15" Class="layer-type-icon">@IconFor(control)</MIcon>
+
+                @if (editingId == control.ID)
+                {
+                    <input class="layer-name-input"
+                           value="@editingName"
+                           @oninput="UpdateRenameValue"
+                           @onkeydown="args => HandleRenameKey(control, args)"
+                           @onkeydown:stopPropagation
+                           @onblur="() => CommitRename(control)"
+                           @onclick:stopPropagation
+                           aria-label="图层名称"
+                           autofocus />
+                }
+                else
+                {
+                    <span class="layer-name" title="@DisplayName(control)" @ondblclick:stopPropagation @ondblclick="() => BeginRename(control)">@DisplayName(control)</span>
+                }
+
+                <div class="layer-row-actions">
+                    <button type="button" class="layer-action" title="复制图层" aria-label="复制图层" @onclick:stopPropagation @onclick="() => Duplicate(control)">
+                        <MIcon Size="14">mdi-content-copy</MIcon>
+                    </button>
+                    <button type="button" class="layer-action" title="删除图层" aria-label="删除图层" @onclick:stopPropagation @onclick="() => RequestDelete(control)">
+                        <MIcon Size="14">mdi-trash-can-outline</MIcon>
+                    </button>
+                    <button type="button" class="layer-action persistent" title="显示或隐藏" aria-label="显示或隐藏图层" @onclick:stopPropagation @onclick="() => ToggleVisible(control)">
+                        <MIcon Size="14">@(control.Enabled ? "mdi-eye-outline" : "mdi-eye-off-outline")</MIcon>
+                    </button>
+                    <button type="button" class="layer-action persistent" title="锁定或解锁" aria-label="锁定或解锁图层" @onclick:stopPropagation @onclick="() => ToggleLocked(control)">
+                        <MIcon Size="14">@(control.IsLocked ? "mdi-lock-outline" : "mdi-lock-open-variant-outline")</MIcon>
+                    </button>
+                </div>
+            </div>
+
+            @if (contextId == control.ID)
+            {
+                <div class="layer-context-menu" role="menu" @onclick:stopPropagation>
+                    <button type="button" role="menuitem" @onclick="() => BeginRename(control)">重命名</button>
+                    <button type="button" role="menuitem" @onclick="() => Duplicate(control)">复制</button>
+                    <button type="button" role="menuitem" class="danger-text" @onclick="() => RequestDelete(control)">删除</button>
+                </div>
+            }
+        </div>
+
+        @if (control is WMContainer childrenContainer && !IsCollapsed(control.ID))
+        {
+            <div class="layer-children" role="group">
+                @for (var childIndex = 0; childIndex < childrenContainer.Controls.Count; childIndex++)
+                {
+                    var child = childrenContainer.Controls[childIndex];
+                    @RenderNode(child, depth + 1, childrenContainer.ID, childIndex)
+                }
+                @RenderDropSlot(childrenContainer.ID, childrenContainer.Controls.Count, depth + 1)
+            </div>
+        }
+    </div>;
+
+    private RenderFragment RenderDropSlot(string parentId, int index, int depth) => @<div class="layer-drop-slot @(IsDropSlot(parentId, index) ? "active" : null)"
+         style="--layer-depth:@depth"
+         @ondragover="() => DragOverSlot(parentId, index)"
+         @ondragover:preventDefault="@CanDrop(parentId, index)"
+         @ondrop="() => DropAsync(parentId, index)">
+        <span></span>
+    </div>;
+
+    private void Select(IWMControl control)
+    {
+        contextId = null;
+        Editor.Select(control.ID);
+    }
+
+    private void AddControl(Type type)
+    {
+        IWMControl added = null;
+        Editor.Mutate("添加图层", () =>
+        {
+            added = MacControlTree.Add(Editor.Draft, type, PreferredParentId());
+            added.Name = type == typeof(WMContainer) ? "新容器"
+                : type == typeof(WMText) ? "新文字"
+                : type == typeof(WMLogo) ? "新 Logo"
+                : "新分割线";
+        });
+        if (added is not null) Editor.Select(added.ID);
+    }
+
+    private string PreferredParentId()
+    {
+        if (string.IsNullOrWhiteSpace(Editor.SelectedControlId)) return null;
+        var selected = MacControlTree.Find(Editor.Draft, Editor.SelectedControlId);
+        if (selected is WMContainer container) return container.ID;
+        return MacControlTree.FindParent(Editor.Draft, Editor.SelectedControlId)?.ID;
+    }
+
+    private void BeginRename(IWMControl control)
+    {
+        contextId = null;
+        editingId = control.ID;
+        editingName = DisplayName(control);
+    }
+
+    private void UpdateRenameValue(ChangeEventArgs args) => editingName = args.Value?.ToString() ?? string.Empty;
+
+    private void HandleRenameKey(IWMControl control, KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") CommitRename(control);
+        else if (args.Key == "Escape") CancelRename();
+    }
+
+    private void CommitRename(IWMControl control)
+    {
+        if (editingId != control.ID) return;
+        var value = editingName.Trim();
+        editingId = null;
+        if (string.IsNullOrWhiteSpace(value) || value == control.Name) return;
+        Editor.Mutate("重命名图层", () => control.Name = value);
+    }
+
+    private void CancelRename()
+    {
+        editingId = null;
+        editingName = string.Empty;
+    }
+
+    private void ToggleVisible(IWMControl control) =>
+        Editor.Mutate("切换图层可见性", () => control.Enabled = !control.Enabled);
+
+    private void ToggleLocked(IWMControl control) =>
+        Editor.Mutate("切换图层锁定", () => control.IsLocked = !control.IsLocked);
+
+    private void Duplicate(IWMControl control)
+    {
+        IWMControl copy = null;
+        Editor.Mutate("复制图层", () =>
+        {
+            copy = MacControlTree.Duplicate(Editor.Draft, control.ID);
+            copy.Name = $"{DisplayName(control)} 副本";
+        });
+        contextId = null;
+        if (copy is not null) Editor.Select(copy.ID);
+    }
+
+    private void RequestDelete(IWMControl control)
+    {
+        contextId = null;
+        var descendants = DescendantCount(control);
+        if (control is WMContainer && descendants > 0)
+        {
+            pendingDelete = control;
+            pendingDescendantCount = descendants;
+            return;
+        }
+        Delete(control);
+    }
+
+    private void ConfirmDelete()
+    {
+        var control = pendingDelete;
+        pendingDelete = null;
+        pendingDescendantCount = 0;
+        if (control is not null) Delete(control);
+    }
+
+    private void CancelDelete()
+    {
+        pendingDelete = null;
+        pendingDescendantCount = 0;
+    }
+
+    private void Delete(IWMControl control)
+    {
+        var parentId = MacControlTree.FindParent(Editor.Draft, control.ID)?.ID;
+        Editor.Mutate("删除图层", () =>
+        {
+            if (!MacControlTree.Remove(Editor.Draft, control.ID))
+                throw new InvalidOperationException("无法删除图层。");
+        });
+        Editor.Select(parentId);
+    }
+
+    private void OpenContextMenu(IWMControl control)
+    {
+        Editor.Select(control.ID);
+        contextId = contextId == control.ID ? null : control.ID;
+    }
+
+    private void CloseContextMenu()
+    {
+        if (contextId is not null) contextId = null;
+    }
+
+    private void HandleRowKeyDown(IWMControl control, KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter" or " ") Select(control);
+        else if (args.Key == "F2") BeginRename(control);
+        else if (args.Key == "Delete" || args.Key == "Backspace") RequestDelete(control);
+        else if (args.Key == "ArrowRight" && control is WMContainer) collapsedIds.Remove(control.ID);
+        else if (args.Key == "ArrowLeft" && control is WMContainer) collapsedIds.Add(control.ID);
+    }
+
+    private void ToggleCollapsed(string id)
+    {
+        if (!collapsedIds.Add(id)) collapsedIds.Remove(id);
+    }
+
+    private bool IsCollapsed(string id) => collapsedIds.Contains(id);
+
+    private void BeginDrag(IWMControl control)
+    {
+        if (control.IsLocked) return;
+        draggedId = control.ID;
+        ClearDropCandidate();
+    }
+
+    private void EndDrag()
+    {
+        draggedId = null;
+        ClearDropCandidate();
+    }
+
+    private void DragOverSlot(string parentId, int index)
+    {
+        CancelHoverExpand();
+        if (!CanDrop(parentId, index)) return;
+        dropParentId = parentId;
+        dropIndex = index;
+        dropOnContainer = false;
+    }
+
+    private void DragOverContainer(IWMControl control)
+    {
+        if (control is not WMContainer || !CanDrop(control.ID, TargetCount(control.ID))) return;
+        dropParentId = control.ID;
+        dropIndex = TargetCount(control.ID);
+        dropOnContainer = true;
+        ScheduleAutoExpand(control.ID);
+    }
+
+    private bool CanDropOnContainer(IWMControl control) =>
+        control is WMContainer && CanDrop(control.ID, TargetCount(control.ID));
+
+    private bool CanDrop(string parentId, int rawIndex)
+    {
+        if (string.IsNullOrWhiteSpace(draggedId)) return false;
+        var control = MacControlTree.Find(Editor.Draft, draggedId);
+        if (control is null || control.IsLocked) return false;
+        if (!MacControlTree.CanMove(Editor.Draft, draggedId, parentId, out _)) return false;
+
+        var target = parentId is null ? null : MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
+        var targetCount = target?.Controls.Count ?? Editor.Draft.Children.Count;
+        var alreadyInTarget = target is null
+            ? control is WMContainer root && Editor.Draft.Children.Contains(root)
+            : target.Controls.Contains(control);
+        var maximum = alreadyInTarget ? targetCount - 1 : targetCount;
+        var index = NormalizeDropIndex(parentId, rawIndex);
+        return index >= 0 && index <= maximum;
+    }
+
+    private async Task DropAsync(string parentId, int rawIndex)
+    {
+        var movingId = draggedId;
+        if (string.IsNullOrWhiteSpace(movingId) || !CanDrop(parentId, rawIndex))
+        {
+            EndDrag();
+            return;
+        }
+
+        var index = NormalizeDropIndex(parentId, rawIndex);
+        Editor.Mutate("移动图层", () =>
+        {
+            if (!MacControlTree.Move(Editor.Draft, movingId, parentId, index))
+                throw new InvalidOperationException("无法移动到目标位置。");
+        });
+        Editor.Select(movingId);
+        EndDrag();
+        await Task.CompletedTask;
+    }
+
+    private int TargetCount(string parentId)
+    {
+        var target = parentId is null ? null : MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
+        return target?.Controls.Count ?? Editor.Draft.Children.Count;
+    }
+
+    private int NormalizeDropIndex(string parentId, int rawIndex)
+    {
+        if (string.IsNullOrWhiteSpace(draggedId)) return rawIndex;
+        var moving = MacControlTree.Find(Editor.Draft, draggedId);
+        if (moving is null) return rawIndex;
+
+        if (parentId is null && moving is WMContainer root)
+        {
+            var sourceIndex = Editor.Draft.Children.IndexOf(root);
+            return sourceIndex >= 0 && sourceIndex < rawIndex ? rawIndex - 1 : rawIndex;
+        }
+
+        if (parentId is null) return rawIndex;
+        var target = MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
+        if (target is null) return rawIndex;
+        var childIndex = target.Controls.IndexOf(moving);
+        return childIndex >= 0 && childIndex < rawIndex ? rawIndex - 1 : rawIndex;
+    }
+
+    private bool IsDropSlot(string parentId, int index) =>
+        !dropOnContainer && dropIndex == index && string.Equals(dropParentId, parentId, StringComparison.Ordinal);
+
+    private bool IsContainerTarget(string id) => dropOnContainer && dropParentId == id;
+
+    private void ClearDropCandidate()
+    {
+        dropParentId = null;
+        dropIndex = -1;
+        dropOnContainer = false;
+        CancelHoverExpand();
+    }
+
+    private void ScheduleAutoExpand(string id)
+    {
+        if (!collapsedIds.Contains(id) || hoverExpandId == id) return;
+        CancelHoverExpand();
+        hoverExpandId = id;
+        var cancellation = new CancellationTokenSource();
+        hoverExpandCancellation = cancellation;
+        _ = AutoExpandAsync(id, cancellation.Token);
+    }
+
+    private async Task AutoExpandAsync(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(600, cancellationToken);
+            await InvokeAsync(() =>
+            {
+                if (hoverExpandId == id && !cancellationToken.IsCancellationRequested)
+                {
+                    collapsedIds.Remove(id);
+                    StateHasChanged();
+                }
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelHoverExpand()
+    {
+        hoverExpandCancellation?.Cancel();
+        hoverExpandCancellation?.Dispose();
+        hoverExpandCancellation = null;
+        hoverExpandId = null;
+    }
+
+    private static int DescendantCount(IWMControl control)
+    {
+        if (control is not WMContainer container) return 0;
+        var count = 0;
+        var pending = new Stack<IWMControl>(container.Controls.Reverse<IWMControl>());
+        var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (!visited.Add(current)) continue;
+            count++;
+            if (current is WMContainer childContainer)
+                foreach (var child in childContainer.Controls) pending.Push(child);
+        }
+        return count;
+    }
+
+    private static string DisplayName(IWMControl control) =>
+        string.IsNullOrWhiteSpace(control.Name) ? control switch
+        {
+            WMContainer => "未命名容器",
+            WMText => "未命名文字",
+            WMLogo => "未命名 Logo",
+            WMLine => "未命名分割线",
+            _ => "未命名图层"
+        } : control.Name;
+
+    private static string IconFor(IWMControl control) => control switch
+    {
+        WMContainer => "mdi-folder-outline",
+        WMText => "mdi-format-text",
+        WMLogo => "mdi-image-outline",
+        WMLine => "mdi-minus",
+        _ => "mdi-shape-outline"
+    };
+
+    public void Dispose() => CancelHoverExpand();
+}

@@ -78,7 +78,7 @@ public static class MacControlTree
 
             if (targetDepth + ContainerDepth(container) > MaxContainerDepth)
             {
-                error = $"容器层级不能超过 {MaxContainerDepth} 层。";
+                error = "容器只能保留根级和一层嵌套，共两级。";
                 return false;
             }
         }
