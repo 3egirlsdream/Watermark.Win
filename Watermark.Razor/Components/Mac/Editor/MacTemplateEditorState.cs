@@ -9,7 +9,7 @@ public sealed class MacTemplateEditorState
     private const int HistoryLimit = 50;
     private readonly List<Snapshot> history;
     private int historyIndex;
-    private string savedSnapshot;
+    private Snapshot savedSnapshot;
     private Snapshot? transactionStart;
 
     private MacTemplateEditorState(WMCanvas draft)
@@ -17,12 +17,12 @@ public sealed class MacTemplateEditorState
         Draft = draft;
         var initial = Snapshot.From(draft);
         history = [initial];
-        savedSnapshot = initial.Json;
+        savedSnapshot = initial;
     }
 
     public WMCanvas Draft { get; private set; }
     public string? SelectedControlId { get; private set; }
-    public bool IsDirty => Serialize(Draft) != savedSnapshot;
+    public bool IsDirty => !savedSnapshot.Matches(Draft);
     public bool CanUndo => historyIndex > 0;
     public bool CanRedo => historyIndex < history.Count - 1;
     public int HistoryCount => history.Count;
@@ -66,7 +66,7 @@ public sealed class MacTemplateEditorState
 
         var start = transactionStart;
         transactionStart = null;
-        if (Serialize(Draft) == start.Json) return;
+        if (start.Matches(Draft)) return;
 
         Draft = start.Restore();
         Changed?.Invoke();
@@ -77,9 +77,9 @@ public sealed class MacTemplateEditorState
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(mutation);
 
-        var before = Serialize(Draft);
+        var before = Snapshot.From(Draft);
         mutation();
-        if (Serialize(Draft) == before) return;
+        if (before.Matches(Draft)) return;
 
         if (transactionStart == null)
             CommitCurrentSnapshot();
@@ -111,14 +111,14 @@ public sealed class MacTemplateEditorState
 
     public void MarkSaved()
     {
-        savedSnapshot = Serialize(Draft);
+        savedSnapshot = Snapshot.From(Draft);
         Changed?.Invoke();
     }
 
     private bool CommitCurrentSnapshot()
     {
         var snapshot = Snapshot.From(Draft);
-        if (snapshot.Json == history[historyIndex].Json) return false;
+        if (snapshot.IsEquivalentTo(history[historyIndex])) return false;
 
         if (historyIndex < history.Count - 1)
             history.RemoveRange(historyIndex + 1, history.Count - historyIndex - 1);
@@ -149,17 +149,46 @@ public sealed class MacTemplateEditorState
         copy.Exif = source.Exif.ToDictionary(
             pair => pair.Key,
             pair => new Dictionary<string, string>(pair.Value));
+        CopyRuntimeGeometry(source, copy);
         return copy;
     }
 
-    private sealed record Snapshot(string Json, string Path, Dictionary<string, Dictionary<string, string>> Exif)
+    private static void CopyRuntimeGeometry(WMCanvas source, WMCanvas target)
+    {
+        var sourceControls = MacControlTree.Flatten(source);
+        var targetControls = MacControlTree.Flatten(target);
+        foreach (var pair in sourceControls.Zip(targetControls))
+        {
+            pair.Second.Width = pair.First.Width;
+            pair.Second.Height = pair.First.Height;
+            pair.Second.DesignX = pair.First.DesignX;
+            pair.Second.DesignY = pair.First.DesignY;
+        }
+    }
+
+    private sealed record Snapshot(
+        string Json,
+        string Path,
+        Dictionary<string, Dictionary<string, string>> Exif,
+        IReadOnlyList<ControlGeometry> Geometry)
     {
         public static Snapshot From(WMCanvas canvas) => new(
             Serialize(canvas),
             canvas.Path,
             canvas.Exif.ToDictionary(
                 pair => pair.Key,
-                pair => new Dictionary<string, string>(pair.Value)));
+                pair => new Dictionary<string, string>(pair.Value)),
+            MacControlTree.Flatten(canvas)
+                .Select(control => new ControlGeometry(control.ID, control.Width, control.Height, control.DesignX, control.DesignY))
+                .ToList());
+
+        public bool Matches(WMCanvas canvas) => IsEquivalentTo(From(canvas));
+
+        public bool IsEquivalentTo(Snapshot other) =>
+            Json == other.Json
+            && Path == other.Path
+            && ExifEqual(Exif, other.Exif)
+            && Geometry.SequenceEqual(other.Geometry);
 
         public WMCanvas Restore()
         {
@@ -168,7 +197,25 @@ public sealed class MacTemplateEditorState
             canvas.Exif = Exif.ToDictionary(
                 pair => pair.Key,
                 pair => new Dictionary<string, string>(pair.Value));
+            var controls = MacControlTree.Flatten(canvas);
+            foreach (var pair in controls.Zip(Geometry))
+            {
+                pair.First.Width = pair.Second.Width;
+                pair.First.Height = pair.Second.Height;
+                pair.First.DesignX = pair.Second.DesignX;
+                pair.First.DesignY = pair.Second.DesignY;
+            }
             return canvas;
         }
+
+        private static bool ExifEqual(
+            IReadOnlyDictionary<string, Dictionary<string, string>> left,
+            IReadOnlyDictionary<string, Dictionary<string, string>> right) =>
+            left.Count == right.Count
+            && left.All(pair => right.TryGetValue(pair.Key, out var value)
+                && pair.Value.Count == value.Count
+                && pair.Value.All(inner => value.TryGetValue(inner.Key, out var innerValue) && inner.Value == innerValue));
     }
+
+    private sealed record ControlGeometry(string Id, double Width, double Height, double DesignX, double DesignY);
 }

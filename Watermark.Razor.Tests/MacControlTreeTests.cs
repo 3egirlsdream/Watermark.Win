@@ -74,4 +74,87 @@ public sealed class MacControlTreeTests
         Assert.Equal("新容器", parent.Name);
         Assert.Same(text, Assert.Single(parent.Controls));
     }
+
+    [Fact]
+    public void Move_InvalidIndexesLeaveSameParentUnchanged()
+    {
+        var canvas = new WMCanvas();
+        var parent = new WMContainer();
+        var first = new WMText { Name = "first" };
+        var second = new WMText { Name = "second" };
+        parent.Controls.AddRange([first, second]);
+        canvas.Children.Add(parent);
+
+        Assert.False(MacControlTree.Move(canvas, first.ID, parent.ID, -1));
+        Assert.False(MacControlTree.Move(canvas, first.ID, parent.ID, 2));
+        Assert.Same(first, parent.Controls[0]);
+        Assert.Same(second, parent.Controls[1]);
+    }
+
+    [Fact]
+    public void Move_SameParentUsesFinalInsertionIndex()
+    {
+        var canvas = new WMCanvas();
+        var parent = new WMContainer();
+        var first = new WMText { Name = "first" };
+        var second = new WMText { Name = "second" };
+        var third = new WMText { Name = "third" };
+        parent.Controls.AddRange([first, second, third]);
+        canvas.Children.Add(parent);
+
+        Assert.True(MacControlTree.Move(canvas, second.ID, parent.ID, 2));
+
+        Assert.Equal(["first", "third", "second"], parent.Controls.Select(control => control.Name));
+    }
+
+    [Fact]
+    public void Move_TooLargeCrossParentIndexLeavesTreeUnchanged()
+    {
+        var canvas = new WMCanvas();
+        var source = new WMContainer();
+        var target = new WMContainer();
+        var text = new WMText();
+        source.Controls.Add(text);
+        canvas.Children.AddRange([source, target]);
+
+        Assert.False(MacControlTree.Move(canvas, text.ID, target.ID, 1));
+        Assert.Same(text, Assert.Single(source.Controls));
+        Assert.Empty(target.Controls);
+    }
+
+    [Fact]
+    public void Add_RejectsBaseAndUnsupportedControlTypes()
+    {
+        var canvas = new WMCanvas();
+
+        Assert.Throws<ArgumentException>(() => MacControlTree.Add(canvas, typeof(IWMControl), null));
+        Assert.Throws<ArgumentException>(() => MacControlTree.Add(canvas, typeof(UnsupportedControl), null));
+        Assert.Empty(canvas.Children);
+    }
+
+    [Fact]
+    public void Add_UsesUniqueUppercaseGuidIdsForAllInsertedControls()
+    {
+        var canvas = new WMCanvas();
+        var container = MacControlTree.Add(canvas, typeof(WMContainer), null);
+        var text = MacControlTree.Add(canvas, typeof(WMText), null);
+        var logo = MacControlTree.Add(canvas, typeof(WMLogo), null);
+        var line = MacControlTree.Add(canvas, typeof(WMLine), null);
+
+        var controls = MacControlTree.Flatten(canvas);
+        Assert.Equal(controls.Count, controls.Select(control => control.ID).Distinct().Count());
+        Assert.All(controls, control =>
+        {
+            Assert.True(Guid.TryParseExact(control.ID, "N", out _));
+            Assert.Equal(control.ID.ToUpperInvariant(), control.ID);
+        });
+        Assert.Contains(container, controls);
+        Assert.Contains(text, controls);
+        Assert.Contains(logo, controls);
+        Assert.Contains(line, controls);
+    }
+
+    private sealed class UnsupportedControl : IWMControl
+    {
+    }
 }

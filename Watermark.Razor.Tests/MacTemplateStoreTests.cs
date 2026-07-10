@@ -37,6 +37,19 @@ public sealed class MacTemplateStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task InvalidNewCanvas_DoesNotCreateTemplateDirectory()
+    {
+        var canvas = SplitCanvas();
+        canvas.Children.Add(new WMContainer { ID = "DUPLICATE" });
+        canvas.Children.Add(new WMContainer { ID = "DUPLICATE" });
+        var directory = Path.Combine(root, canvas.ID);
+
+        await Assert.ThrowsAsync<MacTemplateValidationException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Fact]
     public void Validator_ReportsCyclesInvalidTransformsAndResources()
     {
         var canvas = SplitCanvas();
@@ -64,6 +77,48 @@ public sealed class MacTemplateStoreTests : IDisposable
 
         Assert.Contains(errors, error => error.ControlId != null && error.Severity == MacValidationSeverity.Warning);
         Assert.DoesNotContain(errors, error => error.Severity == MacValidationSeverity.Error);
+    }
+
+    [Fact]
+    public void Validator_AcceptsOffsetBoundaries()
+    {
+        AssertTransformValid("Transform.OffsetXPercent", transform => transform.OffsetXPercent = -500);
+        AssertTransformValid("Transform.OffsetXPercent", transform => transform.OffsetXPercent = 500);
+        AssertTransformInvalid("Transform.OffsetXPercent", transform => transform.OffsetXPercent = -500.01);
+        AssertTransformInvalid("Transform.OffsetXPercent", transform => transform.OffsetXPercent = 500.01);
+        AssertTransformValid("Transform.OffsetYPercent", transform => transform.OffsetYPercent = -500);
+        AssertTransformValid("Transform.OffsetYPercent", transform => transform.OffsetYPercent = 500);
+        AssertTransformInvalid("Transform.OffsetYPercent", transform => transform.OffsetYPercent = -500.01);
+        AssertTransformInvalid("Transform.OffsetYPercent", transform => transform.OffsetYPercent = 500.01);
+    }
+
+    [Fact]
+    public void Validator_AcceptsScaleBoundaries()
+    {
+        AssertTransformValid("Transform.ScaleX", transform => transform.ScaleX = 0.05);
+        AssertTransformValid("Transform.ScaleX", transform => transform.ScaleX = 20);
+        AssertTransformInvalid("Transform.ScaleX", transform => transform.ScaleX = 0.049);
+        AssertTransformInvalid("Transform.ScaleX", transform => transform.ScaleX = 20.01);
+        AssertTransformValid("Transform.ScaleY", transform => transform.ScaleY = 0.05);
+        AssertTransformValid("Transform.ScaleY", transform => transform.ScaleY = 20);
+        AssertTransformInvalid("Transform.ScaleY", transform => transform.ScaleY = 0.049);
+        AssertTransformInvalid("Transform.ScaleY", transform => transform.ScaleY = 20.01);
+    }
+
+    [Fact]
+    public void Validator_AcceptsRotationLowerBoundaryAndRejectsExclusiveUpperBoundary()
+    {
+        AssertTransformValid("Transform.Rotation", transform => transform.Rotation = -180);
+        AssertTransformValid("Transform.Rotation", transform => transform.Rotation = 179.999);
+        AssertTransformInvalid("Transform.Rotation", transform => SetTransformField(transform, "rotation", 180));
+    }
+
+    [Fact]
+    public void Validator_RejectsAllNonFiniteTransformValues()
+    {
+        foreach (var field in new[] { "offsetXPercent", "offsetYPercent", "scaleX", "scaleY", "rotation" })
+        foreach (var value in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+            AssertTransformInvalid($"Transform.{char.ToUpperInvariant(field[0])}{field[1..]}", transform => SetTransformField(transform, field, value));
     }
 
     [Fact]
@@ -97,6 +152,30 @@ public sealed class MacTemplateStoreTests : IDisposable
         CustomWidth = 1000,
         CustomHeight = 800
     };
+
+    private void AssertTransformValid(string field, Action<WMTransform> configure)
+    {
+        var errors = TransformErrors(configure);
+        Assert.DoesNotContain(errors, error => error.Field == field);
+    }
+
+    private void AssertTransformInvalid(string field, Action<WMTransform> configure)
+    {
+        var errors = TransformErrors(configure);
+        Assert.Contains(errors, error => error.Field == field && error.Severity == MacValidationSeverity.Error);
+    }
+
+    private IReadOnlyList<MacTemplateValidationError> TransformErrors(Action<WMTransform> configure)
+    {
+        var canvas = SplitCanvas();
+        var container = new WMContainer { Transform = new WMTransform() };
+        configure(container.Transform);
+        canvas.Children.Add(container);
+        return MacTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+    }
+
+    private static void SetTransformField(WMTransform transform, string fieldName, double value) =>
+        typeof(WMTransform).GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(transform, value);
 
     public void Dispose()
     {

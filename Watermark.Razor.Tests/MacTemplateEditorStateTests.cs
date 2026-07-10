@@ -79,4 +79,107 @@ public sealed class MacTemplateEditorStateTests
         Assert.False(state.CommitTransaction());
         Assert.Equal(1, state.HistoryCount);
     }
+
+    [Fact]
+    public void Create_PreservesRuntimeStateWithoutAliasingOriginal()
+    {
+        var original = RuntimeCanvas();
+        var originalText = Assert.IsType<WMText>(MacControlTree.Find(original, "TEXT"));
+        var state = MacTemplateEditorState.Create(original);
+        var draftText = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+
+        AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
+        state.Draft.Path = "draft";
+        state.Draft.Exif["camera"]["model"] = "draft-value";
+        draftText.Width = 50;
+        draftText.Height = 60;
+        draftText.DesignX = 70;
+        draftText.DesignY = 80;
+
+        AssertRuntimeState(original, "original", "value", 10, 20, 30, 40);
+        Assert.NotSame(originalText, draftText);
+    }
+
+    [Fact]
+    public void CancelTransaction_RestoresPathExifAndGeometry()
+    {
+        var original = RuntimeCanvas();
+        var state = MacTemplateEditorState.Create(original);
+        var text = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+        state.BeginTransaction("runtime");
+        state.Draft.Path = "changed";
+        state.Draft.Exif["camera"]["model"] = "changed-value";
+        text.Width = 50;
+        text.Height = 60;
+        text.DesignX = 70;
+        text.DesignY = 80;
+
+        state.CancelTransaction();
+
+        AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
+        state.Draft.Exif["camera"]["model"] = "after-cancel";
+        Assert.Equal("value", original.Exif["camera"]["model"]);
+    }
+
+    [Fact]
+    public void UndoRedo_RestoresPathExifAndGeometry()
+    {
+        var state = MacTemplateEditorState.Create(RuntimeCanvas());
+        state.BeginTransaction("runtime");
+        var text = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+        state.Draft.Path = "changed";
+        state.Draft.Exif["camera"]["model"] = "changed-value";
+        text.Width = 50;
+        text.Height = 60;
+        text.DesignX = 70;
+        text.DesignY = 80;
+
+        Assert.True(state.CommitTransaction());
+        Assert.True(state.IsDirty);
+        Assert.True(state.Undo());
+        AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
+        Assert.True(state.Redo());
+        AssertRuntimeState(state.Draft, "changed", "changed-value", 50, 60, 70, 80);
+    }
+
+    [Fact]
+    public void PathAndExifOnlyTransaction_IsNotNoOp()
+    {
+        var state = MacTemplateEditorState.Create(RuntimeCanvas());
+        state.BeginTransaction("runtime");
+        state.Draft.Path = "changed";
+        state.Draft.Exif["camera"]["model"] = "changed-value";
+
+        Assert.True(state.CommitTransaction());
+        Assert.Equal(2, state.HistoryCount);
+        Assert.True(state.IsDirty);
+    }
+
+    private static WMCanvas RuntimeCanvas()
+    {
+        var canvas = new WMCanvas { Path = "original" };
+        canvas.Exif["camera"] = new Dictionary<string, string> { ["model"] = "value" };
+        var container = new WMContainer { ID = "CONTAINER" };
+        container.Controls.Add(new WMText
+        {
+            ID = "TEXT",
+            Width = 10,
+            Height = 20,
+            DesignX = 30,
+            DesignY = 40
+        });
+        canvas.Children.Add(container);
+        return canvas;
+    }
+
+    private static void AssertRuntimeState(WMCanvas canvas, string path, string exif, double width, double height, double designX, double designY)
+    {
+        var text = Assert.IsType<WMText>(MacControlTree.Find(canvas, "TEXT"));
+        Assert.Equal(path, canvas.Path);
+        Assert.Equal(exif, canvas.Exif["camera"]["model"]);
+        Assert.Equal(width, text.Width);
+        Assert.Equal(height, text.Height);
+        Assert.Equal(designX, text.DesignX);
+        Assert.Equal(designY, text.DesignY);
+    }
 }

@@ -29,8 +29,10 @@ public sealed class MacTemplateValidationException : Exception
 
 public static class MacTemplateValidator
 {
-    private const double MaximumOffsetPercent = 100;
-    private const double MaximumScale = 10;
+    private const double MinimumOffsetPercent = -500;
+    private const double MaximumOffsetPercent = 500;
+    private const double MinimumScale = 0.05;
+    private const double MaximumScale = 20;
 
     public static IReadOnlyList<MacTemplateValidationError> Validate(WMCanvas canvas, string templateDirectory)
     {
@@ -102,16 +104,16 @@ public static class MacTemplateValidator
         var transform = control.Transform;
         if (transform == null) return;
 
-        ValidateFiniteRange(control.ID, "Transform.OffsetXPercent", transform.OffsetXPercent, -MaximumOffsetPercent, MaximumOffsetPercent, errors);
-        ValidateFiniteRange(control.ID, "Transform.OffsetYPercent", transform.OffsetYPercent, -MaximumOffsetPercent, MaximumOffsetPercent, errors);
-        ValidateFiniteRange(control.ID, "Transform.ScaleX", transform.ScaleX, double.Epsilon, MaximumScale, errors);
-        ValidateFiniteRange(control.ID, "Transform.ScaleY", transform.ScaleY, double.Epsilon, MaximumScale, errors);
-        ValidateFiniteRange(control.ID, "Transform.Rotation", transform.Rotation, -180, 180, errors);
+        ValidateFiniteRange(control.ID, "Transform.OffsetXPercent", transform.OffsetXPercent, MinimumOffsetPercent, MaximumOffsetPercent, errors);
+        ValidateFiniteRange(control.ID, "Transform.OffsetYPercent", transform.OffsetYPercent, MinimumOffsetPercent, MaximumOffsetPercent, errors);
+        ValidateFiniteRange(control.ID, "Transform.ScaleX", transform.ScaleX, MinimumScale, MaximumScale, errors);
+        ValidateFiniteRange(control.ID, "Transform.ScaleY", transform.ScaleY, MinimumScale, MaximumScale, errors);
+        ValidateFiniteRange(control.ID, "Transform.Rotation", transform.Rotation, -180, 180, errors, maximumInclusive: false);
     }
 
-    private static void ValidateFiniteRange(string controlId, string field, double value, double minimum, double maximum, List<MacTemplateValidationError> errors)
+    private static void ValidateFiniteRange(string controlId, string field, double value, double minimum, double maximum, List<MacTemplateValidationError> errors, bool maximumInclusive = true)
     {
-        if (!double.IsFinite(value) || value < minimum || value > maximum)
+        if (!double.IsFinite(value) || value < minimum || value > maximum || (!maximumInclusive && value == maximum))
             errors.Add(new(controlId, field, $"{field} 必须介于 {minimum} 和 {maximum} 之间。"));
     }
 

@@ -17,12 +17,12 @@ public sealed class MacTemplateStore
 
         var root = Path.GetFullPath(templatesRoot);
         var directory = Path.Combine(root, canvas.ID);
-        Directory.CreateDirectory(directory);
         var errors = MacTemplateValidator.Validate(canvas, directory);
         var blocking = errors.Where(error => error.Severity == MacValidationSeverity.Error).ToList();
         if (blocking.Count > 0)
             throw new MacTemplateValidationException(blocking);
 
+        Directory.CreateDirectory(directory);
         var target = Path.Combine(directory, "config.json");
         var temporary = target + ".tmp";
         try

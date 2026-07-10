@@ -93,16 +93,17 @@ public static class MacControlTree
 
         var control = Find(canvas, controlId)!;
         var target = parentId == null ? null : (WMContainer)Find(canvas, parentId)!;
+        if (!IsValidTargetIndex(canvas, control, target, index)) return false;
         if (!RemoveByReference(canvas, control)) return false;
 
         if (target == null)
         {
             var root = (WMContainer)control;
-            canvas.Children.Insert(ClampIndex(index, canvas.Children.Count), root);
+            canvas.Children.Insert(index, root);
         }
         else
         {
-            target.Controls.Insert(ClampIndex(index, target.Controls.Count), control);
+            target.Controls.Insert(index, control);
         }
 
         return true;
@@ -143,11 +144,16 @@ public static class MacControlTree
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(controlType);
-        if (!typeof(IWMControl).IsAssignableFrom(controlType) || controlType.IsAbstract)
+        if (controlType != typeof(WMContainer)
+            && controlType != typeof(WMText)
+            && controlType != typeof(WMLogo)
+            && controlType != typeof(WMLine))
             throw new ArgumentException("控件类型无效。", nameof(controlType));
 
         var control = (IWMControl?)Activator.CreateInstance(controlType)
             ?? throw new ArgumentException("无法创建控件。", nameof(controlType));
+        var usedIds = Flatten(canvas).Select(existing => existing.ID).ToHashSet(StringComparer.Ordinal);
+        AssignNewUniqueId(control, usedIds);
         if (control is WMContainer container)
         {
             canvas.Children.Add(container);
@@ -158,11 +164,22 @@ public static class MacControlTree
         if (parent == null)
         {
             parent = new WMContainer { Name = "新容器" };
+            AssignNewUniqueId(parent, usedIds);
             canvas.Children.Add(parent);
         }
 
         parent.Controls.Add(control);
         return control;
+    }
+
+    private static bool IsValidTargetIndex(WMCanvas canvas, IWMControl control, WMContainer? target, int index)
+    {
+        var targetCount = target?.Controls.Count ?? canvas.Children.Count;
+        var alreadyInTarget = target == null
+            ? control is WMContainer root && canvas.Children.Contains(root)
+            : target.Controls.Contains(control);
+        var maximum = alreadyInTarget ? targetCount - 1 : targetCount;
+        return index >= 0 && index <= maximum;
     }
 
     private static WMContainer? FindParent(WMContainer parent, string id, HashSet<IWMControl> visited)
@@ -313,5 +330,11 @@ public static class MacControlTree
                 AssignIds(child, usedIds, visited);
     }
 
-    private static int ClampIndex(int index, int count) => Math.Clamp(index, 0, count);
+    private static void AssignNewUniqueId(IWMControl control, HashSet<string> usedIds)
+    {
+        string id;
+        do id = Guid.NewGuid().ToString("N").ToUpperInvariant();
+        while (!usedIds.Add(id));
+        control.ID = id;
+    }
 }
