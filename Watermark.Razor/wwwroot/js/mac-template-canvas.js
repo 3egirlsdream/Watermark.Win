@@ -34,6 +34,16 @@ function pair(value, fallback = [0, 0]) {
     : fallback;
 }
 
+function renderedDimension(size, scale) {
+  const value = Math.abs(asFinite(size, 0) * asFinite(scale, 0));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function relativeResizeSize(size, startSize) {
+  if (!Number.isFinite(size) || size < 0 || !Number.isFinite(startSize) || startSize <= 0) return null;
+  return size / startSize;
+}
+
 export async function createEditor(root, callback) {
   await loadMoveable();
 
@@ -78,6 +88,9 @@ export async function createEditor(root, callback) {
     interaction = {
       kind,
       start: { ...item },
+      renderedWidth: renderedDimension(item.width, item.scaleX),
+      renderedHeight: renderedDimension(item.height, item.scaleY),
+      keepRatio: item.type !== "WMContainer",
       deltaX: 0,
       deltaY: 0,
       scaleX: item.scaleX,
@@ -113,11 +126,18 @@ export async function createEditor(root, callback) {
   function updateResize(event) {
     if (!interaction) return;
     const [cssDeltaX, cssDeltaY] = pair(event.drag?.beforeDist ?? event.drag?.dist);
-    const [relativeScaleX, relativeScaleY] = pair(event.scale, [1, 1]);
+    const relativeWidth = relativeResizeSize(event.width, interaction.renderedWidth);
+    const relativeHeight = relativeResizeSize(event.height, interaction.renderedHeight);
     interaction.deltaX = cssDeltaX / viewScale;
     interaction.deltaY = cssDeltaY / viewScale;
-    interaction.scaleX = interaction.start.scaleX * relativeScaleX;
-    interaction.scaleY = interaction.start.scaleY * relativeScaleY;
+    if (interaction.keepRatio) {
+      const relativeSize = relativeWidth ?? relativeHeight ?? 1;
+      interaction.scaleX = interaction.start.scaleX * relativeSize;
+      interaction.scaleY = interaction.start.scaleY * relativeSize;
+    } else {
+      interaction.scaleX = interaction.start.scaleX * (relativeWidth ?? 1);
+      interaction.scaleY = interaction.start.scaleY * (relativeHeight ?? 1);
+    }
     updateOverlay();
   }
 
@@ -128,11 +148,11 @@ export async function createEditor(root, callback) {
   }
 
   function cancelInteraction() {
-    if (interaction) {
-      const target = overlays.get(interaction.start.id);
-      if (target) target.style.transform = compose(interaction.start);
-    }
+    const active = interaction;
+    if (!active) return;
     interaction = null;
+    const target = overlays.get(active.start.id);
+    if (target) target.style.transform = compose(active.start);
     void invoke("CancelCanvasInteraction");
   }
 
@@ -187,7 +207,7 @@ export async function createEditor(root, callback) {
     .on("drag", updateDrag)
     .on("dragEnd", event => completeInteraction("drag", event))
     .on("resizeStart", event => {
-      if (beginInteraction("resize", event)) event.set?.([1, 1]);
+      beginInteraction("resize", event);
     })
     .on("resize", updateResize)
     .on("resizeEnd", event => completeInteraction("resize", event))
@@ -210,11 +230,11 @@ export async function createEditor(root, callback) {
   return {
     setScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId) {
       if (disposed) return;
+      cancelInteraction();
       viewScale = asPositiveScale(nextViewScale);
       const sceneItems = Array.isArray(items) ? items : [];
       itemsById = new Map(sceneItems.map(item => [item.id, item]));
       overlays = new Map();
-      interaction = null;
       stage.replaceChildren();
       stage.style.width = `${canvasWidth}px`;
       stage.style.height = `${canvasHeight}px`;
@@ -259,8 +279,8 @@ export async function createEditor(root, callback) {
     },
     dispose() {
       if (disposed) return;
+      cancelInteraction();
       disposed = true;
-      interaction = null;
       moveable.destroy();
       root.replaceChildren();
       itemsById.clear();
