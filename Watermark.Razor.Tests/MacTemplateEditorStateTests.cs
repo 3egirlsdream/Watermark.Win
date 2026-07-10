@@ -114,15 +114,18 @@ public sealed class MacTemplateEditorStateTests
         text.DesignX = 70;
         text.DesignY = 80;
 
+        Assert.False(state.IsDirty);
+
         state.CancelTransaction();
 
         AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
+        Assert.False(state.IsDirty);
         state.Draft.Exif["camera"]["model"] = "after-cancel";
         Assert.Equal("value", original.Exif["camera"]["model"]);
     }
 
     [Fact]
-    public void UndoRedo_RestoresPathExifAndGeometry()
+    public void RuntimeOnlyUndoRedo_RestoresPathExifAndGeometryWithoutDirtyState()
     {
         var state = MacTemplateEditorState.Create(RuntimeCanvas());
         state.BeginTransaction("runtime");
@@ -135,15 +138,17 @@ public sealed class MacTemplateEditorStateTests
         text.DesignY = 80;
 
         Assert.True(state.CommitTransaction());
-        Assert.True(state.IsDirty);
+        Assert.False(state.IsDirty);
         Assert.True(state.Undo());
         AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
+        Assert.False(state.IsDirty);
         Assert.True(state.Redo());
         AssertRuntimeState(state.Draft, "changed", "changed-value", 50, 60, 70, 80);
+        Assert.False(state.IsDirty);
     }
 
     [Fact]
-    public void PathAndExifOnlyTransaction_IsNotNoOp()
+    public void PathAndExifOnlyTransaction_ParticipatesInHistoryWithoutDirtyState()
     {
         var state = MacTemplateEditorState.Create(RuntimeCanvas());
         state.BeginTransaction("runtime");
@@ -152,7 +157,11 @@ public sealed class MacTemplateEditorStateTests
 
         Assert.True(state.CommitTransaction());
         Assert.Equal(2, state.HistoryCount);
-        Assert.True(state.IsDirty);
+        Assert.False(state.IsDirty);
+        Assert.True(state.Undo());
+        Assert.False(state.IsDirty);
+        Assert.True(state.Redo());
+        Assert.False(state.IsDirty);
     }
 
     private static WMCanvas RuntimeCanvas()

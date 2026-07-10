@@ -9,7 +9,7 @@ public sealed class MacTemplateEditorState
     private const int HistoryLimit = 50;
     private readonly List<Snapshot> history;
     private int historyIndex;
-    private Snapshot savedSnapshot;
+    private string savedSnapshot;
     private Snapshot? transactionStart;
 
     private MacTemplateEditorState(WMCanvas draft)
@@ -17,12 +17,12 @@ public sealed class MacTemplateEditorState
         Draft = draft;
         var initial = Snapshot.From(draft);
         history = [initial];
-        savedSnapshot = initial;
+        savedSnapshot = initial.Json;
     }
 
     public WMCanvas Draft { get; private set; }
     public string? SelectedControlId { get; private set; }
-    public bool IsDirty => !savedSnapshot.Matches(Draft);
+    public bool IsDirty => Serialize(Draft) != savedSnapshot;
     public bool CanUndo => historyIndex > 0;
     public bool CanRedo => historyIndex < history.Count - 1;
     public int HistoryCount => history.Count;
@@ -111,7 +111,7 @@ public sealed class MacTemplateEditorState
 
     public void MarkSaved()
     {
-        savedSnapshot = Snapshot.From(Draft);
+        savedSnapshot = Serialize(Draft);
         Changed?.Invoke();
     }
 
