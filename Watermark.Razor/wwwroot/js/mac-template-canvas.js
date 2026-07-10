@@ -34,9 +34,8 @@ function pair(value, fallback = [0, 0]) {
     : fallback;
 }
 
-function renderedDimension(size, scale) {
-  const value = Math.abs(asFinite(size, 0) * asFinite(scale, 0));
-  return Number.isFinite(value) && value > 0 ? value : null;
+function layoutDimension(size) {
+  return Number.isFinite(size) && size > 0 ? size : null;
 }
 
 function relativeResizeSize(size, startSize) {
@@ -58,6 +57,13 @@ export async function createEditor(root, callback) {
   let selectedId = null;
   let viewScale = 1;
   let interaction = null;
+  let interactionBusy = false;
+  let interactionLifecycle = Promise.resolve();
+  let nextInteractionToken = 0;
+  let sceneQueue = Promise.resolve();
+  let sceneEpoch = 0;
+  let scenePending = false;
+  let disposePromise = null;
   let disposed = false;
 
   function invoke(method, ...args) {
@@ -76,20 +82,25 @@ export async function createEditor(root, callback) {
   }
 
   function beginInteraction(kind, event) {
-    const target = targetFor(event);
-    const controlId = target?.dataset.controlId;
-    const item = controlId ? itemsById.get(controlId) : null;
-    if (!item || !item.visible || item.locked) {
-      interaction = null;
+    if (disposed || scenePending || interactionBusy) {
       event.stop?.();
       return false;
     }
 
-    interaction = {
+    const target = targetFor(event);
+    const controlId = target?.dataset.controlId;
+    const item = controlId ? itemsById.get(controlId) : null;
+    if (!item || !item.visible || item.locked) {
+      event.stop?.();
+      return false;
+    }
+
+    const active = {
+      token: ++nextInteractionToken,
       kind,
       start: { ...item },
-      renderedWidth: renderedDimension(item.width, item.scaleX),
-      renderedHeight: renderedDimension(item.height, item.scaleY),
+      layoutWidth: layoutDimension(item.width),
+      layoutHeight: layoutDimension(item.height),
       keepRatio: item.type !== "WMContainer",
       deltaX: 0,
       deltaY: 0,
@@ -97,7 +108,10 @@ export async function createEditor(root, callback) {
       scaleY: item.scaleY,
       rotation: item.rotation
     };
-    void invoke("BeginCanvasInteraction", controlId);
+    interaction = active;
+    interactionBusy = true;
+    active.beginPromise = invoke("BeginCanvasInteraction", controlId);
+    interactionLifecycle = active.beginPromise;
     return true;
   }
 
@@ -126,12 +140,12 @@ export async function createEditor(root, callback) {
   function updateResize(event) {
     if (!interaction) return;
     const [cssDeltaX, cssDeltaY] = pair(event.drag?.beforeDist ?? event.drag?.dist);
-    const relativeWidth = relativeResizeSize(event.width, interaction.renderedWidth);
-    const relativeHeight = relativeResizeSize(event.height, interaction.renderedHeight);
+    const relativeWidth = relativeResizeSize(event.width, interaction.layoutWidth);
+    const relativeHeight = relativeResizeSize(event.height, interaction.layoutHeight);
     interaction.deltaX = cssDeltaX / viewScale;
     interaction.deltaY = cssDeltaY / viewScale;
     if (interaction.keepRatio) {
-      const relativeSize = relativeWidth ?? relativeHeight ?? 1;
+      const relativeSize = relativeWidth != null && relativeHeight != null ? relativeWidth : 1;
       interaction.scaleX = interaction.start.scaleX * relativeSize;
       interaction.scaleY = interaction.start.scaleY * relativeSize;
     } else {
@@ -147,21 +161,35 @@ export async function createEditor(root, callback) {
     updateOverlay();
   }
 
+  function finishInteraction(active, callback) {
+    if (active.finishPromise) return active.finishPromise;
+
+    active.finishPromise = Promise.resolve(active.beginPromise)
+      .then(callback)
+      .catch(error => {
+        console.error("Mac template canvas interaction callback failed.", error);
+      })
+      .finally(() => {
+        if (!interaction || interaction.token === active.token) interactionBusy = false;
+      });
+    interactionLifecycle = active.finishPromise;
+    return active.finishPromise;
+  }
+
   function cancelInteraction() {
     const active = interaction;
-    if (!active) return;
+    if (!active) return interactionLifecycle;
     interaction = null;
     const target = overlays.get(active.start.id);
     if (target) target.style.transform = compose(active.start);
-    void invoke("CancelCanvasInteraction");
+    return finishInteraction(active, () => invoke("CancelCanvasInteraction"));
   }
 
   function completeInteraction(kind, event) {
     const active = interaction;
-    if (!active || active.kind !== kind) return;
+    if (!active || active.kind !== kind) return interactionLifecycle;
     if (!event.lastEvent) {
-      cancelInteraction();
-      return;
+      return cancelInteraction();
     }
 
     if (kind === "drag") updateDrag(event.lastEvent);
@@ -176,7 +204,7 @@ export async function createEditor(root, callback) {
     const offsetYPercent = start.parentHeight === 0
       ? start.offsetYPercent
       : start.offsetYPercent + active.deltaY / start.parentHeight * 100;
-    void invoke("CommitCanvasInteraction", {
+    return finishInteraction(active, () => invoke("CommitCanvasInteraction", {
       controlId: start.id,
       kind,
       offsetXPercent,
@@ -184,7 +212,7 @@ export async function createEditor(root, callback) {
       scaleX: active.scaleX,
       scaleY: active.scaleY,
       rotation: active.rotation
-    });
+    }));
   }
 
   const moveable = new window.Moveable(stage, {
@@ -205,17 +233,17 @@ export async function createEditor(root, callback) {
       if (beginInteraction("drag", event)) event.set?.([0, 0]);
     })
     .on("drag", updateDrag)
-    .on("dragEnd", event => completeInteraction("drag", event))
+    .on("dragEnd", event => { void completeInteraction("drag", event); })
     .on("resizeStart", event => {
       beginInteraction("resize", event);
     })
     .on("resize", updateResize)
-    .on("resizeEnd", event => completeInteraction("resize", event))
+    .on("resizeEnd", event => { void completeInteraction("resize", event); })
     .on("rotateStart", event => {
       if (beginInteraction("rotate", event)) event.set?.(0);
     })
     .on("rotate", updateRotate)
-    .on("rotateEnd", event => completeInteraction("rotate", event));
+    .on("rotateEnd", event => { void completeInteraction("rotate", event); });
 
   function select(id) {
     selectedId = id;
@@ -227,46 +255,65 @@ export async function createEditor(root, callback) {
     moveable.updateRect();
   }
 
+  function enqueueScene(task) {
+    const scheduled = sceneQueue.then(task, task);
+    sceneQueue = scheduled.catch(error => {
+      console.error("Mac template canvas scene update failed.", error);
+    });
+    return scheduled;
+  }
+
+  function applyScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId) {
+    viewScale = asPositiveScale(nextViewScale);
+    const sceneItems = Array.isArray(items) ? items : [];
+    itemsById = new Map(sceneItems.map(item => [item.id, item]));
+    overlays = new Map();
+    stage.replaceChildren();
+    stage.style.width = `${canvasWidth}px`;
+    stage.style.height = `${canvasHeight}px`;
+    stage.style.transform = `scale(${viewScale})`;
+    moveable.verticalGuidelines = [0, canvasWidth / 2, canvasWidth];
+    moveable.horizontalGuidelines = [0, canvasHeight / 2, canvasHeight];
+
+    sceneItems.forEach(item => {
+      const element = document.createElement("div");
+      element.className = `canvas-control ${item.type.toLowerCase()}`;
+      element.dataset.controlId = item.id;
+      element.style.position = "absolute";
+      element.style.left = `${item.x}px`;
+      element.style.top = `${item.y}px`;
+      element.style.width = `${Math.max(item.width, 1)}px`;
+      element.style.height = `${Math.max(item.height, 1)}px`;
+      element.style.transformOrigin = "center";
+      element.style.transform = compose(item);
+      element.style.display = item.visible ? "block" : "none";
+      element.addEventListener("pointerdown", event => {
+        event.stopPropagation();
+        void invoke("SelectCanvasControl", item.id);
+      });
+      overlays.set(item.id, element);
+    });
+
+    sceneItems.forEach(item => {
+      const element = overlays.get(item.id);
+      const parent = item.parentId ? overlays.get(item.parentId) : stage;
+      (parent || stage).appendChild(element);
+    });
+    select(nextSelectedId);
+  }
+
   return {
     setScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId) {
-      if (disposed) return;
-      cancelInteraction();
-      viewScale = asPositiveScale(nextViewScale);
-      const sceneItems = Array.isArray(items) ? items : [];
-      itemsById = new Map(sceneItems.map(item => [item.id, item]));
-      overlays = new Map();
-      stage.replaceChildren();
-      stage.style.width = `${canvasWidth}px`;
-      stage.style.height = `${canvasHeight}px`;
-      stage.style.transform = `scale(${viewScale})`;
-      moveable.verticalGuidelines = [0, canvasWidth / 2, canvasWidth];
-      moveable.horizontalGuidelines = [0, canvasHeight / 2, canvasHeight];
-
-      sceneItems.forEach(item => {
-        const element = document.createElement("div");
-        element.className = `canvas-control ${item.type.toLowerCase()}`;
-        element.dataset.controlId = item.id;
-        element.style.position = "absolute";
-        element.style.left = `${item.x}px`;
-        element.style.top = `${item.y}px`;
-        element.style.width = `${Math.max(item.width, 1)}px`;
-        element.style.height = `${Math.max(item.height, 1)}px`;
-        element.style.transformOrigin = "center";
-        element.style.transform = compose(item);
-        element.style.display = item.visible ? "block" : "none";
-        element.addEventListener("pointerdown", event => {
-          event.stopPropagation();
-          void invoke("SelectCanvasControl", item.id);
-        });
-        overlays.set(item.id, element);
+      if (disposed) return Promise.resolve();
+      scenePending = true;
+      const epoch = ++sceneEpoch;
+      const cancellation = cancelInteraction();
+      return enqueueScene(async () => {
+        await cancellation;
+        if (disposed || epoch !== sceneEpoch) return;
+        applyScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId);
+        scenePending = false;
       });
-
-      sceneItems.forEach(item => {
-        const element = overlays.get(item.id);
-        const parent = item.parentId ? overlays.get(item.parentId) : stage;
-        (parent || stage).appendChild(element);
-      });
-      select(nextSelectedId);
     },
     setSelected(id) {
       if (!disposed) select(id);
@@ -278,13 +325,20 @@ export async function createEditor(root, callback) {
       moveable.updateRect();
     },
     dispose() {
-      if (disposed) return;
+      if (disposePromise) return disposePromise;
       cancelInteraction();
       disposed = true;
-      moveable.destroy();
-      root.replaceChildren();
-      itemsById.clear();
-      overlays.clear();
+      scenePending = true;
+      sceneEpoch++;
+      const cancellation = interactionLifecycle;
+      disposePromise = enqueueScene(async () => {
+        await cancellation;
+        moveable.destroy();
+        root.replaceChildren();
+        itemsById.clear();
+        overlays.clear();
+      });
+      return disposePromise;
     }
   };
 }
