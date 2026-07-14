@@ -1,25 +1,19 @@
 @using System.Globalization
 
 <div class="mac-inspector-slider @(Disabled ? "disabled" : null)">
-    <div class="inspector-slider-label">
-        <label for="@rangeId">@Label</label>
-        <span>@FormattedValue@Unit</span>
-    </div>
     <div class="inspector-slider-controls">
-        <input id="@rangeId"
-               type="range"
-               min="@MinString"
-               max="@MaxString"
-               step="@StepString"
-               value="@ValueString"
-               disabled="@Disabled"
-               @onfocus="StartInteractionAsync"
-               @onpointerdown="StartInteractionAsync"
-               @oninput="HandleInputAsync"
-               @onchange="EndInteractionAsync"
-               @onpointerup="EndInteractionAsync"
-               @onpointercancel="EndInteractionAsync"
-               @onblur="EndInteractionAsync" />
+        <MacSlider Label="@Label"
+                   Value="@Value"
+                   Min="@Min"
+                   Max="@Max"
+                   Step="@Step"
+                   Format="@(Step < 1 ? "0.##" : "0")"
+                   Suffix="@Unit"
+                   Compact
+                   Disabled="@Disabled"
+                   ValueChanged="HandleSliderAsync"
+                   InteractionStarted="InteractionStarted"
+                   InteractionEnded="InteractionEnded" />
         <input class="inspector-number-input"
                type="number"
                min="@MinString"
@@ -28,9 +22,8 @@
                value="@ValueString"
                disabled="@Disabled"
                aria-label="@Label"
-               @onfocus="StartInteractionAsync"
-               @oninput="HandleInputAsync"
-               @onblur="EndInteractionAsync" />
+               @onchange="HandleInputAsync"
+               @onkeydown:stopPropagation />
     </div>
 </div>
 
@@ -46,42 +39,20 @@
     [Parameter] public EventCallback InteractionStarted { get; set; }
     [Parameter] public EventCallback InteractionEnded { get; set; }
 
-    private readonly string rangeId = $"inspector-slider-{Guid.NewGuid():N}";
-    private bool interactionActive;
     private string ValueString => Value.ToString("0.###", CultureInfo.InvariantCulture);
     private string MinString => Min.ToString("0.###", CultureInfo.InvariantCulture);
     private string MaxString => Max.ToString("0.###", CultureInfo.InvariantCulture);
     private string StepString => Step.ToString("0.###", CultureInfo.InvariantCulture);
-    private string FormattedValue => Value.ToString(Step < 1 ? "0.##" : "0", CultureInfo.InvariantCulture);
-
-    private async Task StartInteractionAsync()
-    {
-        if (Disabled || interactionActive) return;
-        interactionActive = true;
-        try
-        {
-            await InteractionStarted.InvokeAsync();
-        }
-        catch
-        {
-            interactionActive = false;
-            throw;
-        }
-    }
+    private Task HandleSliderAsync(double value) => Disabled
+        ? Task.CompletedTask
+        : ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
 
     private async Task HandleInputAsync(ChangeEventArgs args)
     {
         if (Disabled) return;
-        await StartInteractionAsync();
         if (!double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
             return;
         await ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
     }
 
-    private async Task EndInteractionAsync()
-    {
-        if (!interactionActive) return;
-        interactionActive = false;
-        await InteractionEnded.InvokeAsync();
-    }
 }

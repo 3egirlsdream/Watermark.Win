@@ -1,0 +1,9 @@
+<MOverlay Value="@Visible" Dark="@DarkBackground" Absolute="@Absolute" ZIndex="@ZIndex" Style="@Style">@ChildContent</MOverlay>
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public bool DarkBackground { get; set; }
+    [Parameter] public bool Absolute { get; set; }
+    [Parameter] public int ZIndex { get; set; }
+    [Parameter] public string? Style { get; set; }
+}

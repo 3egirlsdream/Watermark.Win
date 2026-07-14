@@ -417,13 +417,13 @@ html {
     }
 
     /* 功能卡片单列 */
-    .feature-section .mud-grid-item {
+    .feature-section .wm-grid-item {
         flex-basis: 100% !important;
         max-width: 100% !important;
     }
 
     /* 产品截图展示区单列 */
-    .showcase-section .mud-grid-item {
+    .showcase-section .wm-grid-item {
         flex-basis: 100% !important;
         max-width: 100% !important;
     }

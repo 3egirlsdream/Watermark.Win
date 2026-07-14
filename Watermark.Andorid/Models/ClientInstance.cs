@@ -2,7 +2,6 @@ using Masa.Blazor;
 using Masa.Blazor.Presets;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using MudBlazor;
 using Newtonsoft.Json.Linq;
 using SkiaSharp;
 using System.Collections.Concurrent;
@@ -269,9 +268,12 @@ namespace Watermark.Shared.Models
             var result = await FilePicker.PickMultipleAsync(new PickOptions
             {
                 PickerTitle = "长按多选照片",
-                FileTypes = FilePickerFileType.Images
+                FileTypes = new FilePickerFileType(MacOS.FileType)
             });
-            return result?.Select(x => x.FullPath) ?? [];
+            if (result is null) return [];
+            var paths = new List<string>();
+            foreach (var file in result) paths.Add(await ResolvePickedPhotoAsync(file));
+            return paths.Where(File.Exists);
         }
 
         public async Task<string> PickAsync()
@@ -279,9 +281,25 @@ namespace Watermark.Shared.Models
             var result = await FilePicker.PickAsync(new PickOptions
             {
                 PickerTitle = "选择照片",
-                FileTypes = FilePickerFileType.Images
+                FileTypes = new FilePickerFileType(MacOS.FileType)
             });
-            return result?.FullPath ?? string.Empty;
+            return result is null ? string.Empty : await ResolvePickedPhotoAsync(result);
+        }
+
+        private static async Task<string> ResolvePickedPhotoAsync(FileResult file)
+        {
+#if MACCATALYST || WINDOWS
+            if (!string.IsNullOrWhiteSpace(file.FullPath) && File.Exists(file.FullPath)) return file.FullPath;
+#endif
+            var directory = Path.Combine(FileSystem.CacheDirectory, "photo-imports");
+            Directory.CreateDirectory(directory);
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var destination = Path.Combine(directory, $"{Guid.NewGuid():N}{extension}");
+            await using var source = await file.OpenReadAsync();
+            await using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write,
+                FileShare.None, 1024 * 1024, FileOptions.Asynchronous);
+            await source.CopyToAsync(output);
+            return destination;
         }
 
         public async Task SetTextAsync(string uri)
@@ -292,7 +310,17 @@ namespace Watermark.Shared.Models
         public async Task<API<string>> AliPays(decimal cost, string tradeName)
         {
 #if ANDROID
-            var rs = await api.GetPayToken(cost, tradeName);
+            var userId = Global.CurrentUser?.ID ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return new API<string>
+                {
+                    success = false,
+                    message = new APISub { content = "请先登录后再开通会员" }
+                };
+            }
+
+            var rs = await api.GetPayToken(cost, tradeName, userId);
             if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
             {
                 API<string> jt = await Task.Run(() =>
@@ -322,20 +350,70 @@ namespace Watermark.Shared.Models
                 if (!jt.success) return jt;
 
                 JObject result = JObject.Parse(jt.data);
-                var r = result?["alipay_trade_app_pay_response"];
-                if (r == null) return new API<string> { success = false, message = new APISub { content = "API返回为空" } };
-                var code = r["code"]?.ToString();
-                var msg = r["msg"]?.ToString();
-                var app_id = r["app_id"]?.ToString();
-                var auth_app_id = r["auth_app_id"]?.ToString();
-                var out_trade_no = r["out_trade_no"]?.ToString(); ;
-                var total_amount = r["total_amount"]?.ToString();
-                var trade_no = r["trade_no"]?.ToString();
-                var seller_id = r["seller_id"]?.ToString();
-                var up = await api.RecordBill(code, msg, app_id, auth_app_id, out_trade_no, trade_no, tradeName, total_amount, seller_id);
-                if (up == null || !up.success) return new API<string> { success = false, message = new APISub { content = up?.message?.content ?? "" } };
+                var response = result?["alipay_trade_app_pay_response"];
+                var outTradeNo = response?["out_trade_no"]?.ToString();
+                if (string.IsNullOrWhiteSpace(outTradeNo))
+                {
+                    return new API<string>
+                    {
+                        success = false,
+                        message = new APISub { content = "支付宝未返回订单号" }
+                    };
+                }
 
-                return new API<string> { success = true, data = "支付成功" };
+                API<DesktopPayStatus>? confirmed = null;
+                var sawPending = false;
+                for (var attempt = 0; attempt < 5; attempt++)
+                {
+                    confirmed = await api.QueryPay(outTradeNo);
+                    if (confirmed?.success == true
+                        && string.Equals(confirmed.data?.Status, "PAID", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new API<string> { success = true, data = "支付成功" };
+                    }
+
+                    var status = confirmed?.data?.Status;
+                    sawPending |= confirmed?.success == true
+                        && string.Equals(status, "PENDING", StringComparison.OrdinalIgnoreCase);
+                    if (string.Equals(status, "CLOSED", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new API<string>
+                        {
+                            success = false,
+                            message = new APISub
+                            {
+                                content = confirmed?.data?.Message ?? "支付未完成"
+                            }
+                        };
+                    }
+
+                    if (attempt < 4)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }
+
+                if (sawPending)
+                {
+                    return new API<string>
+                    {
+                        success = true,
+                        data = "支付已完成，会员状态确认中，请勿重复付款"
+                    };
+                }
+
+                var queryMessage = confirmed?.message?.content;
+                return new API<string>
+                {
+                    success = false,
+                    message = new APISub
+                    {
+                        content = string.IsNullOrWhiteSpace(queryMessage)
+                            ? "支付结果暂时无法确认，请勿重复付款，稍后重新登录查看会员状态"
+                            : queryMessage
+                    }
+                };
             }
             else
             {
@@ -523,6 +601,17 @@ namespace Watermark.Shared.Models
                 await Browser.Default.OpenAsync(LinkPath, BrowserLaunchMode.SystemPreferred);
             }
 #endif
+        }
+
+        public async Task OpenExternalUrlAsync(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new ArgumentException("Only HTTP and HTTPS links can be opened.", nameof(url));
+            }
+
+            await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
         }
 
         public async Task<bool> Download(string directory, string fileName, string extension)

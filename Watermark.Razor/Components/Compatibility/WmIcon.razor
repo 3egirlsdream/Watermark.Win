@@ -1,0 +1,12 @@
+<MIcon Class="@Class" Style="@Style" Color="@Color" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrWhiteSpace(Icon)) { @Icon } else { @ChildContent }
+</MIcon>
+
+@code {
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

@@ -1,0 +1,446 @@
+@using System.Globalization
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Components.Dashboard
+@inject APIHelper Api
+
+@if (!IsAuthorized)
+{
+    <section class="dashboard-denied" role="alert">
+        <div class="denied-mark"><MIcon Size="34">mdi-shield-lock-outline</MIcon></div>
+        <span class="eyebrow">ADMINISTRATOR ACCESS</span>
+        <h1>此区域仅对管理员开放</h1>
+        <p>当前账号没有查看运营数据的权限，系统不会发起任何统计请求。</p>
+        @if (ShowClose)
+        {
+            <MButton Color="primary" OnClick="Close">返回工作台</MButton>
+        }
+    </section>
+}
+else
+{
+    <section class="dashboard-shell">
+        <header class="dashboard-header">
+            <div class="dashboard-heading">
+                <div class="heading-kicker"><span></span>LIGHTFRAME OPERATIONS</div>
+                <div class="heading-title-row">
+                    <h1>运营看板</h1>
+                    <MChip Small Color="primary" Class="admin-chip">管理员</MChip>
+                </div>
+                <p>从流量抵达内容，再到会员转化的一体化观测面板。</p>
+            </div>
+
+            <div class="dashboard-actions">
+                @if (Data is not null)
+                {
+                    <span class="generated-at">更新于 @Data.Range.GeneratedAt.ToString("MM-dd HH:mm")</span>
+                }
+                <MButton Text Small Class="icon-action" OnClick="Reload" Disabled="@Loading" title="刷新数据">
+                    <MIcon Small>mdi-refresh</MIcon>
+                </MButton>
+                @if (ShowClose)
+                {
+                    <MButton Text Small Class="icon-action close-action" OnClick="Close" title="关闭看板">
+                        <MIcon Small>mdi-close</MIcon>
+                    </MButton>
+                }
+            </div>
+        </header>
+
+        <div class="dashboard-filterbar">
+            <div class="preset-group" aria-label="时间范围">
+                @foreach (var option in Presets)
+                {
+                    <button type="button" class="preset-button @(SelectedPreset == option.Value ? "active" : null)" @onclick="() => SelectPreset(option.Value)">
+                        @option.Label
+                    </button>
+                }
+            </div>
+            <div class="custom-range">
+                <label>
+                    <span>起始</span>
+                    <input type="date" value="@StartDateText" max="@TodayText" @onchange="eventArgs => ChangeCustomDate(true, eventArgs.Value?.ToString())" />
+                </label>
+                <span class="range-arrow">→</span>
+                <label>
+                    <span>结束</span>
+                    <input type="date" value="@EndDateText" max="@TodayText" @onchange="eventArgs => ChangeCustomDate(false, eventArgs.Value?.ToString())" />
+                </label>
+            </div>
+            <span class="range-summary">@StartDate.ToString("yyyy.MM.dd") — @EndDate.ToString("yyyy.MM.dd") · @RangeDays 天</span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(FilterError))
+        {
+            <div class="filter-error"><MIcon Small>mdi-alert-circle-outline</MIcon>@FilterError</div>
+        }
+
+        <nav class="dashboard-tabs" aria-label="看板模块">
+            @foreach (var tab in Tabs)
+            {
+                <button type="button" class="dashboard-tab @(ActiveTab == tab.Value ? "active" : null)" @onclick="() => ActiveTab = tab.Value">
+                    <MIcon Small>@tab.Icon</MIcon>
+                    <span>@tab.Label</span>
+                </button>
+            }
+        </nav>
+
+        <main class="dashboard-content">
+            @if (Loading && Data is null)
+            {
+                <div class="loading-kpis" aria-label="正在加载运营数据">
+                    @for (var index = 0; index < 8; index++)
+                    {
+                        <div class="skeleton-card"><i></i><span></span><strong></strong></div>
+                    }
+                </div>
+                <div class="loading-panel"><MProgressCircular Indeterminate Color="primary" Size="34" /><span>正在汇总运营数据…</span></div>
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage) && Data is null)
+            {
+                <div class="dashboard-error" role="alert">
+                    <MIcon Size="34">mdi-cloud-alert-outline</MIcon>
+                    <h2>数据暂时没有抵达</h2>
+                    <p>@ErrorMessage</p>
+                    <MButton Color="primary" OnClick="Reload">重新加载</MButton>
+                </div>
+            }
+            else if (Data is not null)
+            {
+                @if (Loading)
+                {
+                    <div class="refresh-line"><span></span></div>
+                }
+
+                @if (ActiveTab == DashboardTab.Overview)
+                {
+                    <section class="kpi-grid">
+                        @foreach (var item in OverviewKpis)
+                        {
+                            <article class="kpi-card" style="--accent:@item.Color">
+                                <div class="kpi-topline"><span>@item.Label</span><MIcon Small>@item.Icon</MIcon></div>
+                                <strong>@item.Value</strong>
+                                <small>@item.Note</small>
+                            </article>
+                        }
+                    </section>
+                    <section class="dashboard-grid two-column">
+                        <article class="data-card wide-card">
+                            <CardHeading Eyebrow="TRAFFIC PULSE" Title="访问趋势" Note="页面访问记录汇总" />
+                            <DashboardChart Type="DashboardChartType.Line" Labels="@DailyLabels" Series="@VisitSeries" ValueSuffix=" 次" AriaLabel="每日访问趋势" />
+                        </article>
+                        <article class="data-card">
+                            <CardHeading Eyebrow="GROWTH SIGNAL" Title="内容与用户增长" Note="注册与新模板按日对齐" />
+                            <DashboardChart Type="DashboardChartType.Line" Labels="@DailyLabels" Series="@GrowthSeries" AriaLabel="每日新增用户和模板趋势" />
+                        </article>
+                    </section>
+                }
+                else if (ActiveTab == DashboardTab.Traffic)
+                {
+                    <section class="dashboard-grid two-column">
+                        <article class="data-card wide-card">
+                            <CardHeading Eyebrow="VISIT RHYTHM" Title="访问节奏" Note="所选时间范围内的页面访问次数" />
+                            <DashboardChart Type="DashboardChartType.Line" Labels="@DailyLabels" Series="@VisitSeries" ValueSuffix=" 次" AriaLabel="每日访问趋势" />
+                        </article>
+                        <article class="data-card">
+                            <CardHeading Eyebrow="PLATFORM MIX" Title="平台分布" Note="不同客户端贡献占比" />
+                            <DashboardChart Type="DashboardChartType.Donut" Series="@PlatformSeries" ValueSuffix=" 次" AriaLabel="平台访问分布" Compact />
+                        </article>
+                        <article class="data-card span-two">
+                            <CardHeading Eyebrow="PAGE GRAVITY" Title="页面热度" Note="按访问量从高到低排列" />
+                            <DashboardChart Type="DashboardChartType.Bar" Labels="@PageLabels" Series="@PageSeries" ValueSuffix=" 次" AriaLabel="页面访问排行" />
+                        </article>
+                    </section>
+                }
+                else if (ActiveTab == DashboardTab.Content)
+                {
+                    <section class="metric-strip">
+                        <MetricBlock Label="模板总量" Value="@Data.Summary.TotalTemplates.ToString("N0")" Note="@($"本期新增 {Data.Summary.NewTemplates:N0}")" />
+                        <MetricBlock Label="累计下载" Value="@Data.Summary.TotalDownloads.ToString("N0")" Note="历史累计快照" />
+                        <MetricBlock Label="累计收藏" Value="@Data.Summary.TotalLikes.ToString("N0")" Note="历史累计快照" />
+                        <MetricBlock Label="有效订阅" Value="@Data.Summary.ActiveSubscriptions.ToString("N0")" Note="@($"本期新增 {Data.Summary.NewSubscriptions:N0}")" />
+                    </section>
+                    <section class="dashboard-grid two-column">
+                        <article class="data-card">
+                            <CardHeading Eyebrow="SHELF STATUS" Title="模板状态" Note="当前内容库存" />
+                            <DashboardChart Type="DashboardChartType.Donut" Series="@TemplateStateSeries" AriaLabel="模板状态分布" Compact />
+                        </article>
+                        <article class="data-card">
+                            <CardHeading Eyebrow="CANVAS FORMAT" Title="模板类型" Note="普通模板与拼图模板" />
+                            <DashboardChart Type="DashboardChartType.Donut" Series="@TemplateTypeSeries" AriaLabel="模板类型分布" Compact />
+                        </article>
+                        <article class="data-card span-two table-card">
+                            <CardHeading Eyebrow="TOP CONTENT" Title="热门模板" Note="下载优先，收藏次优先" />
+                            @if (Data.TopTemplates.Count == 0)
+                            {
+                                <div class="inline-empty">暂无模板数据</div>
+                            }
+                            else
+                            {
+                                <div class="dashboard-table-wrap">
+                                    <table class="dashboard-table">
+                                        <thead><tr><th>#</th><th>模板</th><th>作者</th><th>类型</th><th>状态</th><th class="numeric">下载</th><th class="numeric">收藏</th></tr></thead>
+                                        <tbody>
+                                            @for (var index = 0; index < Data.TopTemplates.Count; index++)
+                                            {
+                                                var template = Data.TopTemplates[index];
+                                                <tr>
+                                                    <td class="rank">@((index + 1).ToString("00"))</td>
+                                                    <td><strong>@template.Name</strong><small>@template.CreatedAt.ToString("yyyy-MM-dd")</small></td>
+                                                    <td>@template.Author</td>
+                                                    <td>@template.CanvasType</td>
+                                                    <td><span class="state-dot @(template.State == "已上架" ? "online" : null)"></span>@template.State</td>
+                                                    <td class="numeric">@template.Downloads.ToString("N0")</td>
+                                                    <td class="numeric">@template.Likes.ToString("N0")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </article>
+                    </section>
+                }
+                else
+                {
+                    <section class="commerce-hero">
+                        <div><span>实收金额</span><strong>¥@Data.Summary.PaidRevenue.ToString("N2")</strong><small>已排除 0.01 元测试订单</small></div>
+                        <div><span>实付订单</span><strong>@Data.Summary.PaidOrders.ToString("N0")</strong><small>仅统计 PAID 状态</small></div>
+                        <div><span>当前有效会员</span><strong>@Data.Summary.ActiveVipUsers.ToString("N0")</strong><small>以会员到期时间判断</small></div>
+                    </section>
+                    <section class="dashboard-grid two-column">
+                        <article class="data-card wide-card">
+                            <CardHeading Eyebrow="REVENUE FLOW" Title="每日实收" Note="已支付会员订单金额" />
+                            <DashboardChart Type="DashboardChartType.Bar" Labels="@DailyLabels" Series="@RevenueSeries" Currency AriaLabel="每日实收收入" />
+                        </article>
+                        <article class="data-card">
+                            <CardHeading Eyebrow="ORDER PULSE" Title="实付订单趋势" Note="按支付日期统计" />
+                            <DashboardChart Type="DashboardChartType.Line" Labels="@DailyLabels" Series="@PaidOrderSeries" ValueSuffix=" 单" AriaLabel="每日实付订单趋势" />
+                        </article>
+                        <article class="data-card">
+                            <CardHeading Eyebrow="ORDER STATE" Title="订单状态" Note="所选范围内，已排除测试订单" />
+                            <DashboardChart Type="DashboardChartType.Donut" Series="@OrderStatusSeries" ValueSuffix=" 单" AriaLabel="订单状态分布" Compact />
+                        </article>
+                        <article class="data-card plan-card">
+                            <CardHeading Eyebrow="MEMBERSHIP MIX" Title="会员套餐" Note="仅实付订单" />
+                            @if (Data.OrderPlans.Count == 0)
+                            {
+                                <div class="inline-empty">当前范围暂无实付套餐</div>
+                            }
+                            else
+                            {
+                                <div class="plan-list">
+                                    @foreach (var plan in Data.OrderPlans)
+                                    {
+                                        <div class="plan-row"><span>@plan.Name</span><small>@plan.Count 单</small><strong>¥@plan.Revenue.ToString("N2")</strong></div>
+                                    }
+                                </div>
+                            }
+                        </article>
+                    </section>
+                }
+            }
+        </main>
+    </section>
+}
+
+@code {
+    [Parameter] public bool ShowClose { get; set; }
+    [Parameter] public EventCallback Close { get; set; }
+
+    private static readonly (DashboardRangePreset Value, string Label)[] Presets =
+    [
+        (DashboardRangePreset.SevenDays, "近 7 天"),
+        (DashboardRangePreset.ThirtyDays, "近 30 天"),
+        (DashboardRangePreset.NinetyDays, "近 90 天"),
+        (DashboardRangePreset.ThisYear, "本年"),
+        (DashboardRangePreset.Custom, "自定义"),
+    ];
+
+    private static readonly (DashboardTab Value, string Label, string Icon)[] Tabs =
+    [
+        (DashboardTab.Overview, "概览", "mdi-view-dashboard-outline"),
+        (DashboardTab.Traffic, "流量", "mdi-chart-timeline-variant"),
+        (DashboardTab.Content, "内容", "mdi-image-multiple-outline"),
+        (DashboardTab.Commerce, "商业", "mdi-cash-multiple"),
+    ];
+
+    private static readonly string[] Palette = ["#2864ff", "#00a892", "#f18c3c", "#cb5d78", "#7566d9", "#4c8d9b", "#ad7b45"];
+    private DashboardOverview? Data;
+    private DashboardRangePreset SelectedPreset = DashboardRangePreset.ThirtyDays;
+    private DashboardTab ActiveTab = DashboardTab.Overview;
+    private DateTime StartDate;
+    private DateTime EndDate;
+    private bool Loading;
+    private string? ErrorMessage;
+    private string? FilterError;
+    private int LoadVersion;
+
+    private bool IsAuthorized => AdminAccessPolicy.IsAdmin(Global.CurrentUser);
+    private static DateTime Today => DateTime.UtcNow.AddHours(8).Date;
+    private string TodayText => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private string StartDateText => StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private string EndDateText => EndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private int RangeDays => (EndDate - StartDate).Days + 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        EndDate = Today;
+        StartDate = EndDate.AddDays(-29);
+        if (IsAuthorized)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private Task Reload() => LoadAsync();
+
+    private async Task SelectPreset(DashboardRangePreset preset)
+    {
+        SelectedPreset = preset;
+        if (preset == DashboardRangePreset.Custom)
+        {
+            return;
+        }
+
+        EndDate = Today;
+        StartDate = preset switch
+        {
+            DashboardRangePreset.SevenDays => EndDate.AddDays(-6),
+            DashboardRangePreset.NinetyDays => EndDate.AddDays(-89),
+            DashboardRangePreset.ThisYear => new DateTime(EndDate.Year, 1, 1),
+            _ => EndDate.AddDays(-29),
+        };
+        FilterError = null;
+        await LoadAsync();
+    }
+
+    private async Task ChangeCustomDate(bool isStart, string? value)
+    {
+        SelectedPreset = DashboardRangePreset.Custom;
+        if (!DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+        {
+            FilterError = "请选择有效日期";
+            return;
+        }
+
+        if (isStart)
+        {
+            StartDate = parsed.Date;
+        }
+        else
+        {
+            EndDate = parsed.Date;
+        }
+
+        FilterError = ValidateRange();
+        if (FilterError is null)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private string? ValidateRange()
+    {
+        if (StartDate > EndDate)
+        {
+            return "起始日期不能晚于结束日期";
+        }
+        if (EndDate > Today)
+        {
+            return "结束日期不能晚于今天";
+        }
+        if (RangeDays > 366)
+        {
+            return "查询范围不能超过 366 天";
+        }
+        return null;
+    }
+
+    private async Task LoadAsync()
+    {
+        if (!IsAuthorized)
+        {
+            return;
+        }
+
+        FilterError = ValidateRange();
+        if (FilterError is not null)
+        {
+            return;
+        }
+
+        var version = ++LoadVersion;
+        Loading = true;
+        ErrorMessage = null;
+        try
+        {
+            var result = await Api.GetDashboardOverviewAsync(StartDate, EndDate);
+            if (version != LoadVersion)
+            {
+                return;
+            }
+
+            if (result.success && result.data is not null)
+            {
+                Data = result.data;
+            }
+            else
+            {
+                ErrorMessage = result.message?.content ?? "服务端没有返回可用数据";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (version == LoadVersion)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+        finally
+        {
+            if (version == LoadVersion)
+            {
+                Loading = false;
+            }
+        }
+    }
+
+    private IReadOnlyList<KpiItem> OverviewKpis => Data is null ? [] :
+    [
+        new("用户总量", Data.Summary.TotalUsers.ToString("N0"), $"本期新增 {Data.Summary.NewUsers:N0}", "mdi-account-group-outline", "#2864ff"),
+        new("有效会员", Data.Summary.ActiveVipUsers.ToString("N0"), "当前会员库存", "mdi-crown-outline", "#d38a27"),
+        new("访问次数", Data.Summary.Visits.ToString("N0"), $"{RangeDays} 天汇总", "mdi-pulse", "#00a892"),
+        new("实收金额", $"¥{Data.Summary.PaidRevenue:N2}", $"{Data.Summary.PaidOrders:N0} 笔实付", "mdi-cash-check", "#cb5d78"),
+        new("模板总量", Data.Summary.TotalTemplates.ToString("N0"), $"本期新增 {Data.Summary.NewTemplates:N0}", "mdi-image-multiple-outline", "#7566d9"),
+        new("累计下载", Data.Summary.TotalDownloads.ToString("N0"), "历史累计快照", "mdi-download-outline", "#4c8d9b"),
+        new("累计收藏", Data.Summary.TotalLikes.ToString("N0"), "历史累计快照", "mdi-heart-outline", "#e06b62"),
+        new("有效订阅", Data.Summary.ActiveSubscriptions.ToString("N0"), $"本期新增 {Data.Summary.NewSubscriptions:N0}", "mdi-account-arrow-right-outline", "#ad7b45"),
+    ];
+
+    private IReadOnlyList<string> DailyLabels => Data?.DailySeries.Select(x => x.Date.ToString("MM-dd")).ToArray() ?? [];
+    private IReadOnlyList<DashboardChartSeries> VisitSeries => Data is null ? [] : [Series("访问", "#2864ff", Data.DailySeries.Select(x => (double)x.Visits))];
+    private IReadOnlyList<DashboardChartSeries> GrowthSeries => Data is null ? [] :
+    [
+        Series("新用户", "#00a892", Data.DailySeries.Select(x => (double)x.SignUps)),
+        Series("新模板", "#f18c3c", Data.DailySeries.Select(x => (double)x.NewTemplates)),
+    ];
+    private IReadOnlyList<DashboardChartSeries> PlatformSeries => CountSeries(Data?.VisitPlatforms);
+    private IReadOnlyList<string> PageLabels => Data?.VisitPages.Select(x => x.Name).ToArray() ?? [];
+    private IReadOnlyList<DashboardChartSeries> PageSeries => Data is null ? [] : [Series("访问量", "#00a892", Data.VisitPages.Select(x => (double)x.Count))];
+    private IReadOnlyList<DashboardChartSeries> TemplateStateSeries => CountSeries(Data?.TemplateStates);
+    private IReadOnlyList<DashboardChartSeries> TemplateTypeSeries => CountSeries(Data?.TemplateCanvasTypes);
+    private IReadOnlyList<DashboardChartSeries> RevenueSeries => Data is null ? [] : [Series("实收", "#cb5d78", Data.DailySeries.Select(x => (double)x.PaidRevenue))];
+    private IReadOnlyList<DashboardChartSeries> PaidOrderSeries => Data is null ? [] : [Series("实付订单", "#d38a27", Data.DailySeries.Select(x => (double)x.PaidOrders))];
+    private IReadOnlyList<DashboardChartSeries> OrderStatusSeries => CountSeries(Data?.OrderStatuses);
+
+    private static DashboardChartSeries Series(string name, string color, IEnumerable<double> values) => new() { Name = name, Color = color, Values = values.ToArray() };
+
+    private static IReadOnlyList<DashboardChartSeries> CountSeries(IReadOnlyList<DashboardCountItem>? items)
+    {
+        return items?.Select((item, index) => Series(item.Name, Palette[index % Palette.Length], [item.Count * 1d])).ToArray() ?? [];
+    }
+
+    private sealed record KpiItem(string Label, string Value, string Note, string Icon, string Color);
+    private enum DashboardTab { Overview, Traffic, Content, Commerce }
+    private enum DashboardRangePreset { SevenDays, ThirtyDays, NinetyDays, ThisYear, Custom }
+}

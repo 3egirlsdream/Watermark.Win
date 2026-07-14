@@ -1,0 +1,43 @@
+.mac-workspace-viewport {
+    background: #f5f6f8;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    width: 100dvw;
+}
+
+.mac-workspace-viewport ::deep .mac-workspace-shell {
+    background: #f5f6f8;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.mac-workspace-viewport ::deep .mac-workspace-shell .m-application--wrap,
+.mac-workspace-viewport ::deep .mac-workspace-shell .m-application__wrap {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.mac-workspace-card {
+    background: #f5f6f8;
+    display: grid;
+    grid-template-rows: 44px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.mac-workspace-toolbar {
+    min-height: 0;
+    min-width: 0;
+}
+
+.mac-workspace-content {
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}

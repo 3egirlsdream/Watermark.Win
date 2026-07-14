@@ -21,7 +21,7 @@
             {
                 <MIcon Color="error">mdi-alert-circle-outline</MIcon>
                 <span>@loadError</span>
-                <button type="button" class="secondary-command" @onclick="async () => await OnClose.InvokeAsync()">返回</button>
+                <MButton Text Class="secondary-command" OnClick="async () => await OnClose.InvokeAsync()">返回</MButton>
             }
         </div>
     }
@@ -41,7 +41,9 @@
                             ZoomChanged="SetZoomAsync" />
 
         <div class="designer-workspace">
-            <MacLayerTree Editor="@editor" />
+            <aside class="designer-layer-region">
+                <MacLayerTree Editor="@editor" />
+            </aside>
             <div class="designer-canvas-region">
                 @if (!string.IsNullOrWhiteSpace(renderError))
                 {
@@ -63,25 +65,27 @@
                                  ZoomChanged="SetZoomAsync"
                                  SaveRequested="SaveAsync" />
             </div>
-            <MacSelectionInspector Editor="@editor" DesignFunc="@designFunc" />
+            <aside class="designer-inspector-region">
+                <MacSelectionInspector Editor="@editor" RenderResult="@renderResult" DesignFunc="@designFunc" />
+            </aside>
         </div>
     }
 
-    @if (showExitDialog && editor is not null)
+    @if (editor is not null)
     {
-        <div class="exit-dialog-scrim">
+        <MDialog Persistent @bind-Value="showExitDialog" ContentStyle="width:min(420px,calc(100vw - 48px));">
             <section class="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" aria-describedby="exit-dialog-description">
                 <div class="exit-dialog-copy">
                     <h2 id="exit-dialog-title">保存模板更改？</h2>
                     <p id="exit-dialog-description">退出前可保存当前修改，或放弃本次编辑。</p>
                 </div>
                 <div class="exit-dialog-actions">
-                    <button type="button" class="primary-command" disabled="@isSaving" @onclick="SaveAndExitAsync">保存并退出</button>
-                    <button type="button" class="danger-command" disabled="@isSaving" @onclick="DiscardAndExitAsync">放弃更改</button>
-                    <button type="button" class="secondary-command" disabled="@isSaving" @onclick="ContinueEditing">继续编辑</button>
+                    <MButton Color="primary" Small Elevation="0" Class="primary-command" Disabled="@isSaving" OnClick="SaveAndExitAsync">保存并退出</MButton>
+                    <MButton Text Small Class="danger-command" Disabled="@isSaving" OnClick="DiscardAndExitAsync">放弃更改</MButton>
+                    <MButton Text Small Class="secondary-command" Disabled="@isSaving" OnClick="ContinueEditing">继续编辑</MButton>
                 </div>
             </section>
-        </div>
+        </MDialog>
     }
 </div>
 
@@ -171,10 +175,11 @@
         if (currentEditor is null || disposed) return;
 
         var snapshotJson = Global.CanvasSerialize(currentEditor.Draft);
-        if (!force && string.Equals(snapshotJson, requestedSnapshot, StringComparison.Ordinal))
+        var previewFingerprint = BuildPreviewFingerprint(currentEditor.Draft, snapshotJson);
+        if (!force && string.Equals(previewFingerprint, requestedSnapshot, StringComparison.Ordinal))
             return;
 
-        requestedSnapshot = snapshotJson;
+        requestedSnapshot = previewFingerprint;
         var version = ++renderVersion;
         isRendering = true;
         renderError = string.Empty;
@@ -203,7 +208,10 @@
         catch (Exception ex)
         {
             if (IsCurrentRender(currentEditor, version))
+            {
+                requestedSnapshot = string.Empty;
                 renderError = ex.Message;
+            }
         }
         finally
         {
@@ -217,6 +225,12 @@
 
     private bool IsCurrentRender(MacTemplateEditorState source, long version) =>
         !disposed && ReferenceEquals(editor, source) && renderVersion == version;
+
+    private static string BuildPreviewFingerprint(WMCanvas canvas, string serializedCanvas) =>
+        string.Concat(
+            serializedCanvas,
+            "\npath:", canvas.Path,
+            "\nexif:", System.Text.Json.JsonSerializer.Serialize(canvas.Exif));
 
     private Task SaveAsync() => SaveCoreAsync();
 

@@ -1,0 +1,13 @@
+<MImage Src="@Src" Class="@Class" Style="@ComputedStyle" Contain @attributes="AdditionalAttributes" />
+
+@code {
+    [Parameter] public string? Src { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public string? ObjectFit { get; set; }
+    [Parameter] public int Elevation { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string ComputedStyle => $"{(Width is null ? "" : $"width:{Width}px;")}{(Height is null ? "" : $"height:{Height}px;")}{Style}";
+}

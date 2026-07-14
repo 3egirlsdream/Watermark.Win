@@ -1,0 +1,75 @@
+.mac-inspector-panel {
+    align-self: stretch;
+    background: #fff;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    contain: inline-size layout paint;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    max-width: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.mac-inspector-scroll-body {
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+::deep .inspector-shell {
+    height: 100%;
+    max-height: 100%;
+    width: 100%;
+}
+
+.mac-inspector-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.mac-inspector-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.16);
+    border-radius: 999px;
+}
+
+.inspector-header {
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    height: 56px;
+    padding: 0 14px;
+}
+
+.inspector-kicker {
+    color: #8b9098;
+    font-size: 11px;
+    letter-spacing: 0;
+    line-height: 16px;
+}
+
+.inspector-title {
+    color: #25272d;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inspector-empty {
+    color: #777d86;
+    padding: 18px 16px;
+}
+
+.inspector-empty p {
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 10px 0 0;
+}

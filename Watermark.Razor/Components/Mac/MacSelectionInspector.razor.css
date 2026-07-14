@@ -179,6 +179,22 @@
     color: #8b95a3;
 }
 
+::deep .inspector-field .m-input {
+    font-size: 12px;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+::deep .inspector-field .m-input__slot {
+    min-height: 30px;
+}
+
+::deep .inspector-field .m-select__selection {
+    color: #2e3a4a;
+    font-size: 12px;
+}
+
 .inspector-two-column {
     display: grid;
     gap: 8px;
@@ -290,8 +306,10 @@
     grid-template-columns: minmax(0, 1fr) 62px;
 }
 
-::deep .inspector-slider-controls input[type="range"] {
+::deep .inspector-native-slider {
     accent-color: #276ec7;
+    height: 18px;
+    margin: 0;
     min-width: 0;
     width: 100%;
 }
@@ -299,7 +317,8 @@
 ::deep .inspector-number-input {
     background: #ffffff;
     border: 1px solid #cfd6df;
-    border-radius: 5px;
+    border-radius: 4px;
+    box-sizing: border-box;
     color: #2e3a4a;
     font-size: 11px;
     height: 28px;
@@ -310,19 +329,43 @@
     width: 100%;
 }
 
+::deep .inspector-number-input:focus {
+    border-color: #276ec7;
+    box-shadow: 0 0 0 2px rgba(39, 110, 199, 0.12);
+    outline: none;
+}
+
 ::deep .mac-inspector-slider.disabled {
     opacity: 0.58;
 }
 
-.inspector-confirm-scrim {
-    align-items: center;
-    background: rgba(31, 39, 50, 0.26);
-    display: flex;
-    inset: 0;
-    justify-content: center;
-    padding: 14px;
-    position: absolute;
-    z-index: 30;
+@media (pointer: coarse), (max-width: 720px) {
+    .selection-name-input,
+    .inspector-field input,
+    .inspector-field select,
+    .selection-inspector-scroll select,
+    .selection-inspector-scroll input[type="number"],
+    ::deep .inspector-number-input {
+        font-size: 13px;
+        height: 44px;
+    }
+
+    .selection-header-actions button,
+    .inspector-text-command,
+    ::deep .inspector-text-command {
+        height: 44px;
+        min-width: 44px;
+    }
+
+    ::deep .inspector-native-slider {
+        height: 32px;
+    }
+
+    .inspector-group,
+    ::deep .inspector-group {
+        gap: 12px;
+        padding: 14px;
+    }
 }
 
 .inspector-confirm {

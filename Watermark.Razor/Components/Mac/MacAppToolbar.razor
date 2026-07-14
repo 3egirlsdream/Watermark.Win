@@ -1,0 +1,233 @@
+@using Masa.Blazor
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
+@using Watermark.Razor.Components.Mac.Editing
+
+<div class="mac-app-toolbar-host">
+<MToolbar Dense Elevation="0" Height="44" Class="mac-app-toolbar">
+    <div class="toolbar-left">
+        <div class="toolbar-brand">
+            <div class="toolbar-icon" />
+        </div>
+
+        <div class="toolbar-actions">
+            <MButton Color="@ICONS.Colors.Black.Light1" Plain Small Class="toolbar-button" OnClick="ImportLocalImages">
+                <MIcon Left Small>@ICONS.AddImage</MIcon>导入图片
+            </MButton>
+        </div>
+    </div>
+
+    <div class="toolbar-center">
+        <span>@ModeTitle</span>
+        <small>@ModeSubtitle</small>
+    </div>
+
+    <div class="toolbar-fill"></div>
+
+    <div class="toolbar-actions right">
+        <MButton Color="@ICONS.Colors.Black.Light1" Plain Small Class="toolbar-button" OnClick="Undo" Disabled="@(!CanUndo)" title="撤销上一项操作" aria-label="撤销上一项操作">
+            <MIcon Small>mdi-undo</MIcon>
+        </MButton>
+        <MButton Color="@ICONS.Colors.Black.Light1" Plain Small Class="toolbar-button" OnClick="Redo" Disabled="@(!CanRedo)" title="重做上一项操作" aria-label="重做上一项操作">
+            <MIcon Small>mdi-redo</MIcon>
+        </MButton>
+        <MMenu OffsetY>
+            <ActivatorContent>
+                <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small Class="toolbar-button" Disabled="@(History.Count == 0)">
+                    <MIcon Left Small>mdi-history</MIcon>历史
+                </MButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MList Dense Style="min-width:220px">
+                    @foreach (var entry in History.Reverse())
+                    {
+                        <MListItem Title="@OperationLabel(entry.Operation.Kind)"
+                                   Subtitle="@(entry.IsApplied ? entry.Operation.CreatedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "已撤销")"
+                                   PrependIcon="@(entry.IsApplied ? "mdi-check-circle-outline" : "mdi-history")"
+                                   OnClick="() => EditHistory.InvokeAsync(entry)" />
+                    }
+                </MList>
+            </ChildContent>
+        </MMenu>
+        <MButton Color="primary" Small Class="toolbar-button primary-toolbar-button" OnClick="ToggleExport">
+            <MIcon Left Small>@ICONS.Export</MIcon>导出
+        </MButton>
+
+        <MMenu OffsetY>
+            <ActivatorContent>
+                <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small Class="toolbar-button">
+                    <MIcon Left Small>@ICONS.Setting</MIcon>更多
+                </MButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MList Dense>
+                    <MListItem OnClick="CreateTemplate" Title="新建模板" PrependIcon="@ICONS.Pencil" />
+                    <MListItem OnClick="OpenMyTemplate" Title="我的模板" PrependIcon="@ICONS.Star" />
+                    <MListItem OnClick="OpenMarket" Title="模板市场" PrependIcon="@ICONS.Market" />
+                    <MListItem OnClick="OpenLogoStore" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                    <MDivider />
+                    <MListItem OnClick="SignUp" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
+                    <MListItem OnClick="LogoutAccount" Title="注销账号" PrependIcon="@ICONS.Logout" />
+                    <MDivider />
+                    <MListItem OnClick="OpenSettings" Title="设置" PrependIcon="@ICONS.Setting" />
+                    @if (AdminAccessPolicy.IsAdmin(CurrentUser))
+                    {
+                        <MListItem OnClick="OpenDashboard" Title="运营看板" PrependIcon="mdi-view-dashboard-outline" />
+                    }
+                    <MListItem OnClick="@(() => OpenLink.InvokeAsync("http://www.thankful.top"))" Title="网页版" PrependIcon="@ICONS.Web" />
+                    <MListItem OnClick="@(() => OpenLink.InvokeAsync("https://github.com/3egirlsdream/Watermark.Win/issues"))" Title="提交反馈" PrependIcon="@ICONS.Feedback" />
+                    <MListItem OnClick="@(() => OpenCommonDialog.InvokeAsync("https://cdn.thankful.top/andorid.png"))" Title="安卓版" PrependIcon="@ICONS.Android" />
+                    <MDivider />
+                    <MListItem Title="交流群：836325187" PrependIcon="@ICONS.QQ" />
+                </MList>
+            </ChildContent>
+        </MMenu>
+    </div>
+
+    <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-2">
+        <ActivatorContent>
+            <div @attributes="@context.Attrs" class="account-trigger">
+                @if (CurrentUser != null && !string.IsNullOrEmpty(CurrentUser.DISPLAY_NAME))
+                {
+                    <MAvatar Color="primary" Size="26" Class="account-avatar">
+                        <span>@CurrentUser.DISPLAY_NAME.FirstOrDefault()</span>
+                    </MAvatar>
+                }
+                else
+                {
+                    <MButton Small Text Class="toolbar-button account-login-button">登录</MButton>
+                }
+            </div>
+        </ActivatorContent>
+        <ChildContent>
+            <MCard MinWidth="280">
+                @if (CurrentUser != null && !string.IsNullOrEmpty(CurrentUser.ID))
+                {
+                    <MList>
+                        <MListItem>
+                            <MListItemAvatar>
+                                @if (!string.IsNullOrEmpty(CurrentUser.IMG))
+                                {
+                                    <MImage Width="48" Height="48" Src="@CurrentUser.IMG" Contain />
+                                }
+                                else
+                                {
+                                    <MAvatar Color="primary" Size="48">
+                                        <span>@CurrentUser.DISPLAY_NAME.FirstOrDefault()</span>
+                                    </MAvatar>
+                                }
+                            </MListItemAvatar>
+                            <MListItemContent>
+                                <MListItemTitle>@CurrentUser.DISPLAY_NAME</MListItemTitle>
+                                <MListItemSubtitle>@CurrentUser.USER_NAME</MListItemSubtitle>
+                            </MListItemContent>
+                            <MListItemAction>
+                                @if (CurrentUser.IsVIP)
+                                {
+                                    <Watermark.Razor.Parts.IconVip />
+                                }
+                                else
+                                {
+                                    <Watermark.Razor.Parts.IconVipExpired />
+                                }
+                            </MListItemAction>
+                        </MListItem>
+                    </MList>
+                    <MDivider />
+                    <div class="account-meta">
+                        <div class="coin-row">
+                            <Label Name="硬币：" Small="false" />
+                            <Watermark.Razor.Parts.IconCoin />
+                            <Label Name="@CurrentUser.COINS.ToString()" Small="false" />
+                        </div>
+                        <div class="vip-row">
+                            <Label Name="@(CurrentUser.IsVIP ? "会员到期时间：" + CurrentUser.EXPIRE_DATE : "会员已过期")" />
+                            <MButton Small Color="primary" Class="account-vip-button" OnClick="OpenVip">
+                                @(CurrentUser.IsVIP ? "续费会员" : "开通会员")
+                            </MButton>
+                        </div>
+                    </div>
+                    <MCardActions>
+                        <MSpacer />
+                        <MButton Plain OnClick="Logout">退出登录</MButton>
+                    </MCardActions>
+                }
+                else
+                {
+                    <MCardActions>
+                        <MSpacer />
+                        <MButton Color="primary" OnClick="OpenVip">开通会员</MButton>
+                        <MButton Plain Color="Color.Primary" OnClick="Login">登录</MButton>
+                        <MButton Plain OnClick="SignUp">注册</MButton>
+                    </MCardActions>
+                }
+            </MCard>
+        </ChildContent>
+    </MMenu>
+</MToolbar>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "轻影";
+
+    [Parameter]
+    public WMLoginChildModel? CurrentUser { get; set; }
+
+    [Parameter] public MacWorkspaceMode Mode { get; set; }
+    [Parameter] public bool CanApplyCurrent { get; set; }
+    [Parameter] public bool CanSavePreset { get; set; }
+    [Parameter] public bool CanUndo { get; set; }
+    [Parameter] public bool CanRedo { get; set; }
+    [Parameter] public bool HasPendingOperation { get; set; }
+    [Parameter] public bool ApplyToSelected { get; set; }
+    [Parameter] public IReadOnlyList<MacSessionHistoryEntry> History { get; set; } = [];
+    [Parameter] public EventCallback ImportLocalImages { get; set; }
+    [Parameter] public EventCallback CreateTemplate { get; set; }
+    [Parameter] public EventCallback OpenMyTemplate { get; set; }
+    [Parameter] public EventCallback OpenMarket { get; set; }
+    [Parameter] public EventCallback ToggleExport { get; set; }
+    [Parameter] public EventCallback ApplyCurrent { get; set; }
+    [Parameter] public EventCallback SavePreset { get; set; }
+    [Parameter] public EventCallback Undo { get; set; }
+    [Parameter] public EventCallback Redo { get; set; }
+    [Parameter] public EventCallback CancelPending { get; set; }
+    [Parameter] public EventCallback<bool> ApplyToSelectedChanged { get; set; }
+    [Parameter] public EventCallback<MacSessionHistoryEntry> EditHistory { get; set; }
+    [Parameter] public EventCallback OpenLogoStore { get; set; }
+    [Parameter] public EventCallback OpenSettings { get; set; }
+    [Parameter] public EventCallback OpenDashboard { get; set; }
+    [Parameter] public EventCallback Login { get; set; }
+    [Parameter] public EventCallback SignUp { get; set; }
+    [Parameter] public EventCallback Logout { get; set; }
+    [Parameter] public EventCallback LogoutAccount { get; set; }
+    [Parameter] public EventCallback OpenVip { get; set; }
+    [Parameter] public EventCallback<string> OpenLink { get; set; }
+    [Parameter] public EventCallback<string> OpenCommonDialog { get; set; }
+
+    private string ModeTitle => Mode switch
+    {
+        MacWorkspaceMode.ColorMatch => "调色工作台",
+        MacWorkspaceMode.StarTrail => "多帧合成",
+        _ => "模板预设"
+    };
+
+    private string ModeSubtitle => Mode switch
+    {
+        MacWorkspaceMode.ColorMatch => "参考风格与精细调色",
+        MacWorkspaceMode.StarTrail => "星轨 · 降噪 · 静态星空",
+        _ => "水印与拼图模板"
+    };
+
+    private static string OperationLabel(WMImageOperationKind kind) => kind switch
+    {
+        WMImageOperationKind.StarTrail => "星轨合成",
+        WMImageOperationKind.MultiFrameStack => "多帧合成",
+        WMImageOperationKind.Template => "模板",
+        WMImageOperationKind.ColorGrade => "调色",
+        _ => "原图"
+    };
+
+    private Task OnApplyScopeChanged(ChangeEventArgs args) =>
+        ApplyToSelectedChanged.InvokeAsync(args.Value is bool selected && selected);
+}

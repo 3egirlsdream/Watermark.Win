@@ -1,0 +1,11 @@
+@namespace Watermark.Razor.Components.Dashboard
+<header class="card-heading">
+    <div><span>@Eyebrow</span><h2>@Title</h2></div>
+    <small>@Note</small>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string Eyebrow { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Note { get; set; } = string.Empty;
+}

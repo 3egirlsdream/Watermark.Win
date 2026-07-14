@@ -135,7 +135,11 @@ public static class MacTemplateValidator
     private static bool TryResolveTemplateResource(string templateDirectory, string resourcePath, out string resolved)
     {
         resolved = string.Empty;
-        if (Path.IsPathRooted(resourcePath)) return false;
+        if (Path.IsPathRooted(resourcePath))
+        {
+            resolved = Path.GetFullPath(resourcePath);
+            return true;
+        }
 
         var root = Path.GetFullPath(templateDirectory);
         var candidate = Path.GetFullPath(Path.Combine(root, resourcePath));

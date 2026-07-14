@@ -1,0 +1,7 @@
+@typeparam TValue
+<MButton Small Text="@(!Parent.IsSelected(Value))" Color="@(Parent.IsSelected(Value) ? "primary" : null)" OnClick="@(() => Parent.SelectAsync(Value))">@ChildContent</MButton>
+@code {
+    [CascadingParameter] public WmToggleGroup<TValue> Parent { get; set; } = default!;
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

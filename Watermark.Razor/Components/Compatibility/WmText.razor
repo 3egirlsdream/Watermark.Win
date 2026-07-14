@@ -1,0 +1,22 @@
+<div class="@($"wm-text {TextClass} {Class}")" style="@Style" @attributes="AdditionalAttributes">@ChildContent</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Typo { get; set; }
+    [Parameter] public string? Align { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string TextClass => Typo?.Split('.').LastOrDefault() switch
+    {
+        "h1" => "text-h1",
+        "h5" => "text-h5",
+        "h6" => "text-h6",
+        "subtitle1" => "text-subtitle-1",
+        "subtitle2" => "text-subtitle-2",
+        "button" => "text-button",
+        _ => "text-body-2"
+    };
+}

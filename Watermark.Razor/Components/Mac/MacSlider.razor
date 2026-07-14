@@ -1,0 +1,109 @@
+@using System.Globalization
+
+<div class="mac-slider @(Disabled ? "disabled" : null) @(Compact ? "compact" : null)"
+     @onpointerdown="StartInteractionAsync"
+     @onpointerup="EndInteractionAsync"
+     @onpointercancel="EndInteractionAsync"
+     @onkeydown="StartInteractionAsync"
+     @onkeydown:stopPropagation
+     @onkeyup="EndInteractionAsync">
+    @if (ShowHeading)
+    {
+        <span class="mac-slider-heading">
+            <label class="mac-slider-label" for="@SliderId">@Label</label>
+            @if (Baseline.HasValue && Math.Abs(Baseline.Value) > 0.004)
+            {
+                <span class="mac-slider-baseline" title="自动映射基准">自动 @Baseline.Value.ToString(Format)@Suffix</span>
+            }
+            <output class="mac-slider-value">@Value.ToString(Format)@Suffix</output>
+        </span>
+    }
+    <input id="@SliderId"
+           class="mac-slider-control"
+           type="range"
+           value="@ValueString"
+           min="@MinString"
+           max="@MaxString"
+           step="@StepString"
+           style="@SliderStyle"
+           disabled="@Disabled"
+           aria-label="@Label"
+           @oninput="OnValueChanged" />
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public double Value { get; set; }
+    [Parameter] public double? Baseline { get; set; }
+    [Parameter] public double Min { get; set; } = -100;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Step { get; set; } = 1;
+    [Parameter] public string Suffix { get; set; } = string.Empty;
+    [Parameter] public string Format { get; set; } = "0";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowHeading { get; set; } = true;
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    [Parameter] public EventCallback InteractionStarted { get; set; }
+    [Parameter] public EventCallback InteractionEnded { get; set; }
+
+    private string SliderId { get; } = $"mac-slider-{Guid.NewGuid():N}";
+    private bool interactionActive;
+    private double EffectiveStep => NormalizeStep(Step);
+    private string ValueString => ClampValue(Value).ToString("G17", CultureInfo.InvariantCulture);
+    private string MinString => Min.ToString("G17", CultureInfo.InvariantCulture);
+    private string MaxString => Max.ToString("G17", CultureInfo.InvariantCulture);
+    private string StepString => EffectiveStep.ToString("G17", CultureInfo.InvariantCulture);
+    private string SliderStyle => FormattableString.Invariant($"--mac-slider-progress:{ProgressPercent:0.####}%");
+
+    private double ProgressPercent
+    {
+        get
+        {
+            var range = Max - Min;
+            return double.IsFinite(range) && range > 0
+                ? Math.Clamp((ClampValue(Value) - Min) / range * 100d, 0d, 100d)
+                : 0d;
+        }
+    }
+
+    public static double NormalizeStep(double step)
+    {
+        if (!double.IsFinite(step) || step <= 0)
+        {
+            return 1;
+        }
+
+        // A float such as 0.05f becomes 0.050000000745... after conversion to
+        // double. Keep the native range step stable and reasonably bounded.
+        return Math.Max(0.00000001d, Math.Round(step, 8, MidpointRounding.AwayFromZero));
+    }
+
+    private double ClampValue(double value) =>
+        double.IsFinite(value) && double.IsFinite(Min) && double.IsFinite(Max) && Max >= Min
+            ? Math.Clamp(value, Min, Max)
+            : value;
+
+    private Task OnValueChanged(ChangeEventArgs args)
+    {
+        if (Disabled
+            || !double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+            return Task.CompletedTask;
+
+        return ValueChanged.InvokeAsync(ClampValue(value));
+    }
+
+    private async Task StartInteractionAsync()
+    {
+        if (Disabled || interactionActive) return;
+        interactionActive = true;
+        await InteractionStarted.InvokeAsync();
+    }
+
+    private async Task EndInteractionAsync()
+    {
+        if (!interactionActive) return;
+        interactionActive = false;
+        await InteractionEnded.InvokeAsync();
+    }
+}

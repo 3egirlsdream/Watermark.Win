@@ -13,7 +13,6 @@
 @layout MainLayout
 @inject IClientInstance ClientInstance
 @inherits PStackPageBase
-@using Color = MudBlazor.Color
 @inject LoadingService LoadingService
 <div style="height:100%;">
     <MTabs SliderColor="primary" @bind-Value="tab" Height="30" ShowArrows="false" Centered>
@@ -27,66 +26,66 @@
     <div style="@($"height: calc(100% - 30px);")">
         <SwiperTabItems Value="tab1Head.IndexOf(tab.ToString())" ValueChanged="@((e) => tab = tab1Head[e])">
             <SwiperTabItem>
-                <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
-                    <MudGrid Class="pt-2" Justify="Justify.FlexStart">
+                <WmPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
+                    <WmGrid Class="pt-2" Justify="Justify.FlexStart">
                         @if (loading_down)
                         {
-                            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
+                            <WmProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin-left:calc(50% - 20px);margin-top:calc(45vh - 20px)" />
                         }
                         else
                         {
                             @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Normal))
                             {
-                                <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                <WmItem xs="6" Style="padding:4px;">
+                                    <WmCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out var v) && v > t.WMCanvas.Version)
                                         {
-                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
+                                            <WmChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</WmChip>
                                         }
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
-                                    </MudCard>
-                                </MudItem>
+                                        <WmImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+                                    </WmCard>
+                                </WmItem>
                             }
-                            <MudItem xs="12" Style="padding:4px;">
-                                <MudText Typo="Typo.h5"><b>拼图</b></MudText>
-                            </MudItem>
-                            <MudItem xs="6" Style="padding:4px;">
+                            <WmItem xs="12" Style="padding:4px;">
+                                <WmText Typo="Typo.h5"><b>拼图</b></WmText>
+                            </WmItem>
+                            <WmItem xs="6" Style="padding:4px;">
                                 <MCard Style="padding:16px;background:#E5E5E5;height:200px;display:flex;align-items:center;justify-content:center" Flat OnClick="OpenSplit">
                                     <Split />
                                 </MCard>
-                            </MudItem>
+                            </WmItem>
                             @foreach (var t in GlobalCache.DownloadedTemplates.Where(x => x.CanvasType == CanvasType.Split))
                             {
-                                <MudItem xs="6" Style="padding:4px;">
-                                    <MudCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
+                                <WmItem xs="6" Style="padding:4px;">
+                                    <WmCard style="padding:16px;background:#E5E5E5;height:200px;position:relative;" class="flex-vertical-center" Elevation="0">
                                         @if (Versions.TryGetValue(t.WMCanvas.ID, out int v) && v > t.WMCanvas.Version)
                                         {
-                                            <MudChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</MudChip>
+                                            <WmChip Size="Size.Small" Color="Color.Error" Style="position:absolute;top:10px;right:10px" OnClick="()=>DownloadTemplate(t.WMCanvas.ID)">有更新</WmChip>
                                         }
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
-                                    </MudCard>
-                                </MudItem>
+                                        <WmImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('d',t, true)" />
+                                    </WmCard>
+                                </WmItem>
                             }
                         }
-                    </MudGrid>
-                </MudPaper>
+                    </WmGrid>
+                </WmPaper>
             </SwiperTabItem>
             <SwiperTabItem>
-                <MudPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
-                    <MudGrid Class="pt-2" Justify="Justify.FlexStart">
+                <WmPaper Elevation="0" Style="padding: 8px 18px;height: 100%;overflow: auto;scrollbar-width: none;">
+                    <WmGrid Class="pt-2" Justify="Justify.FlexStart">
                         @foreach (var t in GlobalCache.ILikeTemplates)
                         {
-                            <MudItem xs="6" Style="padding:4px;">
-                                <MudCard style="padding:16px;background:#E5E5E5;height:200px" class="flex-vertical-center" Elevation="0">
+                            <WmItem xs="6" Style="padding:4px;">
+                                <WmCard style="padding:16px;background:#E5E5E5;height:200px" class="flex-vertical-center" Elevation="0">
                                     @if (!string.IsNullOrEmpty(t.Src))
                                     {
-                                        <MudImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />
+                                        <WmImage Style="height:100%;width:100%;" Src="@t.Src" ObjectFit="ObjectFit.Contain" @onclick="()=>OpenFocus('r',t, true)" />
                                     }
-                                </MudCard>
-                            </MudItem>
+                                </WmCard>
+                            </WmItem>
                         }
-                    </MudGrid>
-                </MudPaper>
+                    </WmGrid>
+                </WmPaper>
             </SwiperTabItem>
         </SwiperTabItems>
     </div>
@@ -107,25 +106,25 @@
     </MDialog>
 
     <MOverlay Value="@failedBox.faildShow" DarkBackground="true" Absolute="true" ZIndex="99999">
-        <MudPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
-            <MudStack Style="text-align:center;">
-                <MudText Typo="Typo.subtitle1" Color="Color.Default"> 失败提示</MudText>
-            </MudStack>
+        <WmPaper Elevation="0" Class="pa-2" Width="80vw" Style="margin:0 10vw;">
+            <WmStack Style="text-align:center;">
+                <WmText Typo="Typo.subtitle1" Color="Color.Default"> 失败提示</WmText>
+            </WmStack>
             <br />
-            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+            <WmText Typo="Typo.subtitle2" Color="Color.Secondary">
                 @failedBox.failedMessage
-            </MudText>
+            </WmText>
             <br />
 
-            <MudText Typo="Typo.subtitle2" Color="Color.Default">
+            <WmText Typo="Typo.subtitle2" Color="Color.Default">
                 <strong>如何获取硬币</strong>
-            </MudText>
-            <MudText Typo="Typo.subtitle2" Color="Color.Default">
+            </WmText>
+            <WmText Typo="Typo.subtitle2" Color="Color.Default">
                 上传模板，用户下载<br />
                 开通会员
-            </MudText>
-            <MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>failedBox.faildShow = false" Size="Size.Small" Class="mt-2">确定</MudButton>
-        </MudPaper>
+            </WmText>
+            <WmButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="()=>failedBox.faildShow = false" Size="Size.Small" Class="mt-2">确定</WmButton>
+        </WmPaper>
     </MOverlay>
 </div>
 

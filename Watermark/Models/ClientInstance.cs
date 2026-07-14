@@ -2,7 +2,6 @@
 using Masa.Blazor.Presets;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using MudBlazor;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.Text;
@@ -200,8 +199,6 @@ namespace Watermark.Shared.Models
             if (Global.CurrentUser == null || string.IsNullOrEmpty(Global.CurrentUser.ID))
             {
                 parameter.FocusImageShow = false;
-                //DialogOptions topCenter = new DialogOptions() { NoHeader = true, FullScreen = true };
-                //var rst = DialogService.Show<Watermark.Razor.Components.LoginDialog>("", topCenter);
                 NavController.Push("/login");
                 // var dialogResult = await rst.Result;
                 // if (!dialogResult.Canceled && dialogResult.Data.Equals(true))

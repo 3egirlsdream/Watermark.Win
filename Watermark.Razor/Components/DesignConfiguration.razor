@@ -3,152 +3,304 @@
 @using Microsoft.JSInterop
 @using SkiaSharp
 @using System.ComponentModel
+@using Watermark.Shared.Enums
 @using Watermark.Shared.Models
-@using Shared.Enums
 @inject IJSRuntime JSRuntime
 @inject IPopupService PopupService
-<div style="@Style">
-    <MTabs @bind-Value="tab" Height="30" FixedTabs>
-        @foreach (var sub in tabs)
-        {
-            <MTab Value="sub" Style="min-width:0px;">
-                @sub
-            </MTab>
-        }
-    </MTabs>
-    <div style="overflow-y: auto; scrollbar-width: none; height:calc(100% - 30px);">
-        <MTabsItems Value="@tab">
-            <MTabItem Value="@("大纲")" Transition="" ReverseTransition="">
-                <EditComponentDialog mCanvas="canvas" PropertyChanged="PropertyChanged" />
-            </MTabItem>
-            <MTabItem Value="@("画布")" Class="pa-1" Transition="" ReverseTransition="">
-                <MCard Flat>
-                    <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
-                    <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
 
-                    <MRadioGroup @bind-Value="canvas.CanvasType" Column>
-                        <MRadio Label="单图" TValue="CanvasType" Value="@(CanvasType.Normal)" />
-                        <MRadio Label="拼图" TValue="CanvasType" Value="@(CanvasType.Split)" />
-                    </MRadioGroup>
+<div class="inspector-shell" style="@Style">
+    <div class="inspector-sticky">
+        <div class="inspector-header">
+            <div class="inspector-title-row">
+                <div>
+                    <div class="inspector-kicker">Inspector</div>
+                    <div class="inspector-title">@(string.IsNullOrWhiteSpace(canvas.Name) ? "未命名模板" : canvas.Name)</div>
+                    <div class="inspector-subtitle">@CanvasTypeText · @canvas.Children.Count 个容器 · @ControlCount 个组件</div>
+                </div>
+                <div class="inspector-status-pill">@CanvasTypeText</div>
+            </div>
 
-                    @if (canvas.CanvasType == CanvasType.Normal)
-                    {
-                        <Watermark.Razor.Parts.ExpandPanel Desc="基本图片" @bind-Expanded="canvas.ImageProperties.Show" Class="my-1">
-                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" Simple="true" Delete="@(() => ImagesBase64.Remove("default", out string v))" SelectDefaultImage="SelectDefaultImage"/>
-                        </Watermark.Razor.Parts.ExpandPanel>
-                        <Watermark.Razor.Parts.ExpandPanel Desc="边距" Expanded="true" Class="my-1" ShowSwitch="false">
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Top" Step="1" Name="上边距" />
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Bottom" Step="1" Name="下边距" />
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Left" Step="1" Name="左边距" />
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Right" Step="1" Name="右边距" />
-                        </Watermark.Razor.Parts.ExpandPanel>
-                        <Watermark.Razor.Parts.ExpandPanel Desc="边框等宽" Expanded="true" Class="my-1" ShowSwitch="false" FlexStart="true">
-                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Top" Dense HideDetails="true" Label="上"></MCheckbox>
-                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Bottom" Dense HideDetails="true" Label="下"></MCheckbox>
-                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Left" Dense HideDetails="true" Label="左"></MCheckbox>
-                            <MCheckbox @bind-Value="canvas.BorderSameWidth.Right" Dense HideDetails="true" Label="右"></MCheckbox>
-                        </Watermark.Razor.Parts.ExpandPanel>
+            <div class="inspector-metrics">
+                <div class="inspector-metric">
+                    <span>@canvas.Children.Count</span>
+                    <small>容器</small>
+                </div>
+                <div class="inspector-metric">
+                    <span>@ControlCount</span>
+                    <small>组件</small>
+                </div>
+                <div class="inspector-metric">
+                    <span>@ActiveEffectsCount</span>
+                    <small>效果</small>
+                </div>
+            </div>
+        </div>
 
-                        <Watermark.Razor.Parts.ExpandPanel Desc="阴影" @bind-Expanded="canvas.ImageProperties.EnableShadow" Class="my-1">
-                            <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@canvas.ImageProperties.ShadowColor" />
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.ShadowRange" Step="1" Name="深度" Unit="" />
-                        </Watermark.Razor.Parts.ExpandPanel>
-
-                        <Watermark.Razor.Parts.ExpandPanel Desc="圆角" @bind-Expanded="canvas.ImageProperties.EnableRadius" Class="my-1">
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.CornerRadius" Step="1" Name="度数" Unit="" />
-                        </Watermark.Razor.Parts.ExpandPanel>
-
-                        <Watermark.Razor.Parts.ExpandPanel Desc="背景高斯模糊" @bind-Expanded="canvas.ImageProperties.EnableGaussianBlur" Class="my-1">
-                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.ImageProperties.GaussianDeep" Step="1" Name="深度" Unit="" />
-                        </Watermark.Razor.Parts.ExpandPanel>
-
-
-
-
-                    }
-                    else
-                    {
-                        <MSelect Value="canvas.LengthWidthRatio" TValue="string" TItemValue="string" TItem="string" Dense Items="Radioes" ItemText="e=>e" ItemValue="e=>e" ValueChanged="ValueChanged2"/>
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomWidth" Step="1" Name="自定义宽度" Unit="px" />
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomHeight" Step="1" Name="自定义高度" Unit="px" />
-                    }
-                </MCard>
-            </MTabItem>
-            <MTabItem Value="@("画幅")" Transition="" ReverseTransition="">
-                <Watermark.Razor.Parts.ExpandPanel Desc="画幅" @bind-Expanded="canvas.FrameProperties.Enabled" Color="@ICONS.Colors.Gray.Light1" Class="ma-1 pa-1">
-                    <MSelect Items="Radioes"
-                    ItemText="e => e"
-                    ItemValue="u => u"
-                    TItem="string"
-                    TValue="string"
-                    TItemValue="string"
-                    @bind-Value="canvas.LengthWidthRatio"
-                    Dense
-                    HideDetails="true"
-                    PersistentHint
-                    Label="" Class="ma-1">
-                    </MSelect>
-                    <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.BorderPadding" Step="1" Name="内边距" Unit="%" />
-                    <Watermark.Razor.Parts.ExpandPanel Desc="阴影" @bind-Expanded="canvas.FrameProperties.EnableShadow" Class="my-1">
-                        <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@canvas.FrameProperties.ShadowColor" />
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.ShadowRange" Step="1" Name="深度" Unit="" />
-                    </Watermark.Razor.Parts.ExpandPanel>
-
-
-                    <Watermark.Razor.Parts.ExpandPanel Desc="圆角" @bind-Expanded="canvas.FrameProperties.EnableRadius" Class="my-1">
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.CornerRadius" Step="1" Name="度数" Unit="" />
-                    </Watermark.Razor.Parts.ExpandPanel>
-                    <Watermark.Razor.Parts.ExpandPanel Desc="背景高斯模糊" @bind-Expanded="canvas.FrameProperties.EnableGaussianBlur" Class="my-1">
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.GaussianDeep" Step="1" Name="深度" Unit="" />
-                    </Watermark.Razor.Parts.ExpandPanel>
-
-                    <Watermark.Razor.Parts.ExpandPanel Desc="原背景透明" @bind-Expanded="canvas.FrameProperties.BeforeBkTransparent" Class="my-1" />
-                </Watermark.Razor.Parts.ExpandPanel>
-            </MTabItem>
-            <MTabItem Value="@("图层")" Transition="" ReverseTransition="">
-                <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage"/>
-            </MTabItem>
-        </MTabsItems>
+        <div class="inspector-tabbar" role="tablist" aria-label="配置分类">
+            @foreach (var sub in tabs)
+            {
+                <button type="button"
+                        class="@TabClass(sub.Value)"
+                        role="tab"
+                        aria-selected="@(tab == sub.Value)"
+                        @onclick="() => tab = sub.Value">
+                    <MIcon Size="15">@sub.Icon</MIcon>
+                    <span>@sub.Label</span>
+                </button>
+            }
+        </div>
     </div>
 
+    <div class="inspector-content">
+        @if (tab == "结构")
+        {
+            <section class="inspector-section">
+                <div class="section-heading">
+                    <div>
+                        <h3>模板结构</h3>
+                        <p>管理容器、文字、Logo 和分割线的层级关系。</p>
+                    </div>
+                </div>
+                <div class="outline-panel">
+                    <EditComponentDialog mCanvas="canvas" PropertyChanged="PropertyChanged" />
+                </div>
+            </section>
+        }
 
+        @if (tab == "画布")
+        {
+            <section class="inspector-section">
+                <div class="section-heading">
+                    <div>
+                        <h3>模板基础</h3>
+                        <p>命名、背景和模板用途会影响导出与后续管理。</p>
+                    </div>
+                </div>
+                <div class="property-card">
+                    <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
+                    <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
+                    <div class="field-row">
+                        <span class="field-label">模板类型</span>
+                        <MRadioGroup @bind-Value="canvas.CanvasType" Row Class="mode-choice">
+                            <MRadio Label="单图" TValue="CanvasType" Value="@(CanvasType.Normal)" />
+                            <MRadio Label="拼图" TValue="CanvasType" Value="@(CanvasType.Split)" />
+                        </MRadioGroup>
+                    </div>
+                </div>
+            </section>
+
+            @if (canvas.CanvasType == CanvasType.Normal)
+            {
+                <section class="inspector-section">
+                    <div class="section-heading compact">
+                        <div>
+                            <h3>默认图片</h3>
+                            <p>设计预览和默认替换图。</p>
+                        </div>
+                        <MSwitch @bind-Value="canvas.ImageProperties.Show" Color="primary" Dense Inset HideDetails="true" />
+                    </div>
+                    @if (canvas.ImageProperties.Show)
+                    {
+                        <div class="property-card image-card">
+                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" Simple="true" Delete="@(() => ImagesBase64.Remove("default", out string v))" SelectDefaultImage="SelectDefaultImage" />
+                        </div>
+                    }
+                </section>
+            }
+            else
+            {
+                <section class="inspector-section">
+                    <div class="section-heading">
+                        <div>
+                            <h3>拼图尺寸</h3>
+                            <p>按比例生成画布，也可以微调自定义像素。</p>
+                        </div>
+                    </div>
+                    <div class="property-card">
+                        <MSelect Value="canvas.LengthWidthRatio" TValue="string" TItemValue="string" TItem="string" Dense Items="Radioes" ItemText="e=>e" ItemValue="e=>e" ValueChanged="ValueChanged2" Label="比例" HideDetails="true" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomWidth" Step="1" Name="自定义宽度" Unit="px" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomHeight" Step="1" Name="自定义高度" Unit="px" />
+                    </div>
+                </section>
+            }
+        }
+
+        @if (tab == "布局")
+        {
+            @if (canvas.CanvasType == CanvasType.Normal)
+            {
+                <section class="inspector-section">
+                    <div class="section-heading">
+                        <div>
+                            <h3>图片边距</h3>
+                            <p>控制主体图片与模板外框之间的留白。</p>
+                        </div>
+                    </div>
+                    <div class="property-card">
+                        <div class="quad-grid">
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Top" Step="1" Name="上" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Bottom" Step="1" Name="下" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Left" Step="1" Name="左" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.BorderThickness.Right" Step="1" Name="右" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="inspector-section">
+                    <div class="section-heading compact">
+                        <div>
+                            <h3>边框等宽</h3>
+                            <p>决定哪些方向跟随主体边距进行等宽渲染。</p>
+                        </div>
+                    </div>
+                    <div class="check-grid property-card">
+                        <MCheckbox @bind-Value="canvas.BorderSameWidth.Top" Dense HideDetails="true" Label="上" />
+                        <MCheckbox @bind-Value="canvas.BorderSameWidth.Bottom" Dense HideDetails="true" Label="下" />
+                        <MCheckbox @bind-Value="canvas.BorderSameWidth.Left" Dense HideDetails="true" Label="左" />
+                        <MCheckbox @bind-Value="canvas.BorderSameWidth.Right" Dense HideDetails="true" Label="右" />
+                    </div>
+                </section>
+            }
+
+            <section class="inspector-section">
+                <div class="section-heading compact">
+                    <div>
+                        <h3>画幅</h3>
+                        <p>为成片增加外层画幅、留白和成片比例。</p>
+                    </div>
+                    <MSwitch @bind-Value="canvas.FrameProperties.Enabled" Color="primary" Dense Inset HideDetails="true" />
+                </div>
+                @if (canvas.FrameProperties.Enabled)
+                {
+                    <div class="property-card">
+                        <MSelect Items="Radioes"
+                                 ItemText="e => e"
+                                 ItemValue="u => u"
+                                 TItem="string"
+                                 TValue="string"
+                                 TItemValue="string"
+                                 @bind-Value="canvas.LengthWidthRatio"
+                                 Dense
+                                 HideDetails="true"
+                                 Label="画幅比例">
+                        </MSelect>
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.BorderPadding" Step="1" Name="内边距" Unit="%" />
+                    </div>
+                }
+            </section>
+        }
+
+        @if (tab == "外观")
+        {
+            @if (canvas.CanvasType == CanvasType.Normal)
+            {
+                <section class="inspector-section">
+                    <div class="section-heading">
+                        <div>
+                            <h3>主体图片效果</h3>
+                            <p>控制默认图片区域的阴影、圆角和背景模糊。</p>
+                        </div>
+                    </div>
+                    <div class="effect-stack">
+                        @ImageEffects(canvas.ImageProperties, "图片")
+                    </div>
+                </section>
+            }
+
+            <section class="inspector-section">
+                <div class="section-heading">
+                    <div>
+                        <h3>画幅效果</h3>
+                        <p>对外层画幅应用阴影、圆角、模糊和透明策略。</p>
+                    </div>
+                </div>
+                <div class="effect-stack">
+                    @FrameEffects()
+                </div>
+            </section>
+        }
+
+        @if (tab == "图层")
+        {
+            <DesignConfigurationLayers canvas="@canvas" ImagesBase64="@ImagesBase64" RemoveImageEvt="RemoveImage" SelectImageEvt="SelectImage" />
+        }
+    </div>
 </div>
 
 <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
     @if (showLogoStore)
     {
-        <LogoDialogContent OnClick="(e) => SelectLogoCallback(e)"/>
+        <LogoDialogContent OnClick="(e) => SelectLogoCallback(e)" />
     }
 </MDialog>
 
 @code {
     [Parameter]
     public string Style { get; set; }
-    StringNumber tab = "画布";
-    List<string> tabs = ["大纲", "画布", "画幅", "图层"];
+
+    string tab = "画布";
+    List<InspectorTab> tabs = new()
+    {
+        new("结构", "结构", "mdi-file-tree-outline"),
+        new("画布", "画布", "mdi-image-outline"),
+        new("布局", "布局", "mdi-view-dashboard-outline"),
+        new("外观", "外观", "mdi-tune-variant"),
+        new("图层", "图层", "mdi-layers-outline"),
+    };
+
     [Parameter]
     public WMCanvas canvas { get; set; } = new();
+
     WMLogo Logo;
-    // [Parameter]
-    // public EventCallback<string> Changed { get; set; }
-
     public ConcurrentDictionary<string, string> ImagesBase64 { get; set; } = [];
-
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
     bool showLogoStore = false;
+
     [Parameter]
     public Func<Task<string>> SelectDefaultImageEvt { get; set; }
+
     [Parameter]
     public Func<WMContainer, Task> SelectContainer { get; set; }
+
     [Parameter]
     public PropertyChangedEventHandler PropertyChanged { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        canvas ??= new WMCanvas();
+        EnsureCanvasDefaults(canvas);
+    }
+
+    string CanvasTypeText => canvas.CanvasType == CanvasType.Split ? "拼图模板" : "单图模板";
+
+    string TabClass(string value) => tab == value ? "inspector-tab active" : "inspector-tab";
+
+    int ControlCount => canvas.Children.Sum(CountControls);
+
+    int ActiveEffectsCount
+    {
+        get
+        {
+            var count = 0;
+            if (canvas.ImageProperties.EnableShadow) count++;
+            if (canvas.ImageProperties.EnableRadius) count++;
+            if (canvas.ImageProperties.EnableGaussianBlur) count++;
+            if (canvas.FrameProperties.Enabled) count++;
+            if (canvas.FrameProperties.EnableShadow) count++;
+            if (canvas.FrameProperties.EnableRadius) count++;
+            if (canvas.FrameProperties.EnableGaussianBlur) count++;
+            if (canvas.FrameProperties.BeforeBkTransparent) count++;
+            return count;
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             if (canvas == null) return;
+            EnsureCanvasDefaults(canvas);
             ConcurrentDictionary<string, byte[]> dic = new();
-            if (canvas.ImageProperties == null) canvas.ImageProperties = new WMImage();
             var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
             Global.ImageFile2Base64(dic, p, "default");
             var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
@@ -164,7 +316,6 @@
                         {
                             if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
                         });
-
                     };
                 });
             });
@@ -179,6 +330,101 @@
         }
     }
 
+    RenderFragment ImageEffects(WMImage image, string title) => @<div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>@title 阴影</strong>
+                    <span>拉开图片与背景层次</span>
+                </div>
+                <MSwitch @bind-Value="image.EnableShadow" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (image.EnableShadow)
+            {
+                <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@image.ShadowColor" />
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@image.ShadowRange" Step="1" Name="深度" Unit="" />
+            }
+        </div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>@title 圆角</strong>
+                    <span>柔化图片边缘</span>
+                </div>
+                <MSwitch @bind-Value="image.EnableRadius" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (image.EnableRadius)
+            {
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@image.CornerRadius" Step="1" Name="半径" Unit="" />
+            }
+        </div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>背景模糊</strong>
+                    <span>生成更柔和的背景延展</span>
+                </div>
+                <MSwitch @bind-Value="image.EnableGaussianBlur" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (image.EnableGaussianBlur)
+            {
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@image.GaussianDeep" Step="1" Name="强度" Unit="" />
+            }
+        </div>
+    </div>;
+
+    RenderFragment FrameEffects() => @<div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>画幅阴影</strong>
+                    <span>突出成片边界</span>
+                </div>
+                <MSwitch @bind-Value="canvas.FrameProperties.EnableShadow" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (canvas.FrameProperties.EnableShadow)
+            {
+                <Watermark.Razor.Parts.ColorPicker Name="颜色" @bind-Color="@canvas.FrameProperties.ShadowColor" />
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.ShadowRange" Step="1" Name="深度" Unit="" />
+            }
+        </div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>画幅圆角</strong>
+                    <span>统一最终输出边缘</span>
+                </div>
+                <MSwitch @bind-Value="canvas.FrameProperties.EnableRadius" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (canvas.FrameProperties.EnableRadius)
+            {
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.CornerRadius" Step="1" Name="半径" Unit="" />
+            }
+        </div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>画幅背景模糊</strong>
+                    <span>用原图延展填充背景</span>
+                </div>
+                <MSwitch @bind-Value="canvas.FrameProperties.EnableGaussianBlur" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+            @if (canvas.FrameProperties.EnableGaussianBlur)
+            {
+                <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.FrameProperties.GaussianDeep" Step="1" Name="强度" Unit="" />
+            }
+        </div>
+        <div class="effect-card">
+            <div class="effect-title">
+                <div>
+                    <strong>原背景透明</strong>
+                    <span>保留画幅，移除原背景填充</span>
+                </div>
+                <MSwitch @bind-Value="canvas.FrameProperties.BeforeBkTransparent" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+        </div>
+    </div>;
+
     async void SelectDefaultImage()
     {
         if (SelectDefaultImageEvt is null) return;
@@ -187,10 +433,10 @@
         ConcurrentDictionary<string, byte[]> dic = new();
         var destFolder = Global.AppPath.TemplatesFolder + canvas.ID;
         var destFile = destFolder + System.IO.Path.DirectorySeparatorChar + "default.jpg";
-        SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(p);
+        using var bitmap = SKBitmap.Decode(p);
         var codec = SKCodec.Create(p);
-        bitmap = WatermarkHelper.AutoOrient(codec, bitmap);
-        Global.WriteThumbnailImage(bitmap, destFile);
+        using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap);
+        Global.WriteThumbnailImage(bitmap2, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
         StateHasChanged();
@@ -243,7 +489,6 @@
         StateHasChanged();
     }
 
-
     void ValueChanged2(string v)
     {
         canvas.LengthWidthRatio = v;
@@ -256,4 +501,83 @@
         canvas.CustomHeight = (int)(xs * h);
     }
 
+    int CountControls(WMContainer container)
+    {
+        if (container?.Controls is null) return 0;
+        var count = container.Controls.Count;
+        foreach (var child in container.Controls.OfType<WMContainer>())
+        {
+            count += CountControls(child);
+        }
+        return count;
+    }
+
+    void EnsureCanvasDefaults(WMCanvas target)
+    {
+        target.ID ??= Guid.NewGuid().ToString("N").ToUpper();
+        target.Name ??= "未命名模板";
+        target.BorderThickness ??= new WMThickness(0);
+        target.BackgroundColor ??= "#FFFFFFFF";
+        target.ImageProperties ??= new WMImage();
+        target.Children ??= [];
+        target.BorderSameWidth ??= new WMBorderSameWidth();
+        target.FrameProperties ??= new WMFrame();
+        target.LengthWidthRatio ??= "1:1";
+
+        foreach (var child in target.Children)
+        {
+            EnsureContainerDefaults(child);
+        }
+    }
+
+    void EnsureContainerDefaults(WMContainer container)
+    {
+        container.ID ??= Guid.NewGuid().ToString("N").ToUpper();
+        container.Name ??= "容器";
+        container.Margin ??= new WMThickness(0);
+        container.Path ??= string.Empty;
+        container.ContainerProperties ??= new WMImage();
+        container.Controls ??= [];
+
+        foreach (var control in container.Controls)
+        {
+            EnsureControlDefaults(control);
+        }
+    }
+
+    void EnsureControlDefaults(IWMControl control)
+    {
+        control.ID ??= Guid.NewGuid().ToString("N").ToUpper();
+        control.Name ??= control switch
+        {
+            WMContainer => "容器",
+            WMText => "文字",
+            WMLogo => "Logo",
+            WMLine => "分割线",
+            _ => "组件"
+        };
+        control.Margin ??= new WMThickness(0);
+
+        if (control is WMContainer nestedContainer)
+        {
+            EnsureContainerDefaults(nestedContainer);
+        }
+        else if (control is WMText text)
+        {
+            text.Exifs ??= [];
+            text.FontColor ??= "#000000ff";
+            text.FontFamily ??= Global.DefaultFont;
+            text.BorderColor ??= "#e3e3e3";
+        }
+        else if (control is WMLogo logo)
+        {
+            logo.Path ??= string.Empty;
+        }
+        else if (control is WMLine line)
+        {
+            line.Color ??= "#000000ff";
+        }
+    }
+
+    record InspectorTab(string Value, string Label, string Icon);
 }

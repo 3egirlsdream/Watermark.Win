@@ -1,7 +1,6 @@
 ﻿using Masa.Blazor;
 using Masa.Blazor.Presets;
 using Microsoft.JSInterop;
-using MudBlazor;
 using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
@@ -58,7 +57,7 @@ namespace Watermark.Shared.Models
             {
                 DefaultExt = ".png",  // 设置默认类型
                 Multiselect = true,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                Filter = PhotoFilter
             };
             // 打开选择框选择
             var result = dialog.ShowDialog();
@@ -75,7 +74,7 @@ namespace Watermark.Shared.Models
             {
                 DefaultExt = ".png",  // 设置默认类型
                 Multiselect = false,                             // 设置可选格式
-                Filter = @"图像文件(*.jpg,*.png)|*jpeg;*.jpg;*.png|JPEG(*.jpeg, *.jpg)|*.jpeg;*.jpg|PNG(*.png)|*.png"
+                Filter = PhotoFilter
             };
             // 打开选择框选择
             var result = dialog.ShowDialog();
@@ -85,6 +84,8 @@ namespace Watermark.Shared.Models
                 return "";
             });
         }
+
+        private const string PhotoFilter = "照片与 RAW|*.jpg;*.jpeg;*.png;*.heic;*.heif;*.tif;*.tiff;*.dng;*.cr2;*.cr3;*.nef;*.nrw;*.arw;*.sr2;*.raf;*.orf;*.rw2;*.rwl;*.pef;*.3fr;*.iiq;*.srw|普通照片|*.jpg;*.jpeg;*.png;*.heic;*.heif;*.tif;*.tiff|RAW 照片|*.dng;*.cr2;*.cr3;*.nef;*.nrw;*.arw;*.sr2;*.raf;*.orf;*.rw2;*.rwl;*.pef;*.3fr;*.iiq;*.srw";
 
         public Version GetVersion()
         {

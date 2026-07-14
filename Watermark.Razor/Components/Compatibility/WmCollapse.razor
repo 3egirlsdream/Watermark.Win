@@ -1,0 +1,5 @@
+@if (Expanded) { <div>@ChildContent</div> }
+@code {
+    [Parameter] public bool Expanded { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

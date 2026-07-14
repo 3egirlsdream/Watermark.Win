@@ -93,6 +93,7 @@ public static class MacControlTree
 
         var control = Find(canvas, controlId)!;
         var target = parentId == null ? null : (WMContainer)Find(canvas, parentId)!;
+        var sourceParent = FindParentByReference(canvas, control);
         if (!IsValidTargetIndex(canvas, control, target, index)) return false;
         if (!RemoveByReference(canvas, control)) return false;
 
@@ -106,7 +107,36 @@ public static class MacControlTree
             target.Controls.Insert(index, control);
         }
 
+        if (!ReferenceEquals(sourceParent, target))
+        {
+            var transform = control.EnsureTransform();
+            transform.OffsetXPercent = 0;
+            transform.OffsetYPercent = 0;
+        }
+        SynchronizeParentMetadata(canvas);
+
         return true;
+    }
+
+    private static void SynchronizeParentMetadata(WMCanvas canvas)
+    {
+        for (var rootIndex = 0; rootIndex < canvas.Children.Count; rootIndex++)
+        {
+            var root = canvas.Children[rootIndex];
+            root.PNode = new WMPNode(rootIndex, "0");
+            SynchronizeParentMetadata(root);
+        }
+    }
+
+    private static void SynchronizeParentMetadata(WMContainer parent)
+    {
+        for (var index = 0; index < parent.Controls.Count; index++)
+        {
+            var child = parent.Controls[index];
+            child.PNode = new WMPNode(index, parent.ID);
+            if (child is WMContainer nested)
+                SynchronizeParentMetadata(nested);
+        }
     }
 
     public static IWMControl Duplicate(WMCanvas canvas, string controlId)

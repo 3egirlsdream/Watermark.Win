@@ -1,0 +1,9 @@
+<MCheckbox TValue="bool" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Dense HideDetails="true">@ChildContent</MCheckbox>
+
+@code {
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Size { get; set; }
+}

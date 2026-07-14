@@ -24,6 +24,31 @@ public sealed class MacControlTreeTests
     }
 
     [Fact]
+    public void Move_ReparentRoundTripsThroughTemplateSerialization()
+    {
+        var canvas = new WMCanvas();
+        var left = new WMContainer { Name = "left" };
+        var right = new WMContainer { Name = "right" };
+        var text = new WMText
+        {
+            Name = "text",
+            Transform = new WMTransform { OffsetXPercent = 45, OffsetYPercent = -30 }
+        };
+        left.Controls.Add(text);
+        canvas.Children.AddRange([left, right]);
+
+        Assert.True(MacControlTree.Move(canvas, text.ID, right.ID, 0));
+        var restored = Global.ReadConfig(Global.CanvasSerialize(canvas));
+
+        Assert.Empty(restored.Children.Single(container => container.ID == left.ID).Controls);
+        var restoredText = Assert.IsType<WMText>(Assert.Single(
+            restored.Children.Single(container => container.ID == right.ID).Controls));
+        Assert.Equal(text.ID, restoredText.ID);
+        Assert.Equal(0, restoredText.Transform!.OffsetXPercent);
+        Assert.Equal(0, restoredText.Transform.OffsetYPercent);
+    }
+
+    [Fact]
     public void CanMove_RejectsSelfAndDescendant()
     {
         var canvas = new WMCanvas();

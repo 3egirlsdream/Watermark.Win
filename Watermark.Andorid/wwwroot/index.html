@@ -6,10 +6,9 @@
     <title>Watermark.Andorid</title>
     <base href="/" />
     <link href="_content/Masa.Blazor/css/masa-blazor.min.css" rel="stylesheet" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="Watermark.Andorid.styles.css" rel="stylesheet" />
+    <link href="css/app.css?v=20260709" rel="stylesheet" />
+    <link href="Litograph.styles.css?v=20260709" rel="stylesheet" />
     <link href="css/materialdesign/v7.1.96/css/materialdesignicons.min.css" rel="stylesheet"/>
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
    
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="css/swiper-bundle.min.css" rel="stylesheet" />
@@ -40,7 +39,6 @@
     <script src="js/swiper-bundle.min.js"></script>
     <script src="js/init-swiper.js"></script>
     <script src="_framework/blazor.webview.js" autostart="false"></script>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_content/Masa.Blazor/js/masa-blazor.js"></script>
 
 
@@ -61,43 +59,6 @@
         (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
 
-    /**
-     * 初始化工具栏拖动 - 在 toolbar 上 mousedown 时开始拖动，
-     * 在 document 上监听 mousemove/mouseup 以确保拖出 toolbar 区域也能继续
-     */
-    function initToolbarDrag(toolbarId, dotnetRef) {
-        var toolbar = document.getElementById(toolbarId);
-        if (!toolbar) return;
-        var dragging = false;
-        var rafId = null;
-
-        toolbar.addEventListener('mousedown', function(e) {
-            // 忽略按钮、菜单等交互元素上的点击
-            var tag = e.target.tagName.toLowerCase();
-            if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select') return;
-            if (e.target.closest('.m-btn') || e.target.closest('.m-menu') || e.target.closest('.traffic-light')) return;
-
-            dragging = true;
-            dotnetRef.invokeMethodAsync('OnDragStart');
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', function(e) {
-            if (!dragging) return;
-            if (rafId) return; // 节流：每帧只处理一次
-            rafId = requestAnimationFrame(function() {
-                dotnetRef.invokeMethodAsync('OnDragMove');
-                rafId = null;
-            });
-        });
-
-        document.addEventListener('mouseup', function(e) {
-            if (!dragging) return;
-            dragging = false;
-            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-            dotnetRef.invokeMethodAsync('OnDragEnd');
-        });
-    }
 </script>
 
 <style>

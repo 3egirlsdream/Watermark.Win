@@ -1,0 +1,8 @@
+<MSwitch TValue="bool" Value="@Value" ValueChanged="@ValueChanged" Color="@Color" HideDetails="true" Dense Inset />
+
+@code {
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Style { get; set; }
+}

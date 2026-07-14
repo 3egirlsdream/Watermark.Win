@@ -1,0 +1,19 @@
+@typeparam TValue
+<MTextField TValue="TValue" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Required="@Required" RequiredMessage="@RequiredMessage" Readonly="@ReadOnly" Type="@Type" Dense />
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string? RequiredError { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool AutoFocus { get; set; }
+    [Parameter] public string? InputType { get; set; }
+    [Parameter] public string? Variant { get; set; }
+    [Parameter] public string? Margin { get; set; }
+    [Parameter] public string? Class { get; set; }
+    private string? RequiredMessage => RequiredError ?? ErrorText;
+    private string? Type => InputType?.Contains("Password", StringComparison.OrdinalIgnoreCase) == true ? "password" : null;
+}

@@ -1,0 +1,17 @@
+@typeparam TValue
+@attribute [CascadingTypeParameter(nameof(TValue))]
+<CascadingValue Value="this" IsFixed="true"><div class="wm-toggle-group">@ChildContent</div></CascadingValue>
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public bool Outline { get; set; }
+    [Parameter] public bool Delimiters { get; set; }
+    [Parameter] public bool Dense { get; set; }
+    [Parameter] public bool Rounded { get; set; }
+    [Parameter] public bool CheckMark { get; set; }
+    [Parameter] public bool FixedContent { get; set; }
+    internal bool IsSelected(TValue? value) => EqualityComparer<TValue>.Default.Equals(Value!, value!);
+    internal Task SelectAsync(TValue? value) => value is null ? Task.CompletedTask : ValueChanged.InvokeAsync(value);
+}

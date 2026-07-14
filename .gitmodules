@@ -1,0 +1,3 @@
+[submodule "Watermark.Shared"]
+	path = Watermark.Shared
+	url = https://github.com/3egirlsdream/Watermark.Shared.git

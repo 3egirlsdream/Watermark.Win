@@ -12,11 +12,11 @@
 @inherits PStackPageBase
 
 <style>
-    .mud-overlay .mud-overlay-content {
+    .wm-overlay .wm-overlay-content {
         width: 60%;
     }
 
-    .mud-switch {
+    .wm-switch {
         margin-left: 0px;
         margin-right: 0px;
         margin-inline-start: 0px;
@@ -33,7 +33,7 @@
 </MToolbar>
 @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
 {
-    <MCard Style="@($"padding:10px;margin:10px 16px 20px 16px;background:{Colors.Grey.Lighten4}")" Flat>
+    <MCard Style="padding:10px;margin:10px 16px 20px 16px;background:#F5F5F5" Flat>
         <div style="display:flex;align-items:center;justify-content: flex-start">
             @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
             {
@@ -76,39 +76,39 @@
 else
 {
     <MCard Style="@($"padding:10px;{cardStyle}")" Flat>
-        <Row>
+        <MRow>
             <MButton OnClick="@(() => NavController.Push("/login"))" Text>登录</MButton>
             <MButton OnClick="@(() => NavController.Push("/signup/0"))" Text>注册</MButton>
-        </Row>
+        </MRow>
     </MCard>
 }
 
 @* 活动面板 *@
-@* <MudPaper Style="@cardStyle" Elevation="0" class="pa-3">
-	<MudCarousel Class="mud-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
-		<MudCarouselItem Transition="@Transition.Fade">
+@* <WmPaper Style="@cardStyle" Elevation="0" class="pa-3">
+	<WmCarousel Class="wm-width-full" Style="height:100px;" ShowArrows="false" ShowBullets="false" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+		<WmCarouselItem Transition="@Transition.Fade">
 			<div class="d-flex" style="height:100%">
-				<MudImage Src="https://cdn.thankful.top/gonggao.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+				<WmImage Src="https://cdn.thankful.top/gonggao.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
 			</div>
-		</MudCarouselItem>
-		<MudCarouselItem Transition="@Transition.Fade">
+		</WmCarouselItem>
+		<WmCarouselItem Transition="@Transition.Fade">
 			<div class="d-flex" style="height:100%">
-				<MudImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
+				<WmImage Src="https://cdn.thankful.top/yaofan.jpg" ObjectFit="ObjectFit.Contain" Class="mx-auto" />
 			</div>
-		</MudCarouselItem>
-	</MudCarousel>
-</MudPaper> *@
+		</WmCarouselItem>
+	</WmCarousel>
+</WmPaper> *@
 
 
 <MCard Style="@cardStyle" Flat class="pa-3">
     <SettingPanel OnClick="Update" Icon="@ICONS.ArrowRight">
-        <Row style="align-items: center">
+        <MRow style="align-items:center">
             @($"当前版本{ClientInstance.GetVersion().ToString()}")
             @if (checkUpdate)
             {
                 <MChip Small Color="error">new</MChip>
             }
-        </Row>
+        </MRow>
     </SettingPanel>
     @if (DownLoadProgress > 0)
     {
@@ -118,17 +118,17 @@ else
 
 <MCard Flat Style="@cardStyle" Class="pa-3">
     <SettingPanel OnClick="() => openLogoDialog = true" Text="导入图标" Icon="@ICONS.ArrowRight" />
-    @* <MudDivider Class="my-2" />
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))">
-        <MudText Typo="Typo.button"> PC客户端 </MudText>
-        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" />
-    </MudStack>
+    @* <WmDivider Class="my-2" />
+    <WmStack Row Justify="Justify.SpaceBetween" style="align-items: center" @onclick="@(()=>CopyClipboard("http://thankful.top:2038/api/public/dl/EMRyVNXX"))">
+        <WmText Typo="Typo.button"> PC客户端 </WmText>
+        <WmIcon Icon="@WmIcons.Material.Filled.ContentCopy" Size="Size.Small" />
+    </WmStack>
 
-    <MudDivider Class="my-2" />
-    <MudStack Row Justify="Justify.SpaceBetween" style="align-items: center">
-        <MudText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></MudText>
-        <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" />
-    </MudStack> *@
+    <WmDivider Class="my-2" />
+    <WmStack Row Justify="Justify.SpaceBetween" style="align-items: center">
+        <WmText Typo="Typo.button"><a href="http://thankful.top/"> Web网页版</a></WmText>
+        <WmIcon Icon="@WmIcons.Material.Filled.ArrowRight" Size="Size.Small" />
+    </WmStack> *@
 
     <MDivider Class="my-2" />
     <SettingPanel OnClick="@(()=>CopyClipboard("836325187"))" Text="交流群：836325187" Icon="@ICONS.ArrowRight" />
@@ -140,7 +140,7 @@ else
     <SettingPanel OnClick="()=> { Global.CurrentUser = new(); }" Text="切换账号" Icon="@ICONS.Exit" />
     <MDivider Class="my-2" />
     <SettingPanel OnClick="OpenSettings" Text="设置" Icon="@ICONS.Setting" />
-    @if (Global.CurrentUser?.ID == "0BECCA9A-6F10-4A88-8753-921195D08853" || Global.CurrentUser?.ID == "9DEBF7DC-F58C-4667-BACF-A6BFD18352EB")
+    @if (AdminAccessPolicy.IsAdmin(Global.CurrentUser))
     {
         <MDivider Class="my-2" />
         <SettingPanel OnClick="@(()=>NavController.Push("/dms"))" Text="数据" Icon="@ICONS.ArrowRight" />
@@ -172,7 +172,7 @@ else
 </MOverlay>
 
 @code {
-    string cardStyle => $"margin:20px 16px;background:{Colors.Grey.Lighten4}";
+    string cardStyle => "margin:20px 16px;background:#F5F5F5";
     bool openVip = false;
     bool checkUpdate = false;
     int DownLoadProgress = 0;

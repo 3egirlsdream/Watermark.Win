@@ -1,0 +1,84 @@
+.mac-feature-rail {
+    align-items: center;
+    background: #eef1f5;
+    border-right: 1px solid rgba(31, 41, 55, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 9px 7px;
+    width: 100%;
+}
+
+.feature-button {
+    color: #5d6674;
+    font-size: 11px;
+    font-weight: 680;
+    letter-spacing: 0;
+}
+
+.mac-feature-rail ::deep .feature-button {
+    background: transparent !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    color: #5d6674 !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    text-transform: none !important;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    width: 42px !important;
+}
+
+.mac-feature-rail ::deep .feature-button:hover {
+    background: rgba(203, 213, 225, 0.55) !important;
+    color: #182131 !important;
+}
+
+.mac-feature-rail ::deep .feature-button.active {
+    background: #ffffff !important;
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28), 0 4px 10px rgba(31, 41, 55, 0.08) !important;
+    color: #155fcf !important;
+}
+
+.mac-feature-rail ::deep .feature-button .m-btn__content {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    justify-content: center;
+    line-height: 1;
+    letter-spacing: 0;
+    width: 100%;
+}
+
+.mac-feature-rail ::deep .feature-button .m-icon {
+    font-size: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    width: 18px !important;
+}
+
+.feature-button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+@media (max-width: 1120px) {
+    .mac-feature-rail {
+        gap: 5px;
+        padding: 8px 6px;
+    }
+
+    .mac-feature-rail ::deep .feature-button {
+        border-radius: 8px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        width: 40px !important;
+    }
+}

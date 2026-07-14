@@ -1,0 +1,23 @@
+<MacSlider Label="@Label"
+           Value="@Value"
+           Baseline="@Baseline"
+           Min="@Min"
+           Max="@Max"
+           Step="@Step"
+           Format="@Format"
+           Suffix="@Suffix"
+           ValueChanged="OnValueChanged" />
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public float Value { get; set; }
+    [Parameter] public float? Baseline { get; set; }
+    [Parameter] public double Min { get; set; } = -100;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Step { get; set; } = 1;
+    [Parameter] public string Suffix { get; set; } = string.Empty;
+    [Parameter] public string Format { get; set; } = "0";
+    [Parameter] public EventCallback<float> ValueChanged { get; set; }
+
+    private Task OnValueChanged(double value) => ValueChanged.InvokeAsync((float)value);
+}

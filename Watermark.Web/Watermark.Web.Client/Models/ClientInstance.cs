@@ -1,7 +1,6 @@
 ﻿using SkiaSharp;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text;
-using MudBlazor;
 using Masa.Blazor;
 using Microsoft.JSInterop;
 using Masa.Blazor.Presets;
@@ -62,14 +61,6 @@ namespace Watermark.Shared.Models
             
         }
 
-        public static void ShowMsg(ISnackbar snackbar, string message, Severity severity)
-        {
-            snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-            snackbar?.Add(message, severity, config =>
-            {
-                config.ShowCloseIcon = false;
-            });
-        }
 
 
         public void Haptic()

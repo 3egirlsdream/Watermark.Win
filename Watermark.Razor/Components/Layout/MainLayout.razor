@@ -1,5 +1,4 @@
 ﻿@using Masa.Blazor
-@using MudBlazor
 @using Watermark.Razor.BlazorPages
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Enums
@@ -10,9 +9,6 @@
 @inject PageStackNavController NavController
 @inject LoadingService LoadingService
 
-<MudThemeProvider IsDarkMode="@GlobalConfig.DARK_MODE" />
-<MudDialogProvider />
-<MudSnackbarProvider />
 <div class="page">
     <MApp>
         <MMain>
@@ -51,14 +47,14 @@
         <div style="text-align:center;display:flex;flex-direction: column;justify-content: center;align-items: center">
             <MProgressCircular indeterminate
                                Size="64"></MProgressCircular>
-            <MudText Typo="Typo.subtitle1" Color="MudBlazor.Color.Default" Class="mt-2">
+            <WmText Typo="Typo.subtitle1" Color="default" Class="mt-2">
                 @(loading.Message1.Length > 0 ? loading.Message1[0] : "")
                 @if (loading.Message1.Length >= 2 && !string.IsNullOrEmpty(loading.Message1[1]))
                 {
                     <br />
                     @loading.Message1[1]
                 }
-            </MudText>
+            </WmText>
         </div>
     </MCard>
 </MOverlay>

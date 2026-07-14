@@ -18,7 +18,7 @@
     <ActionContent>
         @if (SrcLoading)
         {
-            <MudProgressCircular Color="MudBlazor.Color.Secondary" Indeterminate="true" />
+            <WmProgressCircular Color="secondary" Indeterminate="true" />
         }
         else
         {
@@ -61,11 +61,11 @@
 </MBottomSheet>
 
 
-<MudOverlay Visible="@SrcLoading" DarkBackground="true" Absolute="true" ZIndex="99999">
-    <MudPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;text-align:center;">
-        <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" Style="margin: auto;" />
-    </MudPaper>
-</MudOverlay>
+<WmOverlay Visible="@SrcLoading" DarkBackground="true" Absolute="true" ZIndex="99999">
+    <WmPaper Width="200px" Height="200px" Elevation="0" Style="justify-content:center;display:flex;align-items:center;text-align:center;">
+        <WmProgressCircular Color="primary" Indeterminate="true" Style="margin: auto;" />
+    </WmPaper>
+</WmOverlay>
 
 @code {
     private List<string> _order = new();

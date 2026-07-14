@@ -46,7 +46,10 @@ global.json
 /Watermark1
 /Watermark.Razor/qemu-system-x86_64.20241123-111535-468.log
 /Watermark.Shared/.DS_Store
-
+.idea
+.codex
+.superpowers
+/docs/superpowers
 /native/build/
 /native/stage/
 /native/downloads/
@@ -55,3 +58,5 @@ global.json
 /native/third_party/LibRaw-0.22.1/*
 !/native/third_party/LibRaw-0.22.1/COPYRIGHT
 !/native/third_party/LibRaw-0.22.1/LICENSE.CDDL
+Watermark.Razor.Tests/bin
+Watermark.Razor.Tests/obj

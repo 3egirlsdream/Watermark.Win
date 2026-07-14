@@ -1,0 +1,33 @@
+@using System.ComponentModel
+@using Watermark.Shared.Models
+
+<aside class="mac-inspector-panel">
+    @if (Canvas != null && !string.IsNullOrEmpty(Canvas.Name) && Visible)
+    {
+        <div class="mac-inspector-scroll-body">
+            <Watermark.Razor.Components.DesignConfiguration Style="width:100%;height:100%;max-height:100%;min-height:0" canvas="@Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" />
+        </div>
+    }
+    else
+    {
+        <div class="inspector-empty">
+            <div class="inspector-kicker">Inspector</div>
+            <div class="inspector-title">未选择图片</div>
+            <p>导入图片并选择模板后，在这里调整画布、画幅和图层。</p>
+        </div>
+    }
+</aside>
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public WMCanvas? Canvas { get; set; }
+
+    [Parameter]
+    public PropertyChangedEventHandler? PropertyChanged { get; set; }
+
+    [Parameter]
+    public Func<WMContainer, Task>? SelectContainer { get; set; }
+}

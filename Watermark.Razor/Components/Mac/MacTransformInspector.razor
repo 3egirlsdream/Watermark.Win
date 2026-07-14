@@ -4,7 +4,7 @@
 <section class="transform-inspector inspector-group">
     <div class="inspector-group-heading">
         <h3>变换</h3>
-        <button type="button" class="inspector-text-command" disabled="@ReadOnly" @onclick="Reset">重置</button>
+        <MButton Text Small Class="inspector-text-command" Disabled="@ReadOnly" OnClick="Reset">重置</MButton>
     </div>
 
     <MacInspectorSlider Label="水平偏移" Value="@Transform.OffsetXPercent" Min="-500" Max="500" Step="0.1" Unit="%"
@@ -12,10 +12,7 @@
     <MacInspectorSlider Label="垂直偏移" Value="@Transform.OffsetYPercent" Min="-500" Max="500" Step="0.1" Unit="%"
                         Disabled="@ReadOnly" ValueChanged="SetOffsetY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
 
-    <label class="inspector-check-row">
-        <input type="checkbox" checked="@keepRatio" disabled="@ReadOnly" @onchange="ToggleKeepRatio" />
-        <span>保持宽高比例</span>
-    </label>
+    <MacInspectorCheckbox Label="保持宽高比例" Value="@keepRatio" Disabled="@ReadOnly" ValueChanged="ToggleKeepRatio" />
 
     <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.05" Max="20" Step="0.01"
                         Disabled="@ReadOnly" ValueChanged="SetScaleX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
@@ -28,6 +25,7 @@
 @code {
     [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
     [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
+    [Parameter] public WMDesignBounds? Bounds { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
 
     private static readonly WMTransform Identity = new();
@@ -51,7 +49,7 @@
         return Task.CompletedTask;
     }
 
-    private void ToggleKeepRatio(ChangeEventArgs args) => keepRatio = args.Value is true;
+    private void ToggleKeepRatio(bool value) => keepRatio = value;
 
     private void SetOffsetX(double value) => Mutate(transform => transform.OffsetXPercent = value);
     private void SetOffsetY(double value) => Mutate(transform => transform.OffsetYPercent = value);
@@ -78,7 +76,24 @@
     private void Mutate(Action<WMTransform> mutation)
     {
         if (ReadOnly) return;
-        Editor.Mutate("调整变换", () => mutation(Control.EnsureTransform()));
+        Editor.Mutate("调整变换", () =>
+        {
+            var transform = Control.EnsureTransform();
+            mutation(transform);
+            if (Bounds is null) return;
+
+            var constrained = MacCanvasBoundary.ConstrainTransform(
+                Bounds,
+                new MacCanvasInteraction(
+                    Control.ID,
+                    "inspector",
+                    transform.OffsetXPercent,
+                    transform.OffsetYPercent,
+                    transform.ScaleX,
+                    transform.ScaleY,
+                    transform.Rotation));
+            MacCanvasTransform.Apply(Control, constrained);
+        });
     }
 
     private void Reset()

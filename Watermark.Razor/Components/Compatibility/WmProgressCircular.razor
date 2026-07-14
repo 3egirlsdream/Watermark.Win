@@ -1,0 +1,7 @@
+<MProgressCircular Indeterminate="@Indeterminate" Color="@Color" Class="@Class" Style="@Style" />
+@code {
+    [Parameter] public bool Indeterminate { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+}

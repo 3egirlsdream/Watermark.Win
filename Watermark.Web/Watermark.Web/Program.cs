@@ -1,7 +1,5 @@
 using Watermark.Web.Client.Pages;
 using Watermark.Web.Components;
-using MudBlazor;
-using MudBlazor.Services;
 using Watermark.Shared.Models;
 namespace Watermark.Web
 {
@@ -14,10 +12,11 @@ namespace Watermark.Web
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveWebAssemblyComponents().AddInteractiveServerComponents();
-            builder.Services.AddMudServices();
-            builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<APIHelper>();
             builder.Services.AddSingleton<IClientInstance, ClientInstance>();
+            builder.Services.AddSingleton<IWMImagingCapabilities>(
+                new WMStaticImagingCapabilities(WMImagingCapabilities.Unsupported));
+            builder.Services.AddSingleton<IWMPhotoMetadataReader, WMMetadataExtractorReader>();
             builder.Services.AddMasaBlazor();
             var app = builder.Build();
 

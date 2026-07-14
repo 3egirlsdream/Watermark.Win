@@ -15,10 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Parts\ColorPicker2.razor.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Remove="Components\ExifDialog.razor" />
   </ItemGroup>
 
@@ -28,17 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="MudBlazor" Version="6.12.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Update="Components\LoginContent.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Update="Components\LogoutContent.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Update="Components\LogoutDialog.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Update="Components\LogoDialogContent.razor">
@@ -64,10 +53,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Parts\ColorPicker2.razor.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Masa.Blazor" Version="1.8.0" />
     <ProjectReference Include="..\Watermark.Shared\Watermark.Shared.csproj" />
   </ItemGroup>
 

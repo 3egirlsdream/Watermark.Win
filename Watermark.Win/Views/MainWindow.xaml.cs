@@ -9,7 +9,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using MudBlazor.Services;
 using Watermark.Win.Models;
 using Watermark.Win.Views;
 using System.IO;
@@ -26,11 +25,30 @@ namespace Watermark.Win
         {
             try
             {
-                IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper, WatermarkHelper>();
+				IocHelper.GetIoc().AddSingleton<WatermarkHelper>();
+                IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper>(provider => provider.GetRequiredService<WatermarkHelper>());
 				IocHelper.GetIoc().AddSingleton<APIHelper>();
                 IocHelper.GetIoc().AddSingleton<IWindowService, WindowService>();
                 IocHelper.GetIoc().AddScoped<MainInterop>();
                 IocHelper.GetIoc().AddSingleton<IClientInstance, ClientInstance>();
+                IocHelper.GetIoc().AddSingleton<IWMPhotoMetadataReader, WMMetadataExtractorReader>();
+                IocHelper.GetIoc().AddSingleton<IWMSourceStager, WMLocalSourceStager>();
+                IocHelper.GetIoc().AddSingleton<WMSkiaPhotoDecoder>();
+                IocHelper.GetIoc().AddSingleton<WMNativePhotoDecoder>();
+                IocHelper.GetIoc().AddSingleton<IWMPhotoDecoder, WMCompositePhotoDecoder>();
+                IocHelper.GetIoc().AddSingleton<IWMFrameAligner, WMNativeFrameAligner>();
+                IocHelper.GetIoc().AddSingleton<IWMFullResolutionTileWarper, WMNativeFullResolutionTileWarper>();
+                IocHelper.GetIoc().AddSingleton<IWMPreviewFrameDecoder, WMCompositePreviewFrameDecoder>();
+                IocHelper.GetIoc().AddSingleton<IWMStarFeatureAnalyzer, WMNativeStarFeatureAnalyzer>();
+                IocHelper.GetIoc().AddSingleton<IWMPreviewFrameWarper, WMNativePreviewFrameWarper>();
+                IocHelper.GetIoc().AddSingleton<IWMPreviewStackComposer, WMNativePreviewStackComposer>();
+                IocHelper.GetIoc().AddSingleton<IWMMultiFramePreviewEngine, WMMultiFramePreviewEngine>();
+                IocHelper.GetIoc().AddSingleton<IWMImagingCapabilities, WMNativeImagingCapabilities>();
+                IocHelper.GetIoc().AddSingleton<IWMTiff16Encoder, WMNativeTiff16Encoder>();
+                IocHelper.GetIoc().AddSingleton<IWMImageStackEngine, WMMultiFrameStackEngine>();
+                IocHelper.GetIoc().AddSingleton<IWMHighPrecisionTemplateRenderer, WMHighPrecisionTemplateRenderer>();
+                IocHelper.GetIoc().AddTransient<WMMultiFrameStackOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<IWMImageOperationProcessor, WMMultiFrameStackOperationProcessor>();
                 var design = DesignProvider.Get(new WMCanvas());
                 IocHelper.GetIoc().AddSingleton(design);
 				Resources.SetIoc();

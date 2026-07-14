@@ -20,11 +20,11 @@
         margin-bottom: 20px; /* 设置下方间距 */
     }
 
-        .rectangle .mud-input-control {
+        .rectangle .wm-input-control {
             margin-top: 0px;
         }
 
-        .rectangle .mud-input-control-input-container {
+        .rectangle .wm-input-control-input-container {
             position: absolute;
             height: 100%;
             width: 100%;
@@ -42,7 +42,7 @@
     @foreach (var per in Fonts)
     {
         <div class="rectangle">
-            <MudImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
+            <WmImage ObjectFit="ObjectFit.Fill" Src="@per.Value" @onclick="()=>Click(per)" Elevation="25" Class="rounded-lg" />
         </div>
     }
 </div>

@@ -1,0 +1,10 @@
+<span class="wm-tooltip" title="@Text">
+    @ChildContent
+    @if (TooltipContent is not null) { <span class="wm-tooltip-content">@TooltipContent</span> }
+</span>
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? TooltipContent { get; set; }
+    [Parameter] public string? Color { get; set; }
+}

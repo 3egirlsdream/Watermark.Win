@@ -1,0 +1,12 @@
+@namespace Watermark.Razor.Components.Dashboard
+<article class="metric-block">
+    <span>@Label</span>
+    <strong>@Value</strong>
+    <small>@Note</small>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter] public string Note { get; set; } = string.Empty;
+}

@@ -1,0 +1,171 @@
+@using System.Globalization
+
+<div class="mac-color-input @(Disabled ? "disabled" : null)">
+    <span class="color-label">@Label</span>
+    <div class="color-control-row">
+        <button type="button"
+                class="color-preview"
+                style="background:@PreviewColor"
+                disabled="@Disabled"
+                aria-label="@($"打开{Label}色盘")"
+                aria-expanded="@open"
+                @onclick="ToggleOpen">
+            <span></span>
+        </button>
+        <input class="color-text-input"
+               value="@displayValue"
+               disabled="@Disabled"
+               spellcheck="false"
+               inputmode="text"
+               aria-label="@Label HEX 或 RGBA"
+               @oninput="CaptureText"
+               @onchange="CommitTextAsync"
+               @onkeydown="HandleKeyDownAsync"
+               @onkeydown:stopPropagation />
+        <button type="button"
+                class="color-expand-button"
+                disabled="@Disabled"
+                aria-label="@(open ? "收起色盘" : "展开色盘")"
+                @onclick="ToggleOpen">
+            <MIcon Size="16">@(open ? "mdi-chevron-up" : "mdi-chevron-down")</MIcon>
+        </button>
+    </div>
+
+    @if (open)
+    {
+        <div class="color-palette" role="group" aria-label="@Label 色盘">
+            <div class="palette-main-row">
+                <label class="native-color-picker" title="选择颜色">
+                    <input type="color"
+                           value="@PreviewColor"
+                           disabled="@Disabled"
+                           aria-label="选择@Label"
+                           @oninput="SelectNativeColorAsync" />
+                    <span style="background:@PreviewColor"></span>
+                </label>
+                <div class="palette-copy">
+                    <strong>@PreviewColor.ToUpperInvariant()</strong>
+                    <span>点击色块打开系统色盘</span>
+                </div>
+            </div>
+
+            <div class="quick-colors" aria-label="常用颜色">
+                @foreach (var color in Palette)
+                {
+                    <button type="button"
+                            class="quick-color @(IsCurrentColor(color) ? "selected" : null)"
+                            style="background:@color"
+                            title="@color"
+                            aria-label="使用颜色 @color"
+                            @onclick="() => SelectPaletteColorAsync(color)"></button>
+                }
+            </div>
+
+            <div class="alpha-control">
+                <MacSlider Label="透明度"
+                           Value="@AlphaPercent"
+                           Min="0" Max="100" Step="1" Suffix="%"
+                           Compact
+                           Disabled="@Disabled"
+                           ValueChanged="SetAlphaPercentAsync" />
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly string[] Palette =
+    [
+        "#FFFFFF", "#F5F7FA", "#DCE3EC", "#9AA6B5",
+        "#111827", "#000000", "#2563EB", "#06B6D4",
+        "#10B981", "#84CC16", "#F59E0B", "#EF4444",
+        "#EC4899", "#8B5CF6", "#7C3AED", "#92400E"
+    ];
+
+    [Parameter] public string Label { get; set; } = "颜色";
+    [Parameter] public string Value { get; set; } = "#FFFFFFFF";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool open;
+    private string displayValue = "#FFFFFFFF";
+
+    private string NormalizedValue => Normalize(Value) ?? "#FFFFFFFF";
+    private string PreviewColor => NormalizedValue[..7];
+    private int Alpha => NormalizedValue.Length == 9
+        ? int.Parse(NormalizedValue[7..9], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+        : 255;
+    private int AlphaPercent => (int)Math.Round(Alpha / 255d * 100);
+
+    protected override void OnParametersSet() => displayValue = NormalizedValue.ToUpperInvariant();
+
+    private void ToggleOpen()
+    {
+        if (!Disabled) open = !open;
+    }
+
+    private async Task CommitTextAsync(ChangeEventArgs args)
+    {
+        var normalized = Normalize(args.Value?.ToString());
+        if (normalized is null)
+        {
+            displayValue = NormalizedValue.ToUpperInvariant();
+            return;
+        }
+
+        displayValue = normalized.ToUpperInvariant();
+        await ValueChanged.InvokeAsync(normalized);
+    }
+
+    private void CaptureText(ChangeEventArgs args) =>
+        displayValue = args.Value?.ToString() ?? string.Empty;
+
+    private async Task SelectNativeColorAsync(ChangeEventArgs args)
+    {
+        var normalized = Normalize(args.Value?.ToString());
+        if (normalized is null) return;
+        await CommitColorAsync(normalized[..7], Alpha);
+    }
+
+    private Task SelectPaletteColorAsync(string color) => CommitColorAsync(color, Alpha);
+
+    private async Task SetAlphaPercentAsync(double percent)
+    {
+        var alpha = (int)Math.Round(Math.Clamp(percent, 0, 100) / 100d * 255);
+        await CommitColorAsync(PreviewColor, Math.Clamp(alpha, 0, 255));
+    }
+
+    private async Task CommitColorAsync(string rgb, int alpha)
+    {
+        var next = $"{rgb[..7]}{alpha:X2}";
+        displayValue = next.ToUpperInvariant();
+        await ValueChanged.InvokeAsync(next);
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            displayValue = NormalizedValue.ToUpperInvariant();
+            open = false;
+        }
+        else if (args.Key == "Enter")
+        {
+            var normalized = Normalize(displayValue);
+            if (normalized is not null)
+                await ValueChanged.InvokeAsync(normalized);
+        }
+    }
+
+    private bool IsCurrentColor(string color) =>
+        string.Equals(PreviewColor, color, StringComparison.OrdinalIgnoreCase);
+
+    private static string? Normalize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var color = value.Trim();
+        if (!color.StartsWith('#')) color = $"#{color}";
+        if (color.Length is not (7 or 9)) return null;
+        return color[1..].All(Uri.IsHexDigit) ? color : null;
+    }
+}

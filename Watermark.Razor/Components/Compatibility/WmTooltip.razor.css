@@ -1,0 +1,3 @@
+.wm-tooltip { position: relative; display: inline-flex; }
+.wm-tooltip-content { display: none; position: absolute; z-index: 20; left: 0; top: 100%; padding: 6px; background: #fff; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.wm-tooltip:hover .wm-tooltip-content { display: block; }

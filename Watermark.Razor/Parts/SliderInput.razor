@@ -1,5 +1,6 @@
 ﻿@using Masa.Blazor
 @using Watermark.Shared.Models
+@using System.Globalization
 @typeparam TValue where TValue : struct, IComparable<TValue>
 <style>
     .slider-input {
@@ -46,7 +47,18 @@
 </style>
 
 
-@if (Global.DeviceType == Shared.Enums.DeviceType.Andorid || Global.DeviceType == Shared.Enums.DeviceType.IOS)
+@if (Global.DeviceType == Shared.Enums.DeviceType.Mac)
+{
+    <Watermark.Razor.Components.Mac.MacSlider Label="@Name"
+                                               Value="@MacValue"
+                                               Min="0"
+                                               Max="100"
+                                               Step="@MacStep"
+                                               Suffix="@Unit"
+                                               Compact
+                                               ValueChanged="OnMacValueChanged" />
+}
+else if (Global.DeviceType == Shared.Enums.DeviceType.Andorid || Global.DeviceType == Shared.Enums.DeviceType.IOS)
 {
         <div class="slider-input-main ma-1">
             <div style="display:flex;align-items:center;justify-content:space-between">
@@ -88,4 +100,19 @@ else
     public string Unit { get; set; } = "%";
     [Parameter]
     public EventCallback<TValue> ValueChanged { get; set; }
+    private double MacValue => Convert.ToDouble(Value, CultureInfo.InvariantCulture);
+    private double MacStep
+    {
+        get
+        {
+            var step = Convert.ToDouble(Step, CultureInfo.InvariantCulture);
+            return step > 0 ? step : 1;
+        }
+    }
+
+    private Task OnMacValueChanged(double value)
+    {
+        var converted = (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+        return ValueChanged.InvokeAsync(converted);
+    }
 }

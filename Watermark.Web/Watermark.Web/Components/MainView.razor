@@ -4,13 +4,8 @@
 @using System.Collections.Concurrent
 @using Watermark.Shared.Models
 @using Watermark.Web.Components.Pages
-@using Color = MudBlazor.Color
-@inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
-<MudThemeProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 @* ===== 3.1: 固定导航栏 ===== *@
 <nav class="sticky-nav" id="stickyNav">
@@ -32,44 +27,44 @@
 @* ===== 3.2: Feature Section 功能卡片区 ===== *@
 <section class="feature-section">
     <h2 class="section-title scroll-animate fade-in">产品特色</h2>
-    <MudGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;">
+    <WmGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;">
         @for (int i = 0; i < features.Count; i++)
         {
             var feature = features[i];
             var delay = i + 1;
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="0" Class="@($"scroll-animate fade-in stagger-delay-{delay}")" Style="text-align:center;padding:32px 16px;background:#f5f5f7;border-radius:16px;">
-                    <MudIcon Icon="@feature.Icon" Style="font-size:2.5rem;color:#0071e3;" />
-                    <MudCardContent>
-                        <MudText Typo="Typo.h6" Style="font-weight:600;margin-bottom:8px;">@feature.Title</MudText>
-                        <MudText Typo="Typo.body2" Style="color:#6e6e73;">@feature.Description</MudText>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <WmItem xs="12" sm="6" md="4">
+                <WmCard Elevation="0" Class="@($"scroll-animate fade-in stagger-delay-{delay}")" Style="text-align:center;padding:32px 16px;background:#f5f5f7;border-radius:16px;">
+                    <WmIcon Icon="@feature.Icon" Style="font-size:2.5rem;color:#0071e3;" />
+                    <WmCardContent>
+                        <WmText Typo="Typo.h6" Style="font-weight:600;margin-bottom:8px;">@feature.Title</WmText>
+                        <WmText Typo="Typo.body2" Style="color:#6e6e73;">@feature.Description</WmText>
+                    </WmCardContent>
+                </WmCard>
+            </WmItem>
         }
-    </MudGrid>
+    </WmGrid>
 </section>
 
 @* ===== 3.3: 产品截图展示区 ===== *@
 <section class="showcase-section">
-    <MudGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;align-items:center;">
-        <MudItem xs="12" sm="6">
+    <WmGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;align-items:center;">
+        <WmItem xs="12" sm="6">
             <div class="scroll-animate slide-left">
                 <h2 class="section-title">强大的模板编辑器</h2>
                 <p class="section-desc">通过模板编辑器制作各式各样的照片模板</p>
                 <p class="section-desc">更可以直接获取图片EXIF信息</p>
                 <p class="section-desc">上百款模板供你选择，创作你自己的专属模板</p>
             </div>
-        </MudItem>
-        <MudItem xs="12" sm="6">
+        </WmItem>
+        <WmItem xs="12" sm="6">
             <div class="scroll-animate slide-right">
                 <img src="https://cdn.thankful.top/C264A6182FBF486DBD4C755D743E4AB3.jpg"
                      alt="产品截图"
                      style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);"
                      onerror="this.style.display='none';this.parentElement.style.background='#e8e8ed';this.parentElement.style.minHeight='300px';this.parentElement.style.borderRadius='12px';" />
             </div>
-        </MudItem>
-    </MudGrid>
+        </WmItem>
+    </WmGrid>
 </section>
 
 @* ===== 3.4: Download Section 下载区 ===== *@
@@ -77,16 +72,16 @@
     <h2 class="section-title scroll-animate fade-in">下载轻影</h2>
     <div class="download-buttons scroll-animate slide-up stagger-delay-1">
         <a href="https://cdn.thankful.top/Watermark.Win.Update.exe" class="download-btn">
-            <MudIcon Icon="@Icons.Custom.Brands.Microsoft" /> Windows
+            <WmIcon Icon="@WmIcons.Custom.Brands.Microsoft" /> Windows
         </a>
         <a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk" class="download-btn">
-            <MudIcon Icon="@Icons.Material.Filled.Android" /> Android
+            <WmIcon Icon="@WmIcons.Material.Filled.Android" /> Android
         </a>
         <a href="https://cdn.thankful.top/Litograph.pkg" class="download-btn">
-            <MudIcon Icon="@Icons.Custom.Brands.Apple" /> macOS
+            <WmIcon Icon="@WmIcons.Custom.Brands.Apple" /> macOS
         </a>
         <a href="https://apps.apple.com/cn/app/%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88/id6541761957" class="download-btn">
-            <MudIcon Icon="@Icons.Custom.Brands.Apple" /> iPhone
+            <WmIcon Icon="@WmIcons.Custom.Brands.Apple" /> iPhone
         </a>
     </div>
     <p class="privacy-text scroll-animate fade-in stagger-delay-2">
@@ -123,11 +118,11 @@
 
     List<FeatureItem> features =
     [
-        new(Icons.Material.Filled.CardGiftcard, "基础功能免费", "核心功能完全免费使用"),
-        new(Icons.Material.Filled.Devices, "会员全平台通用", "跨平台同步，一次订阅多端使用"),
-        new(Icons.Material.Filled.HighQuality, "不损失画质", "原图质量输出，无压缩损失"),
-        new(Icons.Material.Filled.Dashboard, "模板设计与编辑", "丰富模板库，自由创作编辑"),
-        new(Icons.Material.Filled.GridView, "拼图功能", "多种拼图布局，灵活组合照片")
+        new(WmIcons.Material.Filled.CardGiftcard, "基础功能免费", "核心功能完全免费使用"),
+        new(WmIcons.Material.Filled.Devices, "会员全平台通用", "跨平台同步，一次订阅多端使用"),
+        new(WmIcons.Material.Filled.HighQuality, "不损失画质", "原图质量输出，无压缩损失"),
+        new(WmIcons.Material.Filled.Dashboard, "模板设计与编辑", "丰富模板库，自由创作编辑"),
+        new(WmIcons.Material.Filled.GridView, "拼图功能", "多种拼图布局，灵活组合照片")
     ];
 
     List<string> strings =

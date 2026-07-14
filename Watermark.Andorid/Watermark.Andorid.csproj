@@ -185,13 +185,29 @@
       <Folder Include="wwwroot\resources\" />
     </ItemGroup>
 
-	<!-- Remove com.apple.quarantine attribute from all files before bundling -->
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">
-		<PrepareForRunDependsOn>RemoveQuarantineAttribute</PrepareForRunDependsOn>
-	</PropertyGroup>
-
-	<Target Name="RemoveQuarantineAttribute" Condition="'$(Configuration)' == 'Release'">
-		<Exec Command="xattr -r -d com.apple.quarantine &quot;$(IntermediateOutputPath)&quot; 2>/dev/null || true" Condition="'$(OS)' == 'Unix'" />
+	<!--
+		macOS may attach com.apple.provenance to source and build files. On macOS 26
+		this can leave a Mac Catalyst process blocked in dyld before MAUI starts.
+		Recreating the signed bundle without copying stale extended attributes refreshes
+		its filesystem metadata, preserves its signature, and avoids in-place xattr calls.
+	-->
+	<Target Name="SanitizeMacCatalystAppBundle"
+			AfterTargets="Build"
+			Condition="'$(TargetFramework)' == 'net8.0-maccatalyst' And '$(OS)' == 'Unix'">
+		<PropertyGroup>
+			<_MacCatalystAppBundle>$(TargetDir)$(AssemblyName).app</_MacCatalystAppBundle>
+			<_MacCatalystSanitizedAppBundle>$(TargetDir)$(AssemblyName).sanitized.app</_MacCatalystSanitizedAppBundle>
+		</PropertyGroup>
+		<Message Text="Refreshing Mac Catalyst app bundle metadata..."
+				 Importance="high"
+				 Condition="Exists('$(_MacCatalystAppBundle)')" />
+		<RemoveDir Directories="$(_MacCatalystSanitizedAppBundle)" />
+		<Exec Command="/usr/bin/ditto --noextattr &quot;$(_MacCatalystAppBundle)&quot; &quot;$(_MacCatalystSanitizedAppBundle)&quot;"
+			  Condition="Exists('$(_MacCatalystAppBundle)')" />
+		<RemoveDir Directories="$(_MacCatalystAppBundle)"
+				   Condition="Exists('$(_MacCatalystSanitizedAppBundle)')" />
+		<Exec Command="/bin/mv &quot;$(_MacCatalystSanitizedAppBundle)&quot; &quot;$(_MacCatalystAppBundle)&quot;"
+			  Condition="Exists('$(_MacCatalystSanitizedAppBundle)')" />
 	</Target>
 
 </Project>

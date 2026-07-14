@@ -1,34 +1,27 @@
-﻿@using MudBlazor
 @using Watermark.Shared.Models
 
-<MudCard Elevation="0">
-    <MudCardHeader>
-        <CardHeaderContent>
-            <MudText></MudText>
-        </CardHeaderContent>
-        <CardHeaderActions>
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Class="ml-auto" OnClick="Export">保存</MudButton>
-        </CardHeaderActions>
-    </MudCardHeader>
-    <MudCardContent>
-        <MudForm>
-            <MudSelect @bind-Value="@Global.Resolution" T="string" Label="分辨率" AnchorOrigin="Origin.BottomCenter">
-                <MudSelectItem Value="@("default")">原图</MudSelectItem>
-                <MudSelectItem Value="@("1080")">1080P</MudSelectItem>
-                <MudSelectItem Value="@("2160")">4K</MudSelectItem>
-            </MudSelect>
-            <MudSelect @bind-Value="@Global.Quality" T="int" Label="图片质量" AnchorOrigin="Origin.BottomCenter">
-                <MudSelectItem Value="@(100)">原图</MudSelectItem>
-                <MudSelectItem Value="@(85)">高</MudSelectItem>
-                <MudSelectItem Value="@(70)">中</MudSelectItem>
-            </MudSelect>
-            @* <MudTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" /> *@
-        </MudForm>
-    </MudCardContent>
-</MudCard>
+<WmCard Elevation="0">
+    <div class="d-flex justify-end pa-2">
+        <WmButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="primary" Class="ml-auto" OnClick="Export">保存</WmButton>
+    </div>
+    <WmCardContent>
+        <WmForm>
+            <MSelect @bind-Value="Global.Resolution" Items="ResolutionOptions" TItem="KeyValuePair<string, string>" TValue="string" TItemValue="string"
+                     ItemText="u => u.Value" ItemValue="u => u.Key" Label="分辨率" Dense />
+            <MSelect @bind-Value="Global.Quality" Items="QualityOptions" TItem="KeyValuePair<int, string>" TValue="int" TItemValue="int"
+                     ItemText="u => u.Value" ItemValue="u => u.Key" Label="图片质量" Dense />
+            @* <WmTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" /> *@
+        </WmForm>
+    </WmCardContent>
+</WmCard>
 
             
 @code {
+    private static readonly List<KeyValuePair<string, string>> ResolutionOptions =
+    [new("default", "原图"), new("1080", "1080P"), new("2160", "4K")];
+    private static readonly List<KeyValuePair<int, string>> QualityOptions =
+    [new(100, "原图"), new(85, "高"), new(70, "中")];
+
     [Parameter]
     public EventCallback ExportEvent { get; set; }
 

@@ -1,55 +1,22 @@
-﻿@using MudBlazor
-<MudPaper Elevation="0" Class="pa-2" Width="80%" Style="min-width:250px;">
-		<MudStack Style="text-align:center;">
-			<MudText Typo="Typo.subtitle1" Color="Color.Secondary"> 升级提醒</MudText>
-		</MudStack>
-		<br />
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			版本:@UpdateVersion
-		</MudText>
-		<br/>
-
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			更新内容
-		</MudText>
-		<MudText Typo="Typo.subtitle2" Color="Color.Default">
-			@UpdateMessage
-		</MudText>
-		@if (DownLoadProgress > 0)
-		{
-			<MudProgressLinear Color="Color.Primary" Value="@DownLoadProgress" style="width:auto" class="mt-2"/>
-		}
-		<MudButton Color="Color.Secondary" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Update" Size="Size.Small" Class="mt-2">更新</MudButton>
-		<MudButton Color="Color.Default" Variant="Variant.Filled" DisableElevation FullWidth OnClick="Close" Size="Size.Small" Class="mt-2">以后再说</MudButton>
-		
-		
-	</MudPaper>
+<MCard Flat Class="pa-2" Style="width:80%;min-width:250px;">
+    <div class="text-center text-subtitle-1 secondary--text">升级提醒</div>
+    <div class="text-subtitle-2 mt-2">版本：@UpdateVersion</div>
+    <div class="text-subtitle-2 mt-2">更新内容</div>
+    <div class="text-subtitle-2">@UpdateMessage</div>
+    @if (DownLoadProgress > 0)
+    {
+        <MProgressLinear Color="primary" Value="@DownLoadProgress" Class="mt-2" Style="width:auto" />
+    }
+    <MButton Color="secondary" Block OnClick="Update" Small Class="mt-2" Elevation="0">更新</MButton>
+    <MButton Block OnClick="Close" Small Class="mt-2" Elevation="0">以后再说</MButton>
+</MCard>
 
 @code {
-	[Parameter]
-	public string UpdateVersion { get; set; }
-	[Parameter] 
-	public string UpdateMessage { get; set; }
-	[Parameter]
-	public int DownLoadProgress { get; set; }
-	[Parameter]
-	public EventCallback UpdateEvet { get; set; }
-	[Parameter]
-	public EventCallback CloseEvet { get; set; }
-
-	void Update()
-	{
-		if (UpdateEvet.HasDelegate)
-		{
-			UpdateEvet.InvokeAsync();
-		}
-	}
-
-	void Close()
-	{
-		if (CloseEvet.HasDelegate)
-		{
-			CloseEvet.InvokeAsync();
-		}
-	}
+    [Parameter] public string? UpdateVersion { get; set; }
+    [Parameter] public string? UpdateMessage { get; set; }
+    [Parameter] public int DownLoadProgress { get; set; }
+    [Parameter] public EventCallback UpdateEvet { get; set; }
+    [Parameter] public EventCallback CloseEvet { get; set; }
+    private Task Update() => UpdateEvet.InvokeAsync();
+    private Task Close() => CloseEvet.InvokeAsync();
 }

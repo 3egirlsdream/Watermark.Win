@@ -6,7 +6,7 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<div class="mac-canvas-viewport @(spacePressed ? "pan-ready" : null) @(panPointerId is not null ? "panning" : null)"
+<div class="mac-canvas-viewport @(AllowViewportPan && spacePressed ? "pan-ready" : null) @(AllowViewportPan && panPointerId is not null ? "panning" : null)"
      tabindex="0"
      aria-label="模板画布"
      @ref="viewportElement"
@@ -50,6 +50,7 @@
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public string PreviewUrl { get; set; } = string.Empty;
     [Parameter] public double Zoom { get; set; } = 1;
+    [Parameter] public bool AllowViewportPan { get; set; } = true;
     [Parameter] public EventCallback<double> ZoomChanged { get; set; }
     [Parameter] public EventCallback SaveRequested { get; set; }
 
@@ -116,6 +117,9 @@
             await SynchronizeSceneAsync();
         }
         catch (JSDisconnectedException)
+        {
+        }
+        catch (JSException)
         {
         }
     }
@@ -204,25 +208,32 @@
     }
 
     [JSInvokable]
-    public Task BeginCanvasInteraction(string controlId)
+    public Task<bool> BeginCanvasInteraction(string controlId)
     {
-        if (canvasInteractionActive) return Task.CompletedTask;
+        if (canvasInteractionActive) return Task.FromResult(false);
         var control = MacControlTree.Find(Editor.Draft, controlId);
-        if (control is null || control.IsLocked || !control.Enabled) return Task.CompletedTask;
+        if (control is null || control.IsLocked || !control.Enabled) return Task.FromResult(false);
 
-        Editor.Select(controlId);
-        Editor.BeginTransaction("画布变换");
-        canvasInteractionActive = true;
-        canvasInteractionControlId = controlId;
-        return Task.CompletedTask;
+        try
+        {
+            Editor.Select(controlId);
+            Editor.BeginTransaction("画布变换");
+            canvasInteractionActive = true;
+            canvasInteractionControlId = controlId;
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException)
+        {
+            return Task.FromResult(false);
+        }
     }
 
     [JSInvokable]
-    public Task CommitCanvasInteraction(MacCanvasInteraction interaction)
+    public Task<MacCanvasInteraction?> CommitCanvasInteraction(MacCanvasInteraction interaction)
     {
         if (!canvasInteractionActive
             || !string.Equals(canvasInteractionControlId, interaction.ControlId, StringComparison.Ordinal))
-            return Task.CompletedTask;
+            return Task.FromResult<MacCanvasInteraction?>(null);
 
         try
         {
@@ -230,19 +241,31 @@
             if (control is null || control.IsLocked || !control.Enabled)
             {
                 Editor.CancelTransaction();
-                return Task.CompletedTask;
+                return Task.FromResult<MacCanvasInteraction?>(null);
             }
 
-            MacCanvasTransform.Apply(control, interaction);
+            var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == interaction.ControlId);
+            var constrainedInteraction = bounds is null
+                ? interaction
+                : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
+
+            MacCanvasTransform.Apply(control, constrainedInteraction);
             Editor.CommitTransaction();
+            var appliedTransform = control.EnsureTransform();
+            return Task.FromResult<MacCanvasInteraction?>(constrainedInteraction with
+            {
+                OffsetXPercent = appliedTransform.OffsetXPercent,
+                OffsetYPercent = appliedTransform.OffsetYPercent,
+                ScaleX = appliedTransform.ScaleX,
+                ScaleY = appliedTransform.ScaleY,
+                Rotation = appliedTransform.Rotation
+            });
         }
         finally
         {
             canvasInteractionActive = false;
             canvasInteractionControlId = null;
         }
-
-        return Task.CompletedTask;
     }
 
     [JSInvokable]
@@ -264,6 +287,8 @@
             return;
         }
 
+        if (!AllowViewportPan) return;
+
         panX -= args.DeltaX;
         panY -= args.DeltaY;
     }
@@ -271,7 +296,7 @@
     private async Task HandlePointerDownAsync(PointerEventArgs args)
     {
         await viewportElement.FocusAsync(preventScroll: true);
-        if (!spacePressed || args.Button != 0)
+        if (!AllowViewportPan || !spacePressed || args.Button != 0)
         {
             Editor.Select(null);
             return;
@@ -309,6 +334,7 @@
     {
         if (IsSpace(args.Key))
         {
+            if (!AllowViewportPan) return;
             if (!spacePressed)
             {
                 spacePressed = true;
@@ -404,6 +430,8 @@
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
         var control = MacControlTree.Find(Editor.Draft, selectedId);
         if (control is null || control.IsLocked || !control.Enabled) return;
+        var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == selectedId);
+        if (bounds is null) return;
 
         if (!keyboardMoveActive)
         {
@@ -422,10 +450,21 @@
         Editor.Mutate("键盘移动", () =>
         {
             var transform = control.EnsureTransform();
-            if (key == "ArrowLeft") transform.OffsetXPercent = Math.Max(-500, transform.OffsetXPercent - step);
-            else if (key == "ArrowRight") transform.OffsetXPercent = Math.Min(500, transform.OffsetXPercent + step);
-            else if (key == "ArrowUp") transform.OffsetYPercent = Math.Max(-500, transform.OffsetYPercent - step);
-            else if (key == "ArrowDown") transform.OffsetYPercent = Math.Min(500, transform.OffsetYPercent + step);
+            var horizontalStep = bounds.ParentWidth > 0 ? step / bounds.ParentWidth * 100 : 0;
+            var verticalStep = bounds.ParentHeight > 0 ? step / bounds.ParentHeight * 100 : 0;
+            var desiredX = transform.OffsetXPercent;
+            var desiredY = transform.OffsetYPercent;
+            if (key == "ArrowLeft") desiredX -= horizontalStep;
+            else if (key == "ArrowRight") desiredX += horizontalStep;
+            else if (key == "ArrowUp") desiredY -= verticalStep;
+            else if (key == "ArrowDown") desiredY += verticalStep;
+            (transform.OffsetXPercent, transform.OffsetYPercent) = MacCanvasBoundary.ClampOffsets(
+                bounds,
+                Math.Clamp(desiredX, -500, 500),
+                Math.Clamp(desiredY, -500, 500),
+                transform.ScaleX,
+                transform.ScaleY,
+                transform.Rotation);
         });
     }
 
@@ -533,6 +572,9 @@
                 await module.DisposeAsync();
         }
         catch (JSDisconnectedException)
+        {
+        }
+        catch (JSException)
         {
         }
         catch (InvalidOperationException)

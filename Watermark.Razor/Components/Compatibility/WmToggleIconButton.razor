@@ -1,0 +1,13 @@
+<MButton Icon Text OnClick="ToggleAsync"><MIcon>@(Toggled ? ToggledIcon : Icon)</MIcon></MButton>
+@code {
+    [Parameter] public bool Toggled { get; set; }
+    [Parameter] public EventCallback<bool> ToggledChanged { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? ToggledIcon { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? ToggledColor { get; set; }
+    [Parameter] public string? Size { get; set; }
+    [Parameter] public string? ToggledSize { get; set; }
+    [Parameter] public string? Variant { get; set; }
+    private Task ToggleAsync() => ToggledChanged.InvokeAsync(!Toggled);
+}

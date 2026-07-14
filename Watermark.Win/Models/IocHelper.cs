@@ -2,7 +2,6 @@
 using Masa.Blazor.Popup;
 using Masa.Blazor.Presets;
 using Microsoft.Extensions.DependencyInjection;
-using MudBlazor.Services;
 using System.Windows;
 
 namespace Watermark.Win.Models
@@ -21,7 +20,6 @@ namespace Watermark.Win.Models
             }
 
             _services = new ServiceCollection();
-            _services.AddMudServices();
             _services.AddWpfBlazorWebView();
 #if DEBUG
             _services.AddBlazorWebViewDeveloperTools();

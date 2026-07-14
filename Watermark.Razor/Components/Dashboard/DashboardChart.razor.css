@@ -1,0 +1,163 @@
+.dashboard-chart {
+    min-height: 240px;
+    position: relative;
+    width: 100%;
+}
+
+.dashboard-chart.compact {
+    min-height: 200px;
+}
+
+.cartesian-chart {
+    height: 240px;
+    overflow: visible;
+    width: 100%;
+}
+
+.chart-grid-line {
+    stroke: rgba(34, 42, 53, 0.1);
+    stroke-dasharray: 3 6;
+    stroke-width: 1;
+}
+
+.chart-axis-line {
+    stroke: rgba(34, 42, 53, 0.24);
+    stroke-width: 1;
+}
+
+.axis-label,
+.axis-value {
+    fill: #8b8c87;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+}
+
+.x-axis-labels {
+    color: #8b8c87;
+    display: flex;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9px;
+    justify-content: space-between;
+    margin: -20px 3.2% 0 6%;
+    position: relative;
+}
+
+.chart-line,
+.chart-bar,
+.chart-point {
+    transition: filter 160ms ease, opacity 160ms ease;
+}
+
+.chart-line {
+    filter: drop-shadow(0 3px 5px rgba(32, 65, 130, 0.12));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.chart-point {
+    stroke: #fff;
+    stroke-width: 1.5;
+}
+
+.chart-bar:hover,
+.chart-point:hover {
+    filter: brightness(0.88);
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    justify-content: center;
+    padding: 2px 12px 0;
+}
+
+.legend-item {
+    align-items: center;
+    color: #666963;
+    display: flex;
+    font-size: 12px;
+    gap: 7px;
+    min-width: 0;
+}
+
+.legend-item i {
+    border-radius: 99px;
+    flex: 0 0 auto;
+    height: 7px;
+    width: 7px;
+}
+
+.legend-item strong {
+    color: #222a35;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.donut-layout {
+    align-items: center;
+    display: grid;
+    gap: 22px;
+    grid-template-columns: minmax(150px, 0.85fr) minmax(160px, 1fr);
+    min-height: 220px;
+}
+
+.donut-chart {
+    height: 190px;
+    justify-self: center;
+    overflow: visible;
+    width: 190px;
+}
+
+.donut-chart circle {
+    transition: opacity 160ms ease;
+}
+
+.donut-chart circle:hover {
+    opacity: 0.78;
+}
+
+.donut-total {
+    fill: #222a35;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.donut-caption {
+    fill: #92938e;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.donut-legend {
+    align-content: center;
+    display: grid;
+    gap: 10px;
+    justify-content: stretch;
+    padding: 0;
+}
+
+.chart-empty {
+    align-items: center;
+    color: #999b96;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    inset: 0;
+    justify-content: center;
+    min-height: 220px;
+}
+
+@media (max-width: 620px) {
+    .donut-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .donut-chart {
+        height: 150px;
+        width: 150px;
+    }
+}

@@ -14,53 +14,53 @@
             cursor: pointer
         }
 
-    .mud-picker-color-picker {
+    .wm-picker-color-picker {
         width: 312px;
         height: 250px;
         position: relative;
         overflow: hidden;
     }
 
-        .mud-picker-color-picker .mud-picker-color-grid {
+        .wm-picker-color-picker .wm-picker-color-grid {
             display: flex;
             flex-wrap: wrap;
         }
 
-    .mud-picker-color-controls {
+    .wm-picker-color-controls {
         width: 312px;
         padding: 16px;
         display: flex;
         flex-direction: column;
     }
 
-        .mud-picker-color-controls .mud-picker-color-controls-row {
+        .wm-picker-color-controls .wm-picker-color-controls-row {
             display: flex;
             align-items: center;
         }
 
-    .mud-picker-color-dot.mud-picker-color-dot-current {
+    .wm-picker-color-dot.wm-picker-color-dot-current {
         background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQYlWNgYGCQwoKxgqGgcJA5h3yFAAs8BRWVSwooAAAAAElFTkSuQmCC) repeat;
     }
 
-    .mud-ripple {
-        --mud-ripple-offset-x: 0;
-        --mud-ripple-offset-y: 0;
+    .wm-ripple {
+        --wm-ripple-offset-x: 0;
+        --wm-ripple-offset-y: 0;
         position: relative;
         overflow: hidden;
     }
 
-    .mud-picker-color-fill {
+    .wm-picker-color-fill {
         width: 38px;
         height: 38px;
         border-radius: 2px;
     }
 
-    .mud-picker-color-dot {
+    .wm-picker-color-dot {
         height: 38px;
         width: 38px;
         border-radius: 2px;
         transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-radius 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-        border-radius: var(--mud-default-borderradius);
+        border-radius: var(--wm-default-borderradius);
         box-shadow: 0 0 6px rgba(127, 130, 134, .18);
     }
 </style>
@@ -79,8 +79,8 @@
                     <div>
                         @if (@ShowColorField)
                         {
-                            <div class="mud-picker-color-picker">
-                                <div class="mud-picker-color-grid">
+                            <div class="wm-picker-color-picker">
+                                <div class="wm-picker-color-grid">
                                     @foreach (var item in _gridList)
                                     {
                                         <div class="dot" style="@($"background: {item};")" @onclick="() => Click(item)" />
@@ -89,29 +89,42 @@
                             </div>
                         }
 
-                        <div class="mud-picker-color-controls">
+                        <div class="wm-picker-color-controls">
                             @if (ShowSliders || ShowPreview)
                             {
-                                <div class="mud-picker-color-controls-row">
+                                <div class="wm-picker-color-controls-row">
                                     @if (ShowPreview)
                                     {
-                                        <div class="mud-picker-color-dot mud-picker-color-dot-current mud-ripple">
-                                            <div class="mud-picker-color-fill" style="@($"background: {Color};")"></div>
+                                        <div class="wm-picker-color-dot wm-picker-color-dot-current wm-ripple">
+                                            <div class="wm-picker-color-fill" style="@($"background: {Color};")"></div>
                                         </div>
-                                        <MSlider Class="mud-picker-color-slider alpha ml-1"
-                                                 Style="width:220px"
-                                                 Value="@_value.Alpha"
-                                                 TValue="byte"
-                                                 Min="0"
-                                                 Max="255"
-                                                 TrackSize="8"
-                                                 ValueChanged="SliderChanged"
-                                                 HideDetails="true"
-                                                 Step="1" />
+                                        @if (Watermark.Shared.Models.Global.DeviceType == Watermark.Shared.Enums.DeviceType.Mac)
+                                        {
+                                            <div style="width:220px;margin-left:4px">
+                                                <Watermark.Razor.Components.Mac.MacSlider Label="透明度"
+                                                                                           Value="@_value.Alpha"
+                                                                                           Min="0" Max="255" Step="1"
+                                                                                           ShowHeading="false" Compact
+                                                                                           ValueChanged="value => SliderChanged((byte)Math.Round(value))" />
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <MSlider Class="wm-picker-color-slider alpha ml-1"
+                                                     Style="width:220px"
+                                                     Value="@_value.Alpha"
+                                                     TValue="byte"
+                                                     Min="0"
+                                                     Max="255"
+                                                     TrackSize="8"
+                                                     ValueChanged="SliderChanged"
+                                                     HideDetails="true"
+                                                     Step="1" />
+                                        }
                                     }
                                     @if (_collectionOpen)
                                     {
-                                        <div class="mud-picker-color-collection">
+                                        <div class="wm-picker-color-collection">
                                             @foreach (var item in Palette.Take(5))
                                             {
                                                 <div style="@($"background: {item};")"></div>
@@ -122,7 +135,7 @@
                             }
                             @if (ShowInputs)
                             {
-                                <div class="mud-picker-color-controls-row mt-2">
+                                <div class="wm-picker-color-controls-row mt-2">
                                     <div style="width:100%">
                                         <MTextField Outlined TValue="string" Dense Required="true" HideDetails="true" Label="HEX" Value="@Color" ValueChanged="ValueChanged" Counter="9" />
                                     </div>
@@ -293,4 +306,3 @@
         }
     }
 }
-

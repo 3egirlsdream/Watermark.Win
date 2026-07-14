@@ -1,0 +1,160 @@
+.mac-slider {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    min-width: 0;
+    padding: 4px 0 8px;
+    -webkit-user-select: none;
+    user-select: none;
+    width: 100%;
+}
+
+.mac-slider.compact {
+    gap: 1px;
+    padding: 1px 0 3px;
+}
+
+.mac-slider.disabled {
+    opacity: 0.56;
+}
+
+.mac-slider-heading {
+    align-items: baseline;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.mac-slider-label {
+    color: #334155;
+    cursor: default;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.mac-slider.compact .mac-slider-label {
+    color: #657284;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.mac-slider-baseline {
+    background: rgba(40, 120, 229, 0.09);
+    border-radius: 999px;
+    color: #2878e5;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+.mac-slider-value {
+    background: rgba(241, 245, 249, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 5px;
+    color: #475569;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+    min-width: 42px;
+    padding: 1px 5px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.mac-slider.compact .mac-slider-value {
+    background: transparent;
+    border-color: transparent;
+    color: #8994a2;
+    font-size: 10px;
+    padding-right: 0;
+}
+
+.mac-slider-control {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 20px;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.mac-slider-control:disabled {
+    cursor: default;
+}
+
+.mac-slider-control::-webkit-slider-runnable-track {
+    background: linear-gradient(
+        90deg,
+        #2878e5 0,
+        #216fd3 var(--mac-slider-progress),
+        #dbe3ee var(--mac-slider-progress),
+        #dbe3ee 100%);
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(40, 120, 229, 0.12);
+    height: 3px;
+}
+
+.mac-slider-control::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #ffffff;
+    border: 2px solid #2878e5;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.72);
+    height: 13px;
+    margin-top: -5px;
+    transition: box-shadow 100ms ease;
+    width: 13px;
+}
+
+.mac-slider-control:hover::-webkit-slider-thumb {
+    box-shadow: 0 2px 6px rgba(40, 120, 229, 0.24), 0 0 0 3px rgba(40, 120, 229, 0.08);
+}
+
+.mac-slider-control:active::-webkit-slider-thumb {
+    box-shadow: 0 2px 6px rgba(40, 120, 229, 0.24), 0 0 0 4px rgba(40, 120, 229, 0.12);
+}
+
+.mac-slider-control:focus-visible {
+    outline: none;
+}
+
+.mac-slider-control:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18), 0 0 0 3px rgba(40, 120, 229, 0.18);
+}
+
+.mac-slider-control::-moz-range-track {
+    background: #dbe3ee;
+    border: 0;
+    border-radius: 999px;
+    height: 3px;
+}
+
+.mac-slider-control::-moz-range-progress {
+    background: linear-gradient(90deg, #3b8cf4, #216fd3);
+    border-radius: 999px;
+    height: 3px;
+}
+
+.mac-slider-control::-moz-range-thumb {
+    background: #ffffff;
+    border: 2px solid #2878e5;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+    height: 9px;
+    width: 9px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mac-slider-control::-webkit-slider-thumb {
+        transition: none;
+    }
+}

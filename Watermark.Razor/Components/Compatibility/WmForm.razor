@@ -1,0 +1,5 @@
+<MForm @attributes="AdditionalAttributes">@ChildContent</MForm>
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

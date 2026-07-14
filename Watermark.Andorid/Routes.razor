@@ -3,7 +3,7 @@
 @using Watermark.Razor.BlazorPages
 <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(Watermark.Razor.Components.AppSetting).Assembly])">
     <Found Context="routeData">
-        @if (Global.DeviceType == DeviceType.Mac)
+        @if (Global.DeviceType == DeviceType.Mac && (routeData.PageType == typeof(IndexView) || routeData.PageType == typeof(MainViewOSX)))
         {
             <MainViewOSX/>
         }

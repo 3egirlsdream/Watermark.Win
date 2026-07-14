@@ -1,13 +1,20 @@
 ﻿@page "/mac"
+@implements IDisposable
 @using System.IO
 @using System.Diagnostics
 @using System.Collections.Concurrent
 @using Masa.Blazor
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using System.ComponentModel
+@using System.Text.Json
+@using SkiaSharp
 @using Watermark.Razor
 @using Watermark.Razor.Components
+@using Watermark.Razor.Components.Mac
+@using Watermark.Razor.Components.Mac.Editing
+@using Watermark.Razor.Components.Dashboard
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @using Watermark.Razor.BlazorPages
@@ -18,560 +25,217 @@
 @inject IWMWatermarkHelper helper
 @inject APIHelper api
 @inject IClientInstance ClientInstance
+@inject MacTemplateLibraryService TemplateLibrary
+@inject MacEditingSession EditingSession
+@inject MacWorkspaceCoordinator WorkspaceCoordinator
+@inject MacImageImportService ImageImportService
+@inject MacFullResolutionRenderService FullResolutionRenderService
+@inject WMTemplateOperationProcessor TemplateProcessor
+@inject WMColorGradeOperationProcessor ColorGradeProcessor
+@inject IWMColorLookMapper ColorLookMapper
+@inject IWMColorAnalysisService ColorAnalysisService
+@inject IWMProcessingScheduler ProcessingScheduler
 @inject NavigationManager NavController
-<style>
-    .d-mw300 {
-        min-width: 300px;
-    }
-
-    .m-treeview-node__level {
-        width: 0px;
-    }
-
-    .hover:hover {
-        cursor: pointer;
-    }
-
-    .exif-selector .m-input__control {
-        display: none;
-    }
-
-    .exif-selector .m-input__prepend-outer {
-        margin: 0px;
-    }
-
-    .exif-selector .mdi-paperclip::before {
-        font-size: 20px;
-    }
-
-    .m-treeview-node--click > .m-treeview-node__root,
-    .m-treeview-node--click > .m-treeview-node__root > .m-treeview-node__content > .m-treeview-node__prepend {
-        width: 100%;
-        justify-content: flex-start;
-        display: flex;
-    }
-
-    .m-menu__content {
-        box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px, rgba(0, 0, 0, 0.04) 0px 1px 3px !important;
-        border-radius: 8px !important;
-    }
-
-    .m-toolbar__content {
-        padding: 0;
-        justify-content: center;
-        user-select: none;
-        cursor: grab;
-    }
-
-    .m-toolbar__content:active {
-        cursor: grabbing;
-    }
-
-    .toolbar-icon {
-        background: url(img/app-icon.svg);
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-        height: 24px;
-        width: 24px;
-    }
-
-    /* === 三栏布局 === */
-    .main-workspace {
-        height: calc(100% - 36px);
-        width: 100%;
-        display: flex;
-        background: #F0F1F3;
-    }
-
-    .panel-left {
-        width: 240px;
-        min-width: 200px;
-        max-width: 300px;
-        height: 100%;
-        background: #FFFFFF;
-        border-right: 1px solid rgba(0,0,0,0.06);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .panel-center {
-        flex: 1;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .panel-right {
-        width: 280px;
-        min-width: 240px;
-        max-width: 320px;
-        height: 100%;
-        background: #FFFFFF;
-        border-left: 1px solid rgba(0,0,0,0.06);
-        overflow-y: auto;
-    }
-
-    /* === 左侧面板 === */
-    .panel-left .m-tabs {
-        flex-shrink: 0;
-    }
-
-    .template-list {
-        padding: 8px;
-    }
-
-    .template-list::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .template-list::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.12);
-        border-radius: 2px;
-    }
-
-    .template-item {
-        display: flex;
-        align-items: center;
-        padding: 6px 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background 0.15s;
-        gap: 10px;
-    }
-
-    .template-item:hover {
-        background: rgba(0,0,0,0.04);
-    }
-
-    .template-item:active {
-        background: rgba(0,0,0,0.07);
-    }
-
-    .template-item img {
-        width: 36px;
-        height: 36px;
-        object-fit: contain;
-        border-radius: 4px;
-        flex-shrink: 0;
-        border: 1px solid rgba(0,0,0,0.08);
-    }
-
-    .template-item-name {
-        font-size: 13px;
-        color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .split-template-item {
-        padding: 4px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background 0.15s;
-    }
-
-    .split-template-item:hover {
-        background: rgba(0,0,0,0.04);
-    }
-
-    /* === 中间预览区 === */
-    .preview-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        color: #999;
-        font-size: 13px;
-    }
-
-    .preview-toolbar {
-        position: absolute;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: rgba(255,255,255,0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 8px;
-        padding: 4px 8px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        z-index: 10;
-    }
-
-    .preview-image {
-        width: 90%;
-        height: calc(100% - 60px);
-        object-fit: contain;
-    }
-
-    /* === 底部图片列表 === */
-    .upload-strip {
-        min-height: 100px;
-        display: flex;
-        background: #FFFFFF;
-    }
-
-    /* === 右侧面板滚动条 === */
-    .panel-right::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .panel-right::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.12);
-        border-radius: 2px;
-    }
-
-    .traffic-lights {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 0 10px 0 14px;
-        height: 100%;
-        -webkit-app-region: no-drag;
-    }
-
-    .traffic-light {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        cursor: default;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: filter 0.15s;
-    }
-
-    .traffic-light:hover {
-        filter: brightness(0.9);
-    }
-
-    .traffic-light:active {
-        filter: brightness(0.8);
-    }
-
-    .traffic-light svg {
-        width: 6px;
-        height: 6px;
-        opacity: 0;
-        transition: opacity 0.12s;
-    }
-
-    .traffic-lights:hover .traffic-light svg {
-        opacity: 1;
-    }
-
-    .tl-close {
-        background: #FF5F57;
-    }
-
-    .tl-close svg {
-        stroke: #4D0000;
-        stroke-width: 1.5;
-    }
-
-    .tl-minimize {
-        background: #FEBC2E;
-    }
-
-    .tl-minimize svg {
-        stroke: #995700;
-        stroke-width: 2;
-    }
-
-    .tl-zoom {
-        background: #28C840;
-    }
-
-    .tl-zoom svg {
-        stroke: #006500;
-        stroke-width: 1.2;
-    }
-</style>
-<MApp Style="background:#F9FAFC;height:100vh;width:100vw;overflow:hidden;border-radius:10px;">
-    <MErrorHandler>
-        <MCard Color="white" Flat Tile Style="height:100%;border-radius:10px;overflow:hidden;">
-            <MToolbar Dense Elevation="0" Height="36" Id="@appId" Style="background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid rgba(0,0,0,0.1);">
-                @if (Global.DeviceType == DeviceType.Mac)
-                {
-                    <div class="traffic-lights">
-                        <div class="traffic-light tl-close" @onclick="ClientInstance.WindowClose" title="关闭">
-                            <svg viewBox="0 0 6 6"><line x1="0.5" y1="0.5" x2="5.5" y2="5.5"/><line x1="5.5" y1="0.5" x2="0.5" y2="5.5"/></svg>
-                        </div>
-                        <div class="traffic-light tl-minimize" @onclick="ClientInstance.WindowMinimize" title="最小化">
-                            <svg viewBox="0 0 6 6"><line x1="0" y1="3" x2="6" y2="3"/></svg>
-                        </div>
-                        <div class="traffic-light tl-zoom" @onclick="ClientInstance.WindowZoom" title="最大化">
-                            <svg viewBox="0 0 6 6"><polyline points="1,5.5 1,1 5.5,1" fill="none"/><polyline points="5,0.5 5,5 0.5,5" fill="none"/></svg>
-                        </div>
+<MacWorkspaceShell>
+    <ToolbarContent>
+        <MacAppToolbar Title="@ClientInstance.AppTitle"
+                       CurrentUser="@Global.CurrentUser"
+                       Mode="@WorkspaceMode"
+                       CanApplyCurrent="@CanApplyCurrent"
+                       CanSavePreset="@(CurrentColorRecipe != null)"
+                       CanUndo="@EditingSession.CanUndo"
+                       CanRedo="@EditingSession.CanRedo"
+                       HasPendingOperation="@(PendingTemplate != null)"
+                       ApplyToSelected="@ApplyToSelected"
+                       ApplyToSelectedChanged="value => ApplyToSelected = value"
+                       History="@EditingSession.History"
+                       EditHistory="EditHistoryOperation"
+                       ImportLocalImages="ImportLocalImages"
+                       CreateTemplate="@(() => openCreateNew = true)"
+                       OpenMyTemplate="@(() => openMyTemplate = true)"
+                       OpenMarket="@(() => openMarket = true)"
+                       ToggleExport="ToggleExportPanel"
+                       ApplyCurrent="ApplyCurrentMode"
+                       SavePreset="SaveCurrentColorPreset"
+                       Undo="UndoOperation"
+                       Redo="RedoOperation"
+                       CancelPending="CancelPendingOperation"
+                       OpenLogoStore="@(() => showLogoStore = true)"
+                       OpenSettings="@(() => showSetting = true)"
+                       OpenDashboard="@(() => showDashboard = true)"
+                       Login="@(() => showLogin = true)"
+                       SignUp="@(() => showSignUp = true)"
+                       Logout="LogoutCurrentUser"
+                       LogoutAccount="@(() => showLogout = true)"
+                       OpenVip="OpenVipDialog"
+                       OpenLink="OpenLink"
+                       OpenCommonDialog="OpenCommonDialog" />
+    </ToolbarContent>
+    <WorkspaceContent>
+        <div class="main-workspace">
+            <MacFeatureRail Mode="@WorkspaceMode" ModeChanged="SetWorkspaceMode" />
+            <MacModeSidebar Mode="@WorkspaceMode"
+                            Templates="@wMTemplates"
+                            Images="@Images"
+                            CurrentTemplate="@CurrentTemplate"
+                            TemplateSearch="@TemplateSearch"
+                            ColorPresets="@ColorRecipes"
+                            CurrentColorPreset="@CurrentColorRecipe"
+                            ColorReferenceSrc="@ColorReferenceSrc"
+                            ColorReferenceName="@ColorReferenceName"
+                            StarTrailSelectionIds="@StarTrailSelectionIds"
+                            TemplateSearchChanged="value => TemplateSearch = value"
+                            ChangeTemplate="ChangeTemplate"
+                            SelectSplitImages="SelectSplitImages"
+                            EditTemplate="EditTemplate"
+                            CreateTemplate="@(() => openCreateNew = true)"
+                            OpenMyTemplate="@(() => openMyTemplate = true)"
+                            OpenMarket="@(() => openMarket = true)"
+                            ChooseColorReference="ChooseColorReference"
+                            ApplyColorReference="ApplyCurrentColorStyleFromSidebar"
+                            CreateBlankColor="CreateBlankColorRecipe"
+                            SaveColorPreset="SaveCurrentColorPreset"
+                            SelectColorPreset="SelectColorRecipe"
+                            ToggleStarTrailImage="ToggleStarTrailImage" />
+            @if (IsHomepageTemplateEditing && CurrentImage is not null)
+            {
+                <MacAppliedTemplateEditor @ref="homepageEditor"
+                                          CurrentImage="@CurrentImage"
+                                          Embedded="true"
+                                          Images="@Images"
+                                          StarTrailSelectionIds="@StarTrailSelectionIds"
+                                          ClickImage="ClickImage"
+                                          ExportSelectionChanged="HandleExportSelectionChanged"
+                                          Changed="HandleHomepageImageChanged"
+                                          ApplyToSelected="@ApplyToSelected"
+                                          SelectedMediaCount="@Images.Count(image => image.IsChecked)"
+                                          ApplyToSelectedChanged="value => ApplyToSelected = value"
+                                          ApplyPending="ApplyCurrentMode"
+                                          CancelPending="CancelPendingOperation"
+                                          ShowInspectorContent="@showExportPanel">
+                    <InspectorContent>
+                        <MacModeInspector Mode="@WorkspaceMode"
+                                          Visible="true"
+                                          ExportOpen="true"
+                                          HasPendingOperation="@(PendingTemplate != null)"
+                                          SelectedMediaCount="@Images.Count(image => image.IsChecked)"
+                                          AllExportSelected="@AllExportSelected"
+                                          Resolution="@Global.Resolution"
+                                          Quality="@Global.Quality"
+                                          ExportFormat="@ExportFormat"
+                                          OutputPath="@Global.OutPutPath"
+                                          ToggleExport="ToggleExportPanel"
+                                          ChooseOutputFolder="ChooseOutputFolder"
+                                          ExportSelected="ExportSelectedFromPanel"
+                                          ApplyPendingBeforeExport="ApplyPendingThenExport"
+                                          ExportCommittedVersion="ExportCommittedFromPanel"
+                                          AllExportSelectedChanged="SetExportSelectionAll"
+                                          ResolutionChanged="SetResolution"
+                                          QualityChanged="SetQuality"
+                                          ExportFormatChanged="SetExportFormat" />
+                    </InspectorContent>
+                </MacAppliedTemplateEditor>
+            }
+            else
+            {
+                <div class="@WorkspaceMainClass"
+                     style="@WorkspaceMainStyle"
+                     @onpointermove="ResizeMediaStrip"
+                     @onpointermove:preventDefault="IsMediaStripDragging"
+                     @onpointerup="EndMediaStripResize"
+                     @onpointerleave="EndMediaStripResize"
+                     @onpointercancel="EndMediaStripResize">
+                    <section class="workspace-preview-pane">
+                        <MacPreviewWorkspace CurrentImage="@CurrentImage"
+                                             SrcLoading="@SrcLoading"
+                                             PreviewMode="@PreviewMode"
+                                             PreviewSrc="@ActiveWorkspacePreviewSrc"
+                                             CompareBeforeSrc="@ActiveCompareBeforeSrc"
+                                             ModeLabel="@PreviewModeLabel"
+                                             UseColorPreview="@UseGpuColorPreview"
+                                             ColorPreviewLook="@CurrentColorPreviewLook"
+                                             ColorAdjustments="@CurrentColorPreviewParameters"
+                                             ColorPreviewCapabilityChanged="HandleColorPreviewCapabilityChanged"
+                                             ShowExif="@(() => showExif = true)"
+                                             SelectSourceImageExif="SelectSourceImageExif" />
+                    </section>
+                    <div class="workspace-splitter-grip"
+                         title="拖拽调整素材栏高度"
+                         @onpointerdown="StartMediaStripResize"
+                         @onpointerdown:preventDefault="true"
+                         @onpointerdown:stopPropagation="true">
+                        <span></span>
                     </div>
-                }
-                <div class="ml-2 toolbar-icon" />
-                <MMenu OffsetY>
-                    <ActivatorContent>
-                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</MButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MList>
-                            <MListItem OnClick="ImportLocalImages" Title="导入图片" PrependIcon="@ICONS.AddImage" />
-                            <MListItem OnClick="() => showLogoStore = true" Title="图标库" PrependIcon="@ICONS.ImageStore" />
-                            <MListItem OnClick="()=>showExport = true" Title="导出" PrependIcon="@ICONS.Export" />
-                            <MDivider />
-                            <MListItem OnClick="ClientInstance.Exit" Title="退出" PrependIcon="@ICONS.Exit" /> 
-                        </MList>
-                    </ChildContent>
-                </MMenu>
-                <MMenu OffsetY>
-                    <ActivatorContent>
-                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>模板</MButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MList>
-                            <MListItem OnClick="() => openMyTemplate = true" Title="我的模板" PrependIcon="@ICONS.Star" />
-                            <MListItem OnClick="() => openCreateNew = true" Title="创建模板" PrependIcon="@ICONS.Pencil" />
-                            <MListItem OnClick="() => openMarket = true" Title="模板市场" PrependIcon="@ICONS.Market" />
-                        </MList>
-                    </ChildContent>
-                </MMenu>
-                <MMenu OffsetY>
-                    <ActivatorContent>
-                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>关于</MButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MList>
-                            <MListItem OnClick="() => showSetting = true" Title="设置" PrependIcon="@ICONS.Setting" />
-                            <MListItem OnClick="() => showSignUp = true" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
-                            <MListItem OnClick="() => showLogout = true" Title="注销账号" PrependIcon="@ICONS.Logout" />
-                        </MList>
-                    </ChildContent>
-                </MMenu>
-                <MMenu OffsetY>
-                    <ActivatorContent>
-                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>交流群</MButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MList>
-                            <MListItem Title="交流群1：866034817 (已满)" PrependIcon="@ICONS.QQ" />
-                            <MListItem Title="交流群2：836325187" PrependIcon="@ICONS.QQ" />
-                        </MList>
-                    </ChildContent>
-                </MMenu>
-                <MMenu OffsetY>
-                    <ActivatorContent>
-                        <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>更多</MButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MList>
-                            <MListItem Title="网页版" OnClick="@(()=>OpenLink("http://www.thankful.top"))" PrependIcon="@ICONS.Web" />
-                            <MListItem Title="点个赞" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win"))" PrependIcon="@ICONS.Star" />
-                            <MListItem Title="提交反馈" OnClick="@(()=>OpenLink("https://github.com/3egirlsdream/Watermark.Win/issues"))" PrependIcon="@ICONS.Feedback" />
-                            <MListItem Title="赞助" OnClick="@(()=>OpenCommonDialog("http://cdn.thankful.top/wx.jpg"))" PrependIcon="@ICONS.Wechat" />
-                            <MListItem Title="安卓版" OnClick="@(()=>OpenCommonDialog("https://cdn.thankful.top/andorid.png"))" PrependIcon="@ICONS.Android" />
-                        </MList>
-                    </ChildContent>
-                </MMenu>
-                @if (Global.CurrentUser != null && Global.CurrentUser.USER_NAME == "cxk")
-                {
-                    <MMenu OffsetY>
-                        <ActivatorContent>
-                            <MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>七牛</MButton>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MList>
-                                <MListItem Title="文件管理" />
-                            </MList>
-                        </ChildContent>
-                    </MMenu>
-                }
-                <Label Name="@ClientInstance.AppTitle" Style="position:absolute;left:50%;transform:translateX(-50%);user-select:none;-webkit-user-select:none;pointer-events:none;font-size:13px;color:#333;font-weight:500;" />
-                <MSpacer />
-                <MMenu Bottom OffsetY CloseOnContentClick="false" Class="mr-1">
-                    <ActivatorContent>
-                        <div @attributes="@context.Attrs" style="display:flex;align-content:flex-start;align-items:center;user-select:none">
-                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.DISPLAY_NAME))
-                            {
-                                <MAvatar Color="primary" Size="22" Style="display:flex;align-items:center;justify-content:center;cursor:pointer">
-                                    <span>@Global.CurrentUser.DISPLAY_NAME.FirstOrDefault()</span>
-                                </MAvatar>
-                            }
-                            else
-                            {
-                                <MButton Small Text>登录</MButton>
-                            }
-                        </div>
-                    </ActivatorContent>
-
-                    <ChildContent>
-                        <MCard>
-                            @if (Global.CurrentUser != null && !string.IsNullOrEmpty(Global.CurrentUser.ID))
-                            {
-                                <MList>
-                                    <MListItem>
-                                        <MListItemAvatar>
-                                            @if (!string.IsNullOrEmpty(Global.CurrentUser.IMG))
-                                            {
-                                                <MImage Width="50" Height="50" Src="@Global.CurrentUser.IMG" Contain />
-                                            }
-                                            else
-                                            {
-                                                <img src="https://cdn.masastack.com/stack/images/website/masa-blazor/jack.png" alt="MASA">
-                                            }
-                                        </MListItemAvatar>
-
-                                        <MListItemContent>
-                                            <MListItemTitle>@Global.CurrentUser.DISPLAY_NAME</MListItemTitle>
-                                            <MListItemSubtitle>@Global.CurrentUser.USER_NAME</MListItemSubtitle>
-                                        </MListItemContent>
-
-                                        <MListItemAction>
-                                            @if (Global.CurrentUser.IsVIP)
-                                            {
-                                                <Watermark.Razor.Parts.IconVip />
-                                            }
-                                            else
-                                            {
-                                                <Watermark.Razor.Parts.IconVipExpired />
-                                            }
-                                        </MListItemAction>
-                                    </MListItem>
-                                </MList>
-                                <MDivider />
-
-                                <Label Class="px-4 my-1" Name="🤩🤗🥵" Small="false"></Label>
-
-                                <div style="display:flex;align-items:center;" class="px-4 py-1">
-                                    <Label Name="硬币：" Small="false" />
-                                    <Watermark.Razor.Parts.IconCoin />
-                                    <Label Name="@Global.CurrentUser.COINS.ToString()" Small="false" />
-                                </div>
-
-                                <Label Class="px-4 py-1" Name="@(Global.CurrentUser.IsVIP ? "会员到期时间：" + Global.CurrentUser.EXPIRE_DATE : "会员已过期")" />
-                                <MCardActions>
-                                    <MSpacer></MSpacer>
-                                    <MButton Plain Style="margin-left:200px;" OnClick="()=> { Global.CurrentUser = new WMLoginChildModel(); }">退出</MButton>
-                                </MCardActions>
-                            }
-                            else
-                            {
-                                <MSkeletonLoader Class="mx-auto"
-                                                 MaxWidth="300"
-                                                 Type="article">
-                                </MSkeletonLoader>
-                                <MCardActions>
-                                    <MSpacer />
-                                    <MButton Plain Color="Color.Primary" OnClick="() => showLogin = true">登录</MButton>
-                                    <MButton Plain OnClick="() => showSignUp = true">注册</MButton>
-                                </MCardActions>
-                            }
-
-                        </MCard>
-                    </ChildContent>
-                </MMenu>
-            </MToolbar>
-            <div class="main-workspace">
-                @* === 左侧模板面板 === *@
-                <div class="panel-left">
-                    <MTabs @bind-Value="tab" FixedTabs Height="36" Style="border-bottom:1px solid rgba(0,0,0,0.06);">
-                        <MTab Value="@("模板")">模板</MTab>
-                        <MTab Value="@("拼图")">拼图</MTab>
-                    </MTabs>
-                    <MTabsItems Value="@tab" Style="height:calc(100% - 36px);overflow-y:auto;">
-                        <MTabItem Value="@("模板")" Transition="" ReverseTransition="">
-                            <div class="template-list">
-                                <div class="template-item" @onclick="OpenStarTrailDialog">
-                                    <img src="img/star-trail.svg" alt="星轨合成" />
-                                    <span class="template-item-name">星轨合成</span>
-                                </div>
-                                @foreach (var item in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Normal).OrderBy(x => x.Canvas.Name))
-                                {
-                                    <div class="template-item" @onclick="() => ChangeTemplate(item)">
-                                        <img src="@item.Src" alt="@item.Canvas.Name" />
-                                        <span class="template-item-name">@item.Canvas.Name</span>
-                                    </div>
-                                }
-                            </div>
-                        </MTabItem>
-                        <MTabItem Value="@("拼图")" Transition="" ReverseTransition="">
-                            <div class="template-list">
-                                @foreach (var item in wMTemplates.Where(x => x.Canvas.CanvasType == Shared.Enums.CanvasType.Split).OrderBy(x => x.Canvas.Name))
-                                {
-                                    <div class="split-template-item" @onclick="() => SelectSplitImages(item)">
-                                        <MImage Style="width:100%;padding:4px 0" Contain Src="@item.Src" />
-                                    </div>
-                                }
-                            </div>
-                        </MTabItem>
-                    </MTabsItems>
+                    <section class="workspace-media-pane">
+                        <MacMediaStrip Images="@Images"
+                                       CurrentImage="@CurrentImage"
+                                       StarTrailSelectionIds="@StarTrailSelectionIds"
+                                       ClickImage="ClickImage"
+                                       ExportSelectionChanged="HandleExportSelectionChanged" />
+                    </section>
                 </div>
-
-                @* === 中间预览区 === *@
-                <div class="panel-center">
-                    <MSplitter Row Style="height:100%" BarSize="4">
-                        <ChildContent>
-                            <MSplitterPane Class="d-flex align-center justify-center" Size="70" Style="position:relative;background:#F0F1F3;">
-                                @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
-                                {
-                                    <div class="preview-toolbar">
-                                        <MCard Style="width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;" @onclick="() => showExif = true" Flat>
-                                            <Watermark.Razor.Parts.IconExif />
-                                        </MCard>
-                                        <MCard Width="26" Height="26" Flat>
-                                            <MFileInput TValue="IBrowserFile"
-                                                        Class="exif-selector"
-                                                        OnChange="SelectSourceImageExif"
-                                                        Style="width:22px !important;padding:0px !important;margin:0px"
-                                                        HideDetails="true"
-                                                        Label="File input" />
-                                        </MCard>
-                                    </div>
-                                    <MImage Src="@CurrentImage.Src" Class="preview-image" Contain />
-                                    @if (SrcLoading)
-                                    {
-                                        <MProgressCircular Indeterminate="true" Style="position:absolute;top:12px;right:12px" Color="primary" Size="20" Width="2" />
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="preview-empty">
-                                        <Watermark.Razor.Parts.IconImage />
-                                        <span>导入图片开始编辑</span>
-                                    </div>
-                                }
-                            </MSplitterPane>
-                            <MSplitterPane Class="upload-strip" Size="30">
-                                <Upload Images="@Images" ClickImageEvt="(e) => ClickImage(e)" LoadingEvt="(t) => LoadingEvt(t.Item1, t.Item2, t.Item3)" />
-                            </MSplitterPane>
-                        </ChildContent>
-                        <BarContent>
-                            <MIcon Small>mdi-drag-horizontal</MIcon>
-                        </BarContent>
-                    </MSplitter>
-                </div>
-
-                @* === 右侧配置面板 === *@
-                @if (CurrentImage != null && CurrentImage.Canvas != null && !string.IsNullOrEmpty(CurrentImage.Canvas.Name) && showConfig)
-                {
-                    <div class="panel-right">
-                        <Watermark.Razor.Components.DesignConfiguration Style="width:100%;height:100%" canvas="@CurrentImage.Canvas" PropertyChanged="PropertyChanged" SelectContainer="SelectContainerImage" />
+                <MacModeInspector Mode="@WorkspaceMode"
+                                  Visible="@showConfig"
+                                  ExportOpen="@showExportPanel"
+                                  HasPendingOperation="@(PendingTemplate != null || ColorPreviewBaseSrc != null)"
+                                  Canvas="@CurrentImage?.Canvas"
+                                  CurrentColorPreset="@CurrentColorPreset"
+                                  CurrentColorRecipe="@CurrentColorRecipe"
+                                  ColorPresetCount="@ColorRecipes.Count"
+                                  CanApplyColor="@CanApplyColor"
+                                  ApplyColor="ApplyColorToCurrent"
+                                  SelectedMediaCount="@Images.Count(image => image.IsChecked)"
+                                  StarTrailSelectedCount="@StarTrailSelectionIds.Count"
+                                  AllExportSelected="@AllExportSelected"
+                                  Resolution="@Global.Resolution"
+                                  Quality="@Global.Quality"
+                                  ExportFormat="@ExportFormat"
+                                  OutputPath="@Global.OutPutPath"
+                                  PropertyChanged="PropertyChanged"
+                                  SelectContainer="SelectContainerImage"
+                                  ToggleExport="ToggleExportPanel"
+                                  ColorRecipeChanged="QueueColorRecipePreview"
+                                  ColorGradeChanged="QueueColorGradePreview"
+                                  ColorCurvesChanged="QueueColorCurvesPreview"
+                                  SaveColorPreset="SaveCurrentColorPreset"
+                                  RematchColorReference="RematchCurrentColorReference"
+                                  ClearColorReference="ClearColorReference"
+                                  ResetColorAdjustments="ResetColorAdjustments"
+                                  MultiFrameInputs="@StackDialogInputs"
+                                  MultiFrameWorkingDirectory="@EditingSession.GetWorkingDirectory(WMImageOperationKind.MultiFrameStack)"
+                                  MultiFramePreviewChanged="HandleMultiFramePreviewChanged"
+                                  MultiFrameApplied="HandleMultiFrameCompleted"
+                                  ChooseOutputFolder="ChooseOutputFolder"
+                                  ExportSelected="ExportSelectedFromPanel"
+                                  ApplyPendingBeforeExport="ApplyPendingThenExport"
+                                  ExportCommittedVersion="ExportCommittedFromPanel"
+                                  AllExportSelectedChanged="SetExportSelectionAll"
+                                  ResolutionChanged="SetResolution"
+                                  QualityChanged="SetQuality"
+                                  ExportFormatChanged="SetExportFormat" />
+            }
+        </div>
+    </WorkspaceContent>
+    <DialogContent>
+        @if (WMMainLoading.Show)
+        {
+            <section class="mac-task-panel" role="status" aria-live="polite" aria-label="图片处理进度">
+                <div class="task-panel-heading">
+                    <div>
+                        <small>@GetOperationStageLabel(WorkspaceCoordinator.State.Stage)</small>
+                        <strong>@WMMainLoading.Message</strong>
                     </div>
-                }
-            </div>
-        </MCard>
-
-        <MOverlay Dark="false" @bind-Value="WMMainLoading.Show" Absolute="true" ZIndex="99999">
-            <MCard Style="width:520px;height:80px; padding:25px 40px 10px 40px;display:flex;align-items:center;justify-content:center;flex-direction:column">
-                <MProgressLinear Value="@WMMainLoading.Value" Rounded Striped Height="10" Color="light-blue" Class="my-1" />
-                <Watermark.Razor.Parts.Label Name="@WMMainLoading.Message" Small="false" />
-            </MCard>
-        </MOverlay>
+                    @if (WorkspaceCoordinator.State.CanCancel)
+                    {
+                        <MButton Text Small Class="task-cancel-button" OnClick="CancelActiveOperation">取消任务</MButton>
+                    }
+                </div>
+                <MProgressLinear Value="@WMMainLoading.Value"
+                                 Indeterminate="@WorkspaceCoordinator.State.IsIndeterminate"
+                                 Rounded Height="6" Color="primary" />
+                <span class="task-progress-label">@Math.Round(WMMainLoading.Value)%</span>
+            </section>
+        }
         @if (openMyTemplate)
         {
             <Watermark.Razor.Components.MyTemplates @bind-Visible="openMyTemplate" EditTemplateEvt="OpenDesignAction" OnCloseEvt="InitTemplates" />
@@ -599,20 +263,26 @@
                 <SignUpContent CloseEvent="() => showSignUp = false" />
             }
         </MDialog>
+        <MDialog ContentStyle="width:350px;padding:10px;" @bind-Value="showLogout">
+            @if (showLogout)
+            {
+                <LogoutContent CloseEvent="() => showLogout = false" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showVipPurchase" Width="720" ContentStyle="padding:0;background:transparent;box-shadow:none;">
+            @if (showVipPurchase)
+            {
+                <MacVipPurchaseDialog OnClose="() => showVipPurchase = false" OnPaid="OnVipPaid" />
+            }
+        </MDialog>
 
-        <MDialog @bind-Value="openCreateNew" Width="300" ContentStyle="padding:4px;">
+        <MDialog @bind-Value="openCreateNew" Width="380" ContentStyle="padding:0;">
             @if (openCreateNew)
             {
                 <NewTemplateDialog ID="@(Guid.NewGuid().ToString("N").ToUpper())" Ok="OpenDesignAction" SelectDefaultImageAction="ClientInstance.PickAsync" OnClose="() => openCreateNew = false" />
             }
         </MDialog>
 
-        <MDialog @bind-Value="showExport" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;">
-            @if (showExport)
-            {
-                <ExportDialog OnClose="(images) => {Export(images.Where(x => x.IsChecked).ToList()); }" Images="Images" OpenFolderAction="OpenFolderAction()" />
-            }
-        </MDialog>
         <MDialog @bind-Value="showLogoStore" ContentStyle="height: 90%;overflow:hidden;scrollbar-width: none;border: 15px solid #fff;">
             @if (showLogoStore)
             {
@@ -630,96 +300,541 @@
                 <Setting />
             }
         </MDialog>
-        <MDialog @bind-Value="showLogout" ContentStyle="width:350px;padding:10px;">
-            @if (showLogout)
+        <MDialog Persistent @bind-Value="showDashboard" Fullscreen="true" ContentStyle="padding:0;overflow:hidden;">
+            @if (showDashboard)
             {
-                <LogoutContent CloseEvent="() => showLogout = false" />
+                <AdminDashboard ShowClose="true" Close="() => showDashboard = false" />
             }
         </MDialog>
-
-        <MDialog @bind-Value="showStarTrailDialog" Width="420" ContentStyle="padding:4px;">
-            @if (showStarTrailDialog)
-            {
-                <Watermark.Razor.Components.StarTrailDialog OnConfirm="StartStarTrailComposition" OnCancel="() => showStarTrailDialog = false" />
-            }
-        </MDialog>
-
-        <MDialog @bind-Value="showDesign" Fullscreen="true">
+        <MDialog Persistent @bind-Value="showDesign" Fullscreen="true" ContentStyle="padding:0;overflow:hidden;">
             @if (showDesign)
             {
-                <Design cid="@watermarkId" OnClose="() => showDesign = false"/>
+                <MacTemplateDesigner CanvasId="@watermarkId"
+                                     OnSaved="HandleTemplateSaved"
+                                     OnClose="() => showDesign = false" />
             }
         </MDialog>
-    </MErrorHandler>
-</MApp>
+    </DialogContent>
+</MacWorkspaceShell>
 
 
 @code {
-    private string appId = Guid.NewGuid().ToString("N");
     bool openCreateNew = false;
     WMainLoading CommonDialog = new();
-    StringNumber tab;
     bool showLogoStore = false;
-    bool showExport = false;
+    bool showExportPanel = false;
+    WMExportFormat ExportFormat = WMExportFormat.Jpeg8;
     bool openMarket = false;
     bool openMyTemplate = false;
     bool SrcLoading = false;
     bool showLogin = false;
     bool showSignUp = false;
+    bool showLogout = false;
+    bool showVipPurchase = false;
     bool showConfig = false;
     bool showExif = false;
     bool showSetting = false;
-    bool showLogout = false;
+    bool showDashboard = false;
     bool showDesign = false;
-    bool showStarTrailDialog = false;
+    IReadOnlyList<WMImageArtifact> StackDialogInputs = [];
+    List<WMTemplateList> StackDialogSourceImages = [];
+    MacWorkspaceMode WorkspaceMode
+    {
+        get => WorkspaceCoordinator.State.Mode;
+        set => WorkspaceCoordinator.SetMode(value);
+    }
+    string TemplateSearch = string.Empty;
     string watermarkId = null;
+    long templateApplyVersion;
     List<WMTemplateList> wMTemplates = [];
     WMTemplateList CurrentTemplate;
     WMTemplateList CurrentImage;
+    MacAppliedTemplateEditor homepageEditor;
+    List<WMColorPreset> ColorPresets = [];
+    List<WMColorRecipe> ColorRecipes = [];
+    WMColorPreset CurrentColorPreset;
+    WMColorRecipe CurrentColorRecipe = new();
+    string ColorReferenceSrc = null;
+    string ColorReferenceName = null;
+    string ColorReferencePath = null;
+    string ColorCompareBeforeSrc = null;
+    Dictionary<string, string> OriginalImagePaths = new();
+    Dictionary<string, string> OriginalImagePreviewSources = new();
+    Dictionary<string, string> MediaProxyPaths = new(StringComparer.Ordinal);
+    List<string> StarTrailSelectionIds = [];
     Dictionary<string, Dictionary<string, string>> LogoCacheDic = new();
     ConcurrentDictionary<string, string> LogoBase64 = new ConcurrentDictionary<string, string>();
+    ConcurrentDictionary<string, WMColorReferenceProfile> ColorTargetProfileCache = new(StringComparer.Ordinal);
     List<string> LogoStore = new List<string>();
     List<WMTemplateList> Images = new List<WMTemplateList>();
+    Dictionary<string, WMTemplateList> MediaArchive = new();
+    PendingTemplateOperation PendingTemplate;
+    CancellationTokenSource ColorPreviewCancellation;
+    readonly MacColorEditSession ColorEditSession = new();
+    readonly SemaphoreSlim ColorCommitGate = new(1, 1);
+    CancellationTokenSource ActiveOperationCancellation;
+    Task InitializationTask = Task.CompletedTask;
+    long ColorPreviewVersion;
+    bool ColorPreviewHintChecked;
+    MacColorPreviewLook CurrentColorPreviewLook = MacColorPreviewLook.Identity;
+    MacColorPreviewCapability ColorPreviewCapability;
+    WMGeneratedColorLook CurrentGeneratedColorLook;
+    string CurrentColorMappingSignature;
+    string ColorPreviewPath;
+    string ColorPreviewBaseSrc;
+    string ColorPreviewDisplaySrc;
+    string MultiFramePreviewSrc;
+    bool ApplyToSelected;
     Debouncer debouncedAction = null;
-    protected override async Task OnInitializedAsync()
+    const int MediaStripMinHeight = 96;
+    const int MediaStripMaxHeight = 220;
+    int MediaStripHeight = 126;
+    bool IsMediaStripDragging = false;
+    double MediaStripDragStartY = 0;
+    int MediaStripDragStartHeight = 126;
+    MacPreviewMode PreviewMode => (WorkspaceMode == MacWorkspaceMode.ColorMatch && !string.IsNullOrEmpty(ColorCompareBeforeSrc))
+        || (WorkspaceMode == MacWorkspaceMode.StarTrail && !string.IsNullOrEmpty(MultiFramePreviewSrc))
+        ? MacPreviewMode.Compare
+        : MacPreviewMode.Single;
+    string ActiveWorkspacePreviewSrc => WorkspaceMode switch
+    {
+        MacWorkspaceMode.StarTrail => MultiFramePreviewSrc,
+        MacWorkspaceMode.ColorMatch when UseGpuColorPreview => ColorPreviewBaseSrc,
+        MacWorkspaceMode.ColorMatch => ColorPreviewDisplaySrc,
+        _ => null
+    };
+    string ActiveCompareBeforeSrc => WorkspaceMode switch
+    {
+        MacWorkspaceMode.StarTrail when !string.IsNullOrEmpty(MultiFramePreviewSrc) => CurrentImage?.Src,
+        MacWorkspaceMode.ColorMatch => ColorCompareBeforeSrc,
+        _ => null
+    };
+    string WorkspaceMainClass => IsMediaStripDragging ? "workspace-main-column resizing" : "workspace-main-column";
+    string WorkspaceMainStyle => $"grid-template-rows:minmax(0,1fr) 7px {MediaStripHeight}px;";
+    string PreviewModeLabel => WorkspaceMode switch
+    {
+        MacWorkspaceMode.ColorMatch => "调色预览",
+        MacWorkspaceMode.StarTrail => "星轨预览",
+        _ => "模板预览"
+    };
+    bool CanApplyColor => CurrentImage != null && !string.IsNullOrWhiteSpace(CurrentImage.Path)
+        && ((CurrentColorRecipe.ReferenceMapping.Enabled && CurrentColorRecipe.ReferenceProfile != null)
+            || HasManualColorAdjustments(CurrentColorRecipe.Grade));
+    bool UseGpuColorPreview => WorkspaceMode == MacWorkspaceMode.ColorMatch
+        && ColorPreviewBaseSrc != null
+        && ColorPreviewCapability?.Supported != false;
+    bool CanEditCurrent => WorkspaceMode == MacWorkspaceMode.Template
+        && PendingTemplate != null
+        && CurrentImage?.Canvas?.Children.Any() == true;
+    bool IsHomepageTemplateEditing => showConfig && CanEditCurrent;
+    bool CanApplyCurrent => WorkspaceMode switch
+    {
+        MacWorkspaceMode.ColorMatch => CanApplyColor,
+        MacWorkspaceMode.StarTrail => false,
+        _ => PendingTemplate != null
+    };
+    bool AllExportSelected => Images.Count > 0 && Images.All(x => x.IsChecked);
+    WMOperationExecutionOptions ProcessingOptions => WMOperationExecutionOptions.Balanced(GlobalConfig.MAX_THREAD) with
+    {
+        PreviewMaxEdge = 2048,
+        MaxConcurrentImages = 2
+    };
+    WMOperationExecutionOptions InteractivePreviewOptions => ProcessingOptions;
+    MacColorPreviewParameters CurrentColorPreviewParameters = MacColorPreviewParameters.From(new WMColorGradeSettings());
+
+    void StartMediaStripResize(PointerEventArgs args)
+    {
+        IsMediaStripDragging = true;
+        MediaStripDragStartY = args.ClientY;
+        MediaStripDragStartHeight = MediaStripHeight;
+    }
+
+    void ResizeMediaStrip(PointerEventArgs args)
+    {
+        if (!IsMediaStripDragging)
+        {
+            return;
+        }
+
+        var delta = args.ClientY - MediaStripDragStartY;
+        MediaStripHeight = Math.Clamp((int)Math.Round(MediaStripDragStartHeight - delta), MediaStripMinHeight, MediaStripMaxHeight);
+    }
+
+    void EndMediaStripResize(PointerEventArgs args)
+    {
+        IsMediaStripDragging = false;
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        TemplateLibrary.Changed += OnTemplateLibraryChanged;
+        WorkspaceCoordinator.Changed += OnWorkspaceStateChanged;
+        LoadColorPresets();
+        Global.OutPutPath = Global.AppPath.OutputFolder;
+        Global.PrimaryKey = ClientInstance.Key();
+        InitializationTask = InitializeWorkspaceAsync();
+        return Task.CompletedTask;
+    }
+
+    async Task InitializeWorkspaceAsync()
     {
         try
         {
             await GlobalConfig.InitConfig();
-            await InitTemplates();
-            await InitLogoStore();
-            await Global.Login();
-            await api.DownloadLogoes();
-            Global.PrimaryKey = ClientInstance.Key();
+            await Task.WhenAll(
+                RefreshTemplatesIncremental(),
+                InitializeAccountAssetsAsync());
+            await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
-            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            await InvokeAsync(() => Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error));
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    async Task InitializeAccountAssetsAsync()
     {
-        if (firstRender)
+        await Global.Login();
+        await api.DownloadLogoes();
+        await InitLogoStore();
+    }
+
+    private async void OnTemplateLibraryChanged()
+    {
+        await InvokeAsync(() =>
         {
-            await ClientInstance.InteropInit(appId);
-            if (Global.DeviceType == DeviceType.Mac)
-            {
-                await JSRuntime.InvokeVoidAsync("initToolbarDrag", appId, DotNetObjectReference.Create(this));
-            }
+            var currentTemplateId = CurrentTemplate?.Canvas?.ID;
+            wMTemplates = TemplateLibrary.Templates.ToList();
+            if (!string.IsNullOrWhiteSpace(currentTemplateId))
+                CurrentTemplate = wMTemplates.FirstOrDefault(x => x.Canvas?.ID == currentTemplateId) ?? CurrentTemplate;
+            StateHasChanged();
+        });
+    }
+
+    private void OnWorkspaceStateChanged(MacWorkspaceState state)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    void LogoutCurrentUser()
+    {
+        Global.CurrentUser = new WMLoginChildModel();
+        StateHasChanged();
+    }
+
+    void OpenVipDialog()
+    {
+        if (Global.CurrentUser == null || string.IsNullOrWhiteSpace(Global.CurrentUser.ID))
+        {
+            showLogin = true;
+            return;
+        }
+
+        showVipPurchase = true;
+    }
+
+    Task OnVipPaid()
+    {
+        showVipPurchase = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    async Task SetWorkspaceMode(MacWorkspaceMode mode)
+    {
+        if (WorkspaceMode == MacWorkspaceMode.ColorMatch && mode != WorkspaceMode)
+        {
+            ColorEditSession.Seal();
+            ColorPreviewBaseSrc = null;
+            ColorPreviewDisplaySrc = null;
+            ColorCompareBeforeSrc = null;
+        }
+        if ((PendingTemplate != null || ColorPreviewBaseSrc != null) && mode != WorkspaceMode)
+        {
+            await CancelPendingOperation();
+        }
+        WorkspaceMode = mode;
+        if (mode != MacWorkspaceMode.StarTrail) MultiFramePreviewSrc = null;
+        showExportPanel = false;
+        if (mode == MacWorkspaceMode.ColorMatch)
+        {
+            LoadColorPresets();
+        }
+        if (mode == MacWorkspaceMode.StarTrail && !StarTrailSelectionIds.Any() && Images.Any())
+        {
+            StarTrailSelectionIds = Images.Select(x => x.ID).ToList();
+        }
+        if (mode == MacWorkspaceMode.StarTrail) RefreshMultiFrameInputs();
+        StateHasChanged();
+    }
+
+    Task HandleHomepageImageChanged(WMTemplateList image)
+    {
+        if (!ReferenceEquals(CurrentImage, image))
+            return Task.CompletedTask;
+
+        showConfig = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    void ToggleExportPanel()
+    {
+        showExportPanel = !showExportPanel;
+    }
+
+    void LoadColorPresets()
+    {
+        try
+        {
+            ColorPresets = PresetManager.LoadAll();
+            ColorRecipes = PresetManager.LoadAllRecipes();
+            if (PresetManager.LastLoadErrors.Count > 0)
+                Common.ShowMsg(PopupService,
+                    $"已跳过 {PresetManager.LastLoadErrors.Count} 个损坏的调色风格：{PresetManager.LastLoadErrors[0]}",
+                    AlertTypes.Warning);
+            CurrentColorPreset ??= ColorPresets.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"加载调色风格失败: {ex.Message}", AlertTypes.Error);
         }
     }
 
-    [JSInvokable]
-    public void OnDragStart() => ClientInstance.WindowStartDrag();
+    async Task ChooseColorReference()
+    {
+        var path = await ClientInstance.PickAsync();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
 
-    [JSInvokable]
-    public void OnDragMove() => ClientInstance.WindowDragMove();
+        try
+        {
+            WorkspaceCoordinator.BeginProcessing("正在分析参考图…", WMOperationStage.Decoding);
+            await LoadingEvtAsync(true, "正在分析参考图…", 10);
+            var profile = await ProcessingScheduler.RunAsync(
+                _ => ColorAnalysisService.Analyze(path),
+                ProcessingOptions,
+                96L * 1024 * 1024);
+            CurrentColorRecipe = new WMColorRecipe
+            {
+                Name = Path.GetFileNameWithoutExtension(path),
+                ReferenceProfile = profile,
+                ReferenceMapping = new WMColorReferenceMappingSettings
+                {
+                    IsConfigured = true,
+                    Enabled = true,
+                    Strength = 55f,
+                    MatchMode = WMColorMappingMode.Natural
+                },
+                Grade = new WMColorGradeSettings()
+            };
+            CurrentColorPreset = profile.ToLegacyPreset(new WMColorMatchSettings { Enabled = true, Strength = 55f });
+            ColorReferencePath = path;
+            ColorReferenceName = Path.GetFileName(path);
+            ColorReferenceSrc = await Global.Byte2Url(JSRuntime, await Global.GetBase64(path));
+            WorkspaceMode = MacWorkspaceMode.ColorMatch;
+            await PreviewColorRecipe(CurrentColorRecipe);
+            await LoadingEvtAsync(false, "参考风格已生成", 100);
+            WorkspaceCoordinator.PreviewReady("参考风格已生成");
+        }
+        catch (Exception ex)
+        {
+            LoadingEvt(false, "", 0);
+            WorkspaceCoordinator.Fail(ex);
+            Common.ShowMsg(PopupService, $"生成参考风格失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
 
-    [JSInvokable]
-    public void OnDragEnd() => ClientInstance.WindowEndDrag();
+    async Task SelectColorRecipe(WMColorRecipe recipe)
+    {
+        CurrentColorRecipe = CloneColorRecipe(recipe);
+        CurrentColorRecipe.UpgradeToCurrentSchema();
+        CurrentColorPreset = recipe.ReferenceProfile?.ToLegacyPreset(new WMColorMatchSettings
+        {
+            Enabled = recipe.ReferenceMapping.Enabled,
+            Strength = recipe.ReferenceMapping.Strength,
+            PreserveLuminance = recipe.ReferenceMapping.PreserveLuminance,
+            Mode = recipe.ReferenceMapping.Mode
+        });
+        if (CurrentColorPreset != null)
+        {
+            CurrentColorPreset.Id = recipe.Id;
+            CurrentColorPreset.Name = recipe.Name;
+        }
+        var thumbnailPath = PresetManager.GetReferenceThumbnailPath(recipe);
+        ColorReferencePath = thumbnailPath;
+        ColorReferenceName = recipe.ReferenceProfile?.SourceName;
+        ColorReferenceSrc = thumbnailPath is null
+            ? null
+            : await Global.Byte2Url(JSRuntime, await Global.GetBase64(thumbnailPath));
+        WorkspaceMode = MacWorkspaceMode.ColorMatch;
+        await PreviewColorRecipe(CurrentColorRecipe);
+    }
 
+    async Task ApplyCurrentColorStyleFromSidebar()
+    {
+        if (CanApplyColor)
+            await PreviewColorRecipe(CurrentColorRecipe);
+    }
 
+    async Task SaveCurrentColorPreset()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(CurrentColorRecipe.Name) || CurrentColorRecipe.Name == "未命名调色")
+                CurrentColorRecipe.Name = $"调色预设 {DateTime.Now:MMdd HHmm}";
+            await PresetManager.SaveRecipeAsync(CurrentColorRecipe, ColorReferencePath);
+            LoadColorPresets();
+            Common.ShowMsg(PopupService, "调色风格已保存", AlertTypes.Info);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"保存调色风格失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
+
+    async Task CreateBlankColorRecipe()
+    {
+        CurrentColorRecipe = new WMColorRecipe { Name = "未命名调色" };
+        CurrentColorPreset = null;
+        ColorReferencePath = ColorReferenceName = ColorReferenceSrc = null;
+        await PreviewColorRecipe(CurrentColorRecipe);
+    }
+
+    async Task RematchCurrentColorReference()
+    {
+        if (CurrentColorRecipe.ReferenceProfile is null || CurrentImage is null) return;
+        await PrepareGeneratedLookAsync(CurrentColorRecipe);
+        await PreviewColorRecipe(CurrentColorRecipe);
+    }
+
+    async Task ClearColorReference()
+    {
+        CurrentColorRecipe.ReferenceProfile = null;
+        CurrentColorRecipe.ReferenceMapping.Enabled = false;
+        CurrentColorRecipe.GeneratedBaseGrade = null;
+        CurrentColorPreset = null;
+        ColorReferencePath = ColorReferenceName = ColorReferenceSrc = null;
+        await PreviewColorRecipe(CurrentColorRecipe);
+    }
+
+    async Task ResetColorAdjustments()
+    {
+        CurrentColorRecipe.Grade = new WMColorGradeSettings();
+        await PreviewColorRecipe(CurrentColorRecipe);
+    }
+
+    string GetInteractiveColorSourcePath(WMTemplateList image, WMImageArtifact input)
+    {
+        if (input?.SourceOperation == WMImageOperationKind.Source
+            && MediaProxyPaths.TryGetValue(image.ID, out var proxyPath)
+            && File.Exists(proxyPath))
+            return proxyPath;
+        return input?.FilePath ?? image.Path;
+    }
+
+    WMImageArtifact CreateColorPreviewInput(WMTemplateList image)
+        => CreateColorPreviewInput(image, GetColorBaseArtifact(image));
+
+    WMImageArtifact CreateColorPreviewInput(WMTemplateList image, WMImageArtifact input)
+    {
+        var previewPath = GetInteractiveColorSourcePath(image, input);
+        if (string.Equals(previewPath, input.FilePath, StringComparison.Ordinal)) return input;
+
+        using var codec = SKCodec.Create(previewPath)
+            ?? throw new InvalidOperationException($"无法读取代理图片：{Path.GetFileName(previewPath)}");
+        return input with
+        {
+            FilePath = previewPath,
+            PreviewPath = previewPath,
+            Width = codec.Info.Width,
+            Height = codec.Info.Height
+        };
+    }
+
+    WMImageArtifact GetColorBaseArtifact(WMTemplateList image) => ColorEditSession.IsActive
+        && ColorEditSession.Bases.ContainsKey(image.ID)
+            ? ColorEditSession.GetBaseArtifact(image.ID)
+            : EditingSession.GetCurrent(image.ID);
+
+    async Task<WMGeneratedColorLook?> PrepareGeneratedLookAsync(WMColorRecipe recipe, CancellationToken cancellationToken = default)
+    {
+        if (recipe.ReferenceProfile is null || !recipe.ReferenceMapping.Enabled || CurrentImage is null)
+        {
+            recipe.GeneratedBaseGrade = null;
+            return null;
+        }
+        var input = EditingSession.TryGetCurrent(CurrentImage.ID, out var artifact)
+            ? GetColorBaseArtifact(CurrentImage)
+            : null;
+        var path = GetInteractiveColorSourcePath(CurrentImage, input);
+        var targetKey = input?.ContentHash ?? path;
+        if (!ColorTargetProfileCache.TryGetValue(targetKey, out var target))
+        {
+            target = await ProcessingScheduler.RunAsync(_ =>
+            {
+                using var codec = SKCodec.Create(path) ?? throw new InvalidOperationException("无法读取当前图片。");
+                using var decoded = SKBitmap.Decode(codec) ?? throw new InvalidOperationException("无法分析当前图片。");
+                var oriented = WatermarkHelper.AutoOrient(codec, decoded);
+                using var source = ReferenceEquals(oriented, decoded) ? decoded.Copy() : oriented;
+                var analyzed = ColorAnalysisService.Analyze(source, targetKey, cancellationToken);
+                analyzed.SourceHash = targetKey;
+                return analyzed;
+            }, ProcessingOptions, 128L * 1024 * 1024, cancellationToken);
+            ColorTargetProfileCache[targetKey] = target;
+        }
+        var generated = await ProcessingScheduler.RunAsync(_ =>
+            ColorLookMapper.Map(new WMColorLookMappingRequest(
+                recipe.ReferenceProfile,
+                target,
+                recipe.ReferenceMapping,
+                recipe.MappingVersion,
+                33), cancellationToken),
+            ProcessingOptions,
+            32L * 1024 * 1024,
+            cancellationToken);
+        recipe.GeneratedBaseGrade = generated.AutomaticBaseGrade ?? generated.BaseGrade;
+        await InvokeAsync(StateHasChanged);
+        return generated;
+    }
+
+    async Task ApplyCurrentMode()
+    {
+        if (WorkspaceMode == MacWorkspaceMode.ColorMatch)
+        {
+            await ApplyColorToCurrent();
+            return;
+        }
+
+        if (WorkspaceMode == MacWorkspaceMode.StarTrail) return;
+
+        if (CurrentImage is null)
+            return;
+
+        if (PendingTemplate != null)
+        {
+            showExportPanel = false;
+            WorkspaceCoordinator.BeginProcessing("正在同步最新预览…", WMOperationStage.Synchronizing);
+            await LoadingEvtAsync(true, "正在同步最新预览…", 0);
+            // Give Blazor a render opportunity before FlushAsync performs editor work.
+            await Task.Yield();
+            var preparedPreview = homepageEditor is null ? null : await homepageEditor.FlushAsync();
+            if (homepageEditor is not null && preparedPreview is null)
+            {
+                WorkspaceCoordinator.Reset();
+                await LoadingEvtAsync(false, "", 0);
+                Common.ShowMsg(PopupService, "当前编辑尚未生成成功，请先处理画面中的错误。", AlertTypes.Warning);
+                return;
+            }
+            await CommitTemplateOperationAsync(preparedPreview);
+            return;
+        }
+
+        if (CurrentTemplate != null)
+            await ChangeTemplate(CurrentTemplate);
+    }
 
     public async void OpenDesignAction(WMCanvas x)
     {
@@ -729,13 +844,53 @@
         }
         else
         {
-            await Global.SaveCanvas(x);
+            var templateDirectory = Path.Combine(Global.AppPath.TemplatesFolder, x.ID);
+            var configPath = Path.Combine(templateDirectory, "config.json");
+            if (!File.Exists(configPath))
+                await Global.SaveCanvas(x);
+
             watermarkId = x.ID;
             showDesign = true;
             StateHasChanged();
         }
     }
 
+    private async Task HandleTemplateSaved(string templateId)
+    {
+        TemplateLibrary.Invalidate(templateId);
+        wMTemplates = (await TemplateLibrary.GetOrRefreshAsync()).ToList();
+        var refreshed = wMTemplates.FirstOrDefault(x => x.Canvas?.ID == templateId);
+        if (refreshed != null && CurrentTemplate?.Canvas?.ID == templateId)
+            CurrentTemplate = refreshed;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    void ResetColorStateForNewImport()
+    {
+        ColorEditSession.Seal();
+        ColorPreviewCancellation?.Cancel();
+        ColorPreviewCancellation?.Dispose();
+        ColorPreviewCancellation = null;
+        ColorPreviewVersion++;
+        if (!string.IsNullOrWhiteSpace(ColorPreviewPath))
+            EditingSession.DeletePreviewFiles([ColorPreviewPath]);
+        ColorPreviewPath = null;
+        ColorPreviewBaseSrc = null;
+        ColorPreviewDisplaySrc = null;
+        ColorCompareBeforeSrc = null;
+        ColorReferencePath = null;
+        ColorReferenceName = null;
+        ColorReferenceSrc = null;
+        CurrentColorPreset = null;
+        CurrentColorRecipe = new WMColorRecipe { Name = "未命名调色" };
+        CurrentGeneratedColorLook = null;
+        CurrentColorMappingSignature = null;
+        CurrentColorPreviewLook = MacColorPreviewLook.Identity;
+        CurrentColorPreviewParameters = MacColorPreviewParameters.From(new WMColorGradeSettings());
+        ColorTargetProfileCache.Clear();
+        CurrentImage = null;
+    }
 
     void ImportLocalImages()
     {
@@ -747,112 +902,157 @@
                 try
                 {
                     var files = result.ToList();
+                    ResetColorStateForNewImport();
                     Images = new List<WMTemplateList>();
+                    EditingSession.Reset();
+                    MediaArchive.Clear();
+                    PendingTemplate = null;
+                    OriginalImagePaths.Clear();
+                    OriginalImagePreviewSources.Clear();
+                    MediaProxyPaths.Clear();
+                    StarTrailSelectionIds = [];
+                    StackDialogInputs = [];
+                    StackDialogSourceImages = [];
+                    MultiFramePreviewSrc = null;
                     LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第1个...", 0);
-                    if (!Directory.Exists(Global.AppPath.ThumbnailFolder))
-                    {
-                        Directory.CreateDirectory(Global.AppPath.ThumbnailFolder);
-                    }
-                    foreach (var file in files)
-                    {
-                        WMCanvas canvas = new WMCanvas();
-                        canvas.Path = file;
-                        canvas.Exif[canvas.ID] = await ExifHelper.ReadImageAsync(file);
-                        await Task.Run(() =>
+                    WorkspaceCoordinator.BeginProcessing($"正在导入 {files.Count} 张图片…");
+                    var operationToken = BeginActiveOperation();
+                    var previewMaxEdge = await GetRecommendedProxyEdgeAsync();
+                    var importedImages = await ImageImportService.ImportAsync(
+                        files,
+                        new Progress<WMOperationProgress>(progress =>
                         {
-                            var thumbnail = Global.AppPath.ThumbnailFolder + Path.GetFileName(file);
-                            Global.WriteThumbnailImage(file, thumbnail);
-                        });
-                        var b64 = await Global.GetBase64(file);
-                        Images.Add(new WMTemplateList
+                            WorkspaceCoordinator.Report(progress);
+                            LoadingEvt(true, progress.Message, (int)progress.Percentage);
+                        }),
+                        operationToken,
+                        previewMaxEdge);
+                    foreach (var imported in importedImages)
+                    {
+                        WMCanvas canvas = new WMCanvas { ID = imported.Id, Path = imported.SourcePath };
+                        canvas.Exif[canvas.ID] = new Dictionary<string, string>(imported.Exif);
+                        var b64 = await Global.GetBase64(imported.ThumbnailPath);
+                        var src = await Global.Byte2Url(JSRuntime, b64);
+                        var image = new WMTemplateList
                         {
                             Canvas = canvas,
-                            Src = await Global.Byte2Url(JSRuntime, b64),
+                            Src = src,
                             ID = canvas.ID,
-                            Path = file
-                        });
-                        var idx = files.IndexOf(file) + 1;
-                        LoadingEvt(true, $"正在导入图片，一共{files.Count}, 当前第{idx}个...", (int)(idx * 100.0 / files.Count));
+                            Path = imported.SourcePath,
+                            IsChecked = true
+                        };
+                        Images.Add(image);
+                        MediaProxyPaths[image.ID] = imported.ThumbnailPath;
+                        var sourceArtifact = EditingSession.RegisterSource(
+                            image.ID,
+                            imported.SourcePath,
+                            FlattenExif(canvas),
+                            imported.ThumbnailPath);
+                        if (imported.ColorProfile is not null)
+                        {
+                            imported.ColorProfile.SourceHash = sourceArtifact.ContentHash ?? sourceArtifact.Id;
+                            ColorTargetProfileCache[imported.ColorProfile.SourceHash] = imported.ColorProfile;
+                        }
+                        RegisterOriginalImage(image, imported.SourcePath, src);
+                        if (!StarTrailSelectionIds.Contains(canvas.ID))
+                        {
+                            StarTrailSelectionIds.Add(canvas.ID);
+                        }
                     }
 
+                    // Import can be started while the multi-frame workspace is already open.
+                    // Synchronize its artifact inputs immediately instead of waiting for a
+                    // mode switch or a selection toggle to call RefreshMultiFrameInputs().
+                    RefreshMultiFrameInputs();
+                    CurrentImage = Images.FirstOrDefault();
+                    if (CurrentImage?.Canvas is not null)
+                        CurrentImage.Canvas.Path = EditingSession.TryGetCurrent(CurrentImage.ID, out var currentArtifact)
+                            ? currentArtifact.FilePath
+                            : CurrentImage.Path;
+                    showConfig = false;
                     LoadingEvt(false, $"导入完成", 100);
+                    WorkspaceCoordinator.Complete($"已导入 {files.Count} 张图片");
+                    CompleteActiveOperation();
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch (OperationCanceledException)
+                {
+                    CompleteActiveOperation();
+                    WorkspaceCoordinator.Reset();
+                    LoadingEvt(false, "", 0);
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
-                    throw;
+                    CompleteActiveOperation();
+                    WorkspaceCoordinator.Fail(e);
+                    LoadingEvt(false, "", 0);
+                    Common.ShowMsg(PopupService, $"导入失败: {e.Message}", AlertTypes.Error);
                 }
             }
         });
         OpenWinHelper.Open(action);
     }
 
-    async void ClickImage(WMTemplateList image)
+    async Task<int> GetRecommendedProxyEdgeAsync()
     {
         try
         {
-            CurrentImage = null;
-            await Task.Delay(10);
-            StateHasChanged();
-            CurrentImage = image;
-            CurrentImage.Canvas.Path = CurrentImage.Path;
-            PropertyChanged(null, null);
+            await using var module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/Watermark.Razor/js/mac-color-preview.js");
+            return Math.Clamp(await module.InvokeAsync<int>("getRecommendedProxyEdge"), 1600, 2560);
         }
-        catch (Exception e)
+        catch
         {
-            throw e;
+            return 2048;
+        }
+    }
+
+    async Task ClickImage(WMTemplateList image)
+    {
+        try
+        {
+            if ((PendingTemplate != null && PendingTemplate.MediaId != image.ID)
+                || (ColorPreviewBaseSrc != null && !ColorEditSession.IsActive))
+                await CancelPendingOperation();
+            templateApplyVersion++;
+            SrcLoading = false;
+            CurrentImage = image;
+            if (CurrentImage.Canvas is not null)
+                CurrentImage.Canvas.Path = EditingSession.TryGetCurrent(CurrentImage.ID, out var currentArtifact)
+                    ? currentArtifact.FilePath
+                    : CurrentImage.Path;
+            showConfig = WorkspaceMode == MacWorkspaceMode.Template
+                && CurrentImage.Canvas?.Children.Any() == true;
+            if (WorkspaceMode == MacWorkspaceMode.ColorMatch
+                && CurrentColorRecipe.ReferenceMapping.Enabled
+                && CurrentColorRecipe.ReferenceProfile is not null)
+            {
+                ColorPreviewBaseSrc = ColorEditSession.GetBasePreview(image.ID) ?? image.Src;
+                ColorCompareBeforeSrc = ColorPreviewBaseSrc;
+                await PrepareGeneratedLookAsync(CurrentColorRecipe);
+                await PreviewColorRecipe(CurrentColorRecipe);
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"切换图片失败: {ex.Message}", AlertTypes.Error);
         }
     }
 
     async Task InitTemplates()
     {
-        if (!System.IO.Directory.Exists(Global.AppPath.TemplatesFolder))
-        {
-            System.IO.Directory.CreateDirectory(Global.AppPath.TemplatesFolder);
-        }
+        await RefreshTemplatesIncremental();
+    }
+
+    async Task RefreshTemplatesIncremental()
+    {
         try
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(Global.AppPath.TemplatesFolder);
-            var directories = directoryInfo.GetDirectories();
-            LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第1个...", 0);
-            if (wMTemplates != null && wMTemplates.Count > 0)
-            {
-                foreach (var w in wMTemplates)
-                    await JSRuntime.InvokeVoidAsync("revokeUrl", w.Src);
-            }
-            wMTemplates = new List<WMTemplateList>();
-            int cot = 1;
-            foreach (var dirct in directories)
-            {
-                try
-                {
-                    var configPath = Path.Combine(dirct.FullName, "config.json");
-                    if (File.Exists(configPath))
-                    {
-                        var canvas = Global.ReadConfigFromPath(configPath);
-                        canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
-                        await InitFonts([canvas]);
-                        var b64 = await helper.GenerationAsync(canvas, null, true);
-                        var src = await Global.Byte2Url(JSRuntime, b64);
-                        var wh = new WMTemplateList
-                            {
-                                ID = canvas.ID,
-                                Canvas = canvas,
-                                Src = src
-                            };
-                        wMTemplates.Add(wh);
-                        var idx = directories.ToList().IndexOf(dirct) + 1;
-                        LoadingEvt(true, $"正在初始化模板，共{directories.Length}个，当前第{cot++}个...", (int)(cot * 100.0 / directories.Length));
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
-                }
-            }
-            await Task.Delay(200);
-            LoadingEvt(false, $"处理完成...", 100);
+            LoadingEvt(true, "正在同步模板...", 0);
+            wMTemplates = (await TemplateLibrary.GetOrRefreshAsync()).ToList();
+            LoadingEvt(false, "模板同步完成", 100);
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -860,58 +1060,340 @@
             WMMainLoading.Show = false;
             StateHasChanged();
         }
-        finally
+    }
+
+    async Task RefreshTemplatesForce()
+    {
+        try
         {
-            GC.Collect();
+            LoadingEvt(true, "正在重新加载模板...", 0);
+            await TemplateLibrary.ForceReloadAsync();
+            wMTemplates = TemplateLibrary.Templates.ToList();
+            LoadingEvt(false, "模板加载完成", 100);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+            WMMainLoading.Show = false;
+            StateHasChanged();
         }
     }
 
-    async void ChangeTemplate(WMTemplateList template)
+    async Task ChangeTemplate(WMTemplateList template)
     {
-        showConfig = false;
-        CurrentTemplate = template;
-        if (CurrentImage == null) return;
-        SrcLoading = true;
-        var b64 = await Task.Run(() =>
+        var version = ++templateApplyVersion;
+        try
         {
-            var cvs = Global.ReadConfig(Global.CanvasSerialize(template.Canvas));
-            cvs.Exif = CurrentImage.Canvas.Exif;
-            CurrentImage.Canvas = cvs;
-            Global.Subscribe(CurrentImage.Canvas, PropertyChanged);
-            cvs.Path = CurrentImage.Path;
-            return helper.Generation(cvs, null, true);
-        });
+            if (ColorEditSession.IsActive || ColorPreviewBaseSrc != null)
+            {
+                ColorEditSession.Seal();
+                await CancelPendingOperation();
+            }
+            if (PendingTemplate != null)
+                await CancelPendingOperation();
+            showConfig = false;
+            WorkspaceMode = MacWorkspaceMode.Template;
+            CurrentTemplate = template;
+            if (CurrentImage == null)
+            {
+                Common.ShowMsg(PopupService, "请先导入图片，再选择模板。", AlertTypes.Info);
+                StateHasChanged();
+                return;
+            }
 
-        var src = await Global.Byte2Url(JSRuntime, b64);
-        CurrentImage.Src = src;
-        await InitLogoCacheDic(CurrentImage.ID, template);
-        SrcLoading = false;
-        showConfig = true;
-        EnableAll();
-        StateHasChanged();
+            var targetImage = CurrentImage;
+            EnsureSessionSource(targetImage);
+            var inputArtifact = EditingSession.GetCurrent(targetImage.ID);
+            PendingTemplate = new PendingTemplateOperation(
+                targetImage.ID,
+                inputArtifact,
+                targetImage.Path,
+                targetImage.Src,
+                Global.CanvasSerialize(targetImage.Canvas));
+            WorkspaceCoordinator.BeginPreview("正在生成模板预览…");
+            SrcLoading = true;
+            StateHasChanged();
+            var cvs = MacCanvasApplication.CreateForImage(template.Canvas, targetImage);
+            targetImage.Canvas = cvs;
+            await InitLogoCacheDic(targetImage.ID, template);
+            if (version != templateApplyVersion || !ReferenceEquals(CurrentImage, targetImage))
+                return;
+            showConfig = true;
+            WorkspaceCoordinator.PreviewReady("模板编辑器已就绪");
+        }
+        catch (Exception ex)
+        {
+            WorkspaceCoordinator.Fail(ex);
+            if (PendingTemplate != null)
+                await CancelPendingOperation();
+            if (version == templateApplyVersion)
+                Common.ShowMsg(PopupService, ex.Message, AlertTypes.Error);
+        }
+        finally
+        {
+            if (version == templateApplyVersion)
+            {
+                SrcLoading = false;
+                StateHasChanged();
+            }
+        }
     }
 
-    async void Export(List<WMTemplateList> images)
+    async Task ExportAsync(IReadOnlyList<WMTemplateList> images)
     {
-        showExport = false;
-        LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第1张", 0);
-        var idx = 1;
-        var option = new ParallelOptions();
-        option.MaxDegreeOfParallelism = GlobalConfig.MAX_THREAD;
-        await Task.Run(() =>
+        if (images.Count == 0) return;
+
+        showExportPanel = false;
+        try
         {
-            Parallel.ForEach(images, option, (item) =>
+            WorkspaceCoordinator.BeginProcessing($"正在导出 {images.Count} 张图片…");
+            var operationToken = BeginActiveOperation();
+            LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第1张", 0);
+            var outputPaths = CreateUniqueExportPaths(images);
+            var failures = new ConcurrentBag<(string Name, string Error)>();
+            var completed = 0;
+            await Parallel.ForEachAsync(
+                Enumerable.Range(0, images.Count),
+                new ParallelOptions
+                {
+                    CancellationToken = operationToken,
+                    MaxDegreeOfParallelism = ProcessingOptions.MaxConcurrentImages
+                },
+                async (index, token) =>
+                {
+                    var item = images[index];
+                    try
+                    {
+                        EnsureSessionSource(item);
+                        var renderPlan = EditingSession.BuildRenderPlan(item.ID);
+                        var itemProgress = new Progress<WMOperationProgress>(value =>
+                        {
+                            var mapped = new WMOperationProgress(
+                                Volatile.Read(ref completed),
+                                images.Count,
+                                value.Message,
+                                value.Stage,
+                                item.ID,
+                                value.CanCancel,
+                                value.Percentage);
+                            _ = ReportProgressAsync(mapped);
+                        });
+                        await FullResolutionRenderService.RenderAsync(new MacFullResolutionRenderRequest(
+                            renderPlan,
+                            outputPaths[index],
+                            GetOriginalImagePath(item),
+                            Global.Resolution,
+                            Global.Quality,
+                            Path.Combine(EditingSession.SessionDirectory, "export-render"),
+                            ProcessingOptions,
+                            ExportFormat), itemProgress, token);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        failures.Add((Path.GetFileName(GetOriginalImagePath(item)), ex.Message));
+                    }
+                    var done = Interlocked.Increment(ref completed);
+                    var progress = new WMOperationProgress(done, images.Count, $"已导出 {done}/{images.Count}", WMOperationStage.Writing);
+                    await ReportProgressAsync(progress);
+                });
+
+            if (failures.Count == images.Count)
+                throw new InvalidOperationException($"全部图片导出失败：{failures.First().Error}");
+
+            LoadingEvt(false, "", 100);
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Complete(failures.IsEmpty ? "导出完成" : $"导出完成，{failures.Count} 张失败");
+            await InvokeAsync(StateHasChanged);
+            var completionMessage = failures.IsEmpty
+                ? "导出完成，打开输出文件夹？"
+                : $"已导出 {images.Count - failures.Count} 张，{failures.Count} 张失败。打开输出文件夹？";
+            Common.ShowMsg(PopupService, completionMessage, "好的", async () =>
             {
-                helper.Generation(item.Canvas, null, false);
-                LoadingEvt(true, $"正在导出图片，一共{images.Count}张，目前第{idx}张", (int)(idx++ * 100.0 / images.Count));
+                await OpenFolder();
             });
-        });
-        LoadingEvt(false, "", 100);
-        await InvokeAsync(StateHasChanged);
-        Common.ShowMsg(PopupService, "打开输出文件夹？", "好的", async () =>
+        }
+        catch (OperationCanceledException)
         {
-            await OpenFolder();
-        });
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Reset();
+            LoadingEvt(false, "", 0);
+        }
+        catch (Exception ex)
+        {
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Fail(ex);
+            LoadingEvt(false, "", 0);
+            await InvokeAsync(StateHasChanged);
+            Common.ShowMsg(PopupService, $"导出失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
+
+    async Task ApplyColorToCurrent()
+    {
+        if (!CanApplyColor || CurrentImage is null)
+        {
+            Common.ShowMsg(PopupService, "请先导入图片并选择调色风格或进行手工调色", AlertTypes.Info);
+            return;
+        }
+
+        ColorCompareBeforeSrc = GetOriginalPreviewSrc(CurrentImage);
+        await ExecuteColorOperationAsync([CurrentImage]);
+        ColorEditSession.Seal();
+        var releasedPreviewUrls = new[] { ColorPreviewBaseSrc, ColorPreviewDisplaySrc, ColorCompareBeforeSrc }
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        ColorPreviewBaseSrc = null;
+        ColorPreviewDisplaySrc = null;
+        ColorCompareBeforeSrc = null;
+        foreach (var url in releasedPreviewUrls)
+            await TryRevokeUnreferencedBlobAsync(url);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ExecuteColorOperationAsync(IReadOnlyList<WMTemplateList> targets)
+    {
+        ActiveOperationCancellation?.Cancel();
+        await ColorCommitGate.WaitAsync();
+        try
+        {
+            await ExecuteColorOperationCoreAsync(targets);
+        }
+        finally
+        {
+            ColorCommitGate.Release();
+        }
+    }
+
+    async Task ExecuteColorOperationCoreAsync(IReadOnlyList<WMTemplateList> targets)
+    {
+        try
+        {
+            var targetIds = targets.Select(target => target.ID).ToArray();
+            if (!ColorEditSession.IsActive || !ColorEditSession.Matches(targetIds))
+            {
+                ColorEditSession.Seal();
+                var bases = new Dictionary<string, MacColorEditBase>(StringComparer.Ordinal);
+                foreach (var target in targets)
+                {
+                    EnsureSessionSource(target);
+                    bases[target.ID] = new MacColorEditBase(
+                        EditingSession.GetCurrent(target.ID),
+                        target.Src ?? GetOriginalPreviewSrc(target));
+                }
+                ColorEditSession.Begin(bases);
+            }
+            var editVersion = ColorEditSession.Version;
+            WorkspaceCoordinator.BeginProcessing($"正在生成 {targets.Count} 张代理预览…");
+            var operationToken = BeginActiveOperation();
+            await LoadingEvtAsync(true, $"正在生成 {targets.Count} 张代理预览…", 0);
+            ColorPreviewCancellation?.Cancel();
+            if (!string.IsNullOrWhiteSpace(ColorPreviewPath))
+            {
+                EditingSession.DeletePreviewFiles([ColorPreviewPath]);
+                ColorPreviewPath = null;
+            }
+            ColorPreviewDisplaySrc = null;
+            foreach (var target in targets) EnsureSessionSource(target);
+            var progress = new Progress<WMOperationProgress>(value =>
+            {
+                _ = ReportProgressAsync(value);
+            });
+            var inputs = targets.Select(target => CreateColorPreviewInput(
+                target, ColorEditSession.GetBaseArtifact(target.ID))).ToArray();
+            var result = await ColorGradeProcessor.ExecuteAsync(new WMOperationRequest(
+                inputs,
+                CloneColorRecipe(CurrentColorRecipe),
+                true,
+                EditingSession.GetWorkingDirectory(WMImageOperationKind.ColorGrade),
+                progress,
+                ProcessingOptions), operationToken);
+            var outputs = targets.Select((target, index) => (target.ID, Artifact: result.Outputs[index]))
+                .ToDictionary(pair => pair.ID, pair => pair.Artifact);
+            if (editVersion != ColorEditSession.Version)
+            {
+                EditingSession.DeletePreviewFiles(outputs.Values.Select(output => output.FilePath));
+                return;
+            }
+            if (ColorEditSession.CommittedOperationId is { } previousOperationId)
+                EditingSession.ReplaceLast(previousOperationId, result.Operation, outputs);
+            else
+                EditingSession.Commit(result.Operation, outputs);
+            ColorEditSession.MarkCommitted(result.Operation.Id);
+            foreach (var target in targets)
+                await ApplyArtifactToMediaAsync(target, outputs[target.ID]);
+            if (CurrentImage is not null)
+            {
+                ColorPreviewBaseSrc = ColorEditSession.GetBasePreview(CurrentImage.ID) ?? CurrentImage.Src;
+                ColorCompareBeforeSrc = ColorPreviewBaseSrc;
+            }
+            WorkspaceMode = MacWorkspaceMode.ColorMatch;
+            await PrepareGeneratedLookAsync(CurrentColorRecipe, operationToken);
+            await LoadingEvtAsync(false, "调色处理完成", 100);
+            WorkspaceCoordinator.Complete("调色处理完成");
+            CompleteActiveOperation();
+            StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Reset();
+            LoadingEvt(false, "", 0);
+        }
+        catch (Exception ex)
+        {
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Fail(ex);
+            LoadingEvt(false, "", 0);
+            Common.ShowMsg(PopupService, $"调色失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
+
+    void RegisterOriginalImage(WMTemplateList image, string path = null, string previewSrc = null)
+    {
+        if (image == null || string.IsNullOrWhiteSpace(image.ID))
+        {
+            return;
+        }
+
+        var originalPath = path ?? image.Path;
+        if (!string.IsNullOrWhiteSpace(originalPath) && !OriginalImagePaths.ContainsKey(image.ID))
+        {
+            OriginalImagePaths[image.ID] = originalPath;
+        }
+
+        var originalPreview = previewSrc ?? image.Src;
+        if (!string.IsNullOrWhiteSpace(originalPreview) && !OriginalImagePreviewSources.ContainsKey(image.ID))
+        {
+            OriginalImagePreviewSources[image.ID] = originalPreview;
+        }
+    }
+
+    string GetOriginalImagePath(WMTemplateList image)
+    {
+        if (image != null
+            && !string.IsNullOrWhiteSpace(image.ID)
+            && OriginalImagePaths.TryGetValue(image.ID, out var originalPath)
+            && File.Exists(originalPath))
+        {
+            return originalPath;
+        }
+
+        return image?.Path;
+    }
+
+    string GetOriginalPreviewSrc(WMTemplateList image)
+    {
+        if (image != null
+            && !string.IsNullOrWhiteSpace(image.ID)
+            && OriginalImagePreviewSources.TryGetValue(image.ID, out var originalSrc)
+            && !string.IsNullOrWhiteSpace(originalSrc))
+        {
+            return originalSrc;
+        }
+
+        return image?.Src;
     }
 
     async Task OpenFolder()
@@ -972,26 +1454,25 @@
     async Task InitLogoStore()
     {
         LogoStore = new List<string>();
-        var db64 = new ConcurrentDictionary<string, byte[]>();
         if (Directory.Exists(Global.AppPath.LogoesFolder))
         {
             var files = new DirectoryInfo(Global.AppPath.LogoesFolder);
-            var tasks = new List<Task>();
-            foreach (var file in files.GetFiles())
+            var tasks = files.GetFiles().Select(file => Task.Run(() =>
             {
-                var t = Task.Run(() =>
+                var encoded = new ConcurrentDictionary<string, byte[]>();
+                Global.ImageFile2Base64(encoded, file.FullName, file.FullName);
+                return new
                 {
-                    LogoStore.Add(file.FullName);
-                    Global.ImageFile2Base64(db64, file.FullName, file.FullName);
-                });
-                tasks.Add(t);
-            }
-
-            foreach (var e in db64)
+                    Path = file.FullName,
+                    Bytes = encoded.GetValueOrDefault(file.FullName)
+                };
+            })).ToArray();
+            var results = await Task.WhenAll(tasks);
+            LogoStore = results.Select(result => result.Path).ToList();
+            foreach (var result in results.Where(result => result.Bytes is not null))
             {
-                LogoBase64[e.Key] = await Global.Byte2Url(JSRuntime, e.Value);
+                LogoBase64[result.Path] = await Global.Byte2Url(JSRuntime, result.Bytes!);
             }
-            await Task.WhenAll(tasks.ToArray());
         }
     }
 
@@ -1030,40 +1511,55 @@
         StateHasChanged();
     }
 
-    void EnableAll()
+    void PromptApplyCanvasToAll(WMCanvas sourceCanvas, string message)
     {
-        Common.ShowMsg(PopupService, "当前模板应用全部？", "应用", async () =>
+        var snapshot = Global.CanvasSerialize(sourceCanvas);
+        Common.ShowMsg(PopupService, message, "应用", async () =>
         {
-            await Help();
+            await ApplyCanvasToAllAsync(Global.ReadConfig(snapshot));
         });
     }
 
-    public async Task Help()
+    private async Task ApplyCanvasToAllAsync(WMCanvas sourceCanvas)
     {
-        WMMainLoading.Show = true;
-        StateHasChanged();
-        int idx = 1;
-        foreach (var img in Images)
+        try
         {
-            WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
-            WMMainLoading.Value = idx++ * 100.0 / Images.Count;
+            WMMainLoading.Show = true;
             StateHasChanged();
-            var b64 = await Task.Run(() =>
+            int idx = 1;
+            var cacheTemplate = new WMTemplateList
             {
-                var cvs = Global.ReadConfig(Global.CanvasSerialize(CurrentTemplate.Canvas));
-                cvs.Exif = img.Canvas.Exif;
-                img.Canvas = cvs;
-                cvs.Path = img.Path;
-                return helper.Generation(cvs, null, true);
-            });
+                ID = CurrentTemplate?.ID ?? sourceCanvas.ID,
+                Canvas = sourceCanvas
+            };
+            foreach (var img in Images)
+            {
+                WMMainLoading.Message = $"正在应用模板，一共{Images.Count}张，目前第{idx}张";
+                WMMainLoading.Value = idx++ * 100.0 / Images.Count;
+                StateHasChanged();
+                var cvs = MacCanvasApplication.CreateForImage(sourceCanvas, img);
+                var b64 = await helper.GenerationAsync(cvs, null, true);
+                if (b64.Length == 0)
+                    throw new InvalidOperationException($"{Path.GetFileName(img.Path)} 图片生成失败。");
 
-            var src = await Global.Byte2Url(JSRuntime, b64);
-            img.Src = src;
-            await InitLogoCacheDic(img.ID, CurrentTemplate);
+                var src = await Global.Byte2Url(JSRuntime, b64);
+                img.Canvas = cvs;
+                img.Src = src;
+                await InitLogoCacheDic(img.ID, cacheTemplate);
+            }
+
+            Common.ShowMsg(PopupService, "当前编辑已应用。", AlertTypes.Info);
         }
-        WMMainLoading.Value = 100;
-        WMMainLoading.Show = false;
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            Common.ShowMsg(PopupService, $"应用失败: {ex.Message}", AlertTypes.Error);
+        }
+        finally
+        {
+            WMMainLoading.Value = 100;
+            WMMainLoading.Show = false;
+            StateHasChanged();
+        }
     }
 
     void OpenLink(string link)
@@ -1079,6 +1575,92 @@
     {
         Global.OutPutPath = await ClientInstance.OpenFolder();
     });
+
+    async Task ChooseOutputFolder()
+    {
+        Global.OutPutPath = await ClientInstance.OpenFolder();
+        StateHasChanged();
+    }
+
+    void SetResolution(string value)
+    {
+        Global.Resolution = value;
+    }
+
+    void SetQuality(int value)
+    {
+        Global.Quality = value;
+    }
+
+    void SetExportFormat(WMExportFormat value)
+    {
+        ExportFormat = value;
+    }
+
+    async Task SetExportSelectionAll(bool selected)
+    {
+        Images.ForEach(x => x.IsChecked = selected);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task HandleExportSelectionChanged(WMTemplateList _)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ExportSelectedFromPanel()
+    {
+        if (PendingTemplate != null || ColorPreviewBaseSrc != null)
+        {
+            Common.ShowMsg(PopupService, "当前还有未完成的预览，请先点击“应用”提交，或点击“取消”。", AlertTypes.Warning);
+            return;
+        }
+
+        var selected = Images.Where(x => x.IsChecked).ToList();
+        if (!selected.Any())
+        {
+            Common.ShowMsg(PopupService, "请先选择要导出的图片", AlertTypes.Info);
+            return;
+        }
+        await ExportAsync(selected);
+    }
+
+    async Task ApplyPendingThenExport()
+    {
+        await ApplyCurrentMode();
+        if (PendingTemplate == null && ColorPreviewBaseSrc == null)
+            await ExportSelectedFromPanel();
+    }
+
+    async Task ExportCommittedFromPanel()
+    {
+        await CancelPendingOperation();
+        showExportPanel = true;
+        await ExportSelectedFromPanel();
+    }
+
+    void ToggleStarTrailImage(string imageId)
+    {
+        if (StarTrailSelectionIds.Contains(imageId))
+        {
+            StarTrailSelectionIds.Remove(imageId);
+        }
+        else
+        {
+            StarTrailSelectionIds.Add(imageId);
+        }
+        WorkspaceMode = MacWorkspaceMode.StarTrail;
+        RefreshMultiFrameInputs();
+        StateHasChanged();
+    }
+
+    void EditTemplate(WMTemplateList template)
+    {
+        if (template?.Canvas != null)
+        {
+            OpenDesignAction(template.Canvas);
+        }
+    }
 
     async void SelectSourceImageExif(IBrowserFile file)
     {
@@ -1133,9 +1715,25 @@
         CurrentImage.Canvas = cvs;
         CurrentImage.ID = CurrentImage.Canvas.ID;
         CurrentImage.Src = await Global.Byte2Url(JSRuntime, b64);
+        EditingSession.Reset();
+        var splitPath = Path.Combine(EditingSession.GetWorkingDirectory(WMImageOperationKind.Source), $"{CurrentImage.ID}.jpg");
+        await File.WriteAllBytesAsync(splitPath, b64);
+        CurrentImage.Path = splitPath;
+        CurrentImage.Canvas = CreatePlainCanvas(new WMImageArtifact
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            FilePath = splitPath,
+            Width = cvs.CustomWidth,
+            Height = cvs.CustomHeight,
+            Exif = FlattenExif(cvs)
+        });
+        CurrentImage.IsChecked = true;
+        WorkspaceMode = MacWorkspaceMode.Template;
         await InitLogoCacheDic(CurrentImage.ID, template);
         Images = [];
         Images.Add(CurrentImage);
+        EditingSession.RegisterSource(CurrentImage.ID, splitPath, FlattenExif(cvs));
+        StarTrailSelectionIds = [CurrentImage.ID];
         SrcLoading = false;
         StateHasChanged();
     }
@@ -1173,90 +1771,576 @@
         }
     }
 
-    void LoadingEvt(bool b, string m, int v)
+    Task LoadingEvtAsync(bool visible, string message, double value) => InvokeAsync(() =>
     {
-        WMMainLoading.Show = b;
-        WMMainLoading.Message = m;
-        WMMainLoading.Value = v;
-        InvokeAsync(StateHasChanged);
+        WMMainLoading.Show = visible;
+        WMMainLoading.Message = message;
+        WMMainLoading.Value = value;
+        StateHasChanged();
+    });
+
+    void LoadingEvt(bool visible, string message, int value) =>
+        _ = LoadingEvtAsync(visible, message, value);
+
+    Task ReportProgressAsync(WMOperationProgress progress) => InvokeAsync(() =>
+    {
+        WorkspaceCoordinator.Report(progress);
+        // A processor reaching Completed still precedes session commit and UI artifact swap.
+        // The owning command hides the panel only after those steps finish.
+        WMMainLoading.Show = true;
+        WMMainLoading.Message = progress.Message;
+        WMMainLoading.Value = progress.Percentage;
+        StateHasChanged();
+    });
+
+    CancellationToken BeginActiveOperation()
+    {
+        ActiveOperationCancellation?.Cancel();
+        ActiveOperationCancellation?.Dispose();
+        ActiveOperationCancellation = new CancellationTokenSource();
+        return ActiveOperationCancellation.Token;
     }
 
-    void OpenStarTrailDialog()
+    void CompleteActiveOperation()
     {
-        if (Images == null || Images.Count < 2)
+        ActiveOperationCancellation?.Dispose();
+        ActiveOperationCancellation = null;
+    }
+
+    async Task CancelActiveOperation()
+    {
+        ActiveOperationCancellation?.Cancel();
+        ColorPreviewCancellation?.Cancel();
+        WorkspaceCoordinator.CancelPreview();
+        LoadingEvt(false, "", 0);
+        await CancelPendingOperation();
+    }
+
+    void RefreshMultiFrameInputs()
+    {
+        var selectedIds = StarTrailSelectionIds.Any() ? StarTrailSelectionIds : Images.Select(x => x.ID).ToList();
+        StackDialogSourceImages = Images
+            .Where(x => selectedIds.Contains(x.ID) && !string.IsNullOrWhiteSpace(x.Path)).ToList();
+        if (StackDialogSourceImages.Count < 2)
         {
-            Common.ShowMsg(PopupService, "至少需要导入2张图片才能进行星轨合成", AlertTypes.Warning);
+            StackDialogInputs = [];
             return;
         }
-        showStarTrailDialog = true;
+        foreach (var image in StackDialogSourceImages) EnsureSessionSource(image);
+        StackDialogInputs = StackDialogSourceImages.Select(image => EditingSession.GetCurrent(image.ID)).ToArray();
     }
 
-    async Task StartStarTrailComposition((Shared.Enums.StarTrailBlendMode Mode, float Brightness) args)
+    async Task HandleMultiFramePreviewChanged(WMImageArtifact artifact)
     {
-        showStarTrailDialog = false;
+        if (artifact is null)
+        {
+            MultiFramePreviewSrc = null;
+        }
+        else
+        {
+            MultiFramePreviewSrc = await Global.Byte2Url(JSRuntime, await File.ReadAllBytesAsync(artifact.FilePath));
+        }
         await InvokeAsync(StateHasChanged);
+    }
+
+    async Task HandleMultiFrameCompleted(WMOperationResult operationResult)
+    {
+        var artifact = operationResult.Outputs.Single();
+        var src = await Global.Byte2Url(JSRuntime, await File.ReadAllBytesAsync(artifact.FilePath));
+        var mediaId = Guid.NewGuid().ToString("N");
+        var sourceImage = StackDialogSourceImages.FirstOrDefault();
+        CurrentImage = new WMTemplateList
+        {
+            Canvas = CreatePlainCanvas(artifact),
+            Src = src,
+            ID = mediaId,
+            Path = artifact.FilePath,
+            IsChecked = true
+        };
+        Images.Add(CurrentImage);
+        MediaArchive[mediaId] = CurrentImage;
+        EditingSession.Commit(operationResult.Operation, new Dictionary<string, WMImageArtifact>
+        {
+            [mediaId] = artifact
+        }, [mediaId]);
+        RegisterOriginalImage(CurrentImage,
+            sourceImage is null ? artifact.FilePath : GetOriginalImagePath(sourceImage), src);
+        StarTrailSelectionIds = [mediaId];
+        WorkspaceMode = MacWorkspaceMode.StarTrail;
+        MultiFramePreviewSrc = null;
+        RefreshMultiFrameInputs();
+        WorkspaceCoordinator.Complete("多帧合成完成");
+        await InvokeAsync(StateHasChanged);
+        Common.ShowMsg(PopupService, "多帧结果已作为新的基础素材加入，可继续调色、套模板和撤销。", AlertTypes.Info);
+    }
+
+    async Task CommitTemplateOperationAsync(MacPreparedTemplatePreview? preparedPreview = null)
+    {
+        if (PendingTemplate == null || CurrentImage == null || CurrentImage.ID != PendingTemplate.MediaId)
+            return;
         try
         {
-            var paths = Images.Where(x => !string.IsNullOrEmpty(x.Path)).Select(x => x.Path).ToList();
-            if (paths.Count < 2)
+            WorkspaceCoordinator.BeginProcessing("正在提交模板代理预览…");
+            var operationToken = BeginActiveOperation();
+            await LoadingEvtAsync(true, "正在提交模板代理预览…", 0);
+            var targets = ApplyToSelected
+                ? Images.Where(image => image.IsChecked).ToList()
+                : [CurrentImage];
+            if (targets.Count == 0) targets = [CurrentImage];
+            foreach (var target in targets) EnsureSessionSource(target);
+            var inputs = targets.Select(target => EditingSession.GetCurrent(target.ID)).ToArray();
+            var settings = new WMTemplateOperationSettings(CurrentImage.Canvas);
+            IReadOnlyDictionary<string, WMImageArtifact>? preparedOutputs = null;
+            if (preparedPreview is not null
+                && inputs.Any(input => string.Equals(input.Id, preparedPreview.InputArtifactId, StringComparison.Ordinal)))
             {
-                Common.ShowMsg(PopupService, "可用图片少于2张，无法合成", AlertTypes.Warning);
-                return;
+                preparedOutputs = new Dictionary<string, WMImageArtifact>(StringComparer.Ordinal)
+                {
+                    [preparedPreview.InputArtifactId] = preparedPreview.Artifact
+                };
             }
-            WMMainLoading.Show = true;
-            WMMainLoading.Message = "正在合成星轨...";
-            WMMainLoading.Value = 0;
-            await InvokeAsync(StateHasChanged);
-            int lastProgress = -1;
-            var resultBytes = await Task.Run(async () =>
-            {
-                return await SkiaSharpStarTrailGenerator.ComposeAsync(
-                    paths,
-                    args.Mode,
-                    args.Brightness / 100f,
-                    (current, total, msg) =>
-                    {
-                        var progress = total > 0 ? (int)(current * 100.0 / total) : 0;
-                        if (progress != lastProgress)
-                        {
-                            lastProgress = progress;
-                            InvokeAsync(() =>
-                            {
-                                WMMainLoading.Message = msg;
-                                WMMainLoading.Value = progress;
-                                StateHasChanged();
-                            });
-                        }
-                    }
-                );
-            });
-            WMMainLoading.Message = "正在保存图片...";
-            WMMainLoading.Value = 95;
-            await InvokeAsync(StateHasChanged);
-            var fileName = $"星轨合成_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-            var outputPath = Path.Combine(Global.OutPutPath, fileName);
-            await File.WriteAllBytesAsync(outputPath, resultBytes);
-            var src = await Global.Byte2Url(JSRuntime, resultBytes);
-            CurrentImage = new WMTemplateList
-            {
-                Canvas = new WMCanvas(),
-                Src = src,
-                ID = Guid.NewGuid().ToString("N"),
-                Path = outputPath
-            };
-            WMMainLoading.Show = false;
-            WMMainLoading.Value = 100;
-            await InvokeAsync(StateHasChanged);
-            Common.ShowMsg(PopupService, "星轨合成完成，是否打开输出文件夹？", "打开", async () =>
-            {
-                await OpenFolder();
-            });
+            var result = await TemplateProcessor.ExecuteAsync(new WMOperationRequest(
+                inputs,
+                settings,
+                true,
+                EditingSession.GetWorkingDirectory(WMImageOperationKind.Template),
+                new Progress<WMOperationProgress>(value =>
+                {
+                    _ = ReportProgressAsync(value);
+                }),
+                ProcessingOptions), preparedOutputs, operationToken);
+            var outputs = targets.Select((target, index) => (target.ID, Artifact: result.Outputs[index]))
+                .ToDictionary(pair => pair.ID, pair => pair.Artifact);
+            EditingSession.Commit(result.Operation, outputs);
+            PendingTemplate = null;
+            foreach (var target in targets)
+                await ApplyArtifactToMediaAsync(target, outputs[target.ID]);
+            ApplyToSelected = false;
+            showConfig = false;
+            await LoadingEvtAsync(false, "模板操作完成", 100);
+            WorkspaceCoordinator.Complete("模板操作完成");
+            CompleteActiveOperation();
+            Common.ShowMsg(PopupService, "模板已生成新版本，可以继续调色或再次应用模板。", AlertTypes.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Reset();
+            LoadingEvt(false, "", 0);
         }
         catch (Exception ex)
         {
-            WMMainLoading.Show = false;
-            await InvokeAsync(StateHasChanged);
-            Common.ShowMsg(PopupService, $"星轨合成失败: {ex.Message}", AlertTypes.Error);
+            CompleteActiveOperation();
+            WorkspaceCoordinator.Fail(ex);
+            LoadingEvt(false, "", 0);
+            Common.ShowMsg(PopupService, $"模板提交失败: {ex.Message}", AlertTypes.Error);
         }
     }
+
+    async Task CancelPendingOperation()
+    {
+        var releasedPreviewUrls = new[] { ColorPreviewBaseSrc, ColorPreviewDisplaySrc, ColorCompareBeforeSrc }
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (PendingTemplate != null)
+        {
+            var pending = PendingTemplate;
+            PendingTemplate = null;
+            var image = Images.FirstOrDefault(item => item.ID == pending.MediaId);
+            if (image != null)
+            {
+                image.Path = pending.Path;
+                image.Src = pending.Src;
+                image.Canvas = Global.ReadConfig(pending.CanvasJson);
+                image.Canvas.Path = pending.Path;
+            }
+        }
+        ColorPreviewCancellation?.Cancel();
+        if (!string.IsNullOrWhiteSpace(ColorPreviewPath)) EditingSession.DeletePreviewFiles([ColorPreviewPath]);
+        ColorPreviewPath = null;
+        ColorPreviewBaseSrc = null;
+        ColorPreviewDisplaySrc = null;
+        ColorCompareBeforeSrc = null;
+        CurrentColorPreviewLook = MacColorPreviewLook.Identity;
+        showConfig = false;
+        SrcLoading = false;
+        WorkspaceCoordinator.Reset();
+        foreach (var url in releasedPreviewUrls)
+            await TryRevokeUnreferencedBlobAsync(url);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task UndoOperation()
+    {
+        if (PendingTemplate != null || ColorPreviewBaseSrc != null) await CancelPendingOperation();
+        ColorEditSession.Seal();
+        await ApplySessionChangeAsync(EditingSession.Undo());
+    }
+
+    async Task RedoOperation()
+    {
+        if (PendingTemplate != null || ColorPreviewBaseSrc != null) await CancelPendingOperation();
+        ColorEditSession.Seal();
+        await ApplySessionChangeAsync(EditingSession.Redo());
+    }
+
+    async Task EditHistoryOperation(MacSessionHistoryEntry entry)
+    {
+        if (!entry.IsApplied || entry.Operation.Kind != WMImageOperationKind.Template) return;
+        if (PendingTemplate != null || ColorPreviewBaseSrc != null) await CancelPendingOperation();
+        while (EditingSession.History.LastOrDefault(item => item.IsApplied) is { } latest
+               && latest.Operation.Id != entry.Operation.Id)
+        {
+            await ApplySessionChangeAsync(EditingSession.Undo());
+        }
+        await ApplySessionChangeAsync(EditingSession.Undo());
+        var templateArtifact = entry.After.Values.FirstOrDefault();
+        var mediaId = entry.After.Keys.FirstOrDefault();
+        if (templateArtifact?.CanvasSnapshotJson == null || mediaId == null) return;
+        var image = Images.FirstOrDefault(item => item.ID == mediaId);
+        if (image == null) return;
+        CurrentImage = image;
+        WorkspaceMode = MacWorkspaceMode.Template;
+        var canvas = Global.ReadConfig(templateArtifact.CanvasSnapshotJson);
+        await ChangeTemplate(new WMTemplateList { ID = canvas.ID, Canvas = canvas });
+    }
+
+    async Task ApplySessionChangeAsync(MacSessionChange change)
+    {
+        if (change.Operation == null) return;
+        foreach (var mediaId in change.RemovedMediaIds)
+        {
+            var image = Images.FirstOrDefault(item => item.ID == mediaId);
+            if (image != null)
+            {
+                MediaArchive[mediaId] = image;
+                Images.Remove(image);
+            }
+        }
+        foreach (var mediaId in change.AddedMediaIds)
+        {
+            if (!Images.Any(item => item.ID == mediaId) && MediaArchive.TryGetValue(mediaId, out var image))
+                Images.Add(image);
+        }
+        foreach (var pair in change.CurrentArtifacts)
+        {
+            var image = Images.FirstOrDefault(item => item.ID == pair.Key);
+            if (image != null) await ApplyArtifactToMediaAsync(image, pair.Value);
+        }
+        if (CurrentImage == null || !Images.Contains(CurrentImage)) CurrentImage = Images.LastOrDefault();
+        StarTrailSelectionIds = StarTrailSelectionIds.Where(id => Images.Any(image => image.ID == id)).ToList();
+        ColorCompareBeforeSrc = null;
+        showConfig = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    Task QueueColorRecipePreview(WMColorRecipe recipe)
+    {
+        _ = ShowColorPreviewHintOnceAsync();
+        _ = PreviewColorRecipe(recipe);
+        return Task.CompletedTask;
+    }
+
+    Task QueueColorGradePreview(WMColorRecipe recipe)
+    {
+        _ = ShowColorPreviewHintOnceAsync();
+        CurrentColorRecipe = recipe;
+        CurrentColorPreviewParameters = MacColorPreviewParameters.FromGradeAndHsl(
+            recipe.Grade, CurrentColorPreviewParameters);
+        if (CurrentImage == null) return Task.CompletedTask;
+
+        EnsureSessionSource(CurrentImage);
+        ColorPreviewBaseSrc = ColorEditSession.GetBasePreview(CurrentImage.ID) ?? CurrentImage.Src;
+        ColorCompareBeforeSrc = ColorPreviewBaseSrc;
+
+        // Unsupported GPUs keep the existing idle CPU fallback. Supported GPUs only
+        // receive the latest uniforms and do not enter the coordinator/task pipeline.
+        if (ColorPreviewCapability is { Supported: false })
+            _ = PreviewColorRecipe(recipe);
+        return Task.CompletedTask;
+    }
+
+    Task QueueColorCurvesPreview(WMColorRecipe recipe)
+    {
+        _ = ShowColorPreviewHintOnceAsync();
+        CurrentColorRecipe = recipe;
+        CurrentColorPreviewParameters = MacColorPreviewParameters.FromCurves(
+            recipe.Grade, CurrentColorPreviewParameters);
+        if (CurrentImage == null) return Task.CompletedTask;
+
+        EnsureSessionSource(CurrentImage);
+        ColorPreviewBaseSrc = ColorEditSession.GetBasePreview(CurrentImage.ID) ?? CurrentImage.Src;
+        ColorCompareBeforeSrc = ColorPreviewBaseSrc;
+        if (ColorPreviewCapability is { Supported: false })
+            _ = PreviewColorRecipe(recipe);
+        return Task.CompletedTask;
+    }
+
+    async Task ShowColorPreviewHintOnceAsync()
+    {
+        if (ColorPreviewHintChecked) return;
+        ColorPreviewHintChecked = true;
+        const string key = "watermark.mac.color-preview-hint.v1";
+        try
+        {
+            if (await JSRuntime.InvokeAsync<string>("localStorage.getItem", key) == "1") return;
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", key, "1");
+        }
+        catch
+        {
+            // The in-memory flag still guarantees one prompt for this session.
+        }
+        await InvokeAsync(() => Common.ShowMsg(PopupService,
+            "实时预览\n参数会立即作用于当前调色会话，并在停止操作后写入同一个历史节点。",
+            AlertTypes.Info));
+    }
+
+    async Task PreviewColorRecipe(WMColorRecipe recipe)
+    {
+        CurrentColorRecipe = recipe;
+        if (CurrentImage == null) return;
+        EnsureSessionSource(CurrentImage);
+        ColorPreviewCancellation?.Cancel();
+        ColorPreviewCancellation?.Dispose();
+        var cancellation = ColorPreviewCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            WorkspaceCoordinator.BeginPreview("正在更新调色预览…"));
+        var version = ++ColorPreviewVersion;
+        ColorPreviewBaseSrc = ColorEditSession.GetBasePreview(CurrentImage.ID) ?? CurrentImage.Src;
+        var mediaId = CurrentImage.ID;
+        var recipeSnapshot = CloneColorRecipe(recipe);
+        try
+        {
+            // Manual adjustments are rendered by WebGL on the next animation frame.
+            // Only reference changes need background analysis/LUT generation.
+            WMGeneratedColorLook generated = null;
+            if (recipeSnapshot.ReferenceMapping.Enabled && recipeSnapshot.ReferenceProfile is not null)
+            {
+                var input = GetColorBaseArtifact(CurrentImage);
+                var mappingSignature = CreateColorMappingSignature(recipeSnapshot, input);
+                if (string.Equals(mappingSignature, CurrentColorMappingSignature, StringComparison.Ordinal)
+                    && CurrentGeneratedColorLook is not null)
+                {
+                    generated = CurrentGeneratedColorLook;
+                    recipeSnapshot.GeneratedBaseGrade = generated.AutomaticBaseGrade ?? generated.BaseGrade;
+                }
+                else
+                {
+                    generated = await PrepareGeneratedLookAsync(recipeSnapshot, cancellation.Token);
+                    CurrentGeneratedColorLook = generated;
+                    CurrentColorMappingSignature = mappingSignature;
+                }
+            }
+            else
+            {
+                CurrentGeneratedColorLook = null;
+                CurrentColorMappingSignature = null;
+            }
+            if (version != ColorPreviewVersion || cancellation.IsCancellationRequested || CurrentImage?.ID != mediaId) return;
+
+            CurrentColorPreviewLook = generated is null
+                ? MacColorPreviewLook.Identity
+                : MacColorPreviewLook.From(generated);
+            CurrentColorPreviewParameters = MacColorPreviewParameters.From(CurrentColorRecipe.Grade);
+            ColorCompareBeforeSrc = ColorPreviewBaseSrc;
+            CurrentColorRecipe.GeneratedBaseGrade = recipeSnapshot.GeneratedBaseGrade;
+            WorkspaceCoordinator.PreviewReady("调色预览已更新");
+            await InvokeAsync(StateHasChanged);
+
+            if (ColorPreviewCapability is { Supported: false })
+            {
+                await Task.Delay(250, cancellation.Token);
+                await PreviewColorRecipeCpuFallbackAsync(recipeSnapshot, mediaId, version, cancellation.Token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            WorkspaceCoordinator.Fail(ex);
+            Common.ShowMsg(PopupService, $"调色预览失败: {ex.Message}", AlertTypes.Error);
+        }
+    }
+
+    async Task PreviewColorRecipeCpuFallbackAsync(
+        WMColorRecipe recipe,
+        string mediaId,
+        long version,
+        CancellationToken cancellationToken)
+    {
+        var image = Images.First(item => item.ID == mediaId);
+        var input = GetColorBaseArtifact(image);
+        var result = await ColorGradeProcessor.ExecuteAsync(new WMOperationRequest(
+            [input],
+            recipe,
+            true,
+            EditingSession.GetWorkingDirectory(WMImageOperationKind.ColorGrade, preview: true),
+            Execution: InteractivePreviewOptions), cancellationToken);
+        var artifact = result.Outputs.Single();
+        if (version != ColorPreviewVersion || cancellationToken.IsCancellationRequested || CurrentImage?.ID != mediaId)
+        {
+            EditingSession.DeletePreviewFiles([artifact.FilePath]);
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(ColorPreviewPath)) EditingSession.DeletePreviewFiles([ColorPreviewPath]);
+        ColorPreviewPath = artifact.FilePath;
+        ColorPreviewDisplaySrc = await Global.Byte2Url(JSRuntime,
+            await File.ReadAllBytesAsync(artifact.FilePath, cancellationToken));
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task HandleColorPreviewCapabilityChanged(MacColorPreviewCapability capability)
+    {
+        ColorPreviewCapability = capability;
+        if (!capability.Supported && ColorPreviewBaseSrc != null)
+            await PreviewColorRecipe(CurrentColorRecipe);
+    }
+
+    static string CreateColorMappingSignature(WMColorRecipe recipe, WMImageArtifact input) => string.Join('|',
+        input.ContentHash ?? input.Id,
+        recipe.ReferenceProfile?.SourceHash,
+        recipe.MappingVersion,
+        recipe.AnalysisVersion,
+        recipe.ReferenceMapping.Strength,
+        recipe.ReferenceMapping.MatchMode,
+        recipe.ReferenceMapping.Mode,
+        recipe.ReferenceMapping.PreserveLuminance,
+        recipe.ReferenceMapping.Enabled);
+
+    void EnsureSessionSource(WMTemplateList image)
+    {
+        if (EditingSession.TryGetCurrent(image.ID, out _)) return;
+        EditingSession.RegisterSource(
+            image.ID,
+            image.Path,
+            FlattenExif(image.Canvas),
+            MediaProxyPaths.GetValueOrDefault(image.ID));
+    }
+
+    async Task ApplyArtifactToMediaAsync(WMTemplateList image, WMImageArtifact artifact)
+    {
+        // WMTemplateList.Path remains the immutable imported source path. The current
+        // committed proxy lives in the editing session and Canvas.Path.
+        RegisterOriginalImage(image);
+        image.Canvas = CreatePlainCanvas(artifact);
+        var previousSrc = image.Src;
+        var nextSrc = await Global.Byte2Url(JSRuntime, await File.ReadAllBytesAsync(artifact.FilePath));
+        image.Src = nextSrc;
+        if (!string.Equals(previousSrc, nextSrc, StringComparison.Ordinal))
+            await TryRevokeUnreferencedBlobAsync(previousSrc);
+        if (CurrentImage?.ID == image.ID) CurrentImage = image;
+        if (ColorPreviewPath == artifact.FilePath
+            || (artifact.SourceOperation == WMImageOperationKind.ColorGrade && !ColorEditSession.IsActive))
+        {
+            ColorPreviewPath = null;
+            ColorPreviewBaseSrc = null;
+            ColorPreviewDisplaySrc = null;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task TryRevokeUnreferencedBlobAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)
+            || !url.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
+            || Images.Any(item => string.Equals(item.Src, url, StringComparison.Ordinal))
+            || OriginalImagePreviewSources.Values.Any(value => string.Equals(value, url, StringComparison.Ordinal))
+            || string.Equals(PendingTemplate?.Src, url, StringComparison.Ordinal)
+            || string.Equals(ColorPreviewBaseSrc, url, StringComparison.Ordinal)
+            || string.Equals(ColorPreviewDisplaySrc, url, StringComparison.Ordinal)
+            || string.Equals(ColorCompareBeforeSrc, url, StringComparison.Ordinal)
+            || string.Equals(MultiFramePreviewSrc, url, StringComparison.Ordinal))
+            return;
+
+        try { await Global.RevokeUrl(JSRuntime, url); }
+        catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
+    }
+
+    static string GetOperationStageLabel(WMOperationStage stage) => stage switch
+    {
+        WMOperationStage.Synchronizing => "同步预览",
+        WMOperationStage.Queued => "等待处理",
+        WMOperationStage.Decoding => "解码",
+        WMOperationStage.Processing => "处理",
+        WMOperationStage.Encoding => "编码",
+        WMOperationStage.Writing => "写入",
+        WMOperationStage.Completed => "完成",
+        _ => "处理"
+    };
+
+    static WMCanvas CreatePlainCanvas(WMImageArtifact artifact)
+    {
+        var canvas = new WMCanvas { Path = artifact.FilePath };
+        if (artifact.Exif.Count > 0)
+            canvas.Exif[canvas.ID] = new Dictionary<string, string>(artifact.Exif);
+        return canvas;
+    }
+
+    static Dictionary<string, string> FlattenExif(WMCanvas canvas) =>
+        canvas?.Exif?.FirstOrDefault().Value is { } exif
+            ? new Dictionary<string, string>(exif)
+            : [];
+
+    IReadOnlyList<string> CreateUniqueExportPaths(IReadOnlyList<WMTemplateList> images)
+    {
+        var used = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var paths = new string[images.Count];
+        for (var index = 0; index < images.Count; index++)
+        {
+            var baseName = $"DFX_{Path.GetFileNameWithoutExtension(GetOriginalImagePath(images[index]))}";
+            used.TryGetValue(baseName, out var occurrence);
+            occurrence++;
+            used[baseName] = occurrence;
+            var extension = ExportFormat switch
+            {
+                WMExportFormat.Png16 => ".png",
+                WMExportFormat.Tiff16 => ".tiff",
+                _ => ".jpg"
+            };
+            var fileName = occurrence == 1 ? $"{baseName}{extension}" : $"{baseName}_{occurrence}{extension}";
+            paths[index] = Path.Combine(Global.OutPutPath, fileName);
+        }
+        return paths;
+    }
+
+    static bool HasManualColorAdjustments(WMColorGradeSettings settings)
+    {
+        if (new[]
+            {
+                settings.Exposure, settings.Contrast, settings.Highlights, settings.Shadows,
+                settings.Whites, settings.Blacks, settings.Temperature, settings.Tint,
+                settings.Vibrance, settings.Saturation
+            }.Any(value => Math.Abs(value) > 0.001f)) return true;
+        if (settings.Hsl.Values.Any(value => Math.Abs(value.Hue) > 0.001f || Math.Abs(value.Saturation) > 0.001f || Math.Abs(value.Luminance) > 0.001f)) return true;
+        return !IsIdentity(settings.MasterCurve) || !IsIdentity(settings.RedCurve)
+            || !IsIdentity(settings.GreenCurve) || !IsIdentity(settings.BlueCurve);
+    }
+
+    static bool IsIdentity(IReadOnlyList<WMCurvePoint> curve) => curve.Count == 2
+        && Math.Abs(curve[0].X) < 0.001f && Math.Abs(curve[0].Y) < 0.001f
+        && Math.Abs(curve[1].X - 1) < 0.001f && Math.Abs(curve[1].Y - 1) < 0.001f;
+
+    static WMColorRecipe CloneColorRecipe(WMColorRecipe recipe) =>
+        JsonSerializer.Deserialize<WMColorRecipe>(JsonSerializer.Serialize(recipe))
+        ?? throw new InvalidOperationException("无法复制调色参数。");
+
+    public void Dispose()
+    {
+        ActiveOperationCancellation?.Cancel();
+        ActiveOperationCancellation?.Dispose();
+        ColorPreviewCancellation?.Cancel();
+        ColorPreviewCancellation?.Dispose();
+        EditingSession.Dispose();
+        TemplateLibrary.Changed -= OnTemplateLibraryChanged;
+        WorkspaceCoordinator.Changed -= OnWorkspaceStateChanged;
+    }
+
+    sealed record PendingTemplateOperation(
+        string MediaId,
+        WMImageArtifact InputArtifact,
+        string Path,
+        string Src,
+        string CanvasJson);
 }

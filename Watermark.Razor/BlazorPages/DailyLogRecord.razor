@@ -1,131 +1,20 @@
-﻿@page "/dms"
+@page "/dms"
+@using Watermark.Razor.Components.Dashboard
 @using Watermark.Razor.Components.Layout
-@using Watermark.Shared.Models
 @layout MainLayout
 @inherits PStackPageBase
+@inject PageStackNavController NavController
+
+<PStackPageBarInit Title="运营看板" Dense Flat CenterTitle />
+<div class="dashboard-route-host">
+    <AdminDashboard ShowClose="true" Close="() => NavController.Pop()" />
+</div>
+
 <style>
-    .mud-grid-spacing-xs-3 {
+    .dashboard-route-host {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
         width: 100%;
-        margin: 0px;
     }
 </style>
-<PStackPageBarInit Title="数据" Dense Flat CenterTitle>
-</PStackPageBarInit>
-<MudGrid Style="overflow: auto;height: 100%;">
-    <MudItem xs="12">
-        <MSelect Items="_items"
-                 @bind-Value="@Month"
-                 ItemText="@(u => u == 0 ? "全年" : u + "月")"
-                 ItemValue="u => u"
-                 Dense
-                 Solo></MSelect>
-    </MudItem>
-    <MudItem xs="12">
-        <MudText Typo="Typo.h5"><b>每日注册数</b></MudText>
-    </MudItem>
-    <MudItem xs="12">
-        <MudPaper Elevation="25" Height="100%" Width="100%" Class="my-2 pa-1">
-            <MudChart ChartType="ChartType.Line" ChartSeries="@Series" XAxisLabels="@XAxisLabels" Width="100%" Height="100%"/>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12">
-        <MudText Typo="Typo.h5"><b>每日访问数</b></MudText>
-    </MudItem>
-    <MudItem xs="12">
-        <MudPaper Elevation="25" Height="100%" Width="100%" Class="my-2 pa-1">
-            <MudChart ChartType="ChartType.StackedBar" ChartSeries="@Series2" XAxisLabels="@XAxisLabels2" Width="100%" Height="100%" ChartOptions="@Options"></MudChart>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
-
-@code {
-    public ChartOptions Options = new ChartOptions() { YAxisTicks = 200, MaxNumYAxisTicks=100 };
-
-    public List<ChartSeries> Series = [];
-    public string[] XAxisLabels = [];
-
-    public string[] XAxisLabels2 = [];
-    public List<ChartSeries> Series2 = [];
-    int month = DateTime.Now.Month;
-    int Month
-    {
-        get => month;
-        set
-        {
-            month = value;
-            var _ = init();
-        }
-    }
-    List<int> _items = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-
-
-    protected override async Task OnInitializedAsync()
-    {
-#if ANDROID
-    MainActivity.SetColor?.Invoke(Colors.Grey.Lighten4);
-#endif
-        await init();
-    }
-
-    async Task init()
-    {
-        var api = new APIHelper();
-        var result = await api.GetUserSignUpInfo("1", month == 0 ? null : month);
-        if (result.success)
-        {
-            var infoMs = result.data;
-            var r = infoMs.GroupBy(x => x.Date.Month).Select(x => new
-            {
-                x.Key,
-                MonthDetail = x.ToList()
-            }).ToList();
-            Series = new List<ChartSeries>();
-            foreach (var e in r.OrderBy(x => x.Key))
-            {
-                var cs = new ChartSeries()
-                    {
-                        Name = e.Key + "月",
-                        Data = e.MonthDetail.OrderBy(x => x.Date.Day).Select(x => x.Count * 1.0).ToArray()
-                    };
-                Series.Add(cs);
-            }
-
-            var t = new List<string>();
-            for (int i = 1; i <= 31; i++)
-                t.Add(i + "");
-            XAxisLabels = t.ToArray();
-
-        }
-
-        var result2 = await api.GetVisit("1", month == 0 ? null : month);
-        if (result2.success)
-        {
-            XAxisLabels2 = result2.data.Select(x => (string)x.Date.ToString("MM-dd")).ToArray();
-            Dictionary<string, List<double>> vs = new();
-            foreach (var item in result2.data)
-            {
-                foreach (var p in item.Platform)
-                {
-                    foreach (var d in p.Page)
-                    {
-                        var name = (string)(p.Device + "-" + d.Name);
-                        var val = (double)d.Count;
-                        if (!vs.TryGetValue((string)name, out List<double> vvs)) vs[(string)name] = new List<double>();
-                        vs[name].Add(val);
-                    }
-                }
-            }
-
-            foreach (var v in vs)
-            {
-                var cs = new ChartSeries()
-                    {
-                        Name = v.Key,
-                        Data = v.Value.ToArray()
-                    };
-                Series2.Add(cs);
-            }
-        }
-    }
-
-}

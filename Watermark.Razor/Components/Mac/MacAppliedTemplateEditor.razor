@@ -1,0 +1,531 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using SkiaSharp
+@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Razor.Components.Mac.Editing
+@using Watermark.Shared.Models
+@inject IWMWatermarkHelper WatermarkHelper
+@inject IJSRuntime JSRuntime
+@inject MacEditingSession EditingSession
+@implements IAsyncDisposable
+
+<section class="mac-applied-template-editor @(Embedded ? "embedded" : null)"
+         style="@EmbeddedViewportStyle"
+         tabindex="0"
+         @onkeydown="HandleKeyDownAsync">
+    @if (editor is null)
+    {
+        <div class="applied-editor-loading" role="status">
+            <span class="applied-editor-spinner" aria-hidden="true"></span>
+            <span>@(string.IsNullOrWhiteSpace(errorMessage) ? "正在准备可编辑画面" : errorMessage)</span>
+        </div>
+    }
+    else
+    {
+        @if (!Embedded)
+        {
+            <MacDesignerToolbar TemplateName="@editor.Draft.Name"
+                                IsDirty="@editor.IsDirty"
+                                CanUndo="@editor.CanUndo"
+                                CanRedo="@editor.CanRedo"
+                                IsSaving="@isRendering"
+                                SaveLabel="完成编辑"
+                                ShowSave="false"
+                                Zoom="@zoom"
+                                Exit="CompleteAsync"
+                                Save="CompleteAsync"
+                                Undo="UndoAsync"
+                                Redo="RedoAsync"
+                                Fit="FitAsync"
+                                ZoomChanged="SetZoomAsync" />
+        }
+
+        <div class="applied-editor-layout @(Embedded ? "embedded" : null)" style="@EmbeddedViewportStyle">
+            @if (!Embedded)
+            {
+                <aside class="applied-layer-panel">
+                    <MacLayerTree Editor="@editor" />
+                </aside>
+            }
+
+            <div class="applied-primary-column @(mediaStripDragging ? "resizing" : null)"
+                 style="@PrimaryColumnStyle"
+                 @onpointermove="ResizeMediaStrip"
+                 @onpointermove:preventDefault="mediaStripDragging"
+                 @onpointerup="EndMediaStripResize"
+                 @onpointerleave="EndMediaStripResize"
+                 @onpointercancel="EndMediaStripResize">
+                <main class="applied-canvas-panel">
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="applied-status error" role="status">@errorMessage</div>
+                    }
+                    @if (isRendering)
+                    {
+                        <div class="applied-render-progress" aria-label="正在更新画面"></div>
+                    }
+                    <MacCanvasEditor @key="EditorInstanceKey"
+                                     @ref="canvasEditor"
+                                     Editor="@editor"
+                                     RenderResult="@renderResult"
+                                     PreviewUrl="@previewUrl"
+                                     Zoom="@zoom"
+                                     AllowViewportPan="@(!Embedded)"
+                                     ZoomChanged="SetZoomAsync"
+                                     SaveRequested="CompleteAsync" />
+                </main>
+
+                @if (Embedded)
+                {
+                    <div class="applied-splitter-grip"
+                         title="拖拽调整素材栏高度"
+                         @onpointerdown="StartMediaStripResize"
+                         @onpointerdown:preventDefault="true"
+                         @onpointerdown:stopPropagation="true">
+                        <span></span>
+                    </div>
+                    <section class="applied-media-panel">
+                        <MacMediaStrip Images="@Images"
+                                       CurrentImage="@CurrentImage"
+                                       StarTrailSelectionIds="@StarTrailSelectionIds"
+                                       ClickImage="ClickImage"
+                                       ExportSelectionChanged="ExportSelectionChanged" />
+                    </section>
+                }
+            </div>
+
+            <aside class="applied-inspector-panel">
+                @if (ShowInspectorContent && InspectorContent is not null)
+                {
+                    @InspectorContent
+                }
+                else
+                {
+                    <div class="applied-inspector-stack">
+                        <div class="applied-inspector-content">
+                            <MacSelectionInspector @key="EditorInstanceKey" Editor="@editor" RenderResult="@renderResult" />
+                        </div>
+                        <footer class="applied-commit-footer" aria-label="模板预览操作">
+                            <label class="applied-scope-option">
+                                <input type="checkbox" checked="@ApplyToSelected" @onchange="OnApplyScopeChanged" />
+                                <span>同时应用到已选 @SelectedMediaCount 张图片</span>
+                            </label>
+                            <div class="applied-commit-actions">
+                                <MButton Text Class="applied-cancel-command" OnClick="CancelPending">取消预览</MButton>
+                                <MButton Color="primary" Class="applied-apply-command" OnClick="ApplyPending">
+                                    @(ApplyToSelected && SelectedMediaCount > 0 ? $"应用模板到 {SelectedMediaCount} 张图片" : "应用模板到当前图片")
+                                </MButton>
+                            </div>
+                        </footer>
+                    </div>
+                }
+            </aside>
+        </div>
+    }
+</section>
+
+@code {
+#nullable enable
+    [Parameter, EditorRequired] public WMTemplateList CurrentImage { get; set; } = null!;
+    [Parameter] public bool Embedded { get; set; }
+    [Parameter] public IReadOnlyList<WMTemplateList> Images { get; set; } = [];
+    [Parameter] public IReadOnlyList<string> StarTrailSelectionIds { get; set; } = [];
+    [Parameter] public EventCallback<WMTemplateList> ClickImage { get; set; }
+    [Parameter] public EventCallback<WMTemplateList> ExportSelectionChanged { get; set; }
+    [Parameter] public EventCallback<WMTemplateList> Changed { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public bool ShowInspectorContent { get; set; }
+    [Parameter] public RenderFragment? InspectorContent { get; set; }
+    [Parameter] public bool ApplyToSelected { get; set; }
+    [Parameter] public int SelectedMediaCount { get; set; }
+    [Parameter] public EventCallback<bool> ApplyToSelectedChanged { get; set; }
+    [Parameter] public EventCallback ApplyPending { get; set; }
+    [Parameter] public EventCallback CancelPending { get; set; }
+
+    private MacTemplateEditorState? editor;
+    private MacCanvasEditor? canvasEditor;
+    private WMDesignRenderResult? renderResult;
+    private WMTemplateList? loadedImageReference;
+    private WMCanvas? loadedCanvasReference;
+    private string previewUrl = string.Empty;
+    private string loadedImageId = string.Empty;
+    private string loadedCanvasId = string.Empty;
+    private string requestedSnapshot = string.Empty;
+    private string publishedDraftFingerprint = string.Empty;
+    private string errorMessage = string.Empty;
+    private readonly SemaphoreSlim previewLock = new(1, 1);
+    private CancellationTokenSource? previewCancellation;
+    private Task<MacPreparedTemplatePreview?> pendingPreviewTask = Task.FromResult<MacPreparedTemplatePreview?>(null);
+    private MacPreparedTemplatePreview? preparedPreview;
+    private string ownedPreviewUrl = string.Empty;
+    private long renderVersion;
+    private long editorRevision;
+    private bool isRendering;
+    private bool disposed;
+    private bool fitPending;
+    private double zoom = 1;
+    private const int MediaStripMinHeight = 96;
+    private const int MediaStripMaxHeight = 220;
+    private int mediaStripHeight = 126;
+    private bool mediaStripDragging;
+    private double mediaStripDragStartY;
+    private int mediaStripDragStartHeight = 126;
+    private string EditorInstanceKey => $"{loadedImageId}:{loadedCanvasId}:{editorRevision}";
+    private string? EmbeddedViewportStyle => Embedded
+        ? "height:calc(100dvh - 44px);max-height:calc(100dvh - 44px);"
+        : null;
+    private string? PrimaryColumnStyle => Embedded
+        ? $"--media-strip-height:{mediaStripHeight}px;height:calc(100dvh - 44px);max-height:calc(100dvh - 44px);"
+        : null;
+
+    private void StartMediaStripResize(PointerEventArgs args)
+    {
+        if (!Embedded) return;
+        mediaStripDragging = true;
+        mediaStripDragStartY = args.ClientY;
+        mediaStripDragStartHeight = mediaStripHeight;
+    }
+
+    private void ResizeMediaStrip(PointerEventArgs args)
+    {
+        if (!mediaStripDragging) return;
+        var delta = args.ClientY - mediaStripDragStartY;
+        mediaStripHeight = Math.Clamp(
+            (int)Math.Round(mediaStripDragStartHeight - delta),
+            MediaStripMinHeight,
+            MediaStripMaxHeight);
+    }
+
+    private void EndMediaStripResize(PointerEventArgs args)
+    {
+        mediaStripDragging = false;
+    }
+
+    private Task OnApplyScopeChanged(ChangeEventArgs args) =>
+        ApplyToSelectedChanged.InvokeAsync(args.Value is bool selected && selected);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var currentCanvasId = CurrentImage.Canvas?.ID ?? string.Empty;
+        if (editor is not null
+            && string.Equals(loadedImageId, CurrentImage.ID, StringComparison.Ordinal)
+            && string.Equals(loadedCanvasId, currentCanvasId, StringComparison.Ordinal)
+            && ReferenceEquals(loadedCanvasReference, CurrentImage.Canvas))
+            return;
+
+        DetachEditor();
+        loadedImageId = CurrentImage.ID;
+        loadedCanvasId = currentCanvasId;
+        loadedImageReference = CurrentImage;
+        loadedCanvasReference = CurrentImage.Canvas;
+        editorRevision++;
+        renderVersion++;
+        renderResult = null;
+        previewUrl = CurrentImage.Src ?? string.Empty;
+        requestedSnapshot = string.Empty;
+        errorMessage = string.Empty;
+
+        if (CurrentImage.Canvas is null)
+        {
+            errorMessage = "当前图片尚未应用模板。";
+            return;
+        }
+
+        CurrentImage.Canvas.Path = CurrentImage.Path;
+        try
+        {
+            editor = MacTemplateEditorState.Create(CurrentImage.Canvas);
+            editor.Changed += HandleEditorChanged;
+            publishedDraftFingerprint = BuildPreviewFingerprint(
+                editor.Draft,
+                Global.CanvasSerialize(editor.Draft),
+                CurrentImage.Path);
+            pendingPreviewTask = RequestPreviewAsync(force: true);
+            await pendingPreviewTask;
+            fitPending = Embedded;
+        }
+        catch (Exception ex)
+        {
+            DetachEditor();
+            errorMessage = $"无法加载当前模板：{ex.Message}";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!fitPending || canvasEditor is null || disposed) return;
+
+        fitPending = false;
+        await canvasEditor.FitAsync();
+    }
+
+    private void HandleEditorChanged()
+    {
+        var currentEditor = editor;
+        var image = loadedImageReference;
+        var draftPublished = false;
+        if (currentEditor is not null && image is not null && !disposed)
+        {
+            var serializedDraft = Global.CanvasSerialize(currentEditor.Draft);
+            var fingerprint = BuildPreviewFingerprint(currentEditor.Draft, serializedDraft, image.Path);
+            if (!string.Equals(fingerprint, publishedDraftFingerprint, StringComparison.Ordinal))
+            {
+                var publishedDraft = MacTemplateEditorState.Create(currentEditor.Draft).Draft;
+                publishedDraft.Path = image.Path;
+                image.Canvas = publishedDraft;
+                loadedCanvasReference = publishedDraft;
+                publishedDraftFingerprint = fingerprint;
+                renderVersion++;
+                draftPublished = true;
+            }
+        }
+
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        var cancellation = previewCancellation = new CancellationTokenSource();
+        pendingPreviewTask = RenderPublishedDraftAsync(draftPublished, image, cancellation.Token);
+        _ = ObservePreviewTaskAsync(pendingPreviewTask);
+    }
+
+    private async Task<MacPreparedTemplatePreview?> RenderPublishedDraftAsync(
+        bool draftPublished,
+        WMTemplateList? image,
+        CancellationToken cancellationToken)
+    {
+        if (draftPublished && image is not null)
+            await Changed.InvokeAsync(image);
+        return await RequestPreviewAsync(cancellationToken: cancellationToken, debounce: true);
+    }
+
+    private async Task ObservePreviewTaskAsync(Task<MacPreparedTemplatePreview?> task)
+    {
+        try
+        {
+            await task;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task<MacPreparedTemplatePreview?> RequestPreviewAsync(
+        bool force = false,
+        CancellationToken cancellationToken = default,
+        bool debounce = false)
+    {
+        if (debounce) await Task.Delay(120, cancellationToken);
+        await previewLock.WaitAsync(cancellationToken);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var currentEditor = editor;
+            var sourceImage = loadedImageReference;
+            if (currentEditor is null || sourceImage is null || disposed) return null;
+
+            var inputArtifact = EditingSession.GetCurrent(sourceImage.ID);
+            var sourcePath = !string.IsNullOrWhiteSpace(inputArtifact.PreviewPath) && File.Exists(inputArtifact.PreviewPath)
+                ? inputArtifact.PreviewPath
+                : inputArtifact.FilePath;
+            var snapshot = Global.CanvasSerialize(currentEditor.Draft);
+            using var sourceCodec = SKCodec.Create(sourcePath);
+            var previewFingerprint = BuildPreviewFingerprint(
+                currentEditor.Draft,
+                snapshot,
+                inputArtifact.ContentHash ?? inputArtifact.Id,
+                sourceCodec?.Info.Width ?? inputArtifact.Width,
+                sourceCodec?.Info.Height ?? inputArtifact.Height);
+            if (!force && string.Equals(previewFingerprint, requestedSnapshot, StringComparison.Ordinal))
+                return preparedPreview;
+
+            requestedSnapshot = previewFingerprint;
+            var version = ++renderVersion;
+            isRendering = true;
+            errorMessage = string.Empty;
+            StateHasChanged();
+
+            try
+            {
+                var draft = MacTemplateEditorState.Create(currentEditor.Draft).Draft;
+                draft.Path = sourcePath;
+                var result = await WatermarkHelper.GenerationDesignPreviewAsync(draft, null, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!IsCurrentRender(currentEditor, version)) return null;
+
+                var previewDirectory = EditingSession.GetWorkingDirectory(WMImageOperationKind.Template, preview: true);
+                var previewPath = Path.Combine(previewDirectory, $"{previewFingerprint}.png");
+                if (!File.Exists(previewPath))
+                    await File.WriteAllBytesAsync(previewPath, result.ImageBytes, cancellationToken);
+                var artifact = new WMImageArtifact
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    FilePath = previewPath,
+                    PreviewPath = previewPath,
+                    ParentArtifactIds = [inputArtifact.Id],
+                    SourceOperation = WMImageOperationKind.Template,
+                    Width = result.CanvasWidth,
+                    Height = result.CanvasHeight,
+                    Exif = inputArtifact.Exif,
+                    Metadata = inputArtifact.Metadata,
+                    CanvasSnapshotJson = snapshot,
+                    ContentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(result.ImageBytes))
+                };
+
+                var nextUrl = await Global.Byte2Url(JSRuntime, result.ImageBytes);
+                if (!IsCurrentRender(currentEditor, version))
+                {
+                    await RevokeUrlAsync(nextUrl);
+                    return null;
+                }
+
+                var previousOwnedUrl = ownedPreviewUrl;
+                renderResult = result;
+                previewUrl = nextUrl;
+                ownedPreviewUrl = nextUrl;
+                sourceImage.Src = nextUrl;
+                preparedPreview = new MacPreparedTemplatePreview(inputArtifact.Id, previewFingerprint, artifact, result);
+                await Changed.InvokeAsync(sourceImage);
+                if (!string.IsNullOrWhiteSpace(previousOwnedUrl) && previousOwnedUrl != nextUrl)
+                    await RevokeUrlAsync(previousOwnedUrl);
+                return preparedPreview;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (IsCurrentRender(currentEditor, version))
+                {
+                    requestedSnapshot = string.Empty;
+                    errorMessage = ex.Message;
+                }
+                return null;
+            }
+            finally
+            {
+                if (IsCurrentRender(currentEditor, version))
+                {
+                    isRendering = false;
+                    StateHasChanged();
+                }
+            }
+        }
+        finally
+        {
+            previewLock.Release();
+        }
+    }
+
+    private bool IsCurrentRender(MacTemplateEditorState source, long version) =>
+        !disposed && ReferenceEquals(editor, source) && renderVersion == version;
+
+    private static string BuildPreviewFingerprint(
+        WMCanvas canvas,
+        string serializedCanvas,
+        string sourceIdentity,
+        int targetWidth = 0,
+        int targetHeight = 0) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Concat(
+            "mac-template-preview-v3\n",
+            serializedCanvas,
+            "\nsource:", sourceIdentity,
+            "\ntarget:", targetWidth, "x", targetHeight,
+            "\nexif:", System.Text.Json.JsonSerializer.Serialize(canvas.Exif)))));
+
+    public async Task<MacPreparedTemplatePreview?> FlushAsync()
+    {
+        if (editor is null || disposed) return null;
+
+        try
+        {
+            await pendingPreviewTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        return await RequestPreviewAsync();
+    }
+
+    private Task UndoAsync()
+    {
+        editor?.Undo();
+        return Task.CompletedTask;
+    }
+
+    private Task RedoAsync()
+    {
+        editor?.Redo();
+        return Task.CompletedTask;
+    }
+
+    private async Task FitAsync()
+    {
+        if (canvasEditor is not null)
+            await canvasEditor.FitAsync();
+    }
+
+    private Task SetZoomAsync(double value)
+    {
+        zoom = Math.Clamp(value, 0.1, 4);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task CompleteAsync()
+    {
+        if (editor is not null)
+            await RequestPreviewAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await CompleteAsync();
+            return;
+        }
+
+        if (!(args.MetaKey || args.CtrlKey)) return;
+        if (string.Equals(args.Key, "s", StringComparison.OrdinalIgnoreCase))
+            await CompleteAsync();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase) && args.ShiftKey)
+            await RedoAsync();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase))
+            await UndoAsync();
+    }
+
+    private void DetachEditor()
+    {
+        if (editor is not null)
+            editor.Changed -= HandleEditorChanged;
+        editor = null;
+    }
+
+    private async Task RevokeUrlAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        try
+        {
+            await Global.RevokeUrl(JSRuntime, url);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        disposed = true;
+        renderVersion++;
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        DetachEditor();
+        return ValueTask.CompletedTask;
+    }
+#nullable restore
+}

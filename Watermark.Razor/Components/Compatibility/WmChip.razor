@@ -1,0 +1,12 @@
+<MChip Small="@Small" Color="@NormalizedColor" Class="@Class" Style="@Style" OnClick="@OnClick">@ChildContent</MChip>
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public bool Small { get; set; }
+    [Parameter] public string? Size { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool Label { get; set; }
+    private string? NormalizedColor => Color?.Contains('.') == true ? Color.Split('.').Last().ToLowerInvariant() : Color;
+}

@@ -1,0 +1,46 @@
+<div class="wm-chart" style="width:@Width;height:@Height;min-height:220px;overflow:auto;">
+    <svg viewBox="0 0 800 240" role="img" aria-label="数据图表" preserveAspectRatio="none" style="width:100%;height:220px;">
+        @for (var i = 0; i <= 4; i++)
+        {
+            var y = 20 + i * 45;
+            <line x1="35" y1="@y" x2="790" y2="@y" stroke="#e5e7eb" stroke-width="1" />
+        }
+        @for (var index = 0; index < ChartSeries.Count; index++)
+        {
+            var series = ChartSeries[index];
+            if (IsLine)
+            {
+                <polyline points="@BuildPoints(series.Data)" fill="none" stroke="@ColorAt(index)" stroke-width="2.5" vector-effect="non-scaling-stroke" />
+            }
+            else
+            {
+                @for (var valueIndex = 0; valueIndex < series.Data.Length; valueIndex++)
+                {
+                    var barWidth = Math.Max(2, 730d / Math.Max(1, series.Data.Length * ChartSeries.Count));
+                    var x = 42 + valueIndex * (730d / Math.Max(1, series.Data.Length)) + index * barWidth;
+                    var height = 190 * series.Data[valueIndex] / Maximum;
+                    <rect x="@x" y="@(210 - height)" width="@barWidth" height="@height" fill="@ColorAt(index)" opacity="0.85" />
+                }
+            }
+        }
+    </svg>
+    <div class="wm-chart-legend">
+        @for (var index = 0; index < ChartSeries.Count; index++)
+        {
+            <span><i style="background:@ColorAt(index)"></i>@ChartSeries[index].Name</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ChartType { get; set; }
+    [Parameter] public List<WmChartSeries> ChartSeries { get; set; } = [];
+    [Parameter] public string[] XAxisLabels { get; set; } = [];
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public WmChartOptions? ChartOptions { get; set; }
+    private bool IsLine => ChartType?.Contains("Line", StringComparison.OrdinalIgnoreCase) == true;
+    private double Maximum => Math.Max(1, ChartSeries.SelectMany(x => x.Data).DefaultIfEmpty(1).Max());
+    private string BuildPoints(double[] values) => string.Join(' ', values.Select((value, index) => $"{42 + index * (730d / Math.Max(1, values.Length - 1)):0.##},{210 - 190 * value / Maximum:0.##}"));
+    private static string ColorAt(int index) => new[] { "#1976d2", "#26a69a", "#ff9800", "#7e57c2", "#ef5350", "#42a5f5" }[index % 6];
+}

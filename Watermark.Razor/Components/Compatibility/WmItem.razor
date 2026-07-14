@@ -1,0 +1,12 @@
+<MCol Cols="@Cols" Class="@Class" Style="@Style" @attributes="AdditionalAttributes">@ChildContent</MCol>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public int xs { get; set; } = 12;
+    [Parameter] public int sm { get; set; }
+    [Parameter] public int md { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private int Cols => xs is > 0 and <= 12 ? xs : 12;
+}

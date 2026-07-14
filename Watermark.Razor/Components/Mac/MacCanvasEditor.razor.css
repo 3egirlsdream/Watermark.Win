@@ -14,6 +14,7 @@
     overflow: hidden;
     position: relative;
     touch-action: none;
+    -webkit-user-select: none;
     user-select: none;
     width: 100%;
 }
@@ -38,6 +39,8 @@
     top: 50%;
     transform: translate(calc(-50% + var(--pan-x)), calc(-50% + var(--pan-y)));
     transform-origin: center;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .mac-canvas-preview {
@@ -45,6 +48,7 @@
     height: 100%;
     object-fit: fill;
     pointer-events: none;
+    -webkit-user-drag: none;
     width: 100%;
 }
 
@@ -53,49 +57,95 @@
     pointer-events: none;
     position: absolute;
     z-index: 2;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 ::deep .mac-template-canvas-stage {
     pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 ::deep .canvas-control {
-    border: 1px solid transparent;
     box-sizing: border-box;
     pointer-events: auto;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: transform;
 }
 
-::deep .canvas-control.wmcontainer {
-    border-color: rgba(39, 110, 199, 0.28);
+::deep .canvas-interaction-ghost,
+::deep .canvas-container-drag-ghost {
+    background-repeat: no-repeat;
+    border-radius: 2px;
+    box-shadow: 0 10px 28px rgba(31, 67, 120, 0.24);
+    box-sizing: border-box;
+    opacity: 0.98;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    will-change: left, top, width, height, background-size, background-position;
+    z-index: 6;
 }
 
-::deep .canvas-control:hover,
-::deep .canvas-control.selected {
-    outline: 1px solid rgba(39, 110, 199, 0.92);
-    outline-offset: 1px;
-}
-
-::deep .canvas-control.selected {
-    background: rgba(39, 110, 199, 0.035);
+::deep .canvas-control:hover:not(.selected) {
+    outline: 1px solid rgba(31, 111, 235, 0.92);
+    outline-offset: 0;
 }
 
 ::deep .moveable-control-box {
-    pointer-events: auto;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
     z-index: 8;
 }
 
 ::deep .moveable-line {
-    background: #276ec7 !important;
+    background: #1f6feb !important;
+    box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.8), 0 0 6px rgba(31, 111, 235, 0.28);
+    pointer-events: auto;
 }
 
 ::deep .moveable-control {
     background: #ffffff !important;
-    border: 1px solid #276ec7 !important;
+    border: 2px solid #1f6feb !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 4px rgba(21, 42, 76, 0.28) !important;
     box-sizing: border-box;
-    height: 9px !important;
-    margin-left: -4px !important;
-    margin-top: -4px !important;
-    width: 9px !important;
+    height: 10px !important;
+    margin-left: -5px !important;
+    margin-top: -5px !important;
+    pointer-events: auto;
+    width: 10px !important;
+}
+
+::deep .moveable-control[data-direction="e"] {
+    border-radius: 5px !important;
+    cursor: ew-resize !important;
+    height: 20px !important;
+    margin-left: -5px !important;
+    margin-top: -10px !important;
+    width: 10px !important;
+}
+
+::deep .moveable-control[data-direction="se"] {
+    background-color: #1f6feb !important;
+    background-image: linear-gradient(135deg, transparent 42%, rgba(255, 255, 255, 0.95) 43%, rgba(255, 255, 255, 0.95) 53%, transparent 54%) !important;
+    border-color: #ffffff !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 0 1.5px #1f6feb, 0 2px 7px rgba(21, 42, 76, 0.35) !important;
+    cursor: nwse-resize !important;
+    height: 14px !important;
+    margin-left: -7px !important;
+    margin-top: -7px !important;
+    width: 14px !important;
+}
+
+::deep .moveable-control[data-direction="e"]:hover,
+::deep .moveable-control[data-direction="se"]:hover {
+    box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.18), 0 2px 7px rgba(21, 42, 76, 0.32) !important;
 }
 
 ::deep .moveable-rotation-line {

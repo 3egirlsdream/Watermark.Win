@@ -1,58 +1,52 @@
 ﻿@using System.Diagnostics
-@using Watermark.Win.Models
-@inject ISnackbar Snackbar
-<MudDialog Style="width:100%; height:100%;overflow-y:hidden">
-    <DialogContent>
-        <MudGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(100vh - 30px);overflow-y:auto;padding:5px;">
+@inject IPopupService PopupService
+<MCard Flat Style="width:100%;height:100%;overflow-y:hidden">
+        <WmGrid Spacing="2" Justify="Justify.FlexStart" Style="height:calc(100vh - 30px);overflow-y:auto;padding:5px;">
             @if (ZipedTemplates != null)
             {
                 @foreach (var t in ZipedTemplates)
                 {
-                    <MudItem xs="12">
-                        <MudCard>
+                    <WmItem xs="12">
+                        <WmCard>
                             @if (!string.IsNullOrEmpty(t.Src))
                             {
-                                <MudImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
+                                <WmImage Style="width:100%" Height="200" Src="@t.Src" ObjectFit="ObjectFit.Contain" />
                             }
                             else
                             {
-                                <MudOverlay Visible="@loading" DarkBackground="true" Absolute="true">
-                                    <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
-                                </MudOverlay>
+                                <WmOverlay Visible="@loading" DarkBackground="true" Absolute="true">
+                                    <WmProgressCircular Color="Color.Secondary" Indeterminate="true" />
+                                </WmOverlay>
                             }
-                            <MudCardContent Style="height:80px;overflow-y:auto;">
-                                <MudText Typo="Typo.body2">@t.Desc</MudText>
-                                </MudCardContent>
-                                <MudCardActions Style="position:relative;">
-                                    @t.DownloadTimes<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
-                                <MudButton Size="Size.Small" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</MudButton>
-                                <MudIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@Icons.Material.Filled.Share" Style="position:absolute;right:10px" OnClick="()=>Share(t.WatermarkId)"></MudIconButton>
-                            </MudCardActions>
-                        </MudCard>
+                            <WmCardContent Style="height:80px;overflow-y:auto;">
+                                <WmText Typo="Typo.body2">@t.Desc</WmText>
+                                </WmCardContent>
+                                <WmCardActions Style="position:relative;">
+                                    @t.DownloadTimes<WmIcon Icon="@WmIcons.Material.Filled.Favorite" Color="Color.Error" Style="cursor:pointer;" />
+                                <WmButton Size="Size.Small" Variant="Variant.Text" EndIcon="@WmIcons.Material.Filled.Download" Color="Color.Primary" Style="position:absolute;right:70px" OnClick="()=>Download(t.WatermarkId)">下载</WmButton>
+                                <WmIconButton Variant="Variant.Text" Color="Color.Secondary" Icon="@WmIcons.Material.Filled.Share" Style="position:absolute;right:10px" OnClick="()=>Share(t.WatermarkId)"></WmIconButton>
+                            </WmCardActions>
+                        </WmCard>
 
-                    </MudItem>
+                    </WmItem>
                 }
-                <MudButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</MudButton>
+                <WmButton FullWidth Variant="Variant.Text" Class="mt-5" Style="height:30px" OnClick="LoadMore">加载更多...</WmButton>
             }
-        </MudGrid>
-        <MudOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
-            <MudStack Justify="Justify.Center">
-                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
-                <MudText Typo="Typo.subtitle1" Color="Color.Dark">
+        </WmGrid>
+        <WmOverlay Visible="@loading" DarkBackground="false" Style="background:#e6e6e6" Absolute="false" ZIndex="9999">
+            <WmStack Justify="Justify.Center">
+                <WmProgressCircular Color="Color.Secondary" Indeterminate="true" Style="margin:auto" />
+                <WmText Typo="Typo.subtitle1" Color="Color.Dark">
                     <b>正在加载模板...</b>
-                </MudText>
-            </MudStack>
-        </MudOverlay>
-    </DialogContent>
-</MudDialog>
+                </WmText>
+            </WmStack>
+        </WmOverlay>
+</MCard>
 
 
 @code {
 
-    [CascadingParameter]
-    MudDialogInstance MudDialog { get; set; }
-    [Inject]
-    private IDialogService DialogService { get; set; }
+    [Parameter] public EventCallback<WMZipedTemplate> Downloaded { get; set; }
     bool loading = false;
     List<WMZipedTemplate> ZipedTemplates;
     int start = 1;
@@ -97,12 +91,7 @@
         //System.Windows.Clipboard.SetText(id);
 
         string message = "已复制ID到剪贴板";
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
-        Snackbar.Add(message, Severity.Success, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
+        Common.ShowMsg(PopupService, message, AlertTypes.Success);
     }
 
     async void LoadMore()
@@ -145,23 +134,16 @@
         var helper = new APIHelper();
         var result = await helper.ExtractZip(watermarkId);
         string message = "";
-        Severity Severity = Severity.Success;
-        Snackbar.Clear();
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
         if (result != null)
         {
-            Severity = Severity.Success;
             message = "下载成功";
-            MudDialog.Close(result);
+            await Downloaded.InvokeAsync(result);
+            Common.ShowMsg(PopupService, message, AlertTypes.Success);
         }
         else
         {
-            Severity = Severity.Error;
             message = "下载失败";
+            Common.ShowMsg(PopupService, message, AlertTypes.Error);
         }
-        Snackbar.Add(message, Severity, config =>
-        {
-            config.ShowCloseIcon = false;
-        });
     }
 }

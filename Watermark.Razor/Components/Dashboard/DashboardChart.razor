@@ -1,0 +1,143 @@
+@using System.Globalization
+@namespace Watermark.Razor.Components.Dashboard
+
+<div class="dashboard-chart @(Compact ? "compact" : null)">
+    @if (!HasValues)
+    {
+        <div class="chart-empty">
+            <MIcon Size="24">mdi-chart-line-variant</MIcon>
+            <span>当前范围暂无数据</span>
+        </div>
+    }
+    else if (Type == DashboardChartType.Donut)
+    {
+        <div class="donut-layout">
+            <svg class="donut-chart" viewBox="0 0 140 140" role="img" aria-label="@AriaLabel">
+                <circle cx="70" cy="70" r="48" fill="none" stroke="#e8e7e2" stroke-width="18" />
+                @foreach (var segment in DonutSegments)
+                {
+                    <circle cx="70" cy="70" r="48" fill="none" stroke="@segment.Color" stroke-width="18"
+                            stroke-linecap="butt" transform="rotate(-90 70 70)"
+                            stroke-dasharray="@DashArray(segment)" stroke-dashoffset="@Invariant(segment.DashOffset)">
+                        <title>@segment.Name：@FormatValue(segment.Value)</title>
+                    </circle>
+                }
+                <text x="70" y="66" text-anchor="middle" class="donut-total">@FormatCompact(DonutSegments.Sum(x => x.Value))</text>
+                <text x="70" y="84" text-anchor="middle" class="donut-caption">合计</text>
+            </svg>
+            <div class="chart-legend donut-legend">
+                @foreach (var segment in DonutSegments)
+                {
+                    <div class="legend-item">
+                        <i style="background:@segment.Color"></i>
+                        <span>@segment.Name</span>
+                        <strong>@FormatValue(segment.Value)</strong>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <svg class="cartesian-chart" viewBox="0 0 740 240" role="img" aria-label="@AriaLabel" preserveAspectRatio="none">
+            @for (var index = 0; index <= 4; index++)
+            {
+                var y = DashboardChartMath.ChartTop + DashboardChartMath.ChartHeight * index / 4d;
+                <line x1="@DashboardChartMath.ChartLeft" y1="@Invariant(y)" x2="@(DashboardChartMath.ChartLeft + DashboardChartMath.ChartWidth)" y2="@Invariant(y)" class="chart-grid-line" />
+                <g class="axis-tick">
+                    <text x="@(DashboardChartMath.ChartLeft - 8)" y="@Invariant(y + 3)" text-anchor="end" class="axis-value">@(FormatAxisValue(Maximum * (4 - index) / 4d))</text>
+                </g>
+            }
+            <line x1="@DashboardChartMath.ChartLeft" y1="@DashboardChartMath.ChartTop" x2="@DashboardChartMath.ChartLeft" y2="@(DashboardChartMath.ChartTop + DashboardChartMath.ChartHeight)" class="chart-axis-line" />
+            @if (Type == DashboardChartType.Line)
+            {
+                @foreach (var series in Series)
+                {
+                    <polyline points="@DashboardChartMath.BuildLinePoints(series.Values, Maximum)" fill="none" stroke="@series.Color" stroke-width="2.75" vector-effect="non-scaling-stroke" class="chart-line" />
+                    @if (series.Values.Length <= 31)
+                    {
+                        @for (var valueIndex = 0; valueIndex < series.Values.Length; valueIndex++)
+                        {
+                            var point = Point(series.Values, valueIndex);
+                            <circle cx="@Invariant(point.X)" cy="@Invariant(point.Y)" r="3.2" fill="@series.Color" class="chart-point">
+                                <title>@LabelAt(valueIndex) · @series.Name：@FormatValue(series.Values[valueIndex])</title>
+                            </circle>
+                        }
+                    }
+                }
+            }
+            else
+            {
+                @for (var seriesIndex = 0; seriesIndex < Series.Count; seriesIndex++)
+                {
+                    var series = Series[seriesIndex];
+                    @for (var valueIndex = 0; valueIndex < series.Values.Length; valueIndex++)
+                    {
+                        var bar = Bar(seriesIndex, valueIndex, series.Values.Length);
+                        <rect x="@Invariant(bar.X)" y="@Invariant(bar.Y)" width="@Invariant(bar.Width)" height="@Invariant(bar.Height)" rx="2" fill="@series.Color" class="chart-bar">
+                            <title>@LabelAt(valueIndex) · @series.Name：@FormatValue(series.Values[valueIndex])</title>
+                        </rect>
+                    }
+                }
+            }
+        </svg>
+        <div class="x-axis-labels">
+            @foreach (var index in DashboardChartMath.LabelIndexes(Labels.Count))
+            {
+                <span>@Labels[index]</span>
+            }
+        </div>
+        <div class="chart-legend">
+            @foreach (var series in Series)
+            {
+                <div class="legend-item"><i style="background:@series.Color"></i><span>@series.Name</span></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public DashboardChartType Type { get; set; } = DashboardChartType.Line;
+    [Parameter] public IReadOnlyList<string> Labels { get; set; } = [];
+    [Parameter] public IReadOnlyList<DashboardChartSeries> Series { get; set; } = [];
+    [Parameter] public string AriaLabel { get; set; } = "运营数据图表";
+    [Parameter] public string ValueSuffix { get; set; } = string.Empty;
+    [Parameter] public bool Currency { get; set; }
+    [Parameter] public bool Compact { get; set; }
+
+    private double Maximum => DashboardChartMath.Maximum(Series);
+    private IReadOnlyList<DashboardDonutSegment> DonutSegments => DashboardChartMath.BuildDonutSegments(Series);
+    private bool HasValues => Series.SelectMany(x => x.Values ?? []).Any(x => x > 0);
+
+    private (double X, double Y) Point(double[] values, int index)
+    {
+        var x = values.Length == 1
+            ? DashboardChartMath.ChartLeft + DashboardChartMath.ChartWidth / 2
+            : DashboardChartMath.ChartLeft + index * DashboardChartMath.ChartWidth / Math.Max(1, values.Length - 1);
+        var y = DashboardChartMath.ChartTop + DashboardChartMath.ChartHeight - Math.Max(0, values[index]) / Maximum * DashboardChartMath.ChartHeight;
+        return (x, y);
+    }
+
+    private (double X, double Y, double Width, double Height) Bar(int seriesIndex, int valueIndex, int valueCount)
+    {
+        var groupWidth = DashboardChartMath.ChartWidth / Math.Max(1, valueCount);
+        var availableWidth = groupWidth * 0.72;
+        var barWidth = Math.Max(2, availableWidth / Math.Max(1, Series.Count));
+        var x = DashboardChartMath.ChartLeft + valueIndex * groupWidth + (groupWidth - availableWidth) / 2 + seriesIndex * barWidth;
+        var height = Math.Max(0, Series[seriesIndex].Values[valueIndex]) / Maximum * DashboardChartMath.ChartHeight;
+        return (x, DashboardChartMath.ChartTop + DashboardChartMath.ChartHeight - height, barWidth, height);
+    }
+
+    private string LabelAt(int index) => index >= 0 && index < Labels.Count ? Labels[index] : (index + 1).ToString(CultureInfo.InvariantCulture);
+    private string FormatValue(double value) => Currency ? $"¥{value:N2}" : $"{value:N0}{ValueSuffix}";
+    private string FormatAxisValue(double value) => Currency ? $"¥{value:0.##}" : $"{value:0.#}";
+    private string FormatCompact(double value) => Currency ? $"¥{value:N0}" : value switch
+    {
+        >= 1000000 => $"{value / 1000000:0.#}m",
+        >= 10000 => $"{value / 10000:0.#}w",
+        >= 1000 => $"{value / 1000:0.#}k",
+        _ => $"{value:0}",
+    };
+    private static string Invariant(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    private static string DashArray(DashboardDonutSegment segment) => $"{Invariant(segment.DashLength)} {Invariant(DashboardChartMath.DonutCircumference - segment.DashLength)}";
+}

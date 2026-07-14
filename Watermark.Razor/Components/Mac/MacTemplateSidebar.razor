@@ -1,0 +1,55 @@
+@using Masa.Blazor
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+
+<aside class="mac-template-sidebar">
+    <div class="sidebar-tabs" role="tablist" aria-label="模板类型">
+        <MButton Text Class="@(Tab == "模板" ? "sidebar-tab active" : "sidebar-tab")" OnClick="@(() => Tab = "模板")">模板</MButton>
+        <MButton Text Class="@(Tab == "拼图" ? "sidebar-tab active" : "sidebar-tab")" OnClick="@(() => Tab = "拼图")">拼图</MButton>
+    </div>
+    <div class="sidebar-content">
+        @if (Tab == "模板")
+        {
+            <div class="template-list">
+                <MButton Text Class="template-item" OnClick="OpenStarTrail">
+                    <img src="img/star-trail.svg" alt="星轨合成" />
+                    <span class="template-item-name">星轨合成</span>
+                </MButton>
+                @foreach (var item in Templates.Where(x => x.Canvas.CanvasType == CanvasType.Normal).OrderBy(x => x.Canvas.Name))
+                {
+                    <MButton Text Class="template-item" OnClick="() => ChangeTemplate.InvokeAsync(item)">
+                        <img src="@item.Src" alt="@item.Canvas.Name" />
+                        <span class="template-item-name">@item.Canvas.Name</span>
+                    </MButton>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="template-list">
+                @foreach (var item in Templates.Where(x => x.Canvas.CanvasType == CanvasType.Split).OrderBy(x => x.Canvas.Name))
+                {
+                    <MButton Text Class="split-template-item" OnClick="() => SelectSplitImages.InvokeAsync(item)">
+                        <MImage Style="width:100%;padding:4px 0" Contain Src="@item.Src" />
+                    </MButton>
+                }
+            </div>
+        }
+    </div>
+</aside>
+
+@code {
+    private string Tab = "模板";
+
+    [Parameter]
+    public IReadOnlyList<WMTemplateList> Templates { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<WMTemplateList> ChangeTemplate { get; set; }
+
+    [Parameter]
+    public EventCallback<WMTemplateList> SelectSplitImages { get; set; }
+
+    [Parameter]
+    public EventCallback OpenStarTrail { get; set; }
+}

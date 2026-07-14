@@ -20,10 +20,14 @@
 @inherits PStackPageBase
 @layout MainLayout
 @inject PageStackNavController NavController
-<MApp Style="background:#e3e3e3; overflow:hidden;display:flex">
+<MApp Class="design-workbench-app" Style="overflow:hidden;display:flex;flex-direction:column">
     @if (Global.DeviceType != DeviceType.IOS && Global.DeviceType != DeviceType.Andorid)
     {
-        <MToolbar Dense Height="36" Flat>
+        <MToolbar Dense Height="44" Flat Class="design-toolbar">
+            <div class="design-toolbar-title">
+                <strong>模板编辑器</strong>
+                <span>@(CurrentCanvas?.Name ?? "未命名模板")</span>
+            </div>
             <Masa.Blazor.MMenu OffsetY>
                 <ActivatorContent>
                     <Masa.Blazor.MButton Color="@ICONS.Colors.Black.Light1" @attributes="@context.Attrs" Plain Small>文件</Masa.Blazor.MButton>
@@ -42,10 +46,10 @@
             </Masa.Blazor.MMenu>
 
             <MSpacer />
-            <MButton Color="error" OnClick="PreviewImageRefresh" Small Plain>
+            <MButton Color="@ICONS.Colors.Black.Light1" OnClick="PreviewImageRefresh" Small Plain>
                 @if (SrcLoading)
                 {
-                    <MProgressCircular Color="error" Indeterminate="true" Class="ma-4" Size="24" Width="2" />
+                    <MProgressCircular Color="primary" Indeterminate="true" Class="ma-4" Size="22" Width="2" />
                 }
                 else
                 {
@@ -55,17 +59,21 @@
             </MButton>
 
         </MToolbar>
-        <div style="height:calc(100vh - 36px);width:100%;display: flex;justify-content:space-between" @onclick="()=>{showDialog = false;}">
-            <div style="width:calc(100% - 300px);height:calc(100% - 36px);background:#e3e3e3;padding:10px;">
+        <div class="design-desktop-workspace" @onclick="()=>{showDialog = false;}">
+            <div class="design-preview-pane">
                 @if (!string.IsNullOrEmpty(url))
                 {
-                    <MImage Contain Src="@url" Style="height:100%;width:100%" />
+                    <div class="design-stage">
+                        <MImage Contain Src="@url" Style="height:100%;width:100%" />
+                    </div>
                 }
             </div>
 
             @if (CurrentCanvas != null)
             {
-                <DesignConfiguration canvas="CurrentCanvas" Style="width:300px;height:100%;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+                <aside class="design-inspector-dock">
+                    <DesignConfiguration canvas="CurrentCanvas" Style="width:100%;height:100%;max-height:100%;min-height:0;background:#fff" PropertyChanged="PropertyChanged" SelectContainer="SelectContainer" SelectDefaultImageEvt="SelectDefaultImageEvt" />
+                </aside>
             }
         </div>
     }

@@ -1,6 +1,5 @@
 ﻿@page "/counter"
 @rendermode InteractiveWebAssembly
-@using MudBlazor
 @using SkiaSharp
 @using System.Text
 @using Watermark.Shared.Models
@@ -8,22 +7,16 @@
 <PageTitle>Home</PageTitle>
 @if (!string.IsNullOrEmpty(src))
 {
-    <MudImage Src="@src" Width="200" ObjectFit="ObjectFit.Contain" />
+    <WmImage Src="@src" Width="200" ObjectFit="ObjectFit.Contain" />
 }
 <p>@msg</p>
 Welcome to your new app.
-<MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadFiles" Accept=".png, .jpg">
-    <ButtonTemplate>
-        <MudButton HtmlTag="label"
-                   Variant="Variant.Filled"
-                   Color="MudBlazor.Color.Primary"
-                   StartIcon="@Icons.Material.Filled.CloudUpload"
-                   for="@context.Id">
-            选择照片
-        </MudButton>
-    </ButtonTemplate>
-</MudFileUpload>
-<MudButton Variant="Variant.Filled" OnClick="Click">点击</MudButton>
+<label class="v-btn v-btn--is-elevated theme--light primary">
+    <MIcon Left Small>@WmIcons.Material.Filled.CloudUpload</MIcon>
+    选择照片
+    <InputFile OnChange="UploadFilesChanged" multiple accept=".png,.jpg,.jpeg" style="display:none" />
+</label>
+<WmButton Variant="Variant.Filled" OnClick="Click">点击</WmButton>
 @code
 {
     string src = "";
@@ -56,6 +49,8 @@ Welcome to your new app.
         }
         //TODO upload the files to the server
     }
+
+    private void UploadFilesChanged(InputFileChangeEventArgs args) => UploadFiles(args.GetMultipleFiles());
 
     async void Click()
     {

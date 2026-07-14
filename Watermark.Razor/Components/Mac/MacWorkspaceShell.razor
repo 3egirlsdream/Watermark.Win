@@ -1,0 +1,28 @@
+@using Masa.Blazor
+
+<div class="mac-workspace-viewport">
+    <MApp Class="mac-workspace-shell">
+        <MErrorHandler>
+            <div class="mac-workspace-card">
+                <div class="mac-workspace-toolbar">
+                    @ToolbarContent
+                </div>
+                <div class="mac-workspace-content">
+                    @WorkspaceContent
+                </div>
+            </div>
+            @DialogContent
+        </MErrorHandler>
+    </MApp>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ToolbarContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? WorkspaceContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? DialogContent { get; set; }
+}

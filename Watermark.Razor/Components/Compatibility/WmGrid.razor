@@ -1,0 +1,10 @@
+<MRow Class="@Class" Style="@Style" @attributes="AdditionalAttributes">@ChildContent</MRow>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public int Spacing { get; set; }
+    [Parameter] public string? Justify { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

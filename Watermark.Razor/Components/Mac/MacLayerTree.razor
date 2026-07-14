@@ -1,34 +1,32 @@
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
 @using Watermark.Razor.Components.Mac.Editor
 @using Watermark.Shared.Models
+@inject IJSRuntime JSRuntime
 @implements IDisposable
+@implements IAsyncDisposable
 
-<aside class="mac-layer-tree" aria-label="模板图层">
+<aside class="mac-layer-tree" aria-label="模板图层" @ref="treeElement">
     <header class="layer-panel-header">
         <div>
             <h2>图层</h2>
             <span>@LayerCount</span>
         </div>
-        <details class="add-layer-menu">
-            <summary title="添加图层" aria-label="添加图层">
-                <MIcon Small>mdi-plus</MIcon>
-                <span>添加</span>
-            </summary>
-            <div class="add-layer-options">
-                <button type="button" @onclick="() => AddControl(typeof(WMContainer))">
-                    <MIcon Size="15">mdi-folder-outline</MIcon><span>容器</span>
-                </button>
-                <button type="button" @onclick="() => AddControl(typeof(WMText))">
-                    <MIcon Size="15">mdi-format-text</MIcon><span>文字</span>
-                </button>
-                <button type="button" @onclick="() => AddControl(typeof(WMLogo))">
-                    <MIcon Size="15">mdi-image-outline</MIcon><span>Logo</span>
-                </button>
-                <button type="button" @onclick="() => AddControl(typeof(WMLine))">
-                    <MIcon Size="15">mdi-minus</MIcon><span>分割线</span>
-                </button>
-            </div>
-        </details>
+        <MMenu Bottom OffsetY>
+            <ActivatorContent>
+                <MButton Text Small Class="add-layer-trigger" title="添加图层" aria-label="添加图层" @attributes="@context.Attrs">
+                    <MIcon Left Small>mdi-plus</MIcon>添加
+                </MButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MList Dense Class="add-layer-options">
+                    <MListItem Title="容器" PrependIcon="mdi-folder-outline" OnClick="() => AddControl(typeof(WMContainer))" />
+                    <MListItem Title="文字" PrependIcon="mdi-format-text" OnClick="() => AddControl(typeof(WMText))" />
+                    <MListItem Title="Logo" PrependIcon="mdi-image-outline" OnClick="() => AddControl(typeof(WMLogo))" />
+                    <MListItem Title="分割线" PrependIcon="mdi-minus" OnClick="() => AddControl(typeof(WMLine))" />
+                </MList>
+            </ChildContent>
+        </MMenu>
     </header>
 
     <div class="layer-tree-scroll" role="tree" aria-label="模板图层结构" @onclick="CloseContextMenu">
@@ -52,16 +50,16 @@
 
     @if (pendingDelete is not null)
     {
-        <div class="layer-confirm-scrim">
+        <MDialog Persistent Value="true" ContentStyle="width:min(280px,calc(100vw - 32px));">
             <section class="layer-confirm" role="dialog" aria-modal="true" aria-labelledby="layer-delete-title">
                 <h3 id="layer-delete-title">删除“@DisplayName(pendingDelete)”？</h3>
                 <p>此容器包含 @pendingDescendantCount 个子图层，删除后仍可通过撤销恢复。</p>
                 <div class="layer-confirm-actions">
-                    <button type="button" class="secondary" @onclick="CancelDelete">取消</button>
-                    <button type="button" class="danger" @onclick="ConfirmDelete">删除</button>
+                    <MButton Text Small Class="secondary" OnClick="CancelDelete">取消</MButton>
+                    <MButton Text Small Class="danger" OnClick="ConfirmDelete">删除</MButton>
                 </div>
             </section>
-        </div>
+        </MDialog>
     }
 </aside>
 
@@ -73,23 +71,36 @@
     private string editingName = string.Empty;
     private string contextId;
     private string draggedId;
-    private string dropParentId;
-    private int dropIndex = -1;
-    private bool dropOnContainer;
     private IWMControl pendingDelete;
     private int pendingDescendantCount;
     private string hoverExpandId;
     private CancellationTokenSource hoverExpandCancellation;
+    private ElementReference treeElement;
+    private IJSObjectReference layerTreeModule;
+    private IJSObjectReference layerTreeReference;
+    private DotNetObjectReference<MacLayerTree> dotNetReference;
+    private bool disposed;
 
     private int LayerCount => MacControlTree.Flatten(Editor.Draft).Count;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || disposed) return;
+        layerTreeModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/Watermark.Razor/js/mac-layer-tree.js");
+        dotNetReference = DotNetObjectReference.Create(this);
+        layerTreeReference = await layerTreeModule.InvokeAsync<IJSObjectReference>(
+            "createLayerTree", treeElement, dotNetReference);
+    }
+
     private RenderFragment RenderNode(IWMControl control, int depth, string parentId, int index) => @<div class="layer-node-group">
         @RenderDropSlot(parentId, index, depth)
-        <div class="layer-node @(IsContainerTarget(control.ID) ? "drop-target" : null)"
+        <div class="layer-node"
              style="--layer-depth:@depth"
-             @ondragover="() => DragOverContainer(control)"
-             @ondragover:preventDefault="@CanDropOnContainer(control)"
-             @ondrop="() => DropAsync(control.ID, TargetCount(control.ID))">
+             data-layer-control-id="@control.ID"
+             data-layer-parent-id="@(parentId ?? string.Empty)"
+             data-layer-index="@index"
+             data-layer-container-count="@(control is WMContainer container ? container.Controls.Count : -1)">
             <div class="layer-row @(Editor.SelectedControlId == control.ID ? "selected" : null) @(control.Enabled ? null : "hidden-layer")"
                  role="treeitem"
                  aria-level="@(depth + 1)"
@@ -113,10 +124,10 @@
                 <span class="drag-handle @(control.IsLocked ? "disabled" : null)"
                       title="@(control.IsLocked ? "图层已锁定" : "拖动图层")"
                       aria-label="@(control.IsLocked ? "图层已锁定" : "拖动图层")"
-                      draggable="@(!control.IsLocked)"
+                      data-layer-drag-id="@(control.IsLocked ? null : control.ID)"
+                      aria-disabled="@control.IsLocked"
                       @onclick:stopPropagation
-                      @ondragstart="() => BeginDrag(control)"
-                      @ondragend="EndDrag">⋮⋮</span>
+                      >⋮⋮</span>
 
                 <MIcon Size="15" Class="layer-type-icon">@IconFor(control)</MIcon>
 
@@ -176,11 +187,11 @@
         }
     </div>;
 
-    private RenderFragment RenderDropSlot(string parentId, int index, int depth) => @<div class="layer-drop-slot @(IsDropSlot(parentId, index) ? "active" : null)"
+    private RenderFragment RenderDropSlot(string parentId, int index, int depth) => @<div class="layer-drop-slot"
          style="--layer-depth:@depth"
-         @ondragover="() => DragOverSlot(parentId, index)"
-         @ondragover:preventDefault="@CanDrop(parentId, index)"
-         @ondrop="() => DropAsync(parentId, index)">
+         data-layer-drop-slot
+         data-layer-parent-id="@(parentId ?? string.Empty)"
+         data-layer-index="@index">
         <span></span>
     </div>;
 
@@ -325,11 +336,49 @@
 
     private bool IsCollapsed(string id) => collapsedIds.Contains(id);
 
-    private void BeginDrag(IWMControl control)
+    [JSInvokable]
+    public Task<bool> BeginLayerPointerDrag(string controlId)
     {
-        if (control.IsLocked) return;
+        var control = MacControlTree.Find(Editor.Draft, controlId);
+        if (control is null || control.IsLocked) return Task.FromResult(false);
         draggedId = control.ID;
         ClearDropCandidate();
+        return Task.FromResult(true);
+    }
+
+    [JSInvokable]
+    public Task<bool> CanDropLayerPointer(string controlId, string parentId, int rawIndex)
+    {
+        draggedId = controlId;
+        return Task.FromResult(CanDrop(NormalizeParentId(parentId), rawIndex));
+    }
+
+    [JSInvokable]
+    public Task CommitLayerPointerDrop(string controlId, string parentId, int rawIndex)
+    {
+        draggedId = controlId;
+        return DropAsync(NormalizeParentId(parentId), rawIndex);
+    }
+
+    [JSInvokable]
+    public Task EndLayerPointerDrag()
+    {
+        EndDrag();
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task HoverLayerContainer(string controlId)
+    {
+        ScheduleAutoExpand(controlId);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task CancelLayerContainerHover()
+    {
+        CancelHoverExpand();
+        return Task.CompletedTask;
     }
 
     private void EndDrag()
@@ -337,27 +386,6 @@
         draggedId = null;
         ClearDropCandidate();
     }
-
-    private void DragOverSlot(string parentId, int index)
-    {
-        CancelHoverExpand();
-        if (!CanDrop(parentId, index)) return;
-        dropParentId = parentId;
-        dropIndex = index;
-        dropOnContainer = false;
-    }
-
-    private void DragOverContainer(IWMControl control)
-    {
-        if (control is not WMContainer || !CanDrop(control.ID, TargetCount(control.ID))) return;
-        dropParentId = control.ID;
-        dropIndex = TargetCount(control.ID);
-        dropOnContainer = true;
-        ScheduleAutoExpand(control.ID);
-    }
-
-    private bool CanDropOnContainer(IWMControl control) =>
-        control is WMContainer && CanDrop(control.ID, TargetCount(control.ID));
 
     private bool CanDrop(string parentId, int rawIndex)
     {
@@ -396,12 +424,6 @@
         await Task.CompletedTask;
     }
 
-    private int TargetCount(string parentId)
-    {
-        var target = parentId is null ? null : MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
-        return target?.Controls.Count ?? Editor.Draft.Children.Count;
-    }
-
     private int NormalizeDropIndex(string parentId, int rawIndex)
     {
         if (string.IsNullOrWhiteSpace(draggedId)) return rawIndex;
@@ -421,18 +443,10 @@
         return childIndex >= 0 && childIndex < rawIndex ? rawIndex - 1 : rawIndex;
     }
 
-    private bool IsDropSlot(string parentId, int index) =>
-        !dropOnContainer && dropIndex == index && string.Equals(dropParentId, parentId, StringComparison.Ordinal);
+    private static string NormalizeParentId(string parentId) =>
+        string.IsNullOrWhiteSpace(parentId) ? null : parentId;
 
-    private bool IsContainerTarget(string id) => dropOnContainer && dropParentId == id;
-
-    private void ClearDropCandidate()
-    {
-        dropParentId = null;
-        dropIndex = -1;
-        dropOnContainer = false;
-        CancelHoverExpand();
-    }
+    private void ClearDropCandidate() => CancelHoverExpand();
 
     private void ScheduleAutoExpand(string id)
     {
@@ -508,4 +522,25 @@
     };
 
     public void Dispose() => CancelHoverExpand();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+        CancelHoverExpand();
+        try
+        {
+            if (layerTreeReference is not null)
+                await layerTreeReference.InvokeVoidAsync("dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        finally
+        {
+            if (layerTreeReference is not null) await layerTreeReference.DisposeAsync();
+            if (layerTreeModule is not null) await layerTreeModule.DisposeAsync();
+            dotNetReference?.Dispose();
+        }
+    }
 }

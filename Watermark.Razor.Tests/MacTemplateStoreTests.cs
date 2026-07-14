@@ -145,6 +145,103 @@ public sealed class MacTemplateStoreTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(root, "..", "outside")));
     }
 
+    [Fact]
+    public async Task AbsoluteDraftResources_AreCopiedOnlyWhenSavingAndSerializedRelatively()
+    {
+        var sourceDirectory = Path.Combine(root, "sources");
+        Directory.CreateDirectory(sourceDirectory);
+        var defaultImage = Path.Combine(sourceDirectory, "default-source.jpg");
+        var containerImage = Path.Combine(sourceDirectory, "container.png");
+        var logoImage = Path.Combine(sourceDirectory, "logo.png");
+        await File.WriteAllBytesAsync(defaultImage, [1, 2, 3]);
+        await File.WriteAllBytesAsync(containerImage, [4, 5, 6]);
+        await File.WriteAllBytesAsync(logoImage, [7, 8, 9]);
+
+        var canvas = SplitCanvas();
+        canvas.Path = defaultImage;
+        var container = new WMContainer { ID = "CONTAINER", Path = containerImage };
+        container.Controls.Add(new WMLogo { ID = "LOGO", Path = logoImage });
+        canvas.Children.Add(container);
+        var templateDirectory = Path.Combine(root, canvas.ID);
+
+        Assert.False(Directory.Exists(templateDirectory));
+        await new MacTemplateStore().SaveAsync(canvas, root);
+
+        Assert.True(File.Exists(Path.Combine(templateDirectory, "default.jpg")));
+        var persisted = Global.ReadConfigFromPath(Path.Combine(templateDirectory, "config.json"));
+        var persistedContainer = Assert.Single(persisted.Children);
+        var persistedLogo = Assert.IsType<WMLogo>(Assert.Single(persistedContainer.Controls));
+        Assert.False(Path.IsPathRooted(persistedContainer.Path));
+        Assert.False(Path.IsPathRooted(persistedLogo.Path));
+        Assert.True(File.Exists(Path.Combine(templateDirectory, persistedContainer.Path)));
+        Assert.True(File.Exists(Path.Combine(templateDirectory, persistedLogo.Path)));
+        Assert.DoesNotContain(sourceDirectory, await File.ReadAllTextAsync(Path.Combine(templateDirectory, "config.json")));
+        Assert.Equal(defaultImage, canvas.Path);
+        Assert.Equal(containerImage, container.Path);
+        Assert.Equal(logoImage, Assert.IsType<WMLogo>(Assert.Single(container.Controls)).Path);
+    }
+
+    [Fact]
+    public async Task FailedPublish_DoesNotCopyDraftResourcesIntoLiveTemplate()
+    {
+        Directory.CreateDirectory(root);
+        var source = Path.Combine(root, "source.jpg");
+        await File.WriteAllBytesAsync(source, [1, 2, 3]);
+        var canvas = SplitCanvas();
+        canvas.Path = source;
+        var directory = Path.Combine(root, canvas.ID);
+        Directory.CreateDirectory(Path.Combine(directory, "config.json"));
+
+        await Assert.ThrowsAnyAsync<IOException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+
+        Assert.True(Directory.Exists(Path.Combine(directory, "config.json")));
+        Assert.False(File.Exists(Path.Combine(directory, "default.jpg")));
+    }
+
+    [Fact]
+    public async Task MissingAbsoluteDraftResource_DoesNotReplaceExistingConfig()
+    {
+        var canvas = SplitCanvas();
+        canvas.Children.Add(new WMContainer { ID = "CONTAINER", Path = Path.Combine(root, "missing.png") });
+        var directory = Path.Combine(root, canvas.ID);
+        Directory.CreateDirectory(directory);
+        var config = Path.Combine(directory, "config.json");
+        await File.WriteAllTextAsync(config, "original");
+
+        await Assert.ThrowsAsync<MacTemplateValidationException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+
+        Assert.Equal("original", await File.ReadAllTextAsync(config));
+    }
+
+    [Fact]
+    public async Task EmptyCanvasPath_RemovesExistingDefaultImageOnlyOnSuccessfulSave()
+    {
+        var canvas = SplitCanvas();
+        var directory = Path.Combine(root, canvas.ID);
+        Directory.CreateDirectory(directory);
+        var defaultImage = Path.Combine(directory, "default.jpg");
+        await File.WriteAllBytesAsync(defaultImage, [1, 2, 3]);
+
+        await new MacTemplateStore().SaveAsync(canvas, root);
+
+        Assert.False(File.Exists(defaultImage));
+    }
+
+    [Fact]
+    public async Task NormalCanvas_EmptyRuntimePathPreservesConventionBasedDefaultImage()
+    {
+        var canvas = SplitCanvas();
+        canvas.CanvasType = CanvasType.Normal;
+        var directory = Path.Combine(root, canvas.ID);
+        Directory.CreateDirectory(directory);
+        var defaultImage = Path.Combine(directory, "default.jpg");
+        await File.WriteAllBytesAsync(defaultImage, [1, 2, 3]);
+
+        await new MacTemplateStore().SaveAsync(canvas, root);
+
+        Assert.Equal([1, 2, 3], await File.ReadAllBytesAsync(defaultImage));
+    }
+
     private static WMCanvas SplitCanvas() => new()
     {
         Name = "test",

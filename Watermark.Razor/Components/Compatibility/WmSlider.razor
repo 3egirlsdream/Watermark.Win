@@ -1,0 +1,12 @@
+@typeparam TValue where TValue : struct, IComparable<TValue>
+<MSlider TValue="TValue" Value="@Value" ValueChanged="@ValueChanged" Min="@Min" Max="@Max" Step="@Step" Color="@Color" HideDetails="true" />
+
+@code {
+    [Parameter] public TValue Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public double Min { get; set; }
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public TValue Step { get; set; } = (TValue)Convert.ChangeType(1, typeof(TValue));
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public bool ValueLabel { get; set; }
+}

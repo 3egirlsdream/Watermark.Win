@@ -1,47 +1,25 @@
-﻿@using MudBlazor
-<MudPaper Style="@($"margin: 10px 16px;background:{Colors.Grey.Lighten4}")" Elevation="0" class="pa-3">
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>读取不到元数据</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">确认导出时勾选元数据信息，右键图片属性可以查看元数据 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>如何使用</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">B站搜索 我家有很多相机，有详细使用教程 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>照片保存到哪里</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">打开相册会显示在相册中 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>怎么批量处理</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">打开图片选择界面，长按多选照片 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>硬币有什么用</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">可以下载需要硬币的用户模板 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>硬币怎么获取</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">其他用户下载你的模板会支付给你相应的硬币，每个用户初始50枚硬币 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>如何制作自己的模板</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">下载Windows版的可以制作模板，后续会支持移动端创建 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>图标可以替换吗</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">每个模板的图标都可以在生成界面二次替换，无需重复制作模板 </MudText>
-    </MudStack>
-    <MudDivider Class="my-2" />
-    <MudStack Justify="Justify.FlexStart">
-        <MudText Typo="Typo.subtitle1"><strong>品牌LOGO可以自动识别吗</strong>  </MudText>
-        <MudText Typo="Typo.subtitle2">在模板编辑界面图标一栏勾选自动识别 </MudText>
-    </MudStack>
-</MudPaper>
+<MCard Flat Class="pa-3" Style="margin:10px 16px;background:#F5F5F5;">
+    @foreach (var item in Questions)
+    {
+        <section class="py-2">
+            <div class="text-subtitle-1"><strong>@item.Title</strong></div>
+            <div class="text-subtitle-2">@item.Answer</div>
+        </section>
+        <MDivider />
+    }
+</MCard>
+
+@code {
+    private static readonly (string Title, string Answer)[] Questions =
+    [
+        ("读取不到元数据", "确认导出时勾选元数据信息，右键图片属性可以查看元数据。"),
+        ("如何使用", "B站搜索“我家有很多相机”，有详细使用教程。"),
+        ("照片保存到哪里", "打开相册会显示在相册中。"),
+        ("怎么批量处理", "打开图片选择界面，长按多选照片。"),
+        ("硬币有什么用", "可以下载需要硬币的用户模板。"),
+        ("硬币怎么获取", "其他用户下载你的模板会支付相应硬币，每个用户初始50枚硬币。"),
+        ("如何制作自己的模板", "Windows版可以制作模板，移动端将逐步支持创建。"),
+        ("图标可以替换吗", "每个模板的图标都可以在生成界面二次替换，无需重复制作模板。"),
+        ("品牌LOGO可以自动识别吗", "在模板编辑界面的图标设置中启用自动识别。")
+    ];
+}

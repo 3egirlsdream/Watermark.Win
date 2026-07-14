@@ -1,51 +1,64 @@
 ﻿@using Masa.Blazor
 @using Microsoft.JSInterop
-@using MudBlazor
 @using System.Collections.Concurrent
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Models
-@inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
-<style>
-    .image-select1 {
-    border-radius: 5px;
-    border: 1px dashed lightgrey;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 2px auto
-    }
-</style>
+<MCard Flat Class="new-template-dialog">
+    <div class="template-dialog-header">
+        <div>
+            <small>Template</small>
+            <h3>新建模板</h3>
+        </div>
+        <MButton Text Small Class="dialog-close-button" OnClick="Cancel">
+            <MIcon Small>mdi-close</MIcon>
+        </MButton>
+    </div>
 
-<Masa.Blazor.MCard Flat>
-    <MTextField @bind-Value="TemplateName" TValue="string" Label="模板名称" Required="true" RequiredMessage="模板名称不能为空" />
-    <div style="display: flex; align-items: center; justify-content: center;">
+    <div class="template-dialog-body">
+        <MTextField @bind-Value="TemplateName"
+                    TValue="string"
+                    Label="模板名称"
+                    Dense
+                    Outlined
+                    Required="true"
+                    RequiredMessage="模板名称不能为空" />
+
+        <button type="button" class="image-select-card" @onclick="SelectExampleImage">
         @if (!string.IsNullOrEmpty(Base64Src))
         {
-            <MImage Width="250" Contain Src="@Base64Src" @onclick="SelectExampleImage"/>
+                <img class="template-preview-image" src="@Base64Src" alt="模板预览图" />
         }
         else
         {
-            <div style="@($"width:{250}px;height:{250}px;")" @onclick="SelectExampleImage" class="image-select1">
-                <MIcon Size="@("8rem")" Style="color:lightgrey">mdi-image-plus</MIcon>
+                <div class="image-empty-state">
+                    <span class="image-empty-icon">
+                        <MIcon Size="28">mdi-image-plus</MIcon>
+                    </span>
+                    <span>选择默认预览图</span>
+                    <small>用于模板编辑与预览画布</small>
+                </div>
+        }
+        </button>
+
+        @if (_processing)
+        {
+            <div class="processing-line">
+                <MProgressCircular Size="14" Indeterminate="true" />
+                <span>正在处理图片...</span>
             </div>
         }
     </div>
-    <MCardActions>
-        <MSpacer/>
-        <MButton OnClick="OK" Color="primary">
-            @if (_processing)
-            {
-                <MProgressCircular Size="12" Indeterminate="true" />
-            }
-            else
-            {
-                <span>确定</span>
-            }
+
+    <MCardActions Class="template-dialog-actions">
+        <MSpacer />
+        <MButton Text Class="secondary-action" OnClick="Cancel">取消</MButton>
+        <MButton OnClick="OK" Color="primary" Class="primary-action" Disabled="@(_processing || string.IsNullOrWhiteSpace(TemplateName) || string.IsNullOrWhiteSpace(Base64Src))">
+            <span>创建并编辑</span>
         </MButton>
     </MCardActions>
-</Masa.Blazor.MCard>
+</MCard>
 
 
 
@@ -63,6 +76,15 @@
     bool _processing = false;
     string TemplateName;
     string Base64Src;
+
+    async Task Cancel()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync(false);
+        }
+    }
+
     void OK()
     {
         if (string.IsNullOrEmpty(TemplateName) || string.IsNullOrEmpty(Base64Src)) return;

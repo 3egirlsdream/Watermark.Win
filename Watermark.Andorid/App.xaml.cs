@@ -30,21 +30,10 @@ namespace Watermark.Andorid
 		{
 			var window = base.CreateWindow(activationState);
 #if MACCATALYST
-			window.Created += (s, e) =>
-			{
-				// UIWindowScene.Titlebar 在 Created 时已可用
-				WindowHelper.ConfigureTitleBar();
-
-				// NSWindow 需要稍后才能获取到，用 NSTimer 延迟执行
-				Foundation.NSTimer.CreateScheduledTimer(TimeSpan.FromMilliseconds(500), _ =>
+				window.Created += (s, e) =>
 				{
-					MainThread.BeginInvokeOnMainThread(() =>
-					{
-						WindowHelper.HideTrafficLights();
-						WindowHelper.SetCornerRadius(10.0);
-					});
-				});
-			};
+					WindowHelper.ConfigureTitleBar();
+				};
 #endif
 			return window;
 		}

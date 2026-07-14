@@ -1,4 +1,16 @@
-﻿html, body .m-application {
+﻿html,
+body,
+#app {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+html,
+body,
+#app,
+.m-application {
     font-family: 'MiSans', 'OPPO Sans', 'vivo Sans','PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 
@@ -100,11 +112,43 @@ h1:focus {
     --sk-color: white;
 }
 
-::-webkit-scrollbar {
-    display: none;
-}
-
 .scrolling-touch {
     -webkit-overflow-scrolling: touch; /* Safari */
     overflow-scrolling: touch;
+}
+
+/* Mac Catalyst: keep the template inspector's own content pane scrollable.
+   The host page clips global overflow, so every wrapper in this nested panel
+   must pass a definite height down to the internal scroll container. */
+#app .mac-mode-inspector .template-inspector-body,
+#app .mac-inspector-panel .mac-inspector-scroll-body,
+#app .design-inspector-dock {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+#app .mac-mode-inspector .template-inspector-body .inspector-shell,
+#app .mac-inspector-panel .mac-inspector-scroll-body .inspector-shell,
+#app .design-inspector-dock .inspector-shell {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+#app .mac-mode-inspector .template-inspector-body .inspector-content,
+#app .mac-inspector-panel .mac-inspector-scroll-body .inspector-content,
+#app .design-inspector-dock .inspector-content {
+    flex: 1 1 auto !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }

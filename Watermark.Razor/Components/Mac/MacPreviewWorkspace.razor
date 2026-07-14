@@ -1,0 +1,93 @@
+@using Masa.Blazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Razor.Parts
+@using Watermark.Shared.Models
+
+<main class="mac-preview-workspace">
+    <section class="preview-pane">
+        @if (CurrentImage != null && !string.IsNullOrEmpty(CurrentImage.Src))
+        {
+            <div class="preview-toolbar">
+                <span class="mode-pill">@ModeLabel</span>
+                @if (!string.IsNullOrEmpty(CompareBeforeSrc))
+                {
+                    <button type="button" class="compare-hold"
+                            @onpointerdown="() => ShowBefore = true"
+                            @onpointerup="() => ShowBefore = false"
+                            @onpointerleave="() => ShowBefore = false">按住看原图</button>
+                }
+                <MCard Style="width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;" @onclick="ShowExif" Flat>
+                    <Watermark.Razor.Parts.IconExif />
+                </MCard>
+                <MCard Width="28" Height="28" Flat>
+                    <MFileInput TValue="IBrowserFile"
+                                Class="exif-selector"
+                                OnChange="SelectSourceImageExif"
+                                Style="width:24px !important;padding:0px !important;margin:0px"
+                                HideDetails="true"
+                                Label="File input" />
+                </MCard>
+            </div>
+            <div class="preview-stage">
+                @if (UseColorPreview)
+                {
+                    <MacColorPreviewCanvas Source="@DisplaySource"
+                                           Look="@ColorPreviewLook"
+                                           Adjustments="@ColorAdjustments"
+                                           CapabilityChanged="ColorPreviewCapabilityChanged" />
+                }
+                else
+                {
+                    <img src="@DisplaySource" class="preview-image" alt="预览图" />
+                }
+            </div>
+            @if (ShowBefore && !string.IsNullOrEmpty(CompareBeforeSrc))
+            {
+                <div class="preview-before-overlay">
+                    <img src="@CompareBeforeSrc" class="preview-image" alt="操作前" />
+                </div>
+            }
+            @if (SrcLoading)
+            {
+                <MProgressCircular Indeterminate="true" Class="preview-loading" Color="primary" Size="22" Width="2" />
+            }
+        }
+        else
+        {
+            <div class="preview-empty">
+                <Watermark.Razor.Parts.IconImage />
+                <span>导入图片开始编辑</span>
+            </div>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public WMTemplateList? CurrentImage { get; set; }
+
+    [Parameter]
+    public bool SrcLoading { get; set; }
+
+    [Parameter]
+    public MacPreviewMode PreviewMode { get; set; }
+
+    [Parameter]
+    public string? PreviewSrc { get; set; }
+
+    [Parameter]
+    public string? CompareBeforeSrc { get; set; }
+
+    [Parameter]
+    public string ModeLabel { get; set; } = "预览";
+
+    [Parameter] public bool UseColorPreview { get; set; }
+    [Parameter] public MacColorPreviewLook? ColorPreviewLook { get; set; }
+    [Parameter] public MacColorPreviewParameters? ColorAdjustments { get; set; }
+
+    [Parameter] public EventCallback ShowExif { get; set; }
+    [Parameter] public EventCallback<IBrowserFile> SelectSourceImageExif { get; set; }
+    [Parameter] public EventCallback<MacColorPreviewCapability> ColorPreviewCapabilityChanged { get; set; }
+    private bool ShowBefore { get; set; }
+    private string? DisplaySource => string.IsNullOrWhiteSpace(PreviewSrc) ? CurrentImage?.Src : PreviewSrc;
+}
