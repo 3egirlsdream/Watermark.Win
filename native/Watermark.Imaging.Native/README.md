@@ -16,11 +16,18 @@ deterministic RANSAC. Preview stacking is bounded by the managed CPU budget and
 parallelized by output ranges, with NEON/SSE/AVX compiler paths and a scalar
 fallback. The release does not link or deploy OpenCV.
 
-The repository vendors the unmodified LibRaw 0.22.1 and LibTIFF 4.7.2 sources and
-records their archive checksums under `native/third_party`. Generated intermediate
-files stay under ignored `native/build` and `native/stage` directories. Release
-artifacts are written to `native/artifacts` and are consumed conditionally by the
-MAUI and WPF project files.
+Application builds consume the verified binaries committed under
+`native/artifacts`; they do not download or compile LibRaw. The repository does
+not track LibRaw implementation sources. It only keeps LibRaw's license and
+copyright files, while the exact official source URL and archive checksum are
+recorded in `native/artifacts/manifest.json` and `native/NATIVE-BINARY-COMMIT.md`.
+LibTIFF 4.7.2 sources are vendored under `native/third_party`.
+
+The build scripts below are maintainer-only workflows for regenerating native
+artifacts. They never download LibRaw automatically: obtain the pinned official
+archive yourself, verify its SHA-256, and place the extracted source at
+`native/third_party/LibRaw-0.22.1` before running them. Generated intermediate
+files stay under ignored `native/build` and `native/stage` directories.
 
 Apple builds
 ------------

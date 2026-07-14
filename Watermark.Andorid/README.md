@@ -2,6 +2,10 @@
 
 基于 .NET 8 MAUI Blazor Hybrid 的多平台水印模板编辑工具，支持 macOS (Mac Catalyst)、iOS、Android、Windows。
 
+![轻影 Mac Catalyst 预设工作区](../docs/screenshots/preset-workspace.jpg)
+
+应用构建直接使用 `../native/artifacts` 中的预编译原生影像依赖，不会下载或编译 LibRaw 源码。依赖版本、源码获取地址和校验值见[原生影像后端说明](../native/Watermark.Imaging.Native/README.md)。
+
 ## 环境要求
 
 - .NET 8 SDK
