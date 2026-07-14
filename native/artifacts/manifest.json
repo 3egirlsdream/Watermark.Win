@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "generatedAtUtc": "2026-07-14T08:38:39Z",
+  "nativeAbiVersion": 3,
+  "source": {
+    "name": "LibRaw",
+    "version": "0.22.1",
+    "url": "https://www.libraw.org/data/LibRaw-0.22.1.tar.gz",
+    "sha256": "a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786"
+  },
+  "tiffSource": {
+    "name": "LibTIFF",
+    "version": "4.7.2",
+    "url": "https://download.osgeo.org/libtiff/tiff-4.7.2.tar.xz",
+    "sha256": "4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88"
+  },
+  "toolchains": {
+    "android": { "ndkVersion": "26.1.10909125", "minimumApi": 24 }
+  },
+  "configuration": {
+    "threadSafeArchive": true,
+    "openMp": false,
+    "lcms": false,
+    "lossyDngJpeg": false,
+    "zlib": {
+      "apple": "system",
+      "android": "system",
+      "windows": "vcpkg-static"
+    },
+    "callocRawStore": true,
+    "starAlignment": "LoG+centroid+local-triangle-buckets+deterministic-RANSAC",
+    "previewPipeline": "WMPV1+Gray16+RGB16-bicubic+SIMD-stack",
+    "openCv": false
+  },
+  "artifacts": {
+    "maccatalyst": { "path": "maccatalyst/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-maccatalyst/libWatermark.Imaging.Native.a", "architectures": ["arm64", "x86_64"], "binarySha256": "94182e7497e8cc67b0ecf5e1b62f301babafeb43bb0b56c714ecf430d6ab82b8" },
+    "iosDevice": { "path": "ios/Watermark.Imaging.Native.xcframework/ios-arm64/libWatermark.Imaging.Native-device.a", "architectures": ["arm64"], "binarySha256": "ad99d7687163bce3d0c808357489f3783ea3f02b049e17968e507dca017a0d68" },
+    "iosSimulator": { "path": "ios/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-simulator/libWatermark.Imaging.Native-simulator.a", "architectures": ["arm64", "x86_64"], "binarySha256": "20e941a8fc20f426c1b68b191ed24bfd583011000813e838194533f56be3b70f" },
+    "androidArm64V8a": { "path": "android/arm64-v8a/libWatermark.Imaging.Native.so", "architectures": ["arm64-v8a"], "minimumApi": 24, "binarySha256": "792eca5b8f0cb70fead0a9c240faaadc6e83f76cd422e70436d02e65cdb45698" },
+    "androidX86_64": { "path": "android/x86_64/libWatermark.Imaging.Native.so", "architectures": ["x86_64"], "minimumApi": 24, "binarySha256": "b911a89ffc07adcf6a10507ff45852df67f12a5182af9ce5e6e089ebf308d0a5" },
+    "windowsX64": { "path": "win-x64/Watermark.Imaging.Native.dll", "architectures": ["x64"], "binarySha256": "05ed28cba4e912c03dffe313b56da7db4335c7c7f9fe5fcf7ca109215b4e13db" },
+    "windowsArm64": { "path": "win-arm64/Watermark.Imaging.Native.dll", "architectures": ["arm64"], "binarySha256": "edad3a1200ee8736d01762324053d718d620e99e3f6440c853a6dda259fd3021" }
+  }
+}

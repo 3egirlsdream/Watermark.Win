@@ -1,0 +1,41 @@
+Watermark / Litograph third-party notices
+=========================================
+
+LibRaw 0.22.1
+Source: https://www.libraw.org/data/LibRaw-0.22.1.tar.gz
+License: CDDL 1.0 (chosen distribution option)
+Official source archive SHA-256:
+a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786
+The unmodified corresponding source is available from the official archive above
+and is intentionally not stored in this binary dependency commit.
+The complete CDDL text and LibRaw copyright inventory are included in the release
+under licenses/LibRaw-CDDL-1.0.txt and licenses/LibRaw-COPYRIGHT.txt.
+Apple, Android and Windows builds use static thread-safe libraw_r with
+OpenMP/LCMS/lossy-DNG JPEG disabled and LIBRAW_CALLOC_RAWSTORE enabled. Apple and
+Android use system zlib; Windows links the vcpkg static zlib package.
+
+LibTIFF 4.7.2
+Source: https://download.osgeo.org/libtiff/
+License: libtiff BSD-style license
+Official source archive SHA-256:
+4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88
+The unmodified corresponding source is stored under native/third_party/tiff-4.7.2.
+The complete LibTIFF license text is included in the release under
+licenses/LibTIFF-4.7.2.txt. Apple, Android and Windows builds use the static
+library with Deflate enabled; tools, tests, docs and optional
+JPEG/JBIG/LZMA/Zstd/WebP codecs are disabled.
+
+MetadataExtractor 2.9.1
+Source: https://github.com/drewnoakes/metadata-extractor-dotnet
+License: Apache License 2.0
+
+zlib 1.3.2
+Source: https://zlib.net/
+License: zlib License
+The Windows native DLL statically links the vcpkg zlib 1.3.2 package. Apple and
+Android use the operating-system zlib and do not deploy a separate zlib binary.
+
+This inventory is part of the standalone macOS, iOS, Android and Windows release
+payload. LibRaw implementation source is not bundled with the application or this
+binary dependency commit. Its exact corresponding source is identified above by
+the official download address, version and archive SHA-256.
