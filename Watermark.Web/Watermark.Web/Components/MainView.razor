@@ -1,163 +1,264 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
-@using System.IO
-@using System.Collections.Concurrent
 @using Watermark.Shared.Models
-@using Watermark.Web.Components.Pages
-@inject IJSRuntime JSRuntime
 
+<PageTitle>轻影 Litograph｜摄影模板设计与专业影像处理</PageTitle>
+<HeadContent>
+    <meta name="description" content="轻影 Litograph 是面向摄影师的跨平台影像工作台，支持水印模板设计、EXIF、16-bit 调色、RAW、多帧合成与批量导出。" />
+    <meta name="theme-color" content="#fcfbf8" />
+</HeadContent>
 
-@* ===== 3.1: 固定导航栏 ===== *@
-<nav class="sticky-nav" id="stickyNav">
-    <div class="nav-brand">
-        <LogoIcon />
-        <span>轻影 Litograph</span>
-    </div>
-    <a href="#downloadSection" class="nav-download-btn">下载</a>
-</nav>
+<div class="wm-home">
+    <header class="wm-header" aria-label="主导航">
+        <a class="wm-brand" href="#top" aria-label="返回首页">
+            <img src="images/home/app-icon.svg" alt="" />
+            <span>轻影 <b>Litograph</b></span>
+        </a>
+        <nav class="wm-nav" aria-label="官网导航">
+            <a href="#capabilities">能力</a>
+            <a href="#templates">模板</a>
+            <a href="#download">下载</a>
+            <a href="#about">关于</a>
+        </nav>
+        <a class="wm-button wm-button-small" href="#download">免费下载</a>
+    </header>
 
-@* ===== 3.1: Hero Section ===== *@
-<section class="hero-section" id="heroSection">
-    <h1 class="hero-title scroll-animate slide-up">轻影</h1>
-    <p class="hero-subtitle scroll-animate slide-up stagger-delay-1">Litograph</p>
-    <p class="hero-tagline scroll-animate slide-up stagger-delay-2">强大的全功能图片模板编辑工具</p>
-    <a href="#downloadSection" class="hero-cta scroll-animate slide-up stagger-delay-3">立即下载</a>
-</section>
+    <main>
+        <section class="wm-hero" id="top">
+            <div class="wm-shell wm-hero-grid">
+                <div class="wm-hero-copy">
+                    <p class="wm-eyebrow">LIGHT, LAYERS, LITOGRAPH</p>
+                    <h1>轻影 <span>Litograph</span></h1>
+                    <h2>把拍摄参数、个人风格和漫长夜色，留在同一张作品里</h2>
+                    <p class="wm-hero-lead">为摄影师打造的模板设计与影像处理工具。</p>
+                    <div class="wm-actions">
+                        <a class="wm-button" href="#download">开始使用</a>
+                        <a class="wm-text-link" href="#capabilities">浏览核心能力 <span class="mdi mdi-arrow-right" aria-hidden="true"></span></a>
+                    </div>
+                    <p class="wm-proof">基础功能免费 · 原图质量输出 · 四端可用</p>
+                </div>
 
-@* ===== 3.2: Feature Section 功能卡片区 ===== *@
-<section class="feature-section">
-    <h2 class="section-title scroll-animate fade-in">产品特色</h2>
-    <WmGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;">
-        @for (int i = 0; i < features.Count; i++)
-        {
-            var feature = features[i];
-            var delay = i + 1;
-            <WmItem xs="12" sm="6" md="4">
-                <WmCard Elevation="0" Class="@($"scroll-animate fade-in stagger-delay-{delay}")" Style="text-align:center;padding:32px 16px;background:#f5f5f7;border-radius:16px;">
-                    <WmIcon Icon="@feature.Icon" Style="font-size:2.5rem;color:#0071e3;" />
-                    <WmCardContent>
-                        <WmText Typo="Typo.h6" Style="font-weight:600;margin-bottom:8px;">@feature.Title</WmText>
-                        <WmText Typo="Typo.body2" Style="color:#6e6e73;">@feature.Description</WmText>
-                    </WmCardContent>
-                </WmCard>
-            </WmItem>
-        }
-    </WmGrid>
-</section>
-
-@* ===== 3.3: 产品截图展示区 ===== *@
-<section class="showcase-section">
-    <WmGrid Justify="Justify.Center" Style="max-width:1200px;margin:0 auto;align-items:center;">
-        <WmItem xs="12" sm="6">
-            <div class="scroll-animate slide-left">
-                <h2 class="section-title">强大的模板编辑器</h2>
-                <p class="section-desc">通过模板编辑器制作各式各样的照片模板</p>
-                <p class="section-desc">更可以直接获取图片EXIF信息</p>
-                <p class="section-desc">上百款模板供你选择，创作你自己的专属模板</p>
+                <div class="wm-hero-gallery" aria-label="轻影创作效果展示">
+                    <figure class="wm-photo wm-photo-main">
+                        <img src="images/home/hero-mountain.jpg" alt="金色晨光中的雪山作品" />
+                        <figcaption>
+                            <b>NIKON Z 7II</b>
+                            <span>24mm · f/8 · 1/30s · ISO 100</span>
+                        </figcaption>
+                    </figure>
+                    <figure class="wm-photo wm-photo-stars">
+                        <img src="images/home/star-trails.jpg" alt="蓝色夜空下的星轨作品" />
+                    </figure>
+                    <figure class="wm-photo wm-photo-lake">
+                        <img src="images/home/winter-lake.jpg" alt="雪山与湖面倒影作品" />
+                    </figure>
+                    <div class="wm-product-float">
+                        <div class="wm-workspace-composite wm-workspace-composite-hero">
+                            <img class="wm-workspace-ui" src="images/home/preset-workspace.jpg" alt="轻影预设与模板工作区" />
+                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/misty-ridges.jpg" alt="模板工作区中正在编辑的雾岭照片" />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </WmItem>
-        <WmItem xs="12" sm="6">
-            <div class="scroll-animate slide-right">
-                <img src="https://cdn.thankful.top/C264A6182FBF486DBD4C755D743E4AB3.jpg"
-                     alt="产品截图"
-                     style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);"
-                     onerror="this.style.display='none';this.parentElement.style.background='#e8e8ed';this.parentElement.style.minHeight='300px';this.parentElement.style.borderRadius='12px';" />
+        </section>
+
+        <section class="wm-chapter wm-chapter-template" id="templates">
+            <div class="wm-shell">
+                <div class="wm-chapter-heading">
+                    <span class="wm-chapter-number">01</span>
+                    <div>
+                        <p class="wm-kicker">TEMPLATE SIGNATURE</p>
+                        <h2>一套模板，成为你的签名</h2>
+                        <p>图片、文字、边框、画布与元数据自由组合。相机、镜头、焦距、光圈、快门与 ISO，都能成为画面的一部分。</p>
+                    </div>
+                </div>
+
+                <div class="wm-template-layout">
+                    <div class="wm-output-strip" aria-label="模板成片示例">
+                        <figure class="wm-output-card">
+                            <img src="images/home/misty-ridges.jpg" alt="雾岭风景模板成片" />
+                            <figcaption><b>SONY α7R V</b><span>70mm · f/8 · 1/20s · ISO 100</span></figcaption>
+                        </figure>
+                        <figure class="wm-output-card wm-output-card-featured">
+                            <img src="images/home/exif-template.jpg" alt="包含 EXIF 信息的高山湖泊模板成片" />
+                        </figure>
+                        <figure class="wm-output-card">
+                            <img src="images/home/hero-mountain.jpg" alt="晨光雪山模板成片" />
+                            <figcaption><b>FUJIFILM GFX 100S</b><span>32mm · f/11 · 1/80s · ISO 100</span></figcaption>
+                        </figure>
+                    </div>
+                    <figure class="wm-workspace-frame">
+                        <div class="wm-workspace-composite">
+                            <img class="wm-workspace-ui" src="images/home/preset-workspace.jpg" alt="可视化水印模板设计器" />
+                            <img class="wm-workspace-content" src="images/home/exif-template.jpg" alt="模板设计器中的 EXIF 水印成片" />
+                        </div>
+                        <figcaption>图层、图片、文字、边框与 EXIF 内容，在同一画布中完成。</figcaption>
+                    </figure>
+                </div>
             </div>
-        </WmItem>
-    </WmGrid>
-</section>
+        </section>
 
-@* ===== 3.4: Download Section 下载区 ===== *@
-<section class="download-section" id="downloadSection">
-    <h2 class="section-title scroll-animate fade-in">下载轻影</h2>
-    <div class="download-buttons scroll-animate slide-up stagger-delay-1">
-        <a href="https://cdn.thankful.top/Watermark.Win.Update.exe" class="download-btn">
-            <WmIcon Icon="@WmIcons.Custom.Brands.Microsoft" /> Windows
-        </a>
-        <a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk" class="download-btn">
-            <WmIcon Icon="@WmIcons.Material.Filled.Android" /> Android
-        </a>
-        <a href="https://cdn.thankful.top/Litograph.pkg" class="download-btn">
-            <WmIcon Icon="@WmIcons.Custom.Brands.Apple" /> macOS
-        </a>
-        <a href="https://apps.apple.com/cn/app/%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88/id6541761957" class="download-btn">
-            <WmIcon Icon="@WmIcons.Custom.Brands.Apple" /> iPhone
-        </a>
-    </div>
-    <p class="privacy-text scroll-animate fade-in stagger-delay-2">
-        使用轻影即表示你同意其<a href="http://thankful.top/private">许可 &amp; 隐私</a>声明
-    </p>
-</section>
+        <section class="wm-chapter wm-chapter-grade" id="capabilities">
+            <div class="wm-shell">
+                <div class="wm-chapter-heading wm-chapter-heading-compact">
+                    <span class="wm-chapter-number">02</span>
+                    <div>
+                        <p class="wm-kicker">COLOR STUDIO</p>
+                        <h2>调色，不止几个滤镜</h2>
+                        <div class="wm-tags" aria-label="调色能力">
+                            <span>16-bit 中间管线</span>
+                            <span>基础调色</span>
+                            <span>曲线与 HSL</span>
+                            <span>参考图风格匹配</span>
+                        </div>
+                    </div>
+                </div>
 
-@* ===== 3.5: Template Gallery Section 模板画廊 ===== *@
-<section class="gallery-section">
-    <h2 class="section-title scroll-animate fade-in">精选模板</h2>
-    <div class="gallery-grid">
-        @for (int i = 0; i < strings.Count; i++)
-        {
-            var src = strings[i];
-            var delay = (i % 12) + 1;
-            <div class="@($"gallery-item scroll-animate scale-in stagger-delay-{delay}")">
-                <img src="@($"https://cdn.thankful.top/{src}.jpg")"
-                     alt="模板预览"
-                     loading="lazy"
-                     onerror="this.style.display='none';this.parentElement.style.background='#e8e8ed';this.parentElement.style.minHeight='150px';" />
+                <div class="wm-grade-layout">
+                    <div class="wm-before-after" aria-label="调色前后对比">
+                        <figure>
+                            <img class="wm-grade-before" src="images/home/color-grade-base.jpg" alt="调色前的高山花海" />
+                            <figcaption>调色前</figcaption>
+                        </figure>
+                        <figure>
+                            <img class="wm-grade-after" src="images/home/color-grade-base.jpg" alt="调色后的高山花海" />
+                            <figcaption>调色后</figcaption>
+                        </figure>
+                    </div>
+                    <figure class="wm-workspace-frame wm-workspace-grade">
+                        <div class="wm-workspace-composite">
+                            <img class="wm-workspace-ui" src="images/home/color-studio.jpg" alt="轻影 16-bit 调色工作台" />
+                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/color-grade-base.jpg" alt="调色工作台中正在处理的高山照片" />
+                        </div>
+                        <figcaption>基础调色、曲线、HSL 与参考图匹配，共用高精度渲染管线。</figcaption>
+                    </figure>
+                </div>
             </div>
-        }
-    </div>
-</section>
+        </section>
 
-@* ===== 3.6: Footer Section 页脚 ===== *@
-<footer class="footer-section">
-    <a href="https://beian.miit.gov.cn/">蜀ICP备2024092556号</a>
-</footer>
+        <section class="wm-chapter wm-chapter-night">
+            <div class="wm-shell">
+                <div class="wm-chapter-heading wm-chapter-heading-night">
+                    <span class="wm-chapter-number">03</span>
+                    <div>
+                        <p class="wm-kicker">MULTI-FRAME STACK</p>
+                        <h2>让时间参与成像</h2>
+                        <div class="wm-tags wm-tags-night" aria-label="多帧合成能力">
+                            <span>星轨 Maximum</span>
+                            <span>银河堆栈</span>
+                            <span>星点配准</span>
+                            <span>Sigma 剔除</span>
+                        </div>
+                    </div>
+                </div>
 
-@* ===== 3.2 & 3.7: Code block ===== *@
+                <div class="wm-night-stage">
+                    <img class="wm-night-photo" src="images/home/star-trails.jpg" alt="多帧合成后的星轨作品" />
+                    <figure class="wm-night-workspace">
+                        <div class="wm-workspace-composite">
+                            <img class="wm-workspace-ui" src="images/home/multi-frame-workspace.jpg" alt="轻影多帧合成工作区" />
+                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/star-trails.jpg" alt="多帧合成工作区中的星轨成片" />
+                        </div>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <section class="wm-chapter wm-chapter-batch">
+            <div class="wm-shell">
+                <div class="wm-chapter-heading wm-chapter-heading-compact">
+                    <span class="wm-chapter-number">04</span>
+                    <div>
+                        <p class="wm-kicker">BATCH WORKFLOW</p>
+                        <h2>一次导入，成批完成</h2>
+                        <div class="wm-tags" aria-label="批量处理能力">
+                            <span>模板应用</span>
+                            <span>预览缓存</span>
+                            <span>全分辨率导出</span>
+                            <span>EXIF / ICC 保留</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wm-pipeline" aria-label="批量处理流程">
+                    <div class="wm-pipeline-step wm-pipeline-source">
+                        <span class="mdi mdi-folder-multiple-image" aria-hidden="true"></span>
+                        <b>导入照片</b>
+                        <small>RAW · JPEG · HEIF</small>
+                    </div>
+                    <span class="mdi mdi-arrow-right wm-pipeline-arrow" aria-hidden="true"></span>
+                    <div class="wm-filmstrip" aria-label="待处理照片">
+                        <img src="images/home/misty-ridges.jpg" alt="" />
+                        <img src="images/home/winter-lake.jpg" alt="" />
+                        <img src="images/home/hero-mountain.jpg" alt="" />
+                    </div>
+                    <span class="mdi mdi-arrow-right wm-pipeline-arrow" aria-hidden="true"></span>
+                    <div class="wm-pipeline-output">
+                        <img src="images/home/exif-template.jpg" alt="批量导出的模板成片" />
+                        <div><b>全分辨率成片</b><small>模板布局、调色与元数据一次写入</small></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="wm-platforms" id="download">
+            <div class="wm-shell">
+                <p class="wm-platform-title">同一个账号，跨越每一块屏幕</p>
+                <div class="wm-platform-grid">
+                    <a href="https://cdn.thankful.top/Litograph.pkg" aria-label="下载 macOS 版轻影">
+                        <span class="mdi mdi-apple" aria-hidden="true"></span><b>macOS</b><small>Apple Silicon · Intel</small>
+                    </a>
+                    <a href="https://cdn.thankful.top/Watermark.Win.Update.exe" aria-label="下载 Windows 版轻影">
+                        <span class="mdi mdi-microsoft-windows" aria-hidden="true"></span><b>Windows</b><small>x64 · ARM64</small>
+                    </a>
+                    <a href="https://cdn.thankful.top/DaVinci%20Frame%20Master-%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88.apk" aria-label="下载 Android 版轻影">
+                        <span class="mdi mdi-android" aria-hidden="true"></span><b>Android</b><small>Android 8.0+</small>
+                    </a>
+                    <a href="https://apps.apple.com/cn/app/%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%A1%86%E5%A4%A7%E5%B8%88/id6541761957" aria-label="前往 App Store 下载 iOS 版轻影">
+                        <span class="mdi mdi-cellphone" aria-hidden="true"></span><b>iOS</b><small>iPhone · iPad</small>
+                    </a>
+                </div>
+
+                <div class="wm-final-cta">
+                    <p class="wm-kicker">YOUR NEXT PHOTOGRAPH</p>
+                    <h2>把下一张照片，做成你的作品</h2>
+                    <div class="wm-actions wm-actions-centered">
+                        <a class="wm-button" href="https://cdn.thankful.top/Litograph.pkg">下载轻影</a>
+                        <a class="wm-text-link" href="#platforms-note">查看系统要求 <span class="mdi mdi-arrow-right" aria-hidden="true"></span></a>
+                    </div>
+                    <p id="platforms-note" class="wm-system-note">macOS 14+ · Windows 10/11 · Android 8+ · iOS 13+</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="wm-footer" id="about">
+        <div class="wm-shell">
+            <div>
+                <a class="wm-brand wm-brand-footer" href="#top">
+                    <img src="images/home/app-icon.svg" alt="" />
+                    <span>轻影 <b>Litograph</b></span>
+                </a>
+                <p>让创作更自由，让影像更动人。</p>
+            </div>
+            <nav aria-label="页脚导航">
+                <a href="/protocol">使用条款</a>
+                <a href="/private">隐私政策</a>
+                <a href="https://beian.miit.gov.cn/">蜀ICP备2024092556号</a>
+            </nav>
+        </div>
+    </footer>
+</div>
+
 @code {
-    record FeatureItem(string Icon, string Title, string Description);
-
-    List<FeatureItem> features =
-    [
-        new(WmIcons.Material.Filled.CardGiftcard, "基础功能免费", "核心功能完全免费使用"),
-        new(WmIcons.Material.Filled.Devices, "会员全平台通用", "跨平台同步，一次订阅多端使用"),
-        new(WmIcons.Material.Filled.HighQuality, "不损失画质", "原图质量输出，无压缩损失"),
-        new(WmIcons.Material.Filled.Dashboard, "模板设计与编辑", "丰富模板库，自由创作编辑"),
-        new(WmIcons.Material.Filled.GridView, "拼图功能", "多种拼图布局，灵活组合照片")
-    ];
-
-    List<string> strings =
-    [
-        "43F920046F064B18A4BA0B1C46408F66",
-        "B735DFC73A0B4080B11BBCFD3AE833D6",
-        "19BEBDE6C0C64FCB9919DDCD4A2A3675",
-        "DBF0D1F09CF74F9A8E827EA04543083A",
-        "C01EC81767F04D648CD055A241A61C5B",
-        "D28B8DC23C9747ACBEFEF462BA8CBBCB",
-        "ADD765F4905D45C38FE4A33B29D1200C",
-        "2ED212541CB2403EBC86EDD028EBFEDC",
-        "EF3C623CB9ED4CA68DAAE6064D5F0246",
-        "59C0718464C74C5D8B1CE1FB3894E553",
-        "370071180E1C41DB902C37DB84ED022C",
-        "D940CF2EC7A348119837F7CB418D4CFB"
-    ];
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Initialize scroll animation engine
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("HomepageAnimations.init");
-            }
-            catch
-            {
-                // JS load failure - CSS fallback will auto-show elements after 3s
-            }
-
-            // Keep existing page visit record logic
-            APIHelper api = new APIHelper();
-            var _ = api.PageVisitRecord(Shared.Enums.ProgramPage.Index, Shared.Enums.DeviceType.Web);
+            APIHelper api = new();
+            _ = api.PageVisitRecord(Shared.Enums.ProgramPage.Index, Shared.Enums.DeviceType.Web);
         }
+
+        return Task.CompletedTask;
     }
 }
