@@ -120,9 +120,14 @@ jobs:
 
           SSH_COMMAND="ssh -i $HOME/.ssh/markweb_deploy_key -p $DEPLOY_PORT -o BatchMode=yes"
           $SSH_COMMAND "$DEPLOY_USER@$DEPLOY_HOST" \
-            "rm -rf '$DEPLOY_PATH/published.next' && mkdir -p '$DEPLOY_PATH/published.next'"
+            "rm -rf '$DEPLOY_PATH/published.next' && \
+            if [[ -d '$DEPLOY_PATH/published' ]]; then \
+              cp -a --reflink=auto '$DEPLOY_PATH/published' '$DEPLOY_PATH/published.next'; \
+            else \
+              mkdir -p '$DEPLOY_PATH/published.next'; \
+            fi"
 
-          rsync --archive --compress --delete \
+          rsync --archive --checksum --compress --delete \
             --rsh="$SSH_COMMAND" \
             "${{ runner.temp }}/markweb/published/" \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/published.next/"
