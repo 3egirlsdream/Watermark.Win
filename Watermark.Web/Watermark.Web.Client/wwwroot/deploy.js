@@ -362,10 +362,24 @@ async function versionFromPkg(file) {
         const encoding = [...data.children].find(node => node.tagName === "encoding")?.getAttribute("style") ?? "";
         if (encoding.includes("gzip")) content = await decompressBlob(new Blob([content]), "deflate");
         const text = new TextDecoder().decode(content);
-        const match = text.match(/(?:pkg-info|pkg-ref)[^>]*\bversion=["']([^"']+)["']/i);
-        if (match) return match[1];
+        const version = versionFromPkgMetadata(text);
+        if (version) return version;
     }
     return null;
+}
+
+function versionFromPkgMetadata(xml) {
+    const metadata = new DOMParser().parseFromString(xml, "application/xml");
+    if (metadata.querySelector("parsererror")) return null;
+
+    const packageInfo = metadata.documentElement.tagName === "pkg-info"
+        ? metadata.documentElement
+        : metadata.querySelector("pkg-info");
+    return packageInfo?.getAttribute("version")
+        ?? packageInfo?.querySelector("bundle[CFBundleShortVersionString]")?.getAttribute("CFBundleShortVersionString")
+        ?? metadata.querySelector("product[version]")?.getAttribute("version")
+        ?? metadata.querySelector("pkg-ref[version]")?.getAttribute("version")
+        ?? null;
 }
 
 function directChildText(node, name) {
