@@ -16,10 +16,6 @@ export function openFilePicker(input) {
     input.click();
 }
 
-export async function validateAccess(accessToken) {
-    await deployRequest("/api/Deploy/Validate", accessToken, { method: "POST" });
-}
-
 export async function loadCatalog() {
     const entries = Object.values(platforms);
     const releases = await Promise.all(entries.map(async platform => {
@@ -65,7 +61,7 @@ export async function inspectPackage(input) {
     };
 }
 
-export async function uploadPackage(input, accessToken, platformId, version, progressReceiver) {
+export async function uploadPackage(input, platformId, version, progressReceiver) {
     const file = selectedFile(input);
     const platform = Object.values(platforms).find(item => item.id === platformId);
     if (!platform || extensionOf(file.name) !== Object.keys(platforms).find(key => platforms[key].id === platformId)) {
@@ -74,7 +70,6 @@ export async function uploadPackage(input, accessToken, platformId, version, pro
 
     const tokenPayload = await deployRequest(
         `/api/Deploy/UploadToken?platform=${encodeURIComponent(platformId)}&fileSize=${file.size}&version=${encodeURIComponent(version)}`,
-        accessToken,
         { method: "POST" });
     const upload = tokenPayload.data;
 
@@ -108,18 +103,16 @@ export async function uploadPackage(input, accessToken, platformId, version, pro
     });
 }
 
-export async function publishRelease(accessToken, platform, version, memo) {
-    await deployRequest("/api/Deploy/Publish", accessToken, {
+export async function publishRelease(platform, version, memo) {
+    await deployRequest("/api/Deploy/Publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform, version, memo })
     });
 }
 
-async function deployRequest(path, accessToken, options = {}) {
-    const headers = new Headers(options.headers ?? {});
-    headers.set("X-Deploy-Token", accessToken);
-    const response = await fetch(`${apiBase}${path}`, { ...options, headers });
+async function deployRequest(path, options = {}) {
+    const response = await fetch(`${apiBase}${path}`, options);
 
     let payload;
     try {

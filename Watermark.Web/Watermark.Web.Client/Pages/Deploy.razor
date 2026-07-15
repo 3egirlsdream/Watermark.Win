@@ -17,59 +17,13 @@
         </div>
     </header>
 
-    @if (!_authorized)
-    {
-        <main class="deploy-gate">
-            <section class="gate-copy">
-                <p class="deploy-eyebrow">PRIVATE RELEASE CHANNEL</p>
-                <h1>把新版本送到<br /><em>每一块屏幕。</em></h1>
-                <p>安装包只停留在当前浏览器，并由浏览器直接上传七牛。官网服务器不接收、不缓存文件。</p>
-                <div class="gate-flow" aria-label="发布流程">
-                    <span><b>01</b> 识别安装包</span>
-                    <i class="mdi mdi-arrow-right" aria-hidden="true"></i>
-                    <span><b>02</b> 七牛直传</span>
-                    <i class="mdi mdi-arrow-right" aria-hidden="true"></i>
-                    <span><b>03</b> 写入版本</span>
-                </div>
-            </section>
-
-            <section class="gate-card" aria-labelledby="gate-title">
-                <div class="gate-card-top">
-                    <span class="mdi mdi-shield-key-outline" aria-hidden="true"></span>
-                    <div><small>AUTHORIZED PERSONNEL</small><h2 id="gate-title">进入发布台</h2></div>
-                </div>
-                <label for="deploy-token">发布访问口令</label>
-                <div class="token-field">
-                    <input id="deploy-token" type="password" autocomplete="current-password"
-                           placeholder="输入发布口令" @bind="_accessToken" @bind:event="oninput"
-                           @onkeydown="HandleTokenKeyDown" />
-                    <span class="mdi mdi-lock-outline" aria-hidden="true"></span>
-                </div>
-                @if (!string.IsNullOrWhiteSpace(_error))
-                {
-                    <p class="inline-message is-error"><span class="mdi mdi-alert-circle-outline"></span>@_error</p>
-                }
-                <button class="primary-action" type="button" @onclick="UnlockAsync" disabled="@_busy">
-                    @if (_busy) { <span class="spinner"></span> }
-                    <span>@(_busy ? "正在验证" : "验证并进入")</span>
-                    <span class="mdi mdi-arrow-right" aria-hidden="true"></span>
-                </button>
-                <p class="gate-note"><span class="mdi mdi-incognito"></span>口令仅保存在当前页面内存，关闭页面后清除。</p>
-            </section>
-        </main>
-    }
-    else
-    {
-        <main class="deploy-workspace">
+    <main class="deploy-workspace">
             <section class="workspace-intro">
                 <div>
                     <p class="deploy-eyebrow">RELEASE CONTROL / @_clockText</p>
                     <h1>发布一个新版本</h1>
                     <p>选择安装包后自动识别平台与版本；确认更新日志，一次完成版本化命名、七牛上传和版本入库。</p>
                 </div>
-                <button class="quiet-action" type="button" @onclick="Lock">
-                    <span class="mdi mdi-logout-variant" aria-hidden="true"></span>退出发布台
-                </button>
             </section>
 
             <section class="release-strip" aria-label="各平台线上版本">
@@ -205,12 +159,11 @@
                     </div>
                 </aside>
             </div>
-        </main>
-    }
+    </main>
 </div>
 
 @code {
-    private const string ModulePath = "./deploy.js?v=20260715b";
+    private const string ModulePath = "./deploy.js?v=20260715c";
     private static readonly PlatformInfo[] Platforms =
     [
         new("macos", "macOS", "mdi-apple", ".pkg"),
@@ -224,12 +177,10 @@
     private ElementReference _fileInput;
     private PackageAnalysis? _analysis;
     private readonly List<CurrentRelease> _currentReleases = [];
-    private string _accessToken = string.Empty;
     private string _version = string.Empty;
     private string _memo = string.Empty;
     private string _error = string.Empty;
     private string _clockText = DateTime.Now.ToString("yyyy.MM.dd / HH:mm");
-    private bool _authorized;
     private bool _busy;
     private bool _confirmed;
     private bool _fileUploaded;
@@ -279,40 +230,9 @@
         if (!firstRender) return;
         _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
         _selfReference = DotNetObjectReference.Create(this);
-    }
-
-    private async Task UnlockAsync()
-    {
-        if (_module is null || string.IsNullOrWhiteSpace(_accessToken))
-        {
-            _error = "请输入发布访问口令。";
-            return;
-        }
-
-        _busy = true;
-        _error = string.Empty;
-        try
-        {
-            await _module.InvokeVoidAsync("validateAccess", _accessToken.Trim());
-            _authorized = true;
-            _clockText = DateTime.Now.ToString("yyyy.MM.dd / HH:mm");
-            var catalog = await _module.InvokeAsync<CurrentRelease[]>("loadCatalog");
-            _currentReleases.Clear();
-            _currentReleases.AddRange(catalog);
-        }
-        catch (JSException ex)
-        {
-            _error = CleanJsError(ex.Message);
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task HandleTokenKeyDown(KeyboardEventArgs args)
-    {
-        if (args.Key == "Enter") await UnlockAsync();
+        var catalog = await _module.InvokeAsync<CurrentRelease[]>("loadCatalog");
+        _currentReleases.AddRange(catalog);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task OpenFilePickerAsync()
@@ -359,13 +279,13 @@
             {
                 _publishState = PublishState.Uploading;
                 _uploadProgress = 0;
-                await _module.InvokeVoidAsync("uploadPackage", _fileInput, _accessToken.Trim(), _analysis.Platform, releaseVersion, _selfReference);
+                await _module.InvokeVoidAsync("uploadPackage", _fileInput, _analysis.Platform, releaseVersion, _selfReference);
                 _fileUploaded = true;
                 _uploadedVersion = releaseVersion;
             }
 
             _publishState = PublishState.Recording;
-            await _module.InvokeVoidAsync("publishRelease", _accessToken.Trim(), _analysis.Platform, releaseVersion, _memo.Trim());
+            await _module.InvokeVoidAsync("publishRelease", _analysis.Platform, releaseVersion, _memo.Trim());
             _publishState = PublishState.Success;
             _confirmed = false;
 
@@ -390,21 +310,6 @@
         _uploadProgress = Math.Clamp(progress, 0, 100);
         StateHasChanged();
         return Task.CompletedTask;
-    }
-
-    private void Lock()
-    {
-        _authorized = false;
-        _accessToken = string.Empty;
-        _analysis = null;
-        _currentReleases.Clear();
-        _version = string.Empty;
-        _memo = string.Empty;
-        _error = string.Empty;
-        _confirmed = false;
-        _fileUploaded = false;
-        _uploadedVersion = null;
-        _publishState = PublishState.Idle;
     }
 
     private static string CleanJsError(string message)
