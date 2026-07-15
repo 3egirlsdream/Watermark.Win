@@ -34,8 +34,36 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
+
+      - name: Configure SSH for private submodule
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.SUBMODULE_SSH_KEY }}
+          SUBMODULE_KNOWN_HOSTS: ${{ secrets.SUBMODULE_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SUBMODULE_SSH_KEY" || -z "$SUBMODULE_KNOWN_HOSTS" ]]; then
+            echo "::error::SUBMODULE_SSH_KEY and SUBMODULE_KNOWN_HOSTS must be configured."
+            exit 1
+          fi
+
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SUBMODULE_SSH_KEY" > "$HOME/.ssh/markweb_submodule_key"
+          printf '%s\n' "$SUBMODULE_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/markweb_submodule_key" "$HOME/.ssh/known_hosts"
+
+      - name: Check out Watermark.Shared submodule
+        run: |
+          set -euo pipefail
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          GIT_SSH_COMMAND="ssh -i $HOME/.ssh/markweb_submodule_key -o BatchMode=yes -o IdentitiesOnly=yes" \
+            git submodule update --init --recursive
+
+      - name: Remove private submodule credential
+        if: always()
+        run: |
+          rm -f "$HOME/.ssh/markweb_submodule_key"
+          git config --global --unset-all url."git@github.com:".insteadOf || true
 
       - name: Set up .NET SDK
         id: setup-dotnet

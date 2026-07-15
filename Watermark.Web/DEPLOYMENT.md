@@ -20,6 +20,8 @@
 | `DEPLOY_USER` | 有权写入部署目录并执行 Docker 的 SSH 用户 |
 | `DEPLOY_SSH_KEY` | 部署专用 SSH 私钥的完整内容 |
 | `DEPLOY_KNOWN_HOSTS` | 服务器的 SSH host key，建议从可信机器执行 `ssh-keyscan -H -p 22 服务器地址` 获取 |
+| `SUBMODULE_SSH_KEY` | `Watermark.Shared` 私有子模块的只读 Deploy Key 私钥 |
+| `SUBMODULE_KNOWN_HOSTS` | GitHub SSH host key |
 
 可选的 Repository variables：
 
