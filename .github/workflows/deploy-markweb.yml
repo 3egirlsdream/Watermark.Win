@@ -1,0 +1,217 @@
+name: Deploy Watermark.Web
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "Watermark.Web/**"
+      - "Watermark.Razor/**"
+      - "Watermark.Shared/**"
+      - ".github/workflows/deploy-markweb.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-markweb-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/data/markweb' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET SDK
+        id: setup-dotnet
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Pin .NET SDK for this run
+        run: >-
+          dotnet new globaljson
+          --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
+          --roll-forward latestPatch
+          --force
+
+      - name: Restore
+        run: dotnet restore Watermark.Web/Watermark.Web/Watermark.Web.csproj
+
+      - name: Publish Watermark.Web
+        run: >-
+          dotnet publish Watermark.Web/Watermark.Web/Watermark.Web.csproj
+          --configuration Release
+          --no-restore
+          --output "${{ runner.temp }}/markweb/published"
+          /p:UseAppHost=false
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$DEPLOY_SSH_KEY" || -z "$DEPLOY_KNOWN_HOSTS" ]]; then
+            echo "::error::DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS must be configured."
+            exit 1
+          fi
+
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/markweb_deploy_key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/markweb_deploy_key" "$HOME/.ssh/known_hosts"
+
+      - name: Upload published files
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$DEPLOY_HOST" || -z "$DEPLOY_USER" ]]; then
+            echo "::error::DEPLOY_HOST and DEPLOY_USER must be configured."
+            exit 1
+          fi
+
+          SSH_COMMAND="ssh -i $HOME/.ssh/markweb_deploy_key -p $DEPLOY_PORT -o BatchMode=yes"
+          $SSH_COMMAND "$DEPLOY_USER@$DEPLOY_HOST" \
+            "rm -rf '$DEPLOY_PATH/published.next' && mkdir -p '$DEPLOY_PATH/published.next'"
+
+          rsync --archive --compress --delete \
+            --rsh="$SSH_COMMAND" \
+            "${{ runner.temp }}/markweb/published/" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/published.next/"
+
+          rsync --archive --compress \
+            --rsh="$SSH_COMMAND" \
+            "Watermark.Web/deploy/Dockerfile" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/Dockerfile.next"
+
+          rsync --archive --compress \
+            --rsh="$SSH_COMMAND" \
+            "Watermark.Web/deploy/.dockerignore" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.dockerignore"
+
+      - name: Build image and replace container
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          ssh -i "$HOME/.ssh/markweb_deploy_key" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE_SCRIPT'
+          set -Eeuo pipefail
+
+          cd "$DEPLOY_PATH"
+          IMAGE="markweb:$DEPLOY_SHA"
+
+          restore_deploy_files() {
+            rm -rf published
+            if [[ -d published.backup ]]; then
+              mv published.backup published
+            fi
+
+            if [[ -f Dockerfile.backup ]]; then
+              mv -f Dockerfile.backup Dockerfile
+            fi
+          }
+
+          rollback_container() {
+            docker rm -f markweb >/dev/null 2>&1 || true
+            if docker image inspect markweb:previous >/dev/null 2>&1; then
+              docker run \
+                --name markweb \
+                --detach \
+                --restart unless-stopped \
+                --publish 80:8080 \
+                markweb:previous
+            fi
+          }
+
+          rm -rf published.backup
+          rm -f Dockerfile.backup
+
+          if [[ -d published ]]; then
+            mv published published.backup
+          fi
+          mv published.next published
+
+          if [[ -f Dockerfile ]]; then
+            cp Dockerfile Dockerfile.backup
+          fi
+          mv -f Dockerfile.next Dockerfile
+
+          if docker container inspect markweb >/dev/null 2>&1; then
+            docker tag "$(docker inspect --format '{{.Image}}' markweb)" markweb:previous
+          elif docker image inspect markweb:latest >/dev/null 2>&1; then
+            docker tag markweb:latest markweb:previous
+          fi
+
+          if ! docker build --pull --tag "$IMAGE" .; then
+            restore_deploy_files
+            exit 1
+          fi
+
+          docker rm -f markweb >/dev/null 2>&1 || true
+
+          if ! docker run \
+            --name markweb \
+            --detach \
+            --restart unless-stopped \
+            --publish 80:8080 \
+            "$IMAGE"; then
+            rollback_container
+            restore_deploy_files
+            exit 1
+          fi
+
+          healthy=false
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1/ >/dev/null; then
+              healthy=true
+              break
+            fi
+
+            if [[ "$(docker inspect --format '{{.State.Running}}' markweb 2>/dev/null || true)" != "true" ]]; then
+              break
+            fi
+
+            sleep 2
+          done
+
+          if [[ "$healthy" != "true" ]]; then
+            docker logs --tail 200 markweb || true
+            rollback_container
+            restore_deploy_files
+            docker image rm "$IMAGE" >/dev/null 2>&1 || true
+            exit 1
+          fi
+
+          docker tag "$IMAGE" markweb:latest
+          docker image rm "$IMAGE" >/dev/null 2>&1 || true
+          docker image prune --force >/dev/null
+          rm -rf published.backup
+          rm -f Dockerfile.backup
+
+          echo "Watermark.Web deployed successfully: $DEPLOY_SHA"
+          REMOTE_SCRIPT
