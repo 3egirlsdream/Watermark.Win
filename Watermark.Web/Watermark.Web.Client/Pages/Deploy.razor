@@ -65,7 +65,7 @@
                 <div>
                     <p class="deploy-eyebrow">RELEASE CONTROL / @_clockText</p>
                     <h1>发布一个新版本</h1>
-                    <p>选择安装包后自动识别平台与版本；确认更新日志，一次完成固定命名、七牛上传和版本入库。</p>
+                    <p>选择安装包后自动识别平台与版本；确认更新日志，一次完成版本化命名、七牛上传和版本入库。</p>
                 </div>
                 <button class="quiet-action" type="button" @onclick="Lock">
                     <span class="mdi mdi-logout-variant" aria-hidden="true"></span>退出发布台
@@ -88,15 +88,15 @@
                 <section class="release-main">
                     <div class="section-heading">
                         <span>01</span>
-                        <div><h2>选择构建产物</h2><p>支持 .exe、.apk、.pkg 与 .ipa，浏览器不会把文件发送给官网。</p></div>
+                        <div><h2>选择构建产物</h2><p>支持 Windows .zip、Android .apk、macOS .pkg 与 iOS .ipa，浏览器不会把文件发送给官网。</p></div>
                     </div>
 
-                    <input @ref="_fileInput" class="visually-hidden" type="file" accept=".exe,.apk,.pkg,.ipa"
+                    <input @ref="_fileInput" class="visually-hidden" type="file" accept=".zip,.apk,.pkg,.ipa"
                            @onchange="InspectPackageAsync" />
 
                     @if (_analysis is null)
                     {
-                        <button class="drop-zone" type="button" @onclick="OpenFilePickerAsync">
+                        <button class="drop-zone" type="button" @onclick="OpenFilePickerAsync" disabled="@_busy">
                             <span class="drop-visual"><span class="mdi mdi-package-variant-closed" aria-hidden="true"></span></span>
                             <b>选择本地安装包</b>
                             <small>文件在浏览器中识别，最大 2 GB</small>
@@ -118,7 +118,7 @@
                             <div class="package-status">
                                 <span class="mdi mdi-check-circle"></span>已识别
                             </div>
-                            <button class="icon-action" type="button" title="重新选择" @onclick="OpenFilePickerAsync">
+                            <button class="icon-action" type="button" title="重新选择" @onclick="OpenFilePickerAsync" disabled="@_busy">
                                 <span class="mdi mdi-swap-horizontal"></span>
                             </button>
                         </article>
@@ -132,7 +132,7 @@
                     <div class="form-grid">
                         <label class="field-block">
                             <span>版本号 <small>@(_analysis?.VersionSource ?? "等待识别")</small></span>
-                            <div class="version-field"><i>v</i><input placeholder="1.2.20" @bind="_version" @bind:event="oninput" /></div>
+                            <div class="version-field"><i>v</i><input placeholder="1.2.20" @bind="_version" @bind:event="oninput" disabled="@_busy" /></div>
                         </label>
                         <div class="field-block readonly-block">
                             <span>目标平台 <small>自动识别</small></span>
@@ -145,7 +145,7 @@
 
                     <label class="field-block changelog-field">
                         <span>更新日志 <small>@_memo.Length / 4000</small></span>
-                        <textarea maxlength="4000" rows="7" placeholder="这次更新带来了什么？建议每行一项，例如：&#10;• 新增批量导出的后台队列&#10;• 优化 16-bit 调色预览性能&#10;• 修复若干已知问题" @bind="_memo" @bind:event="oninput"></textarea>
+                        <textarea maxlength="4000" rows="7" placeholder="这次更新带来了什么？建议每行一项，例如：&#10;• 新增批量导出的后台队列&#10;• 优化 16-bit 调色预览性能&#10;• 修复若干已知问题" @bind="_memo" @bind:event="oninput" disabled="@_busy"></textarea>
                     </label>
                 </section>
 
@@ -156,14 +156,14 @@
 
                         <dl class="manifest-list">
                             <div><dt>来源文件</dt><dd>@(_analysis?.Name ?? "尚未选择")</dd></div>
-                            <div><dt>七牛对象名</dt><dd class="mono">@(_analysis?.FixedFileName ?? "—")</dd></div>
+                            <div><dt>七牛对象名</dt><dd class="mono">@(ReleaseObjectName ?? "—")</dd></div>
                             <div><dt>版本记录</dt><dd>@(string.IsNullOrWhiteSpace(_version) ? "—" : $"v{_version}")</dd></div>
                             <div><dt>线上当前版本</dt><dd>@CurrentVersionText</dd></div>
                         </dl>
 
                         <div class="route-preview">
                             <span class="mdi mdi-cloud-outline"></span>
-                            <div><small>FIXED DOWNLOAD URL</small><p>@(_analysis?.DownloadUrl ?? "选择文件后生成固定地址")</p></div>
+                            <div><small>DATABASE DOWNLOAD URL</small><p>@(ReleaseDownloadUrl ?? "选择文件并确认版本后生成地址")</p></div>
                         </div>
 
                         <div class="publish-checks">
@@ -173,8 +173,8 @@
                         </div>
 
                         <label class="confirm-row">
-                            <input type="checkbox" @bind="_confirmed" />
-                            <span>确认覆盖线上固定文件，并发布此版本</span>
+                            <input type="checkbox" @bind="_confirmed" disabled="@_busy" />
+                            <span>确认上传此版本文件，并将下载地址发布到数据库</span>
                         </label>
 
                         @if (_publishState != PublishState.Idle)
@@ -210,11 +210,11 @@
 </div>
 
 @code {
-    private const string ModulePath = "./deploy.js?v=20260715a";
+    private const string ModulePath = "./deploy.js?v=20260715b";
     private static readonly PlatformInfo[] Platforms =
     [
         new("macos", "macOS", "mdi-apple", ".pkg"),
-        new("windows", "Windows", "mdi-microsoft-windows", ".exe"),
+        new("windows", "Windows", "mdi-microsoft-windows", ".zip"),
         new("android", "Android", "mdi-android", ".apk"),
         new("ios", "iOS", "mdi-cellphone", ".ipa")
     ];
@@ -233,11 +233,14 @@
     private bool _busy;
     private bool _confirmed;
     private bool _fileUploaded;
+    private string? _uploadedVersion;
     private int _uploadProgress;
     private PublishState _publishState;
 
     private bool IsVersionValid => System.Text.RegularExpressions.Regex.IsMatch(_version.Trim(), @"^\d+\.\d+(?:\.\d+){0,2}$");
     private bool CanPublish => !_busy && _analysis is not null && IsVersionValid && !string.IsNullOrWhiteSpace(_memo) && _confirmed;
+    private bool HasUploadedCurrentVersion => _fileUploaded
+        && string.Equals(_uploadedVersion, _version.Trim(), StringComparison.Ordinal);
     private string CurrentVersionText => _analysis is null
         ? "—"
         : CurrentReleaseFor(_analysis.Platform)?.Version is { } version ? $"v{version}" : "暂无记录";
@@ -246,7 +249,7 @@
         PublishState.Uploading => "正在上传",
         PublishState.Recording => "正在写入版本",
         PublishState.Success => "发布完成",
-        _ => _fileUploaded ? "继续写入版本" : "发布此版本"
+        _ => HasUploadedCurrentVersion ? "继续写入版本" : "发布此版本"
     };
     private string PublishStateClass => _publishState is PublishState.Failed ? "is-error" : _publishState is PublishState.Success ? "is-success" : string.Empty;
     private string PublishStateIcon => _publishState switch
@@ -261,11 +264,11 @@
         PublishState.Uploading => "正在直传七牛",
         PublishState.Recording => "文件已上传，正在发布版本",
         PublishState.Success => "新版本已经发布",
-        _ => _fileUploaded ? "文件已上传，版本记录失败" : "发布未完成"
+        _ => HasUploadedCurrentVersion ? "文件已上传，版本记录失败" : "发布未完成"
     };
     private string PublishStateDescription => _publishState switch
     {
-        PublishState.Uploading => $"{_analysis?.FixedFileName} · 不经过官网服务器",
+        PublishState.Uploading => $"{ReleaseObjectName} · 不经过官网服务器",
         PublishState.Recording => $"{_analysis?.PlatformName} v{_version}",
         PublishState.Success => $"{_analysis?.PlatformName} v{_version} 已生效",
         _ => "可检查信息后重试；已经上传的文件不会重复上传"
@@ -324,6 +327,7 @@
         _error = string.Empty;
         _publishState = PublishState.Idle;
         _fileUploaded = false;
+        _uploadedVersion = null;
         _confirmed = false;
         _uploadProgress = 0;
         try
@@ -348,18 +352,20 @@
 
         _busy = true;
         _error = string.Empty;
+        var releaseVersion = _version.Trim();
         try
         {
-            if (!_fileUploaded)
+            if (!HasUploadedCurrentVersion)
             {
                 _publishState = PublishState.Uploading;
                 _uploadProgress = 0;
-                await _module.InvokeVoidAsync("uploadPackage", _fileInput, _accessToken.Trim(), _analysis.Platform, _selfReference);
+                await _module.InvokeVoidAsync("uploadPackage", _fileInput, _accessToken.Trim(), _analysis.Platform, releaseVersion, _selfReference);
                 _fileUploaded = true;
+                _uploadedVersion = releaseVersion;
             }
 
             _publishState = PublishState.Recording;
-            await _module.InvokeVoidAsync("publishRelease", _accessToken.Trim(), _analysis.Platform, _version.Trim(), _memo.Trim());
+            await _module.InvokeVoidAsync("publishRelease", _accessToken.Trim(), _analysis.Platform, releaseVersion, _memo.Trim());
             _publishState = PublishState.Success;
             _confirmed = false;
 
@@ -397,6 +403,7 @@
         _error = string.Empty;
         _confirmed = false;
         _fileUploaded = false;
+        _uploadedVersion = null;
         _publishState = PublishState.Idle;
     }
 
@@ -407,6 +414,17 @@
     }
 
     private CurrentRelease? CurrentReleaseFor(string platform) => _currentReleases.FirstOrDefault(item => item.Platform == platform);
+    private string? ReleaseObjectName => _analysis?.Platform switch
+    {
+        "windows" when IsVersionValid => $"releases/windows/Litograph-Windows-{_version.Trim()}.zip",
+        "android" when IsVersionValid => $"releases/android/Litograph-Android-{_version.Trim()}.apk",
+        "macos" => "Litograph.pkg",
+        "ios" => "Litograph.ipa",
+        _ => null
+    };
+    private string? ReleaseDownloadUrl => ReleaseObjectName is { } objectName
+        ? $"https://cdn.thankful.top/{string.Join("/", objectName.Split('/').Select(Uri.EscapeDataString))}"
+        : null;
     private static PlatformInfo PlatformFor(string platform) => Platforms.First(item => item.Id == platform);
     private static string PlatformClass(string platform) => $"is-{platform}";
     private static string CheckClass(bool valid) => valid ? "is-ready" : string.Empty;
@@ -432,8 +450,6 @@
         public long Size { get; set; }
         public string Platform { get; set; } = string.Empty;
         public string PlatformName { get; set; } = string.Empty;
-        public string FixedFileName { get; set; } = string.Empty;
-        public string DownloadUrl { get; set; } = string.Empty;
         public string? Version { get; set; }
         public string VersionSource { get; set; } = string.Empty;
     }

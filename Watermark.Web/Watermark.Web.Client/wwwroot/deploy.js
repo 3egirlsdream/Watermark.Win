@@ -5,10 +5,10 @@ const apiBase = window.__LITOGRAPH_DEPLOY_API__
 const maximumPackageSize = 2147483647;
 
 const platforms = {
-    ".exe": { id: "windows", name: "Windows", fixedFileName: "Watermark.Win.Update.exe", client: "WatermarkV3" },
-    ".apk": { id: "android", name: "Android", fixedFileName: "DaVinci Frame Master-水印相框大师.apk", client: "WatermarkAndroid" },
-    ".pkg": { id: "macos", name: "macOS", fixedFileName: "Litograph.pkg", client: "WatermarkMac" },
-    ".ipa": { id: "ios", name: "iOS", fixedFileName: "Litograph.ipa", client: "WatermarkIOS" }
+    ".zip": { id: "windows", name: "Windows", client: "WatermarkV3" },
+    ".apk": { id: "android", name: "Android", client: "WatermarkAndroid" },
+    ".pkg": { id: "macos", name: "macOS", client: "WatermarkMac" },
+    ".ipa": { id: "ios", name: "iOS", client: "WatermarkIOS" }
 };
 
 export function openFilePicker(input) {
@@ -44,7 +44,7 @@ export async function inspectPackage(input) {
     const platform = platforms[extension];
 
     if (!platform) {
-        throw new Error("仅支持 Windows .exe、Android .apk、macOS .pkg 和 iOS .ipa 安装包。");
+        throw new Error("仅支持 Windows .zip、Android .apk、macOS .pkg 和 iOS .ipa 安装包。");
     }
     if (file.size <= 0) {
         throw new Error("所选文件为空，请重新选择安装包。");
@@ -60,14 +60,12 @@ export async function inspectPackage(input) {
         size: file.size,
         platform: platform.id,
         platformName: platform.name,
-        fixedFileName: platform.fixedFileName,
-        downloadUrl: `https://cdn.thankful.top/${encodeURIComponent(platform.fixedFileName)}`,
         version: detected.version,
         versionSource: detected.source
     };
 }
 
-export async function uploadPackage(input, accessToken, platformId, progressReceiver) {
+export async function uploadPackage(input, accessToken, platformId, version, progressReceiver) {
     const file = selectedFile(input);
     const platform = Object.values(platforms).find(item => item.id === platformId);
     if (!platform || extensionOf(file.name) !== Object.keys(platforms).find(key => platforms[key].id === platformId)) {
@@ -75,7 +73,7 @@ export async function uploadPackage(input, accessToken, platformId, progressRece
     }
 
     const tokenPayload = await deployRequest(
-        `/api/Deploy/UploadToken?platform=${encodeURIComponent(platformId)}&fileSize=${file.size}`,
+        `/api/Deploy/UploadToken?platform=${encodeURIComponent(platformId)}&fileSize=${file.size}&version=${encodeURIComponent(version)}`,
         accessToken,
         { method: "POST" });
     const upload = tokenPayload.data;
@@ -153,7 +151,7 @@ async function detectVersion(file, extension) {
         if (extension === ".apk") embedded = await versionFromApk(file);
         if (extension === ".ipa") embedded = await versionFromIpa(file);
         if (extension === ".pkg") embedded = await versionFromPkg(file);
-        if (extension === ".exe") embedded = await versionFromExe(file);
+        if (extension === ".zip") embedded = await versionFromWindowsZip(file);
         const normalized = normalizeVersion(embedded);
         if (normalized) return { version: normalized, source: "从应用信息自动读取" };
     } catch (error) {
@@ -175,6 +173,12 @@ async function versionFromApk(file) {
     const manifest = await readZipEntry(file, name => name === "AndroidManifest.xml");
     if (!manifest) return null;
     return parseAndroidManifest(manifest)?.versionName ?? null;
+}
+
+async function versionFromWindowsZip(file) {
+    const executable = await readZipEntry(file, name => /(?:^|\/)Watermark\.Win\.exe$/i.test(name));
+    if (!executable) return null;
+    return versionFromExe(new Blob([executable], { type: "application/vnd.microsoft.portable-executable" }));
 }
 
 function parseAndroidManifest(bytes) {
