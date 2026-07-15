@@ -154,6 +154,7 @@ jobs:
 
           cd "$DEPLOY_PATH"
           IMAGE="markweb:$DEPLOY_SHA"
+          KEYS_PATH="$DEPLOY_PATH/data-protection-keys"
 
           restore_deploy_files() {
             rm -rf published
@@ -174,6 +175,7 @@ jobs:
                 --detach \
                 --restart unless-stopped \
                 --publish 80:8080 \
+                --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
                 markweb:previous
             fi
           }
@@ -202,6 +204,19 @@ jobs:
             exit 1
           fi
 
+          install -d -m 700 "$KEYS_PATH"
+          if [[ -z "$(find "$KEYS_PATH" -mindepth 1 -maxdepth 1 -print -quit)" ]] && \
+            docker container inspect markweb >/dev/null 2>&1; then
+            docker cp \
+              markweb:/home/app/.aspnet/DataProtection-Keys/. \
+              "$KEYS_PATH" >/dev/null 2>&1 || true
+          fi
+
+          APP_UID="$(docker run --rm --entrypoint id "$IMAGE" -u app)"
+          APP_GID="$(docker run --rm --entrypoint id "$IMAGE" -g app)"
+          chown -R "$APP_UID:$APP_GID" "$KEYS_PATH"
+          chmod 700 "$KEYS_PATH"
+
           docker rm -f markweb >/dev/null 2>&1 || true
 
           if ! docker run \
@@ -209,6 +224,7 @@ jobs:
             --detach \
             --restart unless-stopped \
             --publish 80:8080 \
+            --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
             "$IMAGE"; then
             rollback_container
             restore_deploy_files
