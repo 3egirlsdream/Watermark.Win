@@ -1,7 +1,7 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<section class="wm-mobile-dock @(State.PanelSize == WMWorkspacePanelSize.Collapsed ? "is-collapsed" : null) @(advancedOpen ? "is-advanced" : null) @(isEditing ? "is-editing" : "is-mode-picker")"
+<section class="wm-mobile-dock @(State.PanelSize == WMWorkspacePanelSize.Collapsed ? "is-collapsed" : null) @(isEditing ? "is-editing" : "is-mode-picker")"
          aria-label="移动编辑工具">
     <button type="button" class="wm-dock-handle"
             role="separator" aria-orientation="horizontal"
@@ -11,42 +11,27 @@
     @if (State.PanelSize != WMWorkspacePanelSize.Collapsed)
     {
         <div class="wm-dock-context">
-            @if (advancedOpen)
+            @if (isEditing)
             {
-                <header class="wm-dock-advanced-heading">
-                    <button type="button" @onclick="CloseAdvanced" aria-label="返回常用工具"><MIcon>mdi-chevron-down</MIcon></button>
-                    <div><strong>@AdvancedTitle</strong><small>高级设置</small></div>
-                    <button type="button" class="wm-dock-confirm-edit" disabled="@(!isEditing || isConfirming)" @onclick="ConfirmEditAsync" @onclick:stopPropagation="true" aria-label="确认并完成@ModeLabel编辑"><MIcon>mdi-check</MIcon></button>
-                </header>
-                <div class="wm-dock-advanced-content">
-                    @AdvancedContent
-                </div>
-            }
-            else
-            {
-                @if (isEditing)
-                {
-                    <div class="wm-dock-active-row">
-                        <div class="wm-dock-active-slot">
-                            @if (activeAdjustmentVisible)
-                            {
-                                @ActiveControl
-                            }
-                            else
-                            {
-                                <div class="wm-dock-edit-summary"><strong>@ModeLabel</strong><small>完成当前功能设置</small></div>
-                            }
-                        </div>
-                        <button type="button" class="wm-dock-confirm-edit" disabled="@isConfirming" @onclick="ConfirmEditAsync" @onclick:stopPropagation="true" aria-label="确认并完成@ModeLabel编辑"><MIcon>mdi-check</MIcon></button>
-                    </div>
-                }
-                <div class="wm-dock-configuration">
-                    @SubcategoryRail
-                    <div class="wm-dock-content">
-                        @StandardContent
+                <div class="wm-dock-active-row">
+                    <div class="wm-dock-active-slot">
+                        @if (activeAdjustmentVisible)
+                        {
+                            @ActiveControl
+                        }
+                        else
+                        {
+                            <div class="wm-dock-edit-summary"><strong>@ModeLabel</strong><small>在顶部工具栏点击“应用”完成设置</small></div>
+                        }
                     </div>
                 </div>
             }
+            <div class="wm-dock-configuration">
+                @SubcategoryRail
+                <div class="wm-dock-content">
+                    @StandardContent
+                </div>
+            </div>
         </div>
     }
 
@@ -75,6 +60,7 @@
     [Parameter] public IReadOnlyList<WMTemplateList> Templates { get; set; } = [];
     [Parameter] public EventCallback<WMWorkspaceMode> ModeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceMode> EditConfirmed { get; set; }
+    [Parameter] public EventCallback<bool> EditingChanged { get; set; }
     [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> TemplatePreviewChanged { get; set; }
     [Parameter] public EventCallback<WMColorRecipe> ColorPreviewChanged { get; set; }
@@ -96,19 +82,15 @@
     private MultiFrameSection multiFrameSection = MultiFrameSection.Mode;
     private CollageSection collageSection = CollageSection.Material;
     private string colorParameter = "Exposure";
+    private WMHslBand colorBand = WMHslBand.Red;
     private string borderSide = "Top";
-    private bool advancedOpen;
     private bool isEditing;
     private bool isConfirming;
     private bool activeAdjustmentVisible;
 
-    public bool TryCloseTransient()
-    {
-        if (!advancedOpen) return false;
-        advancedOpen = false;
-        _ = InvokeAsync(StateHasChanged);
-        return true;
-    }
+    public bool TryCloseTransient() => false;
+
+    public Task ConfirmCurrentEditAsync() => ConfirmEditAsync();
 
     private int SelectedCount => State.Media.Count(item => item.IsSelected);
     private string ModeLabel => State.Mode switch
@@ -118,26 +100,37 @@
         WMWorkspaceMode.Collage => "拼图",
         _ => "模板"
     };
-    private string AdvancedTitle => State.Mode switch
-    {
-        WMWorkspaceMode.ColorGrade => "高级调色",
-        WMWorkspaceMode.MultiFrame => "多帧详情",
-        WMWorkspaceMode.Collage => "拼图详情",
-        _ => "模板详情"
-    };
-
     private RenderFragment ActiveControl => __builder =>
     {
         if (State.Mode == WMWorkspaceMode.ColorGrade && colorSection is ColorSection.Light or ColorSection.Color)
         {
-            var parameter = ColorParameter(colorParameter);
-            <div class="wm-dock-active-control">
-                <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
-                    Minimum="@parameter.Minimum" Maximum="@parameter.Maximum" Step="@parameter.Step" Unit="@parameter.Unit"
-                    ShowHeader="false"
-                    PreviewValueChanged="value => ChangeColorAsync(colorParameter, value)"
-                    CommitValueChanged="value => ChangeColorAsync(colorParameter, value)" />
-            </div>
+            if (HslKeys.Contains(colorParameter))
+            {
+                var parameter = HslParameter(colorParameter);
+                <div class="wm-dock-active-control wm-dock-hsl-control">
+                    <nav class="wm-dock-hsl-bands" aria-label="HSL 色彩范围">
+                        @foreach (var band in Enum.GetValues<WMHslBand>())
+                        {
+                            <button type="button" class="@(colorBand == band ? "is-active" : null)" aria-pressed="@(colorBand == band)" @onclick="() => colorBand = band">@BandName(band)</button>
+                        }
+                    </nav>
+                    <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
+                        Minimum="-100" Maximum="100" Step="1" ShowHeader="false"
+                        PreviewValueChanged="value => ChangeHslAsync(colorParameter, value)"
+                        CommitValueChanged="value => ChangeHslAsync(colorParameter, value)" />
+                </div>
+            }
+            else
+            {
+                var parameter = ColorParameter(colorParameter);
+                <div class="wm-dock-active-control">
+                    <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
+                        Minimum="@parameter.Minimum" Maximum="@parameter.Maximum" Step="@parameter.Step" Unit="@parameter.Unit"
+                        ShowHeader="false"
+                        PreviewValueChanged="value => ChangeColorAsync(colorParameter, value)"
+                        CommitValueChanged="value => ChangeColorAsync(colorParameter, value)" />
+                </div>
+            }
         }
         else if (State.Mode == WMWorkspaceMode.Template && templateSection == TemplateSection.Border && CurrentCanvas is { } canvas)
         {
@@ -165,7 +158,6 @@
                 @SectionButton("风格", colorSection == ColorSection.Style, () => SelectColorSection(ColorSection.Style))
                 @SectionButton("光影", colorSection == ColorSection.Light, () => SelectColorSection(ColorSection.Light))
                 @SectionButton("颜色", colorSection == ColorSection.Color, () => SelectColorSection(ColorSection.Color))
-                @SectionButton("高级", false, OpenAdvancedAsync)
             }
             else if (State.Mode == WMWorkspaceMode.MultiFrame)
             {
@@ -260,20 +252,49 @@
                     }
                     <span>参考图</span>
                 </button>
+                @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.Reference.PreviewUrl))
+                {
+                    @ChoiceCard("清除参考", "mdi-image-remove-outline", false, ClearReferenceAsync)
+                }
                 @foreach (var preset in State.ColorGradeTool.Presets)
                 {
                     <button type="button" class="wm-dock-tool-card @(State.ColorGradeTool.SelectedPresetId == preset.Id ? "is-active" : null)"
                             @onclick="() => PreviewPresetAsync(preset)"><MIcon>mdi-palette-outline</MIcon><span>@preset.Name</span></button>
                 }
+                @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
+                @UtilityCard("保存预设", "mdi-content-save-outline", SavePresetRequested)
+                @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.SelectedPresetId))
+                {
+                    @UtilityCard("删除预设", "mdi-delete-outline", DeletePresetRequested, danger: true)
+                }
+                @ScopeCard("当前", "mdi-image-outline", WMApplyScope.Current)
+                @ScopeCard($"已选 {SelectedCount}", "mdi-image-multiple-outline", WMApplyScope.Selected)
+            </WMToolRail>
+        }
+        else if (colorSection == ColorSection.Light)
+        {
+            <WMToolRail AriaLabel="光影参数" CssClass="wm-dock-card-rail">
+                @foreach (var key in LightKeys)
+                {
+                    var parameter = ColorParameter(key);
+                    @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
+                }
+                @ChoiceCard("线性曲线", "mdi-chart-line-variant", IsCurvePreset("linear"), () => ChangeCurveAsync("linear"))
+                @ChoiceCard("增强曲线", "mdi-chart-bell-curve-cumulative", IsCurvePreset("contrast"), () => ChangeCurveAsync("contrast"))
+                @ChoiceCard("柔和曲线", "mdi-chart-bell-curve", IsCurvePreset("soft"), () => ChangeCurveAsync("soft"))
             </WMToolRail>
         }
         else
         {
-            var keys = colorSection == ColorSection.Color ? ColorKeys : LightKeys;
-            <WMToolRail AriaLabel="调色参数" CssClass="wm-dock-card-rail">
-                @foreach (var key in keys)
+            <WMToolRail AriaLabel="颜色参数" CssClass="wm-dock-card-rail">
+                @foreach (var key in ColorKeys)
                 {
                     var parameter = ColorParameter(key);
+                    @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
+                }
+                @foreach (var key in HslKeys)
+                {
+                    var parameter = HslParameter(key);
                     @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
                 }
             </WMToolRail>
@@ -357,42 +378,6 @@
         </button>
     };
 
-    private RenderFragment AdvancedContent => __builder =>
-    {
-        if (State.Mode == WMWorkspaceMode.ColorGrade)
-        {
-            <WMColorGradePanel Recipe="State.ColorGradeTool.Draft" Presets="State.ColorGradeTool.Presets"
-                SelectedPresetId="State.ColorGradeTool.SelectedPresetId" ReferenceUrl="State.ColorGradeTool.Reference.PreviewUrl"
-                ReferenceName="State.ColorGradeTool.Reference.DisplayName" Busy="State.ColorGradeTool.IsBusy"
-                Scope="State.ApplyScope" ScopeChanged="ChangeScopeAsync" SelectedCount="SelectedCount"
-                PreviewChanged="PreviewColorAsync" CommitRequested="PreviewColorAsync"
-                ChooseReferenceRequested="ChooseReferenceAsync" ClearReferenceRequested="ClearReferenceAsync"
-                ResetRequested="ResetColorPreviewAsync" PresetSelected="PreviewPresetAsync"
-                SavePresetRequested="SavePresetRequested" DeletePresetRequested="DeletePresetRequested" />
-        }
-        else if (State.Mode == WMWorkspaceMode.MultiFrame && State.MultiFrameTool.Capability is { } capability)
-        {
-            <WMMultiFramePanel Media="State.Media" Roles="State.MultiFrameTool.Draft.Roles" Mode="State.MultiFrameTool.Draft.Mode"
-                ModeChanged="ChangeMultiFrameModeAsync" NormalizeExposure="State.MultiFrameTool.Draft.NormalizeExposure"
-                NormalizeExposureChanged="value => ChangeToggleAsync(NormalizeExposureChanged, value)" RepairHotPixels="State.MultiFrameTool.Draft.RepairHotPixels"
-                RepairHotPixelsChanged="value => ChangeToggleAsync(RepairHotPixelsChanged, value)" AutoCrop="State.MultiFrameTool.Draft.AutoCrop"
-                AutoCropChanged="value => ChangeToggleAsync(AutoCropChanged, value)" Capability="capability" Busy="State.MultiFrameTool.IsBusy"
-                Message="State.Message" RoleChanged="ChangeFrameRoleAsync" RunRequested="MultiFrameRunRequested" />
-        }
-        else if (State.Mode == WMWorkspaceMode.Collage)
-        {
-            <WMCollagePanel Media="State.Media" OrderedMediaIds="State.CollageTool.Draft.OrderedMediaIds"
-                Direction="State.CollageTool.Draft.Direction" Busy="State.CollageTool.IsBusy"
-                DraftChanged="ChangeCollageDraftAsync" RunOrCancelRequested="CollageRunOrCancelRequested" />
-        }
-        else
-        {
-            <WMTemplatePanel Templates="Templates" TemplateId="State.TemplateId" Draft="State.TemplateEdit"
-                Scope="State.ApplyScope" ScopeChanged="ChangeScopeAsync" SelectedCount="SelectedCount"
-                PreviewChanged="PreviewTemplateEditAsync" CommitRequested="PreviewTemplateEditAsync" />
-        }
-    };
-
     private RenderFragment ParameterCard(string label, double value, bool active, Action action, string icon = "mdi-tune-variant") => __builder =>
     {
         <button type="button" class="wm-dock-tool-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="() => SelectParameter(action)"><MIcon>@icon</MIcon><span>@label</span><output>@value.ToString(value % 1 == 0 ? "0" : "0.0")</output></button>
@@ -411,10 +396,20 @@
         <button type="button" class="wm-dock-tool-card @(value ? "is-active" : null)" role="switch" aria-checked="@value" @onclick="() => ChangeToggleAsync(changed, !value)"><MIcon>@(value ? "mdi-toggle-switch" : "mdi-toggle-switch-off-outline")</MIcon><span>@label</span></button>
     };
 
+    private RenderFragment UtilityCard(string label, string icon, EventCallback action, bool danger = false) => __builder =>
+    {
+        <button type="button" class="wm-dock-tool-card @(danger ? "is-danger" : null)" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
+    };
+
+    private RenderFragment ScopeCard(string label, string icon, WMApplyScope scope) => __builder =>
+    {
+        var active = State.ApplyScope == scope;
+        <button type="button" class="wm-dock-tool-card @(active ? "is-active" : null)" role="radio" aria-checked="@active" @onclick="() => ChangeScopeAsync(scope)"><MIcon>@icon</MIcon><span>@label</span></button>
+    };
+
     private async Task ChangeModeAsync(WMWorkspaceMode mode)
     {
         if (State.Mode == mode || ModeSwitchDisabled(mode)) return;
-        advancedOpen = false;
         activeAdjustmentVisible = false;
         await ModeChanged.InvokeAsync(mode);
     }
@@ -422,15 +417,6 @@
     private bool ModeSwitchDisabled(WMWorkspaceMode mode) =>
         State.Mode != mode && (isEditing || State.HasTransientEdits || isConfirming ||
             State.MultiFrameTool.IsBusy || State.CollageTool.IsBusy);
-
-    private Task OpenAdvancedAsync()
-    {
-        advancedOpen = true;
-        activeAdjustmentVisible = false;
-        return Task.CompletedTask;
-    }
-
-    private void CloseAdvanced() => advancedOpen = false;
 
     private async Task ConfirmEditAsync()
     {
@@ -440,9 +426,8 @@
         {
             var mode = State.Mode;
             await EditConfirmed.InvokeAsync(mode);
-            advancedOpen = false;
             activeAdjustmentVisible = false;
-            isEditing = false;
+            SetEditing(false);
         }
         finally
         {
@@ -455,6 +440,29 @@
         StartEditing(showAdjustment: true);
         var next = WMWorkspacePanelMutations.SetColorValue(State.ColorGradeTool.Draft, key, value);
         return ColorPreviewChanged.InvokeAsync(next);
+    }
+
+    private Task ChangeHslAsync(string key, float value)
+    {
+        StartEditing(showAdjustment: true);
+        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
+        var adjustment = next.Grade.Hsl[colorBand];
+        switch (key)
+        {
+            case "HslSaturation": adjustment.Saturation = value; break;
+            case "HslLuminance": adjustment.Luminance = value; break;
+            default: adjustment.Hue = value; break;
+        }
+        next.UserAdjustments = next.Grade;
+        return ColorPreviewChanged.InvokeAsync(next);
+    }
+
+    private Task ChangeCurveAsync(string preset)
+    {
+        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
+        next.Grade.MasterCurve = CurvePoints(preset);
+        next.UserAdjustments = next.Grade;
+        return PreviewColorAsync(next);
     }
 
     private Task ApplyLookAsync(string name, float exposure, float contrast, float temperature, float vibrance) =>
@@ -516,6 +524,17 @@
         _ => ("饱和度", State.ColorGradeTool.Draft.Grade.Saturation, -100, 100, 1, "", "mdi-palette-outline")
     };
 
+    private (string Label, float Value, string Icon) HslParameter(string key)
+    {
+        var adjustment = State.ColorGradeTool.Draft.Grade.Hsl[colorBand];
+        return key switch
+        {
+            "HslSaturation" => ($"{BandName(colorBand)}饱和度", adjustment.Saturation, "mdi-water-opacity"),
+            "HslLuminance" => ($"{BandName(colorBand)}明度", adjustment.Luminance, "mdi-brightness-6"),
+            _ => ($"{BandName(colorBand)}色相", adjustment.Hue, "mdi-palette-swatch-outline")
+        };
+    }
+
     private static (string Label, double Value) BorderParameter(WMCanvas canvas, string side) => side switch
     {
         "Right" => ("右边框", canvas.BorderThickness.Right),
@@ -526,14 +545,21 @@
 
     private void EnsureColorParameter(bool color)
     {
-        if (color && !ColorKeys.Contains(colorParameter)) colorParameter = "Temperature";
+        if (color && !ColorKeys.Contains(colorParameter) && !HslKeys.Contains(colorParameter)) colorParameter = "Temperature";
         if (!color && !LightKeys.Contains(colorParameter)) colorParameter = "Exposure";
     }
 
     private void StartEditing(bool showAdjustment = false)
     {
-        isEditing = true;
+        SetEditing(true);
         if (showAdjustment) activeAdjustmentVisible = true;
+    }
+
+    private void SetEditing(bool value)
+    {
+        if (isEditing == value) return;
+        isEditing = value;
+        _ = EditingChanged.InvokeAsync(value);
     }
 
     private void SelectParameter(Action action)
@@ -544,6 +570,7 @@
 
     private async Task RunEditActionAsync(Func<Task> action)
     {
+        activeAdjustmentVisible = false;
         StartEditing();
         await action();
     }
@@ -607,12 +634,14 @@
 
     private Task ChangeToggleAsync(EventCallback<bool> changed, bool value)
     {
+        activeAdjustmentVisible = false;
         StartEditing();
         return changed.InvokeAsync(value);
     }
 
     private Task ChangeFrameRoleAsync(WMFrameRoleChange change)
     {
+        activeAdjustmentVisible = false;
         StartEditing();
         return FrameRoleChanged.InvokeAsync(change);
     }
@@ -622,6 +651,7 @@
 
     private Task ChangeCollageDraftAsync(WMCollageDraft draft)
     {
+        activeAdjustmentVisible = false;
         StartEditing();
         return CollageDraftChanged.InvokeAsync(draft);
     }
@@ -674,6 +704,45 @@
     private Task ChangeCollageDirectionAsync(WMCollageDirection direction) =>
         ChangeCollageDraftAsync(State.CollageTool.Draft with { Direction = direction });
 
+    private bool IsCurvePreset(string preset)
+    {
+        var current = State.ColorGradeTool.Draft.Grade.MasterCurve;
+        var target = CurvePoints(preset);
+        return current.Count == target.Count && current.Zip(target).All(pair =>
+            Math.Abs(pair.First.X - pair.Second.X) < .001f &&
+            Math.Abs(pair.First.Y - pair.Second.Y) < .001f);
+    }
+
+    private static List<WMCurvePoint> CurvePoints(string preset) => preset switch
+    {
+        "contrast" =>
+        [
+            new WMCurvePoint { X = 0, Y = 0 },
+            new WMCurvePoint { X = .25f, Y = .18f },
+            new WMCurvePoint { X = .75f, Y = .82f },
+            new WMCurvePoint { X = 1, Y = 1 }
+        ],
+        "soft" =>
+        [
+            new WMCurvePoint { X = 0, Y = .06f },
+            new WMCurvePoint { X = .5f, Y = .52f },
+            new WMCurvePoint { X = 1, Y = .96f }
+        ],
+        _ => WMCurvePoint.Identity()
+    };
+
+    private static string BandName(WMHslBand band) => band switch
+    {
+        WMHslBand.Red => "红色",
+        WMHslBand.Orange => "橙色",
+        WMHslBand.Yellow => "黄色",
+        WMHslBand.Green => "绿色",
+        WMHslBand.Aqua => "青色",
+        WMHslBand.Blue => "蓝色",
+        WMHslBand.Purple => "紫色",
+        _ => "洋红"
+    };
+
     private static string Preview(WMWorkspaceMedia media)
     {
         var path = media.Artifact.PreviewPath ?? media.Artifact.FilePath;
@@ -682,6 +751,7 @@
 
     private static readonly string[] LightKeys = ["Exposure", "Contrast", "Highlights", "Shadows", "Whites", "Blacks"];
     private static readonly string[] ColorKeys = ["Temperature", "Tint", "Vibrance", "Saturation"];
+    private static readonly string[] HslKeys = ["HslHue", "HslSaturation", "HslLuminance"];
 
     private enum TemplateSection { Template, Border, Scope }
     private enum ColorSection { Style, Light, Color }

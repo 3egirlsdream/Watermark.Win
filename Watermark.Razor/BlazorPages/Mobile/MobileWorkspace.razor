@@ -63,6 +63,10 @@ else
                     <button type="button" class="workspace-icon-button" disabled="@(!State.CanUndo)" @onclick="() => Controller.UndoAsync()" aria-label="撤销"><MIcon>mdi-undo</MIcon></button>
                     <button type="button" class="workspace-icon-button" disabled="@(!State.CanRedo)" @onclick="() => Controller.RedoAsync()" aria-label="重做"><MIcon>mdi-redo</MIcon></button>
                 </div>
+                <button type="button" class="workspace-apply-button" disabled="@(!CanApplyMobileEdit || mobileEditConfirming)"
+                        @onclick="ApplyMobileEditAsync" aria-label="应用当前功能设置">
+                    <MIcon>@(mobileEditConfirming ? "mdi-loading" : "mdi-check")</MIcon><span>应用</span>
+                </button>
                 <button type="button" class="workspace-export-button" @onclick="OpenExportDrawer"><MIcon>mdi-export-variant</MIcon><span>导出</span></button>
                 <button type="button" class="workspace-icon-button workspace-more-button" @onclick="ToggleMoreMenu" aria-label="更多操作" aria-expanded="@showMoreMenu"><MIcon>mdi-dots-horizontal</MIcon></button>
             </div>
@@ -191,7 +195,7 @@ else
 
         <div class="workspace-mobile-dock">
             <WMMobileWorkspaceDock @ref="mobileDock" State="State" Templates="templates"
-                ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" ScopeChanged="ChangeApplyScopeAsync"
+                ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" EditingChanged="OnMobileEditingChanged" ScopeChanged="ChangeApplyScopeAsync"
                 TemplatePreviewChanged="PreviewTemplateAsync"
                 ColorPreviewChanged="HandleColorPreviewAsync"
                 ChooseReferenceRequested="ChooseColorReferenceAsync" ClearReferenceRequested="ClearColorReferenceAsync"
@@ -277,6 +281,8 @@ else
     private bool showExportDrawer;
     private bool showMoreMenu;
     private bool recovering;
+    private bool mobileEditActive;
+    private bool mobileEditConfirming;
     private readonly string visibilityScope = $"workspace-template-library-{Guid.NewGuid():N}";
     private DotNetObjectReference<MobileWorkspace>? visibilityReference;
     private DotNetObjectReference<MobileWorkspace>? dockResizeReference;
@@ -297,6 +303,7 @@ else
     private int SelectedCount => State.Media.Count(item => item.IsSelected);
     private bool CanExportPng16 => ImagingCapabilities.Probe(WMImagingFeature.Png16).IsAvailable;
     private bool CanExportTiff16 => ImagingCapabilities.Probe(WMImagingFeature.Tiff16).IsAvailable;
+    private bool CanApplyMobileEdit => mobileEditActive || State.HasTransientEdits;
     private string PanelClass => State.PanelSize switch
     {
         WMWorkspacePanelSize.Collapsed => "panel-collapsed",
@@ -575,6 +582,23 @@ else
                 await Controller.CommitColorDraftAsync(State.ApplyScope);
         }
         HapticFeedback.Perform();
+    }
+
+    private void OnMobileEditingChanged(bool editing) => mobileEditActive = editing;
+
+    private async Task ApplyMobileEditAsync()
+    {
+        if (mobileDock is null || mobileEditConfirming || !CanApplyMobileEdit) return;
+        mobileEditConfirming = true;
+        try
+        {
+            await mobileDock.ConfirmCurrentEditAsync();
+            mobileEditActive = false;
+        }
+        finally
+        {
+            mobileEditConfirming = false;
+        }
     }
 
     private async Task ToggleOriginalFromMenuAsync()

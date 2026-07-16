@@ -23,8 +23,9 @@ public sealed class WMMobileWorkspaceDockContractTests
     {
         var source = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
 
-        Assert.All(new[] { "模板", "调色", "多帧", "拼图", "风格", "光影", "颜色", "高级", "素材", "布局" },
+        Assert.All(new[] { "模板", "调色", "多帧", "拼图", "风格", "光影", "颜色", "素材", "布局" },
             label => Assert.Contains(label, source, StringComparison.Ordinal));
+        Assert.DoesNotContain("@SectionButton(\"高级\"", source, StringComparison.Ordinal);
         Assert.Contains("WMToolRail", source, StringComparison.Ordinal);
         Assert.Contains("WMApplyScopeSelector", source, StringComparison.Ordinal);
     }
@@ -81,6 +82,8 @@ public sealed class WMMobileWorkspaceDockContractTests
 
         Assert.Contains("workspace-toolbar-actions", page, StringComparison.Ordinal);
         Assert.Contains("workspace-history-actions", page, StringComparison.Ordinal);
+        Assert.Contains("workspace-apply-button", page, StringComparison.Ordinal);
+        Assert.Contains("--toolbar-height: calc(52px + var(--workspace-safe-top))", pageCss, StringComparison.Ordinal);
         Assert.Contains("mdi-export-variant", page, StringComparison.Ordinal);
         Assert.Contains("OnDockResizeCommitted", page, StringComparison.Ordinal);
         Assert.Contains("wm-mobile-workspace-dock.js", page, StringComparison.Ordinal);
@@ -136,11 +139,15 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("<nav class=\"wm-dock-modes\"", dock, StringComparison.Ordinal);
         Assert.Contains("disabled=\"@ModeSwitchDisabled", dock, StringComparison.Ordinal);
         Assert.Contains("if (State.Mode == mode || ModeSwitchDisabled(mode)) return;", dock, StringComparison.Ordinal);
-        Assert.Contains("wm-dock-confirm-edit", dock, StringComparison.Ordinal);
+        Assert.DoesNotContain("wm-dock-confirm-edit", dock, StringComparison.Ordinal);
+        Assert.Contains("workspace-apply-button", page, StringComparison.Ordinal);
+        Assert.Contains("EditingChanged=\"OnMobileEditingChanged\"", page, StringComparison.Ordinal);
+        Assert.Contains("await mobileDock.ConfirmCurrentEditAsync()", page, StringComparison.Ordinal);
+        Assert.Contains("public Task ConfirmCurrentEditAsync()", dock, StringComparison.Ordinal);
         Assert.Contains("wm-dock-active-row", dock, StringComparison.Ordinal);
         Assert.Contains("wm-dock-configuration", dock, StringComparison.Ordinal);
         Assert.Contains("activeAdjustmentVisible", dock, StringComparison.Ordinal);
-        Assert.Contains("mdi-check", dock, StringComparison.Ordinal);
+        Assert.Contains("mdi-check", page, StringComparison.Ordinal);
         Assert.Contains("EditConfirmed=\"ConfirmMobileEditAsync\"", page, StringComparison.Ordinal);
         Assert.Contains("Controller.CommitTemplateAsync(edit, State.ApplyScope)", page, StringComparison.Ordinal);
         Assert.Contains("Controller.CommitColorDraftAsync(State.ApplyScope)", page, StringComparison.Ordinal);
@@ -151,7 +158,6 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.DoesNotContain("BeginCurrentModeEdit", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@onfocusin=", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@onpointerdown=", dock, StringComparison.Ordinal);
-        Assert.Contains("@onclick:stopPropagation=\"true\"", dock, StringComparison.Ordinal);
         Assert.DoesNotContain(".wm-mobile-dock.is-editing {", dockCss, StringComparison.Ordinal);
         Assert.Contains(".wm-dock-configuration", dockCss, StringComparison.Ordinal);
         Assert.Contains("align-self: end", dockCss, StringComparison.Ordinal);
@@ -164,7 +170,7 @@ public sealed class WMMobileWorkspaceDockContractTests
 
         var confirmMethod = dock.IndexOf("private async Task ConfirmEditAsync()", StringComparison.Ordinal);
         var commit = dock.IndexOf("await EditConfirmed.InvokeAsync(mode)", confirmMethod, StringComparison.Ordinal);
-        var unlock = dock.IndexOf("isEditing = false", confirmMethod, StringComparison.Ordinal);
+        var unlock = dock.IndexOf("SetEditing(false)", confirmMethod, StringComparison.Ordinal);
         Assert.True(confirmMethod >= 0 && commit > confirmMethod && unlock > commit);
     }
 
@@ -177,7 +183,7 @@ public sealed class WMMobileWorkspaceDockContractTests
         var borderControl = Read("Watermark.Razor", "Workspace", "Components", "WMTemplateBorderControl.razor");
         var colorPanel = Read("Watermark.Razor", "Workspace", "Components", "WMColorGradePanel.razor");
 
-        Assert.Equal(2, CountOccurrences(dock, "ShowHeader=\"false\""));
+        Assert.Equal(3, CountOccurrences(dock, "ShowHeader=\"false\""));
         Assert.Contains("[Parameter] public bool ShowHeader { get; set; } = true", control, StringComparison.Ordinal);
         Assert.Contains("@if (ShowHeader)", control, StringComparison.Ordinal);
         Assert.Contains("[Parameter] public bool ShowHeader { get; set; } = true", borderControl, StringComparison.Ordinal);
@@ -190,6 +196,31 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("::-moz-range-track", dockCss, StringComparison.Ordinal);
         Assert.Contains("height: 14px", dockCss, StringComparison.Ordinal);
         Assert.Contains("#202020", dockCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MobileColorEditor_DistributesAdvancedToolsIntoTheirRelatedCategories()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+
+        Assert.DoesNotContain("<WMColorGradePanel", dock, StringComparison.Ordinal);
+        Assert.DoesNotContain("@SectionButton(\"高级\"", dock, StringComparison.Ordinal);
+        Assert.Contains("HslKeys", dock, StringComparison.Ordinal);
+        Assert.Contains("ChangeHslAsync", dock, StringComparison.Ordinal);
+        Assert.Contains("HSL 色彩范围", dock, StringComparison.Ordinal);
+        Assert.Contains("ChangeCurveAsync", dock, StringComparison.Ordinal);
+        Assert.Contains("线性曲线", dock, StringComparison.Ordinal);
+        Assert.Contains("增强曲线", dock, StringComparison.Ordinal);
+        Assert.Contains("柔和曲线", dock, StringComparison.Ordinal);
+        Assert.Contains("保存预设", dock, StringComparison.Ordinal);
+        Assert.Contains("WMApplyScope.Current", dock, StringComparison.Ordinal);
+        Assert.Contains("WMApplyScope.Selected", dock, StringComparison.Ordinal);
+
+        var lightSection = dock.IndexOf("colorSection == ColorSection.Light", StringComparison.Ordinal);
+        var curve = dock.IndexOf("ChangeCurveAsync", lightSection, StringComparison.Ordinal);
+        var colorSection = dock.IndexOf("AriaLabel=\"颜色参数\"", curve, StringComparison.Ordinal);
+        var hsl = dock.IndexOf("HslKeys", colorSection, StringComparison.Ordinal);
+        Assert.True(lightSection >= 0 && curve > lightSection && colorSection > curve && hsl > colorSection);
     }
 
     private static int CountOccurrences(string source, string value) =>

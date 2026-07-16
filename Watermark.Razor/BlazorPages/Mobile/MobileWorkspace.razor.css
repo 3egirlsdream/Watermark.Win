@@ -41,7 +41,7 @@
 .workspace-shell {
     --workspace-safe-top: min(env(safe-area-inset-top, 0px), 59px);
     --workspace-safe-bottom: min(env(safe-area-inset-bottom, 0px), 34px);
-    --toolbar-height: calc(64px + var(--workspace-safe-top));
+    --toolbar-height: calc(52px + var(--workspace-safe-top));
     --panel-height: calc(clamp(248px, 32vh, 340px) + var(--workspace-safe-bottom));
     background: #10151e;
     color: white;
@@ -65,10 +65,10 @@
     border-bottom: 1px solid rgba(30,41,59,.09);
     box-shadow: 0 8px 24px rgba(8, 18, 32, .06);
     display: flex;
-    gap: 10px;
+    gap: 6px;
     height: var(--toolbar-height);
     justify-content: space-between;
-    padding: var(--workspace-safe-top) 10px 0;
+    padding: var(--workspace-safe-top) 8px 0;
     position: relative;
     z-index: 30;
 }
@@ -84,23 +84,23 @@
     align-items: center;
     display: flex;
     flex: 0 0 auto;
-    gap: 7px;
+    gap: 5px;
 }
 
 .workspace-history-actions {
     align-items: center;
     background: #f3f5f8;
-    border: 1px solid rgba(30, 41, 59, .07);
-    border-radius: 13px;
+    border: 0;
+    border-radius: 10px;
     display: flex;
     overflow: hidden;
 }
 
 .workspace-history-actions .workspace-icon-button {
     border-radius: 0;
-    height: 42px;
-    min-width: 42px;
-    width: 42px;
+    height: 34px;
+    min-width: 34px;
+    width: 34px;
 }
 
 .workspace-history-actions .workspace-icon-button + .workspace-icon-button {
@@ -108,34 +108,47 @@
 }
 
 .workspace-icon-button,
+.workspace-apply-button,
 .workspace-export-button {
     align-items: center;
     background: transparent;
     border: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     color: #172033;
     display: flex;
     font: inherit;
-    height: 44px;
+    height: 36px;
     justify-content: center;
-    min-width: 44px;
+    min-width: 36px;
 }
-.workspace-icon-button :deep(.m-icon) { font-size: 22px; }
+.workspace-icon-button ::deep .m-icon { font-size: 20px; }
 .workspace-icon-button:active { background: #e9edf3; }
 .workspace-icon-button:disabled { color: #aab2be; opacity: .52; }
 .workspace-close-button { background: #f3f5f8; }
+.workspace-apply-button {
+    background: #ffc200;
+    color: #252525;
+    font-size: .68rem;
+    font-weight: 800;
+    gap: 3px;
+    padding: 0 9px;
+    white-space: nowrap;
+}
+.workspace-apply-button ::deep .m-icon { font-size: 19px; }
+.workspace-apply-button:active:not(:disabled) { background: #eeb600; }
+.workspace-apply-button:disabled { background: #eceef1; color: #a3a9b2; }
 .workspace-export-button {
     background: #155fcf;
     box-shadow: 0 5px 14px rgba(21, 95, 207, .2);
     color: #fff;
-    font-size: 13px;
+    font-size: .68rem;
     font-weight: 800;
     gap: 5px;
-    min-width: 70px;
-    padding: 0 11px;
+    min-width: 58px;
+    padding: 0 9px;
     white-space: nowrap;
 }
-.workspace-export-button :deep(.m-icon) { font-size: 18px; }
+.workspace-export-button ::deep .m-icon { font-size: 17px; }
 .workspace-export-button:active { background: #0f4fae; }
 .workspace-more-button { background: transparent; }
 
@@ -872,6 +885,7 @@
         grid-template-rows: var(--toolbar-height) minmax(0, 1fr);
     }
     .workspace-toolbar { grid-column: 1 / -1; }
+    .workspace-apply-button { display: none; }
     .workspace-title { display: block; }
     .workspace-stage-wrap { grid-column: 1; padding-bottom: 0; }
     .workspace-panel {
@@ -894,10 +908,12 @@
 }
 
 @media (max-width: 370px) {
-    .workspace-toolbar { gap: 5px; padding-left: 6px; padding-right: 6px; }
-    .workspace-toolbar-actions { gap: 4px; }
-    .workspace-history-actions .workspace-icon-button { min-width: 40px; width: 40px; }
-    .workspace-export-button { min-width: 62px; padding: 0 8px; }
+    .workspace-toolbar { gap: 4px; padding-left: 5px; padding-right: 5px; }
+    .workspace-toolbar-actions { gap: 3px; }
+    .workspace-history-actions .workspace-icon-button { min-width: 32px; width: 32px; }
+    .workspace-apply-button { min-width: 36px; padding: 0 8px; }
+    .workspace-apply-button span { display: none; }
+    .workspace-export-button { min-width: 52px; padding: 0 7px; }
 }
 
 @media (min-width: 1024px) {

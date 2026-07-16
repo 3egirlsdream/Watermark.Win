@@ -72,9 +72,8 @@
 .wm-dock-active-row {
     align-items: center;
     display: grid;
-    gap: 8px;
     grid-row: 1;
-    grid-template-columns: minmax(0, 1fr) 42px;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 46px;
     min-width: 0;
 }
@@ -85,24 +84,23 @@
 .wm-dock-edit-summary { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .wm-dock-edit-summary strong { font-size: .76rem; }
 .wm-dock-edit-summary small { color: var(--wm-control-muted); font-size: .62rem; }
-
-.wm-dock-confirm-edit {
-    align-items: center;
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 50% !important;
-    color: #252525 !important;
-    display: flex;
-    flex: 0 0 42px;
-    height: 42px !important;
-    justify-content: center;
-    min-height: 42px !important;
-    padding: 0 !important;
-    width: 42px;
+.wm-dock-hsl-control { display: grid; gap: 2px; }
+.wm-dock-hsl-bands {
+    display: grid;
+    gap: 2px;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
 }
-.wm-dock-confirm-edit ::deep .m-icon { font-size: 25px; }
-.wm-dock-confirm-edit:active { background: #e4e4e4 !important; }
-.wm-dock-confirm-edit:disabled { color: #aaa !important; opacity: .55; }
+.wm-dock-hsl-bands button {
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    color: #888;
+    font: inherit;
+    font-size: .56rem;
+    min-height: 22px;
+    padding: 0 1px;
+}
+.wm-dock-hsl-bands button.is-active { background: #e1e1e1; color: #252525; font-weight: 800; }
 
 .wm-dock-subcategories {
     align-items: center;
@@ -227,6 +225,7 @@
 .wm-dock-tool-card img { border-radius: 8px; height: 34px; object-fit: cover; width: 46px; }
 .wm-dock-tool-card output { display: none; }
 .wm-dock-tool-card.is-active { background: var(--wm-control-active-surface); color: #252525; }
+.wm-dock-tool-card.is-danger { color: #b33a43; }
 .wm-dock-tool-card:active { transform: scale(.97); }
 
 .wm-dock-media-card,
@@ -324,17 +323,9 @@
 .wm-mobile-dock ::deep input[type="range"]:focus-visible { outline: 2px solid #252525; outline-offset: 2px; }
 .wm-mobile-dock ::deep input[type="range"]:disabled { cursor: default; opacity: .45; }
 
-.wm-mobile-dock.is-advanced .wm-dock-context { grid-template-rows: auto minmax(0, 1fr); }
-.wm-dock-advanced-heading { align-items: center; display: flex; gap: 8px; min-height: 48px; }
-.wm-dock-advanced-heading > button:first-child { align-items: center; background: var(--wm-control-surface); border: 0; border-radius: 10px; color: #4a4a4a; display: flex; height: 40px; justify-content: center; width: 40px; }
-.wm-dock-advanced-heading div { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
-.wm-dock-advanced-heading strong { font-size: .76rem; }
-.wm-dock-advanced-heading small { color: var(--wm-control-muted); font-size: .6rem; }
-.wm-dock-advanced-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 1px 16px; scrollbar-width: none; }
-
 @media (orientation: landscape) and (max-height: 560px) {
     .wm-mobile-dock { border-radius: 14px 14px 0 0; }
-    .wm-mobile-dock:not(.is-advanced):not(.is-editing) .wm-dock-context { display: none; }
+    .wm-mobile-dock:not(.is-editing) .wm-dock-context { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
