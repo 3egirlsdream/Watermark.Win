@@ -68,7 +68,9 @@ else
                     <MIcon>@(mobileEditConfirming ? "mdi-loading" : "mdi-check")</MIcon><span>应用</span>
                 </button>
                 <button type="button" class="workspace-export-button" @onclick="OpenExportDrawer"><MIcon>mdi-export-variant</MIcon><span>导出</span></button>
-                <button type="button" class="workspace-icon-button workspace-more-button" @onclick="ToggleMoreMenu" aria-label="更多操作" aria-expanded="@showMoreMenu"><MIcon>mdi-dots-horizontal</MIcon></button>
+                <button type="button" class="workspace-icon-button workspace-original-button @(State.IsComparingOriginal ? "is-active" : null)"
+                        @onclick="ToggleOriginalAsync" aria-label="@(State.IsComparingOriginal ? "返回编辑预览" : "查看原图")"
+                        aria-pressed="@State.IsComparingOriginal"><MIcon>mdi-compare</MIcon></button>
             </div>
         </header>
 
@@ -206,19 +208,6 @@ else
                 CollageDraftChanged="UpdateCollageDraftAsync" CollageRunOrCancelRequested="RunOrCancelCollageAsync" />
         </div>
 
-        @if (showMoreMenu)
-        {
-            <button type="button" class="workspace-popover-backdrop" @onclick="CloseMoreMenu" aria-label="关闭更多操作"></button>
-            <section class="workspace-more-menu" role="menu" aria-label="更多操作">
-                <button type="button" role="menuitem" @onclick="ToggleOriginalFromMenuAsync"><MIcon>mdi-compare</MIcon><span>按住画布可查看原图</span></button>
-                <button type="button" role="menuitem" @onclick="CollapseDockFromMenu"><MIcon>mdi-chevron-down</MIcon><span>收起工具坞</span></button>
-                @if (State.Mode == WMWorkspaceMode.ColorGrade)
-                {
-                    <button type="button" role="menuitem" @onclick="ResetColorFromMenuAsync"><MIcon>mdi-restore</MIcon><span>重置调色</span></button>
-                }
-            </section>
-        }
-
         @if (showExportDrawer)
         {
             <button type="button" class="workspace-drawer-backdrop" @onclick="CloseExportDrawer" aria-label="关闭导出设置"></button>
@@ -279,7 +268,6 @@ else
     private bool bypassNavigationGuard;
     private bool showExportCompletion;
     private bool showExportDrawer;
-    private bool showMoreMenu;
     private bool recovering;
     private bool mobileEditActive;
     private bool mobileEditConfirming;
@@ -560,13 +548,10 @@ else
 
     private void OpenExportDrawer()
     {
-        showMoreMenu = false;
         showExportDrawer = true;
     }
 
     private void CloseExportDrawer() => showExportDrawer = false;
-    private void ToggleMoreMenu() => showMoreMenu = !showMoreMenu;
-    private void CloseMoreMenu() => showMoreMenu = false;
 
     private async Task ConfirmMobileEditAsync(WMWorkspaceMode mode)
     {
@@ -601,23 +586,8 @@ else
         }
     }
 
-    private async Task ToggleOriginalFromMenuAsync()
-    {
-        showMoreMenu = false;
-        await Controller.SetCompareOriginalAsync(!State.IsComparingOriginal);
-    }
-
-    private void CollapseDockFromMenu()
-    {
-        showMoreMenu = false;
-        Controller.SetPanelSize(WMWorkspacePanelSize.Collapsed);
-    }
-
-    private async Task ResetColorFromMenuAsync()
-    {
-        showMoreMenu = false;
-        await ResetColorAsync();
-    }
+    private Task ToggleOriginalAsync() =>
+        Controller.SetCompareOriginalAsync(!State.IsComparingOriginal);
 
     private async Task RunOrCancelCollageAsync()
     {
@@ -728,12 +698,6 @@ else
             await Controller.CloseAsync();
             return;
         }
-        if (showMoreMenu)
-        {
-            context.PreventNavigation();
-            showMoreMenu = false;
-            return;
-        }
         if (showExportDrawer)
         {
             context.PreventNavigation();
@@ -809,10 +773,6 @@ else
             if (showExportCompletion)
             {
                 ContinueEditing();
-            }
-            else if (showMoreMenu)
-            {
-                showMoreMenu = false;
             }
             else if (showExportDrawer)
             {

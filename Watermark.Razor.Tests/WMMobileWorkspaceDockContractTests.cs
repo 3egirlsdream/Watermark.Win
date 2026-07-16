@@ -53,8 +53,12 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("<WMMobileWorkspaceDock", source, StringComparison.Ordinal);
         Assert.Contains("workspace-export-drawer", source, StringComparison.Ordinal);
         Assert.Contains("OpenExportDrawer", source, StringComparison.Ordinal);
-        Assert.True(source.IndexOf("else if (showMoreMenu)", StringComparison.Ordinal)
-                    < source.IndexOf("else if (showExportDrawer)", StringComparison.Ordinal));
+        Assert.Contains("workspace-original-button", source, StringComparison.Ordinal);
+        Assert.Contains("ToggleOriginalAsync", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("workspace-more-menu", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("showMoreMenu", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("收起工具坞", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("重置调色", source, StringComparison.Ordinal);
         Assert.True(source.IndexOf("else if (showExportDrawer)", StringComparison.Ordinal)
                     < source.LastIndexOf("mobileDock?.TryCloseTransient()", StringComparison.Ordinal));
     }
@@ -83,7 +87,11 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("workspace-toolbar-actions", page, StringComparison.Ordinal);
         Assert.Contains("workspace-history-actions", page, StringComparison.Ordinal);
         Assert.Contains("workspace-apply-button", page, StringComparison.Ordinal);
-        Assert.Contains("--toolbar-height: calc(52px + var(--workspace-safe-top))", pageCss, StringComparison.Ordinal);
+        Assert.Contains("--toolbar-height: calc(44px + var(--workspace-safe-top))", pageCss, StringComparison.Ordinal);
+        Assert.Contains("height: 32px", pageCss, StringComparison.Ordinal);
+        Assert.Contains("workspace-original-button", page, StringComparison.Ordinal);
+        Assert.Contains("aria-pressed=\"@State.IsComparingOriginal\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("mdi-dots-horizontal", page, StringComparison.Ordinal);
         Assert.Contains("mdi-export-variant", page, StringComparison.Ordinal);
         Assert.Contains("OnDockResizeCommitted", page, StringComparison.Ordinal);
         Assert.Contains("wm-mobile-workspace-dock.js", page, StringComparison.Ordinal);
