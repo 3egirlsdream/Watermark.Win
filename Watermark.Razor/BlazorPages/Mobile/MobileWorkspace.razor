@@ -191,12 +191,10 @@ else
 
         <div class="workspace-mobile-dock">
             <WMMobileWorkspaceDock @ref="mobileDock" State="State" Templates="templates"
-                CycleRequested="CyclePanel" ExpandedRequested="ExpandPanel"
-                ModeChanged="SetModeAsync" ScopeChanged="ChangeApplyScopeAsync"
-                TemplatePreviewChanged="PreviewTemplateAsync" TemplateCommitRequested="CommitTemplateAsync"
-                ColorPreviewChanged="HandleColorPreviewAsync" ColorCommitRequested="HandleColorCommitAsync"
+                ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" ScopeChanged="ChangeApplyScopeAsync"
+                TemplatePreviewChanged="PreviewTemplateAsync"
+                ColorPreviewChanged="HandleColorPreviewAsync"
                 ChooseReferenceRequested="ChooseColorReferenceAsync" ClearReferenceRequested="ClearColorReferenceAsync"
-                ResetColorRequested="ResetColorAsync" PresetSelected="ApplyColorPresetAsync"
                 SavePresetRequested="SaveColorPresetAsync" DeletePresetRequested="DeleteColorPresetAsync"
                 MultiFrameModeChanged="SetMultiFrameModeAsync" FrameRoleChanged="SetFrameRole"
                 NormalizeExposureChanged="SetNormalizeExposureAsync" RepairHotPixelsChanged="SetRepairHotPixelsAsync"
@@ -378,7 +376,11 @@ else
         TemplateLibrary.EnsurePreviewAsync(templateId);
 
     private Task PreviewTemplateAsync(WMWorkspaceTemplateEdit edit) =>
-        Controller.PreviewTemplateAsync(edit, State.ApplyScope);
+        !State.HasTransientEdits
+        && string.Equals(State.TemplateId, edit.TemplateId, StringComparison.Ordinal)
+        && string.Equals(State.TemplateEdit?.CanvasJson, edit.CanvasJson, StringComparison.Ordinal)
+            ? Task.CompletedTask
+            : Controller.PreviewTemplateAsync(edit, State.ApplyScope);
 
     private Task CommitTemplateAsync(WMWorkspaceTemplateEdit edit) =>
         Controller.CommitTemplateAsync(edit, State.ApplyScope);
@@ -418,7 +420,7 @@ else
         if (source is null) return;
         try
         {
-            await Controller.ImportColorReferenceAsync(source);
+            await Controller.ImportColorReferenceDraftAsync(source);
             HapticFeedback.Perform();
         }
         catch (OperationCanceledException) { }
@@ -446,7 +448,7 @@ else
             ? Task.CompletedTask
             : Controller.DeleteColorPresetAsync(State.ColorGradeTool.SelectedPresetId);
 
-    private Task ClearColorReferenceAsync() => Controller.ClearColorReferenceAsync();
+    private Task ClearColorReferenceAsync() => Controller.ClearColorReferenceDraftAsync();
 
     private async Task RefreshTemplatesAsync()
     {
@@ -558,7 +560,22 @@ else
     private void CloseExportDrawer() => showExportDrawer = false;
     private void ToggleMoreMenu() => showMoreMenu = !showMoreMenu;
     private void CloseMoreMenu() => showMoreMenu = false;
-    private void ExpandPanel() => Controller.SetPanelSize(WMWorkspacePanelSize.Expanded);
+
+    private async Task ConfirmMobileEditAsync(WMWorkspaceMode mode)
+    {
+        if (State.HasTransientEdits)
+        {
+            if (mode == WMWorkspaceMode.Template && State.TemplateEdit is { } edit)
+            {
+                await Controller.CommitTemplateAsync(edit, State.ApplyScope);
+                if (Controller.State.HasTransientEdits)
+                    await Controller.DiscardTransientEditsAsync();
+            }
+            else if (mode == WMWorkspaceMode.ColorGrade)
+                await Controller.CommitColorDraftAsync(State.ApplyScope);
+        }
+        HapticFeedback.Perform();
+    }
 
     private async Task ToggleOriginalFromMenuAsync()
     {

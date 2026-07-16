@@ -5,9 +5,10 @@ function clamp(value, minimum, maximum) {
 function panelGeometry(root) {
   const rootHeight = Math.max(1, root.getBoundingClientRect().height);
   const toolbarHeight = root.querySelector(".workspace-toolbar")?.getBoundingClientRect().height || 64;
-  const modeHeight = root.querySelector(".wm-dock-modes")?.getBoundingClientRect().height || 72;
-  const safeBottom = Math.max(0, modeHeight - 72);
-  const collapsed = Math.max(72, modeHeight);
+  const safeBottomProbe = root.querySelector(".wm-dock-safe-bottom-probe")?.getBoundingClientRect().height || 0;
+  const safeBottom = Math.max(0, safeBottomProbe);
+  const modeHeight = root.querySelector(".wm-dock-modes")?.getBoundingClientRect().height || 52 + safeBottom;
+  const collapsed = Math.max(52 + safeBottom, modeHeight);
   const half = Math.max(collapsed, Math.min(340, Math.max(248, rootHeight * 0.32)) + safeBottom);
   const expanded = Math.max(half, Math.min(rootHeight * 0.72, rootHeight - toolbarHeight - 28));
 

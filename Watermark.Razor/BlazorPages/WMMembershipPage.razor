@@ -55,25 +55,57 @@
         ? (Accounts.State.ExpiresAt is null ? "感谢你的支持。" : $"有效期至 {Accounts.State.ExpiresAt:yyyy-MM-dd}")
         : "模板、批量和高质量导出能力，都在同一工作台中。";
 
+    protected override async Task OnInitializedAsync()
+    {
+        busy = true;
+        try
+        {
+            var result = await Membership.ReconcilePendingAsync();
+            if (result is not null) Apply(result);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
     private async Task PurchaseAsync(WMMembershipPlan plan)
     {
         busy = true;
-        var result = await Membership.PurchaseAsync(plan.Id);
-        orderId = result.OrderId;
-        Show(result);
-        busy = false;
+        try
+        {
+            var result = await Membership.PurchaseAsync(plan.Id);
+            Apply(result);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private async Task RefreshPaymentAsync()
     {
         if (string.IsNullOrWhiteSpace(orderId)) return;
         busy = true;
-        var result = await Membership.RefreshAsync(orderId);
-        Show(result);
-        busy = false;
+        try
+        {
+            var result = await Membership.RefreshAsync(orderId);
+            Apply(result);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void OpenLogin() => NavigationHistory.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(new Uri(Navigation.Uri).PathAndQuery)}");
     private void GoBack() => NavigationHistory.GoBack(ReturnTarget);
-    private void Show(WMMembershipResult result) { message = result.Message; messageIsError = !result.Succeeded; }
+    private void Apply(WMMembershipResult result)
+    {
+        orderId = result.State == WMMembershipPaymentState.Pending
+            ? result.OrderId ?? orderId
+            : null;
+        message = result.Message;
+        messageIsError = result.State == WMMembershipPaymentState.Failed;
+    }
 }

@@ -26,6 +26,7 @@ public sealed class WMApplicationStartupContractTests
 
         Assert.Contains("if (!Global.IsMobile)", startup, StringComparison.Ordinal);
         Assert.Contains("await accounts.RefreshAsync()", startup, StringComparison.Ordinal);
+        Assert.Contains("await membership.ReconcilePendingAsync()", startup, StringComparison.Ordinal);
         Assert.Contains("B735DFC73A0B4080B11BBCFD3AE833D6", startup, StringComparison.Ordinal);
         Assert.Contains("await api.Download(DefaultTemplateId, string.Empty)", startup, StringComparison.Ordinal);
         Assert.Contains("await api.DownloadLogoes()", startup, StringComparison.Ordinal);

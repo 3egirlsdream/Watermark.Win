@@ -2,7 +2,10 @@
 @namespace Watermark.Razor.Workspace.Components
 
 <label class="wm-template-border-control @CssClass">
-    <span><strong>@Label</strong><output>@Value.ToString("0.#")</output></span>
+    @if (ShowHeader)
+    {
+        <span><strong>@Label</strong><output>@Value.ToString("0.#")</output></span>
+    }
     <input type="range" min="0" max="100" step="0.5"
            value="@Value.ToString(CultureInfo.InvariantCulture)"
            aria-label="@($"{Label}边框")" aria-valuetext="@Value.ToString("0.#")"
@@ -12,6 +15,7 @@
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
     [Parameter] public double Value { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
     [Parameter] public string? CssClass { get; set; }
     [Parameter] public EventCallback<double> PreviewValueChanged { get; set; }
     [Parameter] public EventCallback<double> CommitValueChanged { get; set; }

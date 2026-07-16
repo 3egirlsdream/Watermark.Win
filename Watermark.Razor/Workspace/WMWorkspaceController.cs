@@ -1270,9 +1270,20 @@ public sealed class WMWorkspaceController
         return CommitColorGradeAsync(NormalizeRecipe(recipe), scope, cancellationToken);
     }
 
-    public async Task ImportColorReferenceAsync(
+    public Task ImportColorReferenceAsync(
         IWMPhotoImportSource source,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ImportColorReferenceCoreAsync(source, commit: true, cancellationToken);
+
+    public Task ImportColorReferenceDraftAsync(
+        IWMPhotoImportSource source,
+        CancellationToken cancellationToken = default) =>
+        ImportColorReferenceCoreAsync(source, commit: false, cancellationToken);
+
+    private async Task ImportColorReferenceCoreAsync(
+        IWMPhotoImportSource source,
+        bool commit,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
         if (colorReferenceService is null)
@@ -1308,7 +1319,8 @@ public sealed class WMWorkspaceController
                 Grade = new WMColorGradeSettings()
             };
             await UpdateColorDraftAsync(recipe, cancellationToken).ConfigureAwait(false);
-            await CommitColorDraftAsync(State.ApplyScope, cancellationToken).ConfigureAwait(false);
+            if (commit)
+                await CommitColorDraftAsync(State.ApplyScope, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -1319,7 +1331,15 @@ public sealed class WMWorkspaceController
         }
     }
 
-    public async Task ClearColorReferenceAsync(CancellationToken cancellationToken = default)
+    public Task ClearColorReferenceAsync(CancellationToken cancellationToken = default) =>
+        ClearColorReferenceCoreAsync(commit: true, cancellationToken);
+
+    public Task ClearColorReferenceDraftAsync(CancellationToken cancellationToken = default) =>
+        ClearColorReferenceCoreAsync(commit: false, cancellationToken);
+
+    private async Task ClearColorReferenceCoreAsync(
+        bool commit,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         WMObjectUrlLease? lease;
@@ -1344,7 +1364,10 @@ public sealed class WMWorkspaceController
             };
         }
         if (lease is not null) await objectUrls.ReleaseAsync(lease).ConfigureAwait(false);
-        await CommitColorGradeAsync(recipe, State.ApplyScope, cancellationToken).ConfigureAwait(false);
+        if (commit)
+            await CommitColorGradeAsync(recipe, State.ApplyScope, cancellationToken).ConfigureAwait(false);
+        else
+            await UpdateColorDraftAsync(recipe, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task SaveColorPresetAsync(

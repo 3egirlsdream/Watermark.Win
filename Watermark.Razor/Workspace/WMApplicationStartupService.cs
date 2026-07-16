@@ -17,6 +17,7 @@ public interface IWMApplicationStartupService
 /// </summary>
 public sealed class WMApplicationStartupService(
     IWMAccountService accounts,
+    IWMMembershipService membership,
     IClientInstance client,
     APIHelper api,
     IWMWorkspaceTraceStore? traces = null) : IWMApplicationStartupService
@@ -59,6 +60,18 @@ public sealed class WMApplicationStartupService(
         // Preserve the old ordering: restore the account before downloading the
         // default template so server-side ownership/download records see the user.
         await accounts.RefreshAsync().ConfigureAwait(false);
+        try
+        {
+            await membership.ReconcilePendingAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            await RecordAsync(
+                "android-membership-reconcile-failed",
+                WMDiagnosticLogLevel.Warning,
+                "安卓待确认会员订单恢复失败，将在会员页再次查询。",
+                ex).ConfigureAwait(false);
+        }
 
         var markerPath = Path.Combine(Global.AppPath.BasePath, "sys", BootstrapMarkerName);
         var migrationBootstrapPending = !File.Exists(markerPath);

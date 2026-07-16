@@ -15,6 +15,10 @@ public static class WMApplicationServiceCollectionExtensions
         services.AddScoped<IWMResourceLibraryService, WMResourceLibraryService>();
         services.AddScoped<IWMAppUpdateService, WMAppUpdateService>();
         services.AddScoped<IWMExternalActionService, WMExternalActionService>();
+        services.AddScoped<IWMMembershipPaymentGateway, WMMembershipPaymentGateway>();
+        services.AddScoped<IWMAlipayAppLauncher, WMClientAlipayAppLauncher>();
+        services.AddScoped<IWMPendingMembershipStore, WMPendingMembershipStore>();
+        services.AddSingleton<IWMMembershipPaymentClock, WMSystemMembershipPaymentClock>();
         services.AddScoped<IWMMembershipService, WMMembershipService>();
         services.AddScoped<IWMAdminDashboardService, WMAdminDashboardService>();
         return services;

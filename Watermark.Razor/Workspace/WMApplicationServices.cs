@@ -706,27 +706,49 @@ public sealed class WMExternalActionService(IClientInstance client) : IWMExterna
 }
 
 public sealed record WMMembershipPlan(string Id, string Name, decimal Price, string Description, bool Recommended = false);
-public sealed record WMMembershipResult(bool Succeeded, string Message, string? OrderId = null);
 
 public interface IWMMembershipService
 {
     IReadOnlyList<WMMembershipPlan> Plans { get; }
     Task<WMMembershipResult> PurchaseAsync(string planId, CancellationToken token = default);
     Task<WMMembershipResult> RefreshAsync(string orderId, CancellationToken token = default);
+    Task<WMMembershipResult?> ReconcilePendingAsync(CancellationToken token = default);
 }
 
 public sealed class WMMembershipService(
-    APIHelper api,
-    IClientInstance client,
+    IWMMembershipPaymentGateway payments,
+    IWMAlipayAppLauncher alipay,
+    IWMPendingMembershipStore pendingOrders,
+    IWMMembershipPaymentClock clock,
     IWMAccountService accounts,
-    IWMExternalActionService external) : IWMMembershipService
+    IWMExternalActionService external,
+    IWMWorkspaceTraceStore? traces = null) : IWMMembershipService
 {
+    private static readonly TimeSpan[] InteractiveQueryDelays =
+    [
+        TimeSpan.Zero,
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(2),
+        TimeSpan.FromSeconds(3),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(4)
+    ];
+    private static readonly TimeSpan[] AccountRefreshDelays =
+    [
+        TimeSpan.Zero,
+        TimeSpan.FromMilliseconds(500),
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(2)
+    ];
     private static readonly WMMembershipPlan[] RegularPlans =
     [
         new("year", "年度会员", 28, "适合长期批量处理", true),
         new("quarter", "季度会员", 18, "适合阶段性创作"),
         new("month", "月度会员", 8, "轻量体验高级能力")
     ];
+    private readonly SemaphoreSlim purchaseGate = new(1, 1);
+
     public IReadOnlyList<WMMembershipPlan> Plans =>
         string.Equals(accounts.State.UserName, "xlz", StringComparison.OrdinalIgnoreCase)
             ? [.. RegularPlans, new WMMembershipPlan("test", "测试套餐", 0.01m, "支付成功后增加 1 分钟会员")]
@@ -736,40 +758,339 @@ public sealed class WMMembershipService(
     {
         token.ThrowIfCancellationRequested();
         var plan = Plans.FirstOrDefault(item => item.Id == planId);
-        if (plan is null) return new WMMembershipResult(false, "会员套餐不存在。");
-        if (!accounts.State.IsAuthenticated) return new WMMembershipResult(false, "请先登录后再开通会员。");
+        if (plan is null) return Failed("会员套餐不存在。");
+        if (!accounts.State.IsAuthenticated) return Failed("请先登录后再开通会员。");
+        if (!await purchaseGate.WaitAsync(0, token).ConfigureAwait(false))
+            return Pending("支付流程正在进行，请勿重复操作。");
         try
         {
             if (Global.DeviceType == DeviceType.Andorid)
-            {
-                var result = await client.AliPays(plan.Price, plan.Name).ConfigureAwait(false);
-                if (result?.success != true) return new WMMembershipResult(false, result?.message?.content ?? "支付失败。");
-                await accounts.RefreshAsync(token).ConfigureAwait(false);
-                return new WMMembershipResult(true, result.data ?? "支付完成。");
-            }
+                return await PurchaseAndroidAsync(plan, token).ConfigureAwait(false);
 
-            var order = await api.CreateDesktopPay(plan.Price, plan.Name, accounts.State.UserId ?? string.Empty).ConfigureAwait(false);
+            var order = await payments.CreateDesktopOrderAsync(
+                plan.Price, plan.Name, accounts.State.UserId ?? string.Empty, token).ConfigureAwait(false);
             if (order?.success != true || order.data is null || string.IsNullOrWhiteSpace(order.data.PayUrl))
-                return new WMMembershipResult(false, order?.message?.content ?? "暂时无法创建支付订单。");
+                return Failed(order?.message?.content ?? "暂时无法创建支付订单。");
             await external.OpenUrlAsync(order.data.PayUrl).ConfigureAwait(false);
-            return new WMMembershipResult(true, "支付页面已打开。", order.data.OutTradeNo);
+            return Pending("支付页面已打开。", order.data.OutTradeNo);
         }
-        catch (Exception ex) { return new WMMembershipResult(false, ex.Message); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            await LogAsync("membership-purchase-failed", WMDiagnosticLogLevel.Error, ex.Message, exception: ex)
+                .ConfigureAwait(false);
+            return Failed(ex.Message);
+        }
+        finally
+        {
+            purchaseGate.Release();
+        }
     }
 
     public async Task<WMMembershipResult> RefreshAsync(string orderId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(orderId)) return new WMMembershipResult(false, "没有待查询订单。");
-        var result = await api.QueryDesktopPay(orderId).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(orderId)) return Failed("没有待查询订单。");
+        await purchaseGate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            if (Global.DeviceType != DeviceType.Andorid)
+                return await ReconcileDesktopAsync(orderId, token).ConfigureAwait(false);
+
+            var userId = accounts.State.UserId;
+            if (string.IsNullOrWhiteSpace(userId)) return Failed("请重新登录后查询支付状态。", orderId);
+            var pending = await pendingOrders.GetAsync(userId, token).ConfigureAwait(false);
+            if (pending is null || !string.Equals(pending.OutTradeNo, orderId, StringComparison.Ordinal))
+            {
+                pending = new WMPendingMembershipOrder(userId, orderId, "unknown", clock.UtcNow);
+                await pendingOrders.SaveAsync(pending, token).ConfigureAwait(false);
+            }
+            return await ReconcileAndroidOrderAsync(pending, false, false, token).ConfigureAwait(false);
+        }
+        finally
+        {
+            purchaseGate.Release();
+        }
+    }
+
+    public async Task<WMMembershipResult?> ReconcilePendingAsync(CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        if (Global.DeviceType != DeviceType.Andorid || !accounts.State.IsAuthenticated) return null;
+        await purchaseGate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            var userId = accounts.State.UserId;
+            if (string.IsNullOrWhiteSpace(userId)) return null;
+            var pending = await pendingOrders.GetAsync(userId, token).ConfigureAwait(false);
+            if (pending is null) return null;
+            if (!string.Equals(pending.UserId, userId, StringComparison.Ordinal))
+            {
+                await LogAsync(
+                    "membership-pending-user-mismatch",
+                    WMDiagnosticLogLevel.Warning,
+                    "忽略了不属于当前账号的待确认订单。",
+                    pending.OutTradeNo).ConfigureAwait(false);
+                return null;
+            }
+            return await ReconcileAndroidOrderAsync(pending, false, false, token).ConfigureAwait(false);
+        }
+        finally
+        {
+            purchaseGate.Release();
+        }
+    }
+
+    private async Task<WMMembershipResult> PurchaseAndroidAsync(
+        WMMembershipPlan plan,
+        CancellationToken token)
+    {
+        var userId = accounts.State.UserId;
+        if (string.IsNullOrWhiteSpace(userId)) return Failed("请先登录后再开通会员。");
+
+        var previous = await pendingOrders.GetAsync(userId, token).ConfigureAwait(false);
+        if (previous is not null)
+        {
+            var recovered = await ReconcileAndroidOrderAsync(previous, false, false, token).ConfigureAwait(false);
+            if (recovered.State is WMMembershipPaymentState.Paid or WMMembershipPaymentState.Pending)
+                return recovered.State == WMMembershipPaymentState.Pending
+                    ? recovered with { Message = "上一笔订单仍在确认中，请勿重复付款。" }
+                    : recovered;
+        }
+
+        var order = await payments.CreateAndroidOrderAsync(plan.Price, plan.Name, userId, token)
+            .ConfigureAwait(false);
+        if (order?.success != true || string.IsNullOrWhiteSpace(order.data))
+            return Failed(order?.message?.content ?? "暂时无法创建支付宝订单。");
+        if (!WMAlipayOrderInfoParser.TryGetOutTradeNo(order.data, out var outTradeNo))
+        {
+            await LogAsync(
+                "membership-order-parse-failed",
+                WMDiagnosticLogLevel.Error,
+                "服务端支付宝订单缺少商户订单号。").ConfigureAwait(false);
+            return Failed("支付宝订单信息不完整，未发起支付。");
+        }
+
+        var pending = new WMPendingMembershipOrder(userId, outTradeNo, plan.Id, clock.UtcNow);
+        await pendingOrders.SaveAsync(pending, token).ConfigureAwait(false);
+        await LogAsync(
+            "membership-order-created",
+            WMDiagnosticLogLevel.Information,
+            "安卓会员订单已创建并保存。",
+            outTradeNo).ConfigureAwait(false);
+
+        WMAlipayAppLaunchResult launchResult;
+        try
+        {
+            launchResult = await alipay.LaunchAsync(order.data, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            await LogAsync(
+                "membership-alipay-launch-failed",
+                WMDiagnosticLogLevel.Error,
+                ex.Message,
+                outTradeNo,
+                exception: ex).ConfigureAwait(false);
+            var recovered = await ReconcileAndroidOrderAsync(pending, false, false, token).ConfigureAwait(false);
+            return recovered.State == WMMembershipPaymentState.Paid
+                ? recovered
+                : Pending("支付宝调用异常，支付状态待确认，请勿重复付款。", outTradeNo);
+        }
+
+        await LogAsync(
+            "membership-alipay-returned",
+            WMDiagnosticLogLevel.Information,
+            "支付宝 App 已返回。",
+            outTradeNo,
+            launchResult.ResultStatus).ConfigureAwait(false);
+
+        var cancelled = string.Equals(launchResult.ResultStatus, "6001", StringComparison.Ordinal);
+        return await ReconcileAndroidOrderAsync(pending, !cancelled, cancelled, token).ConfigureAwait(false);
+    }
+
+    private async Task<WMMembershipResult> ReconcileAndroidOrderAsync(
+        WMPendingMembershipOrder pending,
+        bool interactive,
+        bool clientCancelled,
+        CancellationToken token)
+    {
+        var delays = interactive ? InteractiveQueryDelays : [TimeSpan.Zero];
+        var queryReachedServer = false;
+        string? lastMessage = null;
+        foreach (var delay in delays)
+        {
+            if (delay > TimeSpan.Zero) await clock.DelayAsync(delay, token).ConfigureAwait(false);
+            API<DesktopPayStatus>? result;
+            try
+            {
+                result = await payments.QueryAsync(pending.OutTradeNo, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                lastMessage = ex.Message;
+                await LogAsync(
+                    "membership-query-failed",
+                    WMDiagnosticLogLevel.Warning,
+                    ex.Message,
+                    pending.OutTradeNo,
+                    exception: ex).ConfigureAwait(false);
+                continue;
+            }
+
+            if (result?.success != true || result.data is null)
+            {
+                lastMessage = result?.message?.content;
+                await LogAsync(
+                    "membership-query-failed",
+                    WMDiagnosticLogLevel.Warning,
+                    lastMessage ?? "支付状态查询失败。",
+                    pending.OutTradeNo).ConfigureAwait(false);
+                continue;
+            }
+
+            queryReachedServer = true;
+            var status = result.data.Status?.Trim() ?? string.Empty;
+            lastMessage = result.data.Message;
+            await LogAsync(
+                "membership-query-completed",
+                WMDiagnosticLogLevel.Information,
+                string.IsNullOrWhiteSpace(status) ? "UNKNOWN" : status,
+                pending.OutTradeNo,
+                status).ConfigureAwait(false);
+
+            if (string.Equals(status, "PAID", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!await RefreshAccountUntilPaidAsync(result.data.ExpireDate, token).ConfigureAwait(false))
+                    return Pending("支付已确认，会员状态同步中，请稍后刷新。", pending.OutTradeNo);
+
+                await pendingOrders.DeleteAsync(pending.UserId, pending.OutTradeNo, token).ConfigureAwait(false);
+                await LogAsync(
+                    "membership-entitlement-confirmed",
+                    WMDiagnosticLogLevel.Information,
+                    "会员状态已刷新。",
+                    pending.OutTradeNo).ConfigureAwait(false);
+                return Paid("支付成功，会员已开通。");
+            }
+
+            if (string.Equals(status, "CLOSED", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+            {
+                await pendingOrders.DeleteAsync(pending.UserId, pending.OutTradeNo, token).ConfigureAwait(false);
+                return Failed(result.data.Message ?? "订单未支付成功。", pending.OutTradeNo);
+            }
+
+            if (clientCancelled)
+            {
+                await pendingOrders.DeleteAsync(pending.UserId, pending.OutTradeNo, token).ConfigureAwait(false);
+                return Cancelled("已取消支付。", pending.OutTradeNo);
+            }
+        }
+
+        var message = queryReachedServer
+            ? "支付结果确认中，请勿重复付款。"
+            : string.IsNullOrWhiteSpace(lastMessage)
+                ? "暂时无法查询支付结果，请勿重复付款，稍后刷新。"
+                : $"支付结果暂时无法确认：{lastMessage}。请勿重复付款。";
+        return Pending(message, pending.OutTradeNo);
+    }
+
+    private async Task<WMMembershipResult> ReconcileDesktopAsync(
+        string orderId,
+        CancellationToken token)
+    {
+        API<DesktopPayStatus>? result;
+        try
+        {
+            result = await payments.QueryAsync(orderId, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            return Pending(ex.Message, orderId);
+        }
         if (result?.success != true || result.data is null)
-            return new WMMembershipResult(false, result?.message?.content ?? "支付状态查询失败。", orderId);
-        var paid = string.Equals(result.data.Status, "TRADE_SUCCESS", StringComparison.OrdinalIgnoreCase)
+            return Pending(result?.message?.content ?? "支付状态查询失败。", orderId);
+        var paid = string.Equals(result.data.Status, "PAID", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(result.data.Status, "TRADE_SUCCESS", StringComparison.OrdinalIgnoreCase)
                    || string.Equals(result.data.Status, "SUCCESS", StringComparison.OrdinalIgnoreCase)
                    || result.data.ExpireDate > DateTime.Now;
-        if (paid) await accounts.RefreshAsync(token).ConfigureAwait(false);
-        return new WMMembershipResult(paid, result.data.Message ?? (paid ? "支付成功。" : "等待支付。"), orderId);
+        if (paid)
+        {
+            await accounts.RefreshAsync(token).ConfigureAwait(false);
+            return Paid(result.data.Message ?? "支付成功。");
+        }
+        if (string.Equals(result.data.Status, "CLOSED", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(result.data.Status, "FAILED", StringComparison.OrdinalIgnoreCase))
+            return Failed(result.data.Message ?? "支付未完成。", orderId);
+        return Pending(result.data.Message ?? "等待支付。", orderId);
     }
+
+    private async Task<bool> RefreshAccountUntilPaidAsync(
+        DateTime? expectedExpireDate,
+        CancellationToken token)
+    {
+        foreach (var delay in AccountRefreshDelays)
+        {
+            if (delay > TimeSpan.Zero) await clock.DelayAsync(delay, token).ConfigureAwait(false);
+            await accounts.RefreshAsync(token).ConfigureAwait(false);
+            if (AccountReflectsPaidOrder(accounts.State, expectedExpireDate)) return true;
+        }
+        return false;
+    }
+
+    private static bool AccountReflectsPaidOrder(WMAccountState state, DateTime? expectedExpireDate)
+    {
+        if (!state.IsVip) return false;
+        if (expectedExpireDate is null) return true;
+        return state.ExpiresAt is not null && state.ExpiresAt.Value >= expectedExpireDate.Value.AddSeconds(-2);
+    }
+
+    private async Task LogAsync(
+        string eventName,
+        WMDiagnosticLogLevel level,
+        string message,
+        string? orderId = null,
+        string? resultStatus = null,
+        Exception? exception = null)
+    {
+        if (traces is null) return;
+        if (!string.IsNullOrWhiteSpace(orderId))
+            message = message.Replace(orderId, OrderTail(orderId), StringComparison.Ordinal);
+        var properties = new Dictionary<string, string>();
+        if (!string.IsNullOrWhiteSpace(orderId)) properties["orderTail"] = OrderTail(orderId);
+        if (!string.IsNullOrWhiteSpace(resultStatus)) properties["resultStatus"] = resultStatus;
+        try
+        {
+            await traces.RecordLogAsync(new WMDiagnosticLogEvent(
+                DateTime.UtcNow,
+                level,
+                "Application.Membership",
+                eventName,
+                message,
+                exception?.GetType().FullName,
+                exception is null ? null : $"0x{exception.HResult:X8}",
+                Properties: properties.Count == 0 ? null : properties,
+                StackTrace: exception?.StackTrace)).ConfigureAwait(false);
+        }
+        catch
+        {
+        }
+    }
+
+    private static string OrderTail(string orderId) =>
+        orderId.Length <= 8 ? orderId : orderId[^8..];
+
+    private static WMMembershipResult Paid(string message) =>
+        new(WMMembershipPaymentState.Paid, message);
+    private static WMMembershipResult Pending(string message, string? orderId = null) =>
+        new(WMMembershipPaymentState.Pending, message, orderId);
+    private static WMMembershipResult Cancelled(string message, string? orderId = null) =>
+        new(WMMembershipPaymentState.Cancelled, message, orderId);
+    private static WMMembershipResult Failed(string message, string? orderId = null) =>
+        new(WMMembershipPaymentState.Failed, message, orderId);
 }
 
 public interface IWMAdminDashboardService

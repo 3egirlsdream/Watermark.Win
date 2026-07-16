@@ -56,7 +56,7 @@
     top: 0;
 }
 
-.workspace-shell.panel-collapsed { --panel-height: calc(72px + var(--workspace-safe-bottom)); }
+.workspace-shell.panel-collapsed { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
 .workspace-shell.panel-expanded { --panel-height: min(72vh, calc(100vh - var(--toolbar-height) - 28px)); }
 
 .workspace-toolbar {
@@ -914,7 +914,7 @@
 }
 
 @media (orientation: landscape) and (max-height: 560px) and (max-width: 1023px) {
-    .workspace-shell.panel-half { --panel-height: calc(72px + var(--workspace-safe-bottom)); }
+    .workspace-shell.panel-half { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
     .workspace-shell.panel-expanded { --panel-height: min(52vh, calc(100vh - var(--toolbar-height))); }
 }
 
@@ -922,7 +922,7 @@
     .workspace-loading,
     .workspace-fatal { height: 100dvh; }
     .workspace-shell { --panel-height: calc(clamp(248px, 32dvh, 340px) + var(--workspace-safe-bottom)); }
-    .workspace-shell.panel-collapsed { --panel-height: calc(72px + var(--workspace-safe-bottom)); }
+    .workspace-shell.panel-collapsed { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
     .workspace-shell.panel-expanded { --panel-height: min(72dvh, calc(100dvh - var(--toolbar-height) - 28px)); }
     .workspace-export-drawer { max-height: 72dvh; }
 
@@ -932,7 +932,7 @@
     }
 
     @media (orientation: landscape) and (max-height: 560px) and (max-width: 1023px) {
-        .workspace-shell.panel-half { --panel-height: calc(72px + var(--workspace-safe-bottom)); }
+        .workspace-shell.panel-half { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
         .workspace-shell.panel-expanded { --panel-height: min(52dvh, calc(100dvh - var(--toolbar-height))); }
     }
 }

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using Newtonsoft.Json.Linq;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.IO.Compression;
@@ -191,121 +190,52 @@ namespace Watermark.Shared.Models
             await Clipboard.Default.SetTextAsync(uri);
         }
 
-        public async Task<API<string>> AliPays(decimal cost, string tradeName)
+        public Task<WMAlipayAppLaunchResult> LaunchAlipayAppAsync(
+            string orderInfo,
+            CancellationToken cancellationToken = default)
         {
 #if ANDROID
-            var userId = Global.CurrentUser?.ID ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(userId))
+            if (string.IsNullOrWhiteSpace(orderInfo))
+                return Task.FromResult(new WMAlipayAppLaunchResult("INVALID_ORDER", "支付宝订单信息为空"));
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+            if (activity is null)
+                return Task.FromResult(new WMAlipayAppLaunchResult("NO_ACTIVITY", "当前页面无法唤起支付宝"));
+
+            return Task.Run(() =>
             {
-                return new API<string>
-                {
-                    success = false,
-                    message = new APISub { content = "请先登录后再开通会员" }
-                };
-            }
+                cancellationToken.ThrowIfCancellationRequested();
+                using var payTask = new Com.Alipay.Sdk.App.PayTask(activity);
+                var values = payTask.PayV2(orderInfo, true);
+                if (values is null)
+                    return new WMAlipayAppLaunchResult("UNKNOWN", "支付宝未返回支付状态");
+                values.TryGetValue("resultStatus", out var resultStatus);
+                values.TryGetValue("memo", out var memo);
+                return new WMAlipayAppLaunchResult(
+                    string.IsNullOrWhiteSpace(resultStatus) ? "UNKNOWN" : resultStatus,
+                    memo ?? string.Empty);
+            }, cancellationToken);
+#else
+            return Task.FromResult(WMAlipayAppLaunchResult.Unsupported);
+#endif
+        }
 
-            var rs = await api.GetPayToken(cost, tradeName, userId);
-            if (rs != null && rs.success && !string.IsNullOrEmpty(rs.data))
+        public Task<API<string>> AliPays(decimal cost, string tradeName)
+        {
+#if ANDROID
+            return Task.FromResult(new API<string>
             {
-                API<string> jt = await Task.Run(() =>
-                {
-                    string con = rs.data;
-                    var act = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-                    var pa = new Com.Alipay.Sdk.App.PayTask(act);
-                    var payRs = pa.Pay(con, true);
-                    try
-                    {
-                        string json = payRs.ToString();
-                        if (json.StartsWith("resultStatus={9000}"))
-                        {
-                            var start = json.IndexOf("result={");
-                            var content = json.Substring(start + 8);
-                            var end = content.LastIndexOf("};extendInfo=");
-                            content = content.Substring(0, end);
-                            return new API<string> { success = true, data = content };
-                        }
-                        else return new API<string> { success = false, message = new APISub { content = $"支付失败：错误代码" } };
-                    }
-                    catch (Exception ex)
-                    {
-                        return new API<string> { message = new APISub { content = ex.Message }, success = false };
-                    }
-                });
-                if (!jt.success) return jt;
-
-                JObject result = JObject.Parse(jt.data);
-                var response = result?["alipay_trade_app_pay_response"];
-                var outTradeNo = response?["out_trade_no"]?.ToString();
-                if (string.IsNullOrWhiteSpace(outTradeNo))
-                {
-                    return new API<string>
-                    {
-                        success = false,
-                        message = new APISub { content = "支付宝未返回订单号" }
-                    };
-                }
-
-                API<DesktopPayStatus>? confirmed = null;
-                var sawPending = false;
-                for (var attempt = 0; attempt < 5; attempt++)
-                {
-                    confirmed = await api.QueryPay(outTradeNo);
-                    if (confirmed?.success == true
-                        && string.Equals(confirmed.data?.Status, "PAID", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new API<string> { success = true, data = "支付成功" };
-                    }
-
-                    var status = confirmed?.data?.Status;
-                    sawPending |= confirmed?.success == true
-                        && string.Equals(status, "PENDING", StringComparison.OrdinalIgnoreCase);
-                    if (string.Equals(status, "CLOSED", StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new API<string>
-                        {
-                            success = false,
-                            message = new APISub
-                            {
-                                content = confirmed?.data?.Message ?? "支付未完成"
-                            }
-                        };
-                    }
-
-                    if (attempt < 4)
-                    {
-                        await Task.Delay(1000);
-                    }
-                }
-
-                if (sawPending)
-                {
-                    return new API<string>
-                    {
-                        success = true,
-                        data = "支付已完成，会员状态确认中，请勿重复付款"
-                    };
-                }
-
-                var queryMessage = confirmed?.message?.content;
-                return new API<string>
-                {
-                    success = false,
-                    message = new APISub
-                    {
-                        content = string.IsNullOrWhiteSpace(queryMessage)
-                            ? "支付结果暂时无法确认，请勿重复付款，稍后重新登录查看会员状态"
-                            : queryMessage
-                    }
-                };
-            }
-            else
-            {
-                return rs;
-            }
+                success = false,
+                message = new APISub { content = "请通过会员页面发起支付" }
+            });
 #else
             // macOS/iOS: payment not supported in this build
-            return new API<string> { success = false, message = new APISub { content = "当前平台暂不支持支付" } };
+            return Task.FromResult(new API<string>
+            {
+                success = false,
+                message = new APISub { content = "当前平台暂不支持支付" }
+            });
 #endif
         }
 
