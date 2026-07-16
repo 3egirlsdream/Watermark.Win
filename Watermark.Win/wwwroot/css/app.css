@@ -1,4 +1,32 @@
-﻿html, body .m-application {
+﻿:root {
+    --wm-primary: #155fcf;
+    --wm-primary-pressed: #0f4ea9;
+    --wm-primary-soft: #e9f1ff;
+    --wm-page: #f4f6f8;
+    --wm-surface: #ffffff;
+    --wm-surface-subtle: #f6f7f9;
+    --wm-text: #172033;
+    --wm-text-muted: #687386;
+    --wm-divider: rgba(30, 41, 59, .10);
+    --wm-success: #15805d;
+    --wm-danger: #c53a45;
+    --wm-radius-card: 12px;
+    --wm-radius-sheet: 16px;
+    --wm-shadow-card: 0 8px 26px rgba(23, 32, 51, .07);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+button, [role="button"], input, select, textarea { touch-action: manipulation; }
+
+html, body, .m-application {
     font-family: 'MiSans', 'OPPO Sans', 'vivo Sans','PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 

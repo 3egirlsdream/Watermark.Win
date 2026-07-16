@@ -2,8 +2,8 @@
 
 <header class="designer-toolbar" aria-label="模板编辑工具栏">
     <div class="toolbar-command-group toolbar-leading">
-        <MButton Icon Text Small Class="icon-command" title="退出编辑" aria-label="退出编辑" OnClick="async () => await Exit.InvokeAsync()">
-            <MIcon Small>mdi-close</MIcon>
+        <MButton Icon Text Small Class="icon-command exit-command" title="返回" aria-label="返回上一页" OnClick="async () => await Exit.InvokeAsync()">
+            <MIcon Small>mdi-chevron-left</MIcon>
         </MButton>
         <span class="toolbar-divider" aria-hidden="true"></span>
         <MButton Icon Text Small Class="icon-command" title="撤销" aria-label="撤销" Disabled="@(!CanUndo)" OnClick="async () => await Undo.InvokeAsync()">

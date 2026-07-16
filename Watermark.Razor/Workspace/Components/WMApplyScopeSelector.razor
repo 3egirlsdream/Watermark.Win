@@ -1,0 +1,17 @@
+@namespace Watermark.Razor.Workspace.Components
+
+<div class="wm-apply-scope @CssClass" role="radiogroup" aria-label="应用范围">
+    <button type="button" class="@(Value == WMApplyScope.Current ? "is-active" : null)"
+            role="radio" aria-checked="@(Value == WMApplyScope.Current)"
+            @onclick="() => ValueChanged.InvokeAsync(WMApplyScope.Current)">当前</button>
+    <button type="button" class="@(Value == WMApplyScope.Selected ? "is-active" : null)"
+            role="radio" aria-checked="@(Value == WMApplyScope.Selected)"
+            @onclick="() => ValueChanged.InvokeAsync(WMApplyScope.Selected)">已选 @SelectedCount 张</button>
+</div>
+
+@code {
+    [Parameter] public WMApplyScope Value { get; set; } = WMApplyScope.Selected;
+    [Parameter] public EventCallback<WMApplyScope> ValueChanged { get; set; }
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+}

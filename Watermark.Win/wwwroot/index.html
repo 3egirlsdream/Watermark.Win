@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="utf-8" />
@@ -42,6 +42,17 @@
 
 
 <script>
+    window.watermarkObjectUrls = {
+        createFromStream: async function (streamReference, mimeType) {
+            const bytes = await streamReference.arrayBuffer();
+            const blob = new Blob([bytes], { type: mimeType || "application/octet-stream" });
+            return (window.URL || window.webkitURL).createObjectURL(blob);
+        },
+        revoke: function (url) {
+            if (url) (window.URL || window.webkitURL).revokeObjectURL(url);
+        }
+    };
+
     function byteToUrl(blob) {
         // 适配webview和web
         var myBlob = new Blob([blob], { type: "image/jpeg" });

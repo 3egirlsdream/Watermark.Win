@@ -1,0 +1,168 @@
+.wm-mobile-dock {
+    --wm-control-accent: #155fcf;
+    --wm-control-text: #172033;
+    --wm-control-muted: #687386;
+    --wm-control-surface: #eef1f5;
+    --wm-control-active-surface: #fff;
+    --wm-rail-edge: #fff;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -14px 38px rgba(8, 18, 32, .22);
+    color: #172033;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) calc(72px + var(--workspace-safe-bottom, env(safe-area-inset-bottom, 0px)));
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.wm-mobile-dock.is-collapsed .wm-dock-context { display: none; }
+.wm-mobile-dock.is-collapsed .wm-dock-handle { display: none; }
+
+.wm-dock-handle {
+    align-items: flex-start;
+    background: transparent;
+    border: 0;
+    cursor: ns-resize;
+    display: flex;
+    height: 44px;
+    justify-content: center;
+    left: 0;
+    padding: 10px 0 0;
+    position: absolute;
+    right: 0;
+    touch-action: none;
+    width: 100%;
+    z-index: 5;
+}
+.wm-dock-handle span {
+    background: #cfd6df;
+    border-radius: 999px;
+    height: 5px;
+    transition: background-color .16s ease, width .16s ease;
+    width: 42px;
+}
+.wm-dock-handle.is-dragging span { background: #155fcf; width: 54px; }
+.wm-dock-handle:focus-visible { outline: 2px solid #155fcf; outline-offset: -5px; }
+
+.wm-dock-context {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-row: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 22px 14px 0;
+    position: relative;
+}
+.wm-dock-active-control { border-bottom: 1px solid rgba(30, 41, 59, .08); padding: 5px 2px 7px; }
+.wm-dock-active-control :deep(.wm-color-parameter),
+.wm-dock-active-control :deep(.wm-template-border-control) { gap: 2px; }
+.wm-dock-active-control :deep(input[type="range"]) { height: 24px; }
+
+.wm-dock-subcategories { display: flex; gap: 26px; min-height: 44px; overflow-x: auto; scrollbar-width: none; }
+.wm-dock-subcategories button { background: transparent; border: 0; color: #7a8494; flex: 0 0 auto; font: inherit; font-size: .74rem; min-height: 44px; padding: 0 1px; position: relative; }
+.wm-dock-subcategories button.is-active { color: #172033; font-weight: 800; }
+.wm-dock-subcategories button.is-active::after { background: #155fcf; border-radius: 999px; bottom: 2px; content: ""; height: 3px; left: 20%; position: absolute; right: 20%; }
+
+.wm-dock-content { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding: 7px 0 4px; }
+
+.wm-dock-modes {
+    align-items: stretch;
+    background: rgba(255, 255, 255, .98);
+    border-top: 1px solid rgba(30, 41, 59, .08);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-row: 2;
+    height: 100%;
+    padding: 4px 8px var(--workspace-safe-bottom, env(safe-area-inset-bottom, 0px));
+    position: relative;
+}
+.wm-dock-modes button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    color: #778295;
+    display: flex;
+    flex-direction: column;
+    font: inherit;
+    gap: 2px;
+    justify-content: center;
+    min-height: 64px;
+    padding: 4px 2px;
+}
+.wm-dock-mode-icon {
+    align-items: center;
+    border-radius: 11px;
+    display: flex;
+    height: 34px;
+    justify-content: center;
+    transition: background-color .16s ease, color .16s ease, transform .16s ease;
+    width: 46px;
+}
+.wm-dock-mode-icon :deep(.m-icon) { font-size: 22px; }
+.wm-dock-mode-label {
+    color: currentColor;
+    display: block !important;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 16px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    white-space: nowrap;
+}
+.wm-dock-modes button.is-active { color: #155fcf; }
+.wm-dock-modes button.is-active .wm-dock-mode-icon {
+    background: #e8f1ff;
+    box-shadow: inset 0 0 0 1px rgba(21, 95, 207, .06);
+    transform: translateY(-1px);
+}
+.wm-dock-modes button.is-active .wm-dock-mode-label { font-weight: 800; }
+.wm-dock-modes button:active .wm-dock-mode-icon { background: #edf1f6; }
+
+.wm-dock-template-card { background: transparent; border: 0; color: #687386; display: flex; flex: 0 0 78px; flex-direction: column; font: inherit; font-size: .62rem; gap: 4px; padding: 0; width: 78px; }
+.wm-dock-template-card > span { align-items: center; background: #f0f2f5; border: 2px solid transparent; border-radius: 11px; display: flex; height: 70px; justify-content: center; overflow: hidden; width: 78px; }
+.wm-dock-template-card img { height: 100%; object-fit: cover; width: 100%; }
+.wm-dock-template-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wm-dock-template-card.is-active > span { border-color: #155fcf; box-shadow: 0 0 0 2px #dbe9ff; }
+
+.wm-dock-tool-card { align-items: center; background: #f1f3f6; border: 1px solid transparent; border-radius: 13px; color: #536075; display: flex; flex: 0 0 82px; flex-direction: column; font: inherit; font-size: .65rem; gap: 3px; justify-content: center; min-height: 68px; padding: 6px; position: relative; width: 82px; }
+.wm-dock-tool-card :deep(.m-icon) { font-size: 22px; }
+.wm-dock-tool-card img { border-radius: 7px; height: 32px; object-fit: cover; width: 44px; }
+.wm-dock-tool-card output { color: #8993a1; font-size: .58rem; }
+.wm-dock-tool-card.is-active { background: #e8f1ff; border-color: #9fc0ee; color: #155fcf; }
+
+.wm-dock-media-card, .wm-dock-media-add { background: #f3f5f7; border: 1px solid transparent; border-radius: 12px; color: #536075; display: grid; flex: 0 0 118px; font: inherit; gap: 4px; grid-template-rows: 50px auto 30px; overflow: hidden; padding: 5px; width: 118px; }
+.wm-dock-media-card > img, .wm-dock-media-add > img { border-radius: 8px; height: 50px; object-fit: cover; width: 100%; }
+.wm-dock-media-card > strong { font-size: .58rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wm-dock-media-card > div { display: grid; gap: 2px; grid-template-columns: 1fr 1fr; }
+.wm-dock-media-card button { background: #fff; border: 0; border-radius: 6px; color: #687386; font-size: .53rem; min-height: 30px; }
+.wm-dock-media-card button.is-active { background: #155fcf; color: #fff; }
+.wm-dock-media-add { grid-template-rows: 50px auto; }
+.wm-dock-media-add span { align-items: center; display: flex; font-size: .58rem; gap: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wm-dock-primary-action { align-items: center; background: #155fcf; border: 0; border-radius: 11px; color: #fff; display: flex; flex: 0 0 auto; font: inherit; font-size: .7rem; font-weight: 800; gap: 7px; justify-content: center; min-height: 48px; width: 100%; }
+.wm-dock-primary-action:disabled { background: #b8c2cf; }
+.wm-dock-unavailable { align-items: center; background: #f2f5f8; border-radius: 11px; color: #687386; display: flex; font-size: .64rem; gap: 8px; min-height: 52px; padding: 8px 11px; }
+.wm-dock-empty, .wm-dock-generate-summary { background: #f3f5f8; border-radius: 11px; color: #687386; font-size: .66rem; margin: 0; padding: 13px; }
+.wm-dock-generate-summary { display: flex; flex-direction: column; gap: 4px; }
+.wm-dock-generate-summary strong { color: #172033; }
+
+.wm-dock-advanced-heading { align-items: center; border-bottom: 1px solid rgba(30, 41, 59, .08); display: flex; gap: 8px; min-height: 52px; }
+.wm-dock-advanced-heading button { align-items: center; background: #eef1f5; border: 0; border-radius: 9px; color: #536075; display: flex; height: 40px; justify-content: center; width: 40px; }
+.wm-dock-advanced-heading div { display: flex; flex-direction: column; }
+.wm-dock-advanced-heading strong { font-size: .76rem; }
+.wm-dock-advanced-heading small { color: #7a8494; font-size: .6rem; }
+.wm-dock-advanced-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 1px 18px; scrollbar-width: none; }
+
+@media (orientation: landscape) and (max-height: 560px) {
+    .wm-mobile-dock { border-radius: 14px 14px 0 0; }
+    .wm-mobile-dock:not(.is-advanced) .wm-dock-context { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wm-mobile-dock * { scroll-behavior: auto !important; }
+}

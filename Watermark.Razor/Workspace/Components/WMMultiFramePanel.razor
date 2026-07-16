@@ -1,0 +1,55 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="wm-multiframe" aria-label="多帧设置">
+    <header><div><strong>多帧合成</strong><small>素材角色与参数保存在当前会话</small></div><span class="wm-capability @(Capability.IsAvailable ? "is-ready" : null)">@(Capability.IsAvailable ? "设备可用" : "暂未开放")</span></header>
+    <label class="wm-mode"><span>处理模式</span><select value="@Mode" @onchange="ChangeModeAsync"><option value="@WMStackMode.StarTrail">星轨</option><option value="@WMStackMode.StaticSky">静态星空 / 多帧降噪</option></select></label>
+    @if (Capability.IsAvailable)
+    {
+        <div class="wm-frame-list" aria-label="多帧素材角色">
+            @foreach (var media in Media)
+            {
+                <div><span title="@media.DisplayName">@media.DisplayName</span><div role="radiogroup" aria-label="@media.DisplayName 的角色"><button type="button" class="@(Role(media.Id) == WMFrameRole.Light ? "is-active" : null)" @onclick="() => ChangeRoleAsync(media.Id, WMFrameRole.Light)">Light</button><button type="button" class="@(Role(media.Id) == WMFrameRole.Dark ? "is-active" : null)" @onclick="() => ChangeRoleAsync(media.Id, WMFrameRole.Dark)">Dark</button><button type="button" class="@(Role(media.Id) is null ? "is-active" : null)" @onclick="() => ChangeRoleAsync(media.Id, null)">排除</button></div></div>
+            }
+        </div>
+        <div class="wm-frame-options">
+            @if (Mode == WMStackMode.StaticSky)
+            {
+                <label><input type="checkbox" checked="@NormalizeExposure" @onchange="args => NormalizeExposureChanged.InvokeAsync((bool)args.Value!)" /><span>归一化曝光</span></label>
+                <label><input type="checkbox" checked="@AutoCrop" @onchange="args => AutoCropChanged.InvokeAsync((bool)args.Value!)" /><span>自动裁切配准边缘</span></label>
+            }
+            <label><input type="checkbox" checked="@RepairHotPixels" @onchange="args => RepairHotPixelsChanged.InvokeAsync((bool)args.Value!)" /><span>修复热像素</span></label>
+        </div>
+        <p>已选择 @LightCount 张 Light、@DarkCount 张 Dark。结果会作为稳定产物写入历史，原始素材不会被覆盖。</p>
+        <button type="button" class="wm-frame-run" disabled="@(Busy || !CanRun)" @onclick="RunRequested">@if (Busy) { <MProgressCircular Indeterminate Size="20" Width="2" /> }<span>@(Busy ? Message : "开始合成")</span></button>
+    }
+    else
+    {
+        <div class="wm-unavailable"><MIcon>mdi-weather-night</MIcon><p>@(Capability.UnavailableReason ?? "当前设备未开放本地重型影像处理。")</p></div>
+    }
+</section>
+
+@code {
+    [Parameter] public IReadOnlyList<WMWorkspaceMedia> Media { get; set; } = [];
+    [Parameter] public IReadOnlyDictionary<string, WMFrameRole?> Roles { get; set; } = new Dictionary<string, WMFrameRole?>();
+    [Parameter] public WMStackMode Mode { get; set; } = WMStackMode.StarTrail;
+    [Parameter] public EventCallback<WMStackMode> ModeChanged { get; set; }
+    [Parameter] public bool NormalizeExposure { get; set; } = true;
+    [Parameter] public EventCallback<bool> NormalizeExposureChanged { get; set; }
+    [Parameter] public bool RepairHotPixels { get; set; } = true;
+    [Parameter] public EventCallback<bool> RepairHotPixelsChanged { get; set; }
+    [Parameter] public bool AutoCrop { get; set; } = true;
+    [Parameter] public EventCallback<bool> AutoCropChanged { get; set; }
+    [Parameter, EditorRequired] public WMImagingCapabilityStatus Capability { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback<WMFrameRoleChange> RoleChanged { get; set; }
+    [Parameter] public EventCallback RunRequested { get; set; }
+
+    private int LightCount => Roles.Count(pair => pair.Value == WMFrameRole.Light);
+    private int DarkCount => Roles.Count(pair => pair.Value == WMFrameRole.Dark);
+    private bool CanRun => Capability.IsAvailable && LightCount >= (Mode == WMStackMode.StarTrail ? 2 : 3);
+    private WMFrameRole? Role(string mediaId) => Roles.TryGetValue(mediaId, out var role) ? role : null;
+    private Task ChangeRoleAsync(string mediaId, WMFrameRole? role) => RoleChanged.InvokeAsync(new WMFrameRoleChange(mediaId, role));
+    private Task ChangeModeAsync(ChangeEventArgs args) => Enum.TryParse<WMStackMode>(args.Value?.ToString(), out var mode) ? ModeChanged.InvokeAsync(mode) : Task.CompletedTask;
+}

@@ -1,7 +1,8 @@
 @using System.Globalization
 @using Watermark.Shared.Models
+@using Watermark.Razor.Workspace
 @namespace Watermark.Razor.Components.Dashboard
-@inject APIHelper Api
+@inject IWMAdminDashboardService DashboardService
 
 @if (!IsAuthorized)
 {
@@ -275,7 +276,7 @@ else
     private string? FilterError;
     private int LoadVersion;
 
-    private bool IsAuthorized => AdminAccessPolicy.IsAdmin(Global.CurrentUser);
+    private bool IsAuthorized => DashboardService.IsAuthorized;
     private static DateTime Today => DateTime.UtcNow.AddHours(8).Date;
     private string TodayText => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     private string StartDateText => StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -374,19 +375,19 @@ else
         ErrorMessage = null;
         try
         {
-            var result = await Api.GetDashboardOverviewAsync(StartDate, EndDate);
+            var result = await DashboardService.LoadAsync(StartDate, EndDate);
             if (version != LoadVersion)
             {
                 return;
             }
 
-            if (result.success && result.data is not null)
+            if (result is not null)
             {
-                Data = result.data;
+                Data = result;
             }
             else
             {
-                ErrorMessage = result.message?.content ?? "服务端没有返回可用数据";
+                ErrorMessage = DashboardService.LastError ?? "服务端没有返回可用数据";
             }
         }
         catch (Exception ex)

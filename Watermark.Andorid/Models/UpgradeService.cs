@@ -37,7 +37,8 @@ namespace Watermark.Andorid.Models
             {
                 //给临时读取权限
                 intent.SetFlags(ActivityFlags.GrantReadUriPermission);
-                var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(Android.App.Application.Context, "com.masa.mauidemo.fileprovider", apkFile);
+                var authority = $"{AppInfo.PackageName}.fileProvider";
+                var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(Android.App.Application.Context, authority, apkFile);
                 // 设置显式 MIME 数据类型
                 intent.SetDataAndType(uri, "application/vnd.android.package-archive");
             }

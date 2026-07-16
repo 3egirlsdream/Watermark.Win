@@ -1,11 +1,11 @@
-using Watermark.Razor.Components.Mac.Editor;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Enums;
 using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
 
-public sealed class MacTemplateStoreTests : IDisposable
+public sealed class WMTemplateStoreTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
@@ -20,8 +20,8 @@ public sealed class MacTemplateStoreTests : IDisposable
         var config = Path.Combine(directory, "config.json");
         await File.WriteAllTextAsync(config, "original");
 
-        await Assert.ThrowsAsync<MacTemplateValidationException>(
-            () => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAsync<WMTemplateValidationException>(
+            () => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.Equal("original", await File.ReadAllTextAsync(config));
     }
@@ -30,7 +30,7 @@ public sealed class MacTemplateStoreTests : IDisposable
     public async Task ValidCanvas_ReplacesConfigAndRemovesTemporaryFile()
     {
         var canvas = SplitCanvas();
-        await new MacTemplateStore().SaveAsync(canvas, root);
+        await new WMTemplateStore().SaveAsync(canvas, root);
         var config = Path.Combine(root, canvas.ID, "config.json");
         Assert.Contains(canvas.ID, await File.ReadAllTextAsync(config));
         Assert.False(File.Exists(config + ".tmp"));
@@ -44,7 +44,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         canvas.Children.Add(new WMContainer { ID = "DUPLICATE" });
         var directory = Path.Combine(root, canvas.ID);
 
-        await Assert.ThrowsAsync<MacTemplateValidationException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAsync<WMTemplateValidationException>(() => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.False(Directory.Exists(directory));
     }
@@ -58,11 +58,11 @@ public sealed class MacTemplateStoreTests : IDisposable
         rootContainer.Transform = new WMTransform { ScaleX = double.NaN };
         canvas.Children.Add(rootContainer);
 
-        var errors = MacTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+        var errors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
 
-        Assert.Contains(errors, error => error.Field == "Hierarchy" && error.Severity == MacValidationSeverity.Error);
-        Assert.Contains(errors, error => error.Field == "Transform.ScaleX" && error.Severity == MacValidationSeverity.Error);
-        Assert.Contains(errors, error => error.Field == "Path" && error.Severity == MacValidationSeverity.Error);
+        Assert.Contains(errors, error => error.Field == "Hierarchy" && error.Severity == WMValidationSeverity.Error);
+        Assert.Contains(errors, error => error.Field == "Transform.ScaleX" && error.Severity == WMValidationSeverity.Error);
+        Assert.Contains(errors, error => error.Field == "Path" && error.Severity == WMValidationSeverity.Error);
     }
 
     [Fact]
@@ -73,10 +73,10 @@ public sealed class MacTemplateStoreTests : IDisposable
         container.Controls.Add(new WMLogo { Path = "missing.png" });
         canvas.Children.Add(container);
 
-        var errors = MacTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+        var errors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
 
-        Assert.Contains(errors, error => error.ControlId != null && error.Severity == MacValidationSeverity.Warning);
-        Assert.DoesNotContain(errors, error => error.Severity == MacValidationSeverity.Error);
+        Assert.Contains(errors, error => error.ControlId != null && error.Severity == WMValidationSeverity.Warning);
+        Assert.DoesNotContain(errors, error => error.Severity == WMValidationSeverity.Error);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         Directory.CreateDirectory(Path.Combine(directory, "config.json"));
         var temporary = Path.Combine(directory, "config.json.tmp");
 
-        await Assert.ThrowsAnyAsync<IOException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAnyAsync<IOException>(() => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.False(File.Exists(temporary));
     }
@@ -140,7 +140,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var canvas = SplitCanvas();
         canvas.ID = "../outside";
 
-        await Assert.ThrowsAnyAsync<Exception>(() => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAnyAsync<Exception>(() => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.False(Directory.Exists(Path.Combine(root, "..", "outside")));
     }
@@ -165,7 +165,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var templateDirectory = Path.Combine(root, canvas.ID);
 
         Assert.False(Directory.Exists(templateDirectory));
-        await new MacTemplateStore().SaveAsync(canvas, root);
+        await new WMTemplateStore().SaveAsync(canvas, root);
 
         Assert.True(File.Exists(Path.Combine(templateDirectory, "default.jpg")));
         var persisted = Global.ReadConfigFromPath(Path.Combine(templateDirectory, "config.json"));
@@ -192,7 +192,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var directory = Path.Combine(root, canvas.ID);
         Directory.CreateDirectory(Path.Combine(directory, "config.json"));
 
-        await Assert.ThrowsAnyAsync<IOException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAnyAsync<IOException>(() => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.True(Directory.Exists(Path.Combine(directory, "config.json")));
         Assert.False(File.Exists(Path.Combine(directory, "default.jpg")));
@@ -208,7 +208,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var config = Path.Combine(directory, "config.json");
         await File.WriteAllTextAsync(config, "original");
 
-        await Assert.ThrowsAsync<MacTemplateValidationException>(() => new MacTemplateStore().SaveAsync(canvas, root));
+        await Assert.ThrowsAsync<WMTemplateValidationException>(() => new WMTemplateStore().SaveAsync(canvas, root));
 
         Assert.Equal("original", await File.ReadAllTextAsync(config));
     }
@@ -222,7 +222,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var defaultImage = Path.Combine(directory, "default.jpg");
         await File.WriteAllBytesAsync(defaultImage, [1, 2, 3]);
 
-        await new MacTemplateStore().SaveAsync(canvas, root);
+        await new WMTemplateStore().SaveAsync(canvas, root);
 
         Assert.False(File.Exists(defaultImage));
     }
@@ -237,7 +237,7 @@ public sealed class MacTemplateStoreTests : IDisposable
         var defaultImage = Path.Combine(directory, "default.jpg");
         await File.WriteAllBytesAsync(defaultImage, [1, 2, 3]);
 
-        await new MacTemplateStore().SaveAsync(canvas, root);
+        await new WMTemplateStore().SaveAsync(canvas, root);
 
         Assert.Equal([1, 2, 3], await File.ReadAllBytesAsync(defaultImage));
     }
@@ -259,16 +259,16 @@ public sealed class MacTemplateStoreTests : IDisposable
     private void AssertTransformInvalid(string field, Action<WMTransform> configure)
     {
         var errors = TransformErrors(configure);
-        Assert.Contains(errors, error => error.Field == field && error.Severity == MacValidationSeverity.Error);
+        Assert.Contains(errors, error => error.Field == field && error.Severity == WMValidationSeverity.Error);
     }
 
-    private IReadOnlyList<MacTemplateValidationError> TransformErrors(Action<WMTransform> configure)
+    private IReadOnlyList<WMTemplateValidationError> TransformErrors(Action<WMTransform> configure)
     {
         var canvas = SplitCanvas();
         var container = new WMContainer { Transform = new WMTransform() };
         configure(container.Transform);
         canvas.Children.Add(container);
-        return MacTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+        return WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
     }
 
     private static void SetTransformField(WMTransform transform, string fieldName, double value) =>

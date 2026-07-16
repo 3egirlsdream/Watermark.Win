@@ -1,0 +1,26 @@
+.wm-privacy-bootstrap {
+    align-items: center;
+    background: #f4f7fb;
+    display: flex;
+    height: 100vh;
+    inset: 0;
+    justify-content: center;
+    position: fixed;
+    width: 100%;
+}
+
+.wm-privacy-bootstrap img {
+    border-radius: 20px;
+    height: 72px;
+    width: 72px;
+}
+
+.wm-privacy-startup-app {
+    height: 100vh;
+    overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+    .wm-privacy-bootstrap,
+    .wm-privacy-startup-app { height: 100dvh; }
+}

@@ -1,0 +1,73 @@
+@using Watermark.Razor.BlazorPages
+@using Watermark.Razor.Workspace
+@inject IWMAppSettingsService SettingsService
+@inject IWMApplicationStartupService StartupService
+
+@if (!settingsResolved)
+{
+    <div class="wm-privacy-bootstrap" aria-label="正在启动轻影">
+        <img src="_content/Watermark.Razor/img/app-icon.svg" alt="" />
+    </div>
+}
+else if (privacyRequired)
+{
+    <MApp Class="wm-privacy-startup-app">
+        <FirstPage OnClosed="OnPrivacyClosedAsync" />
+    </MApp>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool settingsResolved;
+    private bool privacyRequired;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var settings = await SettingsService.LoadAsync();
+            privacyRequired = !settings.PrivacyAccepted;
+            if (settings.PrivacyAccepted)
+            {
+                await InitializeApplicationSafelyAsync();
+            }
+        }
+        catch
+        {
+            privacyRequired = true;
+        }
+        finally
+        {
+            settingsResolved = true;
+        }
+    }
+
+    private async Task OnPrivacyClosedAsync(bool accepted)
+    {
+        await SettingsService.SetPrivacyConsentAsync(accepted);
+        if (accepted)
+        {
+            await InitializeApplicationSafelyAsync();
+        }
+        privacyRequired = false;
+    }
+
+    private async Task InitializeApplicationSafelyAsync()
+    {
+        try
+        {
+            await StartupService.InitializeAfterPrivacyConsentAsync();
+        }
+        catch
+        {
+            // Startup performs best-effort network work. A transient account or
+            // resource failure must not send an already-consented user back to the
+            // privacy screen or prevent offline use.
+        }
+    }
+}

@@ -1,10 +1,10 @@
-using Watermark.Razor.Components.Mac.Editor;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
 
-public sealed class MacControlTreeTests
+public sealed class WMControlTreeTests
 {
     [Fact]
     public void Move_ReparentsControlAndKeepsUniqueId()
@@ -16,11 +16,11 @@ public sealed class MacControlTreeTests
         left.Controls.Add(text);
         canvas.Children.AddRange([left, right]);
 
-        Assert.True(MacControlTree.Move(canvas, text.ID, right.ID, 0));
+        Assert.True(WMControlTree.Move(canvas, text.ID, right.ID, 0));
         Assert.Empty(left.Controls);
         Assert.Same(text, right.Controls[0]);
-        Assert.Equal(MacControlTree.Flatten(canvas).Count,
-            MacControlTree.Flatten(canvas).Select(x => x.ID).Distinct().Count());
+        Assert.Equal(WMControlTree.Flatten(canvas).Count,
+            WMControlTree.Flatten(canvas).Select(x => x.ID).Distinct().Count());
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class MacControlTreeTests
         left.Controls.Add(text);
         canvas.Children.AddRange([left, right]);
 
-        Assert.True(MacControlTree.Move(canvas, text.ID, right.ID, 0));
+        Assert.True(WMControlTree.Move(canvas, text.ID, right.ID, 0));
         var restored = Global.ReadConfig(Global.CanvasSerialize(canvas));
 
         Assert.Empty(restored.Children.Single(container => container.ID == left.ID).Controls);
@@ -57,8 +57,8 @@ public sealed class MacControlTreeTests
         root.Controls.Add(nested);
         canvas.Children.Add(root);
 
-        Assert.False(MacControlTree.CanMove(canvas, root.ID, root.ID, out _));
-        Assert.False(MacControlTree.CanMove(canvas, root.ID, nested.ID, out _));
+        Assert.False(WMControlTree.CanMove(canvas, root.ID, root.ID, out _));
+        Assert.False(WMControlTree.CanMove(canvas, root.ID, nested.ID, out _));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class MacControlTreeTests
         root.Controls.Add(new WMText { Name = "text" });
         canvas.Children.Add(root);
 
-        var duplicate = Assert.IsType<WMContainer>(MacControlTree.Duplicate(canvas, root.ID));
+        var duplicate = Assert.IsType<WMContainer>(WMControlTree.Duplicate(canvas, root.ID));
         Assert.NotEqual(root.ID, duplicate.ID);
         Assert.NotEqual(root.Controls[0].ID, duplicate.Controls[0].ID);
     }
@@ -84,7 +84,7 @@ public sealed class MacControlTreeTests
         targetRoot.Controls.Add(targetNested);
         canvas.Children.AddRange([moving, targetRoot]);
 
-        Assert.False(MacControlTree.CanMove(canvas, moving.ID, targetNested.ID, out var error));
+        Assert.False(WMControlTree.CanMove(canvas, moving.ID, targetNested.ID, out var error));
         Assert.Contains("两级", error);
     }
 
@@ -93,7 +93,7 @@ public sealed class MacControlTreeTests
     {
         var canvas = new WMCanvas();
 
-        var text = Assert.IsType<WMText>(MacControlTree.Add(canvas, typeof(WMText), null));
+        var text = Assert.IsType<WMText>(WMControlTree.Add(canvas, typeof(WMText), null));
 
         var parent = Assert.Single(canvas.Children);
         Assert.Equal("新容器", parent.Name);
@@ -110,8 +110,8 @@ public sealed class MacControlTreeTests
         parent.Controls.AddRange([first, second]);
         canvas.Children.Add(parent);
 
-        Assert.False(MacControlTree.Move(canvas, first.ID, parent.ID, -1));
-        Assert.False(MacControlTree.Move(canvas, first.ID, parent.ID, 2));
+        Assert.False(WMControlTree.Move(canvas, first.ID, parent.ID, -1));
+        Assert.False(WMControlTree.Move(canvas, first.ID, parent.ID, 2));
         Assert.Same(first, parent.Controls[0]);
         Assert.Same(second, parent.Controls[1]);
     }
@@ -127,7 +127,7 @@ public sealed class MacControlTreeTests
         parent.Controls.AddRange([first, second, third]);
         canvas.Children.Add(parent);
 
-        Assert.True(MacControlTree.Move(canvas, second.ID, parent.ID, 2));
+        Assert.True(WMControlTree.Move(canvas, second.ID, parent.ID, 2));
 
         Assert.Equal(["first", "third", "second"], parent.Controls.Select(control => control.Name));
     }
@@ -142,7 +142,7 @@ public sealed class MacControlTreeTests
         source.Controls.Add(text);
         canvas.Children.AddRange([source, target]);
 
-        Assert.False(MacControlTree.Move(canvas, text.ID, target.ID, 1));
+        Assert.False(WMControlTree.Move(canvas, text.ID, target.ID, 1));
         Assert.Same(text, Assert.Single(source.Controls));
         Assert.Empty(target.Controls);
     }
@@ -152,8 +152,8 @@ public sealed class MacControlTreeTests
     {
         var canvas = new WMCanvas();
 
-        Assert.Throws<ArgumentException>(() => MacControlTree.Add(canvas, typeof(IWMControl), null));
-        Assert.Throws<ArgumentException>(() => MacControlTree.Add(canvas, typeof(UnsupportedControl), null));
+        Assert.Throws<ArgumentException>(() => WMControlTree.Add(canvas, typeof(IWMControl), null));
+        Assert.Throws<ArgumentException>(() => WMControlTree.Add(canvas, typeof(UnsupportedControl), null));
         Assert.Empty(canvas.Children);
     }
 
@@ -161,12 +161,12 @@ public sealed class MacControlTreeTests
     public void Add_UsesUniqueUppercaseGuidIdsForAllInsertedControls()
     {
         var canvas = new WMCanvas();
-        var container = MacControlTree.Add(canvas, typeof(WMContainer), null);
-        var text = MacControlTree.Add(canvas, typeof(WMText), null);
-        var logo = MacControlTree.Add(canvas, typeof(WMLogo), null);
-        var line = MacControlTree.Add(canvas, typeof(WMLine), null);
+        var container = WMControlTree.Add(canvas, typeof(WMContainer), null);
+        var text = WMControlTree.Add(canvas, typeof(WMText), null);
+        var logo = WMControlTree.Add(canvas, typeof(WMLogo), null);
+        var line = WMControlTree.Add(canvas, typeof(WMLine), null);
 
-        var controls = MacControlTree.Flatten(canvas);
+        var controls = WMControlTree.Flatten(canvas);
         Assert.Equal(controls.Count, controls.Select(control => control.ID).Distinct().Count());
         Assert.All(controls, control =>
         {

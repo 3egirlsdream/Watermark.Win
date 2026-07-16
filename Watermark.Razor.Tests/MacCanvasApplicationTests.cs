@@ -1,10 +1,10 @@
-using Watermark.Razor.Components.Mac;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
 
-public sealed class MacCanvasApplicationTests
+public sealed class WMCanvasApplicationTests
 {
     [Fact]
     public void CreateForImage_PreservesEditedLayoutAndUsesTargetImageRuntimeData()
@@ -25,7 +25,7 @@ public sealed class MacCanvasApplicationTests
         };
         target.Canvas.Exif["camera"] = new Dictionary<string, string> { ["Model"] = "X-T5" };
 
-        var applied = MacCanvasApplication.CreateForImage(source, target);
+        var applied = WMCanvasApplication.CreateForImage(source, target);
         var logo = Assert.IsType<WMLogo>(Assert.Single(Assert.Single(applied.Children).Controls));
 
         Assert.Equal("edited", applied.Name);
@@ -47,7 +47,7 @@ public sealed class MacCanvasApplicationTests
             Canvas = new WMCanvas { Path = "/editing-session/color-proxy.png" }
         };
 
-        var applied = MacCanvasApplication.CreateForImage(new WMCanvas(), target);
+        var applied = WMCanvasApplication.CreateForImage(new WMCanvas(), target);
 
         Assert.Equal("/photos/original.jpg", target.Path);
         Assert.Equal("/editing-session/color-proxy.png", applied.Path);

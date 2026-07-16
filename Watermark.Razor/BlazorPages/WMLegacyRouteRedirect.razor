@@ -1,0 +1,30 @@
+@page "/login"
+@page "/signup/{FuncType:int}"
+@page "/logout"
+@page "/appsetting"
+@page "/dms"
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public int FuncType { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath.ToLowerInvariant();
+        var target = path switch
+        {
+            "/login" => "/account/login",
+            "/logout" => "/account/delete",
+            "/appsetting" => "/settings",
+            "/dms" => "/admin/dashboard",
+            _ when path.StartsWith("/signup/", StringComparison.Ordinal) => FuncType switch
+            {
+                1 => "/account/recover",
+                2 => "/account/change-password",
+                _ => "/account/register"
+            },
+            _ => "/profile"
+        };
+        Navigation.NavigateTo(target, replace: true);
+    }
+}

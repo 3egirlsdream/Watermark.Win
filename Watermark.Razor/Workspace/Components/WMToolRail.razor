@@ -1,0 +1,12 @@
+@namespace Watermark.Razor.Workspace.Components
+
+<div class="wm-tool-rail @CssClass" role="@Role" aria-label="@AriaLabel">
+    <div>@ChildContent</div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "工具列表";
+    [Parameter] public string Role { get; set; } = "group";
+    [Parameter] public string? CssClass { get; set; }
+}

@@ -47,6 +47,40 @@
 		<AssemblyName>Litograph</AssemblyName>
     </PropertyGroup>
 
+    <!-- Heavy imaging is enabled for normal product builds. Runtime capability
+         providers still reject work when the native ABI, memory or disk checks
+         do not pass; QA builds may additionally override individual flags. -->
+    <PropertyGroup>
+      <WMImagingMasterEnabled Condition="'$(WMImagingMasterEnabled)' == ''">true</WMImagingMasterEnabled>
+      <WMImagingRawEnabled Condition="'$(WMImagingRawEnabled)' == ''">true</WMImagingRawEnabled>
+      <WMImagingStarTrailEnabled Condition="'$(WMImagingStarTrailEnabled)' == ''">true</WMImagingStarTrailEnabled>
+      <WMImagingMultiFrameEnabled Condition="'$(WMImagingMultiFrameEnabled)' == ''">true</WMImagingMultiFrameEnabled>
+      <WMImagingPng16Enabled Condition="'$(WMImagingPng16Enabled)' == ''">true</WMImagingPng16Enabled>
+      <WMImagingTiff16Enabled Condition="'$(WMImagingTiff16Enabled)' == ''">true</WMImagingTiff16Enabled>
+      <WMImagingAllowQaOverride Condition="'$(WMImagingAllowQaOverride)' == ''">false</WMImagingAllowQaOverride>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingMasterEnabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_MASTER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingRawEnabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_RAW</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingStarTrailEnabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_STAR_TRAIL</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingMultiFrameEnabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_MULTI_FRAME</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingPng16Enabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_PNG16</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingTiff16Enabled)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_TIFF16</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WMImagingAllowQaOverride)' == 'true'">
+      <DefineConstants>$(DefineConstants);WM_IMAGING_QA_OVERRIDE</DefineConstants>
+    </PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<ApplicationTitle>轻影</ApplicationTitle>
@@ -85,7 +119,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.19</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>1.2.20</ApplicationDisplayVersion>
+	  <ApplicationVersion>4</ApplicationVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
 	  <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>

@@ -1,0 +1,51 @@
+@using Watermark.Razor.Workspace
+
+<section class="wm-recovery" role="alert" aria-labelledby="wm-recovery-title">
+    <span class="wm-recovery-icon"><MIcon>mdi-backup-restore</MIcon></span>
+    <div>
+        <strong id="wm-recovery-title">需要恢复工作台</strong>
+        @foreach (var issue in Result.Issues)
+        {
+            <p>@issue.Message</p>
+            <div class="wm-recovery-actions">
+                @foreach (var action in issue.AvailableActions)
+                {
+                    <button type="button" class="@(action == WMWorkspaceRecoveryAction.DiscardSession ? "is-danger" : null)"
+                            disabled="@Busy" @onclick="() => InvokeAsync(action, issue.AffectedIds)">
+                        @ActionLabel(action)
+                    </button>
+                }
+            </div>
+        }
+        @if (Result.Issues.Count == 0)
+        {
+            <p>@StatusMessage(Result.Status)</p>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public WMWorkspaceOpenResult Result { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceRecoveryRequest> RecoveryRequested { get; set; }
+
+    private Task InvokeAsync(WMWorkspaceRecoveryAction action, IReadOnlyList<string> affectedIds) =>
+        RecoveryRequested.InvokeAsync(new WMWorkspaceRecoveryRequest(action, affectedIds));
+
+    private static string ActionLabel(WMWorkspaceRecoveryAction action) => action switch
+    {
+        WMWorkspaceRecoveryAction.RestoreBackup => "恢复上次备份",
+        WMWorkspaceRecoveryAction.RemoveAffectedMedia => "移除缺失素材并继续",
+        WMWorkspaceRecoveryAction.RemoveTemplateOperation => "移除缺失模板效果并继续",
+        WMWorkspaceRecoveryAction.DiscardSession => "放弃这个会话",
+        _ => "继续"
+    };
+
+    private static string StatusMessage(WMWorkspaceOpenStatus status) => status switch
+    {
+        WMWorkspaceOpenStatus.Missing => "会话已过期或不存在。",
+        WMWorkspaceOpenStatus.UnsupportedVersion => "该会话由更新版本创建，请升级应用后再打开。",
+        WMWorkspaceOpenStatus.CorruptManifest => "会话清单已损坏，且没有可用备份。",
+        _ => "当前会话无法自动恢复。"
+    };
+}

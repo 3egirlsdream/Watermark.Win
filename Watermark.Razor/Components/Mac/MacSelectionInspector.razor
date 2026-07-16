@@ -1,4 +1,4 @@
-@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Razor.Workspace
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @implements IDisposable
@@ -308,7 +308,7 @@
 </aside>
 
 @code {
-    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public WMDesignFunc DesignFunc { get; set; }
 
@@ -320,7 +320,7 @@
 
     private IWMControl SelectedControl => string.IsNullOrWhiteSpace(Editor.SelectedControlId)
         ? null
-        : MacControlTree.Find(Editor.Draft, Editor.SelectedControlId);
+        : WMControlTree.Find(Editor.Draft, Editor.SelectedControlId);
     private WMDesignBounds? SelectedBounds => string.IsNullOrWhiteSpace(Editor.SelectedControlId)
         ? null
         : RenderResult?.Bounds.FirstOrDefault(bounds => bounds.ControlId == Editor.SelectedControlId);
@@ -329,7 +329,7 @@
     private string CurrentTypeName => SelectedControl is null ? "画布" : TypeName(SelectedControl);
     private string Breadcrumb => SelectedControl is null
         ? "模板 / 画布"
-        : $"模板 / {(MacControlTree.FindParent(Editor.Draft, SelectedControl.ID) is { } parent ? ControlName(parent) + " / " : string.Empty)}{ControlName(SelectedControl)}";
+        : $"模板 / {(WMControlTree.FindParent(Editor.Draft, SelectedControl.ID) is { } parent ? ControlName(parent) + " / " : string.Empty)}{ControlName(SelectedControl)}";
     private Dictionary<string, string> ContainerNames => Editor.Draft.Children
         .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
         .GroupBy(container => container.ID)
@@ -397,7 +397,7 @@
         IWMControl copy = null;
         Editor.Mutate("复制图层", () =>
         {
-            copy = MacControlTree.Duplicate(Editor.Draft, control.ID);
+            copy = WMControlTree.Duplicate(Editor.Draft, control.ID);
             copy.Name = $"{ControlName(control)} 副本";
         });
         if (copy is not null) Editor.Select(copy.ID);
@@ -432,10 +432,10 @@
 
     private void DeleteSelected(IWMControl control)
     {
-        var parentId = MacControlTree.FindParent(Editor.Draft, control.ID)?.ID;
+        var parentId = WMControlTree.FindParent(Editor.Draft, control.ID)?.ID;
         Editor.Mutate("删除图层", () =>
         {
-            if (!MacControlTree.Remove(Editor.Draft, control.ID))
+            if (!WMControlTree.Remove(Editor.Draft, control.ID))
                 throw new InvalidOperationException($"无法删除图层 {control.ID}。");
         });
         Editor.Select(parentId);

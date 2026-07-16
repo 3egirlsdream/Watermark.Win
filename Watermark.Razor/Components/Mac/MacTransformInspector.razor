@@ -1,4 +1,5 @@
 @using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 
 <section class="transform-inspector inspector-group">
@@ -23,7 +24,7 @@
 </section>
 
 @code {
-    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
     [Parameter] public WMDesignBounds? Bounds { get; set; }
     [Parameter] public bool ReadOnly { get; set; }

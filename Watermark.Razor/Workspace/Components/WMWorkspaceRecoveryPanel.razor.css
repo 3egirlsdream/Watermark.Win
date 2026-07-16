@@ -1,0 +1,38 @@
+.wm-recovery {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: min(100%, 520px);
+    padding: 22px;
+    border: 1px solid rgba(220, 38, 38, .16);
+    border-radius: 16px;
+    background: #fff;
+    color: #172033;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, .12);
+}
+
+.wm-recovery-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #fff1f2;
+    color: #be123c;
+}
+
+.wm-recovery strong { font-size: 17px; }
+.wm-recovery p { margin: 7px 0 13px; color: #687386; line-height: 1.55; }
+.wm-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wm-recovery button {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid rgba(21, 95, 207, .18);
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #155fcf;
+    font-weight: 650;
+}
+.wm-recovery button.is-danger { border-color: rgba(220, 38, 38, .18); background: #fff1f2; color: #be123c; }
+.wm-recovery button:disabled { opacity: .55; }

@@ -13,6 +13,7 @@ using Watermark.Win.Models;
 using Watermark.Win.Views;
 using System.IO;
 using Watermark.Shared.Models;
+using Watermark.Razor.Workspace;
 
 namespace Watermark.Win
 {
@@ -49,9 +50,68 @@ namespace Watermark.Win
                 IocHelper.GetIoc().AddSingleton<IWMHighPrecisionTemplateRenderer, WMHighPrecisionTemplateRenderer>();
                 IocHelper.GetIoc().AddTransient<WMMultiFrameStackOperationProcessor>();
                 IocHelper.GetIoc().AddTransient<IWMImageOperationProcessor, WMMultiFrameStackOperationProcessor>();
-                var design = DesignProvider.Get(new WMCanvas());
-                IocHelper.GetIoc().AddSingleton(design);
+                IocHelper.GetIoc().AddSingleton<WMDesignFunc>();
+                IocHelper.GetIoc().AddSingleton<LoadingService>();
+                IocHelper.GetIoc().AddScoped<WMTemplateLibraryService>();
+                IocHelper.GetIoc().AddScoped<WMTemplateStore>();
+                IocHelper.GetIoc().AddSingleton<IWMWorkspacePerformanceCounters, WMWorkspacePerformanceCounters>();
+                IocHelper.GetIoc().AddSingleton<WMWorkspaceTraceStore>();
+                IocHelper.GetIoc().AddSingleton<IWMWorkspaceTraceStore>(provider =>
+                    provider.GetRequiredService<WMWorkspaceTraceStore>());
+                IocHelper.GetIoc().AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, WMDiagnosticLoggerProvider>();
+                IocHelper.GetIoc().AddSingleton<IWMArtifactCache, WMArtifactCache>();
+                IocHelper.GetIoc().AddSingleton<IWMProcessingScheduler, WMProcessingScheduler>();
+                IocHelper.GetIoc().AddSingleton<WMHighPrecisionColorPipeline>();
+                IocHelper.GetIoc().AddSingleton<IWMColorLookMapper, WMColorLookMapper>();
+                IocHelper.GetIoc().AddSingleton<IWMColorAnalysisService, WMColorAnalysisService>();
+                IocHelper.GetIoc().AddSingleton<IWMRenderPlanCompiler, WMRenderPlanCompiler>();
+                IocHelper.GetIoc().AddScoped<IWMRenderExecutor, WMRenderExecutor>();
+                IocHelper.GetIoc().AddSingleton<IWMColorPipelineCompiler, WMColorPipelineCompiler>();
+                IocHelper.GetIoc().AddSingleton<WMColorPreviewValidator>();
+                IocHelper.GetIoc().AddSingleton<IWMTemplateRenderer, WMTemplateRenderer>();
+                IocHelper.GetIoc().AddTransient<WMTemplateOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<WMColorGradeOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<IWMImageOperationProcessor, WMTemplateOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<IWMImageOperationProcessor, WMColorGradeOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<WMStarTrailOperationProcessor>();
+                IocHelper.GetIoc().AddTransient<IWMImageOperationProcessor, WMStarTrailOperationProcessor>();
+                IocHelper.GetIoc().AddScoped<WMFastJpegExportService>();
+                IocHelper.GetIoc().AddScoped<WMImageImportService>();
+                IocHelper.GetIoc().AddScoped<IWMColorReferenceService, WMColorReferenceService>();
+                IocHelper.GetIoc().AddScoped<IWMExecutionProfileProvider, WMExecutionProfileProvider>();
+                IocHelper.GetIoc().AddScoped<IWMObjectUrlRegistry, WMObjectUrlRegistry>();
+                IocHelper.GetIoc().AddScoped<WMWorkspaceRenderCoordinator>();
+                IocHelper.GetIoc().AddScoped<IWMWorkspaceRenderCoordinator>(provider =>
+                    provider.GetRequiredService<WMWorkspaceRenderCoordinator>());
+                IocHelper.GetIoc().AddScoped<WMWorkspaceSessionStore>();
+                IocHelper.GetIoc().AddScoped<IWMWorkspaceSessionStore>(provider =>
+                    provider.GetRequiredService<WMWorkspaceSessionStore>());
+                IocHelper.GetIoc().AddScoped<IWMWorkspaceLauncher, WMWorkspaceLauncher>();
+                IocHelper.GetIoc().AddScoped<WMWorkspacePreviewService>();
+                IocHelper.GetIoc().AddScoped<WMFullResolutionRenderService>();
+                IocHelper.GetIoc().AddScoped<WMFullResolutionRenderPipeline>();
+                IocHelper.GetIoc().AddScoped<IWMDerivedMediaProcessor, WMCollageDerivedMediaProcessor>();
+                IocHelper.GetIoc().AddScoped<IWMColorPresetLibrary, WMColorPresetLibrary>();
+                IocHelper.GetIoc().AddScoped<WMTemplateSnapshotService>();
+                IocHelper.GetIoc().AddScoped<WMWorkspaceController>();
+                IocHelper.GetIoc().AddScoped<IWMPhotoPicker, WMWpfPhotoPicker>();
+                IocHelper.GetIoc().AddScoped<IWMExportSink, WMLocalExportSink>();
+                IocHelper.GetIoc().AddScoped<IWMDiagnosticReportExporter, WMLocalDiagnosticReportExporter>();
+                IocHelper.GetIoc().AddSingleton<IWMImagingCapabilityProvider, WMHostImagingCapabilityProvider>();
+                IocHelper.GetIoc().AddSingleton<IWMImagingDiagnosticsService, WMImagingDiagnosticsService>();
+                IocHelper.GetIoc().AddSingleton(WMImagingRolloutDefaults.Create());
+                IocHelper.GetIoc().AddSingleton<IWMWorkspaceFeatureFlags, WMWorkspaceFeatureFlags>();
+                IocHelper.GetIoc().AddSingleton<IWMSystemBackDispatcher, WMSystemBackDispatcher>();
+                IocHelper.GetIoc().AddScoped<IWMHapticFeedback, WMClientHapticFeedback>();
+                IocHelper.GetIoc().AddScoped<IWMSystemAppearance, WMClientSystemAppearance>();
+                IocHelper.GetIoc().AddScoped<IWMTemplateMarketplaceService, WMTemplateMarketplaceService>();
+				IocHelper.GetIoc().AddWMApplicationServices();
 				Resources.SetIoc();
+                if (Resources[IocHelper.IocKey] is IServiceProvider serviceProvider)
+                {
+                    WMDiagnosticUnhandledExceptionRegistration.Register(
+                        serviceProvider.GetRequiredService<IWMWorkspaceTraceStore>());
+                }
                 InitializeComponent();
                 Loaded+=MainWindow_Loaded;
             }

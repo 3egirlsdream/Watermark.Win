@@ -1,17 +1,13 @@
-﻿@using Watermark.Shared.Enums
-@using Watermark.Shared.Models
-@using Watermark.Razor.BlazorPages
-<Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(Watermark.Razor.Components.AppSetting).Assembly])">
-    <Found Context="routeData">
-        @if (Global.DeviceType == DeviceType.Mac && (routeData.PageType == typeof(IndexView) || routeData.PageType == typeof(MainViewOSX)))
-        {
-            <MainViewOSX/>
-        }
-        else
-        {
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Watermark.Razor.Components.Layout.MainLayout)"/>
-        }
-        
-        <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
-    </Found>
-</Router>
+﻿@using Watermark.Razor.BlazorPages
+@using Watermark.Razor.Components.Layout
+<WMPrivacyStartupGate>
+    <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)"/>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
+        </NotFound>
+    </Router>
+</WMPrivacyStartupGate>

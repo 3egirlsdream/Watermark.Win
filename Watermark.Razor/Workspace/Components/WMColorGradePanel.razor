@@ -1,0 +1,129 @@
+@using System.Globalization
+@using System.Text.Json
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="wm-color-panel" aria-label="调色设置">
+    <header class="wm-color-heading">
+        <div><strong>基础调整</strong><small>拖动即时反馈，松手写入一条历史</small></div>
+        <button type="button" @onclick="ResetRequested" aria-label="重置调色"><MIcon>mdi-restore</MIcon></button>
+    </header>
+    <WMApplyScopeSelector Value="Scope" ValueChanged="ScopeChanged" SelectedCount="SelectedCount" />
+    <div class="wm-reference">
+        @if (!string.IsNullOrWhiteSpace(ReferenceUrl))
+        {
+            <figure><img src="@ReferenceUrl" alt="调色参考图" /><figcaption><strong>@ReferenceName</strong><small>参考风格已写入当前配方</small></figcaption></figure>
+            <button type="button" disabled="@Busy" @onclick="ClearReferenceRequested" aria-label="清除参考图"><MIcon>mdi-close</MIcon></button>
+        }
+        else
+        {
+            <button type="button" class="wm-reference-picker" disabled="@Busy" @onclick="ChooseReferenceRequested">
+                <MIcon>mdi-image-search-outline</MIcon><span><strong>@(Busy ? "正在分析…" : "选择参考图")</strong><small>从照片提取色彩风格</small></span>
+            </button>
+        }
+    </div>
+    <WMToolRail AriaLabel="调色风格" CssClass="wm-look-row">
+        <button type="button" @onclick="() => QuickLookAsync(0, 0, 0, 0)">自然</button>
+        <button type="button" @onclick="() => QuickLookAsync(.2f, 12, 8, 10)">清透</button>
+        <button type="button" @onclick="() => QuickLookAsync(-.1f, 18, -10, 8)">电影</button>
+        <button type="button" @onclick="() => QuickLookAsync(.35f, -5, 16, 10)">明亮</button>
+        @foreach (var preset in Presets)
+        {
+            <button type="button" class="@(SelectedPresetId == preset.Id ? "is-active" : null)" @onclick="() => PresetSelected.InvokeAsync(preset)">@preset.Name</button>
+        }
+    </WMToolRail>
+
+    @BasicSlider("曝光", "Exposure", Recipe.Grade.Exposure, -5, 5, .05, "EV")
+    @BasicSlider("对比度", "Contrast", Recipe.Grade.Contrast, -100, 100, 1, "")
+    @BasicSlider("高光", "Highlights", Recipe.Grade.Highlights, -100, 100, 1, "")
+    @BasicSlider("阴影", "Shadows", Recipe.Grade.Shadows, -100, 100, 1, "")
+    @BasicSlider("白色色阶", "Whites", Recipe.Grade.Whites, -100, 100, 1, "")
+    @BasicSlider("黑色色阶", "Blacks", Recipe.Grade.Blacks, -100, 100, 1, "")
+    @BasicSlider("色温", "Temperature", Recipe.Grade.Temperature, -100, 100, 1, "")
+    @BasicSlider("色调", "Tint", Recipe.Grade.Tint, -100, 100, 1, "")
+    @BasicSlider("自然饱和度", "Vibrance", Recipe.Grade.Vibrance, -100, 100, 1, "")
+    @BasicSlider("饱和度", "Saturation", Recipe.Grade.Saturation, -100, 100, 1, "")
+
+    <details class="wm-color-advanced">
+        <summary><strong>HSL 颜色</strong><small>@BandName(currentBand)</small></summary>
+        <select @bind="currentBand" aria-label="HSL 色彩范围">@foreach (var band in Enum.GetValues<WMHslBand>()) { <option value="@band">@BandName(band)</option> }</select>
+        @HslSlider("色相", "Hue", CurrentHsl.Hue)
+        @HslSlider("饱和度", "Saturation", CurrentHsl.Saturation)
+        @HslSlider("明度", "Luminance", CurrentHsl.Luminance)
+    </details>
+    <details class="wm-color-advanced">
+        <summary><strong>曲线</strong><small>主曲线快捷预设</small></summary>
+        <div class="wm-look-row"><button type="button" @onclick='() => CurveAsync("linear")'>线性</button><button type="button" @onclick='() => CurveAsync("contrast")'>增强</button><button type="button" @onclick='() => CurveAsync("soft")'>柔和</button></div>
+    </details>
+    <div class="wm-preset-actions">
+        <button type="button" disabled="@Busy" @onclick="SavePresetRequested"><MIcon>mdi-content-save-outline</MIcon><span>保存当前预设</span></button>
+        @if (!string.IsNullOrWhiteSpace(SelectedPresetId))
+        {
+            <button type="button" class="is-danger" disabled="@Busy" @onclick="DeletePresetRequested"><MIcon>mdi-delete-outline</MIcon><span>删除预设</span></button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public WMColorRecipe Recipe { get; set; } = new();
+    [Parameter] public IReadOnlyList<WMColorRecipe> Presets { get; set; } = [];
+    [Parameter] public string? SelectedPresetId { get; set; }
+    [Parameter] public string? ReferenceUrl { get; set; }
+    [Parameter] public string? ReferenceName { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public WMApplyScope Scope { get; set; } = WMApplyScope.Selected;
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
+    [Parameter] public EventCallback<WMColorRecipe> PreviewChanged { get; set; }
+    [Parameter] public EventCallback<WMColorRecipe> CommitRequested { get; set; }
+    [Parameter] public EventCallback ChooseReferenceRequested { get; set; }
+    [Parameter] public EventCallback ClearReferenceRequested { get; set; }
+    [Parameter] public EventCallback ResetRequested { get; set; }
+    [Parameter] public EventCallback<WMColorRecipe> PresetSelected { get; set; }
+    [Parameter] public EventCallback SavePresetRequested { get; set; }
+    [Parameter] public EventCallback DeletePresetRequested { get; set; }
+
+    private WMHslBand currentBand = WMHslBand.Red;
+    private WMHslAdjustment CurrentHsl => Recipe.Grade.Hsl[currentBand];
+
+    private RenderFragment BasicSlider(string label, string key, float value, double min, double max, double step, string unit) => __builder =>
+    {
+        <WMColorParameterControl Label="@label" Value="@value" Minimum="@min" Maximum="@max" Step="@step" Unit="@unit"
+            PreviewValueChanged="next => ChangeBasicAsync(key, next, false)"
+            CommitValueChanged="next => ChangeBasicAsync(key, next, true)" />
+    };
+
+    private RenderFragment HslSlider(string label, string key, float value) => __builder =>
+    {
+        <label class="wm-color-control"><span><strong>@label</strong><output>@value.ToString("0")</output></span><input type="range" min="-100" max="100" step="1" value="@value.ToString(CultureInfo.InvariantCulture)" @oninput="args => ChangeHslAsync(key, args, false)" @onchange="args => ChangeHslAsync(key, args, true)" /></label>
+    };
+
+    private async Task ChangeBasicAsync(string key, float value, bool commit)
+    {
+        var next = WMWorkspacePanelMutations.SetColorValue(Recipe, key, value);
+        await (commit ? CommitRequested.InvokeAsync(next) : PreviewChanged.InvokeAsync(next));
+    }
+
+    private async Task ChangeHslAsync(string key, ChangeEventArgs args, bool commit)
+    {
+        if (!TryValue(args, out var value)) return;
+        var next = Clone(Recipe); var adjustment = next.Grade.Hsl[currentBand];
+        switch (key) { case "Hue": adjustment.Hue = value; break; case "Saturation": adjustment.Saturation = value; break; case "Luminance": adjustment.Luminance = value; break; }
+        next.UserAdjustments = next.Grade;
+        await (commit ? CommitRequested.InvokeAsync(next) : PreviewChanged.InvokeAsync(next));
+    }
+
+    private Task QuickLookAsync(float exposure, float contrast, float temperature, float vibrance)
+    {
+        return CommitRequested.InvokeAsync(WMWorkspacePanelMutations.QuickLook("快速风格", exposure, contrast, temperature, vibrance));
+    }
+
+    private Task CurveAsync(string preset)
+    {
+        var next = Clone(Recipe); next.Grade.MasterCurve = preset switch { "contrast" => [new WMCurvePoint { X = 0, Y = 0 }, new WMCurvePoint { X = .25f, Y = .18f }, new WMCurvePoint { X = .75f, Y = .82f }, new WMCurvePoint { X = 1, Y = 1 }], "soft" => [new WMCurvePoint { X = 0, Y = .06f }, new WMCurvePoint { X = .5f, Y = .52f }, new WMCurvePoint { X = 1, Y = .96f }], _ => WMCurvePoint.Identity() }; next.UserAdjustments = next.Grade; return CommitRequested.InvokeAsync(next);
+    }
+
+    private static bool TryValue(ChangeEventArgs args, out float value) => float.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    private static WMColorRecipe Clone(WMColorRecipe value) => JsonSerializer.Deserialize<WMColorRecipe>(JsonSerializer.Serialize(value))!;
+    private static string BandName(WMHslBand band) => band switch { WMHslBand.Red => "红色", WMHslBand.Orange => "橙色", WMHslBand.Yellow => "黄色", WMHslBand.Green => "绿色", WMHslBand.Aqua => "青色", WMHslBand.Blue => "蓝色", WMHslBand.Purple => "紫色", _ => "洋红" };
+}

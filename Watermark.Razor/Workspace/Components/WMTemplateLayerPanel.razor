@@ -1,0 +1,8 @@
+@using Watermark.Razor.Components.Mac
+@namespace Watermark.Razor.Workspace.Components
+
+<MacLayerTree Editor="Editor" />
+
+@code {
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+}

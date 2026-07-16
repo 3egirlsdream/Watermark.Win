@@ -1,0 +1,26 @@
+@using Watermark.Razor.Workspace
+@inject IWMWorkspaceSessionStore SessionStore
+@inject NavigationManager Navigation
+
+<section class="not-found-page" aria-labelledby="not-found-title">
+    <div class="not-found-mark">404</div>
+    <span>PAGE NOT FOUND</span>
+    <h1 id="not-found-title">这个页面已经搬走了</h1>
+    <p>旧功能已迁入新的响应式页面，你可以返回创作页，或继续最近一次工作。</p>
+    <div>
+        <button type="button" class="is-primary" @onclick="OpenCreate"><MIcon>mdi-plus-box-outline</MIcon><span>返回创作</span></button>
+        <button type="button" disabled="@loading" @onclick="ResumeRecentAsync"><MIcon>mdi-history</MIcon><span>恢复最近会话</span></button>
+    </div>
+</section>
+
+@code {
+    private bool loading;
+    private void OpenCreate() => Navigation.NavigateTo("/create");
+    private async Task ResumeRecentAsync()
+    {
+        loading = true;
+        var recent = await SessionStore.ListRecentAsync(5);
+        var session = recent.FirstOrDefault(item => item.Mode != WMWorkspaceMode.TemplateDesign);
+        Navigation.NavigateTo(session is null ? "/create" : $"/workspace/{session.Id}");
+    }
+}

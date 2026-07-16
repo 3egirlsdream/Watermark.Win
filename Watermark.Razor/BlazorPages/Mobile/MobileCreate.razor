@@ -1,0 +1,159 @@
+@page "/create"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Models
+@layout WMAppShellLayout
+@inject IWMHapticFeedback HapticFeedback
+@inject IWMPhotoPicker PhotoPicker
+@inject IWMWorkspaceSessionStore SessionStore
+@inject IWMWorkspaceLauncher WorkspaceLauncher
+@inject IWMExecutionProfileProvider ExecutionProfiles
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<section class="create-page" aria-labelledby="create-title">
+    <header class="create-header">
+        <div>
+            <span class="create-eyebrow">轻影工作台</span>
+            <h1 id="create-title">让照片保留现场感</h1>
+            <p>从一张照片开始，模板、调色与批量导出都在同一个工作台完成。</p>
+        </div>
+        <div class="create-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+        </div>
+    </header>
+
+    <button class="create-primary" type="button" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Template)">
+        <span class="create-primary-icon"><MIcon>mdi-image-plus-outline</MIcon></span>
+        <span>
+            <strong>@(busy ? "正在准备照片…" : "导入照片开始创作")</strong>
+            <small>支持多选，导入后可切换模板与调色</small>
+        </span>
+        <MIcon>mdi-arrow-right</MIcon>
+    </button>
+
+    <div class="create-section-heading">
+        <div>
+            <span>创作方式</span>
+            <small>进入后仍可随时切换</small>
+        </div>
+    </div>
+
+    <div class="create-mode-grid">
+        <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Template)">
+            <span class="mode-icon is-template"><MIcon>mdi-card-text-outline</MIcon></span>
+            <strong>套用模板</strong>
+            <small>水印、边框与 EXIF</small>
+        </button>
+        <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.ColorGrade)">
+            <span class="mode-icon is-color"><MIcon>mdi-tune-variant</MIcon></span>
+            <strong>照片调色</strong>
+            <small>基础调整与风格预设</small>
+        </button>
+        <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.MultiFrame)">
+            <span class="mode-icon is-stack"><MIcon>mdi-layers-triple-outline</MIcon></span>
+            <strong>多帧合成</strong>
+            <small>@(CanUseMultiFrame ? "星轨、降噪与静态星空" : "已开放，运行前检查设备能力")</small>
+        </button>
+        <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Collage)">
+            <span class="mode-icon is-collage"><MIcon>mdi-view-split-vertical</MIcon></span>
+            <strong>照片拼图</strong>
+            <small>横向或纵向拼接多张照片</small>
+        </button>
+    </div>
+
+    @if (recentSessions.Count > 0)
+    {
+        <div class="create-section-heading recent-heading">
+            <div>
+                <span>继续创作</span>
+                <small>会话保留 24 小时</small>
+            </div>
+        </div>
+        <div class="recent-list">
+            @foreach (var item in recentSessions)
+            {
+                <button class="recent-item" type="button" @onclick="() => OpenSession(item.Id)">
+                    <span class="recent-thumb">
+                        <MIcon>@ModeIcon(item.Mode)</MIcon>
+                    </span>
+                    <span class="recent-copy">
+                        <strong>@(item.Media.FirstOrDefault()?.DisplayName ?? item.TemplateId ?? "模板设计")</strong>
+                        <small>@ModeName(item.Mode) · @LocalTime(item.UpdatedAtUtc)</small>
+                    </span>
+                    <MIcon>mdi-chevron-right</MIcon>
+                </button>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="create-error" role="alert">
+            <MIcon>mdi-alert-circle-outline</MIcon>
+            <span>@errorMessage</span>
+        </div>
+    }
+</section>
+
+@code {
+    private readonly List<WMWorkspaceSession> recentSessions = [];
+    private bool busy;
+    private string? errorMessage;
+    private bool CanUseMultiFrame => ExecutionProfiles.GetImagingCapabilities().CanMultiFrame;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var recent = await SessionStore.ListRecentAsync(4);
+        recentSessions.AddRange(recent);
+    }
+
+    private async Task StartAsync(WMWorkspaceMode mode)
+    {
+        if (busy) return;
+        busy = true;
+        errorMessage = null;
+        HapticFeedback.Perform();
+        try
+        {
+            var selected = await PhotoPicker.PickMultipleAsync();
+            if (selected.Count == 0) return;
+            var id = await WorkspaceLauncher.CreateFromSourcesAsync(mode, selected, null, CancellationToken.None);
+            NavigationHistory.NavigateTo($"/workspace/{id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void OpenSession(string id)
+    {
+        HapticFeedback.Perform();
+        NavigationHistory.NavigateTo($"/workspace/{id}");
+    }
+
+    private static string ModeName(WMWorkspaceMode mode) => mode switch
+    {
+        WMWorkspaceMode.ColorGrade => "照片调色",
+        WMWorkspaceMode.MultiFrame => "多帧合成",
+        WMWorkspaceMode.Collage => "照片拼图",
+        WMWorkspaceMode.TemplateDesign => "模板设计",
+        _ => "套用模板"
+    };
+
+    private static string ModeIcon(WMWorkspaceMode mode) => mode switch
+    {
+        WMWorkspaceMode.ColorGrade => "mdi-tune-variant",
+        WMWorkspaceMode.MultiFrame => "mdi-layers-triple-outline",
+        WMWorkspaceMode.Collage => "mdi-view-split-vertical",
+        WMWorkspaceMode.TemplateDesign => "mdi-vector-square-edit",
+        _ => "mdi-card-text-outline"
+    };
+
+    private static string LocalTime(DateTime utc) => utc.ToLocalTime().ToString("MM-dd HH:mm");
+}

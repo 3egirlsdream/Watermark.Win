@@ -1,13 +1,12 @@
 using SkiaSharp;
 using System.Text.Json;
-using Watermark.Razor.Components.Mac;
-using Watermark.Razor.Components.Mac.Editing;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
 
-public sealed class MacFullResolutionRenderServiceTests : IDisposable
+public sealed class WMFullResolutionRenderPipelineTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "watermark-full-render-tests", Guid.NewGuid().ToString("N"));
 
@@ -32,16 +31,16 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
             [source.Id],
             ["proxy"],
             new WMColorRecipe());
-        var plan = new MacRenderPlan(source, [new MacRenderPlanStep(operation)], source);
+        var plan = new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source);
         var outputPath = Path.Combine(root, "output.jpg");
         var workingRoot = Path.Combine(root, "working");
         using var scheduler = new WMProcessingScheduler();
-        var service = new MacFullResolutionRenderService(
+        var service = new WMFullResolutionRenderPipeline(
             new WMTemplateOperationProcessor(new WMTemplateRenderer(new WatermarkHelper()), scheduler),
             new WMColorGradeOperationProcessor(scheduler),
             scheduler);
 
-        await service.RenderAsync(new MacFullResolutionRenderRequest(
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
             plan,
             outputPath,
             sourcePath,
@@ -83,8 +82,8 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
         using var scheduler = new WMProcessingScheduler();
         var service = CreateService(scheduler);
 
-        await service.RenderAsync(new MacFullResolutionRenderRequest(
-            new MacRenderPlan(source, [new MacRenderPlanStep(operation)], source),
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source),
             outputPath,
             sourcePath,
             "default",
@@ -164,8 +163,8 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
                 $"序列化后的调色处理器未应用参考风格，输出={processorPixel}");
         }
 
-        await CreateService(scheduler).RenderAsync(new MacFullResolutionRenderRequest(
-            new MacRenderPlan(source, [new MacRenderPlanStep(operation)], source), outputPath, sourcePath, "default", 100,
+        await CreateService(scheduler).RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source), outputPath, sourcePath, "default", 100,
             Path.Combine(root, "adaptive-working"),
             new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 }));
 
@@ -212,8 +211,8 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
         };
         var outputPath = Path.Combine(root, "high-output.png");
         using var scheduler = new WMProcessingScheduler();
-        await CreateService(scheduler).RenderAsync(new MacFullResolutionRenderRequest(
-            new MacRenderPlan(artifact, [], artifact),
+        await CreateService(scheduler).RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(artifact, [], artifact),
             outputPath,
             proxyPath,
             "default",
@@ -265,8 +264,8 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
         var outputPath = Path.Combine(root, "committed-output.png");
         using var scheduler = new WMProcessingScheduler();
 
-        await CreateService(scheduler).RenderAsync(new MacFullResolutionRenderRequest(
-            new MacRenderPlan(source, [], current), outputPath, sourcePath, "default", 100,
+        await CreateService(scheduler).RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(source, [], current), outputPath, sourcePath, "default", 100,
             Path.Combine(root, "committed-working"),
             new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 },
             WMExportFormat.Png16));
@@ -297,8 +296,8 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
         using var scheduler = new WMProcessingScheduler();
         var service = CreateService(scheduler);
 
-        await service.RenderAsync(new MacFullResolutionRenderRequest(
-            new MacRenderPlan(source, [], source), outputPath, sourcePath, resolution, 90,
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(source, [], source), outputPath, sourcePath, resolution, 90,
             Path.Combine(root, $"working-{resolution}"),
             new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 }));
 
@@ -328,22 +327,22 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
             [source.Id],
             ["cache-template"],
             new WMTemplateOperationSettings(canvas));
-        var plan = new MacRenderPlan(source, [new MacRenderPlanStep(operation)], source);
+        var plan = new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source);
         var workingRoot = Path.Combine(root, "cache-working");
         var renderer = new CountingTemplateRenderer();
         using var scheduler = new WMProcessingScheduler();
         var colorProcessor = new WMColorGradeOperationProcessor(scheduler);
-        var fastService = new MacFastJpegExportService(renderer, colorProcessor, scheduler);
-        var service = new MacFullResolutionRenderService(
+        var fastService = new WMFastJpegExportService(renderer, colorProcessor, scheduler);
+        var service = new WMFullResolutionRenderPipeline(
             new WMTemplateOperationProcessor(renderer, scheduler),
             colorProcessor,
             scheduler,
             fastJpegExportService: fastService);
 
-        await service.RenderAsync(new MacFullResolutionRenderRequest(
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
             plan, Path.Combine(root, "first.jpg"), sourcePath, "default", 90, workingRoot,
             new WMOperationExecutionOptions { MaxConcurrentImages = 2, MaxPixelWorkers = 1 }));
-        await service.RenderAsync(new MacFullResolutionRenderRequest(
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
             plan, Path.Combine(root, "second.jpg"), sourcePath, "default", 90, workingRoot,
             new WMOperationExecutionOptions { MaxConcurrentImages = 2, MaxPixelWorkers = 1 }));
 
@@ -353,7 +352,50 @@ public sealed class MacFullResolutionRenderServiceTests : IDisposable
         Assert.Empty(Directory.EnumerateFiles(workingRoot, "*.wm16", SearchOption.AllDirectories));
     }
 
-    private static MacFullResolutionRenderService CreateService(WMProcessingScheduler scheduler) => new(
+    [Fact]
+    public async Task RenderAsync_ZeroLengthFinalCacheIsInvalidatedAndRenderedAgain()
+    {
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "invalid-cache-source.png");
+        WriteImage(sourcePath, 320, 180, SKColors.SteelBlue);
+        var source = new WMImageArtifact
+        {
+            Id = "invalid-cache-source",
+            FilePath = sourcePath,
+            SourceOperation = WMImageOperationKind.Source,
+            Width = 320,
+            Height = 180,
+            ContentHash = "invalid-cache-source-content"
+        };
+        var operation = WMImageOperation.Create(
+            WMImageOperationKind.Template,
+            [source.Id],
+            ["invalid-cache-template"],
+            new WMTemplateOperationSettings(new WMCanvas()));
+        var plan = new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source);
+        var workingRoot = Path.Combine(root, "invalid-cache-working");
+        var renderer = new CountingTemplateRenderer();
+        using var scheduler = new WMProcessingScheduler();
+        var service = new WMFastJpegExportService(
+            renderer,
+            new WMColorGradeOperationProcessor(scheduler),
+            scheduler);
+        var request = new WMFullResolutionRenderRequest(
+            plan, Path.Combine(root, "valid-first.jpg"), sourcePath, "default", 90, workingRoot,
+            new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 });
+
+        await service.RenderAsync(request);
+        var cachePath = Assert.Single(Directory.EnumerateFiles(
+            Path.Combine(workingRoot, "fast-jpeg-cache"), "*.jpg"));
+        await File.WriteAllBytesAsync(cachePath, []);
+
+        await service.RenderAsync(request with { OutputPath = Path.Combine(root, "valid-second.jpg") });
+
+        Assert.Equal(2, renderer.BitmapRenderCount);
+        Assert.True(new FileInfo(cachePath).Length > 0);
+    }
+
+    private static WMFullResolutionRenderPipeline CreateService(WMProcessingScheduler scheduler) => new(
         new WMTemplateOperationProcessor(new WMTemplateRenderer(new WatermarkHelper()), scheduler),
         new WMColorGradeOperationProcessor(scheduler),
         scheduler);

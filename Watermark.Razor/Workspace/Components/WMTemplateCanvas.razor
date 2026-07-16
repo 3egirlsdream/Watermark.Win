@@ -1,0 +1,24 @@
+@using Watermark.Razor.Components.Mac
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<MacCanvasEditor @ref="canvas"
+                 Editor="Editor"
+                 RenderResult="RenderResult"
+                 PreviewUrl="PreviewUrl"
+                 Zoom="Zoom"
+                 ZoomChanged="ZoomChanged"
+                 SaveRequested="SaveRequested" />
+
+@code {
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
+    [Parameter] public string PreviewUrl { get; set; } = string.Empty;
+    [Parameter] public double Zoom { get; set; } = 1;
+    [Parameter] public EventCallback<double> ZoomChanged { get; set; }
+    [Parameter] public EventCallback SaveRequested { get; set; }
+
+    private MacCanvasEditor? canvas;
+
+    public Task FitAsync() => canvas?.FitAsync() ?? Task.CompletedTask;
+}

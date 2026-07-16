@@ -1,16 +1,16 @@
-using Watermark.Razor.Components.Mac.Editor;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
 
-public sealed class MacTemplateEditorStateTests
+public sealed class WMTemplateEditorStateTests
 {
     [Fact]
     public void Create_UsesIndependentDraft()
     {
         var original = new WMCanvas { Name = "original" };
-        var state = MacTemplateEditorState.Create(original);
+        var state = WMTemplateEditorState.Create(original);
         state.Mutate("rename", () => state.Draft.Name = "draft");
         Assert.Equal("original", original.Name);
         Assert.Equal("draft", state.Draft.Name);
@@ -19,7 +19,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void Transaction_CoalescesContinuousChanges()
     {
-        var state = MacTemplateEditorState.Create(new WMCanvas { Name = "one" });
+        var state = WMTemplateEditorState.Create(new WMCanvas { Name = "one" });
         state.BeginTransaction("slider");
         state.Draft.Name = "two";
         state.Draft.Name = "three";
@@ -32,7 +32,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void SavedSnapshot_DrivesDirtyState()
     {
-        var state = MacTemplateEditorState.Create(new WMCanvas { Name = "one" });
+        var state = WMTemplateEditorState.Create(new WMCanvas { Name = "one" });
         state.Mutate("rename", () => state.Draft.Name = "two");
         Assert.True(state.IsDirty);
         state.MarkSaved();
@@ -46,7 +46,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void History_CapsSnapshotsAndTruncatesRedoAfterNewMutation()
     {
-        var state = MacTemplateEditorState.Create(new WMCanvas { Name = "0" });
+        var state = WMTemplateEditorState.Create(new WMCanvas { Name = "0" });
         for (var i = 1; i <= 55; i++)
             state.Mutate("rename", () => state.Draft.Name = i.ToString());
 
@@ -60,7 +60,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void CancelTransaction_RestoresDraftWithoutAddingHistory()
     {
-        var state = MacTemplateEditorState.Create(new WMCanvas { Name = "one" });
+        var state = WMTemplateEditorState.Create(new WMCanvas { Name = "one" });
         state.BeginTransaction("slider");
         state.Draft.Name = "two";
         state.CancelTransaction();
@@ -73,7 +73,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void CommitTransaction_WithNoChangesIsNoOp()
     {
-        var state = MacTemplateEditorState.Create(new WMCanvas { Name = "one" });
+        var state = WMTemplateEditorState.Create(new WMCanvas { Name = "one" });
         state.BeginTransaction("slider");
 
         Assert.False(state.CommitTransaction());
@@ -84,9 +84,9 @@ public sealed class MacTemplateEditorStateTests
     public void Create_PreservesRuntimeStateWithoutAliasingOriginal()
     {
         var original = RuntimeCanvas();
-        var originalText = Assert.IsType<WMText>(MacControlTree.Find(original, "TEXT"));
-        var state = MacTemplateEditorState.Create(original);
-        var draftText = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+        var originalText = Assert.IsType<WMText>(WMControlTree.Find(original, "TEXT"));
+        var state = WMTemplateEditorState.Create(original);
+        var draftText = Assert.IsType<WMText>(WMControlTree.Find(state.Draft, "TEXT"));
 
         AssertRuntimeState(state.Draft, "original", "value", 10, 20, 30, 40);
         state.Draft.Path = "draft";
@@ -104,8 +104,8 @@ public sealed class MacTemplateEditorStateTests
     public void CancelTransaction_RestoresPathExifAndGeometry()
     {
         var original = RuntimeCanvas();
-        var state = MacTemplateEditorState.Create(original);
-        var text = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+        var state = WMTemplateEditorState.Create(original);
+        var text = Assert.IsType<WMText>(WMControlTree.Find(state.Draft, "TEXT"));
         state.BeginTransaction("runtime");
         state.Draft.Path = "changed";
         state.Draft.Exif["camera"]["model"] = "changed-value";
@@ -127,9 +127,9 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void RuntimeOnlyUndoRedo_RestoresPathExifAndGeometryWithoutDirtyState()
     {
-        var state = MacTemplateEditorState.Create(RuntimeCanvas());
+        var state = WMTemplateEditorState.Create(RuntimeCanvas());
         state.BeginTransaction("runtime");
-        var text = Assert.IsType<WMText>(MacControlTree.Find(state.Draft, "TEXT"));
+        var text = Assert.IsType<WMText>(WMControlTree.Find(state.Draft, "TEXT"));
         state.Draft.Path = "changed";
         state.Draft.Exif["camera"]["model"] = "changed-value";
         text.Width = 50;
@@ -150,7 +150,7 @@ public sealed class MacTemplateEditorStateTests
     [Fact]
     public void PathAndExifOnlyTransaction_ParticipatesInHistoryWithoutDirtyState()
     {
-        var state = MacTemplateEditorState.Create(RuntimeCanvas());
+        var state = WMTemplateEditorState.Create(RuntimeCanvas());
         state.BeginTransaction("runtime");
         state.Draft.Path = "changed";
         state.Draft.Exif["camera"]["model"] = "changed-value";
@@ -183,7 +183,7 @@ public sealed class MacTemplateEditorStateTests
 
     private static void AssertRuntimeState(WMCanvas canvas, string path, string exif, double width, double height, double designX, double designY)
     {
-        var text = Assert.IsType<WMText>(MacControlTree.Find(canvas, "TEXT"));
+        var text = Assert.IsType<WMText>(WMControlTree.Find(canvas, "TEXT"));
         Assert.Equal(path, canvas.Path);
         Assert.Equal(exif, canvas.Exif["camera"]["model"]);
         Assert.Equal(width, text.Width);

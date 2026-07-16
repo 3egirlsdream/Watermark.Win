@@ -1,0 +1,149 @@
+name: Cross-platform CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: cross-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  shared-razor-web:
+    name: Shared, Razor and Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Repository architecture guards
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(bin|obj|\.vs|\.idea)/'; then
+            echo "Generated or IDE-local files must not be committed."
+            exit 1
+          fi
+          if rg -n '@page\s+"/(preview|design|split)|NavigateTo\("/(preview|design|split)' Watermark.Razor Watermark.Andorid Watermark.Win; then
+            echo "A removed creation route was reintroduced."
+            exit 1
+          fi
+          if rg -n '\bMac(EditingSession|WorkspaceCoordinator|RenderPlan|TemplateStore|TemplateEditorState|ControlTree|FullResolutionRenderService|ImageImportService|TemplateLibraryService)\b' Watermark.Razor Watermark.Andorid Watermark.Win; then
+            echo "A removed Mac business wrapper was reintroduced."
+            exit 1
+          fi
+      - name: Restore
+        run: |
+          dotnet restore Watermark.Shared/Tests/Watermark.Shared.Tests.csproj
+          dotnet restore Watermark.Razor.Tests/Watermark.Razor.Tests.csproj
+          dotnet restore Watermark.Web/Watermark.Web/Watermark.Web.csproj
+      - name: Test shared core
+        run: dotnet test Watermark.Shared/Tests/Watermark.Shared.Tests.csproj --configuration Release --no-restore
+      - name: Test Razor workspace
+        run: dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj --configuration Release --no-restore
+      - name: Compile Web
+        run: dotnet build Watermark.Web/Watermark.Web/Watermark.Web.csproj --configuration Release --no-restore
+
+  android:
+    name: Android ${{ matrix.configuration }}
+    runs-on: macos-14
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Use runner Java
+        shell: bash
+        run: |
+          test -n "$JAVA_HOME"
+          "$JAVA_HOME/bin/java" -version
+      - name: Install Android workload
+        run: dotnet workload install maui-android
+      - name: Restore Android
+        run: |
+          dotnet restore Watermark.Andorid/Watermark.Andorid.csproj -p:TargetFramework=net8.0-android
+          dotnet restore Watermark.Shared/Watermark.Shared.csproj
+          dotnet restore Watermark.Razor/Watermark.Razor.csproj
+      - name: Build Android
+        run: >-
+          dotnet build Watermark.Andorid/Watermark.Andorid.csproj
+          --framework net8.0-android
+          --configuration ${{ matrix.configuration }}
+          --no-restore
+
+  apple:
+    name: ${{ matrix.name }} Debug
+    runs-on: macos-14
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Mac Catalyst
+            framework: net8.0-maccatalyst
+            runtime: maccatalyst-arm64
+            workload: maui-maccatalyst
+            properties: -p:CodesignKey=-
+          - name: iOS simulator
+            framework: net8.0-ios
+            runtime: iossimulator-arm64
+            workload: ios
+            properties: -p:CodesignKey=-
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Install workload
+        run: dotnet workload install ${{ matrix.workload }}
+      - name: Restore
+        run: |
+          dotnet restore Watermark.Andorid/Watermark.Andorid.csproj -p:TargetFramework=${{ matrix.framework }} -p:RuntimeIdentifier=${{ matrix.runtime }}
+          dotnet restore Watermark.Shared/Watermark.Shared.csproj
+          dotnet restore Watermark.Razor/Watermark.Razor.csproj
+      - name: Build
+        run: >-
+          dotnet build Watermark.Andorid/Watermark.Andorid.csproj
+          --framework ${{ matrix.framework }}
+          --configuration Debug
+          --no-restore
+          -p:RuntimeIdentifier=${{ matrix.runtime }}
+          ${{ matrix.properties }}
+
+  windows:
+    name: Windows Debug
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore Watermark.Win/Watermark.Win.csproj
+      - name: Build Windows host
+        run: dotnet build Watermark.Win/Watermark.Win.csproj --configuration Debug --no-restore

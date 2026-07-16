@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="轻影应用图标">
+  <rect width="1024" height="1024" rx="224" fill="#fff"/>
+  <defs>
+    <linearGradient id="camera" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6b6b"/>
+      <stop offset=".25" stop-color="#ff9f43"/>
+      <stop offset=".5" stop-color="#feca57"/>
+      <stop offset=".75" stop-color="#1dd1a1"/>
+      <stop offset="1" stop-color="#54a0ff"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6b6b"/>
+      <stop offset=".2" stop-color="#ff9f43"/>
+      <stop offset=".4" stop-color="#feca57"/>
+      <stop offset=".6" stop-color="#1dd1a1"/>
+      <stop offset=".8" stop-color="#54a0ff"/>
+      <stop offset="1" stop-color="#5f27cd"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 60)">
+    <rect x="120" y="130" width="784" height="520" rx="52" fill="url(#camera)" opacity=".12"/>
+    <rect x="120" y="130" width="784" height="520" rx="52" fill="none" stroke="url(#camera)" stroke-width="4"/>
+    <rect x="340" y="76" width="200" height="72" rx="20" fill="url(#camera)" opacity=".12"/>
+    <rect x="340" y="76" width="200" height="72" rx="20" fill="none" stroke="url(#camera)" stroke-width="4"/>
+    <circle cx="590" cy="106" r="20" fill="none" stroke="#ff6b6b" stroke-width="3.5"/>
+    <circle cx="590" cy="106" r="10" fill="#ff6b6b" opacity=".3"/>
+    <rect x="176" y="172" width="56" height="24" rx="10" fill="none" stroke="#feca57" stroke-width="3"/>
+    <circle cx="512" cy="390" r="190" fill="none" stroke="url(#lens)" stroke-width="18"/>
+    <circle cx="512" cy="390" r="166" fill="#fff"/>
+    <circle cx="512" cy="390" r="140" fill="none" stroke="url(#lens)" stroke-width="6" opacity=".4"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#ff6b6b" opacity=".7"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#ff9f43" opacity=".7" transform="rotate(45 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#feca57" opacity=".7" transform="rotate(90 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#1dd1a1" opacity=".7" transform="rotate(135 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#54a0ff" opacity=".7" transform="rotate(180 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#5f27cd" opacity=".7" transform="rotate(225 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#c44569" opacity=".7" transform="rotate(270 512 390)"/>
+    <ellipse cx="512" cy="310" rx="36" ry="70" fill="#f8b500" opacity=".7" transform="rotate(315 512 390)"/>
+    <circle cx="512" cy="390" r="24" fill="#fff"/>
+    <rect x="140" y="700" width="744" height="130" rx="26" fill="#eef0f2"/>
+    <text x="280" y="762" font-family="sans-serif" font-size="42" font-weight="700" fill="#ff6b6b" text-anchor="middle">f/1.8</text>
+    <text x="280" y="800" font-family="sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">光圈</text>
+    <line x1="392" y1="722" x2="392" y2="812" stroke="#ccc" stroke-width="2"/>
+    <text x="512" y="762" font-family="sans-serif" font-size="42" font-weight="700" fill="#1dd1a1" text-anchor="middle">1/250</text>
+    <text x="512" y="800" font-family="sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">快门</text>
+    <line x1="632" y1="722" x2="632" y2="812" stroke="#ccc" stroke-width="2"/>
+    <text x="744" y="762" font-family="sans-serif" font-size="42" font-weight="700" fill="#54a0ff" text-anchor="middle">ISO</text>
+    <text x="744" y="800" font-family="sans-serif" font-size="22" font-weight="500" fill="#666" text-anchor="middle">100</text>
+  </g>
+</svg>

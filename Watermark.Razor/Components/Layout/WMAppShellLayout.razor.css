@@ -1,0 +1,277 @@
+.wm-app-shell {
+    background: var(--wm-page);
+    color: var(--wm-text);
+    display: grid;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.wm-shell-sidebar {
+    display: none;
+}
+
+.wm-shell-main {
+    background: transparent !important;
+    min-height: 0;
+    min-width: 0;
+}
+
+.wm-shell-content {
+    background: var(--wm-page);
+    box-sizing: border-box;
+    height: calc(100vh - 74px - env(safe-area-inset-bottom));
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.wm-shell-content.supports-android-mouse-drag { cursor: grab; }
+.wm-shell-content.is-mouse-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.wm-shell-bottom-navigation {
+    align-items: center;
+    backdrop-filter: blur(22px) saturate(1.15);
+    background: rgba(255, 255, 255, .96);
+    border-top: 1px solid rgba(30, 41, 59, .09);
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: calc(74px + env(safe-area-inset-bottom));
+    left: 0;
+    padding: 5px 18px env(safe-area-inset-bottom);
+    position: fixed;
+    right: 0;
+    z-index: 80;
+}
+
+.wm-shell-nav-item {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 14px;
+    color: #7b8798;
+    display: flex;
+    flex-direction: column;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 680;
+    gap: 3px;
+    justify-content: center;
+    min-height: 58px;
+    min-width: 48px;
+    padding: 3px 10px;
+    transition: color 140ms ease, transform 100ms ease;
+}
+
+.wm-shell-nav-icon {
+    align-items: center;
+    border-radius: 11px;
+    display: flex;
+    height: 32px;
+    justify-content: center;
+    transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+    width: 44px;
+}
+
+.wm-shell-nav-item:active {
+    transform: scale(.96);
+}
+
+.wm-shell-nav-item.is-active {
+    color: var(--wm-primary);
+}
+
+.wm-shell-nav-item.is-active .wm-shell-nav-icon {
+    background: var(--wm-primary-soft);
+    color: var(--wm-primary);
+    transform: translateY(-1px);
+}
+
+.wm-shell-nav-item:focus-visible {
+    outline: 2px solid var(--wm-primary);
+    outline-offset: 1px;
+}
+
+.wm-shell-loading {
+    align-items: center;
+    background: rgba(23, 32, 51, .2);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    position: fixed;
+    z-index: 9999;
+}
+
+.wm-shell-loading > div {
+    align-items: center;
+    background: rgba(255, 255, 255, .97);
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(23, 32, 51, .16);
+    display: flex;
+    flex-direction: column;
+    font-size: .84rem;
+    gap: 12px;
+    min-width: 150px;
+    padding: 22px;
+}
+
+@media (min-width: 720px) {
+    .wm-app-shell {
+        grid-template-columns: 84px minmax(0, 1fr);
+    }
+
+    .wm-shell-sidebar {
+        align-items: stretch;
+        background: rgba(255, 255, 255, .97);
+        border-right: 1px solid var(--wm-divider);
+        display: flex;
+        flex-direction: column;
+        grid-column: 1;
+        grid-row: 1;
+        min-height: 0;
+        padding: 18px 10px;
+        z-index: 10;
+    }
+
+    .wm-shell-brand {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        color: var(--wm-text);
+        display: flex;
+        flex-direction: column;
+        font: inherit;
+        gap: 3px;
+        margin-bottom: 24px;
+    }
+
+    .wm-shell-brand > span {
+        align-items: center;
+        background: var(--wm-primary);
+        border-radius: 13px;
+        color: #fff;
+        display: flex;
+        font-size: 1rem;
+        font-weight: 800;
+        height: 44px;
+        justify-content: center;
+        width: 44px;
+    }
+
+    .wm-shell-brand strong { font-size: .72rem; }
+    .wm-shell-brand small { display: none; }
+    .wm-shell-sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+
+    .wm-shell-sidebar .wm-shell-nav-item {
+        gap: 4px;
+        min-height: 64px;
+        padding: 6px 4px;
+    }
+
+    .wm-shell-main { grid-column: 2; grid-row: 1; }
+    .wm-shell-content { height: 100vh; }
+    .wm-shell-bottom-navigation { display: none; }
+    .wm-shell-recents { display: none; }
+}
+
+@media (min-width: 1024px) {
+    .wm-app-shell { grid-template-columns: 220px minmax(0, 1fr); }
+    .wm-shell-sidebar { padding: 24px 18px; }
+
+    .wm-shell-brand {
+        display: grid;
+        gap: 2px;
+        grid-template-columns: 48px 1fr;
+        margin: 0 4px 30px;
+        text-align: left;
+    }
+
+    .wm-shell-brand > span { grid-row: 1 / 3; height: 48px; width: 48px; }
+    .wm-shell-brand strong { font-size: 1rem; }
+    .wm-shell-brand small { color: var(--wm-text-muted); display: block; font-size: .64rem; }
+
+    .wm-shell-sidebar .wm-shell-nav-item {
+        display: grid;
+        font-size: .8rem;
+        gap: 10px;
+        grid-template-columns: 36px 1fr;
+        justify-content: stretch;
+        min-height: 50px;
+        padding: 7px 10px;
+        text-align: left;
+    }
+
+    .wm-shell-sidebar .wm-shell-nav-icon {
+        height: 34px;
+        width: 34px;
+    }
+
+    .wm-shell-sidebar .wm-shell-nav-item.is-active {
+        background: var(--wm-primary-soft);
+    }
+
+    .wm-shell-sidebar .wm-shell-nav-item.is-active .wm-shell-nav-icon {
+        background: transparent;
+        transform: none;
+    }
+
+    .wm-shell-recents {
+        border-top: 1px solid var(--wm-divider);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-top: 24px;
+        padding-top: 18px;
+    }
+
+    .wm-shell-recents > span {
+        color: var(--wm-text-muted);
+        font-size: .64rem;
+        font-weight: 750;
+        letter-spacing: .08em;
+        margin: 0 8px 5px;
+    }
+
+    .wm-shell-recents button {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-radius: 10px;
+        color: var(--wm-text-muted);
+        display: grid;
+        font: inherit;
+        font-size: .68rem;
+        gap: 8px;
+        grid-template-columns: 22px minmax(0, 1fr);
+        min-height: 40px;
+        padding: 6px 8px;
+        text-align: left;
+    }
+
+    .wm-shell-recents button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wm-shell-recents button:hover { background: var(--wm-surface-subtle); color: var(--wm-text); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wm-shell-nav-item,
+    .wm-shell-nav-icon { transition: none; }
+}
+
+@supports (height: 100dvh) {
+    .wm-app-shell { height: 100dvh; }
+    .wm-shell-content { height: calc(100dvh - 74px - env(safe-area-inset-bottom)); }
+
+    @media (min-width: 720px) {
+        .wm-shell-content { height: 100dvh; }
+    }
+}

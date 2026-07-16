@@ -1,6 +1,4 @@
 ﻿using Masa.Blazor;
-using Masa.Blazor.Presets;
-using Microsoft.JSInterop;
 using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
@@ -46,11 +44,6 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
-        public Task DownloadTemplate(string watermarkId, ViewParameter parameter, Masa.Blazor.IPopupService PopupService, List<WMZipedTemplate> ZipedTemplates, IWMWatermarkHelper helper, IJSRuntime JSRuntime, Dictionary<string, int> Versions, PageStackNavController NavController, FailedBox failedBox)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<IEnumerable<string>> PickMultipleAsync()
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
@@ -89,17 +82,43 @@ namespace Watermark.Shared.Models
 
         public Version GetVersion()
         {
-            throw new NotImplementedException();
+            return typeof(ClientInstance).Assembly.GetName().Version ?? new Version(1, 0);
         }
 
-        public Task<bool> CheckUpdate(string platform = "")
+        public async Task<bool> CheckUpdate(string platform = "")
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(platform)
+                || string.Equals(platform, "WatermarkAndroid", StringComparison.OrdinalIgnoreCase))
+                platform = "WatermarkV3";
+            try
+            {
+                var version = await Connections.HttpGetAsync<WMClientVersion>(
+                    APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={Uri.EscapeDataString(platform)}",
+                    Encoding.Default);
+                if (version?.success != true || string.IsNullOrWhiteSpace(version.data?.VERSION)) return false;
+                UpdateMessage = version.data.MEMO ?? string.Empty;
+                UpdateVersion = version.data.VERSION;
+                LinkPath = version.data.PATH ?? string.Empty;
+                return new Version(UpdateVersion) > GetVersion();
+            }
+            catch { return false; }
         }
 
         public Task SetTextAsync(string uri)
         {
             System.Windows.Clipboard.SetText(uri);
+            return Task.CompletedTask;
+        }
+
+        public Task OpenExternalUrlAsync(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                || uri.Scheme is not ("http" or "https"))
+                return Task.CompletedTask;
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
             return Task.CompletedTask;
         }
 
@@ -146,9 +165,9 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
-        public Task Update(Action<long, long> DownloadProgressChanged)
+        public async Task Update(Action<long, long> DownloadProgressChanged)
         {
-            return Task.CompletedTask;
+            if (!string.IsNullOrWhiteSpace(LinkPath)) await OpenExternalUrlAsync(LinkPath);
         }
 
         public Task<bool> Download(string directory, string fileName, string extension)
@@ -171,9 +190,9 @@ namespace Watermark.Shared.Models
             throw new NotImplementedException();
         }
 
-        public string UpdateMessage { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string UpdateVersion { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string LinkPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string UpdateMessage { get; set; } = string.Empty;
+        public string UpdateVersion { get; set; } = string.Empty;
+        public string LinkPath { get; set; } = string.Empty;
         public string AppTitle { get; set; } = App.Current.MainWindow.Title;
         public void WindowMinimize() { }
         public void WindowZoom() { }

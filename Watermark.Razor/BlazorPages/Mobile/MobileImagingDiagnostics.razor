@@ -1,0 +1,228 @@
+@page "/settings/imaging"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@layout WMAppShellLayout
+@inject IWMImagingDiagnosticsService Diagnostics
+@inject IWMWorkspaceTraceStore WorkspaceTraces
+@inject IWMDiagnosticReportExporter ReportExporter
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<section class="imaging-diagnostics" aria-labelledby="imaging-diagnostics-title">
+    <header>
+        <button type="button" @onclick="NavigationBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <div>
+            <span>本机诊断</span>
+            <h1 id="imaging-diagnostics-title">诊断与日志</h1>
+        </div>
+        <button type="button" disabled="@loading" @onclick="RefreshAsync" aria-label="重新检测"><MIcon>mdi-refresh</MIcon></button>
+    </header>
+
+    <section class="diagnostic-toolbar" aria-label="诊断日志操作">
+        <button type="button" disabled="@(loading || exportingReport)" @onclick="ExportReportAsync">
+            <MIcon>mdi-file-export-outline</MIcon>
+            <span><strong>@(exportingReport ? "正在导出…" : "导出诊断日志")</strong><small>保存脱敏后的日志与性能报告</small></span>
+        </button>
+        <button type="button" class="is-secondary" disabled="@(exportingReport || clearingLogs)" @onclick="ClearLogsAsync">
+            <MIcon>mdi-delete-outline</MIcon><span>@(clearingLogs ? "正在清除…" : "清除")</span>
+        </button>
+    </section>
+    @if (!string.IsNullOrWhiteSpace(reportMessage))
+    {
+        <p class="diagnostic-message" role="status">@reportMessage</p>
+    }
+
+    @if (loading && snapshot is null)
+    {
+        <div class="diagnostic-loading" role="status"><MProgressCircular Indeterminate Size="28" Width="3" /><span>正在读取本机能力…</span></div>
+    }
+    else if (snapshot is not null)
+    {
+        <section class="backend-card">
+            <div class="backend-status @(snapshot.NativeBackendLoaded ? "is-ready" : null)">
+                <span><MIcon>@(snapshot.NativeBackendLoaded ? "mdi-check" : "mdi-alert-outline")</MIcon></span>
+                <div><strong>@(snapshot.NativeBackendLoaded ? "原生后端已加载" : "原生后端不可用")</strong><small>@snapshot.BackendVersion</small></div>
+            </div>
+            <dl>
+                <div><dt>设备</dt><dd>@snapshot.Platform</dd></div>
+                <div><dt>架构</dt><dd>@snapshot.Architecture</dd></div>
+                <div><dt>ABI</dt><dd>@(snapshot.NativeAbiVersion == 0 ? "—" : snapshot.NativeAbiVersion)</dd></div>
+                <div><dt>能力位</dt><dd>0x@snapshot.CapabilityBits.ToString("X8")</dd></div>
+                <div><dt>可用内存</dt><dd>@FormatBytes(snapshot.AvailableMemoryBytes)</dd></div>
+                <div><dt>可用缓存空间</dt><dd>@FormatBytes(snapshot.AvailableDiskBytes)</dd></div>
+            </dl>
+        </section>
+
+        <h2>功能状态</h2>
+        <section class="feature-list">
+            @foreach (var feature in snapshot.Features)
+            {
+                <article>
+                    <span class="feature-icon @(feature.IsAvailable ? "is-ready" : null)"><MIcon>@FeatureIcon(feature.Feature)</MIcon></span>
+                    <div><strong>@FeatureName(feature.Feature)</strong><small>@FeatureDescription(feature)</small></div>
+                    <span class="feature-state @(feature.IsAvailable ? "is-ready" : null)">@(feature.IsAvailable ? "可用" : "未开放")</span>
+                </article>
+            }
+        </section>
+        <h2>工作台诊断</h2>
+        <section class="trace-card">
+            @if (traceEvents.Count == 0)
+            {
+                <p>还没有工作台性能记录。完成一次预览、拼图或导出后会在这里显示。</p>
+            }
+            else
+            {
+                var latest = traceEvents[0];
+                <dl>
+                    <div><dt>最近事件</dt><dd>@latest.EventName</dd></div>
+                    <div><dt>解码</dt><dd>@Metric(latest, WMWorkspaceMetricStage.Decode)</dd></div>
+                    <div><dt>缩放</dt><dd>@Metric(latest, WMWorkspaceMetricStage.Scale)</dd></div>
+                    <div><dt>操作重放</dt><dd>@Metric(latest, WMWorkspaceMetricStage.Replay)</dd></div>
+                    <div><dt>编码</dt><dd>@Metric(latest, WMWorkspaceMetricStage.Encode)</dd></div>
+                    <div><dt>工作内存</dt><dd>@FormatBytes(latest.WorkingMemoryBytes)</dd></div>
+                    <div><dt>警告 / 错误</dt><dd>@WarningCount / @ErrorCount</dd></div>
+                </dl>
+            }
+            @if (LatestProblem is not null)
+            {
+                <div class="latest-problem" role="status">
+                    <strong>@(LatestProblem.Level >= WMDiagnosticLogLevel.Error ? "最近错误" : "最近警告")</strong>
+                    <span>@LatestProblem.EventName</span>
+                    @if (!string.IsNullOrWhiteSpace(LatestProblem.Message)) { <small>@LatestProblem.Message</small> }
+                </div>
+            }
+        </section>
+        <p class="diagnostic-note">日志只保存在本机，导出时由你选择保存位置。报告包含设备能力、工作台事件、性能计数和错误信息；不会包含照片内容、完整文件路径、账号或密钥。</p>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    private WMImagingDiagnosticSnapshot? snapshot;
+    private IReadOnlyList<WMWorkspaceTraceEvent> traceEvents = [];
+    private IReadOnlyList<WMDiagnosticLogEvent> logEvents = [];
+    private bool loading;
+    private bool exportingReport;
+    private bool clearingLogs;
+    private string? reportMessage;
+    private int WarningCount => logEvents.Count(item => item.Level == WMDiagnosticLogLevel.Warning);
+    private int ErrorCount => logEvents.Count(item => item.Level >= WMDiagnosticLogLevel.Error);
+    private WMDiagnosticLogEvent? LatestProblem => logEvents.FirstOrDefault(item =>
+        item.Level >= WMDiagnosticLogLevel.Warning);
+
+    protected override Task OnInitializedAsync() => RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        if (loading) return;
+        loading = true;
+        try
+        {
+            var capabilityTask = Diagnostics.CaptureAsync();
+            var traceTask = WorkspaceTraces.ReadLatestAsync(25);
+            var logTask = WorkspaceTraces.ReadLatestLogsAsync(100);
+            await Task.WhenAll(capabilityTask, traceTask, logTask);
+            snapshot = await capabilityTask;
+            traceEvents = await traceTask;
+            logEvents = await logTask;
+        }
+        finally { loading = false; }
+    }
+
+    private async Task ExportReportAsync()
+    {
+        if (exportingReport) return;
+        exportingReport = true;
+        reportMessage = null;
+        try
+        {
+            await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
+                DateTime.UtcNow,
+                WMDiagnosticLogLevel.Information,
+                "Diagnostics.Page",
+                "diagnostic-export-started",
+                "用户开始导出诊断日志。"));
+            var path = await WorkspaceTraces.CreateReportAsync(snapshot);
+            var fileName = $"litograph-diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+            var result = await ReportExporter.ExportAsync(path, fileName);
+            reportMessage = result.Succeeded
+                ? "诊断日志已导出，可以发送给开发人员分析。"
+                : result.ErrorMessage ?? "诊断日志导出失败。";
+            await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
+                DateTime.UtcNow,
+                result.Succeeded ? WMDiagnosticLogLevel.Information : WMDiagnosticLogLevel.Warning,
+                "Diagnostics.Page",
+                result.Succeeded ? "diagnostic-export-completed" : "diagnostic-export-failed",
+                result.Succeeded ? "诊断日志已导出。" : result.ErrorMessage));
+        }
+        catch (OperationCanceledException) { reportMessage = "已取消导出。"; }
+        catch (Exception ex)
+        {
+            reportMessage = ex.Message;
+            try
+            {
+                await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
+                    DateTime.UtcNow,
+                    WMDiagnosticLogLevel.Error,
+                    "Diagnostics.Page",
+                    "diagnostic-export-failed",
+                    ex.Message,
+                    ex.GetType().FullName,
+                    $"0x{ex.HResult:X8}",
+                    StackTrace: ex.StackTrace));
+            }
+            catch { }
+        }
+        finally { exportingReport = false; }
+    }
+
+    private async Task ClearLogsAsync()
+    {
+        if (clearingLogs) return;
+        clearingLogs = true;
+        reportMessage = null;
+        try
+        {
+            await WorkspaceTraces.ClearAsync();
+            traceEvents = [];
+            logEvents = [];
+            reportMessage = "本地诊断日志已清除。";
+        }
+        catch (Exception ex) { reportMessage = ex.Message; }
+        finally { clearingLogs = false; }
+    }
+
+    private static string Metric(WMWorkspaceTraceEvent traceEvent, WMWorkspaceMetricStage stage) =>
+        $"{traceEvent.Calls.GetValueOrDefault(stage)} 次 / {traceEvent.DurationMilliseconds.GetValueOrDefault(stage):0} ms";
+
+    private void NavigationBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl, "/settings"));
+
+    private static string FeatureName(WMImagingFeature feature) => feature switch
+    {
+        WMImagingFeature.Raw => "RAW 单图",
+        WMImagingFeature.StarTrail => "星轨合成",
+        WMImagingFeature.MultiFrame => "多帧降噪 / 静态星空",
+        WMImagingFeature.Png16 => "16 位 PNG",
+        WMImagingFeature.Tiff16 => "16 位 TIFF",
+        _ => feature.ToString()
+    };
+
+    private static string FeatureIcon(WMImagingFeature feature) => feature switch
+    {
+        WMImagingFeature.Raw => "mdi-camera-iris",
+        WMImagingFeature.StarTrail => "mdi-weather-night",
+        WMImagingFeature.MultiFrame => "mdi-layers-triple-outline",
+        WMImagingFeature.Png16 => "mdi-image-outline",
+        WMImagingFeature.Tiff16 => "mdi-file-image-outline",
+        _ => "mdi-flask-outline"
+    };
+
+    private static string FeatureDescription(WMImagingCapabilityStatus status) =>
+        status.IsAvailable ? "当前安装包和设备检查均已通过" : status.UnavailableReason ?? "当前版本尚未开放";
+
+    private static string FormatBytes(long value) => value <= 0
+        ? "未知"
+        : value >= 1024L * 1024 * 1024
+            ? $"{value / 1024d / 1024d / 1024d:0.0} GB"
+            : $"{value / 1024d / 1024d:0} MB";
+}

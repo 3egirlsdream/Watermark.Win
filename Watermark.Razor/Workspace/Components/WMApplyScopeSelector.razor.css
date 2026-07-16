@@ -1,0 +1,26 @@
+.wm-apply-scope {
+    background: var(--wm-control-surface, #eef1f5);
+    border-radius: 12px;
+    display: grid;
+    gap: 3px;
+    grid-template-columns: 1fr 1fr;
+    padding: 3px;
+}
+
+.wm-apply-scope button {
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    color: var(--wm-control-muted, #687386);
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 0 10px;
+}
+
+.wm-apply-scope button.is-active {
+    background: var(--wm-control-active-surface, #fff);
+    box-shadow: 0 2px 9px rgba(30, 41, 59, .10);
+    color: var(--wm-control-accent, #155fcf);
+}

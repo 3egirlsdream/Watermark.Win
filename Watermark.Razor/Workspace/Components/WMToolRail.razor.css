@@ -1,0 +1,20 @@
+.wm-tool-rail { min-width: 0; overflow: hidden; position: relative; }
+.wm-tool-rail::after {
+    background: linear-gradient(90deg, transparent, var(--wm-rail-edge, #fff));
+    content: "";
+    inset: 0 0 0 auto;
+    pointer-events: none;
+    position: absolute;
+    width: 24px;
+}
+.wm-tool-rail > div {
+    display: flex;
+    gap: 10px;
+    min-height: 48px;
+    overflow-x: auto;
+    padding: 2px 22px 5px 2px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+}
+.wm-tool-rail > div::-webkit-scrollbar { display: none; }
+.wm-tool-rail > div > * { flex: 0 0 auto; scroll-snap-align: start; }

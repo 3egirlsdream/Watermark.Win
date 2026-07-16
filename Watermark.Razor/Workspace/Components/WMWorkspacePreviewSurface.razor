@@ -1,0 +1,240 @@
+@implements IAsyncDisposable
+@using System.Security.Cryptography
+@using System.Text
+@using System.Text.Json
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject WMColorPreviewValidator Validator
+
+<div class="wm-preview-surface @(UseGpu ? "is-gpu" : "is-cpu") @Class">
+    <canvas @ref="canvas" class="wm-preview-gpu" aria-label="实时调色预览"></canvas>
+    @if (!UseGpu && FallbackUrl is { Length: > 0 } fallback)
+    {
+        <img src="@fallback" class="wm-preview-image" alt="@Alt" draggable="false" />
+    }
+    @if (!UseGpu && string.IsNullOrWhiteSpace(FallbackUrl))
+    {
+        @EmptyContent
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public WMWorkspacePreviewPresentation Presentation { get; set; } =
+        WMWorkspacePreviewPresentation.Empty;
+    [Parameter] public string Alt { get; set; } = "当前图片预览";
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? EmptyContent { get; set; }
+    [Parameter] public EventCallback<WMColorPreviewCapability> CapabilityChanged { get; set; }
+    [Parameter] public EventCallback<WMColorPreviewPerformanceSample> PerformanceMeasured { get; set; }
+
+    private ElementReference canvas;
+    private IJSObjectReference? module;
+    private IJSObjectReference? renderer;
+    private DotNetObjectReference<WMWorkspacePreviewSurface>? callbackReference;
+    private WMColorPreviewCapability? capability;
+    private WMColorPreviewParameters? appliedAdjustments;
+    private string? appliedSource;
+    private string? appliedLook;
+    private string? appliedProgram;
+    private bool gpuSourceReady;
+    private bool disposed;
+
+    private bool UseGpu =>
+        Presentation.Backend == WMInteractivePreviewBackend.WebGl2
+        && Presentation.ColorProgram is not null
+        && capability?.Supported == true
+        && capability.Validated
+        && gpuSourceReady;
+
+    private string? FallbackUrl => Presentation.StableUrl ?? Presentation.BaseUrl;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (disposed) return;
+        try
+        {
+            if (firstRender)
+            {
+                module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/Watermark.Razor/js/wm-color-preview.js");
+                callbackReference = DotNetObjectReference.Create(this);
+                renderer = await module.InvokeAsync<IJSObjectReference>(
+                    "createColorPreview", canvas, callbackReference);
+                capability = await renderer.InvokeAsync<WMColorPreviewCapability>("getCapability");
+                if (capability.Supported) capability = await ValidateCapabilityAsync(capability);
+                await CapabilityChanged.InvokeAsync(capability);
+                await InvokeAsync(StateHasChanged);
+            }
+            await SynchronizeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (JSException ex)
+        {
+            capability = new WMColorPreviewCapability(false, ex.Message, Validated: true);
+            await CapabilityChanged.InvokeAsync(capability);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SynchronizeAsync()
+    {
+        if (renderer is null || capability is not { Supported: true, Validated: true }) return;
+        var program = Presentation.ColorProgram;
+        if (Presentation.Backend != WMInteractivePreviewBackend.WebGl2
+            || program is null
+            || string.IsNullOrWhiteSpace(Presentation.BaseUrl)) return;
+
+        if (!string.Equals(appliedSource, Presentation.BaseUrl, StringComparison.Ordinal))
+        {
+            gpuSourceReady = false;
+            await renderer.InvokeVoidAsync("setSource", Presentation.BaseUrl);
+            appliedSource = Presentation.BaseUrl;
+        }
+        if (!string.Equals(appliedLook, program.Look.CacheKey, StringComparison.Ordinal))
+        {
+            await renderer.InvokeVoidAsync("setGeneratedLook", program.Look);
+            appliedLook = program.Look.CacheKey;
+        }
+        if (!string.Equals(appliedProgram, program.ProgramFingerprint, StringComparison.Ordinal))
+        {
+            if (appliedAdjustments is not null && CurvesEqual(appliedAdjustments, program.Adjustments))
+                await renderer.InvokeVoidAsync("setGradeAndHsl", program.Adjustments);
+            else
+                await renderer.InvokeVoidAsync("setAdjustments", program.Adjustments);
+            appliedAdjustments = program.Adjustments;
+            appliedProgram = program.ProgramFingerprint;
+        }
+        await renderer.InvokeVoidAsync("render");
+    }
+
+    private async Task<WMColorPreviewCapability> ValidateCapabilityAsync(
+        WMColorPreviewCapability candidate)
+    {
+        if (renderer is null)
+            return candidate with { Supported = false, Validated = true, Reason = "WebGL渲染器尚未初始化。" };
+        var jsVersion = await renderer.InvokeAsync<int>("getPipelineVersion");
+        if (jsVersion != Watermark.Shared.Models.WMColorPipelineVersion.Current
+            || candidate.PipelineVersion != Watermark.Shared.Models.WMColorPipelineVersion.Current)
+            return candidate with
+            {
+                Supported = false,
+                Validated = true,
+                Reason = $"调色Pipeline版本不一致：CPU={Watermark.Shared.Models.WMColorPipelineVersion.Current}，GPU={jsVersion}。"
+            };
+
+        var identity = $"{Watermark.Shared.Models.WMColorPipelineVersion.Current}|{candidate.EnvironmentKey}|rgba16f-v1";
+        var key = "watermark.color-preview-validation."
+                  + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..24];
+        try
+        {
+            var cachedJson = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", key);
+            if (!string.IsNullOrWhiteSpace(cachedJson)
+                && JsonSerializer.Deserialize<WMColorPreviewValidationResult>(cachedJson) is { } cached)
+                return ApplyValidation(candidate, cached);
+        }
+        catch
+        {
+        }
+
+        var request = Validator.CreateRequest();
+        var actual = await renderer.InvokeAsync<byte[]>("validatePipeline", request);
+        var validation = Validator.Evaluate(request, actual);
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "localStorage.setItem", key, JsonSerializer.Serialize(validation));
+        }
+        catch
+        {
+        }
+        return ApplyValidation(candidate, validation);
+    }
+
+    [JSInvokable]
+    public Task OnContextStateChanged(bool restored, string? reason) => InvokeAsync(async () =>
+    {
+        if (!restored)
+        {
+            gpuSourceReady = false;
+            capability = capability is null
+                ? new WMColorPreviewCapability(false, reason, Validated: true)
+                : capability with { Supported = false, Validated = true, Reason = reason };
+        }
+        else if (renderer is not null)
+        {
+            var restoredCapability = await renderer.InvokeAsync<WMColorPreviewCapability>("getCapability");
+            capability = restoredCapability.Supported
+                ? await ValidateCapabilityAsync(restoredCapability)
+                : restoredCapability;
+            appliedSource = null;
+            appliedLook = null;
+            appliedProgram = null;
+            appliedAdjustments = null;
+            gpuSourceReady = false;
+        }
+        if (capability is not null) await CapabilityChanged.InvokeAsync(capability);
+        StateHasChanged();
+    });
+
+    [JSInvokable]
+    public Task OnSourceReady(string source, double uploadMilliseconds) => InvokeAsync(async () =>
+    {
+        if (!string.Equals(source, Presentation.BaseUrl, StringComparison.Ordinal)) return;
+        gpuSourceReady = true;
+        await PerformanceMeasured.InvokeAsync(new WMColorPreviewPerformanceSample(
+            "texture-upload",
+            uploadMilliseconds));
+        StateHasChanged();
+    });
+
+    [JSInvokable]
+    public Task OnFrameMeasured(double durationMilliseconds) =>
+        PerformanceMeasured.InvokeAsync(new WMColorPreviewPerformanceSample(
+            "frame",
+            durationMilliseconds));
+
+    private static WMColorPreviewCapability ApplyValidation(
+        WMColorPreviewCapability capability,
+        WMColorPreviewValidationResult validation) => capability with
+        {
+            Supported = capability.Supported && validation.Passed,
+            Validated = true,
+            Reason = validation.Passed ? null : validation.Reason,
+            AverageDeltaE = validation.AverageDeltaE,
+            MaximumDeltaE = validation.MaximumDeltaE,
+            MaximumChannelError = validation.MaximumChannelError
+        };
+
+    private static bool CurvesEqual(
+        WMColorPreviewParameters left,
+        WMColorPreviewParameters right) =>
+        (ReferenceEquals(left.MasterCurve, right.MasterCurve)
+         || left.MasterCurve.AsSpan().SequenceEqual(right.MasterCurve))
+        && (ReferenceEquals(left.RedCurve, right.RedCurve)
+            || left.RedCurve.AsSpan().SequenceEqual(right.RedCurve))
+        && (ReferenceEquals(left.GreenCurve, right.GreenCurve)
+            || left.GreenCurve.AsSpan().SequenceEqual(right.GreenCurve))
+        && (ReferenceEquals(left.BlueCurve, right.BlueCurve)
+            || left.BlueCurve.AsSpan().SequenceEqual(right.BlueCurve));
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+        try
+        {
+            if (renderer is not null)
+            {
+                await renderer.InvokeVoidAsync("dispose");
+                await renderer.DisposeAsync();
+            }
+            if (module is not null) await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        callbackReference?.Dispose();
+    }
+}

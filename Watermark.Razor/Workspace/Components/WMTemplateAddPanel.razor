@@ -1,0 +1,20 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="wm-template-add-panel" aria-label="添加模板对象">
+    <header>
+        <strong>添加对象</strong>
+        <small>添加后可在画布上拖动、缩放和旋转</small>
+    </header>
+    <div>
+        <button type="button" @onclick="() => AddAsync(typeof(WMText))"><MIcon>mdi-format-text</MIcon><span>文字</span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMLogo))"><MIcon>mdi-image-outline</MIcon><span>图片</span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMLine))"><MIcon>mdi-minus</MIcon><span>线条</span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMContainer))"><MIcon>mdi-view-dashboard-outline</MIcon><span>容器</span></button>
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback<Type> AddRequested { get; set; }
+    private Task AddAsync(Type type) => AddRequested.InvokeAsync(type);
+}

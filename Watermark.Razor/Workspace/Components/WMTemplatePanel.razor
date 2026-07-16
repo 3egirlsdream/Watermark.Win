@@ -1,0 +1,104 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="wm-panel" aria-label="模板设置">
+    <header class="wm-panel-heading">
+        <div><strong>选择模板</strong><small>配置立即展示，预览后台补齐</small></div>
+        <button type="button" disabled="@Refreshing" @onclick="RefreshRequested" aria-label="刷新模板"><MIcon>mdi-refresh</MIcon></button>
+    </header>
+    <WMApplyScopeSelector Value="Scope" ValueChanged="ChangeScopeAsync" SelectedCount="SelectedCount" />
+    <WMToolRail AriaLabel="模板列表" CssClass="wm-template-track">
+        <button type="button" class="wm-template-card @(TemplateId is null ? "is-active" : null)"
+                @onfocus="() => PreviewAsync(null)" @onclick="() => CommitAsync(null)">
+            <span class="wm-template-none"><MIcon>mdi-cancel</MIcon></span><small>无模板</small>
+        </button>
+        @foreach (var template in Templates)
+        {
+            <button type="button" class="wm-template-card @(TemplateId == template.ID ? "is-active" : null)"
+                    data-template-id="@template.ID" @onpointerenter="() => PreviewAsync(template.ID)"
+                    @onfocus="() => PreviewAsync(template.ID)" @onclick="() => CommitAsync(template.ID)">
+                <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <MIcon>mdi-image-outline</MIcon> }</span>
+                <small>@(template.Canvas?.Name ?? "未命名")</small>
+            </button>
+        }
+    </WMToolRail>
+    @if (CurrentCanvas is { } canvas)
+    {
+        <details class="wm-template-parameters">
+            <summary><span><strong>画布与边框</strong><small>@canvas.CanvasType · @ExifFieldCount(canvas) 个 EXIF 字段</small></span><MIcon>mdi-chevron-down</MIcon></summary>
+            <div class="wm-template-border-grid">
+                <WMTemplateBorderControl Label="上" Value="canvas.BorderThickness.Top"
+                    PreviewValueChanged="PreviewTop" CommitValueChanged="CommitTop" />
+                <WMTemplateBorderControl Label="右" Value="canvas.BorderThickness.Right"
+                    PreviewValueChanged="PreviewRight" CommitValueChanged="CommitRight" />
+                <WMTemplateBorderControl Label="下" Value="canvas.BorderThickness.Bottom"
+                    PreviewValueChanged="PreviewBottom" CommitValueChanged="CommitBottom" />
+                <WMTemplateBorderControl Label="左" Value="canvas.BorderThickness.Left"
+                    PreviewValueChanged="PreviewLeft" CommitValueChanged="CommitLeft" />
+            </div>
+            <p>边框调整只写入当前会话的模板快照，不修改模板库原文件。</p>
+        </details>
+    }
+    <p class="wm-panel-note"><MIcon>mdi-gesture-tap-hold</MIcon><span>在画布上按住可查看原图，双击恢复适配。</span></p>
+</section>
+
+@code {
+    [Parameter] public IReadOnlyList<WMTemplateList> Templates { get; set; } = [];
+    [Parameter] public string? TemplateId { get; set; }
+    [Parameter] public WMWorkspaceTemplateEdit? Draft { get; set; }
+    [Parameter] public WMApplyScope Scope { get; set; } = WMApplyScope.Selected;
+    [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public EventCallback RefreshRequested { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> PreviewChanged { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> CommitRequested { get; set; }
+
+    private Task ChangeScopeAsync(WMApplyScope scope) => ScopeChanged.InvokeAsync(scope);
+    private WMCanvas? CurrentCanvas
+    {
+        get
+        {
+            try
+            {
+                if (Draft is { CanvasJson.Length: > 0 } && Draft.TemplateId == TemplateId)
+                    return Global.ReadConfig(Draft.CanvasJson);
+                return Templates.FirstOrDefault(item => item.ID == TemplateId)?.Canvas;
+            }
+            catch { return null; }
+        }
+    }
+
+    private Task PreviewAsync(string? templateId) =>
+        PreviewChanged.InvokeAsync(CreateEdit(templateId));
+
+    private Task CommitAsync(string? templateId) =>
+        CommitRequested.InvokeAsync(CreateEdit(templateId));
+
+    private WMWorkspaceTemplateEdit CreateEdit(string? templateId)
+    {
+        if (templateId is null) return new WMWorkspaceTemplateEdit(null, null);
+        if (Draft?.TemplateId == templateId) return Draft;
+        return new WMWorkspaceTemplateEdit(templateId, null);
+    }
+
+    private Task ChangeBorderAsync(string side, double value, bool commit)
+    {
+        if (CurrentCanvas is not { } current) return Task.CompletedTask;
+        var canvas = WMWorkspacePanelMutations.SetBorder(current, side, value);
+        var edit = new WMWorkspaceTemplateEdit(TemplateId, Global.CanvasSerialize(canvas));
+        return commit ? CommitRequested.InvokeAsync(edit) : PreviewChanged.InvokeAsync(edit);
+    }
+
+    private Task PreviewTop(double value) => ChangeBorderAsync("Top", value, false);
+    private Task CommitTop(double value) => ChangeBorderAsync("Top", value, true);
+    private Task PreviewRight(double value) => ChangeBorderAsync("Right", value, false);
+    private Task CommitRight(double value) => ChangeBorderAsync("Right", value, true);
+    private Task PreviewBottom(double value) => ChangeBorderAsync("Bottom", value, false);
+    private Task CommitBottom(double value) => ChangeBorderAsync("Bottom", value, true);
+    private Task PreviewLeft(double value) => ChangeBorderAsync("Left", value, false);
+    private Task CommitLeft(double value) => ChangeBorderAsync("Left", value, true);
+
+    private static int ExifFieldCount(WMCanvas canvas) =>
+        Global.EnumerateControls(canvas).OfType<WMText>().Sum(text => text.Exifs?.Count ?? 0);
+}

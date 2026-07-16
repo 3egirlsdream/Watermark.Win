@@ -1,7 +1,8 @@
 .designer-toolbar {
     align-items: center;
-    background: rgba(255, 255, 255, 0.96);
-    border-bottom: 1px solid #d9dee7;
+    backdrop-filter: blur(18px) saturate(1.12);
+    background: rgba(255, 255, 255, 0.97);
+    border-bottom: 1px solid rgba(30, 41, 59, 0.1);
     color: #1f2937;
     display: grid;
     grid-template-columns: minmax(180px, 1fr) minmax(160px, auto) minmax(300px, 1fr);
@@ -41,6 +42,10 @@
     height: 32px;
     padding: 0;
     width: 32px;
+}
+
+.exit-command {
+    color: #263348;
 }
 
 .icon-command:hover:not(:disabled) {
@@ -169,5 +174,51 @@
 
     .zoom-control {
         grid-template-columns: 28px 28px;
+    }
+}
+
+@media (max-width: 540px) {
+    .designer-toolbar {
+        box-sizing: border-box;
+        grid-template-columns: 144px minmax(48px, 1fr) 76px;
+        height: 56px;
+        padding: 0 4px;
+    }
+
+    .icon-command {
+        border-radius: 11px;
+        height: 48px;
+        width: 48px;
+    }
+
+    .toolbar-divider,
+    .zoom-control,
+    .toolbar-trailing > .icon-command {
+        display: none;
+    }
+
+    .toolbar-leading {
+        gap: 0;
+    }
+
+    .template-identity {
+        padding: 0 6px;
+    }
+
+    .template-name {
+        font-size: 12px;
+        max-width: 100%;
+    }
+
+    .save-command {
+        border-radius: 11px;
+        font-size: 12px;
+        height: 48px;
+        min-width: 70px;
+        padding: 0 10px;
+    }
+
+    .save-command i {
+        display: none;
     }
 }

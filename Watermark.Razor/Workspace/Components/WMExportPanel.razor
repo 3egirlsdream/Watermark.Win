@@ -1,0 +1,64 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<details class="wm-export-panel" open="@Expanded">
+    <summary><span><MIcon>mdi-export-variant</MIcon>导出设置</span><small>@SelectedCount 张 · @FormatLabel</small></summary>
+    <label><span>格式</span><select value="@Format" @onchange="ChangeFormatAsync"><option value="@WMExportFormat.Jpeg8">JPEG</option>@if (CanExportPng16) { <option value="@WMExportFormat.Png16">16 位 PNG</option> }@if (CanExportTiff16) { <option value="@WMExportFormat.Tiff16">16 位 TIFF</option> }</select></label>
+    <label><span>分辨率</span><select value="@MaximumLongEdge" @onchange="ChangeMaximumLongEdgeAsync"><option value="0">原尺寸</option><option value="1920">最长边 1920</option><option value="3840">最长边 3840</option><option value="-1">自定义最长边</option></select></label>
+    <label><span>保存位置</span><select value="@Destination" @onchange="ChangeDestinationAsync"><option value="@WMExportDestinationKind.PlatformDefault">默认图片目录</option><option value="@WMExportDestinationKind.SystemPicker">每次选择位置</option></select></label>
+    @if (MaximumLongEdge == -1)
+    {
+        <label><span>自定义最长边 <output>@CustomMaximumLongEdge px</output></span><input class="wm-number" type="number" min="320" max="16384" step="1" value="@CustomMaximumLongEdge" @onchange="ChangeCustomMaximumLongEdgeAsync" /></label>
+    }
+    @if (Format == WMExportFormat.Jpeg8)
+    {
+        <label><span>质量 <output>@Quality</output></span><input type="range" min="60" max="100" step="1" value="@Quality" @onchange="ChangeQualityAsync" /></label>
+    }
+    @if (FailedCount > 0)
+    {
+        <button type="button" class="wm-retry" disabled="@Busy" @onclick="RetryFailedRequested"><MIcon>mdi-refresh</MIcon><span>仅重试失败的 @FailedCount 张</span></button>
+    }
+    @if (Busy)
+    {
+        <div class="wm-export-progress" role="status"><span><strong>正在导出</strong><small>@Progress.ToString("P0")</small></span><progress max="1" value="@Progress"></progress></div>
+    }
+    @if (Results.Count > 0)
+    {
+        <ul class="wm-export-results" aria-label="导出结果">
+            @foreach (var item in Results)
+            {
+                <li class="@(item.Status == WMExportItemStatus.Succeeded ? "is-success" : "is-error")"><MIcon>@(item.Status == WMExportItemStatus.Succeeded ? "mdi-check-circle-outline" : "mdi-alert-circle-outline")</MIcon><span><strong>@item.SuggestedFileName</strong><small>@(item.ErrorMessage ?? "已保存")</small></span></li>
+            }
+        </ul>
+    }
+    <button type="button" class="wm-export-run" disabled="@(!Busy && SelectedCount == 0)" @onclick="RunOrCancelRequested"><MIcon>@(Busy ? "mdi-stop-circle-outline" : "mdi-export-variant")</MIcon><span>@(Busy ? "取消导出" : $"导出 {SelectedCount} 张")</span></button>
+</details>
+
+@code {
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public bool Expanded { get; set; }
+    [Parameter] public WMExportFormat Format { get; set; } = WMExportFormat.Jpeg8;
+    [Parameter] public EventCallback<WMExportFormat> FormatChanged { get; set; }
+    [Parameter] public int MaximumLongEdge { get; set; }
+    [Parameter] public EventCallback<int> MaximumLongEdgeChanged { get; set; }
+    [Parameter] public int CustomMaximumLongEdge { get; set; } = 4096;
+    [Parameter] public EventCallback<int> CustomMaximumLongEdgeChanged { get; set; }
+    [Parameter] public int Quality { get; set; } = 92;
+    [Parameter] public EventCallback<int> QualityChanged { get; set; }
+    [Parameter] public WMExportDestinationKind Destination { get; set; } = WMExportDestinationKind.PlatformDefault;
+    [Parameter] public EventCallback<WMExportDestinationKind> DestinationChanged { get; set; }
+    [Parameter] public bool CanExportPng16 { get; set; }
+    [Parameter] public bool CanExportTiff16 { get; set; }
+    [Parameter] public int FailedCount { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public double Progress { get; set; }
+    [Parameter] public IReadOnlyList<WMExportItemResult> Results { get; set; } = [];
+    [Parameter] public EventCallback RetryFailedRequested { get; set; }
+    [Parameter] public EventCallback RunOrCancelRequested { get; set; }
+    private string FormatLabel => Format switch { WMExportFormat.Png16 => "PNG16", WMExportFormat.Tiff16 => "TIFF16", _ => "JPEG" };
+    private Task ChangeFormatAsync(ChangeEventArgs args) => Enum.TryParse<WMExportFormat>(args.Value?.ToString(), out var value) ? FormatChanged.InvokeAsync(value) : Task.CompletedTask;
+    private Task ChangeMaximumLongEdgeAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? MaximumLongEdgeChanged.InvokeAsync(value) : Task.CompletedTask;
+    private Task ChangeCustomMaximumLongEdgeAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? CustomMaximumLongEdgeChanged.InvokeAsync(Math.Clamp(value, 320, 16384)) : Task.CompletedTask;
+    private Task ChangeQualityAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? QualityChanged.InvokeAsync(Math.Clamp(value, 60, 100)) : Task.CompletedTask;
+    private Task ChangeDestinationAsync(ChangeEventArgs args) => Enum.TryParse<WMExportDestinationKind>(args.Value?.ToString(), out var value) ? DestinationChanged.InvokeAsync(value) : Task.CompletedTask;
+}

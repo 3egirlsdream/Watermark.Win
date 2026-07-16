@@ -1,0 +1,11 @@
+@using Watermark.Razor.Components.Mac
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<MacSelectionInspector Editor="Editor" RenderResult="RenderResult" DesignFunc="DesignFunc" />
+
+@code {
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
+    [Parameter] public WMDesignFunc? DesignFunc { get; set; }
+}

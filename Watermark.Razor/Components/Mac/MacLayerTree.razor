@@ -1,6 +1,6 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
-@using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 @inject IJSRuntime JSRuntime
 @implements IDisposable
@@ -64,7 +64,7 @@
 </aside>
 
 @code {
-    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
 
     private readonly HashSet<string> collapsedIds = new(StringComparer.Ordinal);
     private string editingId;
@@ -81,7 +81,7 @@
     private DotNetObjectReference<MacLayerTree> dotNetReference;
     private bool disposed;
 
-    private int LayerCount => MacControlTree.Flatten(Editor.Draft).Count;
+    private int LayerCount => WMControlTree.Flatten(Editor.Draft).Count;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -206,7 +206,7 @@
         IWMControl added = null;
         Editor.Mutate("添加图层", () =>
         {
-            added = MacControlTree.Add(Editor.Draft, type, PreferredParentId());
+            added = WMControlTree.Add(Editor.Draft, type, PreferredParentId());
             added.Name = type == typeof(WMContainer) ? "新容器"
                 : type == typeof(WMText) ? "新文字"
                 : type == typeof(WMLogo) ? "新 Logo"
@@ -218,9 +218,9 @@
     private string PreferredParentId()
     {
         if (string.IsNullOrWhiteSpace(Editor.SelectedControlId)) return null;
-        var selected = MacControlTree.Find(Editor.Draft, Editor.SelectedControlId);
+        var selected = WMControlTree.Find(Editor.Draft, Editor.SelectedControlId);
         if (selected is WMContainer container) return container.ID;
-        return MacControlTree.FindParent(Editor.Draft, Editor.SelectedControlId)?.ID;
+        return WMControlTree.FindParent(Editor.Draft, Editor.SelectedControlId)?.ID;
     }
 
     private void BeginRename(IWMControl control)
@@ -264,7 +264,7 @@
         IWMControl copy = null;
         Editor.Mutate("复制图层", () =>
         {
-            copy = MacControlTree.Duplicate(Editor.Draft, control.ID);
+            copy = WMControlTree.Duplicate(Editor.Draft, control.ID);
             copy.Name = $"{DisplayName(control)} 副本";
         });
         contextId = null;
@@ -300,10 +300,10 @@
 
     private void Delete(IWMControl control)
     {
-        var parentId = MacControlTree.FindParent(Editor.Draft, control.ID)?.ID;
+        var parentId = WMControlTree.FindParent(Editor.Draft, control.ID)?.ID;
         Editor.Mutate("删除图层", () =>
         {
-            if (!MacControlTree.Remove(Editor.Draft, control.ID))
+            if (!WMControlTree.Remove(Editor.Draft, control.ID))
                 throw new InvalidOperationException("无法删除图层。");
         });
         Editor.Select(parentId);
@@ -339,7 +339,7 @@
     [JSInvokable]
     public Task<bool> BeginLayerPointerDrag(string controlId)
     {
-        var control = MacControlTree.Find(Editor.Draft, controlId);
+        var control = WMControlTree.Find(Editor.Draft, controlId);
         if (control is null || control.IsLocked) return Task.FromResult(false);
         draggedId = control.ID;
         ClearDropCandidate();
@@ -390,11 +390,11 @@
     private bool CanDrop(string parentId, int rawIndex)
     {
         if (string.IsNullOrWhiteSpace(draggedId)) return false;
-        var control = MacControlTree.Find(Editor.Draft, draggedId);
+        var control = WMControlTree.Find(Editor.Draft, draggedId);
         if (control is null || control.IsLocked) return false;
-        if (!MacControlTree.CanMove(Editor.Draft, draggedId, parentId, out _)) return false;
+        if (!WMControlTree.CanMove(Editor.Draft, draggedId, parentId, out _)) return false;
 
-        var target = parentId is null ? null : MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
+        var target = parentId is null ? null : WMControlTree.Find(Editor.Draft, parentId) as WMContainer;
         var targetCount = target?.Controls.Count ?? Editor.Draft.Children.Count;
         var alreadyInTarget = target is null
             ? control is WMContainer root && Editor.Draft.Children.Contains(root)
@@ -416,7 +416,7 @@
         var index = NormalizeDropIndex(parentId, rawIndex);
         Editor.Mutate("移动图层", () =>
         {
-            if (!MacControlTree.Move(Editor.Draft, movingId, parentId, index))
+            if (!WMControlTree.Move(Editor.Draft, movingId, parentId, index))
                 throw new InvalidOperationException("无法移动到目标位置。");
         });
         Editor.Select(movingId);
@@ -427,7 +427,7 @@
     private int NormalizeDropIndex(string parentId, int rawIndex)
     {
         if (string.IsNullOrWhiteSpace(draggedId)) return rawIndex;
-        var moving = MacControlTree.Find(Editor.Draft, draggedId);
+        var moving = WMControlTree.Find(Editor.Draft, draggedId);
         if (moving is null) return rawIndex;
 
         if (parentId is null && moving is WMContainer root)
@@ -437,7 +437,7 @@
         }
 
         if (parentId is null) return rawIndex;
-        var target = MacControlTree.Find(Editor.Draft, parentId) as WMContainer;
+        var target = WMControlTree.Find(Editor.Draft, parentId) as WMContainer;
         if (target is null) return rawIndex;
         var childIndex = target.Controls.IndexOf(moving);
         return childIndex >= 0 && childIndex < rawIndex ? rawIndex - 1 : rawIndex;

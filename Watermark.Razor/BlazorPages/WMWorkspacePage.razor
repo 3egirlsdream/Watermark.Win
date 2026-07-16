@@ -1,0 +1,19 @@
+@page "/workspace/{SessionId}"
+@using Watermark.Razor.BlazorPages.Mobile
+@using Watermark.Razor.Components.Layout
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+@layout MobileWorkspaceLayout
+
+@if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
+{
+    <MainViewOSX @key="SessionId" SessionId="@SessionId" />
+}
+else
+{
+    <MobileWorkspace @key="SessionId" SessionId="@SessionId" />
+}
+
+@code {
+    [Parameter] public string SessionId { get; set; } = string.Empty;
+}

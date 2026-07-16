@@ -1,0 +1,167 @@
+@page "/profile"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@layout WMAppShellLayout
+@implements IDisposable
+@inject IWMAccountService Accounts
+@inject IWMCacheMaintenanceService Cache
+@inject IWMAppUpdateService Updates
+@inject IWMExternalActionService External
+@inject IWMAdminDashboardService Admin
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<section class="profile-page" aria-labelledby="profile-title">
+    <header class="profile-header">
+        <span>账户与应用</span>
+        <h1 id="profile-title">我的</h1>
+    </header>
+
+    <section class="profile-identity">
+        <div class="profile-avatar">
+            @if (!avatarFailed && !string.IsNullOrWhiteSpace(Account.AvatarUrl))
+            {
+                <img src="@Account.AvatarUrl" alt="用户头像" @onerror="OnAvatarError" />
+            }
+            else
+            {
+                <MIcon>mdi-account-outline</MIcon>
+            }
+        </div>
+        <div class="profile-copy">
+            <strong>@DisplayName</strong>
+            <small>@AccountSubtitle</small>
+        </div>
+        @if (Account.IsAuthenticated)
+        {
+            <span class="profile-plan @(Account.IsVip ? "is-vip" : null)">@(Account.IsVip ? "会员" : "免费版")</span>
+        }
+        else
+        {
+            <button type="button" @onclick="OpenLogin">登录</button>
+        }
+    </section>
+
+    @if (!Account.IsVip)
+    {
+        <button class="profile-membership" type="button" @onclick="OpenMembership">
+            <span class="membership-symbol"><MIcon>mdi-diamond-stone</MIcon></span>
+            <span><strong>解锁轻影会员</strong><small>批量处理、更多模板与创作者权益</small></span>
+            <MIcon>mdi-arrow-right</MIcon>
+        </button>
+    }
+
+    <div class="profile-group-label">资源管理</div>
+    <section class="profile-list">
+        <button type="button" @onclick="OpenTemplates">
+            <span class="profile-list-icon is-blue"><MIcon>mdi-view-grid-outline</MIcon></span>
+            <span><strong>模板与收藏</strong><small>管理本地、市场和收藏模板</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+        <button type="button" @onclick="OpenResources">
+            <span class="profile-list-icon is-amber"><MIcon>mdi-shape-outline</MIcon></span>
+            <span><strong>图标与字体</strong><small>管理模板使用的个人素材</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+        <button type="button" disabled="@clearingCache" @onclick="ClearCacheAsync">
+            <span class="profile-list-icon is-green"><MIcon>mdi-database-outline</MIcon></span>
+            <span><strong>缓存空间</strong><small>@(clearingCache ? "正在清理…" : cacheDescription)</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+    </section>
+
+    <div class="profile-group-label">应用</div>
+    <section class="profile-list">
+        <button type="button" @onclick="OpenSettings">
+            <span class="profile-list-icon is-slate"><MIcon>mdi-cog-outline</MIcon></span>
+            <span><strong>应用设置</strong><small>EXIF、并发、隐私和缓存选项</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+        <button type="button" @onclick="OpenDiagnostics">
+            <span class="profile-list-icon is-blue"><MIcon>mdi-chip</MIcon></span>
+            <span><strong>诊断与日志</strong><small>查看设备能力并导出脱敏日志</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+        <button type="button" disabled="@checkingUpdate" @onclick="CheckUpdateAsync">
+            <span class="profile-list-icon is-slate"><MIcon>mdi-update</MIcon></span>
+            <span><strong>检查更新</strong><small>@updateDescription</small></span>
+            <MIcon>mdi-chevron-right</MIcon>
+        </button>
+        @if (Admin.IsAuthorized)
+        {
+            <button type="button" @onclick="OpenAdmin">
+                <span class="profile-list-icon is-amber"><MIcon>mdi-view-dashboard-outline</MIcon></span>
+                <span><strong>运营看板</strong><small>管理员数据与运营指标</small></span>
+                <MIcon>mdi-chevron-right</MIcon>
+            </button>
+        }
+        <button type="button" @onclick="OpenWebsiteAsync">
+            <span class="profile-list-icon is-slate"><MIcon>mdi-help-circle-outline</MIcon></span>
+            <span><strong>帮助与反馈</strong><small>使用指南、问题反馈和官网</small></span>
+            <MIcon>mdi-open-in-new</MIcon>
+        </button>
+    </section>
+
+    <footer class="profile-footer">
+        <span>轻影 Watermark</span>
+        <small>v@Updates.State.CurrentVersion</small>
+    </footer>
+</section>
+
+@code {
+    private bool checkingUpdate;
+    private bool clearingCache;
+    private bool avatarFailed;
+    private string updateDescription = "点击检查当前版本";
+    private string cacheDescription = "计算中…";
+    private WMAccountState Account => Accounts.State;
+    private string DisplayName => Account.IsAuthenticated ? Account.DisplayName : "欢迎使用轻影";
+    private string AccountSubtitle => Account.IsAuthenticated ? Account.UserName ?? "已登录" : "登录后同步会员与收藏";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Accounts.Changed += AccountChanged;
+        await RefreshCacheSizeAsync();
+    }
+
+    private void OpenLogin() => NavigationHistory.NavigateTo("/account/login?returnUrl=/profile");
+    private void OpenMembership() => NavigationHistory.NavigateTo("/membership?returnUrl=/profile");
+    private void OpenTemplates() => NavigationHistory.NavigateRoot("/templates");
+    private void OpenResources() => NavigationHistory.NavigateTo("/settings/resources?returnUrl=/profile");
+    private void OpenSettings() => NavigationHistory.NavigateTo("/settings?returnUrl=/profile");
+    private void OpenDiagnostics() => NavigationHistory.NavigateTo("/settings/imaging?returnUrl=/profile");
+    private void OpenAdmin() => NavigationHistory.NavigateTo("/admin/dashboard?returnUrl=/profile");
+    private void OnAvatarError() => avatarFailed = true;
+
+    private async Task CheckUpdateAsync()
+    {
+        if (checkingUpdate) return;
+        checkingUpdate = true;
+        var state = await Updates.CheckAsync();
+        updateDescription = state.Message ?? "检查完成";
+        checkingUpdate = false;
+    }
+
+    private async Task ClearCacheAsync()
+    {
+        if (clearingCache) return;
+        clearingCache = true;
+        var result = await Cache.ClearAsync(WMCacheArea.Temporary);
+        cacheDescription = result.Succeeded ? "临时缓存已清理" : $"清理失败：{result.Message}";
+        clearingCache = false;
+    }
+
+    private async Task RefreshCacheSizeAsync()
+    {
+        var summary = await Cache.MeasureAsync();
+        cacheDescription = FormatBytes(summary.TotalBytes) + "，可安全清理";
+    }
+
+    private Task OpenWebsiteAsync() => External.OpenUrlAsync("http://thankful.top/");
+    private void AccountChanged() => _ = InvokeAsync(() => { avatarFailed = false; StateHasChanged(); });
+    private static string FormatBytes(long value) => value < 1024 * 1024
+        ? $"{value / 1024d:0.#} KB"
+        : $"{value / 1024d / 1024d:0.#} MB";
+
+    public void Dispose() => Accounts.Changed -= AccountChanged;
+}

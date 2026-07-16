@@ -1,0 +1,5 @@
+.wm-template-border-control { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.wm-template-border-control > span { align-items: center; display: flex; justify-content: space-between; }
+.wm-template-border-control strong { color: var(--wm-control-text, #172033); font-size: .74rem; }
+.wm-template-border-control output { color: var(--wm-control-accent, #155fcf); font-size: .7rem; font-variant-numeric: tabular-nums; }
+.wm-template-border-control input { accent-color: var(--wm-control-accent, #155fcf); height: 32px; margin: 0; width: 100%; }

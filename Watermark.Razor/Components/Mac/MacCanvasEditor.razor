@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using Watermark.Razor.Components.Mac.Editor
+@using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
@@ -46,7 +47,7 @@
     private const double MaximumZoom = 4;
     private const double ZoomStep = 0.1;
 
-    [Parameter, EditorRequired] public MacTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public string PreviewUrl { get; set; } = string.Empty;
     [Parameter] public double Zoom { get; set; } = 1;
@@ -211,7 +212,7 @@
     public Task<bool> BeginCanvasInteraction(string controlId)
     {
         if (canvasInteractionActive) return Task.FromResult(false);
-        var control = MacControlTree.Find(Editor.Draft, controlId);
+        var control = WMControlTree.Find(Editor.Draft, controlId);
         if (control is null || control.IsLocked || !control.Enabled) return Task.FromResult(false);
 
         try
@@ -237,7 +238,7 @@
 
         try
         {
-            var control = MacControlTree.Find(Editor.Draft, interaction.ControlId);
+            var control = WMControlTree.Find(Editor.Draft, interaction.ControlId);
             if (control is null || control.IsLocked || !control.Enabled)
             {
                 Editor.CancelTransaction();
@@ -428,7 +429,7 @@
     private void MoveSelected(string key, double step)
     {
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
-        var control = MacControlTree.Find(Editor.Draft, selectedId);
+        var control = WMControlTree.Find(Editor.Draft, selectedId);
         if (control is null || control.IsLocked || !control.Enabled) return;
         var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == selectedId);
         if (bounds is null) return;
@@ -493,14 +494,14 @@
     {
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
         IWMControl? copy = null;
-        Editor.Mutate("复制图层", () => copy = MacControlTree.Duplicate(Editor.Draft, selectedId));
+        Editor.Mutate("复制图层", () => copy = WMControlTree.Duplicate(Editor.Draft, selectedId));
         if (copy is not null) Editor.Select(copy.ID);
     }
 
     private async Task DeleteSelectedAsync()
     {
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
-        var control = MacControlTree.Find(Editor.Draft, selectedId);
+        var control = WMControlTree.Find(Editor.Draft, selectedId);
         if (control is null) return;
 
         var descendants = DescendantCount(control);
@@ -511,10 +512,10 @@
             if (!confirmed) return;
         }
 
-        var parentId = MacControlTree.FindParent(Editor.Draft, selectedId)?.ID;
+        var parentId = WMControlTree.FindParent(Editor.Draft, selectedId)?.ID;
         Editor.Mutate("删除图层", () =>
         {
-            if (!MacControlTree.Remove(Editor.Draft, selectedId))
+            if (!WMControlTree.Remove(Editor.Draft, selectedId))
                 throw new InvalidOperationException("无法删除图层。");
         });
         Editor.Select(parentId);

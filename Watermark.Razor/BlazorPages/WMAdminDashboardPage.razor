@@ -1,0 +1,16 @@
+@page "/admin/dashboard"
+@using Watermark.Razor.Components.Dashboard
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@layout WMAppShellLayout
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<div class="wm-admin-page">
+    <AdminDashboard ShowClose Close="GoBack" />
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl));
+}

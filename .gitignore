@@ -60,3 +60,5 @@ global.json
 !/native/third_party/LibRaw-0.22.1/LICENSE.CDDL
 Watermark.Razor.Tests/bin
 Watermark.Razor.Tests/obj
+/Watermark.Andorid/ReleasePackages/
+/tmp/

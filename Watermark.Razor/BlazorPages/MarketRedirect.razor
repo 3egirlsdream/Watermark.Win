@@ -1,0 +1,7 @@
+@page "/market"
+@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized() =>
+        Navigation.NavigateTo("/templates?tab=market", replace: true);
+}

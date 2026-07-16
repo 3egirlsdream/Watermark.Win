@@ -1,0 +1,79 @@
+@page "/membership"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@layout WMAppShellLayout
+@inject IWMMembershipService Membership
+@inject IWMAccountService Accounts
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<section class="membership-page" aria-labelledby="membership-title">
+    <header><button type="button" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button><div><span>MEMBERSHIP</span><h1 id="membership-title">轻影会员</h1></div></header>
+    <section class="membership-hero">
+        <div class="membership-mark"><MIcon Size="36">mdi-diamond-stone</MIcon></div>
+        <div><strong>@(Accounts.State.IsVip ? "会员权益已生效" : "让每次创作更从容")</strong><p>@StatusText</p></div>
+    </section>
+    @if (!Accounts.State.IsAuthenticated)
+    {
+        <button class="membership-login" type="button" @onclick="OpenLogin"><MIcon>mdi-login-variant</MIcon><span>登录后选择会员套餐</span></button>
+    }
+    else
+    {
+        <section class="membership-plans" aria-label="会员套餐">
+            @foreach (var plan in Membership.Plans)
+            {
+                <button type="button" class="@(plan.Recommended ? "is-recommended" : null)" disabled="@busy" @onclick="() => PurchaseAsync(plan)">
+                    @if (plan.Recommended) { <span class="plan-badge">推荐</span> }
+                    <span><strong>@plan.Name</strong><small>@plan.Description</small></span><b>¥@plan.Price.ToString("0.##")</b>
+                </button>
+            }
+        </section>
+    }
+    <div class="membership-benefits">
+        <article><MIcon>mdi-image-multiple-outline</MIcon><strong>批量工作台</strong><span>多素材统一应用模板和调色</span></article>
+        <article><MIcon>mdi-cloud-download-outline</MIcon><strong>市场模板</strong><span>解锁更多高质量创作模板</span></article>
+        <article><MIcon>mdi-speedometer</MIcon><strong>高效处理</strong><span>获得更完整的批量能力</span></article>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(orderId))
+    {
+        <button class="membership-refresh" type="button" disabled="@busy" @onclick="RefreshPaymentAsync"><MIcon>mdi-refresh</MIcon><span>我已完成支付，刷新状态</span></button>
+    }
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="membership-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    private bool busy;
+    private string? orderId;
+    private string? message;
+    private bool messageIsError;
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl);
+    private string StatusText => Accounts.State.IsVip
+        ? (Accounts.State.ExpiresAt is null ? "感谢你的支持。" : $"有效期至 {Accounts.State.ExpiresAt:yyyy-MM-dd}")
+        : "模板、批量和高质量导出能力，都在同一工作台中。";
+
+    private async Task PurchaseAsync(WMMembershipPlan plan)
+    {
+        busy = true;
+        var result = await Membership.PurchaseAsync(plan.Id);
+        orderId = result.OrderId;
+        Show(result);
+        busy = false;
+    }
+
+    private async Task RefreshPaymentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(orderId)) return;
+        busy = true;
+        var result = await Membership.RefreshAsync(orderId);
+        Show(result);
+        busy = false;
+    }
+
+    private void OpenLogin() => NavigationHistory.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(new Uri(Navigation.Uri).PathAndQuery)}");
+    private void GoBack() => NavigationHistory.GoBack(ReturnTarget);
+    private void Show(WMMembershipResult result) { message = result.Message; messageIsError = !result.Succeeded; }
+}

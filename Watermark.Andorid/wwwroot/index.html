@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" style="overflow:hidden">
+<html lang="zh-CN" style="overflow:hidden">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Watermark.Andorid</title>
     <base href="/" />
     <link href="_content/Masa.Blazor/css/masa-blazor.min.css" rel="stylesheet" />
@@ -47,6 +47,125 @@
 </html>
 
 <script>
+    window.watermarkObjectUrls = {
+        createFromStream: async function (streamReference, mimeType) {
+            const bytes = await streamReference.arrayBuffer();
+            const blob = new Blob([bytes], { type: mimeType || "application/octet-stream" });
+            return (window.URL || window.webkitURL).createObjectURL(blob);
+        },
+        revoke: function (url) {
+            if (url) (window.URL || window.webkitURL).revokeObjectURL(url);
+        }
+    };
+
+    window.watermarkWorkspaceCanvas = (() => {
+        const attached = new WeakMap();
+
+        function attach(element) {
+            if (!element || attached.has(element)) return;
+            const state = {
+                pointers: new Map(),
+                scale: 1,
+                x: 0,
+                y: 0,
+                startDistance: 0,
+                startScale: 1,
+                lastX: 0,
+                lastY: 0
+            };
+
+            const image = () => element.querySelector("img");
+            const apply = () => {
+                const target = image();
+                if (!target) return;
+                const maxX = Math.max(0, element.clientWidth * (state.scale - 1) / 2);
+                const maxY = Math.max(0, element.clientHeight * (state.scale - 1) / 2);
+                state.x = Math.max(-maxX, Math.min(maxX, state.x));
+                state.y = Math.max(-maxY, Math.min(maxY, state.y));
+                target.style.transform = `translate3d(${state.x}px,${state.y}px,0) scale(${state.scale})`;
+            };
+            const distance = () => {
+                const values = Array.from(state.pointers.values());
+                if (values.length < 2) return 0;
+                return Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+            };
+
+            element.addEventListener("pointerdown", event => {
+                element.setPointerCapture?.(event.pointerId);
+                state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (state.pointers.size === 1) {
+                    state.lastX = event.clientX;
+                    state.lastY = event.clientY;
+                } else if (state.pointers.size === 2) {
+                    state.startDistance = distance();
+                    state.startScale = state.scale;
+                }
+            }, { passive: true });
+
+            element.addEventListener("pointermove", event => {
+                if (!state.pointers.has(event.pointerId)) return;
+                state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (state.pointers.size >= 2 && state.startDistance > 0) {
+                    state.scale = Math.max(1, Math.min(5, state.startScale * distance() / state.startDistance));
+                    apply();
+                    return;
+                }
+                if (state.scale > 1) {
+                    state.x += event.clientX - state.lastX;
+                    state.y += event.clientY - state.lastY;
+                    state.lastX = event.clientX;
+                    state.lastY = event.clientY;
+                    apply();
+                }
+            }, { passive: true });
+
+            const release = event => {
+                state.pointers.delete(event.pointerId);
+                if (state.pointers.size < 2) state.startDistance = 0;
+            };
+            element.addEventListener("pointerup", release, { passive: true });
+            element.addEventListener("pointercancel", release, { passive: true });
+            element.addEventListener("dblclick", () => {
+                state.scale = 1;
+                state.x = 0;
+                state.y = 0;
+                apply();
+            });
+            attached.set(element, state);
+        }
+
+        return { attach };
+    })();
+
+    window.watermarkTemplateVisibility = (() => {
+        const scopes = new Map();
+
+        function disconnect(scopeId) {
+            const current = scopes.get(scopeId);
+            if (!current) return;
+            current.disconnect();
+            scopes.delete(scopeId);
+        }
+
+        function observe(scopeId, selector, dotnet) {
+            const root = document.getElementById(scopeId);
+            if (!root || !dotnet || !("IntersectionObserver" in window)) return;
+            disconnect(scopeId);
+            const observer = new IntersectionObserver(entries => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    observer.unobserve(entry.target);
+                    const templateId = entry.target.dataset.templateId;
+                    if (templateId) dotnet.invokeMethodAsync("EnsureVisibleTemplatePreviewAsync", templateId);
+                }
+            }, { root: root.closest(".templates-scroll, .workspace-panel-content"), rootMargin: "160px" });
+            root.querySelectorAll(selector).forEach(element => observer.observe(element));
+            scopes.set(scopeId, observer);
+        }
+
+        return { observe, disconnect };
+    })();
+
     function byteToUrl(blob) {
         // 适配webview和web
         var myBlob = new Blob([blob], { type: "image/jpeg" });

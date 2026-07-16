@@ -1,0 +1,108 @@
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="wm-collage" aria-label="拼图设置">
+    <header>
+        <div><strong>拼接图片</strong><small>排序后横向或纵向合成为一张新素材</small></div>
+        <span>@OrderedMediaIds.Count 张</span>
+    </header>
+
+    <div class="wm-collage-directions" role="radiogroup" aria-label="拼接方向">
+        <button type="button" class="@(Direction == WMCollageDirection.Horizontal ? "is-active" : null)"
+                aria-checked="@(Direction == WMCollageDirection.Horizontal)" role="radio"
+                @onclick="() => ChangeDirectionAsync(WMCollageDirection.Horizontal)">
+            <MIcon>mdi-arrow-expand-horizontal</MIcon><span>横向</span>
+        </button>
+        <button type="button" class="@(Direction == WMCollageDirection.Vertical ? "is-active" : null)"
+                aria-checked="@(Direction == WMCollageDirection.Vertical)" role="radio"
+                @onclick="() => ChangeDirectionAsync(WMCollageDirection.Vertical)">
+            <MIcon>mdi-arrow-expand-vertical</MIcon><span>纵向</span>
+        </button>
+    </div>
+
+    <div class="wm-collage-list" aria-label="拼图素材顺序">
+        @foreach (var media in OrderedMedia)
+        {
+            var index = IndexOf(media.Id);
+            <article>
+                <img src="@Preview(media)" alt="" />
+                <span title="@media.DisplayName"><strong>@(index + 1). @media.DisplayName</strong><small>已加入拼图</small></span>
+                <div>
+                    <button type="button" disabled="@(index <= 0 || Busy)" @onclick="() => MoveAsync(media.Id, -1)" aria-label="上移 @media.DisplayName"><MIcon>mdi-chevron-up</MIcon></button>
+                    <button type="button" disabled="@(index >= OrderedMediaIds.Count - 1 || Busy)" @onclick="() => MoveAsync(media.Id, 1)" aria-label="下移 @media.DisplayName"><MIcon>mdi-chevron-down</MIcon></button>
+                    <button type="button" disabled="@Busy" class="is-remove" @onclick="() => ToggleAsync(media.Id)" aria-label="移除 @media.DisplayName"><MIcon>mdi-close</MIcon></button>
+                </div>
+            </article>
+        }
+        @foreach (var media in AvailableMedia)
+        {
+            <article class="is-available">
+                <img src="@Preview(media)" alt="" />
+                <span title="@media.DisplayName"><strong>@media.DisplayName</strong><small>未加入</small></span>
+                <button type="button" disabled="@Busy" @onclick="() => ToggleAsync(media.Id)" aria-label="加入 @media.DisplayName"><MIcon>mdi-plus</MIcon></button>
+            </article>
+        }
+    </div>
+
+    <p>首版保持原拼图语义：间距为 0，透明区域使用白色背景。生成结果可继续套用模板、调色和导出。</p>
+    <button type="button" class="wm-collage-run" disabled="@(!Busy && OrderedMediaIds.Count < 2)" @onclick="RunOrCancelRequested">
+        @if (Busy) { <MProgressCircular Indeterminate Size="20" Width="2" /> }
+        <span>@(Busy ? "取消生成" : "生成拼图")</span>
+    </button>
+</section>
+
+@code {
+    [Parameter] public IReadOnlyList<WMWorkspaceMedia> Media { get; set; } = [];
+    [Parameter] public IReadOnlyList<string> OrderedMediaIds { get; set; } = [];
+    [Parameter] public WMCollageDirection Direction { get; set; } = WMCollageDirection.Horizontal;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<WMCollageDraft> DraftChanged { get; set; }
+    [Parameter] public EventCallback RunOrCancelRequested { get; set; }
+
+    private IReadOnlyList<WMWorkspaceMedia> OrderedMedia
+    {
+        get
+        {
+            var byId = Media.ToDictionary(item => item.Id, StringComparer.Ordinal);
+            return OrderedMediaIds.Where(byId.ContainsKey).Select(id => byId[id]).ToArray();
+        }
+    }
+
+    private IReadOnlyList<WMWorkspaceMedia> AvailableMedia
+    {
+        get
+        {
+            var selected = OrderedMediaIds.ToHashSet(StringComparer.Ordinal);
+            return Media.Where(item => !selected.Contains(item.Id)).ToArray();
+        }
+    }
+
+    private int IndexOf(string mediaId)
+    {
+        for (var index = 0; index < OrderedMediaIds.Count; index++)
+            if (string.Equals(OrderedMediaIds[index], mediaId, StringComparison.Ordinal)) return index;
+        return -1;
+    }
+
+    private Task ChangeDirectionAsync(WMCollageDirection direction) =>
+        DraftChanged.InvokeAsync(new WMCollageDraft(OrderedMediaIds.ToArray(), direction));
+
+    private Task ToggleAsync(string mediaId)
+    {
+        var next = OrderedMediaIds.ToList();
+        if (!next.Remove(mediaId)) next.Add(mediaId);
+        return DraftChanged.InvokeAsync(new WMCollageDraft(next, Direction));
+    }
+
+    private Task MoveAsync(string mediaId, int offset)
+    {
+        var next = OrderedMediaIds.ToList();
+        var current = next.FindIndex(id => string.Equals(id, mediaId, StringComparison.Ordinal));
+        var target = current + offset;
+        if (current < 0 || target < 0 || target >= next.Count) return Task.CompletedTask;
+        (next[current], next[target]) = (next[target], next[current]);
+        return DraftChanged.InvokeAsync(new WMCollageDraft(next, Direction));
+    }
+
+    private static string Preview(WMWorkspaceMedia media) =>
+        new Uri(media.Artifact.PreviewPath ?? media.Artifact.FilePath).AbsoluteUri;
+}
