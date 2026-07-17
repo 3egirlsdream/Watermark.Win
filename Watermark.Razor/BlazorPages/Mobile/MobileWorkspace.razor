@@ -111,7 +111,14 @@ else
                         <div class="workspace-media-item @(media.Id == State.CurrentMediaId ? "is-active" : null)">
                             <button type="button" class="workspace-media-preview"
                                     @onclick="() => Controller.SelectMediaAsync(media.Id)" aria-label="查看 @media.DisplayName">
-                                <img src="@MediaPreview(media)" alt="" />
+                                @if (MediaPreview(media) is { Length: > 0 } preview)
+                                {
+                                    <img src="@preview" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="workspace-media-placeholder"><MIcon>mdi-image-outline</MIcon></span>
+                                }
                             </button>
                             <button type="button" class="workspace-media-check @(media.IsSelected ? "is-selected" : null)"
                                     @onclick="() => Controller.ToggleMediaSelectionAsync(media.Id)"
@@ -175,6 +182,7 @@ else
                 else if (State.Mode == WMWorkspaceMode.Collage)
                 {
                     <WMCollagePanel Media="State.Media"
+                                    MediaPreviewUrl="MediaPreview"
                                     OrderedMediaIds="State.CollageTool.Draft.OrderedMediaIds"
                                     Direction="State.CollageTool.Draft.Direction"
                                     Busy="State.CollageTool.IsBusy"
@@ -197,6 +205,7 @@ else
 
         <div class="workspace-mobile-dock">
             <WMMobileWorkspaceDock @ref="mobileDock" State="State" Templates="templates"
+                MediaPreviewUrl="MediaPreview"
                 ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" EditingChanged="OnMobileEditingChanged" ScopeChanged="ChangeApplyScopeAsync"
                 TemplatePreviewChanged="PreviewTemplateAsync"
                 ColorPreviewChanged="HandleColorPreviewAsync"
@@ -724,9 +733,9 @@ else
         await Controller.CloseAsync();
     }
 
-    private string MediaPreview(WMWorkspaceMedia media) => media.Artifact.PreviewPath is { Length: > 0 } path
-        ? new Uri(path).AbsoluteUri
-        : new Uri(media.Artifact.FilePath).AbsoluteUri;
+    private string? MediaPreview(WMWorkspaceMedia media) =>
+        Controller.GetMediaPreviewUrl(media.Id)
+        ?? (string.Equals(media.Id, State.CurrentMediaId, StringComparison.Ordinal) ? State.PreviewUrl : null);
 
     private async Task BackAsync()
     {

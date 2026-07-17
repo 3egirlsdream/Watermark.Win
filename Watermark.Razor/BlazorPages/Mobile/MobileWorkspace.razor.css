@@ -242,7 +242,7 @@
     border: 0;
     border-radius: 9px;
     flex: 0 0 auto;
-    height: 100px;
+    height: 56px;
     overflow: visible;
     padding: 0;
     position: relative;
@@ -259,6 +259,15 @@
     width: 52px;
 }
 .workspace-media-strip img { height: 100%; object-fit: cover; width: 100%; }
+.workspace-media-placeholder {
+    align-items: center;
+    color: #788496;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+}
+.workspace-media-placeholder ::deep .m-icon { font-size: 21px; }
 .workspace-media-check {
     align-items: center;
     background: transparent;
@@ -267,14 +276,14 @@
     bottom: 0;
     color: white;
     display: flex;
-    height: 48px;
+    height: 32px;
     justify-content: center;
     padding: 0;
     position: absolute;
-    right: 4px;
-    width: 48px;
+    right: 0;
+    width: 32px;
 }
-.workspace-media-check :deep(.m-icon) {
+.workspace-media-check ::deep .m-icon {
     align-items: center;
     background: rgba(16, 21, 30, .82);
     border: 1px solid rgba(255,255,255,.72);
@@ -285,7 +294,7 @@
     justify-content: center;
     width: 24px;
 }
-.workspace-media-check.is-selected :deep(.m-icon) { background: #155fcf; border-color: #155fcf; }
+.workspace-media-check.is-selected ::deep .m-icon { background: #155fcf; border-color: #155fcf; }
 
 .workspace-panel {
     background: #fff;

@@ -24,7 +24,7 @@
         {
             var index = IndexOf(media.Id);
             <article>
-                <img src="@Preview(media)" alt="" />
+                @Thumbnail(media)
                 <span title="@media.DisplayName"><strong>@(index + 1). @media.DisplayName</strong><small>已加入拼图</small></span>
                 <div>
                     <button type="button" disabled="@(index <= 0 || Busy)" @onclick="() => MoveAsync(media.Id, -1)" aria-label="上移 @media.DisplayName"><MIcon>mdi-chevron-up</MIcon></button>
@@ -36,7 +36,7 @@
         @foreach (var media in AvailableMedia)
         {
             <article class="is-available">
-                <img src="@Preview(media)" alt="" />
+                @Thumbnail(media)
                 <span title="@media.DisplayName"><strong>@media.DisplayName</strong><small>未加入</small></span>
                 <button type="button" disabled="@Busy" @onclick="() => ToggleAsync(media.Id)" aria-label="加入 @media.DisplayName"><MIcon>mdi-plus</MIcon></button>
             </article>
@@ -52,6 +52,7 @@
 
 @code {
     [Parameter] public IReadOnlyList<WMWorkspaceMedia> Media { get; set; } = [];
+    [Parameter] public Func<WMWorkspaceMedia, string?>? MediaPreviewUrl { get; set; }
     [Parameter] public IReadOnlyList<string> OrderedMediaIds { get; set; } = [];
     [Parameter] public WMCollageDirection Direction { get; set; } = WMCollageDirection.Horizontal;
     [Parameter] public bool Busy { get; set; }
@@ -103,6 +104,17 @@
         return DraftChanged.InvokeAsync(new WMCollageDraft(next, Direction));
     }
 
-    private static string Preview(WMWorkspaceMedia media) =>
-        new Uri(media.Artifact.PreviewPath ?? media.Artifact.FilePath).AbsoluteUri;
+    private RenderFragment Thumbnail(WMWorkspaceMedia media) => __builder =>
+    {
+        @if (MediaPreviewUrl?.Invoke(media) is { Length: > 0 } preview)
+        {
+            <img src="@preview" alt="" />
+        }
+        else
+        {
+            <span class="wm-collage-thumbnail">
+                <MIcon>mdi-image-outline</MIcon>
+            </span>
+        }
+    };
 }

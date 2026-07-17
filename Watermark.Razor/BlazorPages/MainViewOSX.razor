@@ -89,7 +89,11 @@
                         @foreach (var media in State.Media)
                         {
                             <article class="@(media.Id == State.CurrentMediaId ? "is-active" : null)">
-                                <button type="button" class="desktop-media-preview" @onclick="() => Controller.SelectMediaAsync(media.Id)"><img src="@MediaPreview(media)" alt="" /><span>@media.DisplayName</span></button>
+                                <button type="button" class="desktop-media-preview" @onclick="() => Controller.SelectMediaAsync(media.Id)">
+                                    @if (MediaPreview(media) is { Length: > 0 } preview) { <img src="@preview" alt="" /> }
+                                    else { <span class="desktop-media-placeholder"><MIcon>mdi-image-outline</MIcon></span> }
+                                    <span>@media.DisplayName</span>
+                                </button>
                                 <button type="button" class="desktop-media-check @(media.IsSelected ? "is-selected" : null)" @onclick="() => Controller.ToggleMediaSelectionAsync(media.Id)" aria-label="切换导出选择"><MIcon>@(media.IsSelected ? "mdi-check" : "mdi-plus")</MIcon></button>
                             </article>
                         }
@@ -112,7 +116,7 @@
                         }
                         else if (State.Mode == WMWorkspaceMode.Collage)
                         {
-                            <WMCollagePanel Media="State.Media" OrderedMediaIds="State.CollageTool.Draft.OrderedMediaIds" Direction="State.CollageTool.Draft.Direction" Busy="State.CollageTool.IsBusy" DraftChanged="UpdateCollageDraftAsync" RunOrCancelRequested="RunOrCancelCollageAsync" />
+                            <WMCollagePanel Media="State.Media" MediaPreviewUrl="MediaPreview" OrderedMediaIds="State.CollageTool.Draft.OrderedMediaIds" Direction="State.CollageTool.Draft.Direction" Busy="State.CollageTool.IsBusy" DraftChanged="UpdateCollageDraftAsync" RunOrCancelRequested="RunOrCancelCollageAsync" />
                         }
                         <WMExportPanel SelectedCount="SelectedCount" Format="State.ExportTool.Draft.Format" FormatChanged="SetExportFormatAsync" MaximumLongEdge="@(State.ExportTool.Draft.MaximumLongEdge ?? 0)" MaximumLongEdgeChanged="SetExportMaximumLongEdgeAsync" CustomMaximumLongEdge="State.ExportTool.Draft.CustomMaximumLongEdge" CustomMaximumLongEdgeChanged="SetCustomExportMaximumLongEdgeAsync" Quality="State.ExportTool.Draft.Quality" QualityChanged="SetExportQualityAsync" Destination="State.ExportTool.Draft.Destination" DestinationChanged="SetExportDestinationAsync" Progress="State.ActiveJob.Progress" Results="State.ExportTool.Results" CanExportPng16="CanPng16" CanExportTiff16="CanTiff16" FailedCount="State.ExportTool.FailedMediaIds.Count" Busy="State.ExportTool.IsBusy" RetryFailedRequested="RetryFailedAsync" RunOrCancelRequested="ExportOrCancelAsync" />
                     </div>
@@ -217,7 +221,9 @@
     private Task SetHistoryCursorAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var cursor) ? Controller.SetHistoryCursorAsync(cursor) : Task.CompletedTask;
     private Task ShowOriginalAsync(PointerEventArgs _) => Controller.SetCompareOriginalAsync(true);
     private Task HideOriginalAsync(PointerEventArgs _) => Controller.SetCompareOriginalAsync(false);
-    private string MediaPreview(WMWorkspaceMedia media) => new Uri(media.Artifact.PreviewPath ?? media.Artifact.FilePath).AbsoluteUri;
+    private string? MediaPreview(WMWorkspaceMedia media) =>
+        Controller.GetMediaPreviewUrl(media.Id)
+        ?? (string.Equals(media.Id, State.CurrentMediaId, StringComparison.Ordinal) ? State.PreviewUrl : null);
 
     private Task PreviewColorAsync(WMColorRecipe recipe) => Controller.UpdateColorDraftAsync(recipe);
     private async Task CommitColorAsync(WMColorRecipe recipe)

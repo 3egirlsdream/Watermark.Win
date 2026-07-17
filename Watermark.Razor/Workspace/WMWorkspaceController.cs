@@ -16,6 +16,7 @@ public sealed class WMWorkspaceController
     private const string PreviewOwner = "workspace:preview";
     private const string OriginalOwner = "workspace:original";
     private const string ColorBaseOwner = "workspace:color-base";
+    private const string MediaPreviewOwnerPrefix = "workspace:media-preview:";
     private readonly object gate = new();
     private readonly IWMWorkspaceSessionStore sessionStore;
     private readonly IWMWorkspaceRenderCoordinator renderCoordinator;
@@ -42,6 +43,8 @@ public sealed class WMWorkspaceController
     private readonly WMWorkspaceRecoveryService recoveryService;
     private readonly SemaphoreSlim lifecycleLock = new(1, 1);
     private readonly HashSet<Task> ownedTasks = [];
+    private readonly Dictionary<string, WMObjectUrlLease> mediaPreviewLeases = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> mediaPreviewFingerprints = new(StringComparer.Ordinal);
     private WMWorkspaceSession? session;
     private WMWorkspaceState state = new();
     private WMColorRecipe? draftColorRecipe;
@@ -113,6 +116,13 @@ public sealed class WMWorkspaceController
     public WMWorkspaceState State
     {
         get { lock (gate) return state; }
+    }
+
+    public string? GetMediaPreviewUrl(string mediaId)
+    {
+        if (string.IsNullOrWhiteSpace(mediaId)) return null;
+        lock (gate)
+            return mediaPreviewLeases.TryGetValue(mediaId, out var lease) ? lease.Url : null;
     }
 
     public WMWorkspaceTemplateDraft? TemplateDraft
@@ -355,6 +365,11 @@ public sealed class WMWorkspaceController
                     : null
             };
         }
+        await RefreshMediaPreviewUrlsAsync(
+            WMWorkspaceProjection.Media(opened),
+            openingEpoch,
+            notify: false,
+            epochToken).ConfigureAwait(false);
         Changed.Invoke(State);
         if (opened.Mode != WMWorkspaceMode.TemplateDesign && opened.Media.Count > 0)
             await QueuePreviewTrackedAsync(opened, openingEpoch, openingIntent, epochToken).ConfigureAwait(false);
@@ -2462,9 +2477,104 @@ public sealed class WMWorkspaceController
         CancellationToken cancellationToken)
     {
         await PersistAsync(current, currentEpoch, cancellationToken).ConfigureAwait(false);
+        await RefreshMediaPreviewUrlsAsync(
+            WMWorkspaceProjection.Media(current),
+            currentEpoch,
+            notify: true,
+            cancellationToken).ConfigureAwait(false);
         if (current.Mode != WMWorkspaceMode.TemplateDesign && current.Media.Count > 0)
             await QueuePreviewTrackedAsync(current, currentEpoch, intent, cancellationToken).ConfigureAwait(false);
     }
+
+    private async Task RefreshMediaPreviewUrlsAsync(
+        IReadOnlyList<WMWorkspaceMedia> media,
+        long requiredEpoch,
+        bool notify,
+        CancellationToken cancellationToken)
+    {
+        var activeIds = media.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        KeyValuePair<string, WMObjectUrlLease>[] obsolete;
+        lock (gate)
+        {
+            if (!IsCurrentLocked(requiredEpoch)) return;
+            obsolete = mediaPreviewLeases
+                .Where(pair => !activeIds.Contains(pair.Key))
+                .ToArray();
+            foreach (var pair in obsolete)
+            {
+                mediaPreviewLeases.Remove(pair.Key);
+                mediaPreviewFingerprints.Remove(pair.Key);
+            }
+        }
+
+        foreach (var pair in obsolete)
+            await objectUrls.ReleaseAsync(pair.Value).ConfigureAwait(false);
+
+        var changed = obsolete.Length > 0;
+        foreach (var item in media)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = item.Artifact.PreviewPath ?? item.Artifact.FilePath;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) continue;
+            var fingerprint = MediaPreviewFingerprint(item, path);
+            lock (gate)
+            {
+                if (!IsCurrentLocked(requiredEpoch)) return;
+                if (mediaPreviewLeases.ContainsKey(item.Id)
+                    && mediaPreviewFingerprints.TryGetValue(item.Id, out var current)
+                    && string.Equals(current, fingerprint, StringComparison.Ordinal))
+                    continue;
+            }
+
+            WMObjectUrlLease? published;
+            try
+            {
+                await using var content = new FileStream(
+                    path, FileMode.Open, FileAccess.Read, FileShare.Read,
+                    64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                published = await objectUrls.PublishAsync(
+                    MediaPreviewOwnerPrefix + item.Id,
+                    Interlocked.Increment(ref nextBlobVersion),
+                    content,
+                    MimeFromPath(path),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                continue;
+            }
+            if (published is null) continue;
+
+            var keep = false;
+            lock (gate)
+            {
+                var current = state.Media.FirstOrDefault(candidate =>
+                    string.Equals(candidate.Id, item.Id, StringComparison.Ordinal));
+                if (IsCurrentLocked(requiredEpoch)
+                    && current is not null
+                    && string.Equals(
+                        MediaPreviewFingerprint(current, current.Artifact.PreviewPath ?? current.Artifact.FilePath),
+                        fingerprint,
+                        StringComparison.Ordinal))
+                {
+                    mediaPreviewLeases[item.Id] = published;
+                    mediaPreviewFingerprints[item.Id] = fingerprint;
+                    keep = true;
+                    changed = true;
+                }
+            }
+            if (!keep) await objectUrls.ReleaseAsync(published).ConfigureAwait(false);
+        }
+
+        if (notify && changed && IsCurrent(requiredEpoch)) Changed.Invoke(State);
+    }
+
+    private static string MediaPreviewFingerprint(WMWorkspaceMedia media, string path) =>
+        $"{media.Artifact.Id}|{media.Artifact.ContentHash}|{path}";
 
     private async Task PersistAsync(
         WMWorkspaceSession current,
@@ -2805,6 +2915,7 @@ public sealed class WMWorkspaceController
         WMObjectUrlLease? original;
         WMObjectUrlLease? colorReference;
         WMObjectUrlLease? colorBase;
+        WMObjectUrlLease[] mediaPreviews;
         IDisposable? artifactLease;
         IDisposable? colorBaseArtifact;
         IDisposable? lease;
@@ -2814,7 +2925,8 @@ public sealed class WMWorkspaceController
             if (closed
                 && epochCancellation is null
                 && sessionLease is null
-                && previewArtifactLease is null) return;
+                && previewArtifactLease is null
+                && mediaPreviewLeases.Count == 0) return;
             closed = true;
             epoch++;
             cancellation = epochCancellation;
@@ -2823,10 +2935,13 @@ public sealed class WMWorkspaceController
             original = originalLease;
             colorReference = colorReferenceLease;
             colorBase = colorBaseLease;
+            mediaPreviews = mediaPreviewLeases.Values.ToArray();
             previewLease = null;
             originalLease = null;
             colorReferenceLease = null;
             colorBaseLease = null;
+            mediaPreviewLeases.Clear();
+            mediaPreviewFingerprints.Clear();
             artifactLease = previewArtifactLease;
             colorBaseArtifact = colorBaseArtifactLease;
             previewArtifactLease = null;
@@ -2854,6 +2969,8 @@ public sealed class WMWorkspaceController
         if (original is not null) await objectUrls.ReleaseAsync(original).ConfigureAwait(false);
         if (colorReference is not null) await objectUrls.ReleaseAsync(colorReference).ConfigureAwait(false);
         if (colorBase is not null) await objectUrls.ReleaseAsync(colorBase).ConfigureAwait(false);
+        foreach (var mediaPreview in mediaPreviews)
+            await objectUrls.ReleaseAsync(mediaPreview).ConfigureAwait(false);
         artifactLease?.Dispose();
         colorBaseArtifact?.Dispose();
         cancellation?.Dispose();

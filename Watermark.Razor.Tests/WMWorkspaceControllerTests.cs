@@ -195,6 +195,38 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task MediaPreviewUrls_ArePublishedOncePerMedia_ReusedAndReleasedOnClose()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var registry = new TrackingOwnerObjectUrlRegistry();
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(SessionWithTwoMedia("media-preview-session")),
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            registry,
+            CreatePreviewService(),
+            null!,
+            null!);
+
+        Assert.True(await controller.OpenAsync("media-preview-session"));
+
+        Assert.StartsWith("blob:", controller.GetMediaPreviewUrl("media-1"), StringComparison.Ordinal);
+        Assert.StartsWith("blob:", controller.GetMediaPreviewUrl("media-2"), StringComparison.Ordinal);
+        Assert.Equal(1, registry.PublishCount("workspace:media-preview:media-1"));
+        Assert.Equal(1, registry.PublishCount("workspace:media-preview:media-2"));
+
+        await controller.SetModeAsync(WMWorkspaceMode.Collage);
+
+        Assert.Equal(1, registry.PublishCount("workspace:media-preview:media-1"));
+        Assert.Equal(1, registry.PublishCount("workspace:media-preview:media-2"));
+
+        await controller.CloseAsync();
+
+        Assert.Equal(0, registry.ActiveLeaseCount);
+        Assert.Null(controller.GetMediaPreviewUrl("media-1"));
+        Assert.Null(controller.GetMediaPreviewUrl("media-2"));
+    }
+
+    [Fact]
     public async Task PreviewArtifactLease_IsReplacedAndReleasedWhenControllerCloses()
     {
         await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
@@ -1140,6 +1172,58 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             var lease = new WMObjectUrlLease(ownerKey, ownerVersion, $"blob:{next}", next);
             lock (gate) leases[ownerKey] = lease;
             return lease;
+        }
+
+        public ValueTask ReleaseAsync(WMObjectUrlLease lease)
+        {
+            lock (gate)
+            {
+                if (leases.TryGetValue(lease.OwnerKey, out var current) && current == lease)
+                    leases.Remove(lease.OwnerKey);
+            }
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            lock (gate) leases.Clear();
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class TrackingOwnerObjectUrlRegistry : IWMObjectUrlRegistry
+    {
+        private readonly object gate = new();
+        private readonly Dictionary<string, WMObjectUrlLease> leases = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> publishCounts = new(StringComparer.Ordinal);
+        private long generation;
+
+        public int ActiveLeaseCount
+        {
+            get { lock (gate) return leases.Count; }
+        }
+
+        public int PublishCount(string ownerKey)
+        {
+            lock (gate) return publishCounts.GetValueOrDefault(ownerKey);
+        }
+
+        public ValueTask<WMObjectUrlLease?> PublishAsync(
+            string ownerKey,
+            long ownerVersion,
+            Stream content,
+            string mimeType,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var next = Interlocked.Increment(ref generation);
+            var lease = new WMObjectUrlLease(ownerKey, ownerVersion, $"blob:{next}", next);
+            lock (gate)
+            {
+                leases[ownerKey] = lease;
+                publishCounts[ownerKey] = publishCounts.GetValueOrDefault(ownerKey) + 1;
+            }
+            return ValueTask.FromResult<WMObjectUrlLease?>(lease);
         }
 
         public ValueTask ReleaseAsync(WMObjectUrlLease lease)

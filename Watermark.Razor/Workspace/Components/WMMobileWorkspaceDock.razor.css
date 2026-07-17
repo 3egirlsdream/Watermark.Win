@@ -243,8 +243,19 @@
     padding: 5px;
     width: 112px;
 }
-.wm-dock-media-card > img,
-.wm-dock-media-add > img { border-radius: 9px; height: 46px; object-fit: cover; width: 100%; }
+.wm-dock-media-thumbnail {
+    align-items: center;
+    background: #dedede;
+    border-radius: 9px;
+    color: #8b8b8b;
+    display: flex;
+    height: 46px;
+    justify-content: center;
+    overflow: hidden;
+    width: 100%;
+}
+.wm-dock-media-thumbnail > img { height: 100%; object-fit: cover; width: 100%; }
+.wm-dock-media-thumbnail ::deep .m-icon { font-size: 21px; }
 .wm-dock-media-card > strong { font-size: .58rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wm-dock-media-card > div { display: grid; gap: 2px; grid-template-columns: 1fr 1fr; }
 .wm-dock-media-card button { background: #f7f7f7; border: 0; border-radius: 7px; color: #555; font-size: .53rem; min-height: 28px; }

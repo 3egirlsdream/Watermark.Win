@@ -58,6 +58,7 @@
 @code {
     [Parameter, EditorRequired] public WMWorkspaceState State { get; set; } = new();
     [Parameter] public IReadOnlyList<WMTemplateList> Templates { get; set; } = [];
+    [Parameter] public Func<WMWorkspaceMedia, string?>? MediaPreviewUrl { get; set; }
     [Parameter] public EventCallback<WMWorkspaceMode> ModeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceMode> EditConfirmed { get; set; }
     [Parameter] public EventCallback<bool> EditingChanged { get; set; }
@@ -321,7 +322,7 @@
                 {
                     var role = FrameRole(media.Id);
                     <article class="wm-dock-media-card">
-                        <img src="@Preview(media)" alt="" /><strong>@media.DisplayName</strong>
+                        @MediaThumbnail(media)<strong>@media.DisplayName</strong>
                         <div><button type="button" class="@(role == WMFrameRole.Light ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Light)">Light</button><button type="button" class="@(role == WMFrameRole.Dark ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Dark)">Dark</button></div>
                     </article>
                 }
@@ -352,13 +353,13 @@
                 {
                     var index = IndexOfCollage(media.Id);
                     <article class="wm-dock-media-card">
-                        <img src="@Preview(media)" alt="" /><strong>@(index + 1). @media.DisplayName</strong>
+                        @MediaThumbnail(media)<strong>@(index + 1). @media.DisplayName</strong>
                         <div><button type="button" disabled="@(index == 0)" @onclick="() => MoveCollageAsync(media.Id, -1)" aria-label="前移"><MIcon>mdi-chevron-left</MIcon></button><button type="button" @onclick="() => ToggleCollageAsync(media.Id)" aria-label="移除"><MIcon>mdi-close</MIcon></button></div>
                     </article>
                 }
                 @foreach (var media in AvailableCollageMedia)
                 {
-                    <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)"><img src="@Preview(media)" alt="" /><span><MIcon>mdi-plus</MIcon>@media.DisplayName</span></button>
+                    <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)">@MediaThumbnail(media)<span><MIcon>mdi-plus</MIcon>@media.DisplayName</span></button>
                 }
             </WMToolRail>
         }
@@ -743,11 +744,19 @@
         _ => "洋红"
     };
 
-    private static string Preview(WMWorkspaceMedia media)
+    private RenderFragment MediaThumbnail(WMWorkspaceMedia media) => __builder =>
     {
-        var path = media.Artifact.PreviewPath ?? media.Artifact.FilePath;
-        return Uri.TryCreate(path, UriKind.Absolute, out var uri) ? uri.AbsoluteUri : path;
-    }
+        <span class="wm-dock-media-thumbnail">
+            @if (MediaPreviewUrl?.Invoke(media) is { Length: > 0 } preview)
+            {
+                <img src="@preview" alt="" />
+            }
+            else
+            {
+                <MIcon>mdi-image-outline</MIcon>
+            }
+        </span>
+    };
 
     private static readonly string[] LightKeys = ["Exposure", "Contrast", "Highlights", "Shadows", "Whites", "Blacks"];
     private static readonly string[] ColorKeys = ["Temperature", "Tint", "Vibrance", "Saturation"];
