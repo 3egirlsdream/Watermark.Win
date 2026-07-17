@@ -32,6 +32,60 @@ public enum WMWorkspacePanelSize
     Expanded
 }
 
+public enum WMMobileEditorSpace
+{
+    Small,
+    Medium,
+    Large
+}
+
+public enum WMMobileEditorHostKind
+{
+    Dock,
+    StageOverlay
+}
+
+public enum WMMobileEditorTool
+{
+    TemplatePicker,
+    TemplateBorderTop,
+    TemplateBorderRight,
+    TemplateBorderBottom,
+    TemplateBorderLeft,
+    TemplateScope,
+    ColorStyle,
+    ColorExposure,
+    ColorContrast,
+    ColorHighlights,
+    ColorShadows,
+    ColorWhites,
+    ColorBlacks,
+    ColorTemperature,
+    ColorTint,
+    ColorVibrance,
+    ColorSaturation,
+    ColorHslHue,
+    ColorHslSaturation,
+    ColorHslLuminance,
+    ColorPresets,
+    ColorCurve,
+    ColorReference,
+    ColorScope,
+    MultiFrameMaterial,
+    MultiFrameMode,
+    MultiFrameParameters,
+    MultiFrameGenerate,
+    CollageMaterial,
+    CollageLayout,
+    CollageGenerate
+}
+
+public sealed record WMMobileToolPresentation(
+    WMWorkspaceMode Category,
+    WMMobileEditorTool Tool,
+    WMMobileEditorSpace Space,
+    WMMobileEditorHostKind HostKind = WMMobileEditorHostKind.Dock);
+
 public enum WMApplyScope
 {
     Current,
@@ -145,6 +199,10 @@ public sealed record WMWorkspaceSession
     public IReadOnlyList<WMWorkspaceTransaction> Transactions { get; init; } = [];
     public int HistoryCursor { get; init; }
     public WMWorkspaceTemplateDraft? TemplateDraft { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WMMultiFrameDraft? MultiFrameConfiguration { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WMCollageDraft? CollageConfiguration { get; init; }
     public IReadOnlyList<WMImagingFeature> RequiredFeatures { get; init; } = [];
     public WMWorkspaceJobCheckpoint? ActiveJobCheckpoint { get; init; }
     public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;
@@ -418,10 +476,27 @@ public sealed record WMTemplateMarketplaceResult(
 public sealed record WMTemplateMarketplacePageResult(
     WMTemplateMarketplaceStatus Status,
     IReadOnlyList<WMZipedTemplate> Items,
-    string? Message = null)
+    string? Message = null,
+    int NextStart = 0,
+    bool HasMore = false,
+    int SourceRequestCount = 0)
 {
     public bool IsSuccess => Status == WMTemplateMarketplaceStatus.Succeeded;
 }
+
+public enum WMTemplateMarketCategory
+{
+    Recommended,
+    Popular,
+    Latest,
+    Collage
+}
+
+public sealed record WMTemplateMarketplaceQuery(
+    WMTemplateMarketCategory Category,
+    string Keyword,
+    int Start,
+    int PageSize = 20);
 
 public sealed record WMLocalTemplateResult(
     WMTemplateMarketplaceStatus Status,
@@ -499,6 +574,7 @@ public sealed record WMWorkspaceState
     public IReadOnlyList<WMWorkspaceHistoryItem> History { get; init; } = [];
     public int HistoryCursor { get; init; }
     public bool HasTransientEdits { get; init; }
+    public WMWorkspaceMode? TransientEditMode { get; init; }
     public WMApplyScope ApplyScope { get; init; } = WMApplyScope.Selected;
     public WMColorGradeToolState ColorGradeTool { get; init; } = new(
         new WMColorRecipe { Name = "工作台调整" }, [], null,
@@ -648,9 +724,7 @@ public interface IWMSystemAppearance
 public interface IWMTemplateMarketplaceService
 {
     Task<WMTemplateMarketplacePageResult> SearchAsync(
-        string query,
-        int page,
-        int pageSize,
+        WMTemplateMarketplaceQuery query,
         CancellationToken cancellationToken = default);
     Task<WMTemplateMarketplacePageResult> GetFavoritesAsync(
         CancellationToken cancellationToken = default);

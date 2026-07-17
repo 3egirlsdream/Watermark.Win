@@ -21,6 +21,7 @@ public static class WMApplicationServiceCollectionExtensions
         services.AddSingleton<IWMMembershipPaymentClock, WMSystemMembershipPaymentClock>();
         services.AddScoped<IWMMembershipService, WMMembershipService>();
         services.AddScoped<IWMAdminDashboardService, WMAdminDashboardService>();
+        services.AddScoped<WMTemplateMarketFeedStore>();
         return services;
     }
 }

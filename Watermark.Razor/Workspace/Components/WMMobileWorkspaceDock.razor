@@ -1,57 +1,31 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<section class="wm-mobile-dock @(State.PanelSize == WMWorkspacePanelSize.Collapsed ? "is-collapsed" : null) @(isEditing ? "is-editing" : "is-mode-picker")"
-         aria-label="移动编辑工具">
-    <button type="button" class="wm-dock-handle"
-            role="separator" aria-orientation="horizontal"
-            aria-label="拖动调整工具坞高度"><span aria-hidden="true"></span></button>
-    <span class="wm-dock-safe-bottom-probe" aria-hidden="true"></span>
-
-    @if (State.PanelSize != WMWorkspacePanelSize.Collapsed)
-    {
-        <div class="wm-dock-context">
-            @if (isEditing)
-            {
-                <div class="wm-dock-active-row">
-                    <div class="wm-dock-active-slot">
-                        @if (activeAdjustmentVisible)
-                        {
-                            @ActiveControl
-                        }
-                        else
-                        {
-                            <div class="wm-dock-edit-summary"><strong>@ModeLabel</strong><small>在顶部工具栏点击“应用”完成设置</small></div>
-                        }
-                    </div>
-                </div>
-            }
-            <div class="wm-dock-configuration">
-                @SubcategoryRail
-                <div class="wm-dock-content">
-                    @StandardContent
-                </div>
-            </div>
+<section class="wm-mobile-dock @SpaceClass" aria-label="移动编辑工具">
+    <div class="wm-dock-context">
+        <div class="wm-dock-control-region">
+            @ActiveToolContent
         </div>
-    }
 
-    <nav class="wm-dock-modes" role="tablist" aria-label="编辑模式">
-        <button type="button" class="@(State.Mode == WMWorkspaceMode.Template ? "is-active" : null)"
-                role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Template)"
-                disabled="@ModeSwitchDisabled(WMWorkspaceMode.Template)"
-                @onclick="() => ChangeModeAsync(WMWorkspaceMode.Template)"><span class="wm-dock-mode-label">模板</span></button>
-        <button type="button" class="@(State.Mode == WMWorkspaceMode.ColorGrade ? "is-active" : null)"
-                role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.ColorGrade)"
-                disabled="@ModeSwitchDisabled(WMWorkspaceMode.ColorGrade)"
-                @onclick="() => ChangeModeAsync(WMWorkspaceMode.ColorGrade)"><span class="wm-dock-mode-label">调色</span></button>
-        <button type="button" class="@(State.Mode == WMWorkspaceMode.MultiFrame ? "is-active" : null)"
-                role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.MultiFrame)"
-                disabled="@ModeSwitchDisabled(WMWorkspaceMode.MultiFrame)"
-                @onclick="() => ChangeModeAsync(WMWorkspaceMode.MultiFrame)"><span class="wm-dock-mode-label">多帧</span></button>
-        <button type="button" class="@(State.Mode == WMWorkspaceMode.Collage ? "is-active" : null)"
-                role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Collage)"
-                disabled="@ModeSwitchDisabled(WMWorkspaceMode.Collage)"
-                @onclick="() => ChangeModeAsync(WMWorkspaceMode.Collage)"><span class="wm-dock-mode-label">拼图</span></button>
+        <nav class="wm-dock-tools" aria-label="@($"{ModeLabel}功能")">
+            <div>
+                @foreach (var tool in CurrentTools)
+                {
+                    <button type="button" class="@(ActiveTool == tool.Tool ? "is-active" : null)"
+                            data-mobile-tool="@tool.Tool" aria-pressed="@(ActiveTool == tool.Tool)"
+                            @onclick="() => SelectToolAsync(tool.Tool)">
+                        <MIcon>@tool.Icon</MIcon><span>@tool.Label</span>
+                    </button>
+                }
+            </div>
+        </nav>
+    </div>
+
+    <nav class="wm-dock-modes" role="tablist" aria-label="编辑分类">
+        @ModeButton(WMWorkspaceMode.Template, "模板", "mdi-view-grid-outline")
+        @ModeButton(WMWorkspaceMode.ColorGrade, "调色", "mdi-tune-variant")
+        @ModeButton(WMWorkspaceMode.MultiFrame, "多帧", "mdi-layers-triple-outline")
+        @ModeButton(WMWorkspaceMode.Collage, "拼图", "mdi-view-split-vertical")
     </nav>
 </section>
 
@@ -61,7 +35,7 @@
     [Parameter] public Func<WMWorkspaceMedia, string?>? MediaPreviewUrl { get; set; }
     [Parameter] public EventCallback<WMWorkspaceMode> ModeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceMode> EditConfirmed { get; set; }
-    [Parameter] public EventCallback<bool> EditingChanged { get; set; }
+    [Parameter] public EventCallback<WMMobileToolPresentation> PresentationChanged { get; set; }
     [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> TemplatePreviewChanged { get; set; }
     [Parameter] public EventCallback<WMColorRecipe> ColorPreviewChanged { get; set; }
@@ -78,22 +52,23 @@
     [Parameter] public EventCallback<WMCollageDraft> CollageDraftChanged { get; set; }
     [Parameter] public EventCallback CollageRunOrCancelRequested { get; set; }
 
-    private TemplateSection templateSection = TemplateSection.Template;
-    private ColorSection colorSection = ColorSection.Light;
-    private MultiFrameSection multiFrameSection = MultiFrameSection.Mode;
-    private CollageSection collageSection = CollageSection.Material;
-    private string colorParameter = "Exposure";
+    private WMMobileEditorTool templateTool = WMMobileEditorTool.TemplatePicker;
+    private WMMobileEditorTool colorTool = WMMobileEditorTool.ColorStyle;
+    private WMMobileEditorTool multiFrameTool = WMMobileEditorTool.MultiFrameMaterial;
+    private WMMobileEditorTool collageTool = WMMobileEditorTool.CollageMaterial;
     private WMHslBand colorBand = WMHslBand.Red;
-    private string borderSide = "Top";
-    private bool isEditing;
-    private bool isConfirming;
-    private bool activeAdjustmentVisible;
+    private WMWorkspaceMode? lastMode;
+    private WMMobileToolPresentation? lastPresentation;
 
     public bool TryCloseTransient() => false;
 
-    public Task ConfirmCurrentEditAsync() => ConfirmEditAsync();
+    public Task ConfirmCurrentEditAsync() =>
+        State.HasTransientEdits && State.TransientEditMode == State.Mode
+            ? EditConfirmed.InvokeAsync(State.Mode)
+            : Task.CompletedTask;
 
     private int SelectedCount => State.Media.Count(item => item.IsSelected);
+    private bool HasCategoryDraft => State.HasTransientEdits && State.TransientEditMode is not null;
     private string ModeLabel => State.Mode switch
     {
         WMWorkspaceMode.ColorGrade => "调色",
@@ -101,400 +76,354 @@
         WMWorkspaceMode.Collage => "拼图",
         _ => "模板"
     };
-    private RenderFragment ActiveControl => __builder =>
+    private WMMobileEditorTool ActiveTool => State.Mode switch
     {
-        if (State.Mode == WMWorkspaceMode.ColorGrade && colorSection is ColorSection.Light or ColorSection.Color)
-        {
-            if (HslKeys.Contains(colorParameter))
-            {
-                var parameter = HslParameter(colorParameter);
-                <div class="wm-dock-active-control wm-dock-hsl-control">
-                    <nav class="wm-dock-hsl-bands" aria-label="HSL 色彩范围">
-                        @foreach (var band in Enum.GetValues<WMHslBand>())
-                        {
-                            <button type="button" class="@(colorBand == band ? "is-active" : null)" aria-pressed="@(colorBand == band)" @onclick="() => colorBand = band">@BandName(band)</button>
-                        }
-                    </nav>
-                    <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
-                        Minimum="-100" Maximum="100" Step="1" ShowHeader="false"
-                        PreviewValueChanged="value => ChangeHslAsync(colorParameter, value)"
-                        CommitValueChanged="value => ChangeHslAsync(colorParameter, value)" />
-                </div>
-            }
-            else
-            {
-                var parameter = ColorParameter(colorParameter);
-                <div class="wm-dock-active-control">
-                    <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
-                        Minimum="@parameter.Minimum" Maximum="@parameter.Maximum" Step="@parameter.Step" Unit="@parameter.Unit"
-                        ShowHeader="false"
-                        PreviewValueChanged="value => ChangeColorAsync(colorParameter, value)"
-                        CommitValueChanged="value => ChangeColorAsync(colorParameter, value)" />
-                </div>
-            }
-        }
-        else if (State.Mode == WMWorkspaceMode.Template && templateSection == TemplateSection.Border && CurrentCanvas is { } canvas)
-        {
-            var parameter = BorderParameter(canvas, borderSide);
-            <div class="wm-dock-active-control">
-                <WMTemplateBorderControl Label="@parameter.Label" Value="@parameter.Value"
-                    ShowHeader="false"
-                    PreviewValueChanged="value => ChangeBorderAsync(borderSide, value)"
-                    CommitValueChanged="value => ChangeBorderAsync(borderSide, value)" />
-            </div>
-        }
+        WMWorkspaceMode.ColorGrade => colorTool,
+        WMWorkspaceMode.MultiFrame => multiFrameTool,
+        WMWorkspaceMode.Collage => collageTool,
+        _ => templateTool
+    };
+    private IReadOnlyList<MobileToolSpec> CurrentTools => State.Mode switch
+    {
+        WMWorkspaceMode.ColorGrade => ColorTools,
+        WMWorkspaceMode.MultiFrame => MultiFrameTools,
+        WMWorkspaceMode.Collage => CollageTools,
+        _ => TemplateTools
+    };
+    private MobileToolSpec ActiveSpec => CurrentTools.First(item => item.Tool == ActiveTool);
+    private WMMobileToolPresentation Presentation => new(
+        State.Mode, ActiveTool, ActiveSpec.Space, WMMobileEditorHostKind.Dock);
+    private string SpaceClass => $"is-{Presentation.Space.ToString().ToLowerInvariant()}";
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (lastMode == State.Mode && Equals(lastPresentation, Presentation)) return Task.CompletedTask;
+        lastMode = State.Mode;
+        return PublishPresentationAsync();
+    }
+
+    private RenderFragment ModeButton(WMWorkspaceMode mode, string label, string icon) => __builder =>
+    {
+        var active = State.Mode == mode;
+        <button type="button" class="@(active ? "is-active" : null)" role="tab"
+                aria-selected="@active" disabled="@ModeSwitchDisabled(mode)"
+                @onclick="() => ChangeModeAsync(mode)">
+            <MIcon>@icon</MIcon><span>@label</span>
+            @if (!active && HasCategoryDraft) { <MIcon Class="wm-dock-lock">mdi-lock</MIcon> }
+        </button>
     };
 
-    private RenderFragment SubcategoryRail => __builder =>
+    private RenderFragment ActiveToolContent => ActiveTool switch
     {
-        <nav class="wm-dock-subcategories" aria-label="工具分类">
-            @if (State.Mode == WMWorkspaceMode.Template)
-            {
-                @SectionButton("模板", templateSection == TemplateSection.Template, () => SelectTemplateSection(TemplateSection.Template))
-                @SectionButton("边框", templateSection == TemplateSection.Border, () => SelectTemplateSection(TemplateSection.Border))
-                @SectionButton("范围", templateSection == TemplateSection.Scope, () => SelectTemplateSection(TemplateSection.Scope))
-            }
-            else if (State.Mode == WMWorkspaceMode.ColorGrade)
-            {
-                @SectionButton("风格", colorSection == ColorSection.Style, () => SelectColorSection(ColorSection.Style))
-                @SectionButton("光影", colorSection == ColorSection.Light, () => SelectColorSection(ColorSection.Light))
-                @SectionButton("颜色", colorSection == ColorSection.Color, () => SelectColorSection(ColorSection.Color))
-            }
-            else if (State.Mode == WMWorkspaceMode.MultiFrame)
-            {
-                @SectionButton("模式", multiFrameSection == MultiFrameSection.Mode, () => SelectMultiFrameSection(MultiFrameSection.Mode))
-                @SectionButton("素材", multiFrameSection == MultiFrameSection.Material, () => SelectMultiFrameSection(MultiFrameSection.Material))
-                @SectionButton("参数", multiFrameSection == MultiFrameSection.Parameter, () => SelectMultiFrameSection(MultiFrameSection.Parameter))
-            }
-            else if (State.Mode == WMWorkspaceMode.Collage)
-            {
-                @SectionButton("素材", collageSection == CollageSection.Material, () => SelectCollageSection(CollageSection.Material))
-                @SectionButton("布局", collageSection == CollageSection.Layout, () => SelectCollageSection(CollageSection.Layout))
-                @SectionButton("生成", collageSection == CollageSection.Generate, () => SelectCollageSection(CollageSection.Generate))
-            }
-        </nav>
-    };
-
-    private RenderFragment SectionButton(string label, bool active, Action action) => __builder =>
-    {
-        <button type="button" class="@(active ? "is-active" : null)" aria-pressed="@active" @onclick="action">@label</button>
-    };
-
-    private RenderFragment SectionButton(string label, bool active, Func<Task> action) => __builder =>
-    {
-        <button type="button" class="@(active ? "is-active" : null)" aria-pressed="@active" @onclick="action">@label</button>
-    };
-
-    private RenderFragment StandardContent => State.Mode switch
-    {
-        WMWorkspaceMode.Template => TemplateContent,
-        WMWorkspaceMode.ColorGrade => ColorContent,
-        WMWorkspaceMode.MultiFrame => MultiFrameContent,
-        WMWorkspaceMode.Collage => CollageContent,
+        WMMobileEditorTool.TemplatePicker => TemplatePickerContent,
+        WMMobileEditorTool.TemplateScope or WMMobileEditorTool.ColorScope => ScopeContent,
+        WMMobileEditorTool.TemplateBorderTop or WMMobileEditorTool.TemplateBorderRight
+            or WMMobileEditorTool.TemplateBorderBottom or WMMobileEditorTool.TemplateBorderLeft => TemplateBorderContent,
+        WMMobileEditorTool.ColorStyle => ColorStyleContent,
+        WMMobileEditorTool.ColorPresets => ColorPresetContent,
+        WMMobileEditorTool.ColorCurve => ColorCurveContent,
+        WMMobileEditorTool.ColorReference => ColorReferenceContent,
+        WMMobileEditorTool.ColorHslHue or WMMobileEditorTool.ColorHslSaturation
+            or WMMobileEditorTool.ColorHslLuminance => HslContent,
+        WMMobileEditorTool.ColorExposure or WMMobileEditorTool.ColorContrast
+            or WMMobileEditorTool.ColorHighlights or WMMobileEditorTool.ColorShadows
+            or WMMobileEditorTool.ColorWhites or WMMobileEditorTool.ColorBlacks
+            or WMMobileEditorTool.ColorTemperature or WMMobileEditorTool.ColorTint
+            or WMMobileEditorTool.ColorVibrance or WMMobileEditorTool.ColorSaturation => ColorParameterContent,
+        WMMobileEditorTool.MultiFrameMaterial => MultiFrameMaterialContent,
+        WMMobileEditorTool.MultiFrameMode => MultiFrameModeContent,
+        WMMobileEditorTool.MultiFrameParameters => MultiFrameParametersContent,
+        WMMobileEditorTool.MultiFrameGenerate => MultiFrameGenerateContent,
+        WMMobileEditorTool.CollageMaterial => CollageMaterialContent,
+        WMMobileEditorTool.CollageLayout => CollageLayoutContent,
+        WMMobileEditorTool.CollageGenerate => CollageGenerateContent,
         _ => __builder => { }
     };
 
-    private RenderFragment TemplateContent => __builder =>
+    private RenderFragment TemplatePickerContent => __builder =>
     {
-        if (templateSection == TemplateSection.Template)
-        {
-            <WMToolRail AriaLabel="模板列表" CssClass="wm-dock-card-rail">
-                <button type="button" class="wm-dock-template-card @(State.TemplateId is null ? "is-active" : null)"
-                        @onclick="() => PreviewTemplateAsync(null)"><span><MIcon>mdi-cancel</MIcon></span><small>无模板</small></button>
-                @foreach (var template in Templates)
-                {
-                    <button type="button" class="wm-dock-template-card wm-template-card @(State.TemplateId == template.ID ? "is-active" : null)"
-                            data-template-id="@template.ID" @onclick="() => PreviewTemplateAsync(template.ID)">
-                        <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <MIcon>mdi-image-outline</MIcon> }</span>
-                        <small>@(template.Canvas?.Name ?? "未命名")</small>
-                    </button>
-                }
-            </WMToolRail>
-        }
-        else if (templateSection == TemplateSection.Border)
-        {
-            if (CurrentCanvas is null)
+        <div class="wm-dock-heading">
+            <div><strong>选择模板</strong><small>@Templates.Count 个模板</small></div>
+            <div class="wm-dock-scope-pills" role="group" aria-label="模板应用范围">
+                <button type="button" class="@(State.ApplyScope == WMApplyScope.Current ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Current)">当前图片</button>
+                <button type="button" class="@(State.ApplyScope == WMApplyScope.Selected ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Selected)">已选 @SelectedCount</button>
+            </div>
+        </div>
+        <WMToolRail AriaLabel="模板列表" CssClass="wm-dock-card-rail">
+            <button type="button" class="wm-dock-template-card @(State.TemplateId is null ? "is-active" : null)"
+                    @onclick="() => PreviewTemplateAsync(null)"><span><MIcon>mdi-cancel</MIcon></span><small>无模板</small></button>
+            @foreach (var template in Templates)
             {
-                <p class="wm-dock-empty">先选择一个模板，再调整画布边框。</p>
+                <button type="button" class="wm-dock-template-card wm-template-card @(State.TemplateId == template.ID ? "is-active" : null)"
+                        data-template-id="@template.ID" @onclick="() => PreviewTemplateAsync(template.ID)">
+                    <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <MIcon>mdi-image-outline</MIcon> }</span>
+                    <small>@(template.Canvas?.Name ?? "未命名")</small>
+                </button>
+            }
+        </WMToolRail>
+    };
+
+    private RenderFragment TemplateBorderContent => __builder =>
+    {
+        if (CurrentCanvas is not { } canvas)
+        {
+            <p class="wm-dock-empty">先选择一个模板，再调整画布边框。</p>
+            return;
+        }
+        var side = BorderSide(ActiveTool);
+        var parameter = BorderParameter(canvas, side);
+        <div class="wm-dock-parameter-editor">
+            <header><strong>@parameter.Label</strong><output>@parameter.Value.ToString("0.#")</output></header>
+            <WMTemplateBorderControl Label="@parameter.Label" Value="@parameter.Value" ShowHeader="false"
+                PreviewValueChanged="value => ChangeBorderAsync(side, value)"
+                CommitValueChanged="value => ChangeBorderAsync(side, value)" />
+        </div>
+    };
+
+    private RenderFragment ScopeContent => __builder =>
+    {
+        <div class="wm-dock-centered-control">
+            <WMApplyScopeSelector Value="State.ApplyScope" ValueChanged="ChangeScopeAsync" SelectedCount="SelectedCount" />
+        </div>
+    };
+
+    private RenderFragment ColorStyleContent => __builder =>
+    {
+        <div class="wm-dock-look-content">
+            <div class="wm-dock-heading"><div><strong>快捷风格</strong><small>预览中 · 顶部应用后写入历史</small></div></div>
+            <WMToolRail AriaLabel="快捷风格" CssClass="wm-dock-card-rail wm-dock-look-rail">
+                @LookCard("自然", "mdi-leaf", 0, 0, 0, 0)
+                @LookCard("清透", "mdi-weather-sunny", .2f, 12, 8, 10)
+                @LookCard("电影", "mdi-movie-open-outline", -.1f, 18, -10, 8)
+                @LookCard("明亮", "mdi-white-balance-sunny", .35f, -5, 16, 10)
+                @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
+            </WMToolRail>
+        </div>
+    };
+
+    private RenderFragment ColorParameterContent => __builder =>
+    {
+        var parameter = ColorParameter(ActiveTool);
+        <div class="wm-dock-parameter-editor">
+            <header><strong>@parameter.Label</strong><output>@DisplayValue(parameter.Value, parameter.Unit)</output></header>
+            <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
+                Minimum="@parameter.Minimum" Maximum="@parameter.Maximum" Step="@parameter.Step" Unit="@parameter.Unit"
+                ShowHeader="false" PreviewValueChanged="value => ChangeColorAsync(parameter.Key, value)"
+                CommitValueChanged="value => ChangeColorAsync(parameter.Key, value)" />
+        </div>
+    };
+
+    private RenderFragment HslContent => __builder =>
+    {
+        var parameter = HslParameter(ActiveTool);
+        <div class="wm-dock-hsl-control">
+            <nav class="wm-dock-hsl-bands" aria-label="HSL 色彩范围">
+                @foreach (var band in Enum.GetValues<WMHslBand>())
+                {
+                    <button type="button" class="@(colorBand == band ? "is-active" : null)" aria-pressed="@(colorBand == band)" @onclick="() => colorBand = band">@BandName(band)</button>
+                }
+            </nav>
+            <div class="wm-dock-parameter-editor">
+                <header><strong>@parameter.Label</strong><output>@parameter.Value.ToString("0")</output></header>
+                <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value" Minimum="-100" Maximum="100" Step="1"
+                    ShowHeader="false" PreviewValueChanged="value => ChangeHslAsync(parameter.Key, value)"
+                    CommitValueChanged="value => ChangeHslAsync(parameter.Key, value)" />
+            </div>
+        </div>
+    };
+
+    private RenderFragment ColorPresetContent => __builder =>
+    {
+        <div class="wm-dock-heading"><div><strong>调色预设</strong><small>选择后先预览，不会直接提交</small></div></div>
+        <WMToolRail AriaLabel="调色预设" CssClass="wm-dock-card-rail wm-dock-preset-rail">
+            @foreach (var preset in State.ColorGradeTool.Presets)
+            {
+                <button type="button" class="wm-dock-preset-card @(State.ColorGradeTool.SelectedPresetId == preset.Id ? "is-active" : null)"
+                        @onclick="() => PreviewPresetAsync(preset)"><MIcon>mdi-palette-outline</MIcon><span>@preset.Name</span><small>预览</small></button>
+            }
+            @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
+            @UtilityCard("保存预设", "mdi-content-save-outline", SavePresetRequested)
+            @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.SelectedPresetId))
+            {
+                @UtilityCard("删除预设", "mdi-delete-outline", DeletePresetRequested, danger: true)
+            }
+        </WMToolRail>
+    };
+
+    private RenderFragment ColorCurveContent => __builder =>
+    {
+        <WMMobileMasterCurve Points="State.ColorGradeTool.Draft.Grade.MasterCurve" PointsChanged="ChangeCurvePointsAsync" />
+    };
+
+    private RenderFragment ColorReferenceContent => __builder =>
+    {
+        <div class="wm-dock-reference">
+            @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.Reference.PreviewUrl))
+            {
+                <figure><img src="@State.ColorGradeTool.Reference.PreviewUrl" alt="参考图片" /><figcaption><strong>@(State.ColorGradeTool.Reference.DisplayName ?? "参考图")</strong><small>已生成调色预览草稿</small></figcaption></figure>
+                <button type="button" @onclick="ClearReferenceRequested"><MIcon>mdi-image-remove-outline</MIcon><span>清除</span></button>
             }
             else
             {
-                <WMToolRail AriaLabel="边框参数" CssClass="wm-dock-card-rail">
-                    @ParameterCard("上", CurrentCanvas.BorderThickness.Top, borderSide == "Top", () => borderSide = "Top")
-                    @ParameterCard("右", CurrentCanvas.BorderThickness.Right, borderSide == "Right", () => borderSide = "Right")
-                    @ParameterCard("下", CurrentCanvas.BorderThickness.Bottom, borderSide == "Bottom", () => borderSide = "Bottom")
-                    @ParameterCard("左", CurrentCanvas.BorderThickness.Left, borderSide == "Left", () => borderSide = "Left")
-                </WMToolRail>
+                <button type="button" class="is-picker" disabled="@State.ColorGradeTool.IsBusy" @onclick="ChooseReferenceRequested"><MIcon>mdi-image-search-outline</MIcon><span><strong>选择参考图</strong><small>分析色彩后生成预览草稿</small></span></button>
             }
-        }
-        else
-        {
-            <WMApplyScopeSelector Value="State.ApplyScope" ValueChanged="ChangeScopeAsync" SelectedCount="SelectedCount" />
-        }
+        </div>
     };
 
-    private RenderFragment ColorContent => __builder =>
+    private RenderFragment MultiFrameMaterialContent => __builder =>
     {
-        if (colorSection == ColorSection.Style)
-        {
-            <WMToolRail AriaLabel="调色风格" CssClass="wm-dock-card-rail">
-                @LookCard("自然", "mdi-leaf", () => ApplyLookAsync("自然", 0, 0, 0, 0))
-                @LookCard("清透", "mdi-weather-sunny", () => ApplyLookAsync("清透", .2f, 12, 8, 10))
-                @LookCard("电影", "mdi-movie-open-outline", () => ApplyLookAsync("电影", -.1f, 18, -10, 8))
-                @LookCard("明亮", "mdi-white-balance-sunny", () => ApplyLookAsync("明亮", .35f, -5, 16, 10))
-                <button type="button" class="wm-dock-tool-card" disabled="@State.ColorGradeTool.IsBusy" @onclick="ChooseReferenceAsync">
-                    @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.Reference.PreviewUrl))
-                    {
-                        <img src="@State.ColorGradeTool.Reference.PreviewUrl" alt="" />
-                    }
-                    else
-                    {
-                        <MIcon>mdi-image-search-outline</MIcon>
-                    }
-                    <span>参考图</span>
-                </button>
-                @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.Reference.PreviewUrl))
-                {
-                    @ChoiceCard("清除参考", "mdi-image-remove-outline", false, ClearReferenceAsync)
-                }
-                @foreach (var preset in State.ColorGradeTool.Presets)
-                {
-                    <button type="button" class="wm-dock-tool-card @(State.ColorGradeTool.SelectedPresetId == preset.Id ? "is-active" : null)"
-                            @onclick="() => PreviewPresetAsync(preset)"><MIcon>mdi-palette-outline</MIcon><span>@preset.Name</span></button>
-                }
-                @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
-                @UtilityCard("保存预设", "mdi-content-save-outline", SavePresetRequested)
-                @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.SelectedPresetId))
-                {
-                    @UtilityCard("删除预设", "mdi-delete-outline", DeletePresetRequested, danger: true)
-                }
-                @ScopeCard("当前", "mdi-image-outline", WMApplyScope.Current)
-                @ScopeCard($"已选 {SelectedCount}", "mdi-image-multiple-outline", WMApplyScope.Selected)
-            </WMToolRail>
-        }
-        else if (colorSection == ColorSection.Light)
-        {
-            <WMToolRail AriaLabel="光影参数" CssClass="wm-dock-card-rail">
-                @foreach (var key in LightKeys)
-                {
-                    var parameter = ColorParameter(key);
-                    @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
-                }
-                @ChoiceCard("线性曲线", "mdi-chart-line-variant", IsCurvePreset("linear"), () => ChangeCurveAsync("linear"))
-                @ChoiceCard("增强曲线", "mdi-chart-bell-curve-cumulative", IsCurvePreset("contrast"), () => ChangeCurveAsync("contrast"))
-                @ChoiceCard("柔和曲线", "mdi-chart-bell-curve", IsCurvePreset("soft"), () => ChangeCurveAsync("soft"))
-            </WMToolRail>
-        }
-        else
-        {
-            <WMToolRail AriaLabel="颜色参数" CssClass="wm-dock-card-rail">
-                @foreach (var key in ColorKeys)
-                {
-                    var parameter = ColorParameter(key);
-                    @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
-                }
-                @foreach (var key in HslKeys)
-                {
-                    var parameter = HslParameter(key);
-                    @ParameterCard(parameter.Label, parameter.Value, colorParameter == key, () => colorParameter = key, parameter.Icon)
-                }
-            </WMToolRail>
-        }
+        <div class="wm-dock-heading"><div><strong>素材排序</strong><small>@State.Media.Count 张素材</small></div></div>
+        <WMToolRail AriaLabel="多帧素材角色" CssClass="wm-dock-media-rail">
+            @foreach (var media in State.Media)
+            {
+                var role = FrameRole(media.Id);
+                <article class="wm-dock-media-card">
+                    @MediaThumbnail(media)<strong>@media.DisplayName</strong>
+                    <div><button type="button" class="@(role == WMFrameRole.Light ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Light)">亮场</button><button type="button" class="@(role == WMFrameRole.Dark ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Dark)">暗场</button></div>
+                </article>
+            }
+        </WMToolRail>
     };
 
-    private RenderFragment MultiFrameContent => __builder =>
+    private RenderFragment MultiFrameModeContent => __builder =>
     {
         if (State.MultiFrameTool.Capability?.IsAvailable != true)
         {
             <div class="wm-dock-unavailable"><MIcon>mdi-weather-night</MIcon><span>@(State.MultiFrameTool.Capability?.UnavailableReason ?? "当前设备暂未开放多帧处理")</span></div>
         }
-        else if (multiFrameSection == MultiFrameSection.Mode)
+        else
         {
             <WMToolRail AriaLabel="多帧模式" CssClass="wm-dock-card-rail">
-                @ChoiceCard("星轨", "mdi-star-four-points-outline", State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail, () => MultiFrameModeChanged.InvokeAsync(WMStackMode.StarTrail))
-                @ChoiceCard("静态星空 / 降噪", "mdi-weather-night", State.MultiFrameTool.Draft.Mode == WMStackMode.StaticSky, () => MultiFrameModeChanged.InvokeAsync(WMStackMode.StaticSky))
+                @ChoiceCard("星轨", "mdi-star-four-points-outline", State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail, () => ChangeMultiFrameModeAsync(WMStackMode.StarTrail))
+                @ChoiceCard("静态星空 / 降噪", "mdi-weather-night", State.MultiFrameTool.Draft.Mode == WMStackMode.StaticSky, () => ChangeMultiFrameModeAsync(WMStackMode.StaticSky))
             </WMToolRail>
-        }
-        else if (multiFrameSection == MultiFrameSection.Material)
-        {
-            <WMToolRail AriaLabel="多帧素材角色" CssClass="wm-dock-media-rail">
-                @foreach (var media in State.Media)
-                {
-                    var role = FrameRole(media.Id);
-                    <article class="wm-dock-media-card">
-                        @MediaThumbnail(media)<strong>@media.DisplayName</strong>
-                        <div><button type="button" class="@(role == WMFrameRole.Light ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Light)">Light</button><button type="button" class="@(role == WMFrameRole.Dark ? "is-active" : null)" @onclick="() => ChangeFrameRoleAsync(media.Id, WMFrameRole.Dark)">Dark</button></div>
-                    </article>
-                }
-            </WMToolRail>
-        }
-        else
-        {
-            <WMToolRail AriaLabel="多帧参数" CssClass="wm-dock-card-rail">
-                @ToggleCard("曝光归一", State.MultiFrameTool.Draft.NormalizeExposure, NormalizeExposureChanged)
-                @ToggleCard("坏点修复", State.MultiFrameTool.Draft.RepairHotPixels, RepairHotPixelsChanged)
-                @ToggleCard("自动裁剪", State.MultiFrameTool.Draft.AutoCrop, AutoCropChanged)
-            </WMToolRail>
-        }
-        @if (State.MultiFrameTool.Capability?.IsAvailable == true)
-        {
-            <button type="button" class="wm-dock-primary-action" disabled="@State.MultiFrameTool.IsBusy" @onclick="MultiFrameRunRequested">
-                <MIcon>mdi-layers-triple-outline</MIcon><span>@(State.MultiFrameTool.IsBusy ? "处理中…" : "开始合成")</span>
-            </button>
         }
     };
 
-    private RenderFragment CollageContent => __builder =>
+    private RenderFragment MultiFrameParametersContent => __builder =>
     {
-        if (collageSection == CollageSection.Material)
-        {
-            <WMToolRail AriaLabel="拼图素材" CssClass="wm-dock-media-rail">
-                @foreach (var media in OrderedCollageMedia)
-                {
-                    var index = IndexOfCollage(media.Id);
-                    <article class="wm-dock-media-card">
-                        @MediaThumbnail(media)<strong>@(index + 1). @media.DisplayName</strong>
-                        <div><button type="button" disabled="@(index == 0)" @onclick="() => MoveCollageAsync(media.Id, -1)" aria-label="前移"><MIcon>mdi-chevron-left</MIcon></button><button type="button" @onclick="() => ToggleCollageAsync(media.Id)" aria-label="移除"><MIcon>mdi-close</MIcon></button></div>
-                    </article>
-                }
-                @foreach (var media in AvailableCollageMedia)
-                {
-                    <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)">@MediaThumbnail(media)<span><MIcon>mdi-plus</MIcon>@media.DisplayName</span></button>
-                }
-            </WMToolRail>
-        }
-        else if (collageSection == CollageSection.Layout)
-        {
-            <WMToolRail AriaLabel="拼图布局" CssClass="wm-dock-card-rail">
-                @ChoiceCard("横向", "mdi-arrow-expand-horizontal", State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal, () => ChangeCollageDirectionAsync(WMCollageDirection.Horizontal))
-                @ChoiceCard("纵向", "mdi-arrow-expand-vertical", State.CollageTool.Draft.Direction == WMCollageDirection.Vertical, () => ChangeCollageDirectionAsync(WMCollageDirection.Vertical))
-            </WMToolRail>
-        }
-        else
-        {
-            <div class="wm-dock-generate-summary"><strong>@State.CollageTool.Draft.OrderedMediaIds.Count 张素材</strong><span>@(State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal ? "横向拼接" : "纵向拼接") · 间距 0 · 白色背景</span></div>
-        }
-        <button type="button" class="wm-dock-primary-action" disabled="@(!State.CollageTool.IsBusy && State.CollageTool.Draft.OrderedMediaIds.Count < 2)" @onclick="CollageRunOrCancelRequested">
-            <MIcon>@(State.CollageTool.IsBusy ? "mdi-stop-circle-outline" : "mdi-view-split-vertical")</MIcon><span>@(State.CollageTool.IsBusy ? "取消生成" : "生成拼图")</span>
-        </button>
+        <WMToolRail AriaLabel="多帧参数" CssClass="wm-dock-card-rail">
+            @ToggleCard("曝光归一", State.MultiFrameTool.Draft.NormalizeExposure, NormalizeExposureChanged)
+            @ToggleCard("坏点修复", State.MultiFrameTool.Draft.RepairHotPixels, RepairHotPixelsChanged)
+            @ToggleCard("自动裁剪", State.MultiFrameTool.Draft.AutoCrop, AutoCropChanged)
+        </WMToolRail>
     };
 
-    private RenderFragment ParameterCard(string label, double value, bool active, Action action, string icon = "mdi-tune-variant") => __builder =>
+    private RenderFragment MultiFrameGenerateContent => __builder =>
     {
-        <button type="button" class="wm-dock-tool-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="() => SelectParameter(action)"><MIcon>@icon</MIcon><span>@label</span><output>@value.ToString(value % 1 == 0 ? "0" : "0.0")</output></button>
+        <div class="wm-dock-generate">
+            <div><strong>@State.MultiFrameTool.Draft.Roles.Count(pair => pair.Value == WMFrameRole.Light) 张亮场</strong><span>@(State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail ? "星轨合成" : "静态星空 / 降噪")</span></div>
+            <button type="button" disabled="@(State.MultiFrameTool.IsBusy || State.MultiFrameTool.Capability?.IsAvailable != true)" @onclick="MultiFrameRunRequested"><MIcon>mdi-layers-triple-outline</MIcon><span>@(State.MultiFrameTool.IsBusy ? "处理中…" : "生成多帧结果")</span></button>
+        </div>
     };
 
-    private RenderFragment LookCard(string label, string icon, Func<Task> action) =>
-        ChoiceCard(label, icon, false, action);
+    private RenderFragment CollageMaterialContent => __builder =>
+    {
+        <div class="wm-dock-heading"><div><strong>素材排序</strong><small>@State.CollageTool.Draft.OrderedMediaIds.Count 张素材</small></div></div>
+        <WMToolRail AriaLabel="拼图素材" CssClass="wm-dock-media-rail">
+            @foreach (var media in OrderedCollageMedia)
+            {
+                var index = IndexOfCollage(media.Id);
+                <article class="wm-dock-media-card">
+                    @MediaThumbnail(media)<strong>@(index + 1). @media.DisplayName</strong>
+                    <div><button type="button" disabled="@(index == 0)" @onclick="() => MoveCollageAsync(media.Id, -1)" aria-label="前移"><MIcon>mdi-chevron-left</MIcon></button><button type="button" @onclick="() => ToggleCollageAsync(media.Id)" aria-label="移除"><MIcon>mdi-close</MIcon></button></div>
+                </article>
+            }
+            @foreach (var media in AvailableCollageMedia)
+            {
+                <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)">@MediaThumbnail(media)<span><MIcon>mdi-plus</MIcon>@media.DisplayName</span></button>
+            }
+        </WMToolRail>
+    };
+
+    private RenderFragment CollageLayoutContent => __builder =>
+    {
+        <WMToolRail AriaLabel="拼图布局" CssClass="wm-dock-card-rail">
+            @ChoiceCard("横向", "mdi-arrow-expand-horizontal", State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal, () => ChangeCollageDirectionAsync(WMCollageDirection.Horizontal))
+            @ChoiceCard("纵向", "mdi-arrow-expand-vertical", State.CollageTool.Draft.Direction == WMCollageDirection.Vertical, () => ChangeCollageDirectionAsync(WMCollageDirection.Vertical))
+        </WMToolRail>
+    };
+
+    private RenderFragment CollageGenerateContent => __builder =>
+    {
+        <div class="wm-dock-generate">
+            <div><strong>@State.CollageTool.Draft.OrderedMediaIds.Count 张素材</strong><span>@(State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal ? "横向拼接" : "纵向拼接") · 间距 0 · 白色背景</span></div>
+            <button type="button" disabled="@(!State.CollageTool.IsBusy && State.CollageTool.Draft.OrderedMediaIds.Count < 2)" @onclick="CollageRunOrCancelRequested"><MIcon>@(State.CollageTool.IsBusy ? "mdi-stop-circle-outline" : "mdi-view-split-vertical")</MIcon><span>@(State.CollageTool.IsBusy ? "取消生成" : "生成拼图")</span></button>
+        </div>
+    };
+
+    private RenderFragment LookCard(string label, string icon, float exposure, float contrast, float temperature, float vibrance) =>
+        ChoiceCard(label, icon, string.Equals(State.ColorGradeTool.Draft.Name, label, StringComparison.Ordinal),
+            () => ApplyLookAsync(label, exposure, contrast, temperature, vibrance));
 
     private RenderFragment ChoiceCard(string label, string icon, bool active, Func<Task> action) => __builder =>
     {
-        <button type="button" class="wm-dock-tool-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="() => RunEditActionAsync(action)"><MIcon>@icon</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
     };
 
     private RenderFragment ToggleCard(string label, bool value, EventCallback<bool> changed) => __builder =>
     {
-        <button type="button" class="wm-dock-tool-card @(value ? "is-active" : null)" role="switch" aria-checked="@value" @onclick="() => ChangeToggleAsync(changed, !value)"><MIcon>@(value ? "mdi-toggle-switch" : "mdi-toggle-switch-off-outline")</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(value ? "is-active" : null)" role="switch" aria-checked="@value" @onclick="() => changed.InvokeAsync(!value)"><MIcon>@(value ? "mdi-toggle-switch" : "mdi-toggle-switch-off-outline")</MIcon><span>@label</span></button>
     };
 
     private RenderFragment UtilityCard(string label, string icon, EventCallback action, bool danger = false) => __builder =>
     {
-        <button type="button" class="wm-dock-tool-card @(danger ? "is-danger" : null)" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(danger ? "is-danger" : null)" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
     };
 
-    private RenderFragment ScopeCard(string label, string icon, WMApplyScope scope) => __builder =>
+    private async Task SelectToolAsync(WMMobileEditorTool tool)
     {
-        var active = State.ApplyScope == scope;
-        <button type="button" class="wm-dock-tool-card @(active ? "is-active" : null)" role="radio" aria-checked="@active" @onclick="() => ChangeScopeAsync(scope)"><MIcon>@icon</MIcon><span>@label</span></button>
-    };
+        switch (State.Mode)
+        {
+            case WMWorkspaceMode.ColorGrade: colorTool = tool; break;
+            case WMWorkspaceMode.MultiFrame: multiFrameTool = tool; break;
+            case WMWorkspaceMode.Collage: collageTool = tool; break;
+            default: templateTool = tool; break;
+        }
+        await PublishPresentationAsync();
+    }
 
     private async Task ChangeModeAsync(WMWorkspaceMode mode)
     {
         if (State.Mode == mode || ModeSwitchDisabled(mode)) return;
-        activeAdjustmentVisible = false;
         await ModeChanged.InvokeAsync(mode);
     }
 
     private bool ModeSwitchDisabled(WMWorkspaceMode mode) =>
-        State.Mode != mode && (isEditing || State.HasTransientEdits || isConfirming ||
-            State.MultiFrameTool.IsBusy || State.CollageTool.IsBusy);
+        State.Mode != mode && (HasCategoryDraft || State.MultiFrameTool.IsBusy || State.CollageTool.IsBusy);
 
-    private async Task ConfirmEditAsync()
+    private async Task PublishPresentationAsync()
     {
-        if (isConfirming) return;
-        isConfirming = true;
-        try
-        {
-            var mode = State.Mode;
-            await EditConfirmed.InvokeAsync(mode);
-            activeAdjustmentVisible = false;
-            SetEditing(false);
-        }
-        finally
-        {
-            isConfirming = false;
-        }
+        var next = Presentation;
+        if (Equals(lastPresentation, next)) return;
+        lastPresentation = next;
+        await PresentationChanged.InvokeAsync(next);
     }
 
-    private Task ChangeColorAsync(string key, float value)
-    {
-        StartEditing(showAdjustment: true);
-        var next = WMWorkspacePanelMutations.SetColorValue(State.ColorGradeTool.Draft, key, value);
-        return ColorPreviewChanged.InvokeAsync(next);
-    }
-
-    private Task ChangeHslAsync(string key, float value)
-    {
-        StartEditing(showAdjustment: true);
-        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
-        var adjustment = next.Grade.Hsl[colorBand];
-        switch (key)
-        {
-            case "HslSaturation": adjustment.Saturation = value; break;
-            case "HslLuminance": adjustment.Luminance = value; break;
-            default: adjustment.Hue = value; break;
-        }
-        next.UserAdjustments = next.Grade;
-        return ColorPreviewChanged.InvokeAsync(next);
-    }
-
-    private Task ChangeCurveAsync(string preset)
-    {
-        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
-        next.Grade.MasterCurve = CurvePoints(preset);
-        next.UserAdjustments = next.Grade;
-        return PreviewColorAsync(next);
-    }
-
-    private Task ApplyLookAsync(string name, float exposure, float contrast, float temperature, float vibrance) =>
-        PreviewColorAsync(WMWorkspacePanelMutations.QuickLook(name, exposure, contrast, temperature, vibrance));
-
-    private Task PreviewPresetAsync(WMColorRecipe preset) => PreviewColorAsync(preset);
-
-    private Task ResetColorPreviewAsync() =>
-        PreviewColorAsync(new WMColorRecipe { Name = "移动端调整" });
+    private Task ChangeScopeAsync(WMApplyScope scope) => ScopeChanged.InvokeAsync(scope);
 
     private Task PreviewTemplateAsync(string? templateId)
     {
         if (string.Equals(State.TemplateId, templateId, StringComparison.Ordinal) && !State.HasTransientEdits)
             return Task.CompletedTask;
-        return PreviewTemplateEditAsync(CreateTemplateEdit(templateId));
+        return TemplatePreviewChanged.InvokeAsync(CreateTemplateEdit(templateId));
     }
 
     private WMWorkspaceTemplateEdit CreateTemplateEdit(string? templateId)
     {
         if (templateId is null) return new WMWorkspaceTemplateEdit(null, null);
         if (State.TemplateEdit?.TemplateId == templateId) return State.TemplateEdit;
-        return new WMWorkspaceTemplateEdit(templateId, null);
+        var canvas = Templates.FirstOrDefault(item => item.ID == templateId)?.Canvas;
+        return new WMWorkspaceTemplateEdit(
+            templateId,
+            canvas is null ? null : Global.CanvasSerialize(canvas));
     }
 
     private Task ChangeBorderAsync(string side, double value)
     {
         if (CurrentCanvas is not { } current) return Task.CompletedTask;
-        StartEditing(showAdjustment: true);
         var next = WMWorkspacePanelMutations.SetBorder(current, side, value);
-        var edit = new WMWorkspaceTemplateEdit(State.TemplateId, Global.CanvasSerialize(next));
-        return TemplatePreviewChanged.InvokeAsync(edit);
+        return TemplatePreviewChanged.InvokeAsync(new WMWorkspaceTemplateEdit(State.TemplateId, Global.CanvasSerialize(next)));
     }
 
     private WMCanvas? CurrentCanvas
@@ -511,151 +440,45 @@
         }
     }
 
-    private (string Label, float Value, double Minimum, double Maximum, double Step, string Unit, string Icon) ColorParameter(string key) => key switch
+    private Task ChangeColorAsync(string key, float value)
     {
-        "Exposure" => ("曝光", State.ColorGradeTool.Draft.Grade.Exposure, -5, 5, .05, "EV", "mdi-plus-minus-variant"),
-        "Contrast" => ("对比度", State.ColorGradeTool.Draft.Grade.Contrast, -100, 100, 1, "", "mdi-contrast-box"),
-        "Highlights" => ("高光", State.ColorGradeTool.Draft.Grade.Highlights, -100, 100, 1, "", "mdi-brightness-7"),
-        "Shadows" => ("阴影", State.ColorGradeTool.Draft.Grade.Shadows, -100, 100, 1, "", "mdi-brightness-4"),
-        "Whites" => ("白色", State.ColorGradeTool.Draft.Grade.Whites, -100, 100, 1, "", "mdi-circle-outline"),
-        "Blacks" => ("黑色", State.ColorGradeTool.Draft.Grade.Blacks, -100, 100, 1, "", "mdi-circle"),
-        "Temperature" => ("色温", State.ColorGradeTool.Draft.Grade.Temperature, -100, 100, 1, "", "mdi-thermometer"),
-        "Tint" => ("色调", State.ColorGradeTool.Draft.Grade.Tint, -100, 100, 1, "", "mdi-eyedropper-variant"),
-        "Vibrance" => ("自然饱和度", State.ColorGradeTool.Draft.Grade.Vibrance, -100, 100, 1, "", "mdi-flower-tulip-outline"),
-        _ => ("饱和度", State.ColorGradeTool.Draft.Grade.Saturation, -100, 100, 1, "", "mdi-palette-outline")
-    };
+        var next = WMWorkspacePanelMutations.SetColorValue(State.ColorGradeTool.Draft, key, value);
+        return ColorPreviewChanged.InvokeAsync(next);
+    }
 
-    private (string Label, float Value, string Icon) HslParameter(string key)
+    private Task ChangeHslAsync(string key, float value)
     {
-        var adjustment = State.ColorGradeTool.Draft.Grade.Hsl[colorBand];
-        return key switch
+        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
+        var adjustment = next.Grade.Hsl[colorBand];
+        switch (key)
         {
-            "HslSaturation" => ($"{BandName(colorBand)}饱和度", adjustment.Saturation, "mdi-water-opacity"),
-            "HslLuminance" => ($"{BandName(colorBand)}明度", adjustment.Luminance, "mdi-brightness-6"),
-            _ => ($"{BandName(colorBand)}色相", adjustment.Hue, "mdi-palette-swatch-outline")
-        };
+            case "HslSaturation": adjustment.Saturation = value; break;
+            case "HslLuminance": adjustment.Luminance = value; break;
+            default: adjustment.Hue = value; break;
+        }
+        next.UserAdjustments = next.Grade;
+        return ColorPreviewChanged.InvokeAsync(next);
     }
 
-    private static (string Label, double Value) BorderParameter(WMCanvas canvas, string side) => side switch
+    private Task ChangeCurvePointsAsync(IReadOnlyList<WMCurvePoint> points)
     {
-        "Right" => ("右边框", canvas.BorderThickness.Right),
-        "Bottom" => ("下边框", canvas.BorderThickness.Bottom),
-        "Left" => ("左边框", canvas.BorderThickness.Left),
-        _ => ("上边框", canvas.BorderThickness.Top)
-    };
-
-    private void EnsureColorParameter(bool color)
-    {
-        if (color && !ColorKeys.Contains(colorParameter) && !HslKeys.Contains(colorParameter)) colorParameter = "Temperature";
-        if (!color && !LightKeys.Contains(colorParameter)) colorParameter = "Exposure";
+        var next = WMColorRecipeSnapshot.Copy(State.ColorGradeTool.Draft)!;
+        next.Grade.MasterCurve = points.Select(point => new WMCurvePoint { X = point.X, Y = point.Y }).ToList();
+        next.UserAdjustments = next.Grade;
+        return ColorPreviewChanged.InvokeAsync(next);
     }
 
-    private void StartEditing(bool showAdjustment = false)
-    {
-        SetEditing(true);
-        if (showAdjustment) activeAdjustmentVisible = true;
-    }
+    private Task ApplyLookAsync(string name, float exposure, float contrast, float temperature, float vibrance) =>
+        ColorPreviewChanged.InvokeAsync(WMWorkspacePanelMutations.QuickLook(name, exposure, contrast, temperature, vibrance));
 
-    private void SetEditing(bool value)
-    {
-        if (isEditing == value) return;
-        isEditing = value;
-        _ = EditingChanged.InvokeAsync(value);
-    }
+    private Task PreviewPresetAsync(WMColorRecipe preset) => ColorPreviewChanged.InvokeAsync(preset);
+    private Task ResetColorPreviewAsync() => ColorPreviewChanged.InvokeAsync(new WMColorRecipe { Name = "移动端调整" });
 
-    private void SelectParameter(Action action)
-    {
-        action();
-        StartEditing(showAdjustment: true);
-    }
+    private Task ChangeMultiFrameModeAsync(WMStackMode mode) => MultiFrameModeChanged.InvokeAsync(mode);
+    private Task ChangeFrameRoleAsync(string mediaId, WMFrameRole role) => FrameRoleChanged.InvokeAsync(new WMFrameRoleChange(mediaId, role));
 
-    private async Task RunEditActionAsync(Func<Task> action)
-    {
-        activeAdjustmentVisible = false;
-        StartEditing();
-        await action();
-    }
-
-    private void SelectTemplateSection(TemplateSection section)
-    {
-        templateSection = section;
-        activeAdjustmentVisible = false;
-    }
-
-    private void SelectColorSection(ColorSection section)
-    {
-        colorSection = section;
-        EnsureColorParameter(section == ColorSection.Color);
-        activeAdjustmentVisible = false;
-    }
-
-    private void SelectMultiFrameSection(MultiFrameSection section)
-    {
-        multiFrameSection = section;
-        activeAdjustmentVisible = false;
-    }
-
-    private void SelectCollageSection(CollageSection section)
-    {
-        collageSection = section;
-        activeAdjustmentVisible = false;
-    }
-
-    private Task ChangeScopeAsync(WMApplyScope scope) => ScopeChanged.InvokeAsync(scope);
-
-    private Task PreviewColorAsync(WMColorRecipe recipe)
-    {
-        StartEditing();
-        return ColorPreviewChanged.InvokeAsync(recipe);
-    }
-
-    private Task PreviewTemplateEditAsync(WMWorkspaceTemplateEdit edit)
-    {
-        StartEditing();
-        return TemplatePreviewChanged.InvokeAsync(edit);
-    }
-
-    private Task ChooseReferenceAsync()
-    {
-        StartEditing();
-        return ChooseReferenceRequested.InvokeAsync();
-    }
-
-    private Task ClearReferenceAsync()
-    {
-        StartEditing();
-        return ClearReferenceRequested.InvokeAsync();
-    }
-
-    private Task ChangeMultiFrameModeAsync(WMStackMode mode)
-    {
-        StartEditing();
-        return MultiFrameModeChanged.InvokeAsync(mode);
-    }
-
-    private Task ChangeToggleAsync(EventCallback<bool> changed, bool value)
-    {
-        activeAdjustmentVisible = false;
-        StartEditing();
-        return changed.InvokeAsync(value);
-    }
-
-    private Task ChangeFrameRoleAsync(WMFrameRoleChange change)
-    {
-        activeAdjustmentVisible = false;
-        StartEditing();
-        return FrameRoleChanged.InvokeAsync(change);
-    }
-
-    private Task ChangeFrameRoleAsync(string mediaId, WMFrameRole role) =>
-        ChangeFrameRoleAsync(new WMFrameRoleChange(mediaId, role));
-
-    private Task ChangeCollageDraftAsync(WMCollageDraft draft)
-    {
-        activeAdjustmentVisible = false;
-        StartEditing();
-        return CollageDraftChanged.InvokeAsync(draft);
-    }
+    private Task ChangeCollageDirectionAsync(WMCollageDirection direction) =>
+        CollageDraftChanged.InvokeAsync(State.CollageTool.Draft with { Direction = direction });
 
     private WMFrameRole? FrameRole(string mediaId) =>
         State.MultiFrameTool.Draft.Roles.TryGetValue(mediaId, out var role) ? role : null;
@@ -689,7 +512,7 @@
     {
         var next = State.CollageTool.Draft.OrderedMediaIds.ToList();
         if (!next.Remove(mediaId)) next.Add(mediaId);
-        return ChangeCollageDraftAsync(State.CollageTool.Draft with { OrderedMediaIds = next });
+        return CollageDraftChanged.InvokeAsync(State.CollageTool.Draft with { OrderedMediaIds = next });
     }
 
     private Task MoveCollageAsync(string mediaId, int offset)
@@ -699,38 +522,68 @@
         var target = current + offset;
         if (current < 0 || target < 0 || target >= next.Count) return Task.CompletedTask;
         (next[current], next[target]) = (next[target], next[current]);
-        return ChangeCollageDraftAsync(State.CollageTool.Draft with { OrderedMediaIds = next });
+        return CollageDraftChanged.InvokeAsync(State.CollageTool.Draft with { OrderedMediaIds = next });
     }
 
-    private Task ChangeCollageDirectionAsync(WMCollageDirection direction) =>
-        ChangeCollageDraftAsync(State.CollageTool.Draft with { Direction = direction });
-
-    private bool IsCurvePreset(string preset)
+    private (string Key, string Label, float Value, double Minimum, double Maximum, double Step, string Unit) ColorParameter(WMMobileEditorTool tool)
     {
-        var current = State.ColorGradeTool.Draft.Grade.MasterCurve;
-        var target = CurvePoints(preset);
-        return current.Count == target.Count && current.Zip(target).All(pair =>
-            Math.Abs(pair.First.X - pair.Second.X) < .001f &&
-            Math.Abs(pair.First.Y - pair.Second.Y) < .001f);
+        var key = tool switch
+        {
+            WMMobileEditorTool.ColorContrast => "Contrast",
+            WMMobileEditorTool.ColorHighlights => "Highlights",
+            WMMobileEditorTool.ColorShadows => "Shadows",
+            WMMobileEditorTool.ColorWhites => "Whites",
+            WMMobileEditorTool.ColorBlacks => "Blacks",
+            WMMobileEditorTool.ColorTemperature => "Temperature",
+            WMMobileEditorTool.ColorTint => "Tint",
+            WMMobileEditorTool.ColorVibrance => "Vibrance",
+            WMMobileEditorTool.ColorSaturation => "Saturation",
+            _ => "Exposure"
+        };
+        return key switch
+        {
+            "Exposure" => (key, "曝光", State.ColorGradeTool.Draft.Grade.Exposure, -5, 5, .05, "EV"),
+            "Contrast" => (key, "对比度", State.ColorGradeTool.Draft.Grade.Contrast, -100, 100, 1, ""),
+            "Highlights" => (key, "高光", State.ColorGradeTool.Draft.Grade.Highlights, -100, 100, 1, ""),
+            "Shadows" => (key, "阴影", State.ColorGradeTool.Draft.Grade.Shadows, -100, 100, 1, ""),
+            "Whites" => (key, "白色", State.ColorGradeTool.Draft.Grade.Whites, -100, 100, 1, ""),
+            "Blacks" => (key, "黑色", State.ColorGradeTool.Draft.Grade.Blacks, -100, 100, 1, ""),
+            "Temperature" => (key, "色温", State.ColorGradeTool.Draft.Grade.Temperature, -100, 100, 1, ""),
+            "Tint" => (key, "色调", State.ColorGradeTool.Draft.Grade.Tint, -100, 100, 1, ""),
+            "Vibrance" => (key, "自然饱和度", State.ColorGradeTool.Draft.Grade.Vibrance, -100, 100, 1, ""),
+            _ => (key, "饱和度", State.ColorGradeTool.Draft.Grade.Saturation, -100, 100, 1, "")
+        };
     }
 
-    private static List<WMCurvePoint> CurvePoints(string preset) => preset switch
+    private (string Key, string Label, float Value) HslParameter(WMMobileEditorTool tool)
     {
-        "contrast" =>
-        [
-            new WMCurvePoint { X = 0, Y = 0 },
-            new WMCurvePoint { X = .25f, Y = .18f },
-            new WMCurvePoint { X = .75f, Y = .82f },
-            new WMCurvePoint { X = 1, Y = 1 }
-        ],
-        "soft" =>
-        [
-            new WMCurvePoint { X = 0, Y = .06f },
-            new WMCurvePoint { X = .5f, Y = .52f },
-            new WMCurvePoint { X = 1, Y = .96f }
-        ],
-        _ => WMCurvePoint.Identity()
+        var adjustment = State.ColorGradeTool.Draft.Grade.Hsl[colorBand];
+        return tool switch
+        {
+            WMMobileEditorTool.ColorHslSaturation => ("HslSaturation", $"{BandName(colorBand)}饱和度", adjustment.Saturation),
+            WMMobileEditorTool.ColorHslLuminance => ("HslLuminance", $"{BandName(colorBand)}明度", adjustment.Luminance),
+            _ => ("HslHue", $"{BandName(colorBand)}色相", adjustment.Hue)
+        };
+    }
+
+    private static string BorderSide(WMMobileEditorTool tool) => tool switch
+    {
+        WMMobileEditorTool.TemplateBorderRight => "Right",
+        WMMobileEditorTool.TemplateBorderBottom => "Bottom",
+        WMMobileEditorTool.TemplateBorderLeft => "Left",
+        _ => "Top"
     };
+
+    private static (string Label, double Value) BorderParameter(WMCanvas canvas, string side) => side switch
+    {
+        "Right" => ("右边框", canvas.BorderThickness.Right),
+        "Bottom" => ("下边框", canvas.BorderThickness.Bottom),
+        "Left" => ("左边框", canvas.BorderThickness.Left),
+        _ => ("上边框", canvas.BorderThickness.Top)
+    };
+
+    private static string DisplayValue(float value, string unit) =>
+        $"{value.ToString(value % 1 == 0 ? "0" : "0.00")}{(string.IsNullOrWhiteSpace(unit) ? string.Empty : $" {unit}")}";
 
     private static string BandName(WMHslBand band) => band switch
     {
@@ -747,23 +600,61 @@
     private RenderFragment MediaThumbnail(WMWorkspaceMedia media) => __builder =>
     {
         <span class="wm-dock-media-thumbnail">
-            @if (MediaPreviewUrl?.Invoke(media) is { Length: > 0 } preview)
-            {
-                <img src="@preview" alt="" />
-            }
-            else
-            {
-                <MIcon>mdi-image-outline</MIcon>
-            }
+            @if (MediaPreviewUrl?.Invoke(media) is { Length: > 0 } preview) { <img src="@preview" alt="" /> }
+            else { <MIcon>mdi-image-outline</MIcon> }
         </span>
     };
 
-    private static readonly string[] LightKeys = ["Exposure", "Contrast", "Highlights", "Shadows", "Whites", "Blacks"];
-    private static readonly string[] ColorKeys = ["Temperature", "Tint", "Vibrance", "Saturation"];
-    private static readonly string[] HslKeys = ["HslHue", "HslSaturation", "HslLuminance"];
+    private sealed record MobileToolSpec(
+        WMMobileEditorTool Tool,
+        string Label,
+        string Icon,
+        WMMobileEditorSpace Space);
 
-    private enum TemplateSection { Template, Border, Scope }
-    private enum ColorSection { Style, Light, Color }
-    private enum MultiFrameSection { Mode, Material, Parameter }
-    private enum CollageSection { Material, Layout, Generate }
+    private static readonly MobileToolSpec[] TemplateTools =
+    [
+        new(WMMobileEditorTool.TemplatePicker, "模板", "mdi-view-grid-outline", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.TemplateBorderTop, "上边框", "mdi-border-top", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderRight, "右边框", "mdi-border-right", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderBottom, "下边框", "mdi-border-bottom", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderLeft, "左边框", "mdi-border-left", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateScope, "范围", "mdi-target", WMMobileEditorSpace.Small)
+    ];
+
+    private static readonly MobileToolSpec[] ColorTools =
+    [
+        new(WMMobileEditorTool.ColorStyle, "风格", "mdi-palette-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorExposure, "曝光", "mdi-white-balance-sunny", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorContrast, "对比度", "mdi-contrast-box", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHighlights, "高光", "mdi-brightness-7", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorShadows, "阴影", "mdi-brightness-4", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorWhites, "白色", "mdi-circle-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorBlacks, "黑色", "mdi-circle", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorTemperature, "色温", "mdi-thermometer", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorTint, "色调", "mdi-eyedropper-variant", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorVibrance, "自然饱和度", "mdi-flower-tulip-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorSaturation, "饱和度", "mdi-water-opacity", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslHue, "HSL 色相", "mdi-palette-swatch-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslSaturation, "HSL 饱和度", "mdi-water-opacity", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslLuminance, "HSL 明度", "mdi-brightness-6", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorPresets, "预设", "mdi-view-grid-plus-outline", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.ColorCurve, "曲线", "mdi-chart-line-variant", WMMobileEditorSpace.Large),
+        new(WMMobileEditorTool.ColorReference, "参考图", "mdi-image-search-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorScope, "范围", "mdi-target", WMMobileEditorSpace.Small)
+    ];
+
+    private static readonly MobileToolSpec[] MultiFrameTools =
+    [
+        new(WMMobileEditorTool.MultiFrameMaterial, "素材", "mdi-image-multiple-outline", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.MultiFrameMode, "模式", "mdi-view-grid-outline", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.MultiFrameParameters, "参数", "mdi-tune-variant", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.MultiFrameGenerate, "生成", "mdi-star-four-points-outline", WMMobileEditorSpace.Small)
+    ];
+
+    private static readonly MobileToolSpec[] CollageTools =
+    [
+        new(WMMobileEditorTool.CollageMaterial, "素材", "mdi-image-multiple-outline", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.CollageLayout, "布局", "mdi-view-split-vertical", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.CollageGenerate, "生成", "mdi-star-four-points-outline", WMMobileEditorSpace.Small)
+    ];
 }

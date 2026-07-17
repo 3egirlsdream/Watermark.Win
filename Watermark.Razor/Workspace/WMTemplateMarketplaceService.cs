@@ -18,31 +18,25 @@ public sealed class WMTemplateMarketplaceService(
 {
     private readonly object deletionGate = new();
     private readonly Dictionary<string, DeletedTemplate> pendingDeletions = new(StringComparer.Ordinal);
+    private readonly WMTemplateMarketPager marketPager = new(new WMTemplateMarketApiPageSource(api));
 
     public async Task<WMTemplateMarketplacePageResult> SearchAsync(
-        string query,
-        int page,
-        int pageSize,
+        WMTemplateMarketplaceQuery query,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var items = await api.GetWatermarks(
-                string.Empty,
-                Math.Max(0, page - 1) * Math.Clamp(pageSize, 1, 200),
-                Math.Clamp(pageSize, 1, 200)).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            var filtered = items
-                .Where(item => item.Visible)
-                .Where(item => string.IsNullOrWhiteSpace(query)
-                               || (item.Name ?? item.Desc ?? string.Empty)
-                               .Contains(query, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            foreach (var item in filtered) item.Src = Global.GetSrc(item.WatermarkId);
-            return new WMTemplateMarketplacePageResult(
-                WMTemplateMarketplaceStatus.Succeeded,
-                filtered);
+            var result = await marketPager.QueryAsync(query, cancellationToken).ConfigureAwait(false);
+            foreach (var item in result.Items)
+            {
+                if (string.IsNullOrWhiteSpace(item.Src)) item.Src = Global.GetSrc(item.WatermarkId);
+            }
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

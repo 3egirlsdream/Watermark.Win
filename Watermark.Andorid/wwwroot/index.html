@@ -151,6 +151,9 @@
             const root = document.getElementById(scopeId);
             if (!root || !dotnet || !("IntersectionObserver" in window)) return;
             disconnect(scopeId);
+            const viewport = root.closest(".workspace-panel-content")
+                || document.getElementById("wm-main-content")
+                || null;
             const observer = new IntersectionObserver(entries => {
                 for (const entry of entries) {
                     if (!entry.isIntersecting) continue;
@@ -158,7 +161,7 @@
                     const templateId = entry.target.dataset.templateId;
                     if (templateId) dotnet.invokeMethodAsync("EnsureVisibleTemplatePreviewAsync", templateId);
                 }
-            }, { root: root.closest(".templates-scroll, .workspace-panel-content"), rootMargin: "160px" });
+            }, { root: viewport, rootMargin: "160px" });
             root.querySelectorAll(selector).forEach(element => observer.observe(element));
             scopes.set(scopeId, observer);
         }

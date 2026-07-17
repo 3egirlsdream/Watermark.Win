@@ -1,0 +1,77 @@
+.wm-mobile-master-curve {
+    box-sizing: border-box;
+    color: #252525;
+    display: grid;
+    gap: 10px;
+    grid-template-rows: auto 44px minmax(180px, 1fr);
+    height: 100%;
+    min-height: 0;
+    padding: 10px 12px 8px;
+}
+
+.wm-mobile-master-curve header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.wm-mobile-master-curve header div { display: flex; flex-direction: column; gap: 2px; }
+.wm-mobile-master-curve header strong { font-size: .92rem; font-weight: 800; }
+.wm-mobile-master-curve header small { color: #858585; font-size: .62rem; }
+.wm-mobile-master-curve header button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    color: #5d5d5d;
+    display: flex;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+}
+
+.wm-curve-presets {
+    background: #e8e8e8;
+    border-radius: 12px;
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 3px;
+}
+
+.wm-curve-presets button {
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    color: #555;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 650;
+}
+
+.wm-curve-presets button.is-active { background: #ffc200; color: #252525; font-weight: 800; }
+
+.wm-curve-graph {
+    background: #20252d;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.wm-curve-graph svg { display: block; height: 100%; touch-action: none; width: 100%; }
+.wm-curve-background { fill: #20252d; }
+.wm-curve-grid { stroke: rgba(255,255,255,.13); stroke-dasharray: 3 3; stroke-width: .8; }
+.wm-curve-line { fill: none; stroke: #f7f7f7; stroke-linecap: round; stroke-width: 2.2; }
+.wm-curve-node { cursor: grab; fill: #ffc200; stroke: #fff; stroke-width: 2.4; }
+.wm-curve-node:active { cursor: grabbing; }
+.wm-curve-node:focus-visible { outline: none; stroke: #5ba0ff; stroke-width: 3.5; }
+.wm-curve-node.is-endpoint { fill: #f0b600; }
+.wm-curve-axis-label { fill: rgba(255,255,255,.55); font-size: 9px; }
+
+@media (orientation: landscape) and (max-height: 560px) {
+    .wm-mobile-master-curve { gap: 6px; grid-template-columns: 150px minmax(0, 1fr); grid-template-rows: 40px minmax(0, 1fr); padding: 6px 10px; }
+    .wm-mobile-master-curve header { grid-column: 1; grid-row: 1; }
+    .wm-curve-presets { grid-column: 1; grid-row: 2; grid-template-columns: 1fr; }
+    .wm-curve-graph { grid-column: 2; grid-row: 1 / 3; }
+}

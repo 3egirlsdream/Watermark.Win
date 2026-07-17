@@ -3,10 +3,12 @@
 @using Microsoft.JSInterop
 @using Watermark.Razor.Components.Layout
 @using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @layout WMAppShellLayout
 @implements IAsyncDisposable
 @inject WMTemplateLibraryService TemplateLibrary
+@inject WMTemplateMarketFeedStore MarketFeedStore
 @inject IWMWorkspaceSessionStore SessionStore
 @inject IWMWorkspaceLauncher WorkspaceLauncher
 @inject IWMPhotoPicker PhotoPicker
@@ -19,11 +21,16 @@
 <NavigationLock OnBeforeInternalNavigation="HandleInternalNavigation" />
 
 <section id="@visibilityScope" class="templates-page" aria-labelledby="templates-title">
-    <header class="templates-header">
-        <div>
-            <span class="templates-eyebrow">素材库</span>
-            <h1 id="templates-title">模板</h1>
-        </div>
+    <header class="templates-header @(activeTab == TemplateTab.Local ? "has-action" : null)">
+        <h1 id="templates-title">模板</h1>
+        <label class="templates-search @(string.IsNullOrWhiteSpace(SearchText) ? "is-empty" : null)">
+            <MIcon>mdi-magnify</MIcon>
+            <input value="@SearchText" @oninput="OnSearchAsync" placeholder="@SearchPlaceholder" aria-label="@SearchPlaceholder" />
+            @if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                <button type="button" @onclick="ClearSearchAsync" aria-label="清除搜索"><MIcon>mdi-close-circle</MIcon></button>
+            }
+        </label>
         @if (activeTab == TemplateTab.Local)
         {
             <button class="templates-add" type="button" disabled="@busy" @onclick="CreateTemplateAsync" aria-label="新建模板">
@@ -32,7 +39,7 @@
         }
     </header>
 
-    <div class="templates-tabs" role="tablist" aria-label="模板分类">
+    <div class="templates-tabs" role="tablist" aria-label="模板来源">
         <button type="button" role="tab" aria-selected="@(activeTab == TemplateTab.Local)"
                 class="@(activeTab == TemplateTab.Local ? "is-active" : null)" @onclick="() => SelectTabAsync(TemplateTab.Local)">我的</button>
         <button type="button" role="tab" aria-selected="@(activeTab == TemplateTab.Market)"
@@ -41,85 +48,243 @@
                 class="@(activeTab == TemplateTab.Favorites ? "is-active" : null)" @onclick="() => SelectTabAsync(TemplateTab.Favorites)">收藏</button>
     </div>
 
-    <label class="templates-search">
-        <MIcon>mdi-magnify</MIcon>
-        <input value="@search" @oninput="OnSearch" placeholder="搜索模板名称" aria-label="搜索模板" />
-        @if (!string.IsNullOrWhiteSpace(search))
-        {
-            <button type="button" @onclick="ClearSearch" aria-label="清除搜索"><MIcon>mdi-close-circle</MIcon></button>
-        }
-    </label>
+    @if (activeTab == TemplateTab.Market)
+    {
+        <nav class="market-categories" role="tablist" aria-label="市场分类">
+            @foreach (var option in MarketCategories)
+            {
+                <button type="button"
+                        role="tab"
+                        aria-selected="@(MarketFeedStore.SelectedCategory == option.Category)"
+                        class="@(MarketFeedStore.SelectedCategory == option.Category ? "is-active" : null)"
+                        @onclick="() => SelectMarketCategoryAsync(option.Category)">
+                    <span>@option.Label</span>
+                </button>
+            }
+        </nav>
+    }
 
     <div class="templates-scroll">
-        @if (loading)
+        @if (activeTab == TemplateTab.Local)
         {
-            <div class="templates-state"><MProgressCircular Indeterminate Color="primary" Size="30" /><span>正在加载…</span></div>
-        }
-        else if (activeTab == TemplateTab.Local)
-        {
-            <div class="templates-grid">
-                @foreach (var item in FilterLocal())
+            @if (loading)
+            {
+                <div class="templates-state"><MProgressCircular Indeterminate Color="primary" Size="30" /><span>正在加载本地模板…</span></div>
+            }
+            else
+            {
+                <div class="templates-grid">
+                    @foreach (var item in FilterLocal())
+                    {
+                        <button class="template-card market-card" type="button" data-template-id="@item.ID" @onclick="() => selectedLocal = item">
+                            <span class="template-preview">
+                                @if (!string.IsNullOrWhiteSpace(item.Src))
+                                {
+                                    <img src="@item.Src" alt="@(item.Canvas?.Name ?? "模板预览")" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <span class="template-skeleton"><MIcon>mdi-image-outline</MIcon></span>
+                                }
+                            </span>
+                            <span class="template-meta">
+                                <strong>@(item.Canvas?.Name ?? "未命名模板")</strong>
+                                <span class="template-meta-row">
+                                    <span class="creator-line"><small>本地模板</small></span>
+                                    <small class="template-kind">@LocalTemplateType(item)</small>
+                                </span>
+                            </span>
+                        </button>
+                    }
+                </div>
+                @if (!FilterLocal().Any())
                 {
-                    <button class="template-card" type="button" data-template-id="@item.ID" @onclick="() => selectedLocal = item">
-                        <span class="template-preview">
-                            @if (!string.IsNullOrWhiteSpace(item.Src))
-                            {
-                                <img src="@item.Src" alt="" loading="lazy" />
-                            }
-                            else
-                            {
-                                <span class="template-skeleton"><MIcon>mdi-image-outline</MIcon></span>
-                            }
+                    <div class="templates-empty">
+                        <span><MIcon>mdi-card-plus-outline</MIcon></span>
+                        <strong>@(string.IsNullOrWhiteSpace(localSearch) ? "还没有本地模板" : "没有找到本地模板")</strong>
+                        <p>@(string.IsNullOrWhiteSpace(localSearch) ? "创建自己的模板，或从市场下载一个开始。" : "换一个名称试试。")</p>
+                        @if (string.IsNullOrWhiteSpace(localSearch))
+                        {
+                            <button type="button" @onclick="CreateTemplateAsync">新建模板</button>
+                        }
+                    </div>
+                }
+            }
+        }
+        else if (activeTab == TemplateTab.Market)
+        {
+            var marketState = ActiveMarketState;
+            @if (!marketState.Initialized && marketState.IsLoading)
+            {
+                <div class="templates-grid" aria-label="正在加载市场模板">
+                    @foreach (var index in Enumerable.Range(0, 6))
+                    {
+                        <article class="template-card market-card is-skeleton" aria-hidden="true">
+                            <span class="template-preview"></span>
+                            <span class="template-meta"><i></i><i></i></span>
+                        </article>
+                    }
+                </div>
+            }
+            else if (marketState.Items.Count == 0)
+            {
+                <div class="templates-empty">
+                    <span><MIcon>@(marketState.ErrorMessage is null ? "mdi-image-search-outline" : "mdi-wifi-off")</MIcon></span>
+                    <strong>@MarketEmptyTitle(marketState)</strong>
+                    <p>@(marketState.ErrorMessage ?? MarketEmptyMessage(marketState))</p>
+                    @if (marketState.ErrorMessage is not null)
+                    {
+                        <button type="button" @onclick="RetryMarketAsync">重新加载</button>
+                    }
+                </div>
+            }
+            else
+            {
+                var featuredItem = FeaturedMarketItem(marketState);
+                var marketGridItems = MarketGridItems(marketState, featuredItem);
+                @if (featuredItem is not null)
+                {
+                    <button @key="@($"featured-{featuredItem.WatermarkId}")"
+                            class="market-featured"
+                            type="button"
+                            data-template-id="@featuredItem.WatermarkId"
+                            aria-label="查看本周精选模板 @(featuredItem.Name ?? featuredItem.Desc ?? "未命名模板")"
+                            @onclick="() => selectedCloud = featuredItem">
+                        <span class="market-featured-label"><MIcon>mdi-star</MIcon>@MarketFeatureLabel(marketState.Category)</span>
+                        <span class="market-featured-preview">
+                            <span class="market-featured-art">
+                                <img src="@featuredItem.Src"
+                                     alt="@(featuredItem.Name ?? featuredItem.Desc ?? "精选模板预览")"
+                                     loading="eager"
+                                     decoding="async"
+                                     fetchpriority="high" />
+                            </span>
                         </span>
-                        <span class="template-meta">
-                            <strong>@(item.Canvas?.Name ?? "未命名模板")</strong>
-                            <small>@(item.Canvas?.CanvasType.ToString() ?? "Normal")</small>
+                        <span class="market-featured-footer">
+                            <span>
+                                <strong>@(featuredItem.Name ?? featuredItem.Desc ?? "未命名模板")</strong>
+                                <span class="creator-line">
+                                    <small>@CreatorName(featuredItem)</small>
+                                    @if (IsVerifiedCreator(featuredItem))
+                                    {
+                                        <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="market-featured-action">查看</span>
                         </span>
                     </button>
                 }
-            </div>
-            @if (!FilterLocal().Any())
-            {
-                <div class="templates-empty">
-                    <span><MIcon>mdi-card-plus-outline</MIcon></span>
-                    <strong>还没有本地模板</strong>
-                    <p>创建自己的模板，或从市场下载一个开始。</p>
-                    <button type="button" @onclick="CreateTemplateAsync">新建模板</button>
+
+                @if (marketGridItems.Count > 0)
+                {
+                    <div class="market-section-heading">
+                        <h2>@MarketSectionTitle(marketState)</h2>
+                    </div>
+                }
+
+                <div class="templates-grid market-grid">
+                    @for (var index = 0; index < marketGridItems.Count; index++)
+                    {
+                        var item = marketGridItems[index];
+                        <button @key="item.WatermarkId"
+                                class="template-card market-card"
+                                type="button"
+                                data-template-id="@item.WatermarkId"
+                                aria-label="查看模板 @(item.Name ?? item.Desc ?? "未命名模板")"
+                                @onclick="() => selectedCloud = item">
+                            <span class="template-preview">
+                                <img src="@item.Src"
+                                     alt="@(item.Name ?? item.Desc ?? "市场模板预览")"
+                                     loading="@(index < 4 ? "eager" : "lazy")"
+                                     decoding="async"
+                                     fetchpriority="@(index < 4 ? "high" : "auto")" />
+                                @if (item.Recommend && marketState.Category != WMTemplateMarketCategory.Recommended)
+                                {
+                                    <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                                }
+                                @if (IsDownloaded(item.WatermarkId))
+                                {
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                                }
+                            </span>
+                            <span class="template-meta">
+                                <strong>@(item.Name ?? item.Desc ?? "未命名模板")</strong>
+                                <span class="template-meta-row">
+                                    <span class="creator-line">
+                                        <small>@CreatorName(item)</small>
+                                        @if (IsVerifiedCreator(item))
+                                        {
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                        }
+                                    </span>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                                </span>
+                            </span>
+                        </button>
+                    }
                 </div>
+                @if (marketState.HasMore)
+                {
+                    <MInfiniteScroll @ref="marketInfiniteScroll"
+                                     Parent="#wm-main-content"
+                                     Threshold="640"
+                                     OnLoad="HandleMarketLoadMoreAsync"
+                                     LoadingText="正在准备更多模板…"
+                                     LoadMoreText="继续浏览"
+                                     ErrorText="加载失败，点击重试"
+                                     EmptyText="已显示全部模板"
+                                     Class="market-infinite" />
+                }
             }
         }
         else
         {
-            var source = activeTab == TemplateTab.Market ? marketTemplates : favoriteTemplates;
-            <div class="templates-grid">
-                @foreach (var item in FilterCloud(source))
-                {
-                    <button class="template-card" type="button" @onclick="() => selectedCloud = item">
-                        <span class="template-preview">
-                            <img src="@item.Src" alt="" loading="lazy" />
-                            @if (item.Recommend)
-                            {
-                                <span class="template-badge">精选</span>
-                            }
-                        </span>
-                        <span class="template-meta">
-                            <strong>@(item.Name ?? item.Desc ?? "未命名模板")</strong>
-                            <small>@(string.IsNullOrWhiteSpace(item.UserDisplayName) ? "轻影创作者" : item.UserDisplayName)</small>
-                        </span>
-                    </button>
-                }
-            </div>
-            @if (!source.Any() && !loading)
+            @if (loading)
             {
-                <div class="templates-empty">
-                    <span><MIcon>@(activeTab == TemplateTab.Market ? "mdi-wifi-off" : "mdi-heart-outline")</MIcon></span>
-                    <strong>@(activeTab == TemplateTab.Market ? "暂时无法加载市场" : "还没有收藏")</strong>
-                    <p>@(errorMessage ?? "稍后再来看看新的模板。")</p>
-                    @if (activeTab == TemplateTab.Market)
+                <div class="templates-state"><MProgressCircular Indeterminate Color="primary" Size="30" /><span>正在加载收藏…</span></div>
+            }
+            else
+            {
+                <div class="templates-grid">
+                    @foreach (var item in FilterFavorites())
                     {
-                        <button type="button" @onclick="LoadMarketAsync">重新加载</button>
+                        <button class="template-card market-card" type="button" data-template-id="@item.WatermarkId" @onclick="() => selectedCloud = item">
+                            <span class="template-preview">
+                                <img src="@item.Src" alt="@(item.Name ?? item.Desc ?? "收藏模板预览")" loading="lazy" decoding="async" />
+                                @if (item.Recommend)
+                                {
+                                    <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                                }
+                                @if (IsDownloaded(item.WatermarkId))
+                                {
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                                }
+                            </span>
+                            <span class="template-meta">
+                                <strong>@(item.Name ?? item.Desc ?? "未命名模板")</strong>
+                                <span class="template-meta-row">
+                                    <span class="creator-line">
+                                        <small>@CreatorName(item)</small>
+                                        @if (IsVerifiedCreator(item))
+                                        {
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                        }
+                                    </span>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                                </span>
+                            </span>
+                        </button>
                     }
                 </div>
+                @if (!FilterFavorites().Any())
+                {
+                    <div class="templates-empty">
+                        <span><MIcon>mdi-heart-outline</MIcon></span>
+                        <strong>@(string.IsNullOrWhiteSpace(favoriteSearch) ? "还没有收藏" : "没有找到收藏模板")</strong>
+                        <p>@(errorMessage ?? (string.IsNullOrWhiteSpace(favoriteSearch) ? "在市场中收藏喜欢的模板，之后会显示在这里。" : "换一个名称试试。"))</p>
+                    </div>
+                }
             }
         }
     </div>
@@ -156,11 +321,21 @@
             <div class="sheet-handle"></div>
             <div class="sheet-preview"><img src="@selectedCloud.Src" alt="@(selectedCloud.Name ?? "模板预览")" /></div>
             <div class="sheet-title">
-                <div><strong>@(selectedCloud.Name ?? selectedCloud.Desc ?? "未命名模板")</strong><small>@selectedCloud.UserDisplayName</small></div>
+                <div>
+                    <strong>@(selectedCloud.Name ?? selectedCloud.Desc ?? "未命名模板")</strong>
+                    <small>@(string.IsNullOrWhiteSpace(selectedCloud.UserDisplayName) ? "轻影创作者" : selectedCloud.UserDisplayName) · @selectedCloud.DownloadTimes 次下载</small>
+                </div>
                 <button type="button" @onclick="CloseSheet" aria-label="关闭"><MIcon>mdi-close</MIcon></button>
             </div>
             <div class="sheet-actions cloud-actions">
-                <button class="is-primary" type="button" disabled="@busy" @onclick="() => DownloadCloudAsync(selectedCloud)"><MIcon>mdi-download-outline</MIcon>@(busy ? "下载中…" : "下载到本地")</button>
+                @if (IsDownloaded(selectedCloud.WatermarkId))
+                {
+                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => UseDownloadedAsync(selectedCloud)"><MIcon>mdi-image-plus-outline</MIcon>立即使用</button>
+                }
+                else
+                {
+                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => DownloadCloudAsync(selectedCloud)"><MIcon>mdi-download-outline</MIcon>@(busy ? "下载中…" : "下载到本地")</button>
+                }
                 <button type="button" disabled="@busy" @onclick="() => ToggleFavoriteAsync(selectedCloud)">
                     <MIcon>@(IsFavorite(selectedCloud.WatermarkId) ? "mdi-heart" : "mdi-heart-outline")</MIcon>
                     @(IsFavorite(selectedCloud.WatermarkId) ? "取消收藏" : "收藏")
@@ -178,26 +353,73 @@
     </div>
 }
 
+@if (!string.IsNullOrWhiteSpace(marketNotice))
+{
+    <div class="market-notice @(marketNoticeIsError ? "is-error" : null)" role="status" aria-live="polite">
+        <span><MIcon>@(marketNoticeIsError ? "mdi-alert-circle" : "mdi-check-circle")</MIcon>@marketNotice</span>
+        @if (noticeTemplate is not null)
+        {
+            <button type="button" @onclick="UseNoticeTemplateAsync">立即使用</button>
+        }
+    </div>
+}
+
 @code {
+    private const int MarketPageSize = 20;
+    private static readonly MarketCategoryOption[] MarketCategories =
+    [
+        new(WMTemplateMarketCategory.Recommended, "推荐"),
+        new(WMTemplateMarketCategory.Popular, "热门"),
+        new(WMTemplateMarketCategory.Latest, "最新"),
+        new(WMTemplateMarketCategory.Collage, "拼图")
+    ];
+
     [SupplyParameterFromQuery(Name = "tab")]
     public string? InitialTab { get; set; }
 
     private readonly List<WMTemplateList> localTemplates = [];
-    private readonly List<WMZipedTemplate> marketTemplates = [];
     private readonly List<WMZipedTemplate> favoriteTemplates = [];
     private TemplateTab activeTab;
-    private string search = string.Empty;
+    private string localSearch = string.Empty;
+    private string favoriteSearch = string.Empty;
     private bool loading = true;
+    private bool localLoaded;
     private bool busy;
-    private bool marketLoaded;
     private bool favoritesLoaded;
     private bool bypassNavigationGuard;
+    private bool restoreMarketScrollPending;
+    private bool resetInfinitePending;
+    private bool disposed;
     private readonly string visibilityScope = $"mobile-template-library-{Guid.NewGuid():N}";
     private DotNetObjectReference<MobileTemplates>? visibilityReference;
+    private IJSObjectReference? marketScrollModule;
+    private MInfiniteScroll? marketInfiniteScroll;
+    private WMTemplateMarketFeedState? activeMarketState;
+    private string? featuredMarketItemId;
+    private CancellationTokenSource? marketContextCancellation;
+    private CancellationTokenSource? searchDebounceCancellation;
+    private CancellationTokenSource? noticeCancellation;
     private string? errorMessage;
+    private string? marketNotice;
+    private bool marketNoticeIsError;
     private WMTemplateList? selectedLocal;
     private WMZipedTemplate? selectedCloud;
+    private WMZipedTemplate? noticeTemplate;
     private string? deletedUndoToken;
+
+    private WMTemplateMarketFeedState ActiveMarketState =>
+        activeMarketState ??= MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
+
+    private string SearchText => activeTab switch
+    {
+        TemplateTab.Market => MarketFeedStore.Search,
+        TemplateTab.Favorites => favoriteSearch,
+        _ => localSearch
+    };
+
+    private string SearchPlaceholder => activeTab == TemplateTab.Market
+        ? "搜索模板"
+        : "搜索模板名称";
 
     protected override async Task OnInitializedAsync()
     {
@@ -208,14 +430,29 @@
             "favorites" => TemplateTab.Favorites,
             _ => TemplateTab.Local
         };
-        await RefreshLocalAsync();
-        if (activeTab == TemplateTab.Market) await LoadMarketAsync();
-        if (activeTab == TemplateTab.Favorites) await LoadFavoritesAsync();
+
+        if (activeTab == TemplateTab.Market)
+            await ActivateMarketFeedAsync(restoreScroll: true);
+        else if (activeTab == TemplateTab.Favorites)
+            await LoadFavoritesAsync();
+        else
+            await RefreshLocalAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         visibilityReference ??= DotNetObjectReference.Create(this);
+        if (firstRender)
+        {
+            try
+            {
+                marketScrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/Watermark.Razor/js/wm-template-market.js");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
         try
         {
             await JSRuntime.InvokeVoidAsync(
@@ -224,59 +461,159 @@
                 ".template-card[data-template-id]",
                 visibilityReference);
         }
+        catch (JSDisconnectedException) { }
         catch (JSException) { }
+
+        if (activeTab == TemplateTab.Market && restoreMarketScrollPending && marketScrollModule is not null)
+        {
+            restoreMarketScrollPending = false;
+            try { await marketScrollModule.InvokeVoidAsync("setScrollTop", "#wm-main-content", ActiveMarketState.ScrollTop); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        if (activeTab != TemplateTab.Market || !ActiveMarketState.HasMore)
+        {
+            resetInfinitePending = false;
+        }
+        else if (resetInfinitePending && marketInfiniteScroll is not null)
+        {
+            resetInfinitePending = false;
+            try { await marketInfiniteScroll.ResetAsync(); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+            catch (ObjectDisposedException) { }
+        }
     }
 
     [JSInvokable]
     public Task EnsureVisibleTemplatePreviewAsync(string templateId) =>
         TemplateLibrary.EnsurePreviewAsync(templateId);
 
-    private async Task RefreshLocalAsync()
+    private async Task RefreshLocalAsync(bool showLoading = true)
     {
-        loading = true;
+        if (showLoading) loading = true;
         try
         {
             var templates = await TemplateLibrary.GetOrRefreshAsync();
             localTemplates.Clear();
             localTemplates.AddRange(templates);
+            localLoaded = true;
         }
         finally
         {
-            loading = false;
+            if (showLoading) loading = false;
         }
     }
 
     private async Task SelectTabAsync(TemplateTab tab)
     {
+        if (activeTab == tab) return;
+        if (activeTab == TemplateTab.Market) await SaveMarketScrollAsync();
         activeTab = tab;
         selectedLocal = null;
         selectedCloud = null;
+        errorMessage = null;
         NavigationHistory.NavigateTo(TemplateTabPath(tab), replace: true);
-        if (tab == TemplateTab.Market && !marketLoaded) await LoadMarketAsync();
-        if (tab == TemplateTab.Favorites && !favoritesLoaded) await LoadFavoritesAsync();
+
+        if (tab == TemplateTab.Market)
+            await ActivateMarketFeedAsync(restoreScroll: true);
+        else
+        {
+            CancelMarketContext();
+            if (tab == TemplateTab.Local && !localLoaded) await RefreshLocalAsync();
+            if (tab == TemplateTab.Favorites && !favoritesLoaded) await LoadFavoritesAsync();
+        }
     }
 
-    private async Task LoadMarketAsync()
+    private async Task SelectMarketCategoryAsync(WMTemplateMarketCategory category)
     {
-        loading = true;
-        errorMessage = null;
+        if (MarketFeedStore.SelectedCategory == category) return;
+        await SaveMarketScrollAsync();
+        MarketFeedStore.SelectedCategory = category;
+        await ActivateMarketFeedAsync(restoreScroll: true);
+    }
+
+    private async Task ActivateMarketFeedAsync(bool forceRefresh = false, bool restoreScroll = false)
+    {
+        CancelMarketContext();
+        marketContextCancellation = new CancellationTokenSource();
+        var state = MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
+        activeMarketState = state;
+        if (forceRefresh) state.Reset();
+        if (!state.Initialized)
+            await LoadMarketPageAsync(state, reset: true, marketContextCancellation.Token);
+        SelectFeaturedMarketItem(state);
+        restoreMarketScrollPending = restoreScroll && state.ScrollTop > 0;
+        resetInfinitePending = state.HasMore;
+    }
+
+    private async Task<MarketLoadOutcome> LoadMarketPageAsync(
+        WMTemplateMarketFeedState state,
+        bool reset,
+        CancellationToken cancellationToken)
+    {
+        if (state.IsLoading) return MarketLoadOutcome.Loading;
+        if (!reset && !state.HasMore) return MarketLoadOutcome.End;
+        if (reset) state.Reset();
+        var loadVersion = state.BeginLoad();
+        state.ErrorMessage = null;
         try
         {
-            var result = await Marketplace.SearchAsync(search, 1, 120);
-            marketTemplates.Clear();
-            marketTemplates.AddRange(result.Items);
-            marketLoaded = result.IsSuccess;
-            errorMessage = result.Message;
+            var result = await Marketplace.SearchAsync(
+                new WMTemplateMarketplaceQuery(
+                    state.Category,
+                    state.Keyword,
+                    state.NextStart,
+                    MarketPageSize),
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!state.IsCurrentLoad(loadVersion)) return MarketLoadOutcome.Cancelled;
+            if (!result.IsSuccess)
+            {
+                state.Initialized = true;
+                state.ErrorMessage = result.Message ?? "市场加载失败，请稍后重试。";
+                return MarketLoadOutcome.Error;
+            }
+
+            state.AppendUnique(result.Items);
+            state.NextStart = result.NextStart;
+            state.HasMore = result.HasMore;
+            state.Initialized = true;
+            state.LastLoadedAtUtc = DateTimeOffset.UtcNow;
+            state.LastAccessedAtUtc = state.LastLoadedAtUtc;
+            return state.HasMore ? MarketLoadOutcome.Ok : MarketLoadOutcome.End;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return MarketLoadOutcome.Cancelled;
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            state.Initialized = true;
+            state.ErrorMessage = ex.Message;
+            return MarketLoadOutcome.Error;
         }
         finally
         {
-            loading = false;
+            state.CompleteLoad(loadVersion);
         }
     }
+
+    private async Task HandleMarketLoadMoreAsync(InfiniteScrollLoadEventArgs args)
+    {
+        var cancellationToken = marketContextCancellation?.Token ?? CancellationToken.None;
+        var outcome = await LoadMarketPageAsync(ActiveMarketState, reset: false, cancellationToken);
+        args.Status = outcome switch
+        {
+            MarketLoadOutcome.Error => InfiniteScrollLoadStatus.Error,
+            MarketLoadOutcome.End => InfiniteScrollLoadStatus.Empty,
+            MarketLoadOutcome.Cancelled => InfiniteScrollLoadStatus.Empty,
+            _ => InfiniteScrollLoadStatus.Ok
+        };
+    }
+
+    private Task RetryMarketAsync() => ActivateMarketFeedAsync(forceRefresh: true);
 
     private async Task LoadFavoritesAsync()
     {
@@ -301,15 +638,135 @@
     }
 
     private IEnumerable<WMTemplateList> FilterLocal() => localTemplates.Where(item =>
-        string.IsNullOrWhiteSpace(search)
-        || (item.Canvas?.Name ?? string.Empty).Contains(search, StringComparison.OrdinalIgnoreCase));
+        string.IsNullOrWhiteSpace(localSearch)
+        || (item.Canvas?.Name ?? string.Empty).Contains(localSearch, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<WMZipedTemplate> FilterCloud(IEnumerable<WMZipedTemplate> source) => source.Where(item =>
-        string.IsNullOrWhiteSpace(search)
-        || (item.Name ?? item.Desc ?? string.Empty).Contains(search, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<WMZipedTemplate> FilterFavorites() => favoriteTemplates.Where(item =>
+        string.IsNullOrWhiteSpace(favoriteSearch)
+        || (item.Name ?? item.Desc ?? string.Empty).Contains(favoriteSearch, StringComparison.OrdinalIgnoreCase));
 
-    private void OnSearch(ChangeEventArgs args) => search = args.Value?.ToString() ?? string.Empty;
-    private void ClearSearch() => search = string.Empty;
+    private async Task OnSearchAsync(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString() ?? string.Empty;
+        if (activeTab == TemplateTab.Local)
+        {
+            localSearch = value;
+            return;
+        }
+        if (activeTab == TemplateTab.Favorites)
+        {
+            favoriteSearch = value;
+            return;
+        }
+
+        MarketFeedStore.Search = value;
+        searchDebounceCancellation?.Cancel();
+        searchDebounceCancellation?.Dispose();
+        searchDebounceCancellation = new CancellationTokenSource();
+        CancelMarketContext();
+        var token = searchDebounceCancellation.Token;
+        try
+        {
+            await Task.Delay(220, token);
+            await ActivateMarketFeedAsync();
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        if (activeTab == TemplateTab.Local)
+        {
+            localSearch = string.Empty;
+            return;
+        }
+        if (activeTab == TemplateTab.Favorites)
+        {
+            favoriteSearch = string.Empty;
+            return;
+        }
+
+        MarketFeedStore.Search = string.Empty;
+        searchDebounceCancellation?.Cancel();
+        await ActivateMarketFeedAsync();
+    }
+
+    private async Task SaveMarketScrollAsync()
+    {
+        if (marketScrollModule is null || activeMarketState is null) return;
+        try
+        {
+            activeMarketState.ScrollTop = await marketScrollModule.InvokeAsync<double>(
+                "getScrollTop", "#wm-main-content");
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    private static string MarketEmptyTitle(WMTemplateMarketFeedState state) =>
+        state.ErrorMessage is not null
+            ? "暂时无法加载市场"
+            : string.IsNullOrWhiteSpace(state.Keyword)
+                ? "这个分类还没有模板"
+                : "没有找到相关模板";
+
+    private static string MarketEmptyMessage(WMTemplateMarketFeedState state) =>
+        string.IsNullOrWhiteSpace(state.Keyword)
+            ? "稍后再来看看新的模板。"
+            : "换一个关键词，或切换分类试试。";
+
+    private void SelectFeaturedMarketItem(WMTemplateMarketFeedState state) =>
+        featuredMarketItemId = WMTemplateMarketFeatureSelector.Pick(state.Items, state.Keyword)?.WatermarkId;
+
+    private WMZipedTemplate? FeaturedMarketItem(WMTemplateMarketFeedState state) =>
+        string.IsNullOrWhiteSpace(state.Keyword)
+            ? state.Items.FirstOrDefault(item => string.Equals(
+                item.WatermarkId,
+                featuredMarketItemId,
+                StringComparison.OrdinalIgnoreCase))
+            : null;
+
+    private static List<WMZipedTemplate> MarketGridItems(
+        WMTemplateMarketFeedState state,
+        WMZipedTemplate? featuredItem) =>
+        WMTemplateMarketFeatureSelector.WithoutFeatured(state.Items, featuredItem);
+
+    private static string MarketFeatureLabel(WMTemplateMarketCategory category) => category switch
+    {
+        WMTemplateMarketCategory.Popular => "人气精选",
+        WMTemplateMarketCategory.Latest => "新作推荐",
+        WMTemplateMarketCategory.Collage => "拼图精选",
+        _ => "本周精选"
+    };
+
+    private static string MarketSectionTitle(WMTemplateMarketFeedState state)
+    {
+        if (!string.IsNullOrWhiteSpace(state.Keyword)) return "搜索结果";
+        return state.Category switch
+        {
+            WMTemplateMarketCategory.Popular => "热门作品",
+            WMTemplateMarketCategory.Latest => "最新上架",
+            WMTemplateMarketCategory.Collage => "更多拼图",
+            _ => "更多灵感"
+        };
+    }
+
+    private static string CreatorName(WMZipedTemplate item) =>
+        string.IsNullOrWhiteSpace(item.UserDisplayName) ? "轻影创作者" : item.UserDisplayName;
+
+    private static string LocalTemplateType(WMTemplateList item) =>
+        item.Canvas?.CanvasType == CanvasType.Split ? "拼图" : "单图";
+
+    private static bool IsVerifiedCreator(WMZipedTemplate item) =>
+        string.Equals(CreatorName(item), "DFM Official", StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatDownloads(int value) => value switch
+    {
+        >= 10000 => $"{value / 10000d:0.#}万",
+        >= 1000 => $"{value / 1000d:0.#}k",
+        _ => value.ToString()
+    };
+
     private void CloseSheet() { selectedLocal = null; selectedCloud = null; }
 
     private void HandleInternalNavigation(LocationChangingContext context)
@@ -337,6 +794,28 @@
         {
             busy = false;
         }
+    }
+
+    private async Task UseDownloadedAsync(WMZipedTemplate template)
+    {
+        if (!localLoaded) await RefreshLocalAsync(showLoading: false);
+        var local = localTemplates.FirstOrDefault(item =>
+            string.Equals(item.ID, template.WatermarkId, StringComparison.OrdinalIgnoreCase));
+        if (local is null)
+        {
+            errorMessage = "本地模板尚未准备好，请重新下载。";
+            return;
+        }
+        selectedCloud = null;
+        await UseLocalAsync(local);
+    }
+
+    private Task UseNoticeTemplateAsync()
+    {
+        var template = noticeTemplate;
+        marketNotice = null;
+        noticeTemplate = null;
+        return template is null ? Task.CompletedTask : UseDownloadedAsync(template);
     }
 
     private async Task EditLocalAsync(WMTemplateList template)
@@ -431,20 +910,25 @@
             if (!result.IsSuccess)
                 throw new InvalidOperationException(result.Message ?? "模板下载失败，请检查网络后重试。");
             TemplateLibrary.Invalidate(template.WatermarkId);
-            await RefreshLocalAsync();
+            await RefreshLocalAsync(showLoading: false);
+            MarketFeedStore.MarkDownloaded(template.WatermarkId);
             selectedCloud = null;
-            activeTab = TemplateTab.Local;
-            NavigationHistory.NavigateTo(TemplateTabPath(TemplateTab.Local), replace: true);
+            ShowMarketNotice(template);
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            ShowMarketNotice(ex.Message, isError: true);
         }
         finally
         {
             busy = false;
         }
     }
+
+    private bool IsDownloaded(string templateId) =>
+        MarketFeedStore.IsDownloaded(templateId)
+        || localTemplates.Any(item => string.Equals(item.ID, templateId, StringComparison.OrdinalIgnoreCase))
+        || TemplateLibrary.Templates.Any(item => string.Equals(item.ID, templateId, StringComparison.OrdinalIgnoreCase));
 
     private bool IsFavorite(string templateId) =>
         favoriteTemplates.Any(item => item.WatermarkId == templateId);
@@ -459,7 +943,10 @@
             var result = await Marketplace.SetFavoriteAsync(template, existing is null);
             if (result.Status == WMTemplateMarketplaceStatus.LoginRequired)
             {
-                errorMessage = result.Message;
+                if (activeTab == TemplateTab.Market)
+                    ShowMarketNotice(result.Message ?? "登录后可收藏市场模板。", isError: true);
+                else
+                    errorMessage = result.Message;
                 return;
             }
             if (!result.IsSuccess)
@@ -471,7 +958,10 @@
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            if (activeTab == TemplateTab.Market)
+                ShowMarketNotice(ex.Message, isError: true);
+            else
+                errorMessage = ex.Message;
         }
         finally
         {
@@ -479,20 +969,82 @@
         }
     }
 
+    private void ShowMarketNotice(WMZipedTemplate template)
+    {
+        ShowMarketNotice("已添加到我的模板", template);
+    }
+
+    private void ShowMarketNotice(
+        string message,
+        WMZipedTemplate? template = null,
+        bool isError = false)
+    {
+        noticeCancellation?.Cancel();
+        noticeCancellation?.Dispose();
+        noticeCancellation = new CancellationTokenSource();
+        noticeTemplate = template;
+        marketNotice = message;
+        marketNoticeIsError = isError;
+        _ = DismissMarketNoticeAsync(noticeCancellation.Token);
+    }
+
+    private async Task DismissMarketNoticeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(6), cancellationToken);
+            await InvokeAsync(() =>
+            {
+                marketNotice = null;
+                noticeTemplate = null;
+                marketNoticeIsError = false;
+                StateHasChanged();
+            });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
     private void OnLibraryChanged() => _ = InvokeAsync(() =>
     {
         localTemplates.Clear();
         localTemplates.AddRange(TemplateLibrary.Templates);
+        localLoaded = true;
         StateHasChanged();
     });
 
+    private void CancelMarketContext()
+    {
+        marketContextCancellation?.Cancel();
+        marketContextCancellation?.Dispose();
+        marketContextCancellation = null;
+        activeMarketState?.InvalidatePendingLoad();
+    }
+
     public async ValueTask DisposeAsync()
     {
+        if (disposed) return;
+        disposed = true;
         TemplateLibrary.Changed -= OnLibraryChanged;
+        await SaveMarketScrollAsync();
+        CancelMarketContext();
+        searchDebounceCancellation?.Cancel();
+        searchDebounceCancellation?.Dispose();
+        noticeCancellation?.Cancel();
+        noticeCancellation?.Dispose();
         try { await JSRuntime.InvokeVoidAsync("watermarkTemplateVisibility.disconnect", visibilityScope); }
+        catch (JSDisconnectedException) { }
         catch (JSException) { }
         visibilityReference?.Dispose();
+        if (marketScrollModule is not null)
+        {
+            try { await marketScrollModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
     }
 
     private enum TemplateTab { Local, Market, Favorites }
+    private enum MarketLoadOutcome { Ok, End, Error, Loading, Cancelled }
+    private readonly record struct MarketCategoryOption(
+        WMTemplateMarketCategory Category,
+        string Label);
 }

@@ -42,7 +42,7 @@
     --workspace-safe-top: min(env(safe-area-inset-top, 0px), 59px);
     --workspace-safe-bottom: min(env(safe-area-inset-bottom, 0px), 34px);
     --toolbar-height: calc(44px + var(--workspace-safe-top));
-    --panel-height: calc(clamp(248px, 32vh, 340px) + var(--workspace-safe-bottom));
+    --panel-height: calc(min(340px, 44vh) + var(--workspace-safe-bottom));
     background: #10151e;
     color: white;
     display: grid;
@@ -56,8 +56,9 @@
     top: 0;
 }
 
-.workspace-shell.panel-collapsed { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
-.workspace-shell.panel-expanded { --panel-height: min(72vh, calc(100vh - var(--toolbar-height) - 28px)); }
+.workspace-shell.mobile-space-small { --panel-height: calc(min(232px, 30vh) + var(--workspace-safe-bottom)); }
+.workspace-shell.mobile-space-medium { --panel-height: calc(min(340px, 44vh) + var(--workspace-safe-bottom)); }
+.workspace-shell.mobile-space-large { --panel-height: calc(min(480px, 62vh) + var(--workspace-safe-bottom)); }
 
 .workspace-toolbar {
     align-items: center;
@@ -108,6 +109,7 @@
 }
 
 .workspace-icon-button,
+.workspace-cancel-button,
 .workspace-apply-button,
 .workspace-export-button {
     align-items: center;
@@ -125,6 +127,13 @@
 .workspace-icon-button:active { background: #e9edf3; }
 .workspace-icon-button:disabled { color: #aab2be; opacity: .52; }
 .workspace-close-button { background: #f3f5f8; }
+.workspace-cancel-button {
+    color: #b88900;
+    font-size: .65rem;
+    font-weight: 750;
+    padding: 0 5px;
+}
+.workspace-cancel-button:disabled { color: #b9b9b9; }
 .workspace-apply-button {
     background: #ffc200;
     color: #252525;
@@ -150,20 +159,21 @@
 }
 .workspace-export-button ::deep .m-icon { font-size: 16px; }
 .workspace-export-button:active { background: #0f4fae; }
+.workspace-export-button:disabled { background: #dfe8f5; box-shadow: none; color: #9bb9df; }
 .workspace-original-button { background: #f3f5f8; }
 .workspace-original-button.is-active { background: #e5edfb; color: #155fcf; }
 
-.workspace-title { min-width: 0; padding: 0 10px; }
+.workspace-title { max-width: min(30vw, 128px); min-width: 0; padding: 0 8px; }
 .workspace-title strong,
 .workspace-title small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.workspace-title { display: none; }
+.workspace-title { display: block; }
 .workspace-title strong { color: #172033; font-size: .76rem; }
 .workspace-title small { color: #8290a3; font-size: .6rem; margin-top: 2px; }
 
 .workspace-stage-wrap {
     min-height: 0;
     overflow: hidden;
-    padding-bottom: calc(var(--panel-height) - 10px);
+    padding-bottom: var(--panel-height);
     position: relative;
     transition: padding-bottom .24s ease;
 }
@@ -323,13 +333,6 @@
     right: 0;
     transition: height .24s ease;
     z-index: 20;
-}
-
-.workspace-shell.is-panel-dragging .workspace-mobile-dock,
-.workspace-shell.is-panel-dragging .workspace-stage-wrap,
-.workspace-shell.is-panel-dragging .workspace-media-strip,
-.workspace-shell.is-panel-dragging .workspace-toast {
-    transition: none;
 }
 
 .workspace-drawer-backdrop {
@@ -888,6 +891,8 @@
     .workspace-toolbar { gap: 3px; padding-left: 4px; padding-right: 4px; }
     .workspace-toolbar-actions { gap: 2px; }
     .workspace-history-actions .workspace-icon-button { min-width: 29px; width: 29px; }
+    .workspace-title { display: none; }
+    .workspace-cancel-button { min-width: 30px; padding: 0 3px; }
     .workspace-apply-button { min-width: 32px; padding: 0 7px; }
     .workspace-apply-button span { display: none; }
     .workspace-export-button { min-width: 50px; padding: 0 7px; }
@@ -907,16 +912,19 @@
 }
 
 @media (orientation: landscape) and (max-height: 560px) and (max-width: 1023px) {
-    .workspace-shell.panel-half { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
-    .workspace-shell.panel-expanded { --panel-height: min(52vh, calc(100vh - var(--toolbar-height))); }
+    .workspace-shell.mobile-space-small { --panel-height: calc(196px + var(--workspace-safe-bottom)); }
+    .workspace-shell.mobile-space-medium { --panel-height: calc(264px + var(--workspace-safe-bottom)); }
+    .workspace-shell.mobile-space-large { --panel-height: calc(100vh - var(--toolbar-height) - 12px); }
+    .workspace-title { max-width: 180px; }
 }
 
 @supports (height: 100dvh) {
     .workspace-loading,
     .workspace-fatal { height: 100dvh; }
-    .workspace-shell { --panel-height: calc(clamp(248px, 32dvh, 340px) + var(--workspace-safe-bottom)); }
-    .workspace-shell.panel-collapsed { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
-    .workspace-shell.panel-expanded { --panel-height: min(72dvh, calc(100dvh - var(--toolbar-height) - 28px)); }
+    .workspace-shell { --panel-height: calc(min(340px, 44dvh) + var(--workspace-safe-bottom)); }
+    .workspace-shell.mobile-space-small { --panel-height: calc(min(232px, 30dvh) + var(--workspace-safe-bottom)); }
+    .workspace-shell.mobile-space-medium { --panel-height: calc(min(340px, 44dvh) + var(--workspace-safe-bottom)); }
+    .workspace-shell.mobile-space-large { --panel-height: calc(min(480px, 62dvh) + var(--workspace-safe-bottom)); }
     .workspace-export-drawer { max-height: 72dvh; }
 
     @media (min-width: 720px) and (min-height: 561px), (min-width: 1024px) {
@@ -925,7 +933,8 @@
     }
 
     @media (orientation: landscape) and (max-height: 560px) and (max-width: 1023px) {
-        .workspace-shell.panel-half { --panel-height: calc(52px + var(--workspace-safe-bottom)); }
-        .workspace-shell.panel-expanded { --panel-height: min(52dvh, calc(100dvh - var(--toolbar-height))); }
+        .workspace-shell.mobile-space-small { --panel-height: calc(196px + var(--workspace-safe-bottom)); }
+        .workspace-shell.mobile-space-medium { --panel-height: calc(264px + var(--workspace-safe-bottom)); }
+        .workspace-shell.mobile-space-large { --panel-height: calc(100dvh - var(--toolbar-height) - 12px); }
     }
 }

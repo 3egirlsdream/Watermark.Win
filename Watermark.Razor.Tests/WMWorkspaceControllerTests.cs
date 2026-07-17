@@ -538,6 +538,91 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task PreviewTemplateWithoutCanvasJson_ResolvesSnapshotBeforeRendering()
+    {
+        const string templateId = "preview-template-without-snapshot";
+        CreateTemplate(templateId);
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var store = new RecordingSessionStore(Session("template-preview-fallback", "media-preview-fallback"));
+        var controller = new WMWorkspaceController(
+            store,
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync("template-preview-fallback"));
+
+        await controller.PreviewTemplateAsync(
+            new WMWorkspaceTemplateEdit(templateId, null),
+            WMApplyScope.Current);
+
+        Assert.Equal(templateId, controller.State.TemplateId);
+        Assert.Equal(templateId, controller.State.TemplateEdit?.TemplateId);
+        Assert.False(string.IsNullOrWhiteSpace(controller.State.TemplateEdit?.CanvasJson));
+        Assert.Equal(templateId, Global.ReadConfig(controller.State.TemplateEdit!.CanvasJson!).ID);
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Null(controller.State.ErrorMessage);
+        Assert.Null(store.Saved);
+    }
+
+    [Fact]
+    public async Task PreviewTemplate_OverridesExplicitNoTemplateProjectionInRenderPlan()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = Session("template-preview-projection", "media-preview-projection");
+        var committedOperation = WMImageOperation.Create(
+            WMImageOperationKind.Template,
+            [initial.Media[0].Artifact.Id],
+            ["no-template-output"],
+            new WMWorkspaceTemplateSelection(null, null));
+        var committedTransaction = new WMWorkspaceTransaction
+        {
+            Id = "committed-template-transaction",
+            Label = "应用模板",
+            Assignments =
+            [
+                new WMWorkspaceOperationAssignment(
+                    [initial.Media[0].Id],
+                    [committedOperation])
+            ],
+            CreatedAtUtc = DateTime.UnixEpoch
+        };
+        initial = initial with
+        {
+            Transactions = [committedTransaction],
+            HistoryCursor = 1,
+            Operations = [committedOperation],
+            TemplateIdsByMediaId = new Dictionary<string, string?>
+            {
+                [initial.Media[0].Id] = null
+            }
+        };
+        var compiler = new RecordingRenderPlanCompiler();
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(initial),
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!,
+            renderPlanCompiler: compiler);
+        Assert.True(await controller.OpenAsync(initial.Id));
+        var previewCanvas = new WMCanvas { ID = "preview-template", Name = "preview-template" };
+
+        await controller.PreviewTemplateAsync(
+            new WMWorkspaceTemplateEdit(previewCanvas.ID, Global.CanvasSerialize(previewCanvas)),
+            WMApplyScope.Current);
+
+        var templateStep = Assert.Single(
+            compiler.Plans[^1].Steps,
+            step => step.Operation.Kind == WMImageOperationKind.Template);
+        using var parameters = System.Text.Json.JsonDocument.Parse(templateStep.Operation.ParametersJson);
+        var canvasJson = parameters.RootElement.GetProperty(nameof(WMTemplateOperationSettings.CanvasJson)).GetString();
+        Assert.Equal(previewCanvas.ID, Global.ReadConfig(canvasJson!).ID);
+    }
+
+    [Fact]
     public async Task DiscardTransientTemplate_RestoresCommittedProjection()
     {
         CreateTemplate("committed-template");
@@ -783,6 +868,133 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         Assert.Equal(50, compiler.Count);
         Assert.Equal("program-49", controller.State.PreviewPresentation.ColorProgram?.ProgramFingerprint);
         Assert.False(controller.State.PreviewPresentation.IsSettled);
+    }
+
+    [Fact]
+    public async Task MultiFrameAndCollageDrafts_CancelRestoreCommittedConfigurationWithoutRendering()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = SessionWithTwoMedia("configuration-cancel") with
+        {
+            Mode = WMWorkspaceMode.MultiFrame,
+            MultiFrameConfiguration = new WMMultiFrameDraft(
+                WMStackMode.StarTrail,
+                new Dictionary<string, WMFrameRole?>
+                {
+                    ["media-1"] = WMFrameRole.Light,
+                    ["media-2"] = WMFrameRole.Dark
+                },
+                NormalizeExposure: true,
+                RepairHotPixels: true,
+                AutoCrop: false),
+            CollageConfiguration = new WMCollageDraft(
+                ["media-2", "media-1"],
+                WMCollageDirection.Vertical)
+        };
+        var store = new RecordingSessionStore(initial);
+        var coordinator = new StrictlyIncreasingRenderCoordinator(previewPath);
+        var controller = new WMWorkspaceController(
+            store,
+            coordinator,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync(initial.Id));
+        var renderCount = coordinator.RequestedVersions.Count;
+
+        await controller.UpdateMultiFrameDraftAsync(
+            controller.State.MultiFrameTool.Draft with { NormalizeExposure = false });
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Equal(WMWorkspaceMode.MultiFrame, controller.State.TransientEditMode);
+        Assert.False(controller.State.MultiFrameTool.Draft.NormalizeExposure);
+
+        await controller.DiscardTransientEditsAsync();
+
+        Assert.True(controller.State.MultiFrameTool.Draft.NormalizeExposure);
+        Assert.False(controller.State.HasTransientEdits);
+        Assert.Null(controller.State.TransientEditMode);
+        Assert.Equal(renderCount, coordinator.RequestedVersions.Count);
+        Assert.Null(store.Saved);
+
+        await controller.SetModeAsync(WMWorkspaceMode.Collage);
+        await controller.UpdateCollageDraftAsync(
+            new WMCollageDraft(["media-1"], WMCollageDirection.Horizontal));
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Equal(WMWorkspaceMode.Collage, controller.State.TransientEditMode);
+
+        await controller.DiscardTransientEditsAsync();
+
+        Assert.Equal(["media-2", "media-1"], controller.State.CollageTool.Draft.OrderedMediaIds);
+        Assert.Equal(WMCollageDirection.Vertical, controller.State.CollageTool.Draft.Direction);
+        Assert.False(controller.State.HasTransientEdits);
+        Assert.Equal(renderCount, coordinator.RequestedVersions.Count);
+    }
+
+    [Fact]
+    public async Task ApplyingMultiFrameAndCollageDrafts_PersistsConfigurationWithoutHistoryOrRendering()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = SessionWithTwoMedia("configuration-apply") with
+        {
+            Mode = WMWorkspaceMode.MultiFrame
+        };
+        var store = new MultiSessionStore(initial);
+        var coordinator = new StrictlyIncreasingRenderCoordinator(previewPath);
+        var controller = new WMWorkspaceController(
+            store,
+            coordinator,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync(initial.Id));
+        var renderCount = coordinator.RequestedVersions.Count;
+
+        var multiFrameDraft = new WMMultiFrameDraft(
+            WMStackMode.StaticSky,
+            new Dictionary<string, WMFrameRole?>
+            {
+                ["media-1"] = WMFrameRole.Light,
+                ["media-2"] = WMFrameRole.Light
+            },
+            NormalizeExposure: false,
+            RepairHotPixels: false,
+            AutoCrop: true);
+        await controller.UpdateMultiFrameDraftAsync(multiFrameDraft);
+        await controller.CommitMultiFrameDraftAsync();
+        await controller.SetModeAsync(WMWorkspaceMode.Collage);
+        var collageDraft = new WMCollageDraft(
+            ["media-2", "media-1"],
+            WMCollageDirection.Vertical);
+        await controller.UpdateCollageDraftAsync(collageDraft);
+        await controller.CommitCollageDraftAsync();
+
+        Assert.False(controller.State.HasTransientEdits);
+        Assert.Null(controller.State.TransientEditMode);
+        Assert.False(controller.State.CanUndo);
+        Assert.Empty(controller.State.History);
+        Assert.Equal(renderCount, coordinator.RequestedVersions.Count);
+        await controller.CloseAsync();
+
+        var persisted = (await store.OpenAsync(initial.Id)).Session!;
+        var reopened = new WMWorkspaceController(
+            new RecordingSessionStore(persisted),
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await reopened.OpenAsync(initial.Id));
+
+        Assert.Equal(WMStackMode.StaticSky, reopened.State.MultiFrameTool.Draft.Mode);
+        Assert.False(reopened.State.MultiFrameTool.Draft.NormalizeExposure);
+        Assert.True(reopened.State.MultiFrameTool.Draft.AutoCrop);
+        Assert.Equal(["media-2", "media-1"], reopened.State.CollageTool.Draft.OrderedMediaIds);
+        Assert.Equal(WMCollageDirection.Vertical, reopened.State.CollageTool.Draft.Direction);
+        Assert.False(reopened.State.CanUndo);
+        Assert.Empty(reopened.State.History);
+        await reopened.CloseAsync();
     }
 
     private static WMWorkspaceController CreateController(RecordingSessionStore store)
@@ -1033,6 +1245,24 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             CancellationToken token = default) => ticket.Completion.WaitAsync(token);
 
         public void CancelPreview() { }
+    }
+
+    private sealed class RecordingRenderPlanCompiler : IWMRenderPlanCompiler
+    {
+        private readonly WMRenderPlanCompiler inner = new();
+
+        public List<WMCompiledRenderPlan> Plans { get; } = [];
+
+        public async Task<WMCompiledRenderPlan> CompileAsync(
+            WMWorkspaceSession session,
+            string mediaId,
+            WMRenderTarget target,
+            CancellationToken token)
+        {
+            var plan = await inner.CompileAsync(session, mediaId, target, token);
+            Plans.Add(plan);
+            return plan;
+        }
     }
 
     private sealed class NoopRenderCoordinator : IWMWorkspaceRenderCoordinator

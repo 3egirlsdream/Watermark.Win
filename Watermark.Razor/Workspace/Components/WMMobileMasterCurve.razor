@@ -1,0 +1,214 @@
+@using System.Globalization
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+<section class="wm-mobile-master-curve" aria-label="主曲线编辑器">
+    <header>
+        <div><strong>主曲线</strong><small>拖动节点调整明暗关系</small></div>
+        <button type="button" @onclick="ResetPresetAsync" aria-label="重置当前曲线预设"><MIcon>mdi-restore</MIcon></button>
+    </header>
+
+    <div class="wm-curve-presets" role="group" aria-label="曲线预设">
+        <button type="button" class="@(IsPreset("linear") ? "is-active" : null)" @onclick='() => SelectPresetAsync("linear")'>线性</button>
+        <button type="button" class="@(IsPreset("contrast") ? "is-active" : null)" @onclick='() => SelectPresetAsync("contrast")'>增强</button>
+        <button type="button" class="@(IsPreset("soft") ? "is-active" : null)" @onclick='() => SelectPresetAsync("soft")'>柔和</button>
+    </div>
+
+    <div class="wm-curve-graph">
+        <svg @ref="curveElement" viewBox="0 0 320 240" role="img" aria-label="主曲线节点图">
+            <rect class="wm-curve-background" x="18" y="18" width="284" height="204" rx="8" />
+            @foreach (var offset in GridOffsets)
+            {
+                var x = 18 + 284 * offset;
+                var y = 18 + 204 * offset;
+                <line class="wm-curve-grid" x1="@Format(x)" y1="18" x2="@Format(x)" y2="222" />
+                <line class="wm-curve-grid" x1="18" y1="@Format(y)" x2="302" y2="@Format(y)" />
+            }
+            <path class="wm-curve-line" d="@CurvePath" />
+            @for (var index = 0; index < workingPoints.Count; index++)
+            {
+                var point = ToSvg(workingPoints[index]);
+                <circle class="wm-curve-node @(index is 0 || index == workingPoints.Count - 1 ? "is-endpoint" : null)"
+                        data-curve-index="@index" cx="@Format(point.X)" cy="@Format(point.Y)" r="7"
+                        tabindex="0" aria-label="曲线节点 @(index + 1)" />
+            }
+            <text class="wm-curve-axis-label" x="18" y="237">0</text>
+            <text class="wm-curve-axis-label" x="294" y="237">255</text>
+            <text class="wm-curve-axis-label" x="3" y="222">0</text>
+            <text class="wm-curve-axis-label" x="1" y="24">255</text>
+        </svg>
+    </div>
+</section>
+
+@code {
+    [Parameter] public IReadOnlyList<WMCurvePoint> Points { get; set; } = WMCurvePoint.Identity();
+    [Parameter] public EventCallback<IReadOnlyList<WMCurvePoint>> PointsChanged { get; set; }
+
+    private static readonly double[] GridOffsets = [0, .25, .5, .75, 1];
+    private readonly List<WMCurvePoint> workingPoints = [];
+    private ElementReference curveElement;
+    private DotNetObjectReference<WMMobileMasterCurve>? selfReference;
+    private IJSObjectReference? module;
+    private IJSObjectReference? attachment;
+    private string signature = string.Empty;
+    private string selectedPreset = "linear";
+
+    private string CurvePath
+    {
+        get
+        {
+            if (workingPoints.Count == 0) return string.Empty;
+            var first = ToSvg(workingPoints[0]);
+            var path = $"M {Format(first.X)} {Format(first.Y)}";
+            for (var index = 0; index < workingPoints.Count - 1; index++)
+            {
+                var prior = ToSvg(workingPoints[index == 0 ? index : index - 1]);
+                var start = ToSvg(workingPoints[index]);
+                var end = ToSvg(workingPoints[index + 1]);
+                var next = ToSvg(workingPoints[index + 2 < workingPoints.Count ? index + 2 : index + 1]);
+                var minimumY = Math.Min(start.Y, end.Y);
+                var maximumY = Math.Max(start.Y, end.Y);
+                var firstControl = (
+                    X: Math.Clamp(start.X + (end.X - prior.X) / 6, start.X, end.X),
+                    Y: Math.Clamp(start.Y + (end.Y - prior.Y) / 6, minimumY, maximumY));
+                var secondControl = (
+                    X: Math.Clamp(end.X - (next.X - start.X) / 6, start.X, end.X),
+                    Y: Math.Clamp(end.Y - (next.Y - start.Y) / 6, minimumY, maximumY));
+                path += $" C {Format(firstControl.X)} {Format(firstControl.Y)}, {Format(secondControl.X)} {Format(secondControl.Y)}, {Format(end.X)} {Format(end.Y)}";
+            }
+            return path;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        var normalized = NormalizeForEditor(Points);
+        var nextSignature = Signature(normalized);
+        if (string.Equals(signature, nextSignature, StringComparison.Ordinal)) return;
+        signature = nextSignature;
+        workingPoints.Clear();
+        workingPoints.AddRange(Copy(normalized));
+        selectedPreset = DetectPreset(workingPoints) ?? selectedPreset;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            selfReference = DotNetObjectReference.Create(this);
+            module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/Watermark.Razor/Workspace/Components/WMMobileMasterCurve.razor.js");
+            attachment = await module.InvokeAsync<IJSObjectReference>("attachCurve", curveElement, selfReference);
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnCurvePointChanged(int index, double x, double y, bool isFinal)
+    {
+        if (index < 0 || index >= workingPoints.Count) return;
+        var minimumX = index == 0 ? 0 : workingPoints[index - 1].X + .02f;
+        var maximumX = index == workingPoints.Count - 1 ? 1 : workingPoints[index + 1].X - .02f;
+        workingPoints[index].X = index switch
+        {
+            0 => 0,
+            _ when index == workingPoints.Count - 1 => 1,
+            _ => (float)Math.Clamp(x, minimumX, maximumX)
+        };
+        workingPoints[index].Y = (float)Math.Clamp(y, 0, 1);
+        signature = Signature(workingPoints);
+        await PointsChanged.InvokeAsync(Copy(workingPoints));
+        if (isFinal) await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectPresetAsync(string preset)
+    {
+        selectedPreset = preset;
+        workingPoints.Clear();
+        workingPoints.AddRange(PresetPoints(preset));
+        signature = Signature(workingPoints);
+        await PointsChanged.InvokeAsync(Copy(workingPoints));
+    }
+
+    private Task ResetPresetAsync() => SelectPresetAsync(selectedPreset);
+
+    private bool IsPreset(string preset) => SameCurve(workingPoints, PresetPoints(preset));
+
+    private static string? DetectPreset(IReadOnlyList<WMCurvePoint> points)
+    {
+        foreach (var preset in new[] { "linear", "contrast", "soft" })
+            if (SameCurve(points, PresetPoints(preset))) return preset;
+        return null;
+    }
+
+    private static IReadOnlyList<WMCurvePoint> NormalizeForEditor(IReadOnlyList<WMCurvePoint> points)
+    {
+        if (points.Count == 2
+            && Math.Abs(points[0].X) < .001f && Math.Abs(points[0].Y) < .001f
+            && Math.Abs(points[1].X - 1) < .001f && Math.Abs(points[1].Y - 1) < .001f)
+            return PresetPoints("linear");
+        return points.Count >= 2 ? Copy(points) : PresetPoints("linear");
+    }
+
+    public static List<WMCurvePoint> PresetPoints(string preset) => preset switch
+    {
+        "contrast" =>
+        [
+            new() { X = 0, Y = 0 },
+            new() { X = .25f, Y = .18f },
+            new() { X = .5f, Y = .48f },
+            new() { X = .75f, Y = .82f },
+            new() { X = 1, Y = 1 }
+        ],
+        "soft" =>
+        [
+            new() { X = 0, Y = .06f },
+            new() { X = .25f, Y = .28f },
+            new() { X = .5f, Y = .52f },
+            new() { X = .75f, Y = .76f },
+            new() { X = 1, Y = .96f }
+        ],
+        _ =>
+        [
+            new() { X = 0, Y = 0 },
+            new() { X = .25f, Y = .25f },
+            new() { X = .5f, Y = .5f },
+            new() { X = .75f, Y = .75f },
+            new() { X = 1, Y = 1 }
+        ]
+    };
+
+    private static List<WMCurvePoint> Copy(IEnumerable<WMCurvePoint> points) => points
+        .Select(point => new WMCurvePoint { X = point.X, Y = point.Y })
+        .ToList();
+
+    private static bool SameCurve(IReadOnlyList<WMCurvePoint> left, IReadOnlyList<WMCurvePoint> right) =>
+        left.Count == right.Count && left.Zip(right).All(pair =>
+            Math.Abs(pair.First.X - pair.Second.X) < .001f
+            && Math.Abs(pair.First.Y - pair.Second.Y) < .001f);
+
+    private static string Signature(IEnumerable<WMCurvePoint> points) => string.Join(
+        ";", points.Select(point => $"{point.X:0.####},{point.Y:0.####}"));
+
+    private static (double X, double Y) ToSvg(WMCurvePoint point) =>
+        (18 + 284 * point.X, 18 + 204 * (1 - point.Y));
+
+    private static string Format(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (attachment is not null)
+        {
+            try { await attachment.InvokeVoidAsync("dispose"); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+            await attachment.DisposeAsync();
+        }
+        if (module is not null) await module.DisposeAsync();
+        selfReference?.Dispose();
+    }
+}

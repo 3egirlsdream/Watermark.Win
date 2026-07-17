@@ -317,8 +317,12 @@ public sealed class WMWorkspaceController
             var currentMediaId = opened.CurrentMediaId ?? opened.Media.FirstOrDefault()?.Id;
             var currentRecipe = CloneRecipe(GetEffectiveColorRecipe(opened, currentMediaId))
                                 ?? new WMColorRecipe { Name = "工作台调整" };
-            var stackSettings = WMMultiFrameStackSettings.CreateDefault(WMStackMode.StarTrail);
-            var stackCapability = imagingCapabilities?.Probe(WMImagingFeature.StarTrail);
+            var multiFrameDraft = NormalizeMultiFrameDraft(opened.MultiFrameConfiguration, opened.Media);
+            var collageDraft = NormalizeCollageDraft(opened.CollageConfiguration, opened.Media);
+            var stackCapability = imagingCapabilities?.Probe(
+                multiFrameDraft.Mode == WMStackMode.StarTrail
+                    ? WMImagingFeature.StarTrail
+                    : WMImagingFeature.MultiFrame);
             state = new WMWorkspaceState
             {
                 SessionId = opened.Id,
@@ -336,21 +340,11 @@ public sealed class WMWorkspaceController
                     new WMColorReferenceState(null, null),
                     false),
                 MultiFrameTool = new WMMultiFrameToolState(
-                    new WMMultiFrameDraft(
-                        WMStackMode.StarTrail,
-                        opened.Media.ToDictionary(
-                            item => item.Id,
-                            _ => (WMFrameRole?)WMFrameRole.Light,
-                            StringComparer.Ordinal),
-                        stackSettings.NormalizeExposure,
-                        stackSettings.RepairHotPixels,
-                        stackSettings.AutoCrop),
+                    multiFrameDraft,
                     stackCapability,
                     false),
                 CollageTool = new WMCollageToolState(
-                    new WMCollageDraft(
-                        opened.Media.Select(item => item.Id).ToArray(),
-                        WMCollageDirection.Horizontal),
+                    collageDraft,
                     false),
                 Activity = WMWorkspaceActivity.Idle,
                 PanelSize = WMWorkspacePanelSize.Half,
@@ -526,6 +520,7 @@ public sealed class WMWorkspaceController
                 Media = WMWorkspaceProjection.Media(updated),
                 CurrentMediaId = updated.CurrentMediaId,
                 HasTransientEdits = false,
+                TransientEditMode = null,
                 Message = $"已导入 {imported.Count} 张素材"
             });
             await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
@@ -553,7 +548,8 @@ public sealed class WMWorkspaceController
             {
                 Media = WMWorkspaceProjection.Media(updated),
                 CurrentMediaId = updated.CurrentMediaId,
-                HasTransientEdits = false
+                HasTransientEdits = false,
+                TransientEditMode = null
             });
             await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
         }, cancellationToken);
@@ -691,7 +687,10 @@ public sealed class WMWorkspaceController
                 {
                     Media = WMWorkspaceProjection.Media(updated),
                     CurrentMediaId = updated.CurrentMediaId,
-                    HasTransientEdits = false,
+                    HasTransientEdits = value.TransientEditMode == WMWorkspaceMode.Collage,
+                    TransientEditMode = value.TransientEditMode == WMWorkspaceMode.Collage
+                        ? WMWorkspaceMode.Collage
+                        : null,
                     ActiveJob = WMWorkspaceProjection.Job(completedCheckpoint),
                     CollageTool = value.CollageTool with { IsBusy = false },
                     CanCancel = false,
@@ -768,6 +767,7 @@ public sealed class WMWorkspaceController
                         IsBusy = false
                     },
                 HasTransientEdits = pendingColor is null && value.HasTransientEdits,
+                TransientEditMode = pendingColor is null ? value.TransientEditMode : null,
                 ErrorMessage = null,
                 IsComparingOriginal = false
             });
@@ -788,12 +788,13 @@ public sealed class WMWorkspaceController
             scope,
             cancellationToken);
 
-    public Task PreviewTemplateAsync(
+    public async Task PreviewTemplateAsync(
         WMWorkspaceTemplateEdit edit,
         WMApplyScope scope,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(edit);
+        edit = await ResolveTemplatePreviewEditAsync(edit, cancellationToken).ConfigureAwait(false);
         WMWorkspaceSession previewSession;
         long currentEpoch;
         long intent;
@@ -803,9 +804,13 @@ public sealed class WMWorkspaceController
                 throw new InvalidOperationException("工作台会话尚未打开。");
             currentEpoch = epoch;
             var targetIds = ResolveTargetMediaIds(session, scope);
-            if (targetIds.Count == 0) return Task.CompletedTask;
+            if (targetIds.Count == 0) return;
+            var overrides = new Dictionary<string, string?>(
+                session.TemplateIdsByMediaId,
+                StringComparer.Ordinal);
+            foreach (var mediaId in targetIds) overrides[mediaId] = edit.TemplateId;
             previewSession = AppendTransaction(
-                session,
+                session with { TemplateIdsByMediaId = overrides },
                 "预览模板",
                 WMImageOperationKind.Template,
                 targetIds,
@@ -817,11 +822,26 @@ public sealed class WMWorkspaceController
                 TemplateId = edit.TemplateId,
                 TemplateEdit = edit,
                 HasTransientEdits = true,
+                TransientEditMode = WMWorkspaceMode.Template,
                 IsComparingOriginal = false
             };
         }
         Changed.Invoke(State);
-        return QueuePreviewTrackedAsync(previewSession, currentEpoch, intent, cancellationToken);
+        await QueuePreviewTrackedAsync(
+            previewSession, currentEpoch, intent, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<WMWorkspaceTemplateEdit> ResolveTemplatePreviewEditAsync(
+        WMWorkspaceTemplateEdit edit,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(edit.TemplateId)
+            || !string.IsNullOrWhiteSpace(edit.CanvasJson)) return edit;
+        var canvas = await Global.GetCanvas(edit.TemplateId)
+            .WaitAsync(cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException("所选模板已不存在。");
+        return new WMWorkspaceTemplateEdit(edit.TemplateId, Global.CanvasSerialize(canvas));
     }
 
     public Task CommitTemplateAsync(
@@ -873,6 +893,7 @@ public sealed class WMWorkspaceController
                 TemplateId = currentTemplate,
                 TemplateEdit = GetEffectiveTemplateEdit(updated, updated.CurrentMediaId),
                 HasTransientEdits = false,
+                TransientEditMode = null,
                 IsComparingOriginal = false
             });
             lock (gate) draftTemplateEdit = null;
@@ -882,12 +903,14 @@ public sealed class WMWorkspaceController
     public Task DiscardTransientEditsAsync(CancellationToken cancellationToken = default)
     {
         WMWorkspaceSession current;
+        WMWorkspaceMode? transientMode;
         long currentEpoch;
         long intent;
         lock (gate)
         {
             if (closed || session is null || epochCancellation is null) return Task.CompletedTask;
             current = session;
+            transientMode = state.TransientEditMode;
             currentEpoch = epoch;
             draftColorRecipe = null;
             draftTemplateEdit = null;
@@ -902,12 +925,22 @@ public sealed class WMWorkspaceController
                     Draft = CloneRecipe(GetEffectiveColorRecipe(current, current.CurrentMediaId))
                             ?? new WMColorRecipe { Name = "工作台调整" }
                 },
+                MultiFrameTool = state.MultiFrameTool with
+                {
+                    Draft = NormalizeMultiFrameDraft(current.MultiFrameConfiguration, current.Media)
+                },
+                CollageTool = state.CollageTool with
+                {
+                    Draft = NormalizeCollageDraft(current.CollageConfiguration, current.Media)
+                },
                 HasTransientEdits = false,
+                TransientEditMode = null,
                 IsComparingOriginal = false
             };
         }
         Changed.Invoke(State);
         return current.Media.Count == 0
+               || transientMode is WMWorkspaceMode.MultiFrame or WMWorkspaceMode.Collage
             ? Task.CompletedTask
             : QueuePreviewTrackedAsync(current, currentEpoch, intent, cancellationToken);
     }
@@ -965,7 +998,8 @@ public sealed class WMWorkspaceController
                     Draft = CloneRecipe(normalized)!,
                     IsBusy = false
                 },
-                HasTransientEdits = true
+                HasTransientEdits = true,
+                TransientEditMode = WMWorkspaceMode.ColorGrade
             };
         }
         Changed.Invoke(State);
@@ -1479,10 +1513,28 @@ public sealed class WMWorkspaceController
                     Roles = new Dictionary<string, WMFrameRole?>(draft.Roles, StringComparer.Ordinal)
                 },
                 Capability = capability
-            }
+            },
+            HasTransientEdits = true,
+            TransientEditMode = WMWorkspaceMode.MultiFrame
         });
         return Task.CompletedTask;
     }
+
+    public Task CommitMultiFrameDraftAsync(CancellationToken cancellationToken = default) =>
+        RunDurableCommandAsync(async context =>
+        {
+            WMMultiFrameDraft draft;
+            lock (gate) draft = CopyMultiFrameDraft(state.MultiFrameTool.Draft);
+            draft = NormalizeMultiFrameDraft(draft, context.Session.Media);
+            var updated = NextRevision(context.Session with { MultiFrameConfiguration = draft });
+            CommitSession(context.Epoch, updated, clearColorDraft: false, value => value with
+            {
+                MultiFrameTool = value.MultiFrameTool with { Draft = draft },
+                HasTransientEdits = false,
+                TransientEditMode = null
+            });
+            await PersistAsync(updated, context.Epoch, context.Token).ConfigureAwait(false);
+        }, cancellationToken);
 
     public Task UpdateCollageDraftAsync(
         WMCollageDraft draft,
@@ -1500,10 +1552,28 @@ public sealed class WMWorkspaceController
             CollageTool = value.CollageTool with
             {
                 Draft = draft with { OrderedMediaIds = ordered }
-            }
+            },
+            HasTransientEdits = true,
+            TransientEditMode = WMWorkspaceMode.Collage
         });
         return Task.CompletedTask;
     }
+
+    public Task CommitCollageDraftAsync(CancellationToken cancellationToken = default) =>
+        RunDurableCommandAsync(async context =>
+        {
+            WMCollageDraft draft;
+            lock (gate) draft = CopyCollageDraft(state.CollageTool.Draft);
+            draft = NormalizeCollageDraft(draft, context.Session.Media);
+            var updated = NextRevision(context.Session with { CollageConfiguration = draft });
+            CommitSession(context.Epoch, updated, clearColorDraft: false, value => value with
+            {
+                CollageTool = value.CollageTool with { Draft = draft },
+                HasTransientEdits = false,
+                TransientEditMode = null
+            });
+            await PersistAsync(updated, context.Epoch, context.Token).ConfigureAwait(false);
+        }, cancellationToken);
 
     public Task<string> ExecuteCollageAsync(CancellationToken cancellationToken = default)
     {
@@ -1781,6 +1851,7 @@ public sealed class WMWorkspaceController
                             ?? new WMColorRecipe { Name = "工作台调整" }
                 },
                 HasTransientEdits = false,
+                TransientEditMode = null,
                 IsComparingOriginal = false
             });
             await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
@@ -2156,6 +2227,7 @@ public sealed class WMWorkspaceController
                         IsBusy = false
                     },
                     HasTransientEdits = false,
+                    TransientEditMode = null,
                     IsComparingOriginal = false
                 });
                 await PersistAndPreviewAsync(
@@ -2189,6 +2261,7 @@ public sealed class WMWorkspaceController
                     IsBusy = false
                 },
                 HasTransientEdits = false,
+                TransientEditMode = null,
                 IsComparingOriginal = false
             });
             await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
@@ -2227,6 +2300,7 @@ public sealed class WMWorkspaceController
                     IsBusy = false
                 },
                 HasTransientEdits = true,
+                TransientEditMode = WMWorkspaceMode.ColorGrade,
                 IsComparingOriginal = false,
                 CanUndo = session.HistoryCursor > 0,
                 CanRedo = session.HistoryCursor < session.Transactions.Count
@@ -3046,8 +3120,6 @@ public sealed class WMWorkspaceController
             .Where(available.Contains)
             .Distinct(StringComparer.Ordinal)
             .ToList();
-        foreach (var item in media)
-            if (!collageOrder.Contains(item.Id, StringComparer.Ordinal)) collageOrder.Add(item.Id);
         return value with
         {
             MultiFrameTool = value.MultiFrameTool with
@@ -3060,6 +3132,46 @@ public sealed class WMWorkspaceController
             }
         };
     }
+
+    private static WMMultiFrameDraft NormalizeMultiFrameDraft(
+        WMMultiFrameDraft? draft,
+        IReadOnlyList<WMWorkspaceMedia> media)
+    {
+        var mode = draft?.Mode ?? WMStackMode.StarTrail;
+        var defaults = WMMultiFrameStackSettings.CreateDefault(mode);
+        var available = media.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        var roles = (draft?.Roles ?? new Dictionary<string, WMFrameRole?>())
+            .Where(pair => available.Contains(pair.Key))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        foreach (var item in media) roles.TryAdd(item.Id, WMFrameRole.Light);
+        return new WMMultiFrameDraft(
+            mode,
+            roles,
+            draft?.NormalizeExposure ?? defaults.NormalizeExposure,
+            draft?.RepairHotPixels ?? defaults.RepairHotPixels,
+            draft?.AutoCrop ?? defaults.AutoCrop);
+    }
+
+    private static WMCollageDraft NormalizeCollageDraft(
+        WMCollageDraft? draft,
+        IReadOnlyList<WMWorkspaceMedia> media)
+    {
+        var available = media.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        var ordered = (draft?.OrderedMediaIds ?? media.Select(item => item.Id).ToArray())
+            .Where(available.Contains)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        return new WMCollageDraft(ordered, draft?.Direction ?? WMCollageDirection.Horizontal);
+    }
+
+    private static WMMultiFrameDraft CopyMultiFrameDraft(WMMultiFrameDraft draft) =>
+        draft with
+        {
+            Roles = new Dictionary<string, WMFrameRole?>(draft.Roles, StringComparer.Ordinal)
+        };
+
+    private static WMCollageDraft CopyCollageDraft(WMCollageDraft draft) =>
+        draft with { OrderedMediaIds = draft.OrderedMediaIds.ToArray() };
 
     private void UpdateCurrent(Func<WMWorkspaceState, WMWorkspaceState> update)
     {
@@ -3084,12 +3196,21 @@ public sealed class WMWorkspaceController
                 Draft = CloneRecipe(GetEffectiveColorRecipe(session, currentMediaId))
                         ?? new WMColorRecipe { Name = "工作台调整" }
             },
+            MultiFrameTool = state.MultiFrameTool with
+            {
+                Draft = NormalizeMultiFrameDraft(session.MultiFrameConfiguration, session.Media)
+            },
+            CollageTool = state.CollageTool with
+            {
+                Draft = NormalizeCollageDraft(session.CollageConfiguration, session.Media)
+            },
             CurrentMediaId = currentMediaId,
             CanUndo = session.HistoryCursor > 0,
             CanRedo = session.HistoryCursor < session.Transactions.Count,
             History = WMWorkspaceProjection.History(session),
             HistoryCursor = session.HistoryCursor,
             HasTransientEdits = false,
+            TransientEditMode = null,
             IsComparingOriginal = false
         };
     }

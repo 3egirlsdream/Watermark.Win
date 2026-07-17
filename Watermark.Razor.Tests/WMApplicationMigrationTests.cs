@@ -195,6 +195,47 @@ public sealed class WMApplicationMigrationTests
     }
 
     [Fact]
+    public void MobileMarketplace_UsesCategoriesPagedLoadingAndLatestWinsCancellation()
+    {
+        var templates = Read("Watermark.Razor/BlazorPages/Mobile/MobileTemplates.razor");
+        var templatesCss = Read("Watermark.Razor/BlazorPages/Mobile/MobileTemplates.razor.css");
+        var paging = Read("Watermark.Razor/Workspace/WMTemplateMarketPaging.cs");
+
+        Assert.Contains("MInfiniteScroll", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("MPullRefresh", templates, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateMarketCategory.Recommended", templates, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateMarketCategory.Popular", templates, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateMarketCategory.Latest", templates, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateMarketCategory.Collage", templates, StringComparison.Ordinal);
+        Assert.Contains("CancellationTokenSource", templates, StringComparison.Ordinal);
+        Assert.Contains("@if (marketState.HasMore)", templates, StringComparison.Ordinal);
+        Assert.Contains("resetInfinitePending = state.HasMore;", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("resetInfinitePending = true;", templates, StringComparison.Ordinal);
+        Assert.Contains("class=\"market-featured\"", templates, StringComparison.Ordinal);
+        Assert.Contains("title=\"已添加\"", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain(">已添加</span>", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("mdi-refresh", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("market-featured-summary", templates, StringComparison.Ordinal);
+        Assert.Contains("? \"搜索模板\"", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("backdrop-filter", templatesCss, StringComparison.Ordinal);
+        Assert.Contains("object-fit: contain", templatesCss, StringComparison.Ordinal);
+        Assert.Contains("border-radius: 999px", templatesCss, StringComparison.Ordinal);
+        Assert.Contains("border: 1px solid #9dbfff", templatesCss, StringComparison.Ordinal);
+        Assert.Contains("SelectFeaturedMarketItem(state);", templates, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateMarketFeatureSelector.WithoutFeatured", templates, StringComparison.Ordinal);
+        Assert.Contains("mdi-tray-arrow-down", templates, StringComparison.Ordinal);
+        Assert.Contains("class=\"template-card market-card\"", templates, StringComparison.Ordinal);
+        Assert.Contains("<span class=\"creator-line\"><small>本地模板</small></span>", templates, StringComparison.Ordinal);
+        Assert.Contains("data-template-id=\"@featuredItem.WatermarkId\"", templates, StringComparison.Ordinal);
+        Assert.Contains("flex: 1", templatesCss, StringComparison.Ordinal);
+        Assert.DoesNotContain("SearchAsync(search, 1, 120)", templates, StringComparison.Ordinal);
+        Assert.Contains("GetMarketTemplatesAsync", paging, StringComparison.Ordinal);
+        Assert.DoesNotContain("MaximumSourceRequests", paging, StringComparison.Ordinal);
+        Assert.Contains("SourceRequestCount: 1", paging, StringComparison.Ordinal);
+        Assert.Contains("AppendUnique", paging, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ResourceLibrary_LoadsLocalFontsAndKeepsNativeFileInputInsideTheImportButton()
     {
         var page = Read("Watermark.Razor/BlazorPages/WMResourcesPage.razor");

@@ -79,7 +79,10 @@
     {
         if (templateId is null) return new WMWorkspaceTemplateEdit(null, null);
         if (Draft?.TemplateId == templateId) return Draft;
-        return new WMWorkspaceTemplateEdit(templateId, null);
+        var canvas = Templates.FirstOrDefault(item => item.ID == templateId)?.Canvas;
+        return new WMWorkspaceTemplateEdit(
+            templateId,
+            canvas is null ? null : Global.CanvasSerialize(canvas));
     }
 
     private Task ChangeBorderAsync(string side, double value, bool commit)
