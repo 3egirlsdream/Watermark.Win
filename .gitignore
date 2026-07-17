@@ -62,3 +62,7 @@ Watermark.Razor.Tests/bin
 Watermark.Razor.Tests/obj
 /Watermark.Andorid/ReleasePackages/
 /tmp/
+artifacts
+design
+Watermark.Web/Watermark.Web/design-qa.md
+design-qa.md
