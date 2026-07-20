@@ -26,6 +26,7 @@ namespace Watermark.Win
         {
             try
             {
+				Global.DeviceType = Watermark.Shared.Enums.DeviceType.Win;
 				IocHelper.GetIoc().AddSingleton<WatermarkHelper>();
                 IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper>(provider => provider.GetRequiredService<WatermarkHelper>());
 				IocHelper.GetIoc().AddSingleton<APIHelper>();
@@ -61,6 +62,7 @@ namespace Watermark.Win
                 IocHelper.GetIoc().AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider, WMDiagnosticLoggerProvider>();
                 IocHelper.GetIoc().AddSingleton<IWMArtifactCache, WMArtifactCache>();
                 IocHelper.GetIoc().AddSingleton<IWMProcessingScheduler, WMProcessingScheduler>();
+                IocHelper.GetIoc().AddSingleton<IWMColorEngine, WMOcioColorEngine>();
                 IocHelper.GetIoc().AddSingleton<WMHighPrecisionColorPipeline>();
                 IocHelper.GetIoc().AddSingleton<IWMColorLookMapper, WMColorLookMapper>();
                 IocHelper.GetIoc().AddSingleton<IWMColorAnalysisService, WMColorAnalysisService>();

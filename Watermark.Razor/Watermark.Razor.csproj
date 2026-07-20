@@ -6,6 +6,43 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!--
+    Watermark.Razor is compiled independently of each host. Keep the imaging
+    rollout symbols here and let hosts opt in through ProjectReference
+    AdditionalProperties; host-only DefineConstants do not flow to this
+    project automatically.
+  -->
+  <PropertyGroup>
+    <WMImagingMasterEnabled Condition="'$(WMImagingMasterEnabled)' == ''">false</WMImagingMasterEnabled>
+    <WMImagingRawEnabled Condition="'$(WMImagingRawEnabled)' == ''">false</WMImagingRawEnabled>
+    <WMImagingStarTrailEnabled Condition="'$(WMImagingStarTrailEnabled)' == ''">false</WMImagingStarTrailEnabled>
+    <WMImagingMultiFrameEnabled Condition="'$(WMImagingMultiFrameEnabled)' == ''">false</WMImagingMultiFrameEnabled>
+    <WMImagingPng16Enabled Condition="'$(WMImagingPng16Enabled)' == ''">false</WMImagingPng16Enabled>
+    <WMImagingTiff16Enabled Condition="'$(WMImagingTiff16Enabled)' == ''">false</WMImagingTiff16Enabled>
+    <WMImagingAllowQaOverride Condition="'$(WMImagingAllowQaOverride)' == ''">false</WMImagingAllowQaOverride>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingMasterEnabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_MASTER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingRawEnabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_RAW</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingStarTrailEnabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_STAR_TRAIL</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingMultiFrameEnabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_MULTI_FRAME</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingPng16Enabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_PNG16</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingTiff16Enabled)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_TIFF16</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WMImagingAllowQaOverride)' == 'true'">
+    <DefineConstants>$(DefineConstants);WM_IMAGING_QA_OVERRIDE</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>embedded</DebugType>
   </PropertyGroup>

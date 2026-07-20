@@ -1,13 +1,29 @@
 ﻿@using Watermark.Razor.BlazorPages
 @using Watermark.Razor.Components.Layout
-<WMPrivacyStartupGate>
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+
+@if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
+{
     <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
         <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)"/>
+            <RouteView RouteData="@routeData" />
             <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
         </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
-        </NotFound>
+        <NotFound><WMNotFoundPage /></NotFound>
     </Router>
-</WMPrivacyStartupGate>
+}
+else
+{
+    <WMPrivacyStartupGate>
+        <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
+            <Found Context="routeData">
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)"/>
+                <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+            </Found>
+            <NotFound>
+                <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
+            </NotFound>
+        </Router>
+    </WMPrivacyStartupGate>
+}

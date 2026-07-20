@@ -10,6 +10,7 @@ namespace Watermark.Web.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.Services.AddMasaBlazor();
+            builder.Services.AddSingleton<IWMColorEngine>(new WMUnsupportedColorEngine("WebAssembly 不提供原生 OpenColorIO 调色。"));
             builder.Services.AddSingleton<IWMImagingCapabilities>(
                 new WMStaticImagingCapabilities(WMImagingCapabilities.Unsupported));
             await builder.Build().RunAsync();

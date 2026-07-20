@@ -90,7 +90,7 @@
                 return Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
             };
 
-            element.addEventListener("pointerdown", event => {
+            const onPointerDown = event => {
                 element.setPointerCapture?.(event.pointerId);
                 state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
                 if (state.pointers.size === 1) {
@@ -100,9 +100,9 @@
                     state.startDistance = distance();
                     state.startScale = state.scale;
                 }
-            }, { passive: true });
+            };
 
-            element.addEventListener("pointermove", event => {
+            const onPointerMove = event => {
                 if (!state.pointers.has(event.pointerId)) return;
                 state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
                 if (state.pointers.size >= 2 && state.startDistance > 0) {
@@ -117,24 +117,42 @@
                     state.lastY = event.clientY;
                     apply();
                 }
-            }, { passive: true });
+            };
 
             const release = event => {
                 state.pointers.delete(event.pointerId);
                 if (state.pointers.size < 2) state.startDistance = 0;
             };
-            element.addEventListener("pointerup", release, { passive: true });
-            element.addEventListener("pointercancel", release, { passive: true });
-            element.addEventListener("dblclick", () => {
+            const onDoubleClick = () => {
                 state.scale = 1;
                 state.x = 0;
                 state.y = 0;
                 apply();
-            });
+            };
+            state.dispose = () => {
+                element.removeEventListener("pointerdown", onPointerDown);
+                element.removeEventListener("pointermove", onPointerMove);
+                element.removeEventListener("pointerup", release);
+                element.removeEventListener("pointercancel", release);
+                element.removeEventListener("dblclick", onDoubleClick);
+                state.pointers.clear();
+            };
+            element.addEventListener("pointerdown", onPointerDown, { passive: true });
+            element.addEventListener("pointermove", onPointerMove, { passive: true });
+            element.addEventListener("pointerup", release, { passive: true });
+            element.addEventListener("pointercancel", release, { passive: true });
+            element.addEventListener("dblclick", onDoubleClick);
             attached.set(element, state);
         }
 
-        return { attach };
+        function detach(element) {
+            const state = element ? attached.get(element) : null;
+            if (!state) return;
+            state.dispose?.();
+            attached.delete(element);
+        }
+
+        return { attach, detach };
     })();
 
     window.watermarkTemplateVisibility = (() => {

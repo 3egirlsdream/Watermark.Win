@@ -167,6 +167,7 @@
         <MauiAsset Include="..\native\third_party\LibRaw-0.22.1\LICENSE.CDDL" LogicalName="licenses/LibRaw-CDDL-1.0.txt" />
         <MauiAsset Include="..\native\third_party\LibRaw-0.22.1\COPYRIGHT" LogicalName="licenses/LibRaw-COPYRIGHT.txt" />
         <MauiAsset Include="..\native\third_party\tiff-4.7.2\LICENSE.md" LogicalName="licenses/LibTIFF-4.7.2.txt" />
+        <MauiAsset Include="..\native\licenses\OCIO-DEPENDENCIES.txt" LogicalName="licenses/OCIO-DEPENDENCIES.txt" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst' And Exists('..\native\artifacts\maccatalyst\Watermark.Imaging.Native.xcframework')">
@@ -201,7 +202,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj" />
+      <!-- ProjectReference builds Razor independently, so forward the rollout
+           properties rather than relying on this host's DefineConstants. -->
+      <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj">
+        <AdditionalProperties>WMImagingMasterEnabled=$(WMImagingMasterEnabled);WMImagingRawEnabled=$(WMImagingRawEnabled);WMImagingStarTrailEnabled=$(WMImagingStarTrailEnabled);WMImagingMultiFrameEnabled=$(WMImagingMultiFrameEnabled);WMImagingPng16Enabled=$(WMImagingPng16Enabled);WMImagingTiff16Enabled=$(WMImagingTiff16Enabled);WMImagingAllowQaOverride=$(WMImagingAllowQaOverride)</AdditionalProperties>
+      </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>

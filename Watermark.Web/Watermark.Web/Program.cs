@@ -17,6 +17,7 @@ namespace Watermark.Web
             builder.Services.AddSingleton<IWMImagingCapabilities>(
                 new WMStaticImagingCapabilities(WMImagingCapabilities.Unsupported));
             builder.Services.AddSingleton<IWMPhotoMetadataReader, WMMetadataExtractorReader>();
+            builder.Services.AddSingleton<IWMColorEngine>(new WMUnsupportedColorEngine("Web 端不提供原生 OpenColorIO 调色。"));
             builder.Services.AddMasaBlazor();
             var app = builder.Build();
 

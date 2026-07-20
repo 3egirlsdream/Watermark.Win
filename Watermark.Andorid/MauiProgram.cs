@@ -124,6 +124,7 @@ namespace Watermark.Andorid
             builder.Services.AddSingleton<ILoggerProvider, WMDiagnosticLoggerProvider>();
             builder.Services.AddSingleton<IWMArtifactCache, WMArtifactCache>();
             builder.Services.AddSingleton<IWMProcessingScheduler, WMProcessingScheduler>();
+            builder.Services.AddSingleton<IWMColorEngine, WMOcioColorEngine>();
             builder.Services.AddSingleton<WMHighPrecisionColorPipeline>();
             builder.Services.AddSingleton<IWMColorLookMapper, WMColorLookMapper>();
             builder.Services.AddSingleton<IWMColorAnalysisService, WMColorAnalysisService>();

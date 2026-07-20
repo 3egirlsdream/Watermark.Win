@@ -40,6 +40,7 @@
     <Content Include="..\native\third_party\LibRaw-0.22.1\LICENSE.CDDL" Link="licenses\LibRaw-CDDL-1.0.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\native\third_party\LibRaw-0.22.1\COPYRIGHT" Link="licenses\LibRaw-COPYRIGHT.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\native\third_party\tiff-4.7.2\LICENSE.md" Link="licenses\LibTIFF-4.7.2.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <Content Include="..\native\licenses\OCIO-DEPENDENCIES.txt" Link="licenses\OCIO-DEPENDENCIES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\native\artifacts\win-x64\Watermark.Imaging.Native.dll"
              Link="Watermark.Imaging.Native.dll"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always"
