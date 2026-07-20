@@ -4,12 +4,9 @@
 
 ## 当前工作范围
 
-- `Watermark.Andorid` 修改要考虑  macOS / Mac Catalyst / 安卓 / Windows / IOS 版本代码。
-- MAC部分修改参考路径：
-  - `Watermark.Andorid/Platforms/MacCatalyst/`
-  - `Watermark.Andorid/Watermark.Andorid.csproj` 中与 `net8.0-maccatalyst`、macOS 签名、打包、公证相关的配置
-  - `Watermark.Andorid/README.md` 中 macOS 构建、发布、签名、公证相关说明
-- 修改共享层代码要考虑其他端的适配。
+- `Watermark.Andorid` 修改要考虑  macOS / Mac Catalyst / 安卓 / Windows / IOS 版本代码， 统一分为移动端和桌面端。
+- 修改共享层代码要考虑其他端的适配，要能在桌面和移动端都完美适配显示，如果不能在其专有的组件目录下创建。
+- 移动端和桌面端入口不同导向不同的UI，注意不要搞混。
 - 不要修改 `bin/`、`obj/`、`.vs/`、`.idea/` 等生成文件或 IDE 本地文件。
 - 除了模板编辑其余的可以不用考虑旧版兼容
 
