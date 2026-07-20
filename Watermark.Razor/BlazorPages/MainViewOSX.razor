@@ -1,12 +1,12 @@
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components.Web
 @using Watermark.Razor.Components
+@using Watermark.Razor.Components.Desktop
 @using Watermark.Razor.Components.Mac
 @using Watermark.Razor.Workspace
 @using Watermark.Razor.Workspace.Components
 @using Watermark.Shared.Models
 @inject WMWorkspaceController Controller
-@inject IWMWorkspaceLauncher WorkspaceLauncher
 @inject IWMWorkspaceSessionStore SessionStore
 @inject IWMPhotoPicker PhotoPicker
 @inject WMTemplateLibraryService TemplateLibrary
@@ -14,122 +14,148 @@
 @inject IWMHapticFeedback HapticFeedback
 @inject IWMSystemAppearance SystemAppearance
 @inject NavigationManager Navigation
-@inject IWMNavigationHistory NavigationHistory
+@inject IWMAccountService Accounts
+@inject IWMExternalActionService ExternalActions
+@inject IWMDesktopStartupService DesktopStartup
+@inject IWMAdminDashboardService AdminDashboard
 
 <MacWorkspaceShell>
     <ToolbarContent>
-        <header class="desktop-commandbar">
-            <div class="desktop-brand"><span class="desktop-brand-mark">影</span><div><strong>轻影</strong><small>跨端工作台</small></div></div>
-            <div class="desktop-command-group">
-                <button type="button" @onclick="ImportNewSessionAsync"><MIcon>mdi-folder-image</MIcon><span>导入</span></button>
-                <button type="button" disabled="@(!opened)" @onclick="AppendMediaAsync"><MIcon>mdi-image-plus-outline</MIcon><span>添加素材</span></button>
-            </div>
-            <div class="desktop-command-group is-history">
-                <button type="button" disabled="@(!State.CanUndo)" @onclick="() => Controller.UndoAsync()" title="撤销"><MIcon>mdi-undo</MIcon></button>
-                <button type="button" disabled="@(!State.CanRedo)" @onclick="() => Controller.RedoAsync()" title="重做"><MIcon>mdi-redo</MIcon></button>
-                <select value="@State.HistoryCursor" disabled="@(!opened)" @onchange="SetHistoryCursorAsync" aria-label="编辑历史">
-                    <option value="0">原始状态</option>
-                    @foreach (var item in State.History) { <option value="@item.Cursor">@item.Label</option> }
-                </select>
-            </div>
-            <div class="desktop-command-spacer"></div>
-            <div class="desktop-command-group">
-                <button type="button" @onclick='() => Navigation.NavigateTo("/templates")'><MIcon>mdi-view-grid-outline</MIcon><span>模板库</span></button>
-                <button type="button" @onclick='() => Navigation.NavigateTo("/templates?tab=market")'><MIcon>mdi-storefront-outline</MIcon><span>市场</span></button>
-                <button type="button" @onclick='() => Navigation.NavigateTo("/templates")'><MIcon>mdi-vector-square-edit</MIcon><span>设计模板</span></button>
-                <button type="button" @onclick="OpenSettings"><MIcon>mdi-cog-outline</MIcon><span>设置</span></button>
-                <button type="button" class="is-primary" disabled="@(!opened)" @onclick="ExportOrCancelAsync"><MIcon>mdi-export-variant</MIcon><span>@(State.ExportTool.IsBusy ? "取消" : "导出")</span></button>
-            </div>
-        </header>
+        <WMDesktopAppToolbar Mode="@DesktopMode" Account="Accounts.State" CanUndo="@(State.CanUndo && !IsCropEditing)" CanRedo="@(State.CanRedo && !IsCropEditing)" History="State.History"
+                             ImportImages="AppendMediaAsync" Undo="() => Controller.UndoAsync()" Redo="() => Controller.RedoAsync()" HistorySelected="cursor => Controller.SetHistoryCursorAsync(cursor)"
+                             Export="ToggleExportPanel" CreateTemplate="OpenNewTemplateDialog" OpenTemplates='() => NavigateDesktopSection("templates")' OpenMarket='() => NavigateDesktopSection("market")'
+                             OpenLogos='() => NavigateDesktopSection("resources")' OpenAccount='() => OpenAccountDialog("login")' OpenMembership="OpenVipDialog"
+                             SignUp='() => OpenAccountDialog("register")' LogoutAccount='() => OpenAccountDialog("delete")'
+                             OpenSettings='() => NavigateDesktopSection("settings")' OpenDashboard='() => NavigateDesktopSection("admin")' CanOpenDashboard="@AdminDashboard.IsAuthorized"
+                             SignOut="SignOutAsync" OpenLink="ExternalActions.OpenUrlAsync" OpenCommonDialog="OpenCommonDialog" />
     </ToolbarContent>
     <WorkspaceContent>
-        @if (!opened)
-        {
-            <section class="desktop-empty">
-                @if (State.Recovery is not null)
-                {
-                    <WMWorkspaceRecoveryPanel Result="State.Recovery" Busy="recovering" RecoveryRequested="RecoverAsync" />
-                }
-                else
-                {
-                    <span class="desktop-empty-orbit"><MIcon>mdi-image-multiple-outline</MIcon></span>
-                    <h1>从照片开始创作</h1>
-                    <p>模板、调色、多帧与导出现在共用同一份可恢复会话。</p>
-                    <button type="button" @onclick="ImportNewSessionAsync"><MIcon>mdi-folder-image</MIcon><span>导入照片</span></button>
-                    @if (!string.IsNullOrWhiteSpace(message)) { <small role="alert">@message</small> }
-                }
-            </section>
-        }
-        else
-        {
-            <div class="desktop-workspace">
-                <nav class="desktop-mode-rail" aria-label="工作模式">
-                    <button type="button" class="@(State.Mode == WMWorkspaceMode.Template ? "is-active" : null)" @onclick="() => SetModeAsync(WMWorkspaceMode.Template)"><MIcon>mdi-palette-swatch-outline</MIcon><span>模板</span></button>
-                    <button type="button" class="@(State.Mode == WMWorkspaceMode.ColorGrade ? "is-active" : null)" @onclick="() => SetModeAsync(WMWorkspaceMode.ColorGrade)"><MIcon>mdi-tune-variant</MIcon><span>调色</span></button>
-                    <button type="button" class="@(State.Mode == WMWorkspaceMode.MultiFrame ? "is-active" : null)" @onclick="() => SetModeAsync(WMWorkspaceMode.MultiFrame)"><MIcon>mdi-weather-night</MIcon><span>多帧</span></button>
-                    <button type="button" class="@(State.Mode == WMWorkspaceMode.Collage ? "is-active" : null)" @onclick="() => SetModeAsync(WMWorkspaceMode.Collage)"><MIcon>mdi-view-split-vertical</MIcon><span>拼图</span></button>
-                </nav>
-                <main class="desktop-stage-column">
-                    <section class="desktop-stage" @onpointerdown="ShowOriginalAsync" @onpointerup="HideOriginalAsync" @onpointerleave="HideOriginalAsync">
-                        <WMWorkspacePreviewSurface Presentation="PreviewPresentation"
-                                                   CapabilityChanged="HandleColorPreviewCapabilityAsync"
-                                                   PerformanceMeasured="HandleColorPreviewPerformanceAsync"
-                                                   Alt="当前图片预览">
-                            <EmptyContent><MIcon>mdi-image-outline</MIcon></EmptyContent>
-                        </WMWorkspacePreviewSurface>
-                        @if (State.Activity == WMWorkspaceActivity.Exporting
-                             || State.Activity == WMWorkspaceActivity.Previewing
-                             && State.PreviewPresentation.Backend != WMInteractivePreviewBackend.WebGl2)
+        <div class="main-workspace">
+            <WMDesktopFeatureRail Mode="@DesktopMode" ColorEngineAvailable="@ColorEngineAvailable" ModeChanged="SetModeAsync" />
+            <WMDesktopModeSidebar Mode="@DesktopMode" Templates="templates" TemplateId="@State.TemplateId" Presets="State.ColorGradeTool.Presets" SelectedPresetId="@State.ColorGradeTool.SelectedPresetId"
+                                  ReferenceUrl="@State.ColorGradeTool.Reference.PreviewUrl" ReferenceName="@State.ColorGradeTool.Reference.DisplayName" Media="State.Media" SelectedFrameIds="SelectedFrameIds"
+                                  MediaPreviewUrl="MediaPreviewById" TemplateSelected="SelectTemplateAsync" SplitTemplateSelected="SelectSplitTemplateAsync" EditTemplate="item => OpenDesignerAsync(item.ID)"
+                                  CreateTemplate="OpenNewTemplateDialog" OpenTemplates='() => NavigateDesktopSection("templates")' OpenMarket='() => NavigateDesktopSection("market")' ChooseReference="ChooseReferenceAsync"
+                                  ResetColor="ResetColorAsync" PresetSelected="ApplyPresetAsync" FrameToggled="ToggleFrameAsync" />
+            @if (ShowAppliedTemplateEditor)
+            {
+                <WMDesktopAppliedTemplateEditor State="State"
+                                                SelectedCount="SelectedCount"
+                                                MediaPreviewUrl="MediaPreviewById"
+                                                MediaSelected="id => Controller.SelectMediaAsync(id)"
+                                                MediaToggled="id => Controller.ToggleMediaSelectionAsync(id)"
+                                                ScopeChanged="ChangeApplyScopeAsync"
+                                                PreviewChanged="PreviewTemplateAsync"
+                                                CommitRequested="CommitTemplateAsync"
+                                                DiscardRequested="() => Controller.DiscardTransientEditsAsync()"
+                                                OpenDesignerRequested="OpenDesignerAsync" />
+            }
+            else
+            {
+            <div class="workspace-main-column @(IsCropEditing ? "is-crop" : null)" style="@WorkspaceMainStyle" @onpointermove="ResizeMediaStrip" @onpointerup="EndMediaStripResize" @onpointerleave="EndMediaStripResize" @onpointercancel="EndMediaStripResize">
+                <section class="workspace-preview-pane">
+                    @if (State.Recovery is not null)
+                    {
+                        <WMWorkspaceRecoveryPanel Result="State.Recovery" Busy="recovering" RecoveryRequested="RecoverAsync" />
+                    }
+                    else
+                    {
+                        <div class="desktop-preview-persistent @(IsCropEditing ? "is-hidden" : null)">
+                            <WMDesktopPreviewWorkspace Presentation="PreviewPresentation" ModeLabel="@PreviewModeLabel" Busy="@IsBusy" IsOriginal="State.IsComparingOriginal" Message="State.Message"
+                                                       ShowOriginal="ShowOriginalAsync" HideOriginal="HideOriginalAsync" CapabilityChanged="HandleColorPreviewCapabilityAsync" PerformanceMeasured="HandleColorPreviewPerformanceAsync" />
+                        </div>
+                        @if (IsCropEditing)
                         {
-                            <div class="desktop-progress" role="status"><MProgressCircular Indeterminate Size="28" Width="3" /><span>@State.Message</span></div>
+                            <div class="desktop-crop-canvas-host">
+                                <WMCropCanvas ImageUrl="@CropSourceUrl"
+                                              SourceWidth="CropSourceWidth"
+                                              SourceHeight="CropSourceHeight"
+                                              Settings="State.CropTool.Draft"
+                                              SettingsChanged="UpdateCropDraftAsync"
+                                              ApplyRequested="() => Controller.CommitCropDraftAsync()"
+                                              CancelRequested="() => Controller.DiscardTransientEditsAsync()" />
+                            </div>
                         }
-                        @if (State.IsComparingOriginal) { <span class="desktop-original-chip">原图</span> }
-                    </section>
-                    <section class="desktop-media-strip" aria-label="素材列表">
-                        @foreach (var media in State.Media)
-                        {
-                            <article class="@(media.Id == State.CurrentMediaId ? "is-active" : null)">
-                                <button type="button" class="desktop-media-preview" @onclick="() => Controller.SelectMediaAsync(media.Id)">
-                                    @if (MediaPreview(media) is { Length: > 0 } preview) { <img src="@preview" alt="" /> }
-                                    else { <span class="desktop-media-placeholder"><MIcon>mdi-image-outline</MIcon></span> }
-                                    <span>@media.DisplayName</span>
-                                </button>
-                                <button type="button" class="desktop-media-check @(media.IsSelected ? "is-selected" : null)" @onclick="() => Controller.ToggleMediaSelectionAsync(media.Id)" aria-label="切换导出选择"><MIcon>@(media.IsSelected ? "mdi-check" : "mdi-plus")</MIcon></button>
-                            </article>
-                        }
-                    </section>
-                </main>
-                <aside class="desktop-inspector">
-                    <div class="desktop-inspector-scroll">
-                        @if (State.Mode == WMWorkspaceMode.Template)
-                        {
-                            <WMTemplatePanel Templates="templates" TemplateId="State.TemplateId" Draft="State.TemplateEdit" Scope="State.ApplyScope" ScopeChanged="ChangeApplyScopeAsync" SelectedCount="SelectedCount" RefreshRequested="RefreshTemplatesAsync" PreviewChanged="PreviewTemplateAsync" CommitRequested="CommitTemplateAsync" />
-                            @if (!string.IsNullOrWhiteSpace(State.TemplateId)) { <button class="desktop-edit-template" type="button" @onclick="() => OpenDesignerAsync(State.TemplateId!)"><MIcon>mdi-vector-square-edit</MIcon><span>编辑当前模板</span></button> }
-                        }
-                        else if (State.Mode == WMWorkspaceMode.ColorGrade)
-                        {
-                            <WMColorGradePanel Recipe="State.ColorGradeTool.Draft" Presets="State.ColorGradeTool.Presets" SelectedPresetId="State.ColorGradeTool.SelectedPresetId" ReferenceUrl="State.ColorGradeTool.Reference.PreviewUrl" ReferenceName="State.ColorGradeTool.Reference.DisplayName" Busy="State.ColorGradeTool.IsBusy" Scope="State.ApplyScope" ScopeChanged="ChangeApplyScopeAsync" SelectedCount="SelectedCount" PreviewChanged="PreviewColorAsync" CommitRequested="CommitColorAsync" ChooseReferenceRequested="ChooseReferenceAsync" ClearReferenceRequested="ClearReferenceAsync" ResetRequested="ResetColorAsync" PresetSelected="ApplyPresetAsync" SavePresetRequested="SavePresetAsync" DeletePresetRequested="DeletePresetAsync" />
-                        }
-                        else if (State.Mode == WMWorkspaceMode.MultiFrame)
-                        {
-                            <WMMultiFramePanel Media="State.Media" Roles="State.MultiFrameTool.Draft.Roles" Mode="State.MultiFrameTool.Draft.Mode" ModeChanged="SetStackModeAsync" NormalizeExposure="State.MultiFrameTool.Draft.NormalizeExposure" NormalizeExposureChanged="SetNormalizeExposureAsync" RepairHotPixels="State.MultiFrameTool.Draft.RepairHotPixels" RepairHotPixelsChanged="SetRepairHotPixelsAsync" AutoCrop="State.MultiFrameTool.Draft.AutoCrop" AutoCropChanged="SetAutoCropAsync" Capability="State.MultiFrameTool.Capability" Busy="State.MultiFrameTool.IsBusy" Message="State.Message" RoleChanged="SetFrameRole" RunRequested="RunStackAsync" />
-                        }
-                        else if (State.Mode == WMWorkspaceMode.Collage)
-                        {
-                            <WMCollagePanel Media="State.Media" MediaPreviewUrl="MediaPreview" OrderedMediaIds="State.CollageTool.Draft.OrderedMediaIds" Direction="State.CollageTool.Draft.Direction" Busy="State.CollageTool.IsBusy" DraftChanged="UpdateCollageDraftAsync" RunOrCancelRequested="RunOrCancelCollageAsync" />
-                        }
-                        <WMExportPanel SelectedCount="SelectedCount" Format="State.ExportTool.Draft.Format" FormatChanged="SetExportFormatAsync" MaximumLongEdge="@(State.ExportTool.Draft.MaximumLongEdge ?? 0)" MaximumLongEdgeChanged="SetExportMaximumLongEdgeAsync" CustomMaximumLongEdge="State.ExportTool.Draft.CustomMaximumLongEdge" CustomMaximumLongEdgeChanged="SetCustomExportMaximumLongEdgeAsync" Quality="State.ExportTool.Draft.Quality" QualityChanged="SetExportQualityAsync" Destination="State.ExportTool.Draft.Destination" DestinationChanged="SetExportDestinationAsync" Progress="State.ActiveJob.Progress" Results="State.ExportTool.Results" CanExportPng16="CanPng16" CanExportTiff16="CanTiff16" FailedCount="State.ExportTool.FailedMediaIds.Count" Busy="State.ExportTool.IsBusy" RetryFailedRequested="RetryFailedAsync" RunOrCancelRequested="ExportOrCancelAsync" />
-                    </div>
-                </aside>
+                    }
+                </section>
+                <div class="workspace-splitter-grip" @onpointerdown="StartMediaStripResize" @onpointerdown:preventDefault="true"><span></span></div>
+                <section class="workspace-media-pane"><WMDesktopMediaStrip Media="State.Media" CurrentMediaId="State.CurrentMediaId" PreviewUrl="MediaPreviewById" StarTrailSelectionIds="SelectedFrameIds" Selected="id => Controller.SelectMediaAsync(id)" Toggled="id => Controller.ToggleMediaSelectionAsync(id)" /></section>
             </div>
-        }
+            <WMDesktopModeInspector Mode="DesktopMode"
+                                    ExportOpen="showExportPanel"
+                                    HasPendingOperation="State.HasTransientEdits"
+                                    ToggleExport="ToggleExportPanel"
+                                    CropSettings="State.CropTool.Draft"
+                                    CropSourceWidth="CropSourceWidth"
+                                    CropSourceHeight="CropSourceHeight"
+                                    CropSettingsChanged="UpdateCropDraftAsync"
+                                    ApplyCrop="() => Controller.CommitCropDraftAsync()"
+                                    CancelCrop="() => Controller.DiscardTransientEditsAsync()"
+                                    ColorRecipe="State.ColorGradeTool.Draft"
+                                    ColorPresetCount="State.ColorGradeTool.Presets.Count"
+                                    ColorReferenceUrl="@State.ColorGradeTool.Reference.PreviewUrl"
+                                    ColorReferenceName="@State.ColorGradeTool.Reference.DisplayName"
+                                    CanApplyColor="@(State.CurrentMediaId is not null && ColorEngineAvailable)"
+                                    ColorPreviewChanged="PreviewColorAsync"
+                                    ApplyColor="ApplyColorAsync"
+                                    SaveColorPreset="SavePresetAsync"
+                                    RematchColorReference="ChooseReferenceAsync"
+                                    ClearColorReference="ClearReferenceAsync"
+                                    ResetColorAdjustments="ResetColorAsync"
+                                    MultiFrameMedia="State.Media"
+                                    MultiFrameDraft="State.MultiFrameTool.Draft"
+                                    MultiFrameCapability="State.MultiFrameTool.Capability"
+                                    MultiFrameCapabilityMessage="@MultiFrameCapabilityMessage"
+                                    MultiFrameBusy="State.MultiFrameTool.IsBusy"
+                                    Message="@State.Message"
+                                    MultiFrameDraftChanged="draft => Controller.UpdateMultiFrameDraftAsync(draft)"
+                                    PreviewMultiFrame="PreviewStackAsync"
+                                    ApplyMultiFrame="RunStackAsync"
+                                    ExportDraft="State.ExportTool.Draft"
+                                    SelectedMediaCount="SelectedCount"
+                                    ExportBusy="State.ExportTool.IsBusy"
+                                    ExportProgress="State.ActiveJob.Progress"
+                                    ExportResults="State.ExportTool.Results"
+                                    ExportFailedCount="State.ExportTool.FailedMediaIds.Count"
+                                    CanExportPng16="CanPng16"
+                                    CanExportTiff16="CanTiff16"
+                                    ExportFormatChanged="SetExportFormatAsync"
+                                    ExportMaximumLongEdgeChanged="SetExportMaximumLongEdgeAsync"
+                                    ExportCustomMaximumLongEdgeChanged="SetCustomExportMaximumLongEdgeAsync"
+                                    ExportQualityChanged="SetExportQualityAsync"
+                                    ExportDestinationChanged="SetExportDestinationAsync"
+                                    RetryFailedExport="RetryFailedAsync"
+                                    RunExport="ExportOrCancelAsync" />
+            }
+        </div>
     </WorkspaceContent>
     <DialogContent>
         @if (!string.IsNullOrWhiteSpace(State.ErrorMessage) || !string.IsNullOrWhiteSpace(message))
         {
             <div class="desktop-toast @(State.ErrorMessage is null ? null : "is-error")" role="status"><span>@(State.ErrorMessage ?? message)</span><button type="button" @onclick="() => message = null"><MIcon>mdi-close</MIcon></button></div>
         }
-        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
+        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMDesktopTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
+        <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+            @if (showNewTemplate)
+            {
+                <WMDesktopNewTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showAccount" Width="390" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+            @if (showAccount)
+            {
+                <WMDesktopAccountDialog @bind-Mode="accountDialogMode" OnClose="CloseAccountDialog" OnCompleted="OnAccountCompleted" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showCommonDialog" Width="300">
+            <MImage Height="300" Width="300" Contain Src="@commonDialogUrl" />
+        </MDialog>
+        <MDialog @bind-Value="showVipPurchase" Width="720" ContentStyle="padding:0;background:transparent;box-shadow:none;">
+            @if (showVipPurchase)
+            {
+                <WMDesktopMembershipDialog OnClose="() => showVipPurchase = false" OnPaid="OnVipPaid" />
+            }
+        </MDialog>
     </DialogContent>
 </MacWorkspaceShell>
 
@@ -138,8 +164,20 @@
     private readonly List<WMTemplateList> templates = [];
     private bool opened;
     private bool showDesigner;
+    private bool showNewTemplate;
+    private bool showAccount;
+    private bool showVipPurchase;
+    private bool showCommonDialog;
+    private bool showExportPanel;
     private bool recovering;
+    private bool mediaStripDragging;
+    private bool desktopMultiFrameInitialized;
+    private double mediaStripDragStartY;
+    private int mediaStripDragStartHeight = 126;
+    private int mediaStripHeight = 126;
     private string? message;
+    private string? commonDialogUrl;
+    private string accountDialogMode = "login";
     private string designerTemplateId = string.Empty;
     private WMWorkspaceState State => Controller.State;
     private WMWorkspacePreviewPresentation PreviewPresentation => State.IsComparingOriginal
@@ -155,12 +193,32 @@
     private int SelectedCount => State.Media.Count(item => item.IsSelected);
     private bool CanPng16 => ImagingCapabilities.Probe(WMImagingFeature.Png16).IsAvailable;
     private bool CanTiff16 => ImagingCapabilities.Probe(WMImagingFeature.Tiff16).IsAvailable;
-
-    private void OpenSettings()
+    private bool ColorEngineAvailable => Controller.ColorEngineCapability.IsAvailable;
+    private string? MultiFrameCapabilityMessage => ImagingCapabilities.Current switch
     {
-        var returnUrl = string.IsNullOrWhiteSpace(State.SessionId) ? "/create" : $"/workspace/{State.SessionId}";
-        NavigationHistory.NavigateTo($"/settings?returnUrl={Uri.EscapeDataString(returnUrl)}");
-    }
+        { CanAlignScene: false, CanAlignStars: false } => "场景 ECC 与星点配准不可用，仅开放无需对齐的星轨模式。",
+        { CanAlignScene: false } => "场景 ECC 配准不可用，场景降噪已禁用。",
+        { CanAlignStars: false } => "星点配准不可用，静态星空已禁用。",
+        _ => null
+    };
+    private WMWorkspaceMode DesktopMode => State.Mode is WMWorkspaceMode.Crop or WMWorkspaceMode.Template or WMWorkspaceMode.ColorGrade or WMWorkspaceMode.MultiFrame ? State.Mode : WMWorkspaceMode.Template;
+    private bool IsCropEditing => DesktopMode == WMWorkspaceMode.Crop
+                                  && State.TransientEditMode == WMWorkspaceMode.Crop;
+    private string? CropSourceUrl => State.CurrentMediaId is { Length: > 0 } mediaId
+        ? Controller.GetMediaPreviewUrl(mediaId)
+        : null;
+    private int CropSourceWidth => Math.Max(1, State.CurrentMedia?.Artifact.Width ?? 1);
+    private int CropSourceHeight => Math.Max(1, State.CurrentMedia?.Artifact.Height ?? 1);
+    private string WorkspaceMainStyle => $"grid-template-rows:minmax(0,1fr) 7px {mediaStripHeight}px;";
+    private string PreviewModeLabel => DesktopMode switch { WMWorkspaceMode.Crop => "裁切", WMWorkspaceMode.ColorGrade => "调色预览", WMWorkspaceMode.MultiFrame => "星轨预览", _ => "模板预览" };
+    private bool IsBusy => State.Activity is WMWorkspaceActivity.Previewing or WMWorkspaceActivity.Exporting || State.MultiFrameTool.IsBusy;
+    private bool ShowAppliedTemplateEditor => State.Mode == WMWorkspaceMode.Template
+        && State.HasTransientEdits
+        && State.TransientEditMode == WMWorkspaceMode.Template
+        && State.TemplateEdit is { TemplateId.Length: > 0, CanvasJson.Length: > 0 };
+    private List<string> SelectedFrameIds => State.Media.Where(item => State.MultiFrameTool.Draft.Roles.TryGetValue(item.Id, out var role) && role is not null).Select(item => item.Id).ToList();
+    private string DesktopRootUrl => Global.DeviceType == Watermark.Shared.Enums.DeviceType.Win ? "/desktop" : "/mac";
+    private string DesktopReturnUrl => string.IsNullOrWhiteSpace(State.SessionId) ? DesktopRootUrl : $"{DesktopRootUrl}/workspace/{State.SessionId}";
 
     private Task HandleColorPreviewCapabilityAsync(WMColorPreviewCapability capability) =>
         Controller.SetColorPreviewCapabilityAsync(capability);
@@ -172,7 +230,9 @@
     {
         Controller.Changed += OnWorkspaceChanged;
         TemplateLibrary.Changed += OnTemplatesChanged;
+        Accounts.Changed += OnAccountChanged;
         SystemAppearance.SetWorkspaceActive(true);
+        await DesktopStartup.InitializeAsync();
         await RefreshTemplatesAsync();
         if (!string.IsNullOrWhiteSpace(SessionId))
         {
@@ -191,26 +251,123 @@
         }
     }
 
-    private async Task ImportNewSessionAsync()
-    {
-        try
-        {
-            var sources = await PhotoPicker.PickMultipleAsync();
-            if (sources.Count == 0) return;
-            if (opened) await Controller.CloseAsync();
-            var id = await WorkspaceLauncher.CreateFromSourcesAsync(WMWorkspaceMode.Template, sources, null, CancellationToken.None);
-            opened = await Controller.OpenAsync(id);
-        }
-        catch (Exception ex) { message = ex.Message; }
-    }
-
     private async Task AppendMediaAsync()
     {
         try { var sources = await PhotoPicker.PickMultipleAsync(); if (sources.Count > 0) await Controller.ImportMediaAsync(sources); }
         catch (Exception ex) { message = ex.Message; }
     }
 
-    private Task SetModeAsync(WMWorkspaceMode mode) => Controller.SetModeAsync(mode);
+    private async Task SetModeAsync(WMWorkspaceMode mode)
+    {
+        await Controller.SetModeAsync(mode);
+        if (mode != WMWorkspaceMode.MultiFrame
+            || desktopMultiFrameInitialized
+            || State.Media.Count != 0
+            || State.MultiFrameTool.Draft.Roles.Count != 0)
+            return;
+
+        desktopMultiFrameInitialized = true;
+        var defaults = WMMultiFrameStackSettings.CreateDefault(WMStackMode.StaticSky);
+        await Controller.UpdateMultiFrameDraftAsync(
+            State.MultiFrameTool.Draft with
+            {
+                Mode = WMStackMode.StaticSky,
+                NormalizeExposure = defaults.NormalizeExposure,
+                RepairHotPixels = defaults.RepairHotPixels,
+                AutoCrop = defaults.AutoCrop,
+                Advanced = WMMultiFrameAdvancedDraft.CreateDefault(WMStackMode.StaticSky)
+            });
+        await Controller.CommitMultiFrameDraftAsync();
+    }
+
+    private Task UpdateCropDraftAsync(WMCropSettings settings) =>
+        Controller.UpdateCropDraftAsync(settings);
+    private async Task SelectTemplateAsync(WMTemplateList template)
+    {
+        if (State.Media.Count == 0)
+        {
+            message = "请先导入图片，再选择水印模板。";
+            return;
+        }
+        await Controller.PreviewTemplateAsync(new WMWorkspaceTemplateEdit(template.ID, null), State.ApplyScope);
+    }
+
+    private async Task SelectSplitTemplateAsync(WMTemplateList template)
+    {
+        try
+        {
+            var sources = await PhotoPicker.PickMultipleAsync();
+            if (sources.Count == 0) return;
+            await Controller.CreateTemplateCollageAsync(new WMWorkspaceTemplateEdit(template.ID, Global.CanvasSerialize(template.Canvas)), sources);
+            await Controller.SetModeAsync(WMWorkspaceMode.Template);
+        }
+        catch (Exception ex) { message = ex.Message; }
+    }
+
+    private Task ToggleFrameAsync(string mediaId)
+    {
+        var roles = new Dictionary<string, WMFrameRole?>(State.MultiFrameTool.Draft.Roles, StringComparer.Ordinal);
+        roles[mediaId] = roles.TryGetValue(mediaId, out var existing) && existing is not null ? null : WMFrameRole.Light;
+        return Controller.UpdateMultiFrameDraftAsync(State.MultiFrameTool.Draft with { Roles = roles });
+    }
+
+    private void ToggleExportPanel() => showExportPanel = !showExportPanel;
+    private void StartMediaStripResize(PointerEventArgs args) { mediaStripDragging = true; mediaStripDragStartY = args.ClientY; mediaStripDragStartHeight = mediaStripHeight; }
+    private void ResizeMediaStrip(PointerEventArgs args) { if (mediaStripDragging) mediaStripHeight = Math.Clamp(mediaStripDragStartHeight + (int)(mediaStripDragStartY - args.ClientY), 96, 220); }
+    private void EndMediaStripResize() => mediaStripDragging = false;
+    private string? MediaPreviewById(string mediaId)
+    {
+        var media = State.Media.FirstOrDefault(item => item.Id == mediaId);
+        return media is null ? null : MediaPreview(media);
+    }
+
+    private async Task SignOutAsync() { await Accounts.SignOutAsync(); showAccount = false; }
+    private void OpenAccountDialog(string mode)
+    {
+        accountDialogMode = mode;
+        showAccount = true;
+    }
+    private void CloseAccountDialog()
+    {
+        showAccount = false;
+        accountDialogMode = "login";
+    }
+    private Task OnAccountCompleted() { StateHasChanged(); return Task.CompletedTask; }
+    private void OpenNewTemplateDialog() => showNewTemplate = true;
+    private void CloseNewTemplateDialog() => showNewTemplate = false;
+    private async Task OnTemplateCreatedAsync(string templateId)
+    {
+        showNewTemplate = false;
+        TemplateLibrary.Invalidate(templateId);
+        await RefreshTemplatesAsync();
+        await OpenDesignerAsync(templateId);
+    }
+    private void NavigateDesktopSection(string section)
+    {
+        var safeSection = section is "templates" or "market" or "resources" or "settings" or "admin" ? section : "templates";
+        Navigation.NavigateTo($"{DesktopRootUrl}/{safeSection}?returnUrl={Uri.EscapeDataString(DesktopReturnUrl)}");
+    }
+    private void OpenCommonDialog(string src)
+    {
+        commonDialogUrl = src;
+        showCommonDialog = true;
+    }
+    private void OpenVipDialog()
+    {
+        if (!Accounts.State.IsAuthenticated)
+        {
+            OpenAccountDialog("login");
+            return;
+        }
+
+        showVipPurchase = true;
+    }
+    private Task OnVipPaid()
+    {
+        showVipPurchase = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
     private Task PreviewTemplateAsync(WMWorkspaceTemplateEdit edit) => Controller.PreviewTemplateAsync(edit, State.ApplyScope);
     private Task CommitTemplateAsync(WMWorkspaceTemplateEdit edit) => Controller.CommitTemplateAsync(edit, State.ApplyScope);
     private Task ChangeApplyScopeAsync(WMApplyScope scope)
@@ -218,7 +375,6 @@
         Controller.SetApplyScope(scope);
         return Task.CompletedTask;
     }
-    private Task SetHistoryCursorAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var cursor) ? Controller.SetHistoryCursorAsync(cursor) : Task.CompletedTask;
     private Task ShowOriginalAsync(PointerEventArgs _) => Controller.SetCompareOriginalAsync(true);
     private Task HideOriginalAsync(PointerEventArgs _) => Controller.SetCompareOriginalAsync(false);
     private string? MediaPreview(WMWorkspaceMedia media) =>
@@ -232,11 +388,8 @@
         await Controller.CommitColorDraftAsync(State.ApplyScope);
     }
 
-    private async Task ResetColorAsync()
-    {
-        await Controller.UpdateColorDraftAsync(new WMColorRecipe { Name = "桌面调整" });
-        await Controller.CommitColorDraftAsync(State.ApplyScope);
-    }
+    private Task ApplyColorAsync() => Controller.CommitColorDraftAsync(WMApplyScope.Current);
+    private Task ResetColorAsync() => Controller.UpdateColorDraftAsync(new WMColorRecipe { Name = "桌面调整" });
 
     private Task ApplyPresetAsync(WMColorRecipe preset) => Controller.ApplyColorPresetAsync(preset.Id);
     private Task SavePresetAsync()
@@ -305,6 +458,12 @@
         catch (Exception ex) { message = ex.Message; }
     }
 
+    private async Task PreviewStackAsync()
+    {
+        try { await Controller.PreviewMultiFrameAsync(); }
+        catch (Exception ex) { message = ex.Message; }
+    }
+
     private Task RetryFailedAsync() => Controller.RetryFailedExportAsync();
 
     private Task SetExportFormatAsync(WMExportFormat value) =>
@@ -325,26 +484,15 @@
     private Task ExportOrCancelAsync() =>
         State.ExportTool.IsBusy ? Controller.CancelActiveJobAsync() : Controller.StartExportAsync();
 
-    private async Task RunOrCancelCollageAsync()
-    {
-        if (State.CollageTool.IsBusy) await Controller.CancelActiveJobAsync();
-        else await Controller.ExecuteCollageAsync();
-    }
-
-    private Task UpdateCollageDraftAsync(WMCollageDraft draft) =>
-        Controller.UpdateCollageDraftAsync(draft);
     private async Task RefreshTemplatesAsync() { var items = await TemplateLibrary.GetOrRefreshAsync(); templates.Clear(); templates.AddRange(items); }
     private void OnTemplatesChanged() => _ = InvokeAsync(() => { templates.Clear(); templates.AddRange(TemplateLibrary.Templates); StateHasChanged(); });
     private void OnWorkspaceChanged(WMWorkspaceState next) => _ = InvokeAsync(() => { opened = !string.IsNullOrWhiteSpace(next.SessionId) && next.Activity != WMWorkspaceActivity.Failed; StateHasChanged(); });
 
     private async Task OpenDesignerAsync(string templateId)
     {
-        var id = await SessionStore.CreateAsync(new WMWorkspaceCreateRequest(
-            WMWorkspaceMode.TemplateDesign,
-            [],
-            templateId,
-            !string.IsNullOrWhiteSpace(State.SessionId) ? $"/workspace/{State.SessionId}" : "/templates?tab=local"));
-        Navigation.NavigateTo($"/workspace/{id}");
+        designerTemplateId = templateId;
+        showDesigner = true;
+        await Task.CompletedTask;
     }
 
     private async Task RecoverAsync(WMWorkspaceRecoveryRequest request)
@@ -355,7 +503,7 @@
         {
             opened = await Controller.RecoverAsync(request.Action, request.AffectedIds);
             if (request.Action == WMWorkspaceRecoveryAction.DiscardSession)
-                Navigation.NavigateTo("/create");
+                Navigation.NavigateTo(DesktopRootUrl, replace: true);
         }
         finally { recovering = false; }
     }
@@ -363,13 +511,12 @@
     private async Task CloseDesignerAsync()
     {
         showDesigner = false;
-        await Controller.DiscardAsync();
-        opened = false;
-        Navigation.NavigateTo("/templates");
+        await Controller.DiscardTransientEditsAsync();
     }
     private async Task OnTemplateSavedAsync(string id) { TemplateLibrary.Invalidate(id); await RefreshTemplatesAsync(); }
+    private void OnAccountChanged() => _ = InvokeAsync(StateHasChanged);
     public async ValueTask DisposeAsync()
     {
-        Controller.Changed -= OnWorkspaceChanged; TemplateLibrary.Changed -= OnTemplatesChanged; if (opened) await Controller.CloseAsync(); SystemAppearance.SetWorkspaceActive(false);
+        Controller.Changed -= OnWorkspaceChanged; TemplateLibrary.Changed -= OnTemplatesChanged; Accounts.Changed -= OnAccountChanged; if (opened) await Controller.CloseAsync(); SystemAppearance.SetWorkspaceActive(false);
     }
 }

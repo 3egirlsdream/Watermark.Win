@@ -69,7 +69,11 @@
 </section>
 
 @code {
-    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+    [Parameter] public string? ModePath { get; set; }
+    [Parameter] public EventCallback<string?> ModePathChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
     private string email = string.Empty;
     private string displayName = string.Empty;
     private string password = string.Empty;
@@ -83,8 +87,8 @@
     private bool deleteConfirmed;
     private int countdown;
     private CancellationTokenSource? countdownCts;
-    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl);
-    private AccountMode Mode => new Uri(Navigation.Uri).AbsolutePath switch
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
+    private AccountMode Mode => (ModePath ?? new Uri(Navigation.Uri).AbsolutePath) switch
     {
         "/account/register" => AccountMode.Register,
         "/account/recover" => AccountMode.Recover,
@@ -142,11 +146,22 @@
         ShowResult(result);
         if (!result.Succeeded) return;
         if (Mode == AccountMode.Recover)
-            NavigationHistory.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(ReturnTarget)}", replace: true);
+        {
+            if (ModePathChanged.HasDelegate) await SetEmbeddedModeAsync("login");
+            else NavigationHistory.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(ReturnTarget)}", replace: true);
+        }
+        else if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
         else if (Mode == AccountMode.Delete)
+        {
             NavigationHistory.NavigateRoot("/profile");
+        }
         else
+        {
             NavigationHistory.GoBackTo(ReturnTarget);
+        }
     }
 
     private async Task SendCodeAsync()
@@ -184,10 +199,31 @@
         messageIsError = !result.Succeeded;
     }
 
-    private void OpenMode(string mode) => NavigationHistory.NavigateTo($"/account/{mode}?returnUrl={Uri.EscapeDataString(ReturnTarget)}");
-    private void OpenRegister() => OpenMode("register");
-    private void OpenRecover() => OpenMode("recover");
-    private void GoBack() => NavigationHistory.GoBack(ReturnTarget);
+    private async Task OpenModeAsync(string mode)
+    {
+        if (ModePathChanged.HasDelegate)
+        {
+            await SetEmbeddedModeAsync(mode);
+            return;
+        }
+
+        NavigationHistory.NavigateTo($"/account/{mode}?returnUrl={Uri.EscapeDataString(ReturnTarget)}");
+    }
+    private async Task SetEmbeddedModeAsync(string mode)
+    {
+        ModePath = $"/account/{mode}";
+        password = confirmPassword = oldPassword = code = string.Empty;
+        message = null;
+        messageIsError = false;
+        await ModePathChanged.InvokeAsync(ModePath);
+    }
+    private Task OpenRegister() => OpenModeAsync("register");
+    private Task OpenRecover() => OpenModeAsync("recover");
+    private async Task GoBack()
+    {
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+        else NavigationHistory.GoBack(ReturnTarget);
+    }
     private Task OpenProtocolAsync() => External.OpenUrlAsync("http://thankful.top/protocol");
     private Task OpenPrivacyAsync() => External.OpenUrlAsync("http://thankful.top/private");
 

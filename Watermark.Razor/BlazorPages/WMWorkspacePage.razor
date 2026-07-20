@@ -3,11 +3,11 @@
 @using Watermark.Razor.Components.Layout
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
-@layout MobileWorkspaceLayout
+@layout WMWorkspaceRouteLayout
+@inject NavigationManager Navigation
 
 @if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
 {
-    <MainViewOSX @key="SessionId" SessionId="@SessionId" />
 }
 else
 {
@@ -16,4 +16,11 @@ else
 
 @code {
     [Parameter] public string SessionId { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        if (Global.DeviceType is not (DeviceType.Mac or DeviceType.Win)) return;
+        var prefix = Global.DeviceType == DeviceType.Win ? "/desktop" : "/mac";
+        Navigation.NavigateTo($"{prefix}/workspace/{SessionId}", replace: true);
+    }
 }

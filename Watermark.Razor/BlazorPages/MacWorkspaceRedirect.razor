@@ -1,13 +1,16 @@
 @page "/mac"
+@page "/desktop"
 @using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @inject IWMWorkspaceSessionStore SessionStore
 @inject NavigationManager Navigation
 
 @code {
     protected override async Task OnInitializedAsync()
     {
-        var recent = await SessionStore.ListRecentAsync(5);
-        var session = recent.FirstOrDefault(item => item.Mode != WMWorkspaceMode.TemplateDesign);
-        Navigation.NavigateTo(session is null ? "/create" : $"/workspace/{session.Id}", replace: true);
+        var id = await SessionStore.CreateEmptyAsync(WMWorkspaceMode.Template);
+        var prefix = Global.DeviceType == DeviceType.Win ? "/desktop" : "/mac";
+        Navigation.NavigateTo($"{prefix}/workspace/{id}", replace: true);
     }
 }

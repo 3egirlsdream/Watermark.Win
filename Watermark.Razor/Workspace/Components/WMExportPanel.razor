@@ -1,42 +1,133 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<details class="wm-export-panel" open="@Expanded">
-    <summary><span><MIcon>mdi-export-variant</MIcon>导出设置</span><small>@SelectedCount 张 · @FormatLabel</small></summary>
-    <label><span>格式</span><select value="@Format" @onchange="ChangeFormatAsync"><option value="@WMExportFormat.Jpeg8">JPEG</option>@if (CanExportPng16) { <option value="@WMExportFormat.Png16">16 位 PNG</option> }@if (CanExportTiff16) { <option value="@WMExportFormat.Tiff16">16 位 TIFF</option> }</select></label>
-    <label><span>分辨率</span><select value="@MaximumLongEdge" @onchange="ChangeMaximumLongEdgeAsync"><option value="0">原尺寸</option><option value="1920">最长边 1920</option><option value="3840">最长边 3840</option><option value="-1">自定义最长边</option></select></label>
-    <label><span>保存位置</span><select value="@Destination" @onchange="ChangeDestinationAsync"><option value="@WMExportDestinationKind.PlatformDefault">默认图片目录</option><option value="@WMExportDestinationKind.SystemPicker">每次选择位置</option></select></label>
-    @if (MaximumLongEdge == -1)
-    {
-        <label><span>自定义最长边 <output>@CustomMaximumLongEdge px</output></span><input class="wm-number" type="number" min="320" max="16384" step="1" value="@CustomMaximumLongEdge" @onchange="ChangeCustomMaximumLongEdgeAsync" /></label>
-    }
-    @if (Format == WMExportFormat.Jpeg8)
-    {
-        <label><span>质量 <output>@Quality</output></span><input type="range" min="60" max="100" step="1" value="@Quality" @onchange="ChangeQualityAsync" /></label>
-    }
-    @if (FailedCount > 0)
-    {
-        <button type="button" class="wm-retry" disabled="@Busy" @onclick="RetryFailedRequested"><MIcon>mdi-refresh</MIcon><span>仅重试失败的 @FailedCount 张</span></button>
-    }
-    @if (Busy)
-    {
-        <div class="wm-export-progress" role="status"><span><strong>正在导出</strong><small>@Progress.ToString("P0")</small></span><progress max="1" value="@Progress"></progress></div>
-    }
-    @if (Results.Count > 0)
-    {
-        <ul class="wm-export-results" aria-label="导出结果">
-            @foreach (var item in Results)
+<details class="wm-export-panel @(Busy ? "is-busy" : null) @(!ShowSummary ? "hide-summary" : null)" open="@Expanded">
+    <summary>
+        <span class="wm-export-summary-icon"><MIcon>mdi-export-variant</MIcon></span>
+        <span class="wm-export-summary-copy">
+            <small>Export studio</small>
+            <strong>导出设置</strong>
+        </span>
+        <span class="wm-export-summary-meta">@SelectedCount 张 · @FormatLabel</span>
+        <MIcon Class="wm-export-summary-chevron">mdi-chevron-down</MIcon>
+    </summary>
+
+    <div class="wm-export-body">
+        <section class="wm-export-overview" aria-label="本次导出摘要">
+            <span class="wm-export-overview-icon"><MIcon>mdi-image-multiple-outline</MIcon></span>
+            <div>
+                <small>本次输出</small>
+                <strong>@SelectedCount 张照片</strong>
+                <span>@ResolutionLabel · @FormatLabel@(Format == WMExportFormat.Jpeg8 ? $" · 质量 {Quality}" : " · 16 位")</span>
+            </div>
+            <span class="wm-export-format-badge">@FormatLabel</span>
+        </section>
+
+        <section class="wm-export-section" aria-labelledby="wm-export-format-heading">
+            <div class="wm-export-section-heading">
+                <div><strong id="wm-export-format-heading">文件格式</strong><small>选择兼容性或高精度工作流</small></div>
+            </div>
+            <div class="wm-export-choice-grid wm-export-format-grid">
+                <button type="button" class="@FormatButtonClass(WMExportFormat.Jpeg8)" aria-pressed="@AriaPressed(Format == WMExportFormat.Jpeg8)" @onclick="() => SelectFormatAsync(WMExportFormat.Jpeg8)">
+                    <span class="wm-export-choice-mark">JPG</span><span><strong>JPEG</strong><small>通用 · 文件更小</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                </button>
+                <button type="button" class="@FormatButtonClass(WMExportFormat.Png16)" aria-pressed="@AriaPressed(Format == WMExportFormat.Png16)" disabled="@(!CanExportPng16)" title="@(!CanExportPng16 ? "当前设备不支持 16 位 PNG" : null)" @onclick="() => SelectFormatAsync(WMExportFormat.Png16)">
+                    <span class="wm-export-choice-mark">PNG</span><span><strong>PNG 16</strong><small>@(CanExportPng16 ? "无损 · 保留细节" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                </button>
+                <button type="button" class="@FormatButtonClass(WMExportFormat.Tiff16)" aria-pressed="@AriaPressed(Format == WMExportFormat.Tiff16)" disabled="@(!CanExportTiff16)" title="@(!CanExportTiff16 ? "当前设备不支持 16 位 TIFF" : null)" @onclick="() => SelectFormatAsync(WMExportFormat.Tiff16)">
+                    <span class="wm-export-choice-mark">TIF</span><span><strong>TIFF 16</strong><small>@(CanExportTiff16 ? "专业 · 后期流程" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                </button>
+            </div>
+        </section>
+
+        @if (Format == WMExportFormat.Jpeg8)
+        {
+            <section class="wm-export-section wm-export-quality" aria-labelledby="wm-export-quality-heading">
+                <div class="wm-export-section-heading">
+                    <div><strong id="wm-export-quality-heading">图片质量</strong><small>更高质量会生成更大的文件</small></div>
+                    <output for="@qualityInputId">@Quality</output>
+                </div>
+                <label class="wm-export-range-wrap" for="@qualityInputId" style="--wm-range-progress: @(QualityProgress)%">
+                    <span class="wm-visually-hidden">JPEG 图片质量</span>
+                    <input id="@qualityInputId" type="range" min="60" max="100" step="1" value="@Quality" @oninput="ChangeQualityAsync" />
+                </label>
+                <div class="wm-export-range-scale"><span>更小文件</span><span>最佳画质</span></div>
+            </section>
+        }
+
+        <section class="wm-export-section" aria-labelledby="wm-export-size-heading">
+            <div class="wm-export-section-heading">
+                <div><strong id="wm-export-size-heading">输出尺寸</strong><small>按照片最长边等比缩放</small></div>
+                <output>@ResolutionLabel</output>
+            </div>
+            <div class="wm-export-resolution-grid">
+                <button type="button" class="@ResolutionButtonClass(0)" aria-pressed="@AriaPressed(MaximumLongEdge == 0)" @onclick="() => SelectResolutionAsync(0)"><strong>原尺寸</strong><small>不缩放</small></button>
+                <button type="button" class="@ResolutionButtonClass(1920)" aria-pressed="@AriaPressed(MaximumLongEdge == 1920)" @onclick="() => SelectResolutionAsync(1920)"><strong>1920</strong><small>屏幕</small></button>
+                <button type="button" class="@ResolutionButtonClass(3840)" aria-pressed="@AriaPressed(MaximumLongEdge == 3840)" @onclick="() => SelectResolutionAsync(3840)"><strong>3840</strong><small>4K</small></button>
+                <button type="button" class="@ResolutionButtonClass(-1)" aria-pressed="@AriaPressed(MaximumLongEdge == -1)" @onclick="() => SelectResolutionAsync(-1)"><strong>自定义</strong><small>精确像素</small></button>
+            </div>
+            @if (MaximumLongEdge == -1)
             {
-                <li class="@(item.Status == WMExportItemStatus.Succeeded ? "is-success" : "is-error")"><MIcon>@(item.Status == WMExportItemStatus.Succeeded ? "mdi-check-circle-outline" : "mdi-alert-circle-outline")</MIcon><span><strong>@item.SuggestedFileName</strong><small>@(item.ErrorMessage ?? "已保存")</small></span></li>
+                <label class="wm-export-number-field">
+                    <span>最长边像素</span>
+                    <span class="wm-export-number-input"><input type="number" min="320" max="16384" step="1" value="@CustomMaximumLongEdge" inputmode="numeric" @onchange="ChangeCustomMaximumLongEdgeAsync" /><small>px</small></span>
+                </label>
             }
-        </ul>
-    }
-    <button type="button" class="wm-export-run" disabled="@(!Busy && SelectedCount == 0)" @onclick="RunOrCancelRequested"><MIcon>@(Busy ? "mdi-stop-circle-outline" : "mdi-export-variant")</MIcon><span>@(Busy ? "取消导出" : $"导出 {SelectedCount} 张")</span></button>
+        </section>
+
+        <section class="wm-export-section" aria-labelledby="wm-export-destination-heading">
+            <div class="wm-export-section-heading">
+                <div><strong id="wm-export-destination-heading">保存位置</strong><small>决定每次导出后的保存方式</small></div>
+            </div>
+            <div class="wm-export-destination-grid">
+                <button type="button" class="@DestinationButtonClass(WMExportDestinationKind.PlatformDefault)" aria-pressed="@AriaPressed(Destination == WMExportDestinationKind.PlatformDefault)" @onclick="() => SelectDestinationAsync(WMExportDestinationKind.PlatformDefault)">
+                    <MIcon>mdi-folder-image</MIcon><span><strong>默认目录</strong><small>快速保存</small></span><span class="wm-export-destination-check"><MIcon>mdi-check</MIcon></span>
+                </button>
+                <button type="button" class="@DestinationButtonClass(WMExportDestinationKind.SystemPicker)" aria-pressed="@AriaPressed(Destination == WMExportDestinationKind.SystemPicker)" @onclick="() => SelectDestinationAsync(WMExportDestinationKind.SystemPicker)">
+                    <MIcon>mdi-folder-search-outline</MIcon><span><strong>选择位置</strong><small>每次询问</small></span><span class="wm-export-destination-check"><MIcon>mdi-check</MIcon></span>
+                </button>
+            </div>
+        </section>
+
+        @if (FailedCount > 0)
+        {
+            <button type="button" class="wm-retry" disabled="@Busy" @onclick="RetryFailedRequested"><MIcon>mdi-refresh</MIcon><span>仅重试失败的 @FailedCount 张</span></button>
+        }
+        @if (Busy)
+        {
+            <div class="wm-export-progress" role="status">
+                <span><strong>正在生成照片</strong><small>@Progress.ToString("P0")</small></span>
+                <progress max="1" value="@Progress"></progress>
+            </div>
+        }
+        @if (Results.Count > 0)
+        {
+            <ul class="wm-export-results" aria-label="导出结果">
+                @foreach (var item in Results)
+                {
+                    <li class="@(item.Status == WMExportItemStatus.Succeeded ? "is-success" : "is-error")"><MIcon>@(item.Status == WMExportItemStatus.Succeeded ? "mdi-check-circle-outline" : "mdi-alert-circle-outline")</MIcon><span><strong>@item.SuggestedFileName</strong><small>@(item.ErrorMessage ?? "已保存")</small></span></li>
+                }
+            </ul>
+        }
+    </div>
+
+    <footer class="wm-export-actions">
+        <button type="button" class="wm-export-run @(Busy ? "is-cancel" : null)" disabled="@(!Busy && (SelectedCount == 0 || Disabled))" @onclick="RunOrCancelRequested">
+            <MIcon>@(Busy ? "mdi-stop-circle-outline" : "mdi-export-variant")</MIcon>
+            <span>@(Busy ? "取消导出" : $"导出 {SelectedCount} 张照片")</span>
+            @if (!Busy) { <MIcon>mdi-arrow-right</MIcon> }
+        </button>
+        @if (!Busy)
+        {
+            <small>@ActionHint</small>
+        }
+    </footer>
 </details>
 
 @code {
     [Parameter] public int SelectedCount { get; set; }
     [Parameter] public bool Expanded { get; set; }
+    [Parameter] public bool ShowSummary { get; set; } = true;
     [Parameter] public WMExportFormat Format { get; set; } = WMExportFormat.Jpeg8;
     [Parameter] public EventCallback<WMExportFormat> FormatChanged { get; set; }
     [Parameter] public int MaximumLongEdge { get; set; }
@@ -51,14 +142,25 @@
     [Parameter] public bool CanExportTiff16 { get; set; }
     [Parameter] public int FailedCount { get; set; }
     [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Disabled { get; set; }
     [Parameter] public double Progress { get; set; }
     [Parameter] public IReadOnlyList<WMExportItemResult> Results { get; set; } = [];
     [Parameter] public EventCallback RetryFailedRequested { get; set; }
     [Parameter] public EventCallback RunOrCancelRequested { get; set; }
-    private string FormatLabel => Format switch { WMExportFormat.Png16 => "PNG16", WMExportFormat.Tiff16 => "TIFF16", _ => "JPEG" };
-    private Task ChangeFormatAsync(ChangeEventArgs args) => Enum.TryParse<WMExportFormat>(args.Value?.ToString(), out var value) ? FormatChanged.InvokeAsync(value) : Task.CompletedTask;
-    private Task ChangeMaximumLongEdgeAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? MaximumLongEdgeChanged.InvokeAsync(value) : Task.CompletedTask;
+
+    private readonly string qualityInputId = $"wm-export-quality-{Guid.NewGuid():N}";
+    private string FormatLabel => Format switch { WMExportFormat.Png16 => "PNG 16", WMExportFormat.Tiff16 => "TIFF 16", _ => "JPEG" };
+    private string ResolutionLabel => MaximumLongEdge switch { 0 => "原尺寸", -1 => $"{CustomMaximumLongEdge}px", _ => $"{MaximumLongEdge}px" };
+    private string ActionHint => Destination == WMExportDestinationKind.SystemPicker ? "导出时将询问保存位置" : "完成后保存到设备默认图片目录";
+    private int QualityProgress => (Math.Clamp(Quality, 60, 100) - 60) * 100 / 40;
+
+    private string FormatButtonClass(WMExportFormat value) => $"wm-export-choice {(Format == value ? "is-selected" : null)}";
+    private string ResolutionButtonClass(int value) => $"wm-export-resolution {(MaximumLongEdge == value ? "is-selected" : null)}";
+    private string DestinationButtonClass(WMExportDestinationKind value) => $"wm-export-destination {(Destination == value ? "is-selected" : null)}";
+    private static string AriaPressed(bool value) => value ? "true" : "false";
+    private Task SelectFormatAsync(WMExportFormat value) => FormatChanged.InvokeAsync(value);
+    private Task SelectResolutionAsync(int value) => MaximumLongEdgeChanged.InvokeAsync(value);
+    private Task SelectDestinationAsync(WMExportDestinationKind value) => DestinationChanged.InvokeAsync(value);
     private Task ChangeCustomMaximumLongEdgeAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? CustomMaximumLongEdgeChanged.InvokeAsync(Math.Clamp(value, 320, 16384)) : Task.CompletedTask;
     private Task ChangeQualityAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? QualityChanged.InvokeAsync(Math.Clamp(value, 60, 100)) : Task.CompletedTask;
-    private Task ChangeDestinationAsync(ChangeEventArgs args) => Enum.TryParse<WMExportDestinationKind>(args.Value?.ToString(), out var value) ? DestinationChanged.InvokeAsync(value) : Task.CompletedTask;
 }

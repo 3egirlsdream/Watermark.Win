@@ -1,4 +1,6 @@
 .wm-mobile-master-curve {
+    --wm-curve-node: #ffc200;
+    --wm-curve-line: #f7f7f7;
     box-sizing: border-box;
     color: #252525;
     display: grid;
@@ -8,6 +10,13 @@
     min-height: 0;
     padding: 10px 12px 8px;
 }
+
+.wm-mobile-master-curve.no-presets { grid-template-rows: auto minmax(180px, 1fr); }
+.wm-mobile-master-curve.is-compact { height: auto; min-height: 270px; padding: 8px; }
+.wm-mobile-master-curve.is-compact .wm-curve-graph { min-height: 214px; }
+.wm-curve-channel-red { --wm-curve-node: #ef5350; --wm-curve-line: #ff8a80; }
+.wm-curve-channel-green { --wm-curve-node: #2ca56c; --wm-curve-line: #73d99e; }
+.wm-curve-channel-blue { --wm-curve-node: #3478f6; --wm-curve-line: #82adff; }
 
 .wm-mobile-master-curve header {
     align-items: center;
@@ -62,11 +71,11 @@
 .wm-curve-graph svg { display: block; height: 100%; touch-action: none; width: 100%; }
 .wm-curve-background { fill: #20252d; }
 .wm-curve-grid { stroke: rgba(255,255,255,.13); stroke-dasharray: 3 3; stroke-width: .8; }
-.wm-curve-line { fill: none; stroke: #f7f7f7; stroke-linecap: round; stroke-width: 2.2; }
-.wm-curve-node { cursor: grab; fill: #ffc200; stroke: #fff; stroke-width: 2.4; }
+.wm-curve-line { fill: none; stroke: var(--wm-curve-line); stroke-linecap: round; stroke-width: 2.2; }
+.wm-curve-node { cursor: grab; fill: var(--wm-curve-node); stroke: #fff; stroke-width: 2.4; }
 .wm-curve-node:active { cursor: grabbing; }
 .wm-curve-node:focus-visible { outline: none; stroke: #5ba0ff; stroke-width: 3.5; }
-.wm-curve-node.is-endpoint { fill: #f0b600; }
+.wm-curve-node.is-endpoint { filter: brightness(.9); }
 .wm-curve-axis-label { fill: rgba(255,255,255,.55); font-size: 9px; }
 
 @media (orientation: landscape) and (max-height: 560px) {

@@ -1,0 +1,12 @@
+@inherits LayoutComponentBase
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+
+@if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
+{
+    @Body
+}
+else
+{
+    <MobileWorkspaceLayout Body="Body" />
+}

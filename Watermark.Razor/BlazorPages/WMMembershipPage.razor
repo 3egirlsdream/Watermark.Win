@@ -45,12 +45,13 @@
 </section>
 
 @code {
-    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
     private bool busy;
     private string? orderId;
     private string? message;
     private bool messageIsError;
-    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl);
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
     private string StatusText => Accounts.State.IsVip
         ? (Accounts.State.ExpiresAt is null ? "感谢你的支持。" : $"有效期至 {Accounts.State.ExpiresAt:yyyy-MM-dd}")
         : "模板、批量和高质量导出能力，都在同一工作台中。";

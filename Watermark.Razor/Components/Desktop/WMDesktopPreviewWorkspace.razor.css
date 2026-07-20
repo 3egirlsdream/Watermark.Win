@@ -1,0 +1,159 @@
+.mac-preview-workspace {
+    align-self: stretch;
+    background: #edf0f4;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.preview-pane {
+    align-items: center;
+    background:
+        radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.74), rgba(237, 240, 244, 0) 34%),
+        linear-gradient(180deg, #f4f6f8 0%, #e8ecf1 100%);
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 22px;
+    position: relative;
+}
+
+.preview-toolbar {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(31, 41, 55, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(31, 41, 55, 0.12);
+    display: flex;
+    gap: 4px;
+    left: 50%;
+    padding: 4px 8px;
+    position: absolute;
+    top: 12px;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+::deep .preview-action {
+    align-items: center;
+    border-radius: 6px !important;
+    color: #64748b !important;
+    display: inline-flex;
+    height: 28px !important;
+    justify-content: center;
+    min-width: 28px !important;
+    padding: 0 !important;
+    width: 28px !important;
+}
+
+.compare-hold {
+    background: rgba(255, 255, 255, .9);
+    border: 1px solid rgba(100, 116, 139, .22);
+    border-radius: 999px;
+    color: #465268;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 5px 9px;
+}
+
+.mode-pill {
+    color: #3b4658;
+    font-size: 12px;
+    font-weight: 720;
+    padding: 0 6px 0 2px;
+}
+
+.preview-image {
+    display: block;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.preview-stage {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.preview-before-overlay {
+    align-items: center;
+    background: inherit;
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 22px;
+    position: absolute;
+    z-index: 8;
+}
+
+.preview-loading {
+    align-items: center;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, .88);
+    border: 1px solid rgba(31, 41, 55, .08);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(31, 41, 55, .12);
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    gap: 6px;
+    left: 50%;
+    padding: 10px 13px;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 12;
+}
+
+.original-badge {
+    background: rgba(31, 41, 55, .78);
+    border-radius: 999px;
+    bottom: 14px;
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    position: absolute;
+    right: 14px;
+}
+
+.preview-empty {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px dashed rgba(100, 116, 139, 0.26);
+    border-radius: 10px;
+    color: #6b7280;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    gap: 12px;
+    justify-content: center;
+    min-height: 188px;
+    min-width: min(420px, 70%);
+    padding: 28px 36px;
+}
+
+::deep .exif-selector .m-input__control {
+    display: none;
+}
+
+::deep .exif-selector .m-input__prepend-outer {
+    margin: 0;
+}
+
+::deep .exif-selector .mdi-paperclip::before {
+    font-size: 20px;
+}

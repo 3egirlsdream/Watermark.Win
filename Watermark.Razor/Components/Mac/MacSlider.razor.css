@@ -85,6 +85,16 @@
     width: 100%;
 }
 
+@media (pointer: coarse) {
+    .mac-slider,
+    .mac-slider-control {
+        /* Keep a vertical page swipe scrollable even when it starts over a
+           horizontal property slider. Horizontal intent still reaches the
+           native range control. */
+        touch-action: pan-y;
+    }
+}
+
 .mac-slider-control:disabled {
     cursor: default;
 }

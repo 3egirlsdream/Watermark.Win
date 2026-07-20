@@ -82,7 +82,8 @@
 </section>
 
 @code {
-    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
     [SupplyParameterFromQuery(Name = "section")] public string? Section { get; set; }
     private WMAppSettingsState? draft;
     private WMCacheSummary? cacheSummary;
@@ -93,7 +94,7 @@
     private bool cacheBusy;
     private string? message;
     private bool messageIsError;
-    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl);
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,0 +1,143 @@
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+
+<aside class="mac-mode-sidebar">
+    <div class="mode-header">
+        <div><div class="mode-kicker">@ModeKicker</div><h2>@ModeTitle</h2></div>
+        @if (Mode == WMWorkspaceMode.Template)
+        {
+            <MButton Text Small Class="icon-action" OnClick="CreateTemplate"><MIcon Small>mdi-plus</MIcon></MButton>
+        }
+    </div>
+    @if (Mode == WMWorkspaceMode.Crop)
+    {
+        <div class="hint-card"><strong>当前照片</strong><span>在中央画布拖动图片或裁切框。右侧可精确选择比例、旋转、翻转和拉直角度。</span></div>
+        <div class="crop-shortcuts" aria-label="裁切快捷键">
+            <span><kbd>滚轮</kbd> 缩放</span>
+            <span><kbd>方向键</kbd> 微调</span>
+            <span><kbd>Shift</kbd> 加速</span>
+            <span><kbd>Enter</kbd> 应用</span>
+            <span><kbd>Esc</kbd> 取消</span>
+        </div>
+    }
+    else if (Mode == WMWorkspaceMode.Template)
+    {
+        <div class="mode-actions"><MButton Text Class="mode-action-button" OnClick="OpenTemplates">我的模板</MButton><MButton Text Class="mode-action-button" OnClick="OpenMarket">模板市场</MButton></div>
+        <div class="sidebar-search"><span>⌕</span><input value="@Search" @oninput="OnSearch" placeholder="搜索模板" /></div>
+        <div class="sidebar-scroll">
+            <section class="asset-section">
+                <div class="section-title"><span>水印模板</span><small>@NormalTemplates.Count</small></div>
+                <div class="template-grid">
+                    @foreach (var item in NormalTemplates)
+                    {
+                        <article class="@(TemplateId == item.ID ? "template-card active" : "template-card")">
+                            <button type="button"
+                                    class="template-card-apply"
+                                    aria-label="应用模板 @item.Canvas.Name"
+                                    @onclick="() => TemplateSelected.InvokeAsync(item)">
+                                @if (!string.IsNullOrWhiteSpace(item.Src))
+                                {
+                                    <img src="@item.Src" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="template-preview-placeholder" aria-label="模板预览生成中"><MIcon Small>mdi-image-outline</MIcon></span>
+                                }
+                                <span class="template-name">@item.Canvas.Name</span>
+                            </button>
+                            <button type="button" class="edit-chip" title="编辑模板"
+                                    @onclick="() => EditTemplate.InvokeAsync(item)">
+                                <span class="edit-chip-icon">✎</span><span>编辑</span>
+                            </button>
+                        </article>
+                    }
+                </div>
+            </section>
+            <section class="asset-section">
+                <div class="section-title"><span>拼图模板</span><small>@SplitTemplates.Count</small></div>
+                <div class="template-grid">
+                    @foreach (var item in SplitTemplates)
+                    {
+                        <article class="template-card split">
+                            <button type="button"
+                                    class="template-card-apply"
+                                    aria-label="应用拼图模板 @item.Canvas.Name"
+                                    @onclick="() => SplitTemplateSelected.InvokeAsync(item)">
+                                @if (!string.IsNullOrWhiteSpace(item.Src)) { <img src="@item.Src" alt="" /> }
+                                else { <span class="template-preview-placeholder"><MIcon Small>mdi-image-outline</MIcon></span> }
+                                <span class="template-name">@item.Canvas.Name</span>
+                            </button>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    }
+    else if (Mode == WMWorkspaceMode.ColorGrade)
+    {
+        <div class="mode-actions"><MButton Text Class="mode-action-button" OnClick="ChooseReference">从参考图生成风格</MButton><MButton Text Class="mode-action-button" OnClick="ResetColor">新建空白调色</MButton></div>
+        @if (!string.IsNullOrWhiteSpace(ReferenceUrl))
+        {
+            <button type="button" class="reference-card" @onclick="ChooseReference"><img src="@ReferenceUrl" alt="调色参考图" /><div><strong>参考图</strong><span>@ReferenceName</span></div><small>重新选择</small></button>
+        }
+        <div class="sidebar-scroll"><section class="asset-section"><div class="section-title"><span>调色风格</span><small>@Presets.Count · 点击即预览</small></div><div class="preset-list">
+            @foreach (var preset in Presets)
+            {
+                <MButton Text Class="@(SelectedPresetId == preset.Id ? "preset-row active" : "preset-row")" OnClick="() => PresetSelected.InvokeAsync(preset)"><span class="preset-dot"></span><span>@preset.Name</span><small>@(preset.ReferenceMapping.Enabled ? $"参考 {preset.ReferenceMapping.Strength:0}%" : "手工")</small></MButton>
+            }
+        </div></section></div>
+    }
+    else
+    {
+        <div class="hint-card"><strong>多帧影像</strong><span>勾选连续拍摄照片，用于星轨、降噪或静态星空合成。</span></div>
+        <div class="sidebar-scroll"><div class="stack-list">
+            @foreach (var media in Media)
+            {
+                var selected = SelectedFrameIds.Contains(media.Id);
+                <button type="button" class="@(selected ? "stack-row selected" : "stack-row")" @onclick="() => FrameToggled.InvokeAsync(media.Id)">
+                    @if (MediaPreviewUrl(media.Id) is { Length: > 0 } preview) { <img class="stack-thumb" src="@preview" alt="" /> }
+                    else { <span class="stack-thumb placeholder"><MIcon Small>mdi-image-outline</MIcon></span> }
+                    @if (selected) { <span class="stack-order">@(SelectionIndex(media.Id) + 1)</span> }
+                    <span class="stack-name">@media.DisplayName</span><span class="stack-check"><input type="checkbox" checked="@selected" tabindex="-1" /></span>
+                </button>
+            }
+        </div></div>
+    }
+</aside>
+
+@code {
+    [Parameter] public WMWorkspaceMode Mode { get; set; }
+    [Parameter] public IReadOnlyList<WMTemplateList> Templates { get; set; } = [];
+    [Parameter] public string? TemplateId { get; set; }
+    [Parameter] public IReadOnlyList<WMColorRecipe> Presets { get; set; } = [];
+    [Parameter] public string? SelectedPresetId { get; set; }
+    [Parameter] public string? ReferenceUrl { get; set; }
+    [Parameter] public string? ReferenceName { get; set; }
+    [Parameter] public IReadOnlyList<WMWorkspaceMedia> Media { get; set; } = [];
+    [Parameter] public IReadOnlyList<string> SelectedFrameIds { get; set; } = [];
+    [Parameter] public Func<string, string?> MediaPreviewUrl { get; set; } = _ => null;
+    [Parameter] public EventCallback<WMTemplateList> TemplateSelected { get; set; }
+    [Parameter] public EventCallback<WMTemplateList> SplitTemplateSelected { get; set; }
+    [Parameter] public EventCallback<WMTemplateList> EditTemplate { get; set; }
+    [Parameter] public EventCallback CreateTemplate { get; set; }
+    [Parameter] public EventCallback OpenTemplates { get; set; }
+    [Parameter] public EventCallback OpenMarket { get; set; }
+    [Parameter] public EventCallback ChooseReference { get; set; }
+    [Parameter] public EventCallback ResetColor { get; set; }
+    [Parameter] public EventCallback<WMColorRecipe> PresetSelected { get; set; }
+    [Parameter] public EventCallback<string> FrameToggled { get; set; }
+    private string Search { get; set; } = string.Empty;
+    private string ModeTitle => Mode switch { WMWorkspaceMode.Crop => "裁切", WMWorkspaceMode.ColorGrade => "调色", WMWorkspaceMode.MultiFrame => "多帧合成", _ => "预设" };
+    private string ModeKicker => Mode switch { WMWorkspaceMode.Crop => "Crop & Geometry", WMWorkspaceMode.ColorGrade => "Color Studio", WMWorkspaceMode.MultiFrame => "Multi-frame Stack", _ => "Templates" };
+    private List<WMTemplateList> NormalTemplates => Filter(CanvasType.Normal);
+    private List<WMTemplateList> SplitTemplates => Filter(CanvasType.Split);
+    private List<WMTemplateList> Filter(CanvasType type) => Templates.Where(x => x.Canvas?.CanvasType == type && (string.IsNullOrWhiteSpace(Search) || (x.Canvas.Name ?? string.Empty).Contains(Search, StringComparison.OrdinalIgnoreCase))).OrderBy(x => x.Canvas.Name).ToList();
+    private void OnSearch(ChangeEventArgs args) => Search = args.Value?.ToString() ?? string.Empty;
+    private int SelectionIndex(string id)
+    {
+        for (var index = 0; index < SelectedFrameIds.Count; index++)
+            if (string.Equals(SelectedFrameIds[index], id, StringComparison.Ordinal)) return index;
+        return -1;
+    }
+}

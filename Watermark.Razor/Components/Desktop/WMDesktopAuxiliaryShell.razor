@@ -1,0 +1,67 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Components.Mac
+@using Watermark.Razor.Workspace
+
+<MacWorkspaceShell>
+    <ToolbarContent>
+        <header class="aux-toolbar">
+            <button type="button" class="aux-back" @onclick="Back" aria-label="返回工作台"><MIcon Small>mdi-arrow-left</MIcon></button>
+            <div class="aux-title">
+                <strong>@Title</strong>
+                <small>@Subtitle</small>
+            </div>
+            <div class="aux-toolbar-spacer"></div>
+            @HeaderActions
+            <div class="aux-account" title="@Account.DisplayName">
+                <span>@Account.DisplayName.FirstOrDefault()</span>
+            </div>
+        </header>
+    </ToolbarContent>
+    <WorkspaceContent>
+        <div class="aux-workspace">
+            <aside class="aux-sidebar" aria-label="桌面功能导航">
+                <div class="aux-sidebar-heading"><small>DESKTOP</small><strong>功能中心</strong></div>
+                @foreach (var item in NavigationItems)
+                {
+                    if (item.Section != "admin" || CanOpenDashboard)
+                    {
+                        <button type="button"
+                                class="aux-nav-button @(ActiveSection == item.Section ? "is-active" : null)"
+                                @onclick="async () => await NavigateSection.InvokeAsync(item.Section)">
+                            <MIcon>@item.Icon</MIcon>
+                            <span>@item.Label</span>
+                        </button>
+                    }
+                }
+                <div class="aux-sidebar-spacer"></div>
+                <div class="aux-session-note"><span></span><small>返回时继续当前工作会话</small></div>
+            </aside>
+            <main class="aux-main">
+                @ChildContent
+            </main>
+        </div>
+    </WorkspaceContent>
+    <DialogContent>@DialogContent</DialogContent>
+</MacWorkspaceShell>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Subtitle { get; set; } = string.Empty;
+    [Parameter] public string ActiveSection { get; set; } = string.Empty;
+    [Parameter] public WMAccountState Account { get; set; } = new(false, null, "轻影用户", null, null, false, 0, null);
+    [Parameter] public bool CanOpenDashboard { get; set; }
+    [Parameter] public EventCallback Back { get; set; }
+    [Parameter] public EventCallback<string> NavigateSection { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? DialogContent { get; set; }
+
+    private static readonly (string Section, string Icon, string Label)[] NavigationItems =
+    [
+        ("templates", "mdi-view-grid-outline", "我的模板"),
+        ("market", "mdi-shopping-outline", "模板市场"),
+        ("resources", "mdi-image-multiple-outline", "图标与字体"),
+        ("settings", "mdi-cog-outline", "设置"),
+        ("admin", "mdi-view-dashboard-outline", "运营看板")
+    ];
+}

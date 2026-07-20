@@ -1,0 +1,522 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Watermark.Razor.Workspace
+@using Watermark.Razor.Components.Mac
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Components.Desktop
+@inject IClientInstance ClientInstance
+@inject WMTemplateStore TemplateStore
+@inject WMWorkspaceController WorkspaceController
+@inject WMTemplateLibraryService TemplateLibrary
+@inject WMTemplateDesignerSession DesignerSession
+@implements IAsyncDisposable
+
+<div class="mac-template-designer" tabindex="0" @onkeydown="HandleKeyDown">
+    @if (editor is null)
+    {
+        <div class="designer-loading-state" role="status">
+            @if (string.IsNullOrWhiteSpace(loadError))
+            {
+                <span class="designer-loading-spinner" aria-hidden="true"></span>
+                <span>正在打开模板</span>
+            }
+            else
+            {
+                <MIcon Color="error">mdi-alert-circle-outline</MIcon>
+                <span>@loadError</span>
+                <MButton Text Class="secondary-command" OnClick="async () => await OnClose.InvokeAsync()">返回</MButton>
+            }
+        </div>
+    }
+    else
+    {
+        <MacDesignerToolbar TemplateName="@editor.Draft.Name"
+                            IsDirty="@editor.IsDirty"
+                            CanUndo="@editor.CanUndo"
+                            CanRedo="@editor.CanRedo"
+                            IsSaving="@isSaving"
+                            SaveLabel="保存"
+                            Zoom="@zoom"
+                            Exit="RequestExitAsync"
+                            Save="SaveAsync"
+                            Undo="UndoAsync"
+                            Redo="RedoAsync"
+                            Fit="FitAsync"
+                            ZoomChanged="SetZoomAsync" />
+
+        <div class="designer-workspace">
+            <aside class="designer-layer-region">
+                <MacLayerTree Editor="@editor" />
+            </aside>
+            <div class="designer-canvas-region">
+                @if (!string.IsNullOrWhiteSpace(renderError))
+                {
+                    <div class="canvas-status-banner error" role="status">@renderError</div>
+                }
+                else if (!string.IsNullOrWhiteSpace(saveNotice))
+                {
+                    <div class="canvas-status-banner success" role="status">@saveNotice</div>
+                }
+                @if (isRendering)
+                {
+                    <div class="canvas-render-indicator" aria-label="正在更新预览"></div>
+                }
+                <MacCanvasEditor @ref="canvasEditor"
+                                  Editor="@editor"
+                                  RenderResult="@renderResult"
+                                  PreviewUrl="@previewUrl"
+                                  Zoom="@zoom"
+                                  ZoomChanged="SetZoomAsync"
+                                  SaveRequested="SaveAsync" />
+            </div>
+            <aside class="designer-inspector-region">
+                <MacSelectionInspector Editor="@editor" RenderResult="@renderResult" DesignFunc="@designFunc" />
+            </aside>
+        </div>
+    }
+
+    @if (editor is not null)
+    {
+        <MDialog Persistent @bind-Value="showExitDialog" ContentStyle="width:min(420px,calc(100vw - 48px));">
+            <section class="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" aria-describedby="exit-dialog-description">
+                <div class="exit-dialog-copy">
+                    <h2 id="exit-dialog-title">保存模板更改？</h2>
+                    <p id="exit-dialog-description">退出前可保存当前修改，或放弃本次编辑。</p>
+                </div>
+                <div class="exit-dialog-actions">
+                    <MButton Color="primary" Small Elevation="0" Class="primary-command" Disabled="@isSaving" OnClick="SaveAndExitAsync">保存并退出</MButton>
+                    <MButton Text Small Class="danger-command" Disabled="@isSaving" OnClick="DiscardAndExitAsync">放弃更改</MButton>
+                    <MButton Text Small Class="secondary-command" Disabled="@isSaving" OnClick="ContinueEditing">继续编辑</MButton>
+                </div>
+            </section>
+        </MDialog>
+    }
+</div>
+
+@code {
+#nullable enable
+    [Parameter] public string CanvasId { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnSaved { get; set; }
+
+    private WMTemplateEditorState? editor;
+    private MacCanvasEditor? canvasEditor;
+    private WMDesignFunc? designFunc;
+    private WMDesignRenderResult? renderResult;
+    private string previewUrl = string.Empty;
+    private CancellationTokenSource? draftDebounce;
+    private readonly object draftTaskGate = new();
+    private readonly HashSet<Task> draftTasks = [];
+    private string loadError = string.Empty;
+    private string renderError = string.Empty;
+    private string saveNotice = string.Empty;
+    private string loadedCanvasId = string.Empty;
+    private string requestedSnapshot = string.Empty;
+    private string originalCanvasJson = string.Empty;
+    private long renderVersion;
+    private bool showExitDialog;
+    private bool isSaving;
+    private bool isRendering;
+    private bool disposed;
+    private double zoom = 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (editor is not null && string.Equals(loadedCanvasId, CanvasId, StringComparison.Ordinal))
+            return;
+
+        await LoadEditorAsync();
+    }
+
+    private async Task LoadEditorAsync()
+    {
+        DetachEditor();
+        renderVersion++;
+        await ReleasePreviewAsync();
+        previewUrl = string.Empty;
+        renderResult = null;
+        canvasEditor = null;
+        designFunc = null;
+        loadError = string.Empty;
+        renderError = string.Empty;
+        saveNotice = string.Empty;
+        requestedSnapshot = string.Empty;
+        loadedCanvasId = CanvasId;
+
+        if (string.IsNullOrWhiteSpace(CanvasId))
+        {
+            loadError = "模板标识无效。";
+            return;
+        }
+
+        try
+        {
+            var templates = await TemplateLibrary.GetOrRefreshAsync();
+            var sourceCanvas = templates.FirstOrDefault(item =>
+                string.Equals(item.ID, CanvasId, StringComparison.Ordinal))?.Canvas
+                ?? await Global.GetCanvas(CanvasId);
+            if (sourceCanvas is null)
+            {
+                loadError = "模板加载失败，请重试。";
+                return;
+            }
+
+            var loadedCanvas = CloneCanvas(sourceCanvas);
+            loadedCanvas.Exif.TryAdd(loadedCanvas.ID, ExifHelper.DefaultMeta);
+            // Font refresh may require the network for a newly downloaded
+            // template. The editor must still open offline with local or
+            // fallback fonts instead of replacing the canvas with an error.
+            try { await Global.InitFonts([loadedCanvas]); }
+            catch { }
+            try
+            {
+                designFunc = await ClientInstance.GetWMDesignFunc(CanvasId);
+            }
+            catch (NotImplementedException)
+            {
+                designFunc = new WMDesignFunc();
+            }
+            designFunc ??= new WMDesignFunc();
+            designFunc.CurrentCanvas = loadedCanvas;
+
+            originalCanvasJson = Global.CanvasSerialize(loadedCanvas);
+            var persistedDraft = WorkspaceController.TemplateDraft;
+            if (persistedDraft is not null
+                && string.Equals(persistedDraft.TemplateId, CanvasId, StringComparison.Ordinal))
+            {
+                try
+                {
+                    editor = WMTemplateEditorState.Restore(
+                        loadedCanvas,
+                        persistedDraft.EditorState);
+                }
+                catch
+                {
+                    editor = WMTemplateEditorState.Create(loadedCanvas);
+                    await WorkspaceController.ClearTemplateDraftAsync();
+                }
+            }
+            else
+            {
+                editor = WMTemplateEditorState.Create(loadedCanvas);
+            }
+            editor.Changed += HandleEditorChanged;
+            PublishToolState();
+            await RequestPreviewAsync(force: true);
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+    }
+
+    private static WMCanvas CloneCanvas(WMCanvas source)
+    {
+        var clone = Global.ReadConfig(Global.CanvasSerialize(source));
+        clone.Path = source.Path;
+        clone.Exif = source.Exif?.ToDictionary(
+            pair => pair.Key,
+            pair => new Dictionary<string, string>(pair.Value),
+            StringComparer.Ordinal) ?? [];
+        return clone;
+    }
+
+    private void HandleEditorChanged()
+    {
+        PublishToolState();
+        draftDebounce?.Cancel();
+        draftDebounce?.Dispose();
+        draftDebounce = new CancellationTokenSource();
+        TrackDraftTask(PersistDraftAfterDelayAsync(editor, draftDebounce.Token));
+        _ = InvokeAsync(async () =>
+        {
+            await RequestPreviewAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void PublishToolState()
+    {
+        if (editor is null || WorkspaceController.State.Mode != WMWorkspaceMode.TemplateDesign) return;
+        WorkspaceController.UpdateTemplateDesignState(
+            editor.SelectedControlId,
+            editor.IsDirty,
+            editor.IsTransactionActive,
+            editor.HistoryCursor,
+            editor.HistoryCount);
+    }
+
+    private async Task PersistDraftAfterDelayAsync(
+        WMTemplateEditorState? source,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(450, cancellationToken);
+            if (source is null
+                || disposed
+                || !ReferenceEquals(editor, source)
+                || WorkspaceController.State.Mode != WMWorkspaceMode.TemplateDesign
+                || string.IsNullOrWhiteSpace(WorkspaceController.State.SessionId)
+                || !source.TryExportDraftState(out var persisted)
+                || persisted is null)
+                return;
+            await WorkspaceController.SaveTemplateDraftAsync(
+                new WMWorkspaceTemplateDraft(
+                    CanvasId,
+                    originalCanvasJson,
+                    persisted,
+                    DateTime.UtcNow),
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            if (!disposed && ReferenceEquals(editor, source))
+            {
+                renderError = $"草稿保存失败：{ex.Message}";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private void TrackDraftTask(Task task)
+    {
+        lock (draftTaskGate) draftTasks.Add(task);
+        _ = task.ContinueWith(
+            _ =>
+            {
+                lock (draftTaskGate) draftTasks.Remove(task);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private async Task RequestPreviewAsync(bool force = false)
+    {
+        var currentEditor = editor;
+        if (currentEditor is null || disposed) return;
+
+        var snapshotJson = Global.CanvasSerialize(currentEditor.Draft);
+        var previewFingerprint = BuildPreviewFingerprint(currentEditor.Draft, snapshotJson);
+        if (!force && string.Equals(previewFingerprint, requestedSnapshot, StringComparison.Ordinal))
+            return;
+
+        requestedSnapshot = previewFingerprint;
+        var version = ++renderVersion;
+        isRendering = true;
+        renderError = string.Empty;
+        saveNotice = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var preview = await DesignerSession.RenderPreviewAsync(
+                $"template-designer:{CanvasId}",
+                currentEditor.Draft);
+            if (preview is null || !IsCurrentRender(currentEditor, version)) return;
+
+            renderResult = preview.RenderResult;
+            previewUrl = preview.PreviewUrl;
+        }
+        catch (Exception ex)
+        {
+            if (IsCurrentRender(currentEditor, version))
+            {
+                requestedSnapshot = string.Empty;
+                renderError = ex.Message;
+            }
+        }
+        finally
+        {
+            if (IsCurrentRender(currentEditor, version))
+            {
+                isRendering = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private bool IsCurrentRender(WMTemplateEditorState source, long version) =>
+        !disposed && ReferenceEquals(editor, source) && renderVersion == version;
+
+    private static string BuildPreviewFingerprint(WMCanvas canvas, string serializedCanvas) =>
+        string.Concat(
+            serializedCanvas,
+            "\npath:", canvas.Path,
+            "\nexif:", System.Text.Json.JsonSerializer.Serialize(canvas.Exif));
+
+    private Task SaveAsync() => SaveCoreAsync();
+
+    private async Task<bool> SaveCoreAsync()
+    {
+        var currentEditor = editor;
+        if (currentEditor is null || isSaving) return false;
+
+        isSaving = true;
+        saveNotice = string.Empty;
+        renderError = string.Empty;
+        StateHasChanged();
+        try
+        {
+            draftDebounce?.Cancel();
+            await TemplateStore.SaveAsync(currentEditor.Draft);
+            currentEditor.MarkSaved();
+            if (WorkspaceController.State.Mode == WMWorkspaceMode.TemplateDesign)
+                await WorkspaceController.ClearTemplateDraftAsync();
+            saveNotice = "模板已保存";
+            try
+            {
+                await OnSaved.InvokeAsync(currentEditor.Draft.ID);
+            }
+            catch (Exception ex)
+            {
+                renderError = ex.Message;
+            }
+            return true;
+        }
+        catch (WMTemplateValidationException ex)
+        {
+            var first = ex.Errors.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(first?.ControlId))
+                currentEditor.Select(first.ControlId);
+            renderError = first?.Message ?? ex.Message;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            renderError = ex.Message;
+            return false;
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task RequestExitAsync()
+    {
+        if (editor is null || !editor.IsDirty)
+        {
+            await OnClose.InvokeAsync();
+            return;
+        }
+
+        showExitDialog = true;
+    }
+
+    public async Task HandleBackAsync()
+    {
+        if (showExitDialog)
+        {
+            ContinueEditing();
+            return;
+        }
+        await RequestExitAsync();
+    }
+
+    public Task<bool> CanNavigateAwayAsync()
+    {
+        if (editor is null || !editor.IsDirty) return Task.FromResult(true);
+        showExitDialog = true;
+        StateHasChanged();
+        return Task.FromResult(false);
+    }
+
+    private async Task SaveAndExitAsync()
+    {
+        if (await SaveCoreAsync())
+        {
+            showExitDialog = false;
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task DiscardAndExitAsync()
+    {
+        draftDebounce?.Cancel();
+        if (WorkspaceController.State.Mode == WMWorkspaceMode.TemplateDesign)
+            await WorkspaceController.ClearTemplateDraftAsync();
+        showExitDialog = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private void ContinueEditing() => showExitDialog = false;
+
+    private Task UndoAsync()
+    {
+        editor?.Undo();
+        return Task.CompletedTask;
+    }
+
+    private Task RedoAsync()
+    {
+        editor?.Redo();
+        return Task.CompletedTask;
+    }
+
+    private async Task FitAsync()
+    {
+        if (canvasEditor is not null)
+            await canvasEditor.FitAsync();
+    }
+
+    private Task SetZoomAsync(double value)
+    {
+        zoom = Math.Clamp(value, 0.1, 4);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (showExitDialog && args.Key == "Escape")
+        {
+            ContinueEditing();
+            return;
+        }
+
+        if (!(args.MetaKey || args.CtrlKey)) return;
+        if (string.Equals(args.Key, "s", StringComparison.OrdinalIgnoreCase))
+            await SaveAsync();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase) && args.ShiftKey)
+            await RedoAsync();
+        else if (string.Equals(args.Key, "z", StringComparison.OrdinalIgnoreCase))
+            await UndoAsync();
+    }
+
+    private void DetachEditor()
+    {
+        if (editor is not null)
+            editor.Changed -= HandleEditorChanged;
+        editor = null;
+    }
+
+    private async Task ReleasePreviewAsync()
+    {
+        await DesignerSession.ClearAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        renderVersion++;
+        draftDebounce?.Cancel();
+        draftDebounce?.Dispose();
+        draftDebounce = null;
+        Task[] pendingDrafts;
+        lock (draftTaskGate) pendingDrafts = draftTasks.ToArray();
+        if (pendingDrafts.Length > 0)
+        {
+            try { await Task.WhenAll(pendingDrafts); }
+            catch (OperationCanceledException) { }
+        }
+        DetachEditor();
+        await ReleasePreviewAsync();
+        previewUrl = string.Empty;
+    }
+#nullable restore
+}

@@ -1,0 +1,297 @@
+@using System.Globalization
+@using Watermark.Razor.Components.Mac
+@using Watermark.Razor.Workspace
+@using Watermark.Razor.Workspace.Components
+@using Watermark.Shared.Models
+
+<aside class="mac-mode-inspector">
+    @if (ExportOpen)
+    {
+        <div class="inspector-scroll export-inspector-scroll">
+            <section class="inspector-block">
+                <div class="block-heading export-block-heading"><div><small>Export studio</small><h3>输出作品</h3></div><MButton Text Small Class="ghost-button" OnClick="ToggleExport">关闭</MButton></div>
+                @if (HasPendingOperation)
+                {
+                    <div class="pending-export-note"><strong>当前画面尚未应用</strong><span>先应用或取消正在编辑的效果，再导出稳定版本。</span></div>
+                }
+                <WMExportPanel Expanded="true" ShowSummary="false"
+                               SelectedCount="SelectedMediaCount"
+                               Format="ExportDraft.Format" FormatChanged="ExportFormatChanged"
+                               MaximumLongEdge="@(ExportDraft.MaximumLongEdge ?? 0)" MaximumLongEdgeChanged="ExportMaximumLongEdgeChanged"
+                               CustomMaximumLongEdge="ExportDraft.CustomMaximumLongEdge" CustomMaximumLongEdgeChanged="ExportCustomMaximumLongEdgeChanged"
+                               Quality="ExportDraft.Quality" QualityChanged="ExportQualityChanged"
+                               Destination="ExportDraft.Destination" DestinationChanged="ExportDestinationChanged"
+                               Progress="ExportProgress" Results="ExportResults"
+                               CanExportPng16="CanExportPng16" CanExportTiff16="CanExportTiff16"
+                               FailedCount="ExportFailedCount" Busy="ExportBusy" Disabled="HasPendingOperation"
+                               RetryFailedRequested="RetryFailedExport" RunOrCancelRequested="RunExport" />
+            </section>
+        </div>
+    }
+    else if (Mode == WMWorkspaceMode.Crop)
+    {
+        <div class="crop-inspector-layout">
+            <div class="inspector-scroll">
+                <section class="inspector-block">
+                    <div class="block-heading"><div><small>Crop &amp; Geometry</small><h3>裁切图片</h3></div><span class="count-pill">当前照片</span></div>
+                    <div class="control-card crop-summary">
+                        <span>输出范围</span>
+                        <strong>@CropOutputLabel</strong>
+                        <small>角度 @CropSettings.StraightenDegrees.ToString("0.0")° · 旋转 @((CropSettings.QuarterTurns % 4 + 4) % 4 * 90)°</small>
+                    </div>
+                </section>
+                <section class="inspector-block">
+                    <div class="block-heading"><div><small>Geometry</small><h3>几何与比例</h3></div></div>
+                    <WMCropControls Settings="CropSettings"
+                                    SourceWidth="CropSourceWidth"
+                                    SourceHeight="CropSourceHeight"
+                                    SettingsChanged="CropSettingsChanged" />
+                </section>
+            </div>
+            <footer class="inspector-footer crop-footer">
+                <div class="action-stack">
+                    <MButton Color="primary" Class="primary-button" OnClick="ApplyCrop">应用裁切</MButton>
+                    <MButton Text Class="secondary-button" OnClick="CancelCrop">取消</MButton>
+                </div>
+            </footer>
+        </div>
+    }
+    else if (Mode == WMWorkspaceMode.Template)
+    {
+        <div class="inspector-empty">
+            <small>Template</small><h3>未选择模板</h3><p>导入图片并选择模板后，在这里调整画布、画幅和图层。</p>
+        </div>
+    }
+    else if (Mode == WMWorkspaceMode.ColorGrade)
+    {
+        <div class="color-inspector-layout">
+            <div class="inspector-scroll color-inspector-scroll" tabindex="0" aria-label="调色参数">
+                @if (ColorRecipe.ReferenceProfile is not null)
+                {
+                <section class="inspector-block">
+                    <div class="block-heading"><div><small>Reference Look</small><h3>参考风格</h3></div></div>
+                    <div class="control-card">
+                        <div class="metric-grid"><div><strong>@ColorRecipe.Name</strong><span>当前预设</span></div><div><strong>@ColorPresetCount</strong><span>预设</span></div></div>
+                        <label class="check-row"><input type="checkbox" checked="@ColorRecipe.ReferenceMapping.Enabled" disabled="@(ColorRecipe.ReferenceProfile is null)" @onchange="ToggleReferenceMapping" /><span>启用参考图风格</span></label>
+                        <MacSlider Label="风格强度" Value="@ColorRecipe.ReferenceMapping.Strength" Min="0" Max="100" Step="1" Suffix="%" Disabled="@(ColorRecipe.ReferenceProfile is null)" ValueChanged="ChangeReferenceStrength" />
+                        <label class="check-row"><input type="checkbox" checked="@ColorRecipe.ReferenceMapping.PreserveLuminance" @onchange="TogglePreserveLuminance" /><span>保留原图亮度</span></label>
+                        @if (!string.IsNullOrWhiteSpace(ColorReferenceUrl))
+                        {
+                            <div class="reference-preview"><img src="@ColorReferenceUrl" alt="调色参考图" /><span>@ColorReferenceName</span></div>
+                            <div class="reference-actions"><MButton Text Small OnClick="RematchColorReference">重新匹配当前图片</MButton><MButton Text Small OnClick="ClearColorReference">清除参考风格</MButton></div>
+                        }
+                    </div>
+                </section>
+                }
+                else
+                {
+                    <section class="inspector-block reference-placeholder">
+                        <div class="control-card reference-placeholder-card"><label class="check-row"><input type="checkbox" disabled /><span>保留原图亮度</span></label></div>
+                    </section>
+                }
+
+                <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Basic ? "expanded" : null)">
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Basic)"><span><small>Basic</small><strong>基础调色</strong></span><span class="section-summary">10 项</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    @if (ActiveColorSection == ColorSection.Basic)
+                    {
+                        <div class="control-card grade-card adjustment-section-panel">
+                            <div class="hint-line">滑杆表示人工微调；蓝色“自动”值来自当前参考风格。</div>
+                            <MacSlider Label="曝光" Baseline="@AutoGrade?.Exposure" Value="@ColorRecipe.Grade.Exposure" Min="-5" Max="5" Step=".05" Format="0.00" Suffix=" EV" ValueChanged='value => ChangeGrade("Exposure", value)' />
+                            <MacSlider Label="对比度" Baseline="@AutoGrade?.Contrast" Value="@ColorRecipe.Grade.Contrast" ValueChanged='value => ChangeGrade("Contrast", value)' />
+                            <MacSlider Label="高光" Baseline="@AutoGrade?.Highlights" Value="@ColorRecipe.Grade.Highlights" ValueChanged='value => ChangeGrade("Highlights", value)' />
+                            <MacSlider Label="阴影" Baseline="@AutoGrade?.Shadows" Value="@ColorRecipe.Grade.Shadows" ValueChanged='value => ChangeGrade("Shadows", value)' />
+                            <MacSlider Label="白色" Baseline="@AutoGrade?.Whites" Value="@ColorRecipe.Grade.Whites" ValueChanged='value => ChangeGrade("Whites", value)' />
+                            <MacSlider Label="黑色" Baseline="@AutoGrade?.Blacks" Value="@ColorRecipe.Grade.Blacks" ValueChanged='value => ChangeGrade("Blacks", value)' />
+                            <MacSlider Label="色温" Baseline="@AutoGrade?.Temperature" Value="@ColorRecipe.Grade.Temperature" ValueChanged='value => ChangeGrade("Temperature", value)' />
+                            <MacSlider Label="色调" Baseline="@AutoGrade?.Tint" Value="@ColorRecipe.Grade.Tint" ValueChanged='value => ChangeGrade("Tint", value)' />
+                            <MacSlider Label="自然饱和度" Baseline="@AutoGrade?.Vibrance" Value="@ColorRecipe.Grade.Vibrance" ValueChanged='value => ChangeGrade("Vibrance", value)' />
+                            <MacSlider Label="饱和度" Baseline="@AutoGrade?.Saturation" Value="@ColorRecipe.Grade.Saturation" ValueChanged='value => ChangeGrade("Saturation", value)' />
+                        </div>
+                    }
+                </section>
+
+                <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Curves ? "expanded" : null)">
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Curves)"><span><small>Curves</small><strong>色调曲线</strong></span><span class="section-summary">RGB · R · G · B</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    @if (ActiveColorSection == ColorSection.Curves)
+                    {
+                        <div class="control-card curve-stack adjustment-section-panel">
+                            <div class="curve-channel-tabs">
+                                @foreach (var channel in Enum.GetValues<CurveChannel>())
+                                {
+                                    <button type="button" class="channel-@ChannelCss(channel) @(SelectedCurveChannel == channel ? "active" : null)" @onclick="() => SelectedCurveChannel = channel">@ChannelLabel(channel)</button>
+                                }
+                            </div>
+                            <WMMobileMasterCurve @key="SelectedCurveChannel"
+                                                Title="@($"{ChannelLabel(SelectedCurveChannel)} 曲线")"
+                                                Description="拖动节点调整亮度映射"
+                                                Channel="@ChannelCss(SelectedCurveChannel)"
+                                                Points="@SelectedCurvePoints"
+                                                PointsChanged="ChangeCurve"
+                                                ShowPresets="false"
+                                                Compact="true" />
+                        </div>
+                    }
+                </section>
+
+                <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Hsl ? "expanded" : null)">
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Hsl)"><span><small>HSL</small><strong>分色调整</strong></span><span class="section-summary">@BandLabel(SelectedBand)</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    @if (ActiveColorSection == ColorSection.Hsl)
+                    {
+                        <div class="control-card grade-card adjustment-section-panel">
+                            <div class="hsl-band-field"><span>颜色范围</span><div class="hsl-band-buttons">
+                                @foreach (var band in Enum.GetValues<WMHslBand>())
+                                {
+                                    <button type="button" class="band-@band.ToString().ToLowerInvariant() @(SelectedBand == band ? "active" : null)" @onclick="() => SelectedBand = band"><span class="hsl-band-swatch"></span><span>@BandLabel(band)</span></button>
+                                }
+                            </div></div>
+                            <MacSlider Label="色相" Value="@SelectedHsl.Hue" ValueChanged='value => ChangeHsl("Hue", value)' />
+                            <MacSlider Label="饱和度" Value="@SelectedHsl.Saturation" ValueChanged='value => ChangeHsl("Saturation", value)' />
+                            <MacSlider Label="明度" Value="@SelectedHsl.Luminance" ValueChanged='value => ChangeHsl("Luminance", value)' />
+                        </div>
+                    }
+                </section>
+            </div>
+            <footer class="inspector-footer"><div class="action-stack"><MButton Color="primary" Class="primary-button" OnClick="ApplyColor" Disabled="@(!CanApplyColor)">应用到当前照片</MButton><MButton Text Class="save-recipe-button" OnClick="SaveColorPreset">保存调色风格</MButton><MButton Text Class="secondary-button" OnClick="ResetColorAdjustments">重置人工调整</MButton></div></footer>
+        </div>
+    }
+    else
+    {
+        <div class="inspector-scroll">
+            <section class="inspector-block">
+                <div class="block-heading"><div><small>Multi-frame</small><h3>多帧影像</h3></div><span class="count-pill">@LightCount 张</span></div>
+                <div class="control-card"><div class="hint-line">可直接应用，或先用 1600px 代理预览；“应用合成”始终重新生成全分辨率 16-bit 母版。</div></div>
+                <section class="multi-frame-workspace embedded" aria-label="多帧影像工作区">
+                @if (!string.IsNullOrWhiteSpace(MultiFrameCapabilityMessage) || MultiFrameCapability is { IsAvailable: false })
+                {
+                    <div class="capability-note"><strong>配准能力受限</strong><span>@(MultiFrameCapabilityMessage ?? MultiFrameCapability?.UnavailableReason)</span></div>
+                }
+                <div class="mode-grid">
+                    <button type="button" class="mode-card @(MultiFrameDraft.Mode == WMStackMode.StarTrail ? "active" : null)" @onclick="() => ChangeStackMode(WMStackMode.StarTrail)"><strong>星轨</strong><span>Maximum · 不对齐</span></button>
+                    <button type="button" class="mode-card @(MultiFrameDraft.Mode == WMStackMode.StaticSky ? "active" : null)" @onclick="() => ChangeStackMode(WMStackMode.StaticSky)"><strong>银河堆栈</strong><span>星点配准 · Sigma</span></button>
+                </div>
+                <div class="stack-summary"><span><strong>@LightCount</strong> Light</span><span><strong>@DarkCount</strong> Dark</span><span><strong>@MinimumFrames</strong> 最少 Light</span><span><strong>@FormatBytes(EstimatedBytes)</strong> 预计缓存</span></div>
+                <div class="frame-list">
+                    @foreach (var media in MultiFrameMedia)
+                    {
+                        <article class="frame-row"><div class="frame-main"><strong>@media.DisplayName</strong></div><div class="role-toggle"><button type="button" class="@(Role(media.Id) == WMFrameRole.Light ? "active" : null)" @onclick="() => ChangeRole(media.Id, WMFrameRole.Light)">Light</button><button type="button" class="@(Role(media.Id) == WMFrameRole.Dark ? "active" : null)" @onclick="() => ChangeRole(media.Id, WMFrameRole.Dark)">Dark</button></div><button type="button" class="reference-button @(Advanced.ReferenceMediaId == media.Id ? "active" : null)" @onclick="() => SetReference(media.Id)">参考</button></article>
+                    }
+                </div>
+                <details class="advanced"><summary>高级设置</summary><div class="advanced-grid">
+                    <label><span>对齐</span><select value="@Advanced.Alignment" @onchange="ChangeAlignment"><option value="@WMAlignmentMode.None">不对齐</option><option value="@WMAlignmentMode.Stars">星点配准</option></select></label>
+                    <label><span>合成算法</span><select value="@Advanced.Reduction" @onchange="ChangeReduction"><option value="@WMReductionMode.Maximum">最大值 Maximum</option><option value="@WMReductionMode.Lighten">变亮 Lighten</option><option value="@WMReductionMode.WinsorizedMean">Winsorized Mean</option><option value="@WMReductionMode.SigmaClippedMean">Sigma-Clipped Mean</option></select></label>
+                    <label><span>Sigma Low</span><input type="number" min="1" max="8" step=".1" value="@Advanced.SigmaLow" @onchange="ChangeSigmaLow" /></label>
+                    <label><span>Sigma High</span><input type="number" min="1" max="8" step=".1" value="@Advanced.SigmaHigh" @onchange="ChangeSigmaHigh" /></label>
+                    <label><span>迭代</span><input type="number" min="1" max="5" value="@Advanced.SigmaIterations" @onchange="ChangeIterations" /></label>
+                    <label class="check"><input type="checkbox" checked="@MultiFrameDraft.NormalizeExposure" @onchange='args => ChangeBoolean("Normalize", args)' /><span>曝光归一化</span></label>
+                    <label class="check"><input type="checkbox" checked="@MultiFrameDraft.RepairHotPixels" @onchange='args => ChangeBoolean("Repair", args)' /><span>坏点修复</span></label>
+                    <label class="check"><input type="checkbox" checked="@MultiFrameDraft.AutoCrop" @onchange='args => ChangeBoolean("Crop", args)' /><span>有效区域自动裁切</span></label>
+                </div></details>
+                @if (MultiFrameBusy) { <div class="progress-panel"><div><strong>处理中</strong><span>@Message</span></div><MProgressLinear Indeterminate Color="primary" Rounded Height="6" /></div> }
+                <footer><MButton Text Class="secondary-button" OnClick="PreviewMultiFrame" Disabled="@(!CanRun || MultiFrameBusy)">预览合成</MButton><MButton Color="primary" Class="primary-button" OnClick="ApplyMultiFrame" Disabled="@(!CanRun || MultiFrameBusy)">应用合成</MButton></footer>
+                </section>
+            </section>
+        </div>
+    }
+</aside>
+
+@code {
+    [Parameter] public WMWorkspaceMode Mode { get; set; }
+    [Parameter] public bool ExportOpen { get; set; }
+    [Parameter] public bool HasPendingOperation { get; set; }
+    [Parameter] public EventCallback ToggleExport { get; set; }
+    [Parameter] public WMCropSettings CropSettings { get; set; } = WMCropSettings.Identity;
+    [Parameter] public int CropSourceWidth { get; set; }
+    [Parameter] public int CropSourceHeight { get; set; }
+    [Parameter] public EventCallback<WMCropSettings> CropSettingsChanged { get; set; }
+    [Parameter] public EventCallback ApplyCrop { get; set; }
+    [Parameter] public EventCallback CancelCrop { get; set; }
+    [Parameter] public WMColorRecipe ColorRecipe { get; set; } = new() { Name = "桌面调整" };
+    [Parameter] public int ColorPresetCount { get; set; }
+    [Parameter] public string? ColorReferenceUrl { get; set; }
+    [Parameter] public string? ColorReferenceName { get; set; }
+    [Parameter] public bool CanApplyColor { get; set; }
+    [Parameter] public EventCallback<WMColorRecipe> ColorPreviewChanged { get; set; }
+    [Parameter] public EventCallback ApplyColor { get; set; }
+    [Parameter] public EventCallback SaveColorPreset { get; set; }
+    [Parameter] public EventCallback RematchColorReference { get; set; }
+    [Parameter] public EventCallback ClearColorReference { get; set; }
+    [Parameter] public EventCallback ResetColorAdjustments { get; set; }
+    [Parameter] public IReadOnlyList<WMWorkspaceMedia> MultiFrameMedia { get; set; } = [];
+    [Parameter] public WMMultiFrameDraft MultiFrameDraft { get; set; } = new(WMStackMode.StarTrail, new Dictionary<string, WMFrameRole?>(), false, true, false);
+    [Parameter] public WMImagingCapabilityStatus? MultiFrameCapability { get; set; }
+    [Parameter] public string? MultiFrameCapabilityMessage { get; set; }
+    [Parameter] public bool MultiFrameBusy { get; set; }
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback<WMMultiFrameDraft> MultiFrameDraftChanged { get; set; }
+    [Parameter] public EventCallback PreviewMultiFrame { get; set; }
+    [Parameter] public EventCallback ApplyMultiFrame { get; set; }
+    [Parameter] public WMExportDraft ExportDraft { get; set; } = WMExportDraft.Default;
+    [Parameter] public int SelectedMediaCount { get; set; }
+    [Parameter] public bool ExportBusy { get; set; }
+    [Parameter] public double ExportProgress { get; set; }
+    [Parameter] public IReadOnlyList<WMExportItemResult> ExportResults { get; set; } = [];
+    [Parameter] public int ExportFailedCount { get; set; }
+    [Parameter] public bool CanExportPng16 { get; set; }
+    [Parameter] public bool CanExportTiff16 { get; set; }
+    [Parameter] public EventCallback<WMExportFormat> ExportFormatChanged { get; set; }
+    [Parameter] public EventCallback<int> ExportMaximumLongEdgeChanged { get; set; }
+    [Parameter] public EventCallback<int> ExportCustomMaximumLongEdgeChanged { get; set; }
+    [Parameter] public EventCallback<int> ExportQualityChanged { get; set; }
+    [Parameter] public EventCallback<WMExportDestinationKind> ExportDestinationChanged { get; set; }
+    [Parameter] public EventCallback RetryFailedExport { get; set; }
+    [Parameter] public EventCallback RunExport { get; set; }
+
+    private ColorSection? ActiveColorSection { get; set; } = ColorSection.Basic;
+    private CurveChannel SelectedCurveChannel { get; set; } = CurveChannel.Rgb;
+    private WMHslBand SelectedBand { get; set; } = WMHslBand.Red;
+    private WMColorGradeSettings? AutoGrade => ColorRecipe.GeneratedBaseGrade;
+    private WMHslAdjustment SelectedHsl => ColorRecipe.Grade.Hsl.GetValueOrDefault(SelectedBand) ?? new WMHslAdjustment();
+    private WMMultiFrameAdvancedDraft Advanced => MultiFrameDraft.Advanced ?? WMMultiFrameAdvancedDraft.CreateDefault(MultiFrameDraft.Mode);
+    private int LightCount => MultiFrameDraft.Roles.Count(pair => pair.Value == WMFrameRole.Light);
+    private int DarkCount => MultiFrameDraft.Roles.Count(pair => pair.Value == WMFrameRole.Dark);
+    private int MinimumFrames => MultiFrameDraft.Mode == WMStackMode.StarTrail ? 2 : 3;
+    private bool CanRun => LightCount >= MinimumFrames && MultiFrameCapability?.IsAvailable != false;
+    private long EstimatedBytes => MultiFrameMedia.Sum(item => item.Artifact.SourceFingerprint?.Length ?? 0) * 4;
+    private string CropOutputLabel
+    {
+        get
+        {
+            if (CropSourceWidth <= 0 || CropSourceHeight <= 0) return "—";
+            var plan = WMCropPlanner.CreatePlan(CropSettings, CropSourceWidth, CropSourceHeight);
+            return $"{plan.OutputWidth} × {plan.OutputHeight} px";
+        }
+    }
+    private IReadOnlyList<WMCurvePoint> SelectedCurvePoints => SelectedCurveChannel switch { CurveChannel.Red => ColorRecipe.Grade.RedCurve, CurveChannel.Green => ColorRecipe.Grade.GreenCurve, CurveChannel.Blue => ColorRecipe.Grade.BlueCurve, _ => ColorRecipe.Grade.MasterCurve };
+
+    private void ToggleColorSection(ColorSection section) => ActiveColorSection = ActiveColorSection == section ? null : section;
+    private async Task ChangeGrade(string key, double value)
+    {
+        var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!;
+        switch (key) { case "Exposure": next.Grade.Exposure = (float)value; break; case "Contrast": next.Grade.Contrast = (float)value; break; case "Highlights": next.Grade.Highlights = (float)value; break; case "Shadows": next.Grade.Shadows = (float)value; break; case "Whites": next.Grade.Whites = (float)value; break; case "Blacks": next.Grade.Blacks = (float)value; break; case "Temperature": next.Grade.Temperature = (float)value; break; case "Tint": next.Grade.Tint = (float)value; break; case "Vibrance": next.Grade.Vibrance = (float)value; break; case "Saturation": next.Grade.Saturation = (float)value; break; }
+        next.UserAdjustments = WMColorRecipeSnapshot.Copy(next.Grade); await ColorPreviewChanged.InvokeAsync(next);
+    }
+    private async Task ChangeReferenceStrength(double value) { var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!; next.ReferenceMapping.Strength = (float)value; next.ReferenceMapping.IsConfigured = true; await ColorPreviewChanged.InvokeAsync(next); }
+    private async Task ToggleReferenceMapping(ChangeEventArgs args) { var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!; next.ReferenceMapping.Enabled = args.Value is bool value && value; next.ReferenceMapping.IsConfigured = true; await ColorPreviewChanged.InvokeAsync(next); }
+    private async Task TogglePreserveLuminance(ChangeEventArgs args) { var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!; next.ReferenceMapping.PreserveLuminance = args.Value is bool value && value; next.ReferenceMapping.IsConfigured = true; await ColorPreviewChanged.InvokeAsync(next); }
+    private async Task ChangeCurve(IReadOnlyList<WMCurvePoint> points) { var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!; switch (SelectedCurveChannel) { case CurveChannel.Red: next.Grade.RedCurve = points.Select(point => new WMCurvePoint { X = point.X, Y = point.Y }).ToList(); break; case CurveChannel.Green: next.Grade.GreenCurve = points.Select(point => new WMCurvePoint { X = point.X, Y = point.Y }).ToList(); break; case CurveChannel.Blue: next.Grade.BlueCurve = points.Select(point => new WMCurvePoint { X = point.X, Y = point.Y }).ToList(); break; default: next.Grade.MasterCurve = points.Select(point => new WMCurvePoint { X = point.X, Y = point.Y }).ToList(); break; } next.UserAdjustments = WMColorRecipeSnapshot.Copy(next.Grade); await ColorPreviewChanged.InvokeAsync(next); }
+    private async Task ChangeHsl(string key, double value) { var next = WMColorRecipeSnapshot.Copy(ColorRecipe)!; var hsl = next.Grade.Hsl[SelectedBand]; switch (key) { case "Hue": hsl.Hue = (float)value; break; case "Saturation": hsl.Saturation = (float)value; break; default: hsl.Luminance = (float)value; break; } next.UserAdjustments = WMColorRecipeSnapshot.Copy(next.Grade); await ColorPreviewChanged.InvokeAsync(next); }
+
+    private Task ChangeStackMode(WMStackMode mode) { var defaults = WMMultiFrameStackSettings.CreateDefault(mode); return MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Mode = mode, NormalizeExposure = defaults.NormalizeExposure, RepairHotPixels = defaults.RepairHotPixels, AutoCrop = defaults.AutoCrop, Advanced = WMMultiFrameAdvancedDraft.CreateDefault(mode) }); }
+    private Task ChangeRole(string mediaId, WMFrameRole role) { var roles = new Dictionary<string, WMFrameRole?>(MultiFrameDraft.Roles, StringComparer.Ordinal) { [mediaId] = role }; return MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Roles = roles }); }
+    private Task SetReference(string mediaId) => MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { ReferenceMediaId = Advanced.ReferenceMediaId == mediaId ? null : mediaId } });
+    private WMFrameRole? Role(string id) => MultiFrameDraft.Roles.TryGetValue(id, out var role) ? role : null;
+    private Task ChangeAlignment(ChangeEventArgs args) => Enum.TryParse<WMAlignmentMode>(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Alignment = value } }) : Task.CompletedTask;
+    private Task ChangeReduction(ChangeEventArgs args) => Enum.TryParse<WMReductionMode>(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Reduction = value, AutomaticReduction = false } }) : Task.CompletedTask;
+    private Task ChangeSigmaLow(ChangeEventArgs args) => ChangeAdvancedNumber(args, value => Advanced with { SigmaLow = value });
+    private Task ChangeSigmaHigh(ChangeEventArgs args) => ChangeAdvancedNumber(args, value => Advanced with { SigmaHigh = value });
+    private Task ChangeIterations(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { SigmaIterations = Math.Clamp(value, 1, 5) } }) : Task.CompletedTask;
+    private Task ChangeAdvancedNumber(ChangeEventArgs args, Func<double, WMMultiFrameAdvancedDraft> update) => double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = update(Math.Clamp(value, 1, 8)) }) : Task.CompletedTask;
+    private Task ChangeBoolean(string key, ChangeEventArgs args) { var value = args.Value is bool enabled && enabled; return MultiFrameDraftChanged.InvokeAsync(key switch { "Normalize" => MultiFrameDraft with { NormalizeExposure = value }, "Repair" => MultiFrameDraft with { RepairHotPixels = value }, _ => MultiFrameDraft with { AutoCrop = value } }); }
+
+    private static string ChannelLabel(CurveChannel channel) => channel switch { CurveChannel.Red => "R", CurveChannel.Green => "G", CurveChannel.Blue => "B", _ => "RGB" };
+    private static string ChannelCss(CurveChannel channel) => channel.ToString().ToLowerInvariant();
+    private static string BandLabel(WMHslBand band) => band switch { WMHslBand.Red => "红", WMHslBand.Orange => "橙", WMHslBand.Yellow => "黄", WMHslBand.Green => "绿", WMHslBand.Aqua => "青", WMHslBand.Blue => "蓝", WMHslBand.Purple => "紫", _ => "洋红" };
+    private static string FormatBytes(long value) => value >= 1024L * 1024 * 1024 ? $"{value / 1024d / 1024d / 1024d:0.0} GB" : $"{value / 1024d / 1024d:0} MB";
+    private enum ColorSection { Basic, Curves, Hsl }
+    private enum CurveChannel { Rgb, Red, Green, Blue }
+}

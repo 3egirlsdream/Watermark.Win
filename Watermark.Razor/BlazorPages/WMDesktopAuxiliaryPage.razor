@@ -1,0 +1,173 @@
+@page "/mac/templates"
+@page "/desktop/templates"
+@page "/mac/market"
+@page "/desktop/market"
+@page "/mac/resources"
+@page "/desktop/resources"
+@page "/mac/settings"
+@page "/desktop/settings"
+@page "/mac/admin"
+@page "/desktop/admin"
+@using Microsoft.AspNetCore.Components.Routing
+@using Watermark.Razor.Components.Dashboard
+@using Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject IWMAccountService Accounts
+@inject IWMAdminDashboardService AdminDashboard
+@inject IWMDesktopStartupService DesktopStartup
+@inject WMTemplateLibraryService TemplateLibrary
+
+@if (IsDesktopPlatform)
+{
+<WMDesktopAuxiliaryShell Title="@PageTitle"
+                         Subtitle="@PageSubtitle"
+                         ActiveSection="@ActiveSection"
+                         Account="Accounts.State"
+                         CanOpenDashboard="@AdminDashboard.IsAuthorized"
+                         Back="GoBack"
+                         NavigateSection="NavigateSection">
+    <ChildContent>
+        @switch (ActiveSection)
+        {
+            case "templates":
+                <WMDesktopTemplateLibraryPage CreateRequested="OpenNewTemplateDialog" EditRequested="OpenDesigner" />
+                break;
+            case "market":
+                <div class="auxiliary-fill market-fill"><WMDesktopTemplateMarket Downloaded="RefreshTemplatesAsync" /></div>
+                break;
+            case "resources":
+                <WMDesktopResourceLibraryPage />
+                break;
+            case "settings":
+                <WMDesktopSettingsPage OpenAccount="OpenAccountDialog" OpenMembership="OpenMembershipDialog" OpenResources='() => NavigateSection("resources")' />
+                break;
+            case "admin":
+                @if (AdminDashboard.IsAuthorized)
+                {
+                    <div class="auxiliary-fill dashboard-fill"><AdminDashboard ShowClose="false" /></div>
+                }
+                else
+                {
+                    <section class="desktop-access-denied"><MIcon Size="42">mdi-shield-lock-outline</MIcon><h1>当前账号无法访问运营看板</h1><p>请使用具有管理权限的账号登录后重试。</p><button type="button" @onclick='() => OpenAccountDialog("login")'>登录其他账号</button></section>
+                }
+                break;
+        }
+    </ChildContent>
+    <DialogContent>
+        <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+            @if (showNewTemplate)
+            {
+                <WMDesktopNewTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showAccount" Width="390" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+            @if (showAccount)
+            {
+                <WMDesktopAccountDialog @bind-Mode="accountMode" OnClose="CloseAccountDialog" OnCompleted="OnAccountCompleted" />
+            }
+        </MDialog>
+        <MDialog @bind-Value="showMembership" Width="720" ContentStyle="padding:0;background:transparent;box-shadow:none;">
+            @if (showMembership)
+            {
+                <WMDesktopMembershipDialog OnClose="CloseMembershipDialog" OnPaid="OnMembershipPaid" />
+            }
+        </MDialog>
+    </DialogContent>
+</WMDesktopAuxiliaryShell>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+
+    private bool showNewTemplate;
+    private bool showAccount;
+    private bool showMembership;
+    private string accountMode = "login";
+    private string activeSection = "templates";
+    private static bool IsDesktopPlatform => Watermark.Shared.Models.Global.DeviceType is Watermark.Shared.Enums.DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win;
+    private string ActiveSection => activeSection;
+    private string ResolveActiveSection()
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        return path[(path.LastIndexOf('/') + 1)..] switch
+        {
+            "templates" => "templates",
+            "market" => "market",
+            "resources" => "resources",
+            "settings" => "settings",
+            "admin" => "admin",
+            _ => "templates"
+        };
+    }
+    private string DesktopRoot => new Uri(Navigation.Uri).AbsolutePath.StartsWith("/desktop", StringComparison.OrdinalIgnoreCase) ? "/desktop" : "/mac";
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl, DesktopRoot);
+    private string CurrentRoute => $"{DesktopRoot}/{ActiveSection}?returnUrl={Uri.EscapeDataString(ReturnTarget)}";
+    private string PageTitle => ActiveSection switch { "market" => "模板市场", "resources" => "图标与字体", "settings" => "设置", "admin" => "运营看板", _ => "我的模板" };
+    private string PageSubtitle => ActiveSection switch { "market" => "发现和下载模板", "resources" => "管理桌面设计资源", "settings" => "桌面偏好与账号", "admin" => "数据概览与运营分析", _ => "管理和编辑本地模板" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        activeSection = ResolveActiveSection();
+        if (!IsDesktopPlatform)
+        {
+            Navigation.NavigateTo("/settings", replace: true);
+            return;
+        }
+        Accounts.Changed += OnAccountChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        await DesktopStartup.InitializeAsync();
+    }
+
+    private void GoBack() => Navigation.NavigateTo(ReturnTarget);
+
+    private void NavigateSection(string section)
+    {
+        var safeSection = section is "templates" or "market" or "resources" or "settings" or "admin" ? section : "templates";
+        activeSection = safeSection;
+        Navigation.NavigateTo($"{DesktopRoot}/{safeSection}?returnUrl={Uri.EscapeDataString(ReturnTarget)}");
+    }
+
+    private void OpenDesigner(string templateId) =>
+        Navigation.NavigateTo($"{DesktopRoot}/templates/{Uri.EscapeDataString(templateId)}/edit?returnUrl={Uri.EscapeDataString(CurrentRoute)}");
+
+    private void OpenNewTemplateDialog() => showNewTemplate = true;
+    private void CloseNewTemplateDialog() => showNewTemplate = false;
+    private async Task OnTemplateCreatedAsync(string templateId)
+    {
+        showNewTemplate = false;
+        TemplateLibrary.Invalidate(templateId);
+        await TemplateLibrary.GetOrRefreshAsync();
+        OpenDesigner(templateId);
+    }
+
+    private void OpenAccountDialog(string mode)
+    {
+        accountMode = mode;
+        showAccount = true;
+    }
+    private void CloseAccountDialog() { showAccount = false; accountMode = "login"; }
+    private Task OnAccountCompleted() { StateHasChanged(); return Task.CompletedTask; }
+
+    private void OpenMembershipDialog()
+    {
+        if (!Accounts.State.IsAuthenticated) { OpenAccountDialog("login"); return; }
+        showMembership = true;
+    }
+    private void CloseMembershipDialog() => showMembership = false;
+    private Task OnMembershipPaid() { showMembership = false; StateHasChanged(); return Task.CompletedTask; }
+
+    private async Task RefreshTemplatesAsync() => await TemplateLibrary.GetOrRefreshAsync(force: true);
+    private void OnAccountChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(() =>
+    {
+        activeSection = ResolveActiveSection();
+        StateHasChanged();
+    });
+    public void Dispose()
+    {
+        Accounts.Changed -= OnAccountChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

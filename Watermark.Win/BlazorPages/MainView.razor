@@ -6,17 +6,13 @@
 @inject IWMHostNavigationBridge HostNavigation
 @inject NavigationManager Navigation
 
-<WMPrivacyStartupGate>
-    <Router AppAssembly="@typeof(MainView).Assembly" AdditionalAssemblies="new[] { typeof(WMRootRedirect).Assembly }">
-        <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)" />
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-        </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
-        </NotFound>
-    </Router>
-</WMPrivacyStartupGate>
+<Router AppAssembly="@typeof(MainView).Assembly" AdditionalAssemblies="new[] { typeof(WMRootRedirect).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound><WMNotFoundPage /></NotFound>
+</Router>
 
 @code {
     protected override void OnInitialized() => HostNavigation.NavigationRequested += OnNavigationRequested;

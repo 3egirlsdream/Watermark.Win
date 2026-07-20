@@ -74,6 +74,59 @@
     z-index: 30;
 }
 
+.workspace-crop-cancel,
+.workspace-crop-reset,
+.workspace-crop-apply {
+    background: transparent;
+    border: 0;
+    color: #273142;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 700;
+    min-height: 40px;
+    min-width: 58px;
+    padding: 0 10px;
+}
+.workspace-crop-cancel {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0;
+}
+.workspace-crop-cancel ::deep .m-icon { font-size: 30px; }
+.workspace-crop-actions { align-items: center; display: flex; gap: 6px; }
+.workspace-crop-reset {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0;
+}
+.workspace-crop-reset ::deep .m-icon { font-size: 25px; }
+.workspace-crop-apply {
+    background: #ffd400;
+    border-radius: 999px;
+    color: #1c222c;
+    margin-right: 4px;
+    min-height: 34px;
+    min-width: 64px;
+    padding: 0 15px;
+    text-align: center;
+}
+.workspace-crop-cancel:disabled,
+.workspace-crop-reset:disabled,
+.workspace-crop-apply:disabled { color: #a8afb9; }
+.workspace-crop-apply:disabled { background: #eceff3; }
+.workspace-crop-title {
+    color: #172033;
+    font-size: 1rem;
+    font-weight: 760;
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+}
+
 .workspace-toolbar-leading {
     align-items: center;
     display: flex;
@@ -177,6 +230,15 @@
     position: relative;
     transition: padding-bottom .24s ease;
 }
+
+.workspace-shell.is-crop {
+    --panel-height: calc(clamp(168px, 22vh, 184px) + var(--workspace-safe-bottom));
+}
+.workspace-shell.is-crop .workspace-stage-wrap { padding-bottom: var(--panel-height); }
+.workspace-stage.is-crop { background: #15191f; }
+.workspace-stage.is-crop ::deep .wm-crop-canvas { height: 100%; width: 100%; }
+.workspace-preview-persistent { height: 100%; min-height: 0; width: 100%; }
+.workspace-preview-persistent.is-hidden { height: 0; overflow: hidden; pointer-events: none; position: absolute; visibility: hidden; width: 0; }
 
 .workspace-stage {
     align-items: center;
@@ -335,8 +397,21 @@
     z-index: 20;
 }
 
+.workspace-mobile-crop-tools {
+    background: #0a1018;
+    bottom: 0;
+    height: var(--panel-height);
+    left: 0;
+    min-height: var(--panel-height);
+    position: absolute;
+    right: 0;
+    z-index: 22;
+}
+
 .workspace-drawer-backdrop {
-    background: rgba(8, 14, 24, .42);
+    animation: workspace-export-fade-in 160ms ease-out;
+    background: rgba(7, 13, 23, .52);
+    backdrop-filter: blur(2px);
     border: 0;
     inset: 0;
     padding: 0;
@@ -345,33 +420,50 @@
 
 .workspace-drawer-backdrop { z-index: 65; }
 .workspace-export-drawer {
-    --wm-export-background: #fff;
-    --wm-export-surface: #f3f5f8;
+    --wm-export-background: #f6f8fb;
+    --wm-export-surface: #fff;
     --wm-export-border: rgba(30,41,59,.10);
     --wm-export-text: #172033;
     --wm-export-muted: #687386;
-    background: #fff;
-    border-radius: 18px 18px 0 0;
+    animation: workspace-export-rise 220ms cubic-bezier(.2,.8,.2,1);
+    background: #f6f8fb;
+    border: 1px solid rgba(255,255,255,.72);
+    border-bottom: 0;
+    border-radius: 26px 26px 0 0;
     bottom: 0;
-    box-shadow: 0 -16px 46px rgba(8,20,38,.26);
+    box-shadow: 0 -24px 60px rgba(8,20,38,.30);
     color: #172033;
     display: grid;
-    grid-template-rows: 58px minmax(0, 1fr);
+    grid-template-rows: 78px minmax(0, 1fr);
     left: 0;
-    max-height: 72vh;
+    max-height: 86vh;
     overflow: hidden;
     position: absolute;
     right: 0;
     z-index: 70;
 }
-.workspace-export-drawer > header { align-items: center; border-bottom: 1px solid rgba(30,41,59,.09); display: flex; justify-content: space-between; padding: 0 14px; }
-.workspace-export-drawer > header div { display: flex; flex-direction: column; }
-.workspace-export-drawer > header strong { font-size: .84rem; }
-.workspace-export-drawer > header small { color: #687386; font-size: .62rem; }
-.workspace-export-drawer > header button { align-items: center; background: #eef1f5; border: 0; border-radius: 10px; color: #536075; display: flex; height: 44px; justify-content: center; width: 44px; }
-.workspace-export-drawer > div { min-height: 0; overflow-y: auto; padding: 4px 14px calc(18px + var(--workspace-safe-bottom)); }
-.workspace-export-drawer :deep(.wm-export-panel) { background: var(--wm-export-background); border: 0; color: var(--wm-export-text); margin: 0; padding: 0; }
+.workspace-export-drawer > header {
+    align-items: center;
+    border-bottom: 1px solid rgba(30,41,59,.08);
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(0,1fr) 44px;
+    padding: 13px 12px 8px 16px;
+    position: relative;
+}
+.workspace-export-drawer-handle { background: #d5dbe4; border-radius: 999px; height: 4px; left: 50%; position: absolute; top: 7px; transform: translateX(-50%); width: 36px; }
+.workspace-export-drawer > header div { display: grid; gap: 1px; min-width: 0; }
+.workspace-export-drawer > header small { color: #1769e0; font-size: .48rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.workspace-export-drawer > header strong { color: #172033; font-size: .86rem; line-height: 1.15; }
+.workspace-export-drawer > header div > span { color: #788497; font-size: .55rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-export-drawer > header button { align-items: center; background: #e9edf3; border: 0; border-radius: 13px; color: #536075; display: flex; height: 42px; justify-content: center; width: 42px; }
+.workspace-export-drawer > header button:active { background: #dfe5ed; }
+.workspace-export-drawer > div { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px calc(12px + var(--workspace-safe-bottom)); }
+.workspace-export-drawer :deep(.wm-export-panel) { background: var(--wm-export-background); border: 0; border-radius: 0; color: var(--wm-export-text); margin: 0; overflow: visible; padding: 0; }
 .workspace-export-drawer :deep(.wm-export-panel > summary) { display: none; }
+
+@keyframes workspace-export-rise { from { opacity: .72; transform: translateY(34px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes workspace-export-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 .workspace-panel-handle {
     align-items: center;
@@ -386,7 +478,7 @@
 .workspace-mode-tabs {
     border-bottom: 1px solid rgba(30,41,59,.09);
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding: 0 12px;
 }
 .workspace-mode-tabs button {
@@ -879,6 +971,21 @@
     }
     .workspace-desktop-panel { display: grid; }
     .workspace-mobile-dock { display: none; }
+    .workspace-shell.is-crop {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    .workspace-shell.is-crop .workspace-stage-wrap { padding-bottom: 0; }
+    .workspace-shell.is-crop .workspace-desktop-panel { display: none; }
+    .workspace-shell.is-crop .workspace-mobile-crop-tools {
+        background: #fff;
+        border-left: 1px solid rgba(30,41,59,.1);
+        grid-column: 2;
+        grid-row: 2;
+        min-height: 0;
+        overflow: auto;
+        padding: 18px 14px;
+        position: relative;
+    }
     .workspace-panel-handle { display: none; }
     .workspace-panel { grid-template-rows: 54px minmax(0, 1fr); }
     .workspace-media-strip { bottom: 0; }
@@ -909,6 +1016,8 @@
     .workspace-stage-wrap,
     .workspace-media-strip,
     .workspace-toast { transition: none; }
+    .workspace-drawer-backdrop,
+    .workspace-export-drawer { animation: none; }
 }
 
 @media (orientation: landscape) and (max-height: 560px) and (max-width: 1023px) {
@@ -925,7 +1034,7 @@
     .workspace-shell.mobile-space-small { --panel-height: calc(min(232px, 30dvh) + var(--workspace-safe-bottom)); }
     .workspace-shell.mobile-space-medium { --panel-height: calc(min(340px, 44dvh) + var(--workspace-safe-bottom)); }
     .workspace-shell.mobile-space-large { --panel-height: calc(min(480px, 62dvh) + var(--workspace-safe-bottom)); }
-    .workspace-export-drawer { max-height: 72dvh; }
+    .workspace-export-drawer { max-height: 86dvh; }
 
     @media (min-width: 720px) and (min-height: 561px), (min-width: 1024px) {
         .workspace-shell { --panel-height: auto; }

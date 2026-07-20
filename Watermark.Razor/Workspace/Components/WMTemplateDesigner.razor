@@ -5,11 +5,10 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 @inject IClientInstance ClientInstance
-@inject IWMWatermarkHelper WatermarkHelper
 @inject WMTemplateStore TemplateStore
-@inject IWMObjectUrlRegistry ObjectUrls
 @inject WMWorkspaceController WorkspaceController
 @inject WMTemplateLibraryService TemplateLibrary
+@inject WMTemplateDesignerSession DesignerSession
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
@@ -136,7 +135,6 @@
     private WMDesignFunc? designFunc;
     private WMDesignRenderResult? renderResult;
     private string previewUrl = string.Empty;
-    private WMObjectUrlLease? previewLease;
     private ElementReference designerWorkspace;
     private ElementReference drawerHandle;
     private IJSObjectReference? drawerModule;
@@ -406,26 +404,13 @@
 
         try
         {
-            var draftSnapshot = WMTemplateEditorState.Create(currentEditor.Draft).Draft;
-            var nextResult = await WatermarkHelper.GenerationDesignPreviewAsync(draftSnapshot, null);
-            if (!IsCurrentRender(currentEditor, version)) return;
+            var preview = await DesignerSession.RenderPreviewAsync(
+                $"template-designer:{CanvasId}",
+                currentEditor.Draft);
+            if (preview is null || !IsCurrentRender(currentEditor, version)) return;
 
-            await using var content = new MemoryStream(nextResult.ImageBytes, writable: false);
-            var nextLease = await ObjectUrls.PublishAsync(
-                $"template-designer:{CanvasId}", version, content, "image/png");
-            if (nextLease is null) return;
-            if (!IsCurrentRender(currentEditor, version))
-            {
-                await ObjectUrls.ReleaseAsync(nextLease);
-                return;
-            }
-
-            renderResult = nextResult;
-            previewUrl = nextLease.Url;
-            var previousLease = previewLease;
-            previewLease = nextLease;
-            if (previousLease is not null)
-                await ObjectUrls.ReleaseAsync(previousLease);
+            renderResult = preview.RenderResult;
+            previewUrl = preview.PreviewUrl;
         }
         catch (Exception ex)
         {
@@ -603,9 +588,7 @@
 
     private async Task ReleasePreviewAsync()
     {
-        var lease = previewLease;
-        previewLease = null;
-        if (lease is not null) await ObjectUrls.ReleaseAsync(lease);
+        await DesignerSession.ClearAsync();
     }
 
     public async ValueTask DisposeAsync()

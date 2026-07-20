@@ -1,0 +1,142 @@
+.desktop-applied-editor {
+    background: #eef1f5;
+    display: grid;
+    grid-column: 3 / -1;
+    grid-template-columns: minmax(360px, 1fr) minmax(310px, 340px);
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.desktop-applied-editor.is-resizing,
+.desktop-applied-editor.is-resizing * {
+    cursor: row-resize;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.applied-primary-column {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 7px var(--media-strip-height, 126px);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.applied-canvas-panel {
+    background: #e9edf2;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.applied-canvas-panel ::deep .mac-canvas-viewport {
+    bottom: 0;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+}
+
+.applied-splitter-grip {
+    align-items: center;
+    background: #f7f8fa;
+    border-top: 1px solid rgba(31, 41, 55, .08);
+    cursor: row-resize;
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+}
+
+.applied-splitter-grip span {
+    background: rgba(100, 116, 139, .36);
+    border-radius: 999px;
+    height: 1px;
+    width: 44px;
+}
+
+.applied-splitter-grip:hover span { background: rgba(47, 129, 255, .78); }
+
+.applied-media-panel {
+    background: #f7f8fa;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.applied-inspector-panel {
+    background: #fff;
+    border-left: 1px solid #d7dde6;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.applied-inspector-stack{display:flex;flex-direction:column;height:100%;min-height:0}
+
+.applied-inspector-content {
+    flex:1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.applied-inspector-content ::deep .wm-panel,
+.applied-inspector-content ::deep .mac-inspector-panel,
+.applied-inspector-content ::deep .mac-selection-inspector {
+    background: #fff;
+    color: #344054;
+}
+
+.applied-commit-footer {
+    background: rgba(255, 255, 255, .98);
+    border-top: 1px solid #d7dde6;
+    box-shadow: 0 -8px 24px rgba(35, 49, 66, .06);
+    padding: 12px;
+}
+
+.applied-scope-option{align-items:center;color:#3f4b5a;display:flex;font-size:12px;gap:8px;margin-bottom:10px}.applied-scope-option input{accent-color:#1769d2;height:16px;width:16px}
+
+.applied-commit-actions {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.applied-commit-actions ::deep .applied-cancel-command,
+.applied-commit-actions ::deep .applied-apply-command {
+    font-size: 12px;
+    min-height: 36px;
+    text-transform:none;
+}
+.applied-commit-actions ::deep .applied-apply-command{width:100%}
+
+.applied-loading {
+    align-items: center;
+    color: #536174;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    gap: 10px;
+    height: 100%;
+    justify-content: center;
+}
+
+.applied-render-progress {
+    animation: applied-pulse 850ms ease-in-out infinite alternate;
+    background: #1769d2;
+    height: 2px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 10;
+}
+
+@keyframes applied-pulse { from { opacity: .25; } to { opacity: .9; } }
+
+@media (max-width: 1120px) {
+    .desktop-applied-editor { grid-template-columns: minmax(320px, 1fr) minmax(290px, 310px); }
+}

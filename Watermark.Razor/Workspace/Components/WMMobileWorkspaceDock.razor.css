@@ -97,12 +97,21 @@
     background: #f4f4f4;
     border-top: 1px solid rgba(37,37,37,.08);
     box-sizing: border-box;
-    display: grid;
+    display: flex;
     gap: 6px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     height: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
     padding: 4px 12px var(--workspace-safe-bottom, env(safe-area-inset-bottom, 0px));
+    scroll-behavior: smooth;
+    scroll-padding-inline: 12px;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
 }
+.wm-dock-modes::-webkit-scrollbar { display: none; }
 
 .wm-dock-modes > button {
     align-items: center;
@@ -111,19 +120,24 @@
     border-radius: 11px;
     color: #888;
     display: flex;
+    flex: 0 0 78px;
     font: inherit;
     font-size: .66rem;
-    gap: 5px;
+    gap: 3px;
     justify-content: center;
     min-height: 40px;
-    padding: 4px 7px;
+    min-width: 78px;
+    padding: 4px 3px;
     position: relative;
+    scroll-margin-inline: 12px;
+    white-space: nowrap;
 }
+.wm-dock-modes > button > span { flex: 0 0 auto; white-space: nowrap; }
 .wm-dock-modes > button ::deep .m-icon { font-size: 19px; }
 .wm-dock-modes > button.is-active { color: #252525; font-weight: 800; }
 .wm-dock-modes > button.is-active::after { background: #ffc200; border-radius: 999px; bottom: 1px; content: ""; height: 3px; left: 24%; position: absolute; right: 24%; }
 .wm-dock-modes > button:disabled:not(.is-active) { color: #aaa; opacity: .58; }
-.wm-dock-modes .wm-dock-lock { font-size: 10px !important; margin-left: -2px; }
+.wm-dock-modes .wm-dock-lock { font-size: 10px !important; margin: 0; position: absolute; right: 4px; top: 5px; }
 
 .wm-dock-heading {
     align-items: center;

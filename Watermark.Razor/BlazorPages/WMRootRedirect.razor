@@ -1,6 +1,13 @@
 @page "/"
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @inject NavigationManager Navigation
 
 @code {
-    protected override void OnInitialized() => Navigation.NavigateTo("/create", replace: true);
+    protected override void OnInitialized() => Navigation.NavigateTo(Global.DeviceType switch
+    {
+        DeviceType.Mac => "/mac",
+        DeviceType.Win => "/desktop",
+        _ => "/create"
+    }, replace: true);
 }

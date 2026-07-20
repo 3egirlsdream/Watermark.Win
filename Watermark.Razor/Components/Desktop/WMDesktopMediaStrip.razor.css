@@ -1,0 +1,150 @@
+.mac-media-strip {
+    background: #f7f8fa;
+    display: grid;
+    gap: 6px;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 7px 10px 8px;
+}
+
+.media-strip-header {
+    align-items: center;
+    color: #7b8492;
+    display: flex;
+    font-size: 11px;
+    gap: 7px;
+    line-height: 16px;
+    min-width: 0;
+}
+
+.media-strip-header strong {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 720;
+}
+
+.selection-count {
+    border-left: 1px solid rgba(100, 116, 139, 0.2);
+    margin-left: 2px;
+    padding-left: 8px;
+}
+
+.media-tile:hover {
+    background: #f0f5ff;
+}
+
+.media-scroll {
+    align-content: flex-start;
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 2px 4px 0;
+    scrollbar-width: thin;
+}
+
+.media-empty {
+    align-items: center;
+    border: 1px dashed rgba(100, 116, 139, 0.22);
+    border-radius: 7px;
+    color: #8a94a3;
+    display: flex;
+    font-size: 11px;
+    height: 54px;
+    justify-content: center;
+    min-width: 210px;
+    padding: 0 18px;
+}
+
+.media-scroll::-webkit-scrollbar {
+    width: 9px;
+}
+
+.media-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.28);
+    border: 3px solid #f7f8fa;
+    border-radius: 999px;
+}
+
+.media-tile {
+    background: #ffffff;
+    border: 1px solid rgba(100, 116, 139, 0.18);
+    border-radius: 8px;
+    flex: 0 0 108px;
+    height: 76px;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+    width: 108px;
+}
+
+.media-tile.active {
+    border-color: #2f81ff;
+    box-shadow: 0 0 0 2px rgba(47, 129, 255, 0.35);
+}
+
+.media-thumb {
+    background: transparent;
+    cursor: pointer;
+    display: block;
+    height: 100%;
+    padding: 0;
+    width: 100%;
+}
+
+.media-thumb img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.media-thumb-placeholder {
+    align-items: center;
+    color: #8a94a3;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+}
+
+.media-check {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 1px 4px rgba(31, 41, 55, 0.16);
+    border-radius: 6px;
+    display: inline-flex;
+    height: 22px;
+    justify-content: center;
+    left: 6px;
+    position: absolute;
+    top: 6px;
+    width: 22px;
+}
+
+.media-check input {
+    accent-color: #2f81ff;
+    height: 14px;
+    margin: 0;
+    width: 14px;
+}
+
+.stack-badge {
+    background: rgba(22, 119, 255, 0.9);
+    border-radius: 999px;
+    bottom: 6px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 720;
+    padding: 3px 7px;
+    position: absolute;
+    right: 6px;
+}

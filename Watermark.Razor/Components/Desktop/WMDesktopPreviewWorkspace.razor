@@ -1,0 +1,65 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Watermark.Razor.Parts
+@using Watermark.Razor.Workspace
+@using Watermark.Razor.Workspace.Components
+
+<main class="mac-preview-workspace">
+    <section class="preview-pane">
+        @if (HasPreview)
+        {
+            <div class="preview-toolbar">
+                <span class="mode-pill">@ModeLabel</span>
+                <button type="button"
+                        class="compare-hold"
+                        @onpointerdown="ShowOriginal"
+                        @onpointerup="HideOriginal"
+                        @onpointerleave="HideOriginal">按住看原图</button>
+                <MButton Text Icon Small Class="preview-action" OnClick="ShowExif" aria-label="查看 EXIF">
+                    <IconExif />
+                </MButton>
+            </div>
+            <div class="preview-stage"
+                 @onpointerdown="ShowOriginal"
+                 @onpointerup="HideOriginal"
+                 @onpointerleave="HideOriginal">
+                <WMWorkspacePreviewSurface Presentation="Presentation"
+                                           CapabilityChanged="CapabilityChanged"
+                                           PerformanceMeasured="PerformanceMeasured"
+                                           Alt="当前图片预览" />
+            </div>
+            @if (Busy)
+            {
+                <div class="preview-loading" role="status" aria-label="正在更新预览">
+                    <MProgressCircular Indeterminate Color="primary" Size="24" Width="2" />
+                    <span>正在更新</span>
+                </div>
+            }
+            @if (IsOriginal)
+            {
+                <span class="original-badge">原图</span>
+            }
+        }
+        else
+        {
+            <div class="preview-empty">
+                <IconImage />
+                <span>导入图片开始编辑</span>
+            </div>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter] public WMWorkspacePreviewPresentation Presentation { get; set; } = WMWorkspacePreviewPresentation.Empty;
+    [Parameter] public string ModeLabel { get; set; } = "模板预览";
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool IsOriginal { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback<PointerEventArgs> ShowOriginal { get; set; }
+    [Parameter] public EventCallback<PointerEventArgs> HideOriginal { get; set; }
+    [Parameter] public EventCallback ShowExif { get; set; }
+    [Parameter] public EventCallback<WMColorPreviewCapability> CapabilityChanged { get; set; }
+    [Parameter] public EventCallback<WMColorPreviewPerformanceSample> PerformanceMeasured { get; set; }
+    private bool HasPreview => !string.IsNullOrWhiteSpace(Presentation.StableUrl)
+        || !string.IsNullOrWhiteSpace(Presentation.BaseUrl);
+}

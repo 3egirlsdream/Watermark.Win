@@ -1,0 +1,64 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@implements IAsyncDisposable
+@inject IWMPhotoPicker PhotoPicker
+@inject IWMTemplateMarketplaceService Marketplace
+
+<MCard Flat Class="new-template-dialog">
+    <div class="template-dialog-header"><div><small>Template</small><h3>新建模板</h3></div><MButton Text Small Class="dialog-close-button" OnClick="CloseAsync"><MIcon Small>mdi-close</MIcon></MButton></div>
+    <div class="template-dialog-body">
+        <MTextField @bind-Value="templateName" TValue="string" Label="模板名称" Dense Outlined Required="true" RequiredMessage="模板名称不能为空" />
+        <button type="button" class="image-select-card @(source is null ? null : "has-source")" disabled="@busy" @onclick="SelectSourceAsync">
+            <div class="image-empty-state">
+                <span class="image-empty-icon"><MIcon Size="28">@(source is null ? "mdi-image-plus" : "mdi-image-check-outline")</MIcon></span>
+                <span>@(source?.DisplayName ?? "选择默认预览图")</span>
+                <small>@(source is null ? "用于模板编辑与预览画布" : "点击可重新选择图片")</small>
+            </div>
+        </button>
+        @if (!string.IsNullOrWhiteSpace(message)) { <div class="template-message is-error" role="status">@message</div> }
+        @if (busy) { <div class="processing-line"><MProgressCircular Size="14" Indeterminate /><span>正在创建模板...</span></div> }
+    </div>
+    <MCardActions Class="template-dialog-actions"><MSpacer /><MButton Text Class="secondary-action" OnClick="CloseAsync" Disabled="@busy">取消</MButton><MButton OnClick="CreateAsync" Color="primary" Class="primary-action" Disabled="@(busy || source is null || string.IsNullOrWhiteSpace(templateName))">创建并编辑</MButton></MCardActions>
+</MCard>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnCreated { get; set; }
+
+    private IWMPhotoImportSource? source;
+    private string templateName = $"我的模板 {DateTime.Now:MM-dd}";
+    private string? message;
+    private bool busy;
+
+    private async Task SelectSourceAsync()
+    {
+        var sources = await PhotoPicker.PickMultipleAsync();
+        if (sources.Count == 0) return;
+        var selected = sources[0];
+        foreach (var extra in sources.Skip(1)) await extra.DisposeAsync();
+        if (source is not null) await source.DisposeAsync();
+        source = selected;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (busy || source is null || string.IsNullOrWhiteSpace(templateName)) return;
+        busy = true;
+        message = null;
+        try
+        {
+            var result = await Marketplace.CreateLocalAsync(source, templateName);
+            if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.TemplateId))
+            {
+                message = result.Message ?? "模板创建失败。";
+                return;
+            }
+            await OnCreated.InvokeAsync(result.TemplateId);
+        }
+        catch (Exception ex) { message = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+    public async ValueTask DisposeAsync() { if (source is not null) await source.DisposeAsync(); }
+}

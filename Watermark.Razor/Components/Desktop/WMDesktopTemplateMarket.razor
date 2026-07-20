@@ -1,0 +1,305 @@
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Models
+@implements IDisposable
+@inject IWMTemplateMarketplaceService Marketplace
+@inject WMTemplateMarketFeedStore MarketFeedStore
+@inject WMTemplateLibraryService TemplateLibrary
+
+<section class="desktop-market" aria-label="模板市场">
+    <div class="market-controls">
+        <nav aria-label="模板分类">
+            @foreach (var item in Categories)
+            {
+                <button type="button"
+                        class="@(MarketFeedStore.SelectedCategory == item.Value ? "is-active" : null)"
+                        disabled="@ActiveState.IsLoading"
+                        @onclick="() => SelectCategoryAsync(item.Value)">@item.Label</button>
+            }
+        </nav>
+        <label class="market-search">
+            <MIcon Small>mdi-magnify</MIcon>
+            <input value="@keyword" @oninput="UpdateKeyword" @onkeydown="SearchOnEnterAsync" placeholder="搜索模板" aria-label="搜索模板" />
+            @if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                <button type="button" class="market-search-clear" @onclick="ClearSearchAsync" aria-label="清除搜索"><MIcon Small>mdi-close-circle</MIcon></button>
+            }
+        </label>
+        <button type="button" class="market-search-command" disabled="@ActiveState.IsLoading" @onclick="ReloadAsync">搜索</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(DisplayMessage))
+    {
+        <p class="market-message @(messageIsError ? "is-error" : null)" role="status">@DisplayMessage</p>
+    }
+
+    <div id="@scrollId" class="market-results" aria-busy="@ActiveState.IsLoading">
+        @if (ActiveState.IsLoading && ActiveState.Items.Count == 0)
+        {
+            <div class="market-empty"><MProgressCircular Indeterminate Size="28" Width="3" /><span>正在加载模板</span></div>
+        }
+        else if (ActiveState.Items.Count == 0)
+        {
+            <div class="market-empty"><MIcon Size="42">mdi-store-search-outline</MIcon><strong>暂时没有匹配的模板</strong><span>换一个分类或搜索词试试。</span></div>
+        }
+        else
+        {
+            @for (var index = 0; index < ActiveState.Items.Count; index++)
+            {
+                var item = ActiveState.Items[index];
+                var downloaded = IsDownloaded(item.WatermarkId);
+                <article @key="item.WatermarkId" class="template-card market-card">
+                    <div class="template-preview">
+                        @if (!string.IsNullOrWhiteSpace(item.Src))
+                        {
+                            <img src="@item.Src"
+                                 alt="@(item.Name ?? item.Desc ?? "市场模板预览")"
+                                 loading="@(index < 8 ? "eager" : "lazy")"
+                                 decoding="async" />
+                        }
+                        else
+                        {
+                            <span class="template-skeleton"><MIcon Size="34">mdi-image-outline</MIcon></span>
+                        }
+                        @if (item.Recommend)
+                        {
+                            <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                        }
+                        @if (downloaded)
+                        {
+                            <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                        }
+                        <button type="button"
+                                class="card-download @(downloaded ? "is-downloaded" : null)"
+                                disabled="@(downloadingId is not null || downloaded)"
+                                @onclick="() => DownloadAsync(item)">
+                            <MIcon Small>@(downloaded ? "mdi-check" : "mdi-tray-arrow-down")</MIcon>
+                            <span>@(downloadingId == item.WatermarkId ? "下载中" : downloaded ? "已添加" : "下载")</span>
+                        </button>
+                    </div>
+                    <div class="template-meta">
+                        <strong title="@(item.Name ?? item.Desc)">@(item.Name ?? item.Desc ?? "未命名模板")</strong>
+                        <div class="template-meta-row">
+                            <span class="creator-line">
+                                <small>@CreatorName(item)</small>
+                                @if (IsVerifiedCreator(item))
+                                {
+                                    <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                }
+                            </span>
+                            <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                        </div>
+                    </div>
+                </article>
+            }
+
+            @if (ActiveState.HasMore)
+            {
+                <MInfiniteScroll @ref="marketInfiniteScroll"
+                                 Parent="@($"#{scrollId}")"
+                                 Threshold="520"
+                                 OnLoad="HandleLoadMoreAsync"
+                                 LoadingText="正在准备更多模板…"
+                                 LoadMoreText="继续浏览"
+                                 ErrorText="加载失败，点击重试"
+                                 EmptyText="已显示全部模板"
+                                 Class="market-infinite" />
+            }
+            else
+            {
+                <div class="market-end"><span></span><small>已显示全部模板</small><span></span></div>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback Downloaded { get; set; }
+
+    private const int PageSize = 24;
+    private static readonly (WMTemplateMarketCategory Value, string Label)[] Categories =
+    [
+        (WMTemplateMarketCategory.Recommended, "推荐"),
+        (WMTemplateMarketCategory.Popular, "热门"),
+        (WMTemplateMarketCategory.Latest, "最新"),
+        (WMTemplateMarketCategory.Collage, "拼图")
+    ];
+
+    private readonly string scrollId = $"desktop-market-scroll-{Guid.NewGuid():N}";
+    private WMTemplateMarketFeedState? activeState;
+    private MInfiniteScroll? marketInfiniteScroll;
+    private CancellationTokenSource? contextCancellation;
+    private string keyword = string.Empty;
+    private string? message;
+    private string? downloadingId;
+    private bool messageIsError;
+    private bool resetInfinitePending;
+    private WMTemplateMarketFeedState ActiveState => activeState ??= MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
+    private string? DisplayMessage => message ?? ActiveState.ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        keyword = MarketFeedStore.Search;
+        await ActivateFeedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!resetInfinitePending || marketInfiniteScroll is null) return;
+        resetInfinitePending = false;
+        try { await marketInfiniteScroll.ResetAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        catch (ObjectDisposedException) { }
+    }
+
+    private void UpdateKeyword(ChangeEventArgs args) => keyword = args.Value?.ToString() ?? string.Empty;
+
+    private Task SearchOnEnterAsync(KeyboardEventArgs args) =>
+        string.Equals(args.Key, "Enter", StringComparison.Ordinal) ? ReloadAsync() : Task.CompletedTask;
+
+    private async Task ClearSearchAsync()
+    {
+        if (string.IsNullOrEmpty(keyword)) return;
+        keyword = string.Empty;
+        await ReloadAsync();
+    }
+
+    private async Task SelectCategoryAsync(WMTemplateMarketCategory value)
+    {
+        if (MarketFeedStore.SelectedCategory == value) return;
+        MarketFeedStore.SelectedCategory = value;
+        MarketFeedStore.Search = keyword.Trim();
+        await ActivateFeedAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        MarketFeedStore.Search = keyword.Trim();
+        await ActivateFeedAsync(forceRefresh: true);
+    }
+
+    private async Task ActivateFeedAsync(bool forceRefresh = false)
+    {
+        contextCancellation?.Cancel();
+        contextCancellation?.Dispose();
+        contextCancellation = new CancellationTokenSource();
+        activeState = MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
+        message = null;
+        messageIsError = false;
+        if (forceRefresh) ActiveState.Reset();
+        if (!ActiveState.Initialized)
+            await LoadPageAsync(ActiveState, contextCancellation.Token);
+        resetInfinitePending = ActiveState.HasMore;
+    }
+
+    private async Task<MarketLoadOutcome> LoadPageAsync(WMTemplateMarketFeedState state, CancellationToken token)
+    {
+        if (state.IsLoading) return MarketLoadOutcome.Loading;
+        if (!state.HasMore) return MarketLoadOutcome.End;
+        var version = state.BeginLoad();
+        state.ErrorMessage = null;
+        try
+        {
+            var result = await Marketplace.SearchAsync(
+                new WMTemplateMarketplaceQuery(state.Category, state.Keyword, state.NextStart, PageSize),
+                token);
+            token.ThrowIfCancellationRequested();
+            if (!state.IsCurrentLoad(version)) return MarketLoadOutcome.Cancelled;
+            state.Initialized = true;
+            if (!result.IsSuccess)
+            {
+                state.ErrorMessage = result.Message ?? "模板市场加载失败，请稍后重试。";
+                messageIsError = true;
+                return MarketLoadOutcome.Error;
+            }
+
+            state.AppendUnique(result.Items);
+            state.NextStart = result.NextStart;
+            state.HasMore = result.HasMore;
+            state.LastLoadedAtUtc = DateTimeOffset.UtcNow;
+            state.LastAccessedAtUtc = state.LastLoadedAtUtc;
+            return state.HasMore ? MarketLoadOutcome.Ok : MarketLoadOutcome.End;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            return MarketLoadOutcome.Cancelled;
+        }
+        catch (Exception ex)
+        {
+            state.Initialized = true;
+            state.ErrorMessage = ex.Message;
+            messageIsError = true;
+            return MarketLoadOutcome.Error;
+        }
+        finally
+        {
+            state.CompleteLoad(version);
+        }
+    }
+
+    private async Task HandleLoadMoreAsync(InfiniteScrollLoadEventArgs args)
+    {
+        var token = contextCancellation?.Token ?? CancellationToken.None;
+        var outcome = await LoadPageAsync(ActiveState, token);
+        args.Status = outcome switch
+        {
+            MarketLoadOutcome.Error => InfiniteScrollLoadStatus.Error,
+            MarketLoadOutcome.End => InfiniteScrollLoadStatus.Empty,
+            MarketLoadOutcome.Cancelled => InfiniteScrollLoadStatus.Empty,
+            _ => InfiniteScrollLoadStatus.Ok
+        };
+    }
+
+    private async Task DownloadAsync(WMZipedTemplate item)
+    {
+        if (downloadingId is not null || IsDownloaded(item.WatermarkId)) return;
+        downloadingId = item.WatermarkId;
+        message = null;
+        messageIsError = false;
+        try
+        {
+            var result = await Marketplace.DownloadAsync(item);
+            message = result.IsSuccess ? "模板已下载到我的模板。" : result.Message ?? "模板下载失败。";
+            messageIsError = !result.IsSuccess;
+            if (result.IsSuccess)
+            {
+                MarketFeedStore.MarkDownloaded(item.WatermarkId);
+                await Downloaded.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            messageIsError = true;
+        }
+        finally
+        {
+            downloadingId = null;
+        }
+    }
+
+    private bool IsDownloaded(string templateId) =>
+        MarketFeedStore.IsDownloaded(templateId)
+        || TemplateLibrary.Templates.Any(item => string.Equals(item.ID, templateId, StringComparison.OrdinalIgnoreCase));
+
+    private static string CreatorName(WMZipedTemplate item) =>
+        string.IsNullOrWhiteSpace(item.UserDisplayName) ? "轻影创作者" : item.UserDisplayName;
+
+    private static bool IsVerifiedCreator(WMZipedTemplate item) =>
+        string.Equals(CreatorName(item), "DFM Official", StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatDownloads(int value) => value switch
+    {
+        >= 10000 => $"{value / 10000d:0.#}万",
+        >= 1000 => $"{value / 1000d:0.#}k",
+        _ => value.ToString()
+    };
+
+    public void Dispose()
+    {
+        contextCancellation?.Cancel();
+        contextCancellation?.Dispose();
+    }
+
+    private enum MarketLoadOutcome { Ok, End, Error, Loading, Cancelled }
+}

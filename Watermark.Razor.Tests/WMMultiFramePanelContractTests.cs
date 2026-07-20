@@ -17,15 +17,21 @@ public sealed class WMMultiFramePanelContractTests
     }
 
     [Fact]
-    public void DesktopAndMobile_ConsumeTheSameMultiFramePanel()
+    public void DesktopAndMobile_ShareControllerWithoutSharingVisualPanel()
     {
         var desktop = Read("Watermark.Razor", "BlazorPages", "MainViewOSX.razor");
+        var desktopInspector = Read("Watermark.Razor", "Components", "Desktop", "WMDesktopModeInspector.razor");
         var mobile = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileWorkspace.razor");
 
-        Assert.Contains("<WMMultiFramePanel", desktop, StringComparison.Ordinal);
+        Assert.Contains("<WMDesktopModeInspector", desktop, StringComparison.Ordinal);
+        Assert.DoesNotContain("<WMMultiFramePanel", desktop, StringComparison.Ordinal);
         Assert.Contains("<WMMultiFramePanel", mobile, StringComparison.Ordinal);
         Assert.Contains("Controller.ExecuteMultiFrameAsync", desktop, StringComparison.Ordinal);
+        Assert.Contains("Controller.PreviewMultiFrameAsync", desktop, StringComparison.Ordinal);
         Assert.Contains("Controller.ExecuteMultiFrameAsync", mobile, StringComparison.Ordinal);
+        Assert.Contains("EventCallback PreviewMultiFrame", desktopInspector, StringComparison.Ordinal);
+        Assert.DoesNotContain("IWMImageStackEngine", desktopInspector, StringComparison.Ordinal);
+        Assert.DoesNotContain("@inject", desktopInspector, StringComparison.Ordinal);
     }
 
     [Fact]

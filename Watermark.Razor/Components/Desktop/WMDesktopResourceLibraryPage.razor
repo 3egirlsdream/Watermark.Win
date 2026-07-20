@@ -1,0 +1,137 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Microsoft.AspNetCore.Components.Forms
+@using Watermark.Razor.Workspace
+@inject IWMResourceLibraryService Resources
+@inject IPopupService Popup
+
+<section class="desktop-resources" aria-labelledby="desktop-resources-title">
+    <header class="resources-heading">
+        <div><small>ASSETS</small><h1 id="desktop-resources-title">图标与字体</h1><p>统一管理模板设计器可用的本地图标和字体资源。</p></div>
+        <label class="import-command" aria-disabled="@busy"><MIcon Small>mdi-file-import-outline</MIcon><span>导入@(kind == WMResourceKind.Logo ? "图标" : "字体")</span><InputFile class="file-input" OnChange="ImportAsync" accept="@(kind == WMResourceKind.Logo ? ".png,.jpg,.jpeg,image/png,image/jpeg" : ".ttf,.otf,font/ttf,font/otf")" disabled="@busy" /></label>
+    </header>
+    <div class="resource-toolbar">
+        <nav role="tablist" aria-label="资源类型">
+            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Logo)" class="@(kind == WMResourceKind.Logo ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Logo)"><MIcon Small>mdi-image-outline</MIcon><span>个人图标</span></button>
+            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Font)" class="@(kind == WMResourceKind.Font ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Font)"><MIcon Small>mdi-format-font</MIcon><span>字体库</span></button>
+        </nav>
+        <span>@Summary</span>
+        <button type="button" class="refresh-command" disabled="@busy" @onclick="ReloadAsync"><MIcon Small>mdi-refresh</MIcon></button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="resource-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
+    }
+    <div class="resource-body">
+        @if (loading)
+        {
+            <div class="resource-empty"><MProgressCircular Indeterminate Size="28" Width="3" /><span>正在加载资源</span></div>
+        }
+        else if (items.Count == 0)
+        {
+            <div class="resource-empty"><MIcon Size="44">@(kind == WMResourceKind.Logo ? "mdi-image-plus-outline" : "mdi-format-font")</MIcon><strong>@(kind == WMResourceKind.Logo ? "还没有个人图标" : "还没有可用字体")</strong><span>使用右上角导入按钮添加本地资源。</span></div>
+        }
+        else
+        {
+            <div class="resource-grid @(kind == WMResourceKind.Font ? "is-font" : null)">
+                @foreach (var item in items)
+                {
+                    <article class="resource-card @(item.Kind == WMResourceKind.Font ? "is-font" : null)" @key="item.Id">
+                        <div class="resource-preview">
+                            @if (!string.IsNullOrWhiteSpace(item.PreviewUrl)) { <img src="@item.PreviewUrl" alt="" /> }
+                            else { <MIcon Size="34">@(item.Kind == WMResourceKind.Logo ? "mdi-image-outline" : "mdi-format-font")</MIcon> }
+                        </div>
+                        <div class="resource-copy"><strong title="@item.Name">@DisplayName(item)</strong><small>@(item.Installed ? "本地可用" : "云端字体")</small></div>
+                        @if (item.Kind == WMResourceKind.Font && !item.Installed)
+                        {
+                            <button type="button" class="resource-action download" disabled="@busy" @onclick="() => DownloadAsync(item)">下载</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="resource-action delete" disabled="@busy" @onclick="() => DeleteAsync(item)" aria-label="删除 @item.Name"><MIcon Small>mdi-delete-outline</MIcon></button>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private readonly List<WMResourceItem> items = [];
+    private WMResourceKind kind = WMResourceKind.Logo;
+    private bool loading = true;
+    private bool busy;
+    private string? message;
+    private bool messageIsError;
+    private int InstalledCount => items.Count(item => item.Installed);
+    private string Summary => kind == WMResourceKind.Logo
+        ? $"本地 {InstalledCount} 个图标 · 支持 PNG、JPEG"
+        : $"本地 {InstalledCount} 款 · 云端 {items.Count - InstalledCount} 款";
+
+    protected override Task OnInitializedAsync() => ReloadAsync();
+
+    private async Task SelectKindAsync(WMResourceKind value)
+    {
+        if (kind == value) return;
+        kind = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        try
+        {
+            items.Clear();
+            items.AddRange(await Resources.ListAsync(kind));
+        }
+        catch (Exception ex) { Show(ex.Message, true); }
+        finally { loading = false; }
+    }
+
+    private async Task ImportAsync(InputFileChangeEventArgs args)
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var file = args.File;
+            await using var stream = file.OpenReadStream(32 * 1024 * 1024);
+            var result = await Resources.ImportAsync(kind, file.Name, stream);
+            Show(result.Message, !result.Succeeded);
+            if (result.Succeeded) await ReloadAsync();
+        }
+        finally { busy = false; }
+    }
+
+    private async Task DownloadAsync(WMResourceItem item)
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var result = await Resources.DownloadFontAsync(item.Name);
+            Show(result.Message, !result.Succeeded);
+            if (result.Succeeded) await ReloadAsync();
+        }
+        finally { busy = false; }
+    }
+
+    private async Task DeleteAsync(WMResourceItem item)
+    {
+        if (busy) return;
+        var confirmed = await Popup.ConfirmAsync("删除资源", $"确定删除“{item.Name}”吗？使用该资源的旧模板可能无法完整显示。", AlertTypes.Warning);
+        if (confirmed != true) return;
+        busy = true;
+        try
+        {
+            var result = await Resources.DeleteAsync(item.Kind, item.Id);
+            Show(result.Message, !result.Succeeded);
+            if (result.Succeeded) await ReloadAsync();
+        }
+        finally { busy = false; }
+    }
+
+    private void Show(string value, bool error) { message = value; messageIsError = error; }
+    private static string DisplayName(WMResourceItem item) => Path.GetFileNameWithoutExtension(item.Name);
+}

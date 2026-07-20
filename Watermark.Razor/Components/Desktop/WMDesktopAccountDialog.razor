@@ -1,0 +1,187 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@implements IDisposable
+@inject IWMAccountService Accounts
+@inject IWMExternalActionService External
+@inject IPopupService Popup
+
+<section class="desktop-account-dialog" aria-labelledby="desktop-account-title">
+    <header>
+        <div class="account-symbol"><MIcon Size="26">@Icon</MIcon></div>
+        <div><small>ACCOUNT</small><h2 id="desktop-account-title">@Title</h2><p>@Description</p></div>
+        <button type="button" class="close-command" @onclick="Close" aria-label="关闭"><MIcon Small>mdi-close</MIcon></button>
+    </header>
+
+    <form @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
+        <label><span>邮箱</span><input type="email" autocomplete="email" @bind="email" disabled="@busy" placeholder="name@example.com" /></label>
+        @if (CurrentMode == AccountMode.Register)
+        {
+            <label><span>展示名称</span><input autocomplete="nickname" @bind="displayName" disabled="@busy" placeholder="轻影用户" /></label>
+        }
+        @if (CurrentMode == AccountMode.ChangePassword)
+        {
+            <label><span>当前密码</span><input type="password" autocomplete="current-password" @bind="oldPassword" disabled="@busy" /></label>
+        }
+        <label><span>@(CurrentMode is AccountMode.Login or AccountMode.Delete ? "密码" : "新密码")</span><input type="password" autocomplete="@(CurrentMode == AccountMode.Login ? "current-password" : "new-password")" @bind="password" disabled="@busy" /></label>
+        @if (CurrentMode is AccountMode.Register or AccountMode.Recover or AccountMode.ChangePassword)
+        {
+            <label><span>确认密码</span><input type="password" autocomplete="new-password" @bind="confirmPassword" disabled="@busy" /></label>
+        }
+        @if (NeedsVerificationCode)
+        {
+            <label><span>验证码</span><span class="code-row"><input inputmode="numeric" autocomplete="one-time-code" @bind="code" disabled="@busy" /><button type="button" disabled="@(busy || countdown > 0)" @onclick="SendCodeAsync">@(countdown > 0 ? $"{countdown}s" : "发送验证码")</button></span></label>
+        }
+        @if (CurrentMode == AccountMode.Register)
+        {
+            <label class="agreement"><input type="checkbox" @bind="agreementAccepted" /><span>我已阅读并同意<button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'>用户协议</button>和<button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/private")'>隐私协议</button></span></label>
+        }
+        @if (CurrentMode == AccountMode.Delete)
+        {
+            <div class="danger-note"><strong>删除账号不可恢复</strong><span>云端账号、会员与收藏信息将被永久删除。</span></div>
+            <label class="agreement"><input type="checkbox" @bind="deleteConfirmed" /><span>我确认永久删除当前账号</span></label>
+        }
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="account-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
+        }
+        <button class="submit-command @(CurrentMode == AccountMode.Delete ? "is-danger" : null)" type="submit" disabled="@busy">@(busy ? "正在处理…" : SubmitLabel)</button>
+    </form>
+
+    <footer>
+        @if (CurrentMode == AccountMode.Login)
+        {
+            <button type="button" @onclick='() => ChangeModeAsync("register")'>注册账号</button><span></span><button type="button" @onclick='() => ChangeModeAsync("recover")'>忘记密码</button>
+        }
+        else
+        {
+            <button type="button" @onclick='() => ChangeModeAsync("login")'><MIcon Small>mdi-arrow-left</MIcon><span>返回登录</span></button>
+        }
+    </footer>
+</section>
+
+@code {
+    [Parameter] public string Mode { get; set; } = "login";
+    [Parameter] public EventCallback<string> ModeChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private string email = string.Empty;
+    private string displayName = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+    private string oldPassword = string.Empty;
+    private string code = string.Empty;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private bool agreementAccepted;
+    private bool deleteConfirmed;
+    private int countdown;
+    private string appliedMode = string.Empty;
+    private CancellationTokenSource? countdownCts;
+
+    private AccountMode CurrentMode => Mode switch
+    {
+        "register" => AccountMode.Register,
+        "recover" => AccountMode.Recover,
+        "change-password" => AccountMode.ChangePassword,
+        "delete" => AccountMode.Delete,
+        _ => AccountMode.Login
+    };
+    private bool NeedsVerificationCode => CurrentMode is AccountMode.Register or AccountMode.Recover or AccountMode.Delete;
+    private string Title => CurrentMode switch { AccountMode.Register => "注册账号", AccountMode.Recover => "找回密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "注销账号", _ => "登录" };
+    private string Description => CurrentMode switch { AccountMode.Register => "创建账号并同步会员与模板权益。", AccountMode.Recover => "验证邮箱后重新设置密码。", AccountMode.ChangePassword => "更新当前账号的登录密码。", AccountMode.Delete => "永久删除云端账号和关联信息。", _ => "登录后继续使用会员和市场能力。" };
+    private string Icon => CurrentMode switch { AccountMode.Register => "mdi-account-plus-outline", AccountMode.Recover => "mdi-lock-reset", AccountMode.ChangePassword => "mdi-form-textbox-password", AccountMode.Delete => "mdi-account-remove-outline", _ => "mdi-login-variant" };
+    private string SubmitLabel => CurrentMode switch { AccountMode.Register => "注册并登录", AccountMode.Recover => "重置密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "永久删除账号", _ => "登录" };
+
+    protected override void OnParametersSet()
+    {
+        if (appliedMode == Mode) return;
+        appliedMode = Mode;
+        password = confirmPassword = oldPassword = code = string.Empty;
+        message = null;
+        messageIsError = false;
+        agreementAccepted = deleteConfirmed = false;
+        if (Accounts.State.IsAuthenticated) email = Accounts.State.UserName ?? email;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (busy) return;
+        message = null;
+        if ((CurrentMode is AccountMode.Register or AccountMode.Recover or AccountMode.ChangePassword) && password != confirmPassword)
+        {
+            Show(new WMAccountResult(false, "两次输入的密码不一致。"));
+            return;
+        }
+        if (CurrentMode == AccountMode.Register && !agreementAccepted)
+        {
+            Show(new WMAccountResult(false, "请先同意用户协议和隐私协议。"));
+            return;
+        }
+        if (CurrentMode == AccountMode.Delete && !deleteConfirmed)
+        {
+            Show(new WMAccountResult(false, "请确认永久删除当前账号。"));
+            return;
+        }
+        if (CurrentMode == AccountMode.Delete)
+        {
+            var confirmed = await Popup.ConfirmAsync("确认删除", "删除后账号无法恢复，确认继续？", AlertTypes.Warning);
+            if (confirmed != true) return;
+        }
+
+        busy = true;
+        WMAccountResult result;
+        try
+        {
+            result = CurrentMode switch
+            {
+                AccountMode.Register => await Accounts.RegisterAsync(new WMRegisterRequest(email, displayName, password, code), CancellationToken.None),
+                AccountMode.Recover => await Accounts.RecoverPasswordAsync(new WMRecoverPasswordRequest(email, password, code), CancellationToken.None),
+                AccountMode.ChangePassword => await Accounts.ChangePasswordAsync(new WMChangePasswordRequest(email, oldPassword, password), CancellationToken.None),
+                AccountMode.Delete => await Accounts.DeleteAccountAsync(new WMDeleteAccountRequest(email, password, code), CancellationToken.None),
+                _ => await Accounts.LoginAsync(new WMLoginRequest(email, password), CancellationToken.None)
+            };
+        }
+        finally { busy = false; }
+        Show(result);
+        if (!result.Succeeded) return;
+        if (CurrentMode == AccountMode.Recover)
+        {
+            await ChangeModeAsync("login");
+            return;
+        }
+        if (OnCompleted.HasDelegate) await OnCompleted.InvokeAsync();
+        await Close();
+    }
+
+    private async Task SendCodeAsync()
+    {
+        if (countdown > 0 || busy) return;
+        busy = true;
+        var result = await Accounts.SendVerificationCodeAsync(email, CancellationToken.None);
+        busy = false;
+        Show(result);
+        if (!result.Succeeded) return;
+        countdownCts?.Cancel(); countdownCts?.Dispose();
+        countdownCts = new CancellationTokenSource();
+        countdown = 60;
+        _ = RunCountdownAsync(countdownCts.Token);
+    }
+
+    private async Task RunCountdownAsync(CancellationToken token)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            while (countdown > 0 && await timer.WaitForNextTickAsync(token)) { countdown--; await InvokeAsync(StateHasChanged); }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task ChangeModeAsync(string value) { Mode = value; await ModeChanged.InvokeAsync(value); }
+    private void Show(WMAccountResult result) { message = result.Message; messageIsError = !result.Succeeded; }
+    private Task Close() => OnClose.InvokeAsync();
+    public void Dispose() { countdownCts?.Cancel(); countdownCts?.Dispose(); }
+    private enum AccountMode { Login, Register, Recover, ChangePassword, Delete }
+}

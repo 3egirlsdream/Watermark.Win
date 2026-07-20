@@ -1,0 +1,8 @@
+@page "/mac/workspace/{SessionId}"
+@page "/desktop/workspace/{SessionId}"
+
+<MainViewOSX @key="SessionId" SessionId="@SessionId" />
+
+@code {
+    [Parameter] public string SessionId { get; set; } = string.Empty;
+}

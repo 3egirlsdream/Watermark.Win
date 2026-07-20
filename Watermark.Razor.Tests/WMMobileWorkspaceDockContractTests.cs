@@ -113,6 +113,22 @@ public sealed class WMMobileWorkspaceDockContractTests
     }
 
     [Fact]
+    public void ModeNavigation_ScrollsHorizontallyWithoutCompressingLabels()
+    {
+        var dockCss = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor.css");
+
+        Assert.Contains(".wm-dock-modes", dockCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-x: auto", dockCss, StringComparison.Ordinal);
+        Assert.Contains("touch-action: pan-x", dockCss, StringComparison.Ordinal);
+        Assert.Contains("scrollbar-width: none", dockCss, StringComparison.Ordinal);
+        Assert.Contains("flex: 0 0 78px", dockCss, StringComparison.Ordinal);
+        Assert.Contains("min-width: 78px", dockCss, StringComparison.Ordinal);
+        Assert.Contains("white-space: nowrap", dockCss, StringComparison.Ordinal);
+        Assert.Contains(".wm-dock-modes::-webkit-scrollbar { display: none; }", dockCss, StringComparison.Ordinal);
+        Assert.DoesNotContain("grid-template-columns: repeat(5, minmax(0, 1fr))", dockCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TemplatePickers_AttachCanvasJsonBeforeRequestingPreview()
     {
         var mobileDock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
@@ -195,7 +211,7 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("pending = value", curveJs, StringComparison.Ordinal);
         Assert.Contains("flush(true)", curveJs, StringComparison.Ordinal);
         Assert.DoesNotContain("histogram", curve, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("RGB", curve, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Channel", curve, StringComparison.Ordinal);
     }
 
     [Fact]

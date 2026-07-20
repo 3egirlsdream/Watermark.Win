@@ -89,7 +89,8 @@
 
 @code {
     [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
-    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
     private readonly List<WMResourceItem> items = [];
     private bool loading = true;
     private bool busy;
@@ -147,8 +148,8 @@
 
     private void OpenLogos() => NavigationHistory.NavigateTo(BuildTabUrl("icons"), replace: true);
     private void OpenFonts() => NavigationHistory.NavigateTo(BuildTabUrl("fonts"), replace: true);
-    private string BuildTabUrl(string tab) => $"/settings/resources?tab={tab}&returnUrl={Uri.EscapeDataString(WMReturnUrl.Normalize(ReturnUrl, "/settings"))}";
-    private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl, "/settings"));
+    private string BuildTabUrl(string tab) => $"/settings/resources?tab={tab}&returnUrl={Uri.EscapeDataString(WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl, "/settings"))}";
+    private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl, "/settings"));
     private void Show(WMResourceResult result) { message = result.Message; messageIsError = !result.Succeeded; }
     private static string DisplayName(WMResourceItem item) => Path.GetFileNameWithoutExtension(item.Name);
 }

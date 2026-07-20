@@ -11,6 +11,7 @@
 </div>
 
 @code {
-    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
-    private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl));
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
+    private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl));
 }

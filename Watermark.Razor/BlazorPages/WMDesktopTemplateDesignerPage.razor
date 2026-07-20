@@ -1,0 +1,40 @@
+@page "/mac/templates/{TemplateId}/edit"
+@page "/desktop/templates/{TemplateId}/edit"
+@using Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@inject NavigationManager Navigation
+@inject IWMDesktopStartupService DesktopStartup
+@inject WMTemplateLibraryService TemplateLibrary
+
+@if (IsDesktopPlatform)
+{
+<div class="desktop-designer-route">
+    <MApp Class="desktop-designer-app">
+        <MErrorHandler>
+            <WMDesktopTemplateDesigner CanvasId="@TemplateId" OnSaved="OnSavedAsync" OnClose="CloseDesigner" />
+        </MErrorHandler>
+    </MApp>
+</div>
+}
+
+@code {
+    [Parameter] public string TemplateId { get; set; } = string.Empty;
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+
+    private static bool IsDesktopPlatform => Watermark.Shared.Models.Global.DeviceType is Watermark.Shared.Enums.DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win;
+    private string DesktopRoot => new Uri(Navigation.Uri).AbsolutePath.StartsWith("/desktop", StringComparison.OrdinalIgnoreCase) ? "/desktop" : "/mac";
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl, $"{DesktopRoot}/templates");
+
+    protected override Task OnInitializedAsync()
+    {
+        if (IsDesktopPlatform) return DesktopStartup.InitializeAsync();
+        Navigation.NavigateTo("/templates?tab=local", replace: true);
+        return Task.CompletedTask;
+    }
+    private void CloseDesigner() => Navigation.NavigateTo(ReturnTarget);
+    private async Task OnSavedAsync(string templateId)
+    {
+        TemplateLibrary.Invalidate(templateId);
+        await TemplateLibrary.GetOrRefreshAsync();
+    }
+}

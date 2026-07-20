@@ -4,20 +4,23 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JSRuntime
 
-<section class="wm-mobile-master-curve" aria-label="主曲线编辑器">
+<section class="wm-mobile-master-curve @(ShowPresets ? "has-presets" : "no-presets") @(Compact ? "is-compact" : null) wm-curve-channel-@Channel" aria-label="@Title 编辑器">
     <header>
-        <div><strong>主曲线</strong><small>拖动节点调整明暗关系</small></div>
+        <div><strong>@Title</strong><small>@Description</small></div>
         <button type="button" @onclick="ResetPresetAsync" aria-label="重置当前曲线预设"><MIcon>mdi-restore</MIcon></button>
     </header>
 
-    <div class="wm-curve-presets" role="group" aria-label="曲线预设">
-        <button type="button" class="@(IsPreset("linear") ? "is-active" : null)" @onclick='() => SelectPresetAsync("linear")'>线性</button>
-        <button type="button" class="@(IsPreset("contrast") ? "is-active" : null)" @onclick='() => SelectPresetAsync("contrast")'>增强</button>
-        <button type="button" class="@(IsPreset("soft") ? "is-active" : null)" @onclick='() => SelectPresetAsync("soft")'>柔和</button>
-    </div>
+    @if (ShowPresets)
+    {
+        <div class="wm-curve-presets" role="group" aria-label="曲线预设">
+            <button type="button" class="@(IsPreset("linear") ? "is-active" : null)" @onclick='() => SelectPresetAsync("linear")'>线性</button>
+            <button type="button" class="@(IsPreset("contrast") ? "is-active" : null)" @onclick='() => SelectPresetAsync("contrast")'>增强</button>
+            <button type="button" class="@(IsPreset("soft") ? "is-active" : null)" @onclick='() => SelectPresetAsync("soft")'>柔和</button>
+        </div>
+    }
 
     <div class="wm-curve-graph">
-        <svg @ref="curveElement" viewBox="0 0 320 240" role="img" aria-label="主曲线节点图">
+        <svg @ref="curveElement" viewBox="0 0 320 240" role="img" aria-label="@Title 节点图">
             <rect class="wm-curve-background" x="18" y="18" width="284" height="204" rx="8" />
             @foreach (var offset in GridOffsets)
             {
@@ -45,6 +48,11 @@
 @code {
     [Parameter] public IReadOnlyList<WMCurvePoint> Points { get; set; } = WMCurvePoint.Identity();
     [Parameter] public EventCallback<IReadOnlyList<WMCurvePoint>> PointsChanged { get; set; }
+    [Parameter] public string Title { get; set; } = "主曲线";
+    [Parameter] public string Description { get; set; } = "拖动节点调整明暗关系";
+    [Parameter] public string Channel { get; set; } = "master";
+    [Parameter] public bool ShowPresets { get; set; } = true;
+    [Parameter] public bool Compact { get; set; }
 
     private static readonly double[] GridOffsets = [0, .25, .5, .75, 1];
     private readonly List<WMCurvePoint> workingPoints = [];
@@ -119,7 +127,9 @@
             _ when index == workingPoints.Count - 1 => 1,
             _ => (float)Math.Clamp(x, minimumX, maximumX)
         };
-        workingPoints[index].Y = (float)Math.Clamp(y, 0, 1);
+        var minimumY = index == 0 ? 0 : workingPoints[index - 1].Y;
+        var maximumY = index == workingPoints.Count - 1 ? 1 : workingPoints[index + 1].Y;
+        workingPoints[index].Y = (float)Math.Clamp(y, minimumY, maximumY);
         signature = Signature(workingPoints);
         await PointsChanged.InvokeAsync(Copy(workingPoints));
         if (isFinal) await InvokeAsync(StateHasChanged);

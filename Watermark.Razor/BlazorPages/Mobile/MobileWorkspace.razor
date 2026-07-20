@@ -49,8 +49,19 @@ else if (State.Mode == WMWorkspaceMode.TemplateDesign)
 }
 else
 {
-    <section id="@visibilityScope" class="workspace-shell @(MobilePresentationClass)" aria-label="图片工作台" @ref="workspaceShell">
+    <section id="@visibilityScope" class="workspace-shell @(MobilePresentationClass) @(IsCropEditing ? "is-crop" : null)" aria-label="图片工作台" @ref="workspaceShell">
         <header class="workspace-toolbar">
+            @if (IsCropEditing)
+            {
+                <button type="button" class="workspace-crop-cancel" disabled="@mobileEditConfirming" @onclick="CancelMobileEditAsync" aria-label="取消裁切"><MIcon>mdi-chevron-left</MIcon></button>
+                <strong class="workspace-crop-title">裁切</strong>
+                <div class="workspace-crop-actions">
+                    <button type="button" class="workspace-crop-reset" disabled="@mobileEditConfirming" @onclick="ResetCropDraftAsync" aria-label="重置裁切"><MIcon>mdi-undo</MIcon></button>
+                    <button type="button" class="workspace-crop-apply" disabled="@mobileEditConfirming" @onclick="ApplyMobileEditAsync">应用</button>
+                </div>
+            }
+            else
+            {
             <div class="workspace-toolbar-leading">
                 <button type="button" class="workspace-icon-button workspace-close-button" @onclick="BackAsync" aria-label="返回上一页"><MIcon>mdi-chevron-left</MIcon></button>
                 <div class="workspace-title">
@@ -77,23 +88,36 @@ else
                         @onclick="ToggleOriginalAsync" aria-label="@(State.IsComparingOriginal ? "返回编辑预览" : "查看原图")"
                         aria-pressed="@State.IsComparingOriginal"><MIcon>mdi-compare</MIcon></button>
             </div>
+            }
         </header>
 
         <main class="workspace-stage-wrap">
-            <div class="workspace-stage" @ref="canvasElement"
+            <div class="workspace-stage @(IsCropEditing ? "is-crop" : null)" @ref="canvasElement"
                  @onpointerdown="BeginOriginalPress"
                  @onpointermove="MoveOriginalPress"
                  @onpointerup="EndOriginalPress"
                  @onpointercancel="EndOriginalPress"
                  @onpointerleave="EndOriginalPress">
-                <WMWorkspacePreviewSurface Presentation="PreviewPresentation"
-                                           CapabilityChanged="HandleColorPreviewCapabilityAsync"
-                                           PerformanceMeasured="HandleColorPreviewPerformanceAsync"
-                                           Alt="当前照片预览">
-                    <EmptyContent>
-                        <div class="workspace-stage-empty"><MIcon>mdi-image-outline</MIcon></div>
-                    </EmptyContent>
-                </WMWorkspacePreviewSurface>
+                <div class="workspace-preview-persistent @(IsCropEditing ? "is-hidden" : null)">
+                    <WMWorkspacePreviewSurface Presentation="PreviewPresentation"
+                                               CapabilityChanged="HandleColorPreviewCapabilityAsync"
+                                               PerformanceMeasured="HandleColorPreviewPerformanceAsync"
+                                               Alt="当前照片预览">
+                        <EmptyContent>
+                            <div class="workspace-stage-empty"><MIcon>mdi-image-outline</MIcon></div>
+                        </EmptyContent>
+                    </WMWorkspacePreviewSurface>
+                </div>
+                @if (IsCropEditing)
+                {
+                    <WMCropCanvas ImageUrl="@CropSourceUrl"
+                                  SourceWidth="CropSourceWidth"
+                                  SourceHeight="CropSourceHeight"
+                                  Settings="State.CropTool.Draft"
+                                  SettingsChanged="UpdateCropDraftAsync"
+                                  ApplyRequested="ApplyMobileEditAsync"
+                                  CancelRequested="CancelMobileEditAsync" />
+                }
                 @if (State.Activity == WMWorkspaceActivity.Previewing
                      && State.PreviewPresentation.Backend != WMInteractivePreviewBackend.WebGl2)
                 {
@@ -108,7 +132,7 @@ else
                 }
             </div>
 
-            @if (State.Media.Count > 1)
+            @if (!IsCropEditing && State.Media.Count > 1)
             {
                 <div class="workspace-media-strip" aria-label="素材列表">
                     @foreach (var media in State.Media)
@@ -139,11 +163,15 @@ else
         <aside class="workspace-panel workspace-desktop-panel">
             <button type="button" class="workspace-panel-handle" @onclick="CyclePanel" aria-label="切换参数面板高度"><span></span></button>
             <div class="workspace-mode-tabs" role="tablist" aria-label="编辑模式">
+                <button type="button" class="@(State.Mode == WMWorkspaceMode.Crop ? "is-active" : null)"
+                        role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Crop)"
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.Crop)"><MIcon>mdi-crop</MIcon><span>裁切</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.Template ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Template)"
                         @onclick="() => SetModeAsync(WMWorkspaceMode.Template)"><MIcon>mdi-card-text-outline</MIcon><span>模板</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.ColorGrade ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.ColorGrade)"
+                        disabled="@(!ColorEngineAvailable)"
                         @onclick="() => SetModeAsync(WMWorkspaceMode.ColorGrade)"><MIcon>mdi-tune-variant</MIcon><span>调色</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.MultiFrame ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.MultiFrame)"
@@ -208,9 +236,22 @@ else
             </div>
         </aside>
 
+        @if (IsCropEditing)
+        {
+        <div class="workspace-mobile-crop-tools">
+            <WMCropControls Settings="State.CropTool.Draft"
+                            SourceWidth="CropSourceWidth"
+                            SourceHeight="CropSourceHeight"
+                            ShowReset="false"
+                            SettingsChanged="UpdateCropDraftAsync" />
+        </div>
+        }
+        else
+        {
         <div class="workspace-mobile-dock">
             <WMMobileWorkspaceDock @ref="mobileDock" State="State" Templates="templates"
                 MediaPreviewUrl="MediaPreview"
+                ColorEngineAvailable="@ColorEngineAvailable" ColorEngineUnavailableReason="@ColorEngineUnavailableReason"
                 ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" PresentationChanged="OnMobilePresentationChangedAsync" ScopeChanged="ChangeApplyScopeAsync"
                 TemplatePreviewChanged="PreviewTemplateAsync"
                 ColorPreviewChanged="HandleColorPreviewAsync"
@@ -221,14 +262,19 @@ else
                 AutoCropChanged="SetAutoCropAsync" MultiFrameRunRequested="RunMultiFrameAsync"
                 CollageDraftChanged="UpdateCollageDraftAsync" CollageRunOrCancelRequested="RunOrCancelCollageAsync" />
         </div>
+        }
 
         @if (showExportDrawer)
         {
             <button type="button" class="workspace-drawer-backdrop" @onclick="CloseExportDrawer" aria-label="关闭导出设置"></button>
             <section class="workspace-export-drawer" role="dialog" aria-modal="true" aria-labelledby="workspace-export-title">
-                <header><div><strong id="workspace-export-title">导出</strong><small>@SelectedCount 张素材</small></div><button type="button" @onclick="CloseExportDrawer" aria-label="关闭导出设置"><MIcon>mdi-close</MIcon></button></header>
+                <header>
+                    <span class="workspace-export-drawer-handle" aria-hidden="true"></span>
+                    <div><small>Export studio</small><strong id="workspace-export-title">导出作品</strong><span>@SelectedCount 张已选 · 确认参数后开始生成</span></div>
+                    <button type="button" @onclick="CloseExportDrawer" aria-label="关闭导出设置"><MIcon>mdi-close</MIcon></button>
+                </header>
                 <div>
-                    <WMExportPanel Expanded="true" SelectedCount="SelectedCount"
+                    <WMExportPanel Expanded="true" ShowSummary="false" SelectedCount="SelectedCount"
                                    Format="State.ExportTool.Draft.Format" FormatChanged="SetExportFormatAsync"
                                    MaximumLongEdge="@(State.ExportTool.Draft.MaximumLongEdge ?? 0)" MaximumLongEdgeChanged="SetExportMaximumLongEdgeAsync"
                                    CustomMaximumLongEdge="State.ExportTool.Draft.CustomMaximumLongEdge" CustomMaximumLongEdgeChanged="SetCustomExportMaximumLongEdgeAsync"
@@ -308,12 +354,20 @@ else
     private bool CanExportPng16 => ImagingCapabilities.Probe(WMImagingFeature.Png16).IsAvailable;
     private bool CanExportTiff16 => ImagingCapabilities.Probe(WMImagingFeature.Tiff16).IsAvailable;
     private bool HasActiveMobileDraft => State.HasTransientEdits && State.TransientEditMode is not null;
+    private bool IsCropEditing => State.Mode == WMWorkspaceMode.Crop
+                                  && State.TransientEditMode == WMWorkspaceMode.Crop;
+    private string? CropSourceUrl => State.CurrentMediaId is { Length: > 0 } mediaId
+        ? Controller.GetMediaPreviewUrl(mediaId)
+        : null;
+    private int CropSourceWidth => Math.Max(1, State.CurrentMedia?.Artifact.Width ?? 1);
+    private int CropSourceHeight => Math.Max(1, State.CurrentMedia?.Artifact.Height ?? 1);
     private string MobilePresentationClass => $"mobile-space-{mobilePresentation.Space.ToString().ToLowerInvariant()} mobile-host-{mobilePresentation.HostKind.ToString().ToLowerInvariant()}";
     private string MobileModeLabel => State.Mode switch
     {
         WMWorkspaceMode.ColorGrade => "调色",
         WMWorkspaceMode.MultiFrame => "多帧",
         WMWorkspaceMode.Collage => "拼图",
+        WMWorkspaceMode.Crop => "裁切",
         _ => "模板"
     };
     private string WorkspaceSubtitle => State.IsComparingOriginal
@@ -350,7 +404,13 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!opened || State.Mode == WMWorkspaceMode.TemplateDesign) return;
-        try { await JSRuntime.InvokeVoidAsync("watermarkWorkspaceCanvas.attach", canvasElement); }
+        try
+        {
+            if (IsCropEditing)
+                await JSRuntime.InvokeVoidAsync("watermarkWorkspaceCanvas.detach", canvasElement);
+            else
+                await JSRuntime.InvokeVoidAsync("watermarkWorkspaceCanvas.attach", canvasElement);
+        }
         catch (JSException) { }
         visibilityReference ??= DotNetObjectReference.Create(this);
         try
@@ -589,6 +649,8 @@ else
                 await Controller.CommitMultiFrameDraftAsync();
             else if (mode == WMWorkspaceMode.Collage)
                 await Controller.CommitCollageDraftAsync();
+            else if (mode == WMWorkspaceMode.Crop)
+                await Controller.CommitCropDraftAsync();
         }
         HapticFeedback.Perform();
     }
@@ -602,11 +664,12 @@ else
 
     private async Task ApplyMobileEditAsync()
     {
-        if (mobileDock is null || mobileEditConfirming || !HasActiveMobileDraft) return;
+        if (mobileEditConfirming || !HasActiveMobileDraft) return;
         mobileEditConfirming = true;
         try
         {
-            await mobileDock.ConfirmCurrentEditAsync();
+            if (IsCropEditing) await Controller.CommitCropDraftAsync();
+            else if (mobileDock is not null) await mobileDock.ConfirmCurrentEditAsync();
         }
         finally
         {
@@ -667,6 +730,7 @@ else
 
     private void BeginOriginalPress(PointerEventArgs args)
     {
+        if (IsCropEditing) return;
         if (originalPress is not null)
         {
             originalPress.Cancel();
@@ -684,6 +748,7 @@ else
 
     private void MoveOriginalPress(PointerEventArgs args)
     {
+        if (IsCropEditing) return;
         if (originalPress is null) return;
         if (Math.Abs(args.ClientX - originalStartX) <= 8
             && Math.Abs(args.ClientY - originalStartY) <= 8) return;
@@ -704,6 +769,7 @@ else
 
     private async Task EndOriginalPress(PointerEventArgs args)
     {
+        if (IsCropEditing) return;
         originalPress?.Cancel();
         originalPress?.Dispose();
         originalPress = null;
@@ -722,9 +788,21 @@ else
 
     private async Task SetModeAsync(WMWorkspaceMode mode)
     {
-        if (State.Mode == mode || HasActiveMobileDraft) return;
+        if (State.Mode == mode || HasActiveMobileDraft || mode == WMWorkspaceMode.ColorGrade && !ColorEngineAvailable) return;
         HapticFeedback.Perform();
         await Controller.SetModeAsync(mode);
+    }
+
+    private bool ColorEngineAvailable => Controller.ColorEngineCapability.IsAvailable;
+    private string? ColorEngineUnavailableReason => Controller.ColorEngineCapability.Error;
+
+    private Task UpdateCropDraftAsync(WMCropSettings settings) =>
+        Controller.UpdateCropDraftAsync(settings);
+
+    private Task ResetCropDraftAsync()
+    {
+        HapticFeedback.Perform();
+        return Controller.UpdateCropDraftAsync(WMCropSettings.Identity);
     }
 
     private async Task HandleInternalNavigationAsync(LocationChangingContext context)

@@ -1,0 +1,51 @@
+@using Watermark.Razor.Workspace
+<section class="mac-media-strip" aria-label="素材">
+    <header class="media-strip-header">
+        <strong>素材</strong>
+        <span>@Media.Count 张</span>
+        @if (Media.Any(media => media.IsSelected))
+        {
+            <span class="selection-count">已勾选 @Media.Count(media => media.IsSelected) 张</span>
+        }
+    </header>
+    <div class="media-scroll">
+        @if (Media.Count == 0)
+        {
+            <div class="media-empty">导入图片后，素材会显示在这里</div>
+        }
+        else
+        {
+            @foreach (var media in Media)
+            {
+                <article class="@(media.Id == CurrentMediaId ? "media-tile active" : "media-tile")"
+                         @onclick="() => Selected.InvokeAsync(media.Id)">
+                    <div class="media-thumb" @onclick:stopPropagation="true" @onclick="() => Selected.InvokeAsync(media.Id)">
+                        @if (PreviewUrl(media.Id) is { Length: > 0 } preview)
+                        {
+                            <img src="@preview" alt="@media.DisplayName" />
+                        }
+                        else
+                        {
+                            <span class="media-thumb-placeholder"><MIcon>mdi-image-outline</MIcon></span>
+                        }
+                    </div>
+                    <label class="media-check" title="导出选择" @onclick:stopPropagation="true">
+                        <input type="checkbox" checked="@media.IsSelected" @onchange="() => Toggled.InvokeAsync(media.Id)" />
+                    </label>
+                    @if (StarTrailSelectionIds.Contains(media.Id))
+                    {
+                        <span class="stack-badge">星轨</span>
+                    }
+                </article>
+            }
+        }
+    </div>
+</section>
+@code {
+    [Parameter] public IReadOnlyList<WMWorkspaceMedia> Media { get; set; } = [];
+    [Parameter] public string? CurrentMediaId { get; set; }
+    [Parameter] public Func<string, string?> PreviewUrl { get; set; } = _ => null;
+    [Parameter] public IReadOnlyList<string> StarTrailSelectionIds { get; set; } = [];
+    [Parameter] public EventCallback<string> Selected { get; set; }
+    [Parameter] public EventCallback<string> Toggled { get; set; }
+}

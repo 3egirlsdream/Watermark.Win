@@ -84,7 +84,17 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("State.Recovery?.Status == WMWorkspaceOpenStatus.Missing", workspace, StringComparison.Ordinal);
         Assert.Contains("Navigation.NavigateTo(\"/create\", replace: true);", workspace, StringComparison.Ordinal);
         Assert.DoesNotContain("SessionId=\"SessionId\"", route, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(route, "SessionId=\\\"@SessionId\\\"").Count);
+        Assert.Equal(1, Regex.Matches(route, "SessionId=\\\"@SessionId\\\"").Count);
+        var desktopRoute = Read("Watermark.Razor/BlazorPages/WMDesktopWorkspacePage.razor");
+        Assert.Contains("/mac/workspace/{SessionId}", desktopRoute, StringComparison.Ordinal);
+        Assert.Contains("/desktop/workspace/{SessionId}", desktopRoute, StringComparison.Ordinal);
+        Assert.Contains("@layout WMWorkspaceRouteLayout", route, StringComparison.Ordinal);
+        var routeLayout = Read("Watermark.Razor/Components/Layout/WMWorkspaceRouteLayout.razor");
+        Assert.Contains("Global.DeviceType is DeviceType.Mac or DeviceType.Win", routeLayout, StringComparison.Ordinal);
+        Assert.Contains("<MobileWorkspaceLayout Body=\"Body\" />", routeLayout, StringComparison.Ordinal);
+        var desktopWorkspace = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
+        Assert.DoesNotContain("/templates?tab=market", desktopWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("NavigateTo(\"/create\"", desktopWorkspace, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -93,6 +103,7 @@ public sealed class WMWorkspaceArchitectureGuardTests
         var designer = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
         var designerCss = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor.css");
         var drawerJs = Read("Watermark.Razor/wwwroot/js/wm-template-designer.js");
+        var sliderCss = Read("Watermark.Razor/Components/Mac/MacSlider.razor.css");
         var shell = Read("Watermark.Razor/Components/Layout/WMAppShellLayout.razor");
         var controller = Read("Watermark.Razor/Workspace/WMWorkspaceController.cs");
 
@@ -106,6 +117,10 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("--mobile-designer-drawer-height", designerCss, StringComparison.Ordinal);
         Assert.Contains("pointerdown", drawerJs, StringComparison.Ordinal);
         Assert.Contains("setPointerCapture", drawerJs, StringComparison.Ordinal);
+        Assert.Contains("touch-action: pan-y", sliderCss, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateDesignerSession", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("IWMWatermarkHelper", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("IWMObjectUrlRegistry", designer, StringComparison.Ordinal);
         Assert.Contains("aria-current", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("private RenderFragment NavItem", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("Message = \"预览已更新\"", controller, StringComparison.Ordinal);
@@ -137,11 +152,12 @@ public sealed class WMWorkspaceArchitectureGuardTests
     public void CrossPlatformPreview_UsesCompiledPlanAndSharedWebGlSurface()
     {
         var mobile = Read("Watermark.Razor/BlazorPages/Mobile/MobileWorkspace.razor");
-        var desktop = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
+        var desktop = Read("Watermark.Razor/Components/Desktop/WMDesktopPreviewWorkspace.razor");
         var controller = Read("Watermark.Razor/Workspace/WMWorkspaceController.cs");
         var preview = Read("Watermark.Razor/Workspace/WMWorkspacePreviewService.cs");
         var export = Read("Watermark.Razor/Workspace/WMFullResolutionRenderService.cs");
         var surface = Read("Watermark.Razor/Workspace/Components/WMWorkspacePreviewSurface.razor");
+        var surfaceStyles = Read("Watermark.Razor/Workspace/Components/WMWorkspacePreviewSurface.razor.css");
         var webGl = Read("Watermark.Razor/wwwroot/js/wm-color-preview.js");
         var manifest = Read("Watermark.Andorid/Platforms/Android/AndroidManifest.xml");
 
@@ -154,7 +170,15 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.DoesNotContain("string? templateId", preview, StringComparison.Ordinal);
         Assert.DoesNotContain("string? templateSnapshotJson", export, StringComparison.Ordinal);
         Assert.Contains("appliedSource", surface, StringComparison.Ordinal);
+        Assert.Contains("grid-template-columns: minmax(0, 1fr);", surfaceStyles, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows: minmax(0, 1fr);", surfaceStyles, StringComparison.Ordinal);
+        Assert.Matches(new Regex(
+            @"\.wm-preview-gpu,\s*\.wm-preview-image\s*\{[^}]*height:\s*100%;[^}]*width:\s*100%;",
+            RegexOptions.CultureInvariant | RegexOptions.Singleline), surfaceStyles);
         Assert.Contains("requestAnimationFrame", webGl, StringComparison.Ordinal);
+        Assert.Contains("pendingDynamicSnapshot", webGl, StringComparison.Ordinal);
+        Assert.Contains("setDynamicState", webGl, StringComparison.Ordinal);
+        Assert.Contains("setDynamicState", surface, StringComparison.Ordinal);
         Assert.Contains("webglcontextlost", webGl, StringComparison.Ordinal);
         Assert.Contains("OnFrameMeasured", webGl, StringComparison.Ordinal);
         Assert.Contains("android:hardwareAccelerated=\"true\"", manifest, StringComparison.Ordinal);
@@ -191,7 +215,7 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("SettingsService.LoadAsync()", gate, StringComparison.Ordinal);
         Assert.Contains("await SettingsService.SetPrivacyConsentAsync(accepted);", gate, StringComparison.Ordinal);
         Assert.Contains("<WMPrivacyStartupGate>", androidRoutes, StringComparison.Ordinal);
-        Assert.Contains("<WMPrivacyStartupGate>", windowsRoutes, StringComparison.Ordinal);
+        Assert.DoesNotContain("<WMPrivacyStartupGate>", windowsRoutes, StringComparison.Ordinal);
         Assert.DoesNotContain("showPrivacy", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("<FirstPage", shell, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(RepositoryRoot,

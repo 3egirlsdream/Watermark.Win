@@ -244,6 +244,40 @@ public sealed class WMMembershipPaymentTests : IDisposable
     }
 
     [Fact]
+    public async Task DesktopPurchase_ReturnsTheOpenedPaymentUrlForTheHistoricalDialog()
+    {
+        Global.DeviceType = DeviceType.Mac;
+        const string paymentUrl = "https://pay.example.test/desktop-order";
+        var gateway = new FakeGateway(
+            SuccessfulOrder(OrderInfo(OrderId)),
+            _ => Task.FromResult(PendingQuery()),
+            new API<DesktopPayOrder>
+            {
+                success = true,
+                data = new DesktopPayOrder
+                {
+                    OutTradeNo = OrderId,
+                    PayUrl = paymentUrl
+                }
+            });
+        var external = new FakeExternalActionService();
+        var service = new WMMembershipService(
+            gateway,
+            new FakeLauncher(),
+            new MemoryPendingStore(),
+            new FakeClock(),
+            AuthenticatedAccount(),
+            external);
+
+        var result = await service.PurchaseAsync("year");
+
+        Assert.Equal(WMMembershipPaymentState.Pending, result.State);
+        Assert.Equal(OrderId, result.OrderId);
+        Assert.Equal(paymentUrl, result.PaymentUrl);
+        Assert.Equal(paymentUrl, external.LastOpenedUrl);
+    }
+
+    [Fact]
     public async Task PendingStore_AtomicallyPersistsAndDeletesCurrentUsersOrder()
     {
         var directory = Path.Combine(Path.GetTempPath(), "watermark-membership-tests", Guid.NewGuid().ToString("N"));
@@ -335,7 +369,8 @@ public sealed class WMMembershipPaymentTests : IDisposable
 
     private sealed class FakeGateway(
         API<string> createResult,
-        Func<string, Task<API<DesktopPayStatus>>> query) : IWMMembershipPaymentGateway
+        Func<string, Task<API<DesktopPayStatus>>> query,
+        API<DesktopPayOrder>? desktopCreateResult = null) : IWMMembershipPaymentGateway
     {
         public int CreateCount { get; private set; }
         public int QueryCount { get; private set; }
@@ -357,8 +392,13 @@ public sealed class WMMembershipPaymentTests : IDisposable
             decimal cost,
             string planName,
             string userId,
-            CancellationToken token = default) =>
-            throw new InvalidOperationException("Android tests must not create desktop orders.");
+            CancellationToken token = default)
+        {
+            token.ThrowIfCancellationRequested();
+            return desktopCreateResult is null
+                ? throw new InvalidOperationException("Android tests must not create desktop orders.")
+                : Task.FromResult(desktopCreateResult);
+        }
 
         public Task<API<DesktopPayStatus>> QueryAsync(
             string outTradeNo,
@@ -468,7 +508,12 @@ public sealed class WMMembershipPaymentTests : IDisposable
 
     private sealed class FakeExternalActionService : IWMExternalActionService
     {
-        public Task OpenUrlAsync(string url) => Task.CompletedTask;
+        public string? LastOpenedUrl { get; private set; }
+        public Task OpenUrlAsync(string url)
+        {
+            LastOpenedUrl = url;
+            return Task.CompletedTask;
+        }
         public Task CopyTextAsync(string text) => Task.CompletedTask;
     }
 }

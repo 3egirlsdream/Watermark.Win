@@ -340,6 +340,22 @@
 }
 
 @media (pointer: coarse), (max-width: 720px) {
+    .selection-header {
+        gap: 3px;
+        padding: 8px 12px 7px;
+    }
+
+    .selection-inspector-scroll {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        scrollbar-width: none;
+        touch-action: pan-y;
+    }
+
+    .selection-inspector-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
     .selection-name-input,
     .inspector-field input,
     .inspector-field select,
@@ -359,12 +375,17 @@
 
     ::deep .inspector-native-slider {
         height: 32px;
+        touch-action: pan-y;
     }
 
     .inspector-group,
     ::deep .inspector-group {
         gap: 12px;
         padding: 14px;
+    }
+
+    ::deep .inspector-slider-controls {
+        grid-template-columns: minmax(0, 1fr) 72px;
     }
 }
 

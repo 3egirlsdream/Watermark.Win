@@ -1,0 +1,242 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Watermark.Razor.Components.Mac
+@using Watermark.Razor.Workspace
+@using Watermark.Razor.Workspace.Components
+@using Watermark.Shared.Models
+@implements IAsyncDisposable
+
+<section class="desktop-applied-editor @(resizing ? "is-resizing" : null)"
+         style="@EditorStyle"
+         @onpointermove="ResizeMediaStrip"
+         @onpointerup="EndMediaStripResize"
+         @onpointerleave="EndMediaStripResize"
+         @onpointercancel="EndMediaStripResize">
+    <div class="applied-primary-column">
+        <main class="applied-canvas-panel">
+            @if (editor is not null && renderResult is not null && !string.IsNullOrWhiteSpace(State.PreviewUrl))
+            {
+                <MacCanvasEditor @key="editorKey"
+                                 Editor="editor"
+                                 RenderResult="renderResult"
+                                 PreviewUrl="@State.PreviewUrl"
+                                 Zoom="zoom"
+                                 AllowViewportPan="false"
+                                 ZoomChanged="SetZoomAsync"
+                                 SaveRequested="ApplyAsync" />
+            }
+            else
+            {
+                <div class="applied-loading" role="status">
+                    <MProgressCircular Indeterminate Size="28" Width="3" />
+                    <span>正在准备可编辑画面</span>
+                </div>
+            }
+            @if (State.Activity == WMWorkspaceActivity.Previewing)
+            {
+                <div class="applied-render-progress" aria-label="正在更新模板预览"></div>
+            }
+        </main>
+        <div class="applied-splitter-grip"
+             title="拖拽调整素材栏高度"
+             @onpointerdown="StartMediaStripResize"
+             @onpointerdown:preventDefault="true"
+             @onpointerdown:stopPropagation="true"><span></span></div>
+        <section class="applied-media-panel">
+            <WMDesktopMediaStrip Media="State.Media"
+                                 CurrentMediaId="State.CurrentMediaId"
+                                 PreviewUrl="MediaPreviewUrl"
+                                 Selected="MediaSelected"
+                                 Toggled="MediaToggled" />
+        </section>
+    </div>
+
+    <aside class="applied-inspector-panel">
+        <div class="applied-inspector-stack">
+            <div class="applied-inspector-content">
+                @if (editor is not null)
+                {
+                    <MacSelectionInspector @key="editorKey" Editor="editor" RenderResult="renderResult" />
+                }
+            </div>
+            <footer class="applied-commit-footer" aria-label="模板预览操作">
+                <label class="applied-scope-option">
+                    <input type="checkbox" checked="@(State.ApplyScope == WMApplyScope.Selected)" @onchange="ChangeScopeFromCheckbox" />
+                    <span>同时应用到已选 @SelectedCount 张图片</span>
+                </label>
+                <div class="applied-commit-actions">
+                    <MButton Text Class="applied-cancel-command" Disabled="busy" OnClick="CancelAsync">取消预览</MButton>
+                    <MButton Color="primary" Class="applied-apply-command" Disabled="@(busy || editor is null)" OnClick="ApplyAsync">
+                        @(State.ApplyScope == WMApplyScope.Selected && SelectedCount > 0 ? $"应用模板到 {SelectedCount} 张图片" : "应用模板到当前图片")
+                    </MButton>
+                </div>
+            </footer>
+        </div>
+    </aside>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public WMWorkspaceState State { get; set; } = null!;
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public Func<string, string?>? MediaPreviewUrl { get; set; }
+    [Parameter] public EventCallback<string> MediaSelected { get; set; }
+    [Parameter] public EventCallback<string> MediaToggled { get; set; }
+    [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> PreviewChanged { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> CommitRequested { get; set; }
+    [Parameter] public EventCallback DiscardRequested { get; set; }
+    [Parameter] public EventCallback<string> OpenDesignerRequested { get; set; }
+
+    private WMTemplateEditorState? editor;
+    private WMDesignRenderResult? renderResult;
+    private CancellationTokenSource? previewCancellation;
+    private string loadedTemplateId = string.Empty;
+    private string loadedCanvasJson = string.Empty;
+    private string requestedCanvasJson = string.Empty;
+    private string editorKey = string.Empty;
+    private long appliedPreviewVersion = -1;
+    private bool busy;
+    private bool disposed;
+    private bool resizing;
+    private double zoom = 1;
+    private double resizeStartY;
+    private int resizeStartHeight = 126;
+    private int mediaStripHeight = 126;
+    private string EditorStyle => $"--media-strip-height:{mediaStripHeight}px;";
+
+    protected override Task OnParametersSetAsync()
+    {
+        var edit = State.TemplateEdit;
+        if (edit is null || string.IsNullOrWhiteSpace(edit.TemplateId) || string.IsNullOrWhiteSpace(edit.CanvasJson))
+            return Task.CompletedTask;
+
+        if (!string.Equals(loadedTemplateId, edit.TemplateId, StringComparison.Ordinal)
+            || (!string.Equals(loadedCanvasJson, edit.CanvasJson, StringComparison.Ordinal)
+                && !string.Equals(requestedCanvasJson, edit.CanvasJson, StringComparison.Ordinal)))
+        {
+            DetachEditor();
+            var canvas = Global.ReadConfig(edit.CanvasJson);
+            editor = WMTemplateEditorState.Create(canvas);
+            editor.Changed += HandleEditorChanged;
+            loadedTemplateId = edit.TemplateId;
+            loadedCanvasJson = edit.CanvasJson;
+            requestedCanvasJson = edit.CanvasJson;
+            editorKey = $"{edit.TemplateId}:{Guid.NewGuid():N}";
+            renderResult = null;
+            appliedPreviewVersion = -1;
+        }
+
+        if (State.TemplateLayout is { } layout && appliedPreviewVersion != State.PreviewVersion)
+        {
+            renderResult = new WMDesignRenderResult(
+                [],
+                layout.CanvasWidth,
+                layout.CanvasHeight,
+                layout.ContentViewport,
+                layout.Bounds);
+            appliedPreviewVersion = State.PreviewVersion;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void HandleEditorChanged()
+    {
+        if (disposed || editor is null) return;
+        _ = InvokeAsync(StateHasChanged);
+        var canvasJson = Global.CanvasSerialize(editor.Draft);
+        if (string.Equals(requestedCanvasJson, canvasJson, StringComparison.Ordinal)) return;
+
+        requestedCanvasJson = canvasJson;
+        loadedCanvasJson = canvasJson;
+        renderResult = null;
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        previewCancellation = new CancellationTokenSource();
+        _ = QueuePreviewAsync(new WMWorkspaceTemplateEdit(loadedTemplateId, canvasJson), previewCancellation.Token);
+    }
+
+    private async Task QueuePreviewAsync(WMWorkspaceTemplateEdit edit, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(100, cancellationToken);
+            await PreviewChanged.InvokeAsync(edit);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private Task SetZoomAsync(double value)
+    {
+        zoom = value;
+        return Task.CompletedTask;
+    }
+
+    private Task ChangeScopeFromCheckbox(ChangeEventArgs args) =>
+        ScopeChanged.InvokeAsync(args.Value is bool selected && selected
+            ? WMApplyScope.Selected
+            : WMApplyScope.Current);
+
+    private async Task ApplyAsync()
+    {
+        if (busy || editor is null) return;
+        busy = true;
+        try
+        {
+            previewCancellation?.Cancel();
+            var edit = new WMWorkspaceTemplateEdit(loadedTemplateId, Global.CanvasSerialize(editor.Draft));
+            await CommitRequested.InvokeAsync(edit);
+            editor.MarkSaved();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            previewCancellation?.Cancel();
+            await DiscardRequested.InvokeAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void StartMediaStripResize(PointerEventArgs args)
+    {
+        resizing = true;
+        resizeStartY = args.ClientY;
+        resizeStartHeight = mediaStripHeight;
+    }
+
+    private void ResizeMediaStrip(PointerEventArgs args)
+    {
+        if (!resizing) return;
+        mediaStripHeight = Math.Clamp(resizeStartHeight + (int)Math.Round(resizeStartY - args.ClientY), 96, 220);
+    }
+
+    private void EndMediaStripResize() => resizing = false;
+
+    private void DetachEditor()
+    {
+        if (editor is not null) editor.Changed -= HandleEditorChanged;
+        editor = null;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        disposed = true;
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        DetachEditor();
+        return ValueTask.CompletedTask;
+    }
+}

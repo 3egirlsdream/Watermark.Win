@@ -1,0 +1,291 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@implements IDisposable
+@inject IWMMembershipService Membership
+@inject IWMAccountService Accounts
+@inject IWMExternalActionService ExternalActions
+
+<div class="mac-vip-dialog">
+    <header class="vip-header">
+        <div>
+            <div class="eyebrow">MEMBERSHIP</div>
+            <h2>开通会员</h2>
+            <p>选择套餐后前往支付宝网页付款，支付成功会自动刷新账号状态。</p>
+        </div>
+        <MButton Icon Small Text Class="vip-icon-button" OnClick="CloseAsync">
+            <MIcon>mdi-close</MIcon>
+        </MButton>
+    </header>
+
+    <section class="vip-plans">
+        @foreach (var plan in Plans)
+        {
+            <button type="button"
+                    class="@GetPlanClass(plan)"
+                    @onclick="() => SelectPlan(plan)"
+                    disabled="@IsBusy">
+                <span class="plan-name">@plan.Name</span>
+                <strong>¥@plan.Price.ToString("0.##")</strong>
+                <small>@plan.Description</small>
+                @if (plan.Recommended)
+                {
+                    <em>推荐</em>
+                }
+            </button>
+        }
+    </section>
+
+    <section class="vip-pay-area">
+        <div class="checkout-panel">
+            @if (isCreatingOrder)
+            {
+                <div class="checkout-placeholder">
+                    <MProgressCircular Indeterminate Size="28" Color="primary" />
+                    <span>正在创建支付宝收银台</span>
+                </div>
+            }
+            else if (HasOrder)
+            {
+                <div class="checkout-placeholder ready">
+                    <MIcon Size="52">mdi-open-in-new</MIcon>
+                    <strong>支付宝收银台已打开</strong>
+                    <span>请在浏览器中扫码或登录付款</span>
+                </div>
+            }
+            else
+            {
+                <div class="checkout-placeholder">
+                    <MIcon Size="52">mdi-web</MIcon>
+                    <strong>网页安全支付</strong>
+                    <span>点击后将在系统浏览器打开</span>
+                </div>
+            }
+        </div>
+
+        <div class="pay-info">
+            <div class="status-row">
+                <span class="@StatusDotClass"></span>
+                <strong>@statusTitle</strong>
+            </div>
+            <p>@statusMessage</p>
+            @if (HasOrder)
+            {
+                <dl>
+                    <div>
+                        <dt>订单号</dt>
+                        <dd>@orderId</dd>
+                    </div>
+                    <div>
+                        <dt>套餐</dt>
+                        <dd>@SelectedPlan.Name · ¥@SelectedPlan.Price.ToString("0.##")</dd>
+                    </div>
+                </dl>
+            }
+        </div>
+    </section>
+
+    <footer class="vip-actions">
+        <MButton Text Class="vip-secondary-button" OnClick="OpenPaymentPageAsync" Disabled="@(string.IsNullOrWhiteSpace(paymentUrl))">
+            <MIcon Left Small>mdi-open-in-new</MIcon>重新打开支付页
+        </MButton>
+        <MSpacer />
+        <MButton Text Class="vip-secondary-button" OnClick="RefreshStatusAsync" Disabled="@(!HasOrder || isPolling)">
+            <MIcon Left Small>mdi-refresh</MIcon>刷新状态
+        </MButton>
+        <MButton Color="primary" Class="vip-primary-button" OnClick="CreateOrderAsync" Disabled="@IsBusy">
+            <MIcon Left Small>mdi-open-in-new</MIcon>@PrimaryActionText
+        </MButton>
+    </footer>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnPaid { get; set; }
+
+    private IReadOnlyList<WMMembershipPlan> Plans => Membership.Plans;
+    private WMMembershipPlan SelectedPlan = null!;
+    private string? orderId;
+    private string? paymentUrl;
+    private string statusTitle = "等待选择套餐";
+    private string statusMessage = "请选择一个会员套餐，系统会打开支付宝网页收银台。";
+    private bool isCreatingOrder;
+    private bool isPolling;
+    private bool isRefreshing;
+    private CancellationTokenSource? pollingTokenSource;
+
+    private bool HasOrder => !string.IsNullOrWhiteSpace(orderId);
+    private bool IsBusy => isCreatingOrder || isPolling || isRefreshing;
+    private string PrimaryActionText => !HasOrder
+        ? "前往支付宝付款"
+        : isPolling ? "等待支付" : "重新创建订单";
+    private string StatusDotClass => isPolling ? "status-dot polling" : !HasOrder ? "status-dot idle" : "status-dot";
+
+    protected override void OnInitialized()
+    {
+        SelectedPlan = Plans.First();
+    }
+
+    private void SelectPlan(WMMembershipPlan plan)
+    {
+        if (SelectedPlan == plan) return;
+
+        StopPolling();
+        SelectedPlan = plan;
+        orderId = null;
+        paymentUrl = null;
+        statusTitle = $"{plan.Name} · ¥{plan.Price:0.##}";
+        statusMessage = "点击付款后，将在系统浏览器打开支付宝收银台。";
+    }
+
+    private string GetPlanClass(WMMembershipPlan plan)
+    {
+        var classes = "vip-plan";
+        if (SelectedPlan == plan) classes += " active";
+        if (plan.Recommended) classes += " recommend";
+        return classes;
+    }
+
+    private async Task CreateOrderAsync()
+    {
+        if (!Accounts.State.IsAuthenticated)
+        {
+            statusTitle = "请先登录";
+            statusMessage = "请先登录后再开通会员。";
+            await CloseAsync();
+            return;
+        }
+
+        StopPolling();
+        orderId = null;
+        paymentUrl = null;
+        isCreatingOrder = true;
+        statusTitle = "正在创建订单";
+        statusMessage = "正在向服务端申请支付宝网页订单...";
+        try
+        {
+            var result = await Membership.PurchaseAsync(SelectedPlan.Id);
+            await ApplyResultAsync(result, fromPurchase: true);
+        }
+        catch (Exception ex)
+        {
+            statusTitle = "创建订单失败";
+            statusMessage = FormatCreateOrderError(ex.Message);
+        }
+        finally
+        {
+            isCreatingOrder = false;
+        }
+    }
+
+    private async Task RefreshStatusAsync()
+    {
+        if (!HasOrder) return;
+
+        isRefreshing = true;
+        try
+        {
+            await QueryStatusAsync(CancellationToken.None);
+        }
+        finally
+        {
+            isRefreshing = false;
+        }
+    }
+
+    private void StartPolling()
+    {
+        StopPolling();
+        pollingTokenSource = new CancellationTokenSource();
+        isPolling = true;
+        _ = PollPaymentStatusAsync(pollingTokenSource.Token);
+    }
+
+    private async Task PollPaymentStatusAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), token);
+                await QueryStatusAsync(token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task QueryStatusAsync(CancellationToken token)
+    {
+        if (!HasOrder) return;
+
+        var result = await Membership.RefreshAsync(orderId!, token);
+        await InvokeAsync(() => ApplyResultAsync(result, fromPurchase: false));
+    }
+
+    private async Task ApplyResultAsync(WMMembershipResult result, bool fromPurchase)
+    {
+        if (!string.IsNullOrWhiteSpace(result.OrderId)) orderId = result.OrderId;
+        if (!string.IsNullOrWhiteSpace(result.PaymentUrl)) paymentUrl = result.PaymentUrl;
+
+        switch (result.State)
+        {
+            case WMMembershipPaymentState.Paid:
+                StopPolling();
+                statusTitle = "支付成功";
+                statusMessage = "会员已开通，账号状态已刷新。";
+                if (OnPaid.HasDelegate) await OnPaid.InvokeAsync();
+                await CloseAsync();
+                return;
+            case WMMembershipPaymentState.Pending:
+                statusTitle = fromPurchase ? "等待网页支付" : "等待支付";
+                statusMessage = result.Message;
+                if (fromPurchase && HasOrder) StartPolling();
+                break;
+            case WMMembershipPaymentState.Cancelled:
+                StopPolling();
+                statusTitle = "订单已取消";
+                statusMessage = result.Message;
+                break;
+            default:
+                StopPolling();
+                statusTitle = fromPurchase ? "创建订单失败" : "支付未完成";
+                statusMessage = fromPurchase ? FormatCreateOrderError(result.Message) : result.Message;
+                break;
+        }
+    }
+
+    private async Task OpenPaymentPageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(paymentUrl)) return;
+
+        try
+        {
+            await ExternalActions.OpenUrlAsync(paymentUrl);
+        }
+        catch
+        {
+            statusTitle = "支付页打开失败";
+            statusMessage = "订单已经创建，请点击“重新打开支付页”再次尝试。";
+        }
+    }
+
+    private static string FormatCreateOrderError(string? message) =>
+        string.IsNullOrWhiteSpace(message) ? "暂时无法创建支付宝订单，请稍后重试。" : message;
+
+    private async Task CloseAsync()
+    {
+        StopPolling();
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+    }
+
+    private void StopPolling()
+    {
+        pollingTokenSource?.Cancel();
+        pollingTokenSource?.Dispose();
+        pollingTokenSource = null;
+        isPolling = false;
+    }
+
+    public void Dispose() => StopPolling();
+}

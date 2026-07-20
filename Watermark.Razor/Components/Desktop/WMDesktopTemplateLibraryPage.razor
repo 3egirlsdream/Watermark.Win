@@ -1,0 +1,147 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Models
+@implements IDisposable
+@inject WMTemplateLibraryService TemplateLibrary
+@inject IWMTemplateMarketplaceService Marketplace
+
+<section class="desktop-library" aria-labelledby="desktop-library-title">
+    <header class="library-heading">
+        <div><small>TEMPLATES</small><h1 id="desktop-library-title">我的模板</h1><p>管理本机模板，编辑后会立即同步到桌面工作台。</p></div>
+        <div class="library-heading-actions">
+            <label class="library-search"><MIcon Small>mdi-magnify</MIcon><input @bind="keyword" @bind:event="oninput" placeholder="搜索模板" /></label>
+            <button type="button" class="secondary-command" disabled="@busy" @onclick="ReloadAsync"><MIcon Small>mdi-refresh</MIcon><span>刷新</span></button>
+            <button type="button" class="primary-command" @onclick="CreateRequested"><MIcon Small>mdi-plus</MIcon><span>新建模板</span></button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="library-message @(messageIsError ? "is-error" : null)" role="status"><span>@message</span>@if (!string.IsNullOrWhiteSpace(undoToken)){<button type="button" @onclick="UndoDeleteAsync">撤销删除</button>}</div>
+    }
+
+    <div class="library-body" aria-busy="@busy">
+        @if (busy && templates.Count == 0)
+        {
+            <div class="library-empty"><MProgressCircular Indeterminate Size="28" Width="3" /><span>正在载入模板</span></div>
+        }
+        else if (FilteredTemplates.Count == 0)
+        {
+            <div class="library-empty"><MIcon Size="42">mdi-image-filter-none</MIcon><strong>@(string.IsNullOrWhiteSpace(keyword) ? "还没有本地模板" : "没有匹配的模板")</strong><span>创建模板后，可在工作台中直接应用到照片。</span></div>
+        }
+        else
+        {
+            <div class="library-grid">
+                @foreach (var template in FilteredTemplates)
+                {
+                    <article class="library-card" @key="template.ID">
+                        <div class="library-preview">
+                            @if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> }
+                            else { <MIcon Size="34">mdi-image-outline</MIcon> }
+                            <span>@TemplateKind(template)</span>
+                        </div>
+                        <div class="library-card-copy"><strong title="@template.Canvas.Name">@template.Canvas.Name</strong><small>@TemplateDescription(template)</small></div>
+                        <div class="library-card-actions">
+                            <button type="button" class="edit" @onclick="() => EditRequested.InvokeAsync(template.ID)"><MIcon Small>mdi-pencil-outline</MIcon><span>编辑</span></button>
+                            <button type="button" class="delete" disabled="@busy" @onclick="() => DeleteAsync(template)" aria-label="删除 @template.Canvas.Name"><MIcon Small>mdi-delete-outline</MIcon></button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback CreateRequested { get; set; }
+    [Parameter] public EventCallback<string> EditRequested { get; set; }
+
+    private readonly List<WMTemplateList> templates = [];
+    private string keyword = string.Empty;
+    private string? message;
+    private string? undoToken;
+    private bool messageIsError;
+    private bool busy;
+    private IReadOnlyList<WMTemplateList> FilteredTemplates => templates
+        .Where(item => string.IsNullOrWhiteSpace(keyword)
+            || (item.Canvas.Name ?? string.Empty).Contains(keyword.Trim(), StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+
+    protected override void OnInitialized()
+    {
+        TemplateLibrary.Changed += OnLibraryChanged;
+        _ = ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var items = await TemplateLibrary.GetOrRefreshAsync();
+            templates.Clear();
+            templates.AddRange(items);
+        }
+        catch (Exception ex) { Show(ex.Message, true); }
+        finally { busy = false; }
+    }
+
+    private async Task DeleteAsync(WMTemplateList template)
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var result = await Marketplace.DeleteLocalAsync(template);
+            if (result.IsSuccess)
+            {
+                undoToken = result.UndoToken;
+                Show("模板已移到回收区。", false);
+                await ReloadAfterMutationAsync();
+            }
+            else if (result.Status != WMTemplateMarketplaceStatus.Cancelled)
+            {
+                Show(result.Message ?? "模板删除失败。", true);
+            }
+        }
+        finally { busy = false; }
+    }
+
+    private async Task UndoDeleteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(undoToken) || busy) return;
+        busy = true;
+        try
+        {
+            var result = await Marketplace.UndoDeleteLocalAsync(undoToken);
+            if (result.IsSuccess)
+            {
+                undoToken = null;
+                Show("模板已恢复。", false);
+                await ReloadAfterMutationAsync();
+            }
+            else Show(result.Message ?? "无法恢复模板。", true);
+        }
+        finally { busy = false; }
+    }
+
+    private async Task ReloadAfterMutationAsync()
+    {
+        var items = await TemplateLibrary.GetOrRefreshAsync();
+        templates.Clear();
+        templates.AddRange(items);
+    }
+
+    private void OnLibraryChanged() => _ = InvokeAsync(() =>
+    {
+        templates.Clear();
+        templates.AddRange(TemplateLibrary.Templates);
+        StateHasChanged();
+    });
+
+    private void Show(string value, bool error) { message = value; messageIsError = error; }
+    private static string TemplateKind(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "拼图" : "水印";
+    private static string TemplateDescription(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "多图容器模板" : "照片水印模板";
+    public void Dispose() => TemplateLibrary.Changed -= OnLibraryChanged;
+}

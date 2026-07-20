@@ -25,9 +25,11 @@
     @if (HasScene)
     {
         <div class="mac-canvas-surface" style="@SurfaceStyle">
-            <img class="mac-canvas-preview"
-                 src="@PreviewUrl"
+            <img @key="PreviewElementKey"
+                 class="mac-canvas-preview"
+                 src="@DisplayedPreviewUrl"
                  alt="@Editor.Draft.Name 模板预览"
+                 @onerror="UseInlinePreviewFallback"
                  draggable="false" />
             <div class="mac-canvas-overlay-root" style="@OverlayStyle" @ref="overlayElement"></div>
         </div>
@@ -70,6 +72,8 @@
     private string? keyboardMoveControlId;
     private bool canvasInteractionActive;
     private string? canvasInteractionControlId;
+    private string observedPreviewUrl = string.Empty;
+    private string inlinePreviewUrl = string.Empty;
     private long? panPointerId;
     private double panStartX;
     private double panStartY;
@@ -78,8 +82,16 @@
     private double panX;
     private double panY;
 
+    private string DisplayedPreviewUrl => string.IsNullOrWhiteSpace(inlinePreviewUrl)
+        ? PreviewUrl
+        : inlinePreviewUrl;
+
+    private string PreviewElementKey => string.IsNullOrWhiteSpace(inlinePreviewUrl)
+        ? PreviewUrl
+        : $"inline:{observedPreviewUrl}";
+
     private bool HasScene => RenderResult is { CanvasWidth: > 0, CanvasHeight: > 0 }
-        && !string.IsNullOrWhiteSpace(PreviewUrl);
+        && !string.IsNullOrWhiteSpace(DisplayedPreviewUrl);
 
     private string SurfaceStyle => string.Create(CultureInfo.InvariantCulture,
         $"width:{RenderResult?.CanvasWidth * Zoom ?? 0:0.###}px;height:{RenderResult?.CanvasHeight * Zoom ?? 0:0.###}px;--pan-x:{panX:0.###}px;--pan-y:{panY:0.###}px;");
@@ -123,6 +135,25 @@
         catch (JSException)
         {
         }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(observedPreviewUrl, PreviewUrl, StringComparison.Ordinal)) return;
+        observedPreviewUrl = PreviewUrl;
+        inlinePreviewUrl = string.Empty;
+    }
+
+    private void UseInlinePreviewFallback()
+    {
+        if (!string.IsNullOrWhiteSpace(inlinePreviewUrl)
+            || RenderResult?.ImageBytes is not { Length: > 0 } bytes)
+            return;
+
+        // Some mobile WebViews can create a Blob URL successfully but still
+        // reject it as an <img> source. Reuse the already encoded preview bytes
+        // so recovery never starts a second render or creates another Blob URL.
+        inlinePreviewUrl = WMTemplatePreviewSource.CreateInlineDataUrl(bytes);
     }
 
     public async Task FitAsync()
@@ -586,5 +617,6 @@
             dotNetReference?.Dispose();
         }
     }
+
 #nullable restore
 }

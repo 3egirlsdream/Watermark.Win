@@ -4,7 +4,16 @@
 <section class="wm-mobile-dock @SpaceClass" aria-label="移动编辑工具">
     <div class="wm-dock-context">
         <div class="wm-dock-control-region">
-            @ActiveToolContent
+            @if (State.Mode == WMWorkspaceMode.ColorGrade && !ColorEngineAvailable)
+            {
+                <div class="wm-dock-heading" role="alert">
+                    <div><strong>专业调色引擎不可用</strong><small>@ColorEngineUnavailableReason</small></div>
+                </div>
+            }
+            else
+            {
+                @ActiveToolContent
+            }
         </div>
 
         <nav class="wm-dock-tools" aria-label="@($"{ModeLabel}功能")">
@@ -22,6 +31,7 @@
     </div>
 
     <nav class="wm-dock-modes" role="tablist" aria-label="编辑分类">
+        @ModeButton(WMWorkspaceMode.Crop, "裁切", "mdi-crop")
         @ModeButton(WMWorkspaceMode.Template, "模板", "mdi-view-grid-outline")
         @ModeButton(WMWorkspaceMode.ColorGrade, "调色", "mdi-tune-variant")
         @ModeButton(WMWorkspaceMode.MultiFrame, "多帧", "mdi-layers-triple-outline")
@@ -51,6 +61,8 @@
     [Parameter] public EventCallback MultiFrameRunRequested { get; set; }
     [Parameter] public EventCallback<WMCollageDraft> CollageDraftChanged { get; set; }
     [Parameter] public EventCallback CollageRunOrCancelRequested { get; set; }
+    [Parameter] public bool ColorEngineAvailable { get; set; } = true;
+    [Parameter] public string? ColorEngineUnavailableReason { get; set; }
 
     private WMMobileEditorTool templateTool = WMMobileEditorTool.TemplatePicker;
     private WMMobileEditorTool colorTool = WMMobileEditorTool.ColorStyle;
@@ -390,7 +402,8 @@
     }
 
     private bool ModeSwitchDisabled(WMWorkspaceMode mode) =>
-        State.Mode != mode && (HasCategoryDraft || State.MultiFrameTool.IsBusy || State.CollageTool.IsBusy);
+        State.Mode != mode && (HasCategoryDraft || State.MultiFrameTool.IsBusy || State.CollageTool.IsBusy
+            || mode == WMWorkspaceMode.ColorGrade && !ColorEngineAvailable);
 
     private async Task PublishPresentationAsync()
     {
