@@ -53,6 +53,19 @@ namespace Watermark.Andorid
 			base.OnCreate(savedInstanceState);
 			OnBackPressedDispatcher.AddCallback(this, new WorkspaceBackCallback(this));
 		}
+
+		protected override void OnResume()
+		{
+			base.OnResume();
+
+			// Android can recreate the WebView's compositor surface while this
+			// activity is backgrounded. Blazor's circuit is still valid, so only
+			// resume and redraw the existing WebView; never reload it here.
+			if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is MainPage page)
+			{
+				page.ResumeAndroidWebView();
+			}
+		}
 		public static MainActivity? Instance { get; private set; }
 
         public static Action<string>? SetColor;
