@@ -11,7 +11,8 @@ public enum WMWorkspaceMode
     ColorGrade,
     MultiFrame,
     Collage,
-    TemplateDesign
+    TemplateDesign,
+    Crop
 }
 
 public enum WMWorkspaceActivity
@@ -166,7 +167,7 @@ public sealed record WMWorkspaceMedia
 
 public sealed record WMWorkspaceSession
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
     public required string Id { get; init; }
@@ -183,6 +184,8 @@ public sealed record WMWorkspaceSession
         new Dictionary<string, string?>();
     public IReadOnlyDictionary<string, WMColorRecipe?> ColorRecipesByMediaId { get; init; } =
         new Dictionary<string, WMColorRecipe?>();
+    public IReadOnlyDictionary<string, WMCropSettings> CropSettingsByMediaId { get; init; } =
+        new Dictionary<string, WMCropSettings>();
     /// <summary>
     /// Compatibility projection written for v1/v2 recovery. New code treats
     /// MediaCatalog and ActiveMediaIds as authoritative.
@@ -257,7 +260,8 @@ public sealed record WMWorkspaceTemplateEdit(
 
 public enum WMDerivedMediaKind
 {
-    Collage
+    Collage,
+    TemplateCollage
 }
 
 public enum WMCollageDirection
@@ -279,13 +283,18 @@ public sealed record WMCollageDraft(
     public static WMCollageDraft Empty { get; } = new([], WMCollageDirection.Horizontal);
 }
 
+public sealed record WMTemplateCollageSettings(
+    string TemplateId,
+    string CanvasJson);
+
 public sealed record WMDerivedMediaRequest(
     WMDerivedMediaKind Kind,
     IReadOnlyList<string> SourceMediaIds,
     string Label,
     WMCollageSettings Collage,
     string? SuggestedFileName = null,
-    bool SelectResult = true);
+    bool SelectResult = true,
+    WMTemplateCollageSettings? TemplateCollage = null);
 
 public sealed record WMDerivedMediaOutput(
     WMImageArtifact Artifact,
@@ -309,12 +318,38 @@ public sealed record WMWorkspaceMultiFrameSelection(
 
 public sealed record WMFrameRoleChange(string MediaId, WMFrameRole? Role);
 
+public sealed record WMMultiFrameAdvancedDraft(
+    WMAlignmentMode Alignment,
+    WMReductionMode Reduction,
+    bool AutomaticReduction,
+    double SigmaLow,
+    double SigmaHigh,
+    int SigmaIterations,
+    string? ReferenceMediaId)
+{
+    public static WMMultiFrameAdvancedDraft CreateDefault(WMStackMode mode)
+    {
+        var settings = WMMultiFrameStackSettings.CreateDefault(mode);
+        return new WMMultiFrameAdvancedDraft(
+            settings.Alignment,
+            settings.Reduction,
+            settings.AutomaticReduction,
+            settings.SigmaLow,
+            settings.SigmaHigh,
+            settings.SigmaIterations,
+            null);
+    }
+}
+
 public sealed record WMMultiFrameDraft(
     WMStackMode Mode,
     IReadOnlyDictionary<string, WMFrameRole?> Roles,
     bool NormalizeExposure,
     bool RepairHotPixels,
-    bool AutoCrop);
+    bool AutoCrop)
+{
+    public WMMultiFrameAdvancedDraft? Advanced { get; init; }
+}
 
 public sealed record WMExportRequest(
     IReadOnlyList<string> MediaIds,
@@ -408,6 +443,11 @@ public sealed record WMMultiFrameToolState(
 public sealed record WMCollageToolState(
     WMCollageDraft Draft,
     bool IsBusy);
+
+public sealed record WMCropToolState(
+    WMCropSettings Draft,
+    WMCropSettings Committed,
+    bool IsDirty);
 
 public sealed record WMExportToolState(
     WMExportDraft Draft,
@@ -519,7 +559,14 @@ public sealed record WMWorkspacePreview(
     string MimeType,
     int Width,
     int Height,
-    bool CacheHit = false);
+    bool CacheHit = false,
+    WMTemplateLayoutSnapshot? TemplateLayout = null);
+
+public sealed record WMTemplateLayoutSnapshot(
+    int CanvasWidth,
+    int CanvasHeight,
+    WMDesignViewport ContentViewport,
+    IReadOnlyList<WMDesignBounds> Bounds);
 
 public sealed record WMWorkspaceRenderRequest(
     string SessionId,
@@ -563,6 +610,7 @@ public sealed record WMWorkspaceState
     public long PreviewVersion { get; init; }
     public WMWorkspacePreviewPresentation PreviewPresentation { get; init; } =
         WMWorkspacePreviewPresentation.Empty;
+    public WMTemplateLayoutSnapshot? TemplateLayout { get; init; }
     public WMOperationStage Stage { get; init; } = WMOperationStage.Queued;
     public double Progress { get; init; }
     public string Message { get; init; } = string.Empty;
@@ -591,6 +639,10 @@ public sealed record WMWorkspaceState
     public WMCollageToolState CollageTool { get; init; } = new(
         WMCollageDraft.Empty,
         false);
+    public WMCropToolState CropTool { get; init; } = new(
+        WMCropSettings.Identity,
+        WMCropSettings.Identity,
+        false);
     public WMExportToolState ExportTool { get; init; } = new(
         WMExportDraft.Default, [], false);
     public WMTemplateDesignToolState? TemplateDesign { get; init; }
@@ -605,6 +657,11 @@ public interface IWMWorkspaceSessionStore
 {
     IDisposable AcquireLease(string sessionId);
     string GetSessionDirectory(string sessionId);
+    Task<string> CreateEmptyAsync(
+        WMWorkspaceMode mode = WMWorkspaceMode.Template,
+        string? returnPath = null,
+        CancellationToken token = default) =>
+        throw new NotSupportedException("当前会话存储不支持空白桌面会话。");
     Task<string> CreateAsync(WMWorkspaceCreateRequest request, CancellationToken token = default);
     Task<string> CreateAsync(
         WMWorkspaceMode mode,
@@ -832,7 +889,15 @@ public enum WMWorkspaceMetricStage
     Scale,
     Replay,
     Encode,
-    BlobCreate
+    BlobCreate,
+    Crop,
+    ProcessorCompile,
+    DynamicUpdate,
+    CpuApply,
+    GpuUpload,
+    GpuFrame,
+    ContextCreated,
+    ContextLost
 }
 
 public sealed record WMWorkspaceMetricSnapshot(

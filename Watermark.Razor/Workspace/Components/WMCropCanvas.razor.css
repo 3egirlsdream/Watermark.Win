@@ -1,0 +1,15 @@
+.wm-crop-canvas{background:#080d14;contain:layout paint;height:100%;min-height:220px;overflow:hidden;position:relative;touch-action:none;width:100%}
+.wm-crop-canvas:focus-visible{box-shadow:inset 0 0 0 2px #2f81ff;outline:0}
+.wm-cropper-host{height:100%;inset:0;position:absolute;width:100%}
+.wm-cropper-host ::deep cropper-canvas{background:#080d14;display:block;height:100%;min-height:0;min-width:0;width:100%}
+.wm-cropper-host ::deep cropper-image{outline:0;will-change:transform}
+.wm-cropper-host ::deep cropper-shade{--theme-color:rgba(2,7,13,.72)}
+.wm-cropper-host ::deep cropper-selection{--theme-color:#fff;filter:drop-shadow(0 0 1px rgba(0,0,0,.8));outline-width:1px;will-change:transform,width,height}
+.wm-cropper-host ::deep cropper-grid{--theme-color:rgba(255,255,255,.82)}
+.wm-cropper-host ::deep cropper-handle[action=move]{--theme-color:transparent}
+.wm-cropper-host ::deep cropper-handle[action$=-resize]{--theme-color:#fff;z-index:2}
+.wm-crop-loading{align-items:center;background:#080d14;display:flex;inset:0;justify-content:center;opacity:1;pointer-events:none;position:absolute;transition:opacity .16s ease;z-index:3}.wm-crop-loading span{animation:wm-crop-spin .7s linear infinite;border:2px solid rgba(255,255,255,.2);border-radius:50%;border-top-color:#fff;height:24px;width:24px}.wm-crop-canvas.is-ready .wm-crop-loading{opacity:0}
+.wm-crop-empty{align-items:center;color:#8d98a8;display:flex;flex-direction:column;font-size:12px;gap:8px;height:100%;justify-content:center}.wm-crop-empty ::deep .m-icon{font-size:32px}
+@keyframes wm-crop-spin{to{transform:rotate(360deg)}}
+@media (pointer:coarse){.wm-cropper-host ::deep cropper-handle[action=n-resize],.wm-cropper-host ::deep cropper-handle[action=s-resize]{height:44px}.wm-cropper-host ::deep cropper-handle[action=e-resize],.wm-cropper-host ::deep cropper-handle[action=w-resize]{width:44px}.wm-cropper-host ::deep cropper-handle[action=ne-resize],.wm-cropper-host ::deep cropper-handle[action=nw-resize],.wm-cropper-host ::deep cropper-handle[action=se-resize],.wm-cropper-host ::deep cropper-handle[action=sw-resize]{height:44px;width:44px}}
+@media (prefers-reduced-motion:reduce){.wm-crop-loading{transition:none}}

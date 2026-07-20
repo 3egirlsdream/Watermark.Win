@@ -16,7 +16,8 @@ public enum WMMembershipPaymentState
 public sealed record WMMembershipResult(
     WMMembershipPaymentState State,
     string Message,
-    string? OrderId = null)
+    string? OrderId = null,
+    string? PaymentUrl = null)
 {
     public bool Succeeded => State == WMMembershipPaymentState.Paid;
 }

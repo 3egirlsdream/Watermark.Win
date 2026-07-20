@@ -225,6 +225,127 @@ public sealed class WMFullResolutionRenderPipelineTests : IDisposable
     }
 
     [Fact]
+    public async Task RenderAsync_CropReplaysAtHighPrecisionWithSharedOutputDimensions()
+    {
+        Directory.CreateDirectory(root);
+        var proxyPath = Path.Combine(root, "crop-high-proxy.png");
+        WriteImage(proxyPath, 200, 120, new SKColor(80, 130, 190));
+        var highPath = Path.Combine(root, "crop-high-base.wm16");
+        var samples = new ushort[200 * 120 * 4];
+        for (var pixel = 0; pixel < 200 * 120; pixel++)
+        {
+            samples[pixel * 4] = 12_000;
+            samples[pixel * 4 + 1] = 32_000;
+            samples[pixel * 4 + 2] = 52_000;
+            samples[pixel * 4 + 3] = ushort.MaxValue;
+        }
+        string hash;
+        using (var writer = new WM16FileWriter(highPath, 200, 120, 4, 120))
+        {
+            writer.WriteTile(new WMLinearTile(0, 120, 200, 4, samples));
+            hash = writer.Complete();
+        }
+        var artifact = new WMImageArtifact
+        {
+            Id = "crop-high-base",
+            FilePath = proxyPath,
+            SourceOperation = WMImageOperationKind.Source,
+            Width = 200,
+            Height = 120,
+            HighPrecision = new WMHighPrecisionArtifact
+            {
+                FilePath = highPath,
+                Width = 200,
+                Height = 120,
+                ContentHash = hash
+            }
+        };
+        var crop = WMImageOperation.Create(
+            WMImageOperationKind.Crop,
+            [artifact.Id],
+            ["crop-high-output"],
+            new WMCropSettings
+            {
+                VisibleWidth = .5,
+                VisibleHeight = .5,
+                AspectPreset = WMCropAspectPreset.Free
+            });
+        var outputPath = Path.Combine(root, "crop-high-output.png");
+        var metrics = new WMWorkspacePerformanceCounters();
+        using var scheduler = new WMProcessingScheduler();
+        var service = new WMFullResolutionRenderPipeline(
+            new WMTemplateOperationProcessor(new WMTemplateRenderer(new WatermarkHelper()), scheduler),
+            new WMColorGradeOperationProcessor(scheduler),
+            scheduler,
+            metrics: metrics);
+
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(artifact, [new WMRenderPlanStep(crop)], artifact),
+            outputPath,
+            proxyPath,
+            "default",
+            100,
+            Path.Combine(root, "crop-high-working"),
+            new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 },
+            WMExportFormat.Png16));
+
+        Assert.True(WMPng16Encoder.IsPng16(outputPath));
+        using var decoded = SKBitmap.Decode(outputPath);
+        Assert.Equal(100, decoded.Width);
+        Assert.Equal(60, decoded.Height);
+        Assert.Equal(1, metrics.Snapshot().Calls[WMWorkspaceMetricStage.Crop]);
+    }
+
+    [Fact]
+    public async Task RenderAsync_CropUsesSameDimensionsInFastJpegPipeline()
+    {
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "crop-fast-source.png");
+        WriteImage(sourcePath, 200, 120, new SKColor(80, 130, 190));
+        var artifact = new WMImageArtifact
+        {
+            Id = "crop-fast-source",
+            FilePath = sourcePath,
+            SourceOperation = WMImageOperationKind.Source,
+            Width = 200,
+            Height = 120,
+            ContentHash = "crop-fast-source-hash"
+        };
+        var crop = WMImageOperation.Create(
+            WMImageOperationKind.Crop,
+            [artifact.Id],
+            ["crop-fast-output"],
+            new WMCropSettings
+            {
+                VisibleWidth = .5,
+                VisibleHeight = .5,
+                AspectPreset = WMCropAspectPreset.Free
+            });
+        var outputPath = Path.Combine(root, "crop-fast-output.jpg");
+        var metrics = new WMWorkspacePerformanceCounters();
+        using var scheduler = new WMProcessingScheduler();
+        var service = new WMFullResolutionRenderPipeline(
+            new WMTemplateOperationProcessor(new WMTemplateRenderer(new WatermarkHelper()), scheduler),
+            new WMColorGradeOperationProcessor(scheduler),
+            scheduler,
+            metrics: metrics);
+
+        await service.RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(artifact, [new WMRenderPlanStep(crop)], artifact),
+            outputPath,
+            sourcePath,
+            "default",
+            100,
+            Path.Combine(root, "crop-fast-working"),
+            new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 }));
+
+        using var decoded = SKBitmap.Decode(outputPath);
+        Assert.Equal(100, decoded.Width);
+        Assert.Equal(60, decoded.Height);
+        Assert.Equal(1, metrics.Snapshot().Calls[WMWorkspaceMetricStage.Crop]);
+    }
+
+    [Fact]
     public async Task RenderAsync_ExportsCommittedHighPrecisionVersionInsteadOfBaseOrProxy()
     {
         Directory.CreateDirectory(root);

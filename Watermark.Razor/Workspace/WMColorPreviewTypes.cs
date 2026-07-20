@@ -39,88 +39,10 @@ public sealed record WMColorPreviewPerformanceSample(
     double DurationMilliseconds,
     string? Detail = null);
 
-public sealed record WMColorPreviewLook(
-    string CacheKey,
-    int LutSize,
-    float[] LutValues,
-    WMColorPreviewParameters Automatic,
-    int PipelineVersion = WMColorPipelineVersion.Current)
-{
-    public static WMColorPreviewLook Identity { get; } = new(
-        "identity",
-        2,
-        WMColorLut3D.Identity(2).Values,
-        WMColorPreviewParameters.From(new WMColorGradeSettings()));
-
-    public static WMColorPreviewLook From(WMGeneratedColorLook look) => new(
-        look.CacheKey,
-        look.ResidualLut.Size,
-        look.ResidualLut.Values,
-        WMColorPreviewParameters.From(look.BaseGrade));
-}
-
-public sealed record WMColorPreviewParameters(
-    float[] Grade,
-    float[] MasterCurve,
-    float[] RedCurve,
-    float[] GreenCurve,
-    float[] BlueCurve,
-    float[] Hsl)
-{
-    public static WMColorPreviewParameters From(WMColorGradeSettings settings)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        return new WMColorPreviewParameters(
-            [
-                settings.Exposure,
-                settings.Contrast,
-                settings.Highlights,
-                settings.Shadows,
-                settings.Whites,
-                settings.Blacks,
-                settings.Temperature,
-                settings.Tint,
-                settings.Vibrance,
-                settings.Saturation
-            ],
-            SampleCurve(settings.MasterCurve),
-            SampleCurve(settings.RedCurve),
-            SampleCurve(settings.GreenCurve),
-            SampleCurve(settings.BlueCurve),
-            Enum.GetValues<WMHslBand>()
-                .SelectMany(band =>
-                {
-                    var value = settings.Hsl.GetValueOrDefault(band) ?? new WMHslAdjustment();
-                    return new[] { value.Hue, value.Saturation, value.Luminance };
-                })
-                .ToArray());
-    }
-
-    internal static float[] SampleCurve(IReadOnlyList<WMCurvePoint> points)
-    {
-        var normalized = WMCurvePoint.Normalize(points);
-        var values = new float[4096];
-        var segment = 0;
-        for (var index = 0; index < values.Length; index++)
-        {
-            var x = index / (float)(values.Length - 1);
-            while (segment < normalized.Count - 2 && x > normalized[segment + 1].X) segment++;
-            var left = normalized[segment];
-            var right = normalized[Math.Min(segment + 1, normalized.Count - 1)];
-            var width = right.X - left.X;
-            values[index] = Math.Clamp(width <= float.Epsilon
-                ? right.Y
-                : left.Y + (right.Y - left.Y) * ((x - left.X) / width), 0f, 1f);
-        }
-        return values;
-    }
-}
-
 public sealed record WMColorPipelineProgram(
     int PipelineVersion,
     string ProgramFingerprint,
-    WMColorPreviewLook Look,
-    WMColorPreviewParameters Adjustments);
+    WMColorGpuProgram GpuProgram);
 
 public interface IWMColorPipelineCompiler
 {
@@ -146,14 +68,18 @@ public sealed record WMWorkspacePreviewPresentation(
 
 public sealed class WMColorPipelineCompiler(
     IWMColorLookMapper lookMapper,
-    IWMColorAnalysisService analysisService) : IWMColorPipelineCompiler
+    IWMColorAnalysisService analysisService,
+    IWMColorEngine colorEngine,
+    IWMWorkspacePerformanceCounters? metrics = null) : IWMColorPipelineCompiler, IDisposable
 {
     private const int CacheLimit = 48;
-    private const int CurveCacheLimit = 128;
-    private readonly ConcurrentDictionary<string, Lazy<Task<WMColorPreviewLook>>> looks = new(StringComparer.Ordinal);
+    private const int ProcessorCacheLimit = 16;
+    private readonly ConcurrentDictionary<string, Lazy<Task<WMGeneratedColorLook?>>> looks = new(StringComparer.Ordinal);
     private readonly ConcurrentQueue<string> lookOrder = new();
-    private readonly ConcurrentDictionary<string, float[]> curveSamples = new(StringComparer.Ordinal);
-    private readonly ConcurrentQueue<string> curveOrder = new();
+    private readonly Dictionary<string, ProcessorEntry> processors = new(StringComparer.Ordinal);
+    private readonly Queue<string> processorOrder = new();
+    private readonly object processorGate = new();
+    private bool disposed;
 
     public async Task<WMColorPipelineProgram> CompileAsync(
         WMImageArtifact target,
@@ -163,31 +89,54 @@ public sealed class WMColorPipelineCompiler(
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(recipe);
         token.ThrowIfCancellationRequested();
+        if (!colorEngine.Capability.IsAvailable)
+            throw new PlatformNotSupportedException(colorEngine.Capability.Error);
         var normalized = CloneRecipe(recipe);
         normalized.UpgradeToCurrentSchema();
         var look = await GetLookAsync(target, normalized, token).ConfigureAwait(false);
-        var adjustments = BuildParameters(normalized.Grade);
+        var staticKey = $"{normalized.PipelineVersion}|{look?.CacheKey ?? "identity"}|srgb-srgb";
+        var entry = AcquireProcessor(staticKey, () =>
+        {
+            using var measurement = metrics?.Measure(WMWorkspaceMetricStage.ProcessorCompile);
+            return colorEngine.CreateProcessor(
+                new WMColorPipelineDefinition(look?.BaseGrade, look?.ResidualLut),
+                new WMColorDynamicState(normalized.Grade));
+        });
+        WMColorGpuProgram gpuProgram;
+        try
+        {
+            await entry.Gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                using (metrics?.Measure(WMWorkspaceMetricStage.DynamicUpdate))
+                    colorEngine.Update(entry.Processor, new WMColorDynamicState(normalized.Grade));
+                using (metrics?.Measure(WMWorkspaceMetricStage.GpuUpload))
+                    gpuProgram = colorEngine.CreateGpuProgram(entry.Processor);
+            }
+            finally { entry.Gate.Release(); }
+        }
+        finally { ReleaseProcessor(entry); }
         var material = JsonSerializer.Serialize(new
         {
             Pipeline = normalized.PipelineVersion,
-            Look = look.CacheKey,
+            Look = look?.CacheKey ?? "identity",
+            Shader = gpuProgram.ShaderCacheId,
             Grade = normalized.Grade
         });
         var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material)));
         return new WMColorPipelineProgram(
             normalized.PipelineVersion,
             fingerprint,
-            look,
-            adjustments);
+            gpuProgram);
     }
 
-    private Task<WMColorPreviewLook> GetLookAsync(
+    private Task<WMGeneratedColorLook?> GetLookAsync(
         WMImageArtifact target,
         WMColorRecipe recipe,
         CancellationToken token)
     {
         if (!recipe.ReferenceMapping.Enabled || recipe.ReferenceProfile is null)
-            return Task.FromResult(WMColorPreviewLook.Identity);
+            return Task.FromResult<WMGeneratedColorLook?>(null);
 
         var source = target.ContentHash ?? target.SourceFingerprint?.StableId ?? target.Id;
         var reference = recipe.ReferenceProfile.SourceHash;
@@ -200,7 +149,7 @@ public sealed class WMColorPipelineCompiler(
         {
             lookOrder.Enqueue(key);
             TrimCache();
-            return new Lazy<Task<WMColorPreviewLook>>(
+            return new Lazy<Task<WMGeneratedColorLook?>>(
                 () => Task.Run(() =>
                 {
                     token.ThrowIfCancellationRequested();
@@ -214,16 +163,16 @@ public sealed class WMColorPipelineCompiler(
                         recipe.ReferenceMapping,
                         recipe.MappingVersion,
                         33), token);
-                    return WMColorPreviewLook.From(generated);
+                    return (WMGeneratedColorLook?)generated;
                 }, token),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         });
         return AwaitAndEvictFailureAsync(key, lazy);
     }
 
-    private async Task<WMColorPreviewLook> AwaitAndEvictFailureAsync(
+    private async Task<WMGeneratedColorLook?> AwaitAndEvictFailureAsync(
         string key,
-        Lazy<Task<WMColorPreviewLook>> value)
+        Lazy<Task<WMGeneratedColorLook?>> value)
     {
         try { return await value.Value.ConfigureAwait(false); }
         catch
@@ -239,46 +188,69 @@ public sealed class WMColorPipelineCompiler(
             looks.TryRemove(expired, out _);
     }
 
-    private WMColorPreviewParameters BuildParameters(WMColorGradeSettings settings) => new(
-        [
-            settings.Exposure,
-            settings.Contrast,
-            settings.Highlights,
-            settings.Shadows,
-            settings.Whites,
-            settings.Blacks,
-            settings.Temperature,
-            settings.Tint,
-            settings.Vibrance,
-            settings.Saturation
-        ],
-        GetCurveSamples(settings.MasterCurve),
-        GetCurveSamples(settings.RedCurve),
-        GetCurveSamples(settings.GreenCurve),
-        GetCurveSamples(settings.BlueCurve),
-        Enum.GetValues<WMHslBand>()
-            .SelectMany(band =>
-            {
-                var value = settings.Hsl.GetValueOrDefault(band) ?? new WMHslAdjustment();
-                return new[] { value.Hue, value.Saturation, value.Luminance };
-            })
-            .ToArray());
-
-    private float[] GetCurveSamples(IReadOnlyList<WMCurvePoint> points)
+    private ProcessorEntry AcquireProcessor(string key, Func<WMColorProcessorLease> create)
     {
-        var normalized = WMCurvePoint.Normalize(points);
-        var material = string.Join('|', normalized.Select(point => $"{point.X:R},{point.Y:R}"));
-        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material)));
-        if (curveSamples.TryGetValue(key, out var cached)) return cached;
-        var samples = WMColorPreviewParameters.SampleCurve(normalized);
-        if (curveSamples.TryAdd(key, samples))
+        lock (processorGate)
         {
-            curveOrder.Enqueue(key);
-            while (curveSamples.Count > CurveCacheLimit && curveOrder.TryDequeue(out var expired))
-                curveSamples.TryRemove(expired, out _);
-            return samples;
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (!processors.TryGetValue(key, out var entry))
+            {
+                entry = new ProcessorEntry(key, create());
+                processors.Add(key, entry);
+                processorOrder.Enqueue(key);
+            }
+            entry.Users++;
+            TrimProcessorCache(key);
+            return entry;
         }
-        return curveSamples[key];
+    }
+
+    private void ReleaseProcessor(ProcessorEntry entry)
+    {
+        lock (processorGate) entry.Users = Math.Max(0, entry.Users - 1);
+    }
+
+    private void TrimProcessorCache(string retainedKey)
+    {
+        var attempts = processorOrder.Count;
+        while (processors.Count > ProcessorCacheLimit && attempts-- > 0 && processorOrder.TryDequeue(out var key))
+        {
+            if (string.Equals(key, retainedKey, StringComparison.Ordinal)
+                || !processors.TryGetValue(key, out var entry)
+                || entry.Users > 0)
+            {
+                processorOrder.Enqueue(key);
+                continue;
+            }
+            processors.Remove(key);
+            entry.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (processorGate)
+        {
+            if (disposed) return;
+            disposed = true;
+            foreach (var entry in processors.Values) entry.Dispose();
+            processors.Clear();
+            processorOrder.Clear();
+        }
+    }
+
+    private sealed class ProcessorEntry(string key, WMColorProcessorLease processor) : IDisposable
+    {
+        public string Key { get; } = key;
+        public WMColorProcessorLease Processor { get; } = processor;
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public int Users { get; set; }
+
+        public void Dispose()
+        {
+            Processor.Dispose();
+            Gate.Dispose();
+        }
     }
 
     private static WMColorRecipe CloneRecipe(WMColorRecipe recipe) =>
@@ -290,6 +262,5 @@ public sealed record WMColorPreviewValidationRequest(
     int Height,
     byte[] SourceRgba,
     byte[] ExpectedRgba,
-    WMColorPreviewLook Look,
-    WMColorPreviewParameters Adjustments,
+    WMColorGpuProgram Program,
     int PipelineVersion = WMColorPipelineVersion.Current);

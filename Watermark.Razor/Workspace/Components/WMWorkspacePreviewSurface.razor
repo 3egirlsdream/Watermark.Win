@@ -1,7 +1,4 @@
 @implements IAsyncDisposable
-@using System.Security.Cryptography
-@using System.Text
-@using System.Text.Json
 @using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime
 @inject WMColorPreviewValidator Validator
@@ -32,10 +29,9 @@
     private IJSObjectReference? renderer;
     private DotNetObjectReference<WMWorkspacePreviewSurface>? callbackReference;
     private WMColorPreviewCapability? capability;
-    private WMColorPreviewParameters? appliedAdjustments;
     private string? appliedSource;
-    private string? appliedLook;
     private string? appliedProgram;
+    private string? appliedShader;
     private bool gpuSourceReady;
     private bool disposed;
 
@@ -61,6 +57,8 @@
                 renderer = await module.InvokeAsync<IJSObjectReference>(
                     "createColorPreview", canvas, callbackReference);
                 capability = await renderer.InvokeAsync<WMColorPreviewCapability>("getCapability");
+                if (capability.Supported)
+                    await PerformanceMeasured.InvokeAsync(new WMColorPreviewPerformanceSample("context-created", 0));
                 if (capability.Supported) capability = await ValidateCapabilityAsync(capability);
                 await CapabilityChanged.InvokeAsync(capability);
                 await InvokeAsync(StateHasChanged);
@@ -92,18 +90,24 @@
             await renderer.InvokeVoidAsync("setSource", Presentation.BaseUrl);
             appliedSource = Presentation.BaseUrl;
         }
-        if (!string.Equals(appliedLook, program.Look.CacheKey, StringComparison.Ordinal))
-        {
-            await renderer.InvokeVoidAsync("setGeneratedLook", program.Look);
-            appliedLook = program.Look.CacheKey;
-        }
         if (!string.Equals(appliedProgram, program.ProgramFingerprint, StringComparison.Ordinal))
         {
-            if (appliedAdjustments is not null && CurvesEqual(appliedAdjustments, program.Adjustments))
-                await renderer.InvokeVoidAsync("setGradeAndHsl", program.Adjustments);
+            if (string.Equals(appliedShader, program.GpuProgram.ShaderCacheId, StringComparison.Ordinal))
+            {
+                var dynamicTextures = program.GpuProgram.Textures
+                    .Where(texture => texture.SamplerName.StartsWith("wm_dynamic_", StringComparison.Ordinal))
+                    .ToArray();
+                await renderer.InvokeVoidAsync("setDynamicState", new
+                {
+                    program.GpuProgram.Uniforms,
+                    Textures = dynamicTextures
+                });
+            }
             else
-                await renderer.InvokeVoidAsync("setAdjustments", program.Adjustments);
-            appliedAdjustments = program.Adjustments;
+            {
+                await renderer.InvokeVoidAsync("setProgram", program.GpuProgram);
+                appliedShader = program.GpuProgram.ShaderCacheId;
+            }
             appliedProgram = program.ProgramFingerprint;
         }
         await renderer.InvokeVoidAsync("render");
@@ -124,32 +128,22 @@
                 Reason = $"调色Pipeline版本不一致：CPU={Watermark.Shared.Models.WMColorPipelineVersion.Current}，GPU={jsVersion}。"
             };
 
-        var identity = $"{Watermark.Shared.Models.WMColorPipelineVersion.Current}|{candidate.EnvironmentKey}|rgba16f-v1";
-        var key = "watermark.color-preview-validation."
-                  + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..24];
         try
         {
-            var cachedJson = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", key);
-            if (!string.IsNullOrWhiteSpace(cachedJson)
-                && JsonSerializer.Deserialize<WMColorPreviewValidationResult>(cachedJson) is { } cached)
-                return ApplyValidation(candidate, cached);
+            var request = Validator.CreateRequest();
+            var actual = await renderer.InvokeAsync<byte[]>("validate", request);
+            return ApplyValidation(candidate, Validator.Evaluate(request, actual));
         }
-        catch
+        catch (Exception ex) when (ex is JSException or InvalidOperationException
+                                   or PlatformNotSupportedException or DllNotFoundException)
         {
+            return candidate with
+            {
+                Supported = false,
+                Validated = true,
+                Reason = $"OCIO GPU 校验失败：{ex.Message}"
+            };
         }
-
-        var request = Validator.CreateRequest();
-        var actual = await renderer.InvokeAsync<byte[]>("validatePipeline", request);
-        var validation = Validator.Evaluate(request, actual);
-        try
-        {
-            await JSRuntime.InvokeVoidAsync(
-                "localStorage.setItem", key, JsonSerializer.Serialize(validation));
-        }
-        catch
-        {
-        }
-        return ApplyValidation(candidate, validation);
     }
 
     [JSInvokable]
@@ -157,6 +151,7 @@
     {
         if (!restored)
         {
+            await PerformanceMeasured.InvokeAsync(new WMColorPreviewPerformanceSample("context-lost", 0, reason));
             gpuSourceReady = false;
             capability = capability is null
                 ? new WMColorPreviewCapability(false, reason, Validated: true)
@@ -164,14 +159,14 @@
         }
         else if (renderer is not null)
         {
+            await PerformanceMeasured.InvokeAsync(new WMColorPreviewPerformanceSample("context-created", 0, "restored"));
             var restoredCapability = await renderer.InvokeAsync<WMColorPreviewCapability>("getCapability");
             capability = restoredCapability.Supported
                 ? await ValidateCapabilityAsync(restoredCapability)
                 : restoredCapability;
             appliedSource = null;
-            appliedLook = null;
             appliedProgram = null;
-            appliedAdjustments = null;
+            appliedShader = null;
             gpuSourceReady = false;
         }
         if (capability is not null) await CapabilityChanged.InvokeAsync(capability);
@@ -206,18 +201,6 @@
             MaximumDeltaE = validation.MaximumDeltaE,
             MaximumChannelError = validation.MaximumChannelError
         };
-
-    private static bool CurvesEqual(
-        WMColorPreviewParameters left,
-        WMColorPreviewParameters right) =>
-        (ReferenceEquals(left.MasterCurve, right.MasterCurve)
-         || left.MasterCurve.AsSpan().SequenceEqual(right.MasterCurve))
-        && (ReferenceEquals(left.RedCurve, right.RedCurve)
-            || left.RedCurve.AsSpan().SequenceEqual(right.RedCurve))
-        && (ReferenceEquals(left.GreenCurve, right.GreenCurve)
-            || left.GreenCurve.AsSpan().SequenceEqual(right.GreenCurve))
-        && (ReferenceEquals(left.BlueCurve, right.BlueCurve)
-            || left.BlueCurve.AsSpan().SequenceEqual(right.BlueCurve));
 
     public async ValueTask DisposeAsync()
     {

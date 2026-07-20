@@ -37,6 +37,7 @@ public sealed class WMWorkspaceController
     private readonly IWMWorkspacePerformanceCounters? performanceCounters;
     private readonly IWMRenderPlanCompiler renderPlanCompiler;
     private readonly IWMColorPipelineCompiler? colorPipelineCompiler;
+    private readonly IWMColorEngine? colorEngine;
     private readonly WMDurableCommandQueue durableCommands = new();
     private readonly WMTransientPreviewCoordinator transientPreviews = new();
     private readonly WMWorkspaceJobCoordinator jobs = new();
@@ -49,7 +50,9 @@ public sealed class WMWorkspaceController
     private WMWorkspaceState state = new();
     private WMColorRecipe? draftColorRecipe;
     private WMWorkspaceTemplateEdit? draftTemplateEdit;
+    private WMWorkspaceMode? cropReturnMode;
     private WMObjectUrlLease? previewLease;
+    private WMObjectUrlLease? retiredPreviewLease;
     private WMObjectUrlLease? originalLease;
     private WMObjectUrlLease? colorReferenceLease;
     private WMObjectUrlLease? colorBaseLease;
@@ -87,7 +90,8 @@ public sealed class WMWorkspaceController
         IWMWorkspaceTraceStore? traceStore = null,
         IWMWorkspacePerformanceCounters? performanceCounters = null,
         IWMRenderPlanCompiler? renderPlanCompiler = null,
-        IWMColorPipelineCompiler? colorPipelineCompiler = null)
+        IWMColorPipelineCompiler? colorPipelineCompiler = null,
+        IWMColorEngine? colorEngine = null)
     {
         this.sessionStore = sessionStore;
         this.renderCoordinator = renderCoordinator;
@@ -108,6 +112,7 @@ public sealed class WMWorkspaceController
         this.performanceCounters = performanceCounters;
         this.renderPlanCompiler = renderPlanCompiler ?? new WMRenderPlanCompiler();
         this.colorPipelineCompiler = colorPipelineCompiler;
+        this.colorEngine = colorEngine;
         recoveryService = new WMWorkspaceRecoveryService(sessionStore);
     }
 
@@ -117,6 +122,14 @@ public sealed class WMWorkspaceController
     {
         get { lock (gate) return state; }
     }
+
+    public WMColorEngineCapability ColorEngineCapability =>
+        colorEngine?.Capability
+        ?? new WMColorEngineCapability(
+            true,
+            WMColorPipelineVersion.Current,
+            "Host-managed",
+            "Host-managed");
 
     public string? GetMediaPreviewUrl(string mediaId)
     {
@@ -306,7 +319,11 @@ public sealed class WMWorkspaceController
             session = opened;
             draftColorRecipe = null;
             draftTemplateEdit = null;
+            cropReturnMode = opened.Mode == WMWorkspaceMode.Crop
+                ? WMWorkspaceMode.Template
+                : null;
             previewLease = null;
+            retiredPreviewLease = null;
             originalLease = null;
             colorBaseLease = null;
             colorBaseArtifactLease = null;
@@ -317,6 +334,7 @@ public sealed class WMWorkspaceController
             var currentMediaId = opened.CurrentMediaId ?? opened.Media.FirstOrDefault()?.Id;
             var currentRecipe = CloneRecipe(GetEffectiveColorRecipe(opened, currentMediaId))
                                 ?? new WMColorRecipe { Name = "工作台调整" };
+            var currentCrop = GetEffectiveCropSettings(opened, currentMediaId);
             var multiFrameDraft = NormalizeMultiFrameDraft(opened.MultiFrameConfiguration, opened.Media);
             var collageDraft = NormalizeCollageDraft(opened.CollageConfiguration, opened.Media);
             var stackCapability = imagingCapabilities?.Probe(
@@ -346,6 +364,7 @@ public sealed class WMWorkspaceController
                 CollageTool = new WMCollageToolState(
                     collageDraft,
                     false),
+                CropTool = new WMCropToolState(currentCrop, currentCrop, false),
                 Activity = WMWorkspaceActivity.Idle,
                 PanelSize = WMWorkspacePanelSize.Half,
                 CanUndo = opened.HistoryCursor > 0,
@@ -356,7 +375,9 @@ public sealed class WMWorkspaceController
                 ActiveJob = WMWorkspaceProjection.Job(opened.ActiveJobCheckpoint),
                 TemplateDesign = opened.Mode == WMWorkspaceMode.TemplateDesign
                     ? new WMTemplateDesignToolState(null, false, false, 0, 1)
-                    : null
+                    : null,
+                HasTransientEdits = opened.Mode == WMWorkspaceMode.Crop,
+                TransientEditMode = opened.Mode == WMWorkspaceMode.Crop ? WMWorkspaceMode.Crop : null
             };
         }
         await RefreshMediaPreviewUrlsAsync(
@@ -407,28 +428,77 @@ public sealed class WMWorkspaceController
     public Task SelectMediaAsync(string mediaId, CancellationToken cancellationToken = default) =>
         RunDurableCommandAsync(async context =>
         {
+            WMColorRecipe? pendingColor;
+            WMApplyScope pendingScope;
+            bool useGpuColorPreview;
+            lock (gate)
+            {
+                if (state.TransientEditMode == WMWorkspaceMode.Crop) return;
+                pendingColor = state.HasTransientEdits
+                               && state.TransientEditMode == WMWorkspaceMode.ColorGrade
+                               && draftColorRecipe is not null
+                    ? CloneRecipe(draftColorRecipe)
+                    : null;
+                pendingScope = state.ApplyScope;
+                useGpuColorPreview = pendingColor is not null
+                                     && colorPipelineCompiler is not null
+                                     && gpuColorPreviewAvailable == true;
+            }
             if (!context.Session.Media.Any(item => item.Id == mediaId)
                 || context.Session.CurrentMediaId == mediaId) return;
             var updated = NextRevision(context.Session with { CurrentMediaId = mediaId });
+            var previewSession = pendingColor is null
+                ? updated
+                : CreateColorPreviewSession(updated, pendingColor, pendingScope);
+            var visibleColor = pendingColor ?? GetEffectiveColorRecipe(updated, mediaId);
             var intent = CommitSession(context.Epoch, updated, clearColorDraft: false, value => value with
             {
                 CurrentMediaId = mediaId,
                 TemplateId = GetEffectiveTemplateId(updated, mediaId),
                 TemplateEdit = GetEffectiveTemplateEdit(updated, mediaId),
-                ColorRecipe = CloneRecipe(GetEffectiveColorRecipe(updated, mediaId)),
+                ColorRecipe = CloneRecipe(visibleColor),
                 ColorGradeTool = value.ColorGradeTool with
                 {
-                    Draft = CloneRecipe(GetEffectiveColorRecipe(updated, mediaId))
+                    Draft = CloneRecipe(visibleColor)
                             ?? new WMColorRecipe { Name = "工作台调整" }
                 },
+                CropTool = CreateCropToolState(updated, mediaId),
+                TemplateLayout = null,
+                Activity = pendingColor is null
+                    ? value.Activity
+                    : WMWorkspaceActivity.Previewing,
+                Message = pendingColor is null ? value.Message : "正在切换图片…",
+                CanCancel = pendingColor is not null,
                 IsComparingOriginal = false
             });
-            await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
+            await PersistAsync(updated, context.Epoch, context.Token).ConfigureAwait(false);
+            if (pendingColor is null)
+            {
+                await QueuePreviewTrackedAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
+                return;
+            }
+
+            // A color draft is an explicit, unapplied batch preview. Switching
+            // media keeps the controls and draft intact, changes only the base
+            // image and lets repeated thumbnail clicks supersede older work.
+            if (useGpuColorPreview)
+            {
+                var previewTask = PreviewColorDraftGpuAsync(
+                    pendingColor, context.Epoch, intent, context.Token);
+                TrackOwned(previewTask);
+            }
+            else
+            {
+                _ = QueuePreviewTrackedAsync(
+                    previewSession, context.Epoch, intent, context.Token);
+            }
         }, cancellationToken);
 
     public Task ToggleMediaSelectionAsync(string mediaId, CancellationToken cancellationToken = default) =>
         RunDurableCommandAsync(async context =>
         {
+            lock (gate)
+                if (state.TransientEditMode == WMWorkspaceMode.Crop) return;
             var target = context.Session.Media.FirstOrDefault(item => item.Id == mediaId);
             if (target is null) return;
             var wasSelected = context.Session.SelectedMediaIds.Contains(mediaId, StringComparer.Ordinal)
@@ -576,8 +646,11 @@ public sealed class WMWorkspaceController
                 if (derivedMediaProcessor is null)
                     throw new PlatformNotSupportedException("当前宿主未注册派生素材处理器。");
                 var sourceIds = request.SourceMediaIds.Distinct(StringComparer.Ordinal).ToArray();
-                if (sourceIds.Length < 2)
-                    throw new InvalidOperationException("派生素材至少需要两张源图片。");
+                var minimumSources = request.Kind == WMDerivedMediaKind.TemplateCollage ? 1 : 2;
+                if (sourceIds.Length < minimumSources)
+                    throw new InvalidOperationException(request.Kind == WMDerivedMediaKind.TemplateCollage
+                        ? "拼图模板至少需要一张素材。"
+                        : "派生素材至少需要两张源图片。");
                 var sourceById = Catalog(context.Session).ToDictionary(item => item.Id, StringComparer.Ordinal);
                 if (sourceIds.Any(id => !sourceById.ContainsKey(id)))
                     throw new InvalidOperationException("派生素材的源图片已不存在。");
@@ -715,9 +788,164 @@ public sealed class WMWorkspaceController
         }
     }
 
-    public Task SetModeAsync(WMWorkspaceMode mode, CancellationToken cancellationToken = default) =>
+    public Task BeginCropEditAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        WMWorkspaceState next;
+        lock (gate)
+        {
+            if (closed || session is null)
+                throw new InvalidOperationException("工作台会话尚未打开。");
+            var media = session.Media.FirstOrDefault(item => item.Id == session.CurrentMediaId)
+                        ?? session.Media.FirstOrDefault()
+                        ?? throw new InvalidOperationException("当前没有可裁切的图片。");
+            if (state.TransientEditMode == WMWorkspaceMode.Crop) return Task.CompletedTask;
+            cropReturnMode = state.Mode == WMWorkspaceMode.Crop
+                ? WMWorkspaceMode.Template
+                : state.Mode;
+            var committed = WMCropPlanner.Normalize(
+                GetEffectiveCropSettings(session, media.Id),
+                media.Artifact.Width,
+                media.Artifact.Height);
+            intentRevision++;
+            state = next = state with
+            {
+                Mode = WMWorkspaceMode.Crop,
+                CropTool = new WMCropToolState(committed, committed, false),
+                HasTransientEdits = true,
+                TransientEditMode = WMWorkspaceMode.Crop,
+                IsComparingOriginal = false,
+                ErrorMessage = null
+            };
+        }
+        Changed.Invoke(next);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Updates only the in-memory gesture draft. No render version is queued here.
+    /// </summary>
+    public Task UpdateCropDraftAsync(
+        WMCropSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        cancellationToken.ThrowIfCancellationRequested();
+        WMWorkspaceState? next = null;
+        lock (gate)
+        {
+            if (closed || session is null || state.TransientEditMode != WMWorkspaceMode.Crop)
+                return Task.CompletedTask;
+            var media = session.Media.FirstOrDefault(item => item.Id == session.CurrentMediaId);
+            if (media is null) return Task.CompletedTask;
+            var normalized = WMCropPlanner.Normalize(
+                settings,
+                media.Artifact.Width,
+                media.Artifact.Height);
+            state = next = state with
+            {
+                CropTool = state.CropTool with
+                {
+                    Draft = normalized,
+                    IsDirty = normalized != state.CropTool.Committed
+                }
+            };
+        }
+        if (next is not null) Changed.Invoke(next);
+        return Task.CompletedTask;
+    }
+
+    public Task CommitCropDraftAsync(CancellationToken cancellationToken = default) =>
         RunDurableCommandAsync(async context =>
         {
+            var media = context.Session.Media.FirstOrDefault(item => item.Id == context.Session.CurrentMediaId);
+            if (media is null) return;
+            WMCropSettings draft;
+            WMWorkspaceMode returnMode;
+            lock (gate)
+            {
+                if (state.TransientEditMode != WMWorkspaceMode.Crop) return;
+                draft = WMCropPlanner.Normalize(
+                    state.CropTool.Draft,
+                    media.Artifact.Width,
+                    media.Artifact.Height);
+                returnMode = cropReturnMode is null or WMWorkspaceMode.Crop
+                    ? WMWorkspaceMode.Template
+                    : cropReturnMode.Value;
+            }
+            var committed = WMCropPlanner.Normalize(
+                GetEffectiveCropSettings(context.Session, media.Id),
+                media.Artifact.Width,
+                media.Artifact.Height);
+            // Aspect preset metadata alone must not create work when both states
+            // describe the same unmodified source image.
+            if (draft == committed
+                || (WMCropPlanner.IsIdentity(draft) && WMCropPlanner.IsIdentity(committed)))
+            {
+                cropReturnMode = null;
+                TryUpdate(context.Epoch, null, value => value with
+                {
+                    Mode = returnMode,
+                    CropTool = new WMCropToolState(committed, committed, false),
+                    HasTransientEdits = false,
+                    TransientEditMode = null
+                });
+                return;
+            }
+
+            var cropOverrides = new Dictionary<string, WMCropSettings>(
+                context.Session.CropSettingsByMediaId,
+                StringComparer.Ordinal)
+            {
+                [media.Id] = draft
+            };
+            var updated = AppendTransaction(
+                context.Session with { CropSettingsByMediaId = cropOverrides },
+                "裁切图片",
+                WMImageOperationKind.Crop,
+                [media.Id],
+                draft);
+            updated = NextRevision(updated with
+            {
+                Mode = context.Session.Mode == WMWorkspaceMode.Crop
+                    ? returnMode
+                    : context.Session.Mode
+            });
+            cropReturnMode = null;
+            var intent = CommitSession(context.Epoch, updated, clearColorDraft: false, value => value with
+            {
+                Mode = returnMode,
+                CropTool = new WMCropToolState(draft, draft, false),
+                HasTransientEdits = false,
+                TransientEditMode = null,
+                IsComparingOriginal = false,
+                Message = "裁切已应用"
+            });
+            await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
+        }, cancellationToken);
+
+    public Task SetModeAsync(WMWorkspaceMode mode, CancellationToken cancellationToken = default)
+    {
+        if (mode == WMWorkspaceMode.ColorGrade && TryGetColorEngineUnavailable(out var reason))
+        {
+            UpdateCurrent(value => value with
+            {
+                ErrorMessage = reason,
+                Message = string.Empty
+            });
+            return RecordLogSafeAsync(
+                WMDiagnosticLogLevel.Error,
+                "workspace-color-engine-unavailable",
+                reason,
+                State.SessionId);
+        }
+
+        return mode == WMWorkspaceMode.Crop
+            ? BeginCropEditAsync(cancellationToken)
+            : RunDurableCommandAsync(async context =>
+        {
+            lock (gate)
+                if (state.TransientEditMode == WMWorkspaceMode.Crop) return;
             if (context.Session.Mode == mode) return;
             WMColorRecipe? pendingColor;
             WMApplyScope pendingScope;
@@ -775,6 +1003,7 @@ public sealed class WMWorkspaceController
             if (pendingColor is not null)
                 await QueuePreviewTrackedAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
         }, cancellationToken);
+    }
 
     public Task ApplyTemplateAsync(string? templateId, CancellationToken cancellationToken = default) =>
         ApplyTemplateAsync(templateId, WMApplyScope.Selected, cancellationToken);
@@ -821,6 +1050,12 @@ public sealed class WMWorkspaceController
             {
                 TemplateId = edit.TemplateId,
                 TemplateEdit = edit,
+                // The current layout and preview URL were produced for the
+                // previously selected template.  The desktop editor must not
+                // combine that geometry with the new canvas while the latest
+                // render is still in flight, otherwise the first frame is
+                // displayed with the previous template's aspect ratio.
+                TemplateLayout = null,
                 HasTransientEdits = true,
                 TransientEditMode = WMWorkspaceMode.Template,
                 IsComparingOriginal = false
@@ -912,8 +1147,12 @@ public sealed class WMWorkspaceController
             current = session;
             transientMode = state.TransientEditMode;
             currentEpoch = epoch;
+            var discardedCropReturnMode = cropReturnMode is null or WMWorkspaceMode.Crop
+                ? WMWorkspaceMode.Template
+                : cropReturnMode.Value;
             draftColorRecipe = null;
             draftTemplateEdit = null;
+            cropReturnMode = null;
             intent = ++intentRevision;
             state = state with
             {
@@ -933,6 +1172,10 @@ public sealed class WMWorkspaceController
                 {
                     Draft = NormalizeCollageDraft(current.CollageConfiguration, current.Media)
                 },
+                CropTool = CreateCropToolState(current, current.CurrentMediaId),
+                Mode = transientMode == WMWorkspaceMode.Crop
+                    ? discardedCropReturnMode
+                    : state.Mode,
                 HasTransientEdits = false,
                 TransientEditMode = null,
                 IsComparingOriginal = false
@@ -940,7 +1183,7 @@ public sealed class WMWorkspaceController
         }
         Changed.Invoke(State);
         return current.Media.Count == 0
-               || transientMode is WMWorkspaceMode.MultiFrame or WMWorkspaceMode.Collage
+               || transientMode is WMWorkspaceMode.MultiFrame or WMWorkspaceMode.Collage or WMWorkspaceMode.Crop
             ? Task.CompletedTask
             : QueuePreviewTrackedAsync(current, currentEpoch, intent, cancellationToken);
     }
@@ -958,6 +1201,7 @@ public sealed class WMWorkspaceController
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recipe);
+        EnsureColorEngineAvailable();
         var normalized = NormalizeRecipe(recipe);
         return createHistoryEntry
             ? CommitColorGradeAsync(normalized, scope, cancellationToken)
@@ -972,6 +1216,7 @@ public sealed class WMWorkspaceController
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recipe);
+        EnsureColorEngineAvailable();
         var normalized = NormalizeRecipe(recipe);
         CancellationTokenSource? debounce = null;
         long currentEpoch;
@@ -1068,6 +1313,15 @@ public sealed class WMWorkspaceController
     public Task RecordColorPreviewPerformanceAsync(WMColorPreviewPerformanceSample sample)
     {
         ArgumentNullException.ThrowIfNull(sample);
+        var metric = sample.Stage switch
+        {
+            "texture-upload" => WMWorkspaceMetricStage.GpuUpload,
+            "frame" => WMWorkspaceMetricStage.GpuFrame,
+            "context-created" => WMWorkspaceMetricStage.ContextCreated,
+            "context-lost" => WMWorkspaceMetricStage.ContextLost,
+            _ => (WMWorkspaceMetricStage?)null
+        };
+        if (metric is { } stage) performanceCounters?.Increment(stage);
         string? sessionId;
         lock (gate) sessionId = state.SessionId;
         return RecordLogSafeAsync(
@@ -1090,7 +1344,7 @@ public sealed class WMWorkspaceController
     {
         try
         {
-            await Task.Delay(75, debounce.Token).ConfigureAwait(false);
+            await Task.Delay(100, debounce.Token).ConfigureAwait(false);
             WMApplyScope scope;
             lock (gate) scope = state.ApplyScope;
             await PreviewColorGradeAsync(recipe, scope, debounce.Token).ConfigureAwait(false);
@@ -1133,8 +1387,9 @@ public sealed class WMWorkspaceController
                 media.Id,
                 WMRenderTarget.InteractiveBase(),
                 linked.Token).ConfigureAwait(false);
+            if (!IsCurrent(currentEpoch, currentIntent)) return;
             var basePreviewTask = GetOrCreateColorBaseAsync(
-                snapshot, media, basePlan, currentEpoch, linked.Token);
+                snapshot, media, basePlan, currentEpoch, currentIntent, linked.Token);
             var programTask = colorPipelineCompiler.CompileAsync(
                 basePlan.BaseArtifact, recipe, linked.Token);
             await Task.WhenAll(basePreviewTask, programTask).ConfigureAwait(false);
@@ -1147,6 +1402,10 @@ public sealed class WMWorkspaceController
                 Activity = value.Activity == WMWorkspaceActivity.Previewing
                     ? WMWorkspaceActivity.PreviewReady
                     : value.Activity,
+                Stage = WMOperationStage.Completed,
+                Message = string.Empty,
+                Progress = 100,
+                CanCancel = false,
                 PreviewPresentation = new WMWorkspacePreviewPresentation(
                     version,
                     basePreview.Fingerprint,
@@ -1192,6 +1451,7 @@ public sealed class WMWorkspaceController
         WMWorkspaceMedia media,
         WMCompiledRenderPlan plan,
         long currentEpoch,
+        long currentIntent,
         CancellationToken cancellationToken)
     {
         var fingerprint = await previewService.CreateFingerprintAsync(plan, cancellationToken)
@@ -1199,7 +1459,7 @@ public sealed class WMWorkspaceController
         Task<ColorBasePreview> resultTask;
         lock (gate)
         {
-            if (!IsCurrentLocked(currentEpoch))
+            if (!IsCurrentLocked(currentEpoch, currentIntent))
                 throw new OperationCanceledException(cancellationToken);
             if (string.Equals(colorBaseFingerprint, fingerprint, StringComparison.Ordinal))
             {
@@ -1221,7 +1481,16 @@ public sealed class WMWorkspaceController
         Task<ColorBasePreview> CreateColorBaseTask()
         {
             var committedColor = GetEffectiveColorRecipe(snapshot, media.Id);
-            if (committedColor is null && state.PreviewUrl is { Length: > 0 } stable)
+            // The settled preview can be reused as the WebGL base only when it
+            // was produced from this exact media/render graph.  Reusing the
+            // previous media's URL after a thumbnail switch makes the controls
+            // look retained while the picture itself never changes.
+            if (committedColor is null
+                && string.Equals(
+                    state.PreviewPresentation.BaseFingerprint,
+                    fingerprint,
+                    StringComparison.Ordinal)
+                && state.PreviewUrl is { Length: > 0 } stable)
                 return Task.FromResult(new ColorBasePreview(fingerprint, stable));
             return PrepareColorBaseAsync(
                 snapshot, media, plan, fingerprint, currentEpoch, cancellationToken);
@@ -1310,6 +1579,7 @@ public sealed class WMWorkspaceController
         WMApplyScope scope,
         CancellationToken cancellationToken = default)
     {
+        EnsureColorEngineAvailable();
         WMColorRecipe recipe;
         lock (gate)
         {
@@ -1335,6 +1605,7 @@ public sealed class WMWorkspaceController
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
+        EnsureColorEngineAvailable();
         if (colorReferenceService is null)
             throw new PlatformNotSupportedException("当前宿主未注册参考图导入服务。");
         string sessionId;
@@ -1423,6 +1694,7 @@ public sealed class WMWorkspaceController
         string name,
         CancellationToken cancellationToken = default)
     {
+        EnsureColorEngineAvailable();
         if (colorPresetLibrary is null)
             throw new PlatformNotSupportedException("当前宿主未注册调色预设服务。");
         WMColorRecipe recipe;
@@ -1452,6 +1724,7 @@ public sealed class WMWorkspaceController
         string presetId,
         CancellationToken cancellationToken = default)
     {
+        EnsureColorEngineAvailable();
         var preset = State.ColorGradeTool.Presets.FirstOrDefault(item => item.Id == presetId)
                      ?? throw new KeyNotFoundException("调色预设不存在。");
         lock (gate)
@@ -1500,6 +1773,7 @@ public sealed class WMWorkspaceController
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        transientPreviews.Cancel();
         var capability = imagingCapabilities?.Probe(
             draft.Mode == WMStackMode.StarTrail
                 ? WMImagingFeature.StarTrail
@@ -1595,6 +1869,188 @@ public sealed class WMWorkspaceController
             cancellationToken);
     }
 
+    public async Task<string> CreateTemplateCollageAsync(
+        WMWorkspaceTemplateEdit edit,
+        IReadOnlyList<IWMPhotoImportSource> sources,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        ArgumentNullException.ThrowIfNull(sources);
+        if (sources.Count == 0) throw new InvalidOperationException("拼图模板至少需要一张素材。");
+        if (string.IsNullOrWhiteSpace(edit.TemplateId) || string.IsNullOrWhiteSpace(edit.CanvasJson))
+            throw new InvalidOperationException("拼图模板内容不完整。");
+        if (imageImporter is null || executionProfiles is null)
+            throw new InvalidOperationException("当前宿主未注册工作台导入服务。");
+        if (derivedMediaProcessor is null)
+            throw new PlatformNotSupportedException("当前宿主未注册派生素材处理器。");
+
+        var derivedMediaId = Guid.NewGuid().ToString("N");
+        using var operation = jobs.Begin(cancellationToken);
+        try
+        {
+            await RunDurableCommandAsync(async context =>
+            {
+                IReadOnlyList<WMWorkspaceMedia> imported;
+                try
+                {
+                    imported = await imageImporter.ImportTemplateCollageSourcesAsync(
+                        sources,
+                        sessionStore.GetSessionDirectory(context.Session.Id),
+                        executionProfiles.GetInteractiveProfile(),
+                        context.Token).ConfigureAwait(false);
+                }
+                finally
+                {
+                    foreach (var source in sources)
+                        await source.DisposeAsync().ConfigureAwait(false);
+                }
+                if (imported.Count == 0)
+                    throw new InvalidOperationException("没有可用于拼图模板的素材。");
+
+                var importedIds = imported.Select(item => item.Id).ToArray();
+                var request = new WMDerivedMediaRequest(
+                    WMDerivedMediaKind.TemplateCollage,
+                    importedIds,
+                    "应用拼图模板",
+                    new WMCollageSettings(importedIds, WMCollageDirection.Horizontal),
+                    $"拼图模板-{DateTime.Now:yyyyMMdd-HHmmss}.png",
+                    true,
+                    new WMTemplateCollageSettings(edit.TemplateId, edit.CanvasJson));
+                var currentArtifacts = new Dictionary<string, string>(
+                    context.Session.CurrentArtifactIdsByMediaId, StringComparer.Ordinal);
+                foreach (var source in imported) currentArtifacts[source.Id] = source.Artifact.Id;
+                var now = DateTime.UtcNow;
+                var checkpoint = new WMWorkspaceJobCheckpoint(
+                    Guid.NewGuid().ToString("N"),
+                    WMWorkspaceJobKind.DerivedMedia,
+                    WMWorkspaceJobStatus.Running,
+                    System.Text.Json.JsonSerializer.Serialize(request),
+                    [],
+                    now,
+                    now);
+                var working = NextRevision(context.Session with
+                {
+                    MediaCatalog = Catalog(context.Session).Concat(imported).ToArray(),
+                    Artifacts = context.Session.Artifacts
+                        .Concat(imported.Select(item => item.Artifact))
+                        .GroupBy(item => item.Id, StringComparer.Ordinal)
+                        .Select(group => group.Last())
+                        .ToArray(),
+                    CurrentArtifactIdsByMediaId = currentArtifacts,
+                    ActiveJobCheckpoint = checkpoint
+                });
+                CommitPassiveSession(context.Epoch, working, value => value with
+                {
+                    ActiveJob = WMWorkspaceProjection.Job(checkpoint),
+                    CollageTool = value.CollageTool with { IsBusy = true },
+                    Message = "正在生成拼图模板…",
+                    CanCancel = true
+                });
+                await PersistAsync(working, context.Epoch, context.Token).ConfigureAwait(false);
+
+                WMDerivedMediaOutput generated;
+                try
+                {
+                    generated = await derivedMediaProcessor.ExecuteAsync(
+                        request,
+                        imported.Select(item => item.Artifact).ToArray(),
+                        sessionStore.GetSessionDirectory(context.Session.Id),
+                        context.Token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    var failedCheckpoint = checkpoint with
+                    {
+                        Status = ex is OperationCanceledException
+                            ? WMWorkspaceJobStatus.Canceled
+                            : WMWorkspaceJobStatus.Failed,
+                        UpdatedAtUtc = DateTime.UtcNow,
+                        ErrorMessage = ex.Message
+                    };
+                    var failed = NextRevision(working with { ActiveJobCheckpoint = failedCheckpoint });
+                    CommitPassiveSession(context.Epoch, failed, value => value with
+                    {
+                        ActiveJob = WMWorkspaceProjection.Job(failedCheckpoint),
+                        CollageTool = value.CollageTool with { IsBusy = false },
+                        CanCancel = false
+                    });
+                    await PersistAsync(failed, context.Epoch, CancellationToken.None).ConfigureAwait(false);
+                    throw;
+                }
+
+                var artifact = generated.Artifact;
+                if (!File.Exists(artifact.FilePath))
+                    throw new FileNotFoundException("拼图模板产物不存在。", artifact.FilePath);
+                var resultMedia = new WMWorkspaceMedia
+                {
+                    Id = derivedMediaId,
+                    DisplayName = request.SuggestedFileName ?? generated.SuggestedFileName,
+                    OriginalReference = imported[0].OriginalReference,
+                    Artifact = artifact,
+                    IsSelected = true
+                };
+                currentArtifacts[derivedMediaId] = artifact.Id;
+                var completedCheckpoint = checkpoint with
+                {
+                    Status = WMWorkspaceJobStatus.Completed,
+                    StableArtifactIds = [artifact.Id],
+                    UpdatedAtUtc = DateTime.UtcNow
+                };
+                var assignments = new[]
+                {
+                    new WMWorkspaceOperationAssignment([derivedMediaId], [generated.Operation])
+                };
+                var updated = AppendStructuralTransaction(
+                    working with
+                    {
+                        MediaCatalog = Catalog(working).Append(resultMedia).ToArray(),
+                        Artifacts = working.Artifacts.Append(artifact)
+                            .GroupBy(item => item.Id, StringComparer.Ordinal)
+                            .Select(group => group.Last())
+                            .ToArray(),
+                        CurrentArtifactIdsByMediaId = currentArtifacts,
+                        SelectedMediaIds = working.SelectedMediaIds
+                            .Append(derivedMediaId)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToArray(),
+                        CurrentMediaId = derivedMediaId,
+                        ActiveJobCheckpoint = completedCheckpoint
+                    },
+                    request.Label,
+                    assignments,
+                    importedIds.Append(derivedMediaId).ToArray(),
+                    importedIds);
+                updated = NextRevision(MaterializeAtCursor(updated, updated.HistoryCursor));
+                var intent = CommitSession(context.Epoch, updated, clearColorDraft: true, value => value with
+                {
+                    Media = WMWorkspaceProjection.Media(updated),
+                    CurrentMediaId = derivedMediaId,
+                    HasTransientEdits = false,
+                    TransientEditMode = null,
+                    ActiveJob = WMWorkspaceProjection.Job(completedCheckpoint),
+                    CollageTool = value.CollageTool with { IsBusy = false },
+                    CanCancel = false,
+                    Message = "拼图模板已生成"
+                });
+                await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
+                await RecordTraceAsync(
+                    updated.Id,
+                    artifact.ContentHash,
+                    checkpoint.Id,
+                    "template-collage-completed",
+                    cacheHit: false,
+                    canceled: false,
+                    errorCode: null).ConfigureAwait(false);
+            }, operation.Token).ConfigureAwait(false);
+            return derivedMediaId;
+        }
+        finally
+        {
+            jobs.Complete(operation);
+            UpdateCurrent(value => value with { CollageTool = value.CollageTool with { IsBusy = false } });
+        }
+    }
+
     public Task ExecuteMultiFrameAsync(CancellationToken cancellationToken = default)
     {
         var draft = State.MultiFrameTool.Draft;
@@ -1602,20 +2058,185 @@ public sealed class WMWorkspaceController
             .Select(pair => pair.Key).ToArray();
         var darks = draft.Roles.Where(pair => pair.Value == WMFrameRole.Dark)
             .Select(pair => pair.Key).ToArray();
-        var settings = WMMultiFrameStackSettings.CreateDefault(draft.Mode) with
+        return ExecuteMultiFrameAsync(
+            BuildMultiFrameSettings(draft),
+            lights,
+            darks,
+            draft.Advanced?.ReferenceMediaId,
+            cancellationToken);
+    }
+
+    public async Task PreviewMultiFrameAsync(CancellationToken cancellationToken = default)
+    {
+        if (imageStackEngine is null)
+            throw new PlatformNotSupportedException("当前宿主未注册多帧影像后端。");
+
+        WMWorkspaceSession snapshot;
+        WMMultiFrameDraft draft;
+        long currentEpoch;
+        long currentIntent;
+        CancellationToken epochToken;
+        lock (gate)
         {
-            NormalizeExposure = draft.NormalizeExposure,
-            RepairHotPixels = draft.RepairHotPixels,
-            AutoCrop = draft.AutoCrop
-        };
-        return ExecuteMultiFrameAsync(settings, lights, darks, cancellationToken);
+            if (closed || session is null || epochCancellation is null)
+                throw new InvalidOperationException("工作台会话尚未打开。");
+            snapshot = session;
+            draft = CopyMultiFrameDraft(state.MultiFrameTool.Draft);
+            currentEpoch = epoch;
+            currentIntent = ++intentRevision;
+            epochToken = epochCancellation.Token;
+        }
+
+        var cancellation = transientPreviews.ReplaceDebounce(cancellationToken, epochToken);
+        try
+        {
+            var lights = draft.Roles.Where(pair => pair.Value == WMFrameRole.Light)
+                .Select(pair => pair.Key).Where(id => snapshot.Media.Any(item => item.Id == id)).Distinct(StringComparer.Ordinal).ToArray();
+            var darks = draft.Roles.Where(pair => pair.Value == WMFrameRole.Dark)
+                .Select(pair => pair.Key).Where(id => snapshot.Media.Any(item => item.Id == id)).Except(lights, StringComparer.Ordinal).Distinct(StringComparer.Ordinal).ToArray();
+            var minimum = draft.Mode == WMStackMode.StarTrail ? 2 : 3;
+            if (lights.Length < minimum)
+                throw new InvalidOperationException($"{(draft.Mode == WMStackMode.StarTrail ? "星轨" : "静态星空/降噪")}至少需要 {minimum} 张 Light 照片。");
+
+            var orderedIds = lights.Concat(darks).ToArray();
+            var inputs = orderedIds.Select(id => ResolveArtifact(snapshot, snapshot.Media.First(item => item.Id == id))).ToArray();
+            var referenceMediaId = draft.Advanced?.ReferenceMediaId;
+            var settings = BuildMultiFrameSettings(draft) with
+            {
+                DarkArtifactIds = darks.Select(id => ResolveArtifact(snapshot, snapshot.Media.First(item => item.Id == id)).Id).ToArray(),
+                ReferenceArtifactId = referenceMediaId is not null && snapshot.Media.Any(item => item.Id == referenceMediaId)
+                    ? ResolveArtifact(snapshot, snapshot.Media.First(item => item.Id == referenceMediaId)).Id
+                    : null
+            };
+            EnsureMultiFrameCapability(settings.Mode, inputs);
+            var workingDirectory = Path.Combine(ResolveSessionDirectory(inputs[0]), "preview", "multi-frame");
+            var progress = new Progress<WMOperationProgress>(report =>
+                TryUpdate(currentEpoch, currentIntent, value => value with
+                {
+                    Stage = report.Stage,
+                    Progress = report.Percentage,
+                    Message = report.Message ?? "正在生成多帧预览…"
+                }));
+            TryUpdate(currentEpoch, currentIntent, value => value with
+            {
+                Activity = WMWorkspaceActivity.Previewing,
+                MultiFrameTool = value.MultiFrameTool with { IsBusy = true },
+                Stage = WMOperationStage.Queued,
+                Progress = 0,
+                Message = "正在生成多帧预览…",
+                ErrorMessage = null
+            });
+
+            var result = await imageStackEngine.ExecuteAsync(
+                new WMOperationRequest(
+                    inputs,
+                    settings,
+                    true,
+                    workingDirectory,
+                    progress,
+                    executionProfiles?.GetInteractiveProfile() ?? WMOperationExecutionOptions.Balanced()),
+                settings,
+                cancellation.Token).ConfigureAwait(false);
+            var output = result.Outputs.Single();
+            if (!IsCurrent(currentEpoch, currentIntent)) return;
+            await using var stream = new FileStream(output.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var version = Interlocked.Increment(ref nextBlobVersion);
+            var lease = await objectUrls.PublishAsync(
+                PreviewOwnerFor(version),
+                version,
+                stream,
+                MimeFromPath(output.FilePath),
+                cancellation.Token).ConfigureAwait(false);
+            if (lease is null || !IsCurrent(currentEpoch, currentIntent))
+            {
+                if (lease is not null) await objectUrls.ReleaseAsync(lease).ConfigureAwait(false);
+                return;
+            }
+
+            WMWorkspaceState? next = null;
+            WMObjectUrlLease? expiredPreview = null;
+            WMObjectUrlLease? compareLease = null;
+            lock (gate)
+            {
+                if (IsCurrentLocked(currentEpoch, currentIntent))
+                {
+                    expiredPreview = retiredPreviewLease;
+                    retiredPreviewLease = previewLease;
+                    previewLease = lease;
+                    compareLease = originalLease;
+                    originalLease = null;
+                    var projected = state with
+                    {
+                        Activity = WMWorkspaceActivity.PreviewReady,
+                        PreviewUrl = lease.Url,
+                        PreviewPresentation = new WMWorkspacePreviewPresentation(
+                            version,
+                            output.ContentHash ?? output.Id,
+                            lease.Url,
+                            lease.Url,
+                            null,
+                            WMInteractivePreviewBackend.CpuSkia,
+                            IsSettled: true,
+                            FallbackReason: null),
+                        MultiFrameTool = state.MultiFrameTool with { IsBusy = false },
+                        Progress = 100,
+                        Message = "多帧预览已更新"
+                    };
+                    state = next = NormalizeRuntimeTools(projected, projected.Media) with
+                    {
+                        CanUndo = session is { HistoryCursor: > 0 },
+                        CanRedo = session is not null && session.HistoryCursor < session.Transactions.Count,
+                        History = session is null ? [] : WMWorkspaceProjection.History(session),
+                        HistoryCursor = session?.HistoryCursor ?? 0
+                    };
+                }
+            }
+            if (next is null)
+            {
+                await objectUrls.ReleaseAsync(lease).ConfigureAwait(false);
+                return;
+            }
+            Changed.Invoke(next);
+            if (expiredPreview is not null)
+                await objectUrls.ReleaseAsync(expiredPreview).ConfigureAwait(false);
+            if (compareLease is not null)
+                await objectUrls.ReleaseAsync(compareLease).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            TryUpdate(currentEpoch, currentIntent, value => value with
+            {
+                Activity = WMWorkspaceActivity.Failed,
+                MultiFrameTool = value.MultiFrameTool with { IsBusy = false },
+                ErrorMessage = ex.Message,
+                Message = "多帧预览失败"
+            });
+            throw;
+        }
+        finally
+        {
+            transientPreviews.Complete(cancellation);
+            cancellation.Dispose();
+        }
     }
 
     public Task ExecuteMultiFrameAsync(
         WMMultiFrameStackSettings settings,
         IReadOnlyList<string> lightMediaIds,
         IReadOnlyList<string> darkMediaIds,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ExecuteMultiFrameAsync(settings, lightMediaIds, darkMediaIds, null, cancellationToken);
+
+    private Task ExecuteMultiFrameAsync(
+        WMMultiFrameStackSettings settings,
+        IReadOnlyList<string> lightMediaIds,
+        IReadOnlyList<string> darkMediaIds,
+        string? referenceMediaId,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(lightMediaIds);
@@ -1645,7 +2266,11 @@ public sealed class WMWorkspaceController
             {
                 DarkArtifactIds = darks.Select(mediaId => ResolveArtifact(
                     context.Session,
-                    context.Session.Media.First(item => item.Id == mediaId)).Id).ToArray()
+                    context.Session.Media.First(item => item.Id == mediaId)).Id).ToArray(),
+                ReferenceArtifactId = referenceMediaId is not null && availableMediaIds.Contains(referenceMediaId)
+                    ? ResolveArtifact(context.Session,
+                        context.Session.Media.First(item => item.Id == referenceMediaId)).Id
+                    : settings.ReferenceArtifactId
             };
             EnsureMultiFrameCapability(normalizedSettings.Mode, inputs);
             var targetMediaId = lights[0];
@@ -1815,16 +2440,24 @@ public sealed class WMWorkspaceController
     public Task UndoAsync(CancellationToken cancellationToken = default)
     {
         int target;
-        lock (gate) target = Math.Max(0, (session?.HistoryCursor ?? 0) - 1);
+        lock (gate)
+        {
+            if (state.TransientEditMode == WMWorkspaceMode.Crop) return Task.CompletedTask;
+            target = Math.Max(0, (session?.HistoryCursor ?? 0) - 1);
+        }
         return SetHistoryCursorAsync(target, cancellationToken);
     }
 
     public Task RedoAsync(CancellationToken cancellationToken = default)
     {
         int target;
-        lock (gate) target = Math.Min(
-            session?.Transactions.Count ?? 0,
-            (session?.HistoryCursor ?? 0) + 1);
+        lock (gate)
+        {
+            if (state.TransientEditMode == WMWorkspaceMode.Crop) return Task.CompletedTask;
+            target = Math.Min(
+                session?.Transactions.Count ?? 0,
+                (session?.HistoryCursor ?? 0) + 1);
+        }
         return SetHistoryCursorAsync(target, cancellationToken);
     }
 
@@ -1850,6 +2483,7 @@ public sealed class WMWorkspaceController
                     Draft = CloneRecipe(GetEffectiveColorRecipe(updated, updated.CurrentMediaId))
                             ?? new WMColorRecipe { Name = "工作台调整" }
                 },
+                CropTool = CreateCropToolState(updated, updated.CurrentMediaId),
                 HasTransientEdits = false,
                 TransientEditMode = null,
                 IsComparingOriginal = false
@@ -2011,6 +2645,20 @@ public sealed class WMWorkspaceController
             ? mediaIds
             : stateSnapshot.Media.Where(item => item.IsSelected).Select(item => item.Id).ToArray();
         var draft = stateSnapshot.ExportTool.Draft;
+        if (ExportRequiresColorEngine(targets) && TryGetColorEngineUnavailable(out var reason))
+        {
+            UpdateCurrent(value => value with
+            {
+                ErrorMessage = reason,
+                Message = string.Empty,
+                ExportTool = value.ExportTool with { IsBusy = false }
+            });
+            return RecordLogSafeAsync(
+                WMDiagnosticLogLevel.Error,
+                "workspace-color-export-blocked",
+                reason,
+                stateSnapshot.SessionId);
+        }
         var maximumLongEdge = draft.MaximumLongEdge == -1
             ? draft.CustomMaximumLongEdge
             : draft.MaximumLongEdge;
@@ -2281,15 +2929,7 @@ public sealed class WMWorkspaceController
                 throw new InvalidOperationException("工作台会话尚未打开。");
             currentEpoch = epoch;
             draftColorRecipe = CloneRecipe(recipe);
-            var targetIds = ResolveTargetMediaIds(session, scope);
-            var overrides = session.ColorRecipesByMediaId.ToDictionary(
-                pair => pair.Key,
-                pair => CloneRecipe(pair.Value),
-                StringComparer.Ordinal);
-            foreach (var mediaId in targetIds) overrides[mediaId] = CloneRecipe(recipe);
-            previewSession = targetIds.Count == 0
-                ? session with { ColorRecipe = CloneRecipe(recipe) }
-                : session with { ColorRecipesByMediaId = overrides };
+            previewSession = CreateColorPreviewSession(session, recipe, scope);
             intent = ++intentRevision;
             state = state with
             {
@@ -2330,6 +2970,8 @@ public sealed class WMWorkspaceController
             mediaItems = current.Media.Where(item => requestedIds.Contains(item.Id)).ToArray();
             if (mediaItems.Count == 0)
                 throw new InvalidOperationException("请至少选择一张要导出的图片。");
+            if (mediaItems.Any(item => GetEffectiveColorRecipe(current, item.Id) is not null))
+                EnsureColorEngineAvailable();
         }
         TryUpdate(currentEpoch, null, value => value with
         {
@@ -2711,6 +3353,27 @@ public sealed class WMWorkspaceController
                 media.Id,
                 WMRenderTarget.SettledPreview(),
                 token).ConfigureAwait(false);
+            var colorUnavailableReason = TryGetColorEngineUnavailable(out var unavailableReason)
+                ? unavailableReason
+                : null;
+            if (colorUnavailableReason is not null
+                && compiledPlan.Steps.Any(step => step.Operation.Kind == WMImageOperationKind.ColorGrade))
+            {
+                compiledPlan = await renderPlanCompiler.CompileAsync(
+                    previewSession,
+                    media.Id,
+                    WMRenderTarget.InteractiveBase(),
+                    token).ConfigureAwait(false);
+                TryUpdate(currentEpoch, intent, value => value with
+                {
+                    ErrorMessage = colorUnavailableReason,
+                    PreviewPresentation = value.PreviewPresentation with
+                    {
+                        Backend = WMInteractivePreviewBackend.CpuSkia,
+                        FallbackReason = colorUnavailableReason
+                    }
+                });
+            }
             var hasTemplate = compiledPlan.Steps.Any(step =>
                 step.Operation.Kind == WMImageOperationKind.Template);
             var hasColorRecipe = compiledPlan.Steps.Any(step =>
@@ -2755,8 +3418,9 @@ public sealed class WMWorkspaceController
             await using var content = new FileStream(
                 preview.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var blobVersion = Interlocked.Increment(ref nextBlobVersion);
             var lease = await objectUrls.PublishAsync(
-                PreviewOwner, version, content, preview.MimeType, token).ConfigureAwait(false);
+                PreviewOwnerFor(blobVersion), blobVersion, content, preview.MimeType, token).ConfigureAwait(false);
             if (lease is null) return;
             if (!IsCurrent(currentEpoch, intent, version))
             {
@@ -2765,83 +3429,98 @@ public sealed class WMWorkspaceController
             }
 
             WMObjectUrlLease? compareLease;
+            WMObjectUrlLease? expiredPreviewLease;
             IDisposable? replacedArtifactLease;
+            WMWorkspaceState? next = null;
             lock (gate)
             {
                 if (!IsCurrentLocked(currentEpoch, intent, version))
                 {
                     compareLease = null;
+                    expiredPreviewLease = null;
                     replacedArtifactLease = null;
                 }
                 else
                 {
+                    expiredPreviewLease = retiredPreviewLease;
+                    retiredPreviewLease = previewLease;
                     previewLease = lease;
                     compareLease = originalLease;
                     originalLease = null;
                     replacedArtifactLease = previewArtifactLease;
                     previewArtifactLease = candidateArtifactLease;
                     candidateArtifactLease = null;
+
+                    var value = state;
+                    var projected = value with
+                    {
+                        Activity = WMWorkspaceActivity.PreviewReady,
+                        PreviewUrl = lease.Url,
+                        TemplateLayout = preview.TemplateLayout,
+                        PreviewPresentation = value.HasTransientEdits
+                                              && value.Mode == WMWorkspaceMode.ColorGrade
+                                              && value.PreviewPresentation.ColorProgram is not null
+                            ? value.PreviewPresentation with
+                            {
+                                StableUrl = lease.Url,
+                                IsSettled = false
+                            }
+                            : new WMWorkspacePreviewPresentation(
+                                version,
+                                fingerprint,
+                                lease.Url,
+                                lease.Url,
+                                null,
+                                WMInteractivePreviewBackend.CpuSkia,
+                                IsSettled: true,
+                                FallbackReason: value.PreviewPresentation.FallbackReason),
+                        Stage = WMOperationStage.Completed,
+                        Message = string.Empty,
+                        Progress = 100,
+                        CanCancel = false,
+                        IsComparingOriginal = false
+                    };
+                    state = next = NormalizeRuntimeTools(projected, projected.Media) with
+                    {
+                        CanUndo = session is { HistoryCursor: > 0 },
+                        CanRedo = session is not null && session.HistoryCursor < session.Transactions.Count,
+                        History = session is null ? [] : WMWorkspaceProjection.History(session),
+                        HistoryCursor = session?.HistoryCursor ?? 0
+                    };
                 }
             }
-            replacedArtifactLease?.Dispose();
-            if (!IsCurrent(currentEpoch, intent, version))
+            if (next is null)
             {
                 await objectUrls.ReleaseAsync(lease).ConfigureAwait(false);
                 return;
             }
+            replacedArtifactLease?.Dispose();
+            Changed.Invoke(next);
+            if (expiredPreviewLease is not null)
+                await objectUrls.ReleaseAsync(expiredPreviewLease).ConfigureAwait(false);
             if (compareLease is not null) await objectUrls.ReleaseAsync(compareLease).ConfigureAwait(false);
-            var published = TryUpdate(currentEpoch, intent, value => value with
-            {
-                Activity = WMWorkspaceActivity.PreviewReady,
-                PreviewUrl = lease.Url,
-                PreviewPresentation = value.HasTransientEdits
-                                      && value.Mode == WMWorkspaceMode.ColorGrade
-                                      && value.PreviewPresentation.ColorProgram is not null
-                    ? value.PreviewPresentation with
-                    {
-                        StableUrl = lease.Url,
-                        IsSettled = false
-                    }
-                    : new WMWorkspacePreviewPresentation(
-                        version,
-                        fingerprint,
-                        lease.Url,
-                        lease.Url,
-                        null,
-                        WMInteractivePreviewBackend.CpuSkia,
-                        IsSettled: true,
-                        FallbackReason: value.PreviewPresentation.FallbackReason),
-                Stage = WMOperationStage.Completed,
-                Message = string.Empty,
-                Progress = 100,
-                CanCancel = false,
-                IsComparingOriginal = false
-            });
-            if (published)
-            {
-                await RecordTraceAsync(
-                    previewSession.Id,
-                    fingerprint,
-                    null,
-                    "preview-published",
-                    cacheHit: preview.CacheHit,
-                    canceled: false,
-                    errorCode: null).ConfigureAwait(false);
-                previewStopwatch.Stop();
-                await RecordLogSafeAsync(
-                    WMDiagnosticLogLevel.Information,
-                    "workspace-preview-published",
-                    "工作台预览已发布。",
-                    previewSession.Id,
-                    properties: new Dictionary<string, string>
-                    {
-                        ["previewVersion"] = version.ToString(),
-                        ["intentRevision"] = intent.ToString(),
-                        ["sessionRevision"] = previewSession.Revision.ToString(),
-                        ["elapsedMs"] = previewStopwatch.ElapsedMilliseconds.ToString(),
-                        ["cacheHit"] = preview.CacheHit.ToString()
-                    }).ConfigureAwait(false);
-            }
+            await RecordTraceAsync(
+                previewSession.Id,
+                fingerprint,
+                null,
+                "preview-published",
+                cacheHit: preview.CacheHit,
+                canceled: false,
+                errorCode: null).ConfigureAwait(false);
+            previewStopwatch.Stop();
+            await RecordLogSafeAsync(
+                WMDiagnosticLogLevel.Information,
+                "workspace-preview-published",
+                "工作台预览已发布。",
+                previewSession.Id,
+                properties: new Dictionary<string, string>
+                {
+                    ["previewVersion"] = version.ToString(),
+                    ["intentRevision"] = intent.ToString(),
+                    ["sessionRevision"] = previewSession.Revision.ToString(),
+                    ["elapsedMs"] = previewStopwatch.ElapsedMilliseconds.ToString(),
+                    ["cacheHit"] = preview.CacheHit.ToString()
+                }).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!IsCurrent(currentEpoch, intent, version))
         {
@@ -2920,6 +3599,35 @@ public sealed class WMWorkspaceController
             capability?.UnavailableReason ?? "当前宿主尚未开放所选高精度导出格式。");
     }
 
+    private bool ExportRequiresColorEngine(IReadOnlyList<string> mediaIds)
+    {
+        lock (gate)
+        {
+            if (session is null) return false;
+            return mediaIds.Any(mediaId => GetEffectiveColorRecipe(session, mediaId) is not null);
+        }
+    }
+
+    private bool TryGetColorEngineUnavailable(out string message)
+    {
+        var capability = colorEngine?.Capability;
+        if (capability is null || capability.IsAvailable)
+        {
+            message = string.Empty;
+            return false;
+        }
+
+        message = $"专业调色引擎不可用（OpenColorIO 2.5.2）：{capability.Error ?? "缺少原生调色能力"}"
+                  + $"（后端 {capability.BackendVersion}，ABI {capability.AbiVersion}）。";
+        return true;
+    }
+
+    private void EnsureColorEngineAvailable()
+    {
+        if (TryGetColorEngineUnavailable(out var message))
+            throw new PlatformNotSupportedException(message);
+    }
+
     private void EnsureMultiFrameCapability(
         WMStackMode mode,
         IReadOnlyList<WMImageArtifact> inputs)
@@ -2986,6 +3694,7 @@ public sealed class WMWorkspaceController
     {
         CancellationTokenSource? cancellation;
         WMObjectUrlLease? preview;
+        WMObjectUrlLease? retiredPreview;
         WMObjectUrlLease? original;
         WMObjectUrlLease? colorReference;
         WMObjectUrlLease? colorBase;
@@ -3000,17 +3709,20 @@ public sealed class WMWorkspaceController
                 && epochCancellation is null
                 && sessionLease is null
                 && previewArtifactLease is null
+                && retiredPreviewLease is null
                 && mediaPreviewLeases.Count == 0) return;
             closed = true;
             epoch++;
             cancellation = epochCancellation;
             epochCancellation = null;
             preview = previewLease;
+            retiredPreview = retiredPreviewLease;
             original = originalLease;
             colorReference = colorReferenceLease;
             colorBase = colorBaseLease;
             mediaPreviews = mediaPreviewLeases.Values.ToArray();
             previewLease = null;
+            retiredPreviewLease = null;
             originalLease = null;
             colorReferenceLease = null;
             colorBaseLease = null;
@@ -3028,6 +3740,7 @@ public sealed class WMWorkspaceController
             closingSessionId = session?.Id ?? state.SessionId;
             draftColorRecipe = null;
             draftTemplateEdit = null;
+            cropReturnMode = null;
             colorReferencePath = null;
             colorReferenceName = null;
         }
@@ -3040,6 +3753,7 @@ public sealed class WMWorkspaceController
         await AwaitOwnedTasksAsync().ConfigureAwait(false);
 
         if (preview is not null) await objectUrls.ReleaseAsync(preview).ConfigureAwait(false);
+        if (retiredPreview is not null) await objectUrls.ReleaseAsync(retiredPreview).ConfigureAwait(false);
         if (original is not null) await objectUrls.ReleaseAsync(original).ConfigureAwait(false);
         if (colorReference is not null) await objectUrls.ReleaseAsync(colorReference).ConfigureAwait(false);
         if (colorBase is not null) await objectUrls.ReleaseAsync(colorBase).ConfigureAwait(false);
@@ -3120,11 +3834,14 @@ public sealed class WMWorkspaceController
             .Where(available.Contains)
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        var advanced = value.MultiFrameTool.Draft.Advanced;
+        if (advanced?.ReferenceMediaId is { } referenceId && !available.Contains(referenceId))
+            advanced = advanced with { ReferenceMediaId = null };
         return value with
         {
             MultiFrameTool = value.MultiFrameTool with
             {
-                Draft = value.MultiFrameTool.Draft with { Roles = roles }
+                Draft = value.MultiFrameTool.Draft with { Roles = roles, Advanced = advanced }
             },
             CollageTool = value.CollageTool with
             {
@@ -3144,12 +3861,18 @@ public sealed class WMWorkspaceController
             .Where(pair => available.Contains(pair.Key))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         foreach (var item in media) roles.TryAdd(item.Id, WMFrameRole.Light);
+        var advanced = draft?.Advanced ?? WMMultiFrameAdvancedDraft.CreateDefault(mode);
+        if (advanced.ReferenceMediaId is { } referenceId && !available.Contains(referenceId))
+            advanced = advanced with { ReferenceMediaId = null };
         return new WMMultiFrameDraft(
             mode,
             roles,
             draft?.NormalizeExposure ?? defaults.NormalizeExposure,
             draft?.RepairHotPixels ?? defaults.RepairHotPixels,
-            draft?.AutoCrop ?? defaults.AutoCrop);
+            draft?.AutoCrop ?? defaults.AutoCrop)
+        {
+            Advanced = advanced
+        };
     }
 
     private static WMCollageDraft NormalizeCollageDraft(
@@ -3169,6 +3892,24 @@ public sealed class WMWorkspaceController
         {
             Roles = new Dictionary<string, WMFrameRole?>(draft.Roles, StringComparer.Ordinal)
         };
+
+    private static WMMultiFrameStackSettings BuildMultiFrameSettings(WMMultiFrameDraft draft)
+    {
+        var advanced = draft.Advanced ?? WMMultiFrameAdvancedDraft.CreateDefault(draft.Mode);
+        return new WMMultiFrameStackSettings
+        {
+            Mode = draft.Mode,
+            Alignment = advanced.Alignment,
+            Reduction = advanced.Reduction,
+            AutomaticReduction = advanced.AutomaticReduction,
+            NormalizeExposure = draft.NormalizeExposure,
+            RepairHotPixels = draft.RepairHotPixels,
+            AutoCrop = draft.AutoCrop,
+            SigmaLow = advanced.SigmaLow,
+            SigmaHigh = advanced.SigmaHigh,
+            SigmaIterations = advanced.SigmaIterations
+        }.Normalize(draft.Roles.Count(pair => pair.Value == WMFrameRole.Light));
+    }
 
     private static WMCollageDraft CopyCollageDraft(WMCollageDraft draft) =>
         draft with { OrderedMediaIds = draft.OrderedMediaIds.ToArray() };
@@ -3204,6 +3945,7 @@ public sealed class WMWorkspaceController
             {
                 Draft = NormalizeCollageDraft(session.CollageConfiguration, session.Media)
             },
+            CropTool = CreateCropToolState(session, currentMediaId),
             CurrentMediaId = currentMediaId,
             CanUndo = session.HistoryCursor > 0,
             CanRedo = session.HistoryCursor < session.Transactions.Count,
@@ -3295,6 +4037,22 @@ public sealed class WMWorkspaceController
         return value.ColorRecipe;
     }
 
+    private static WMCropSettings GetEffectiveCropSettings(
+        WMWorkspaceSession value,
+        string? mediaId) =>
+        !string.IsNullOrWhiteSpace(mediaId)
+        && value.CropSettingsByMediaId.TryGetValue(mediaId, out var settings)
+            ? settings
+            : WMCropSettings.Identity;
+
+    private static WMCropToolState CreateCropToolState(
+        WMWorkspaceSession value,
+        string? mediaId)
+    {
+        var settings = GetEffectiveCropSettings(value, mediaId);
+        return new WMCropToolState(settings, settings, false);
+    }
+
     private static IReadOnlyList<string> ResolveTargetMediaIds(
         WMWorkspaceSession value,
         WMApplyScope scope)
@@ -3307,6 +4065,21 @@ public sealed class WMWorkspaceController
         selected = value.Media.Where(item => item.IsSelected).Select(item => item.Id).ToArray();
         if (selected.Length > 0) return selected;
         return string.IsNullOrWhiteSpace(value.CurrentMediaId) ? [] : [value.CurrentMediaId];
+    }
+
+    private static WMWorkspaceSession CreateColorPreviewSession(
+        WMWorkspaceSession value,
+        WMColorRecipe recipe,
+        WMApplyScope scope)
+    {
+        var targetIds = ResolveTargetMediaIds(value, scope);
+        if (targetIds.Count == 0) return value with { ColorRecipe = CloneRecipe(recipe) };
+        var overrides = value.ColorRecipesByMediaId.ToDictionary(
+            pair => pair.Key,
+            pair => CloneRecipe(pair.Value),
+            StringComparer.Ordinal);
+        foreach (var mediaId in targetIds) overrides[mediaId] = CloneRecipe(recipe);
+        return value with { ColorRecipesByMediaId = overrides };
     }
 
     private static WMWorkspaceSession AppendTransaction<TSettings>(
@@ -3397,6 +4170,7 @@ public sealed class WMWorkspaceController
         }
         var templateOverrides = new Dictionary<string, string?>(StringComparer.Ordinal);
         var colorOverrides = new Dictionary<string, WMColorRecipe?>(StringComparer.Ordinal);
+        var cropOverrides = new Dictionary<string, WMCropSettings>(StringComparer.Ordinal);
         var operationTargets = value.Transactions.Take(cursor)
             .SelectMany(transaction => transaction.Assignments)
             .SelectMany(assignment => assignment.Operations.Select(operation =>
@@ -3449,6 +4223,21 @@ public sealed class WMWorkspaceController
                 foreach (var mediaId in targetMediaIds)
                     colorOverrides[mediaId] = CloneRecipe(recipe);
             }
+            else if (operation.Kind == WMImageOperationKind.Crop)
+            {
+                WMCropSettings? crop;
+                try
+                {
+                    crop = System.Text.Json.JsonSerializer.Deserialize<WMCropSettings>(operation.ParametersJson);
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    continue;
+                }
+                if (crop is null) continue;
+                foreach (var mediaId in targetMediaIds)
+                    cropOverrides[mediaId] = crop;
+            }
             else if (operation.Kind == WMImageOperationKind.MultiFrameStack)
             {
                 WMWorkspaceMultiFrameSelection? selection;
@@ -3486,6 +4275,7 @@ public sealed class WMWorkspaceController
             CurrentMediaId = currentMediaId,
             TemplateIdsByMediaId = templateOverrides,
             ColorRecipesByMediaId = colorOverrides,
+            CropSettingsByMediaId = cropOverrides,
             CurrentArtifactIdsByMediaId = currentArtifacts
         };
     }
@@ -3549,6 +4339,8 @@ public sealed class WMWorkspaceController
                                   ?? throw new InvalidOperationException("素材路径没有有效目录。");
         return containingDirectory.Parent?.FullName ?? containingDirectory.FullName;
     }
+
+    private static string PreviewOwnerFor(long blobVersion) => $"{PreviewOwner}:{blobVersion}";
 
     private static string MimeFromPath(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {

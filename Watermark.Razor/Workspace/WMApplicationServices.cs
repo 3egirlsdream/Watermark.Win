@@ -772,7 +772,11 @@ public sealed class WMMembershipService(
             if (order?.success != true || order.data is null || string.IsNullOrWhiteSpace(order.data.PayUrl))
                 return Failed(order?.message?.content ?? "暂时无法创建支付订单。");
             await external.OpenUrlAsync(order.data.PayUrl).ConfigureAwait(false);
-            return Pending("支付页面已打开。", order.data.OutTradeNo);
+            return new WMMembershipResult(
+                WMMembershipPaymentState.Pending,
+                "支付页面已打开。",
+                order.data.OutTradeNo,
+                order.data.PayUrl);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

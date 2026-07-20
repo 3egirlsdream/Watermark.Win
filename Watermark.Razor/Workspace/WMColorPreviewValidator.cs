@@ -5,7 +5,7 @@ using Watermark.Shared.Models;
 
 namespace Watermark.Razor.Workspace;
 
-public sealed class WMColorPreviewValidator
+public sealed class WMColorPreviewValidator(IWMColorEngine colorEngine)
 {
     public const double MaximumAverageDeltaE = 0.5;
     public const double MaximumPeakDeltaE = 2.0;
@@ -75,14 +75,17 @@ public sealed class WMColorPreviewValidator
             automatic,
             CreateValidationLut(17),
             $"validation-v{WMColorPipelineVersion.Current}");
-        using var expected = WMHighPrecisionColorPipeline.ApplyPreviewReference(source, generated, manual);
+        using var expected = source.Copy();
+        using var processor = colorEngine.CreateProcessor(
+            new WMColorPipelineDefinition(generated.BaseGrade, generated.ResidualLut),
+            new WMColorDynamicState(manual));
+        colorEngine.Apply(processor, expected);
         return new WMColorPreviewValidationRequest(
             width,
             height,
             sourceBytes,
             ReadRgba(expected),
-            WMColorPreviewLook.From(generated),
-            WMColorPreviewParameters.From(manual));
+            colorEngine.CreateGpuProgram(processor));
     }
 
     public WMColorPreviewValidationResult Evaluate(
@@ -106,6 +109,7 @@ public sealed class WMColorPreviewValidator
                 request.ExpectedRgba[index], request.ExpectedRgba[index + 1], request.ExpectedRgba[index + 2]);
             var actual = new SKColor(actualRgba[index], actualRgba[index + 1], actualRgba[index + 2]);
             var deltaE = DeltaE2000(expected, actual);
+            if (!double.IsFinite(deltaE)) deltaE = 1_000_000;
             totalDeltaE += deltaE;
             maximumDeltaE = Math.Max(maximumDeltaE, deltaE);
             for (var channel = 0; channel < 3; channel++)

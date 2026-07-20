@@ -12,6 +12,22 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
         Path.GetTempPath(), "watermark-workspace-store-tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public async Task CreateEmpty_OpensDesktopWorkspaceWithoutChangingRegularCreateValidation()
+    {
+        var store = CreateStore(new WMWorkspacePerformanceCounters());
+
+        var id = await store.CreateEmptyAsync(WMWorkspaceMode.Template, "/mac");
+        var session = Opened(await store.OpenAsync(id));
+
+        Assert.Equal(WMWorkspaceMode.Template, session.Mode);
+        Assert.Equal("/mac", session.ReturnPath);
+        Assert.Empty(session.Media);
+        Assert.Empty(session.Artifacts);
+        await Assert.ThrowsAsync<ArgumentException>(() => store.CreateAsync(
+            new WMWorkspaceCreateRequest(WMWorkspaceMode.Template, [])));
+    }
+
+    [Fact]
     public async Task Create_StagesAndDecodesSourceExactlyOnce()
     {
         var metrics = new WMWorkspacePerformanceCounters();
@@ -270,7 +286,7 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task Create_WritesV4CatalogAndActiveProjection()
+    public async Task Create_WritesCurrentCatalogAndActiveProjection()
     {
         var store = CreateStore(new WMWorkspacePerformanceCounters());
         var source = CreateImage("v3-create.png", 320, 240);
@@ -278,7 +294,7 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
         var id = await store.CreateAsync(new WMWorkspaceCreateRequest(WMWorkspaceMode.Template, [source]));
         var session = Opened(await store.OpenAsync(id));
 
-        Assert.Equal(4, session.SchemaVersion);
+        Assert.Equal(WMWorkspaceSession.CurrentSchemaVersion, session.SchemaVersion);
         Assert.Equal(session.Media.Select(item => item.Id), session.MediaCatalog.Select(item => item.Id));
         Assert.Equal(session.Media.Select(item => item.Id), session.ActiveMediaIds);
     }
@@ -298,7 +314,7 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
 
         var migrated = Opened(await store.OpenAsync(id));
 
-        Assert.Equal(4, migrated.SchemaVersion);
+        Assert.Equal(WMWorkspaceSession.CurrentSchemaVersion, migrated.SchemaVersion);
         Assert.Equal(migrated.Media.Select(item => item.Id), migrated.MediaCatalog.Select(item => item.Id));
         Assert.Equal(migrated.Media.Select(item => item.Id), migrated.ActiveMediaIds);
         Assert.True(File.Exists(Path.Combine(root, id, "manifest.v2.bak")));
@@ -398,7 +414,7 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
 
         var migrated = Opened(await store.OpenAsync(id));
 
-        Assert.Equal(4, migrated.SchemaVersion);
+        Assert.Equal(WMWorkspaceSession.CurrentSchemaVersion, migrated.SchemaVersion);
         Assert.Empty(migrated.RequiredFeatures);
         Assert.Null(migrated.ActiveJobCheckpoint);
         Assert.True(File.Exists(Path.Combine(root, id, "manifest.v3.bak")));

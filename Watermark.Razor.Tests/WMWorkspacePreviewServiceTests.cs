@@ -75,6 +75,8 @@ public sealed class WMWorkspacePreviewServiceTests : IDisposable
         var firstMetrics = metrics.Snapshot();
 
         Assert.True(File.Exists(first.FilePath));
+        Assert.True(File.Exists(first.FilePath + ".layout.json"));
+        Assert.NotNull(first.TemplateLayout);
         Assert.Equal(1, renderer.RenderCalls);
         Assert.Equal(1, firstMetrics.Calls[WMWorkspaceMetricStage.Decode]);
         Assert.Equal(1, firstMetrics.Calls[WMWorkspaceMetricStage.Replay]);
@@ -84,6 +86,7 @@ public sealed class WMWorkspacePreviewServiceTests : IDisposable
         var secondMetrics = metrics.Snapshot();
 
         Assert.Equal(first.FilePath, second.FilePath);
+        Assert.NotNull(second.TemplateLayout);
         Assert.Equal(1, renderer.RenderCalls);
         Assert.Equal(firstMetrics.Calls, secondMetrics.Calls);
     }

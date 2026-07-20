@@ -1,5 +1,6 @@
-// Shared by Android WebView, WKWebView and Windows WebView2.
-export const colorPipelineVersion = 2;
+// Shared by Android WebView, WKWebView and Windows WebView2. Color math is
+// emitted by OpenColorIO; this module only owns WebGL resources and scheduling.
+export const colorPipelineVersion = 3;
 
 export function getRecommendedProxyEdge() {
   const viewport = Math.max(window.innerWidth || 0, window.innerHeight || 0);
@@ -15,143 +16,6 @@ void main() {
   gl_Position = vec4(a_position, 0.0, 1.0);
 }`;
 
-const fragmentSource = `#version 300 es
-precision highp float;
-precision highp sampler3D;
-in vec2 v_uv;
-out vec4 outColor;
-uniform sampler2D u_source;
-uniform sampler3D u_lut;
-uniform sampler2D u_autoCurves;
-uniform sampler2D u_userCurves;
-uniform float u_lutSize;
-uniform float u_autoGrade[10];
-uniform float u_userGrade[10];
-uniform vec3 u_autoHsl[8];
-uniform vec3 u_userHsl[8];
-
-float clamp01(float value) { return clamp(value, 0.0, 1.0); }
-float luminance(vec3 color) { return dot(color, vec3(0.2126, 0.7152, 0.0722)); }
-vec3 srgbToLinear(vec3 color) {
-  return mix(color / 12.92, pow((color + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), color));
-}
-vec3 linearToSrgb(vec3 color) {
-  color = clamp(color, 0.0, 1.0);
-  return mix(color * 12.92, 1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), color));
-}
-
-vec3 rgbToHsl(vec3 color) {
-  float maxValue = max(color.r, max(color.g, color.b));
-  float minValue = min(color.r, min(color.g, color.b));
-  float light = (maxValue + minValue) * 0.5;
-  float delta = maxValue - minValue;
-  if (delta < 0.00001) return vec3(0.0, 0.0, light);
-  float saturation = light > 0.5 ? delta / (2.0 - maxValue - minValue) : delta / (maxValue + minValue);
-  float hue;
-  if (maxValue == color.r) hue = (color.g - color.b) / delta + (color.g < color.b ? 6.0 : 0.0);
-  else if (maxValue == color.g) hue = (color.b - color.r) / delta + 2.0;
-  else hue = (color.r - color.g) / delta + 4.0;
-  return vec3(hue / 6.0, saturation, light);
-}
-
-float hueToRgb(float p, float q, float t) {
-  if (t < 0.0) t += 1.0;
-  if (t > 1.0) t -= 1.0;
-  if (t < 1.0 / 6.0) return p + (q - p) * 6.0 * t;
-  if (t < 0.5) return q;
-  if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
-  return p;
-}
-
-vec3 hslToRgb(vec3 hsl) {
-  if (hsl.y <= 0.00001) return vec3(hsl.z);
-  float q = hsl.z < 0.5 ? hsl.z * (1.0 + hsl.y) : hsl.z + hsl.y - hsl.z * hsl.y;
-  float p = 2.0 * hsl.z - q;
-  return vec3(hueToRgb(p, q, hsl.x + 1.0 / 3.0), hueToRgb(p, q, hsl.x), hueToRgb(p, q, hsl.x - 1.0 / 3.0));
-}
-
-float curveValue(bool automatic, int channel, float value) {
-  float coordinate = (clamp01(value) * 4095.0 + 0.5) / 4096.0;
-  vec4 curves = automatic
-    ? texture(u_autoCurves, vec2(coordinate, 0.5))
-    : texture(u_userCurves, vec2(coordinate, 0.5));
-  if (channel == 0) return curves.r;
-  if (channel == 1) return curves.g;
-  if (channel == 2) return curves.b;
-  return curves.a;
-}
-
-float gradeValue(bool automatic, int index) {
-  return automatic ? u_autoGrade[index] : u_userGrade[index];
-}
-
-vec3 hslValue(bool automatic, int index) {
-  return automatic ? u_autoHsl[index] : u_userHsl[index];
-}
-
-vec3 applyGrade(vec3 color, bool automatic) {
-  float exposure = exp2(gradeValue(automatic, 0));
-  float contrast = 1.0 + gradeValue(automatic, 1) / 100.0;
-  float temperature = gradeValue(automatic, 6) / 100.0;
-  float tint = gradeValue(automatic, 7) / 100.0;
-  color *= exposure * exp2(vec3(temperature * 0.5 + tint * 0.125, -tint * 0.25, -temperature * 0.5 + tint * 0.125));
-  float lum = clamp01(luminance(color));
-  float tonal = gradeValue(automatic, 3) / 100.0 * pow(1.0 - lum, 2.0) * 0.35
-    + gradeValue(automatic, 2) / 100.0 * pow(lum, 2.0) * 0.35
-    + gradeValue(automatic, 5) / 100.0 * pow(1.0 - lum, 4.0) * 0.22
-    + gradeValue(automatic, 4) / 100.0 * pow(lum, 4.0) * 0.22;
-  color += vec3(tonal);
-  color = (color - vec3(0.18)) * contrast + vec3(0.18);
-  float gray = luminance(color);
-  float maxValue = max(color.r, max(color.g, color.b));
-  float minValue = min(color.r, min(color.g, color.b));
-  float existingSaturation = maxValue <= 0.0 ? 0.0 : (maxValue - minValue) / maxValue;
-  float saturation = max(0.0, (1.0 + gradeValue(automatic, 9) / 100.0)
-    * (1.0 + gradeValue(automatic, 8) / 100.0 * (1.0 - existingSaturation)));
-  color = vec3(gray) + (color - vec3(gray)) * saturation;
-  vec3 hsl = rgbToHsl(clamp(color, 0.0, 1.0));
-  float centers[8] = float[8](0.0, 30.0, 60.0, 120.0, 180.0, 240.0, 285.0, 330.0);
-  float degrees = hsl.x * 360.0;
-  float weightSum = 0.0;
-  float hueShift = 0.0;
-  float saturationShift = 0.0;
-  float luminanceShift = 0.0;
-  for (int index = 0; index < 8; index++) {
-    float distance = abs(degrees - centers[index]);
-    distance = min(distance, 360.0 - distance);
-    float weight = max(0.0, 1.0 - distance / 45.0);
-    vec3 adjustment = hslValue(automatic, index);
-    weightSum += weight;
-    hueShift += adjustment.x * 0.3 * weight;
-    saturationShift += adjustment.y / 100.0 * weight;
-    luminanceShift += adjustment.z / 100.0 * weight;
-  }
-  if (weightSum > 0.0) {
-    hsl.x = mod(mod(degrees + hueShift / weightSum, 360.0) + 360.0, 360.0) / 360.0;
-    hsl.y = clamp01(hsl.y + saturationShift / weightSum * max(0.2, hsl.y));
-    hsl.z = clamp01(hsl.z + luminanceShift / weightSum * 0.35);
-  }
-  color = hslToRgb(hsl);
-  color = vec3(
-    curveValue(automatic, 0, color.r),
-    curveValue(automatic, 1, color.g),
-    curveValue(automatic, 2, color.b));
-  return vec3(
-    curveValue(automatic, 3, color.r),
-    curveValue(automatic, 3, color.g),
-    curveValue(automatic, 3, color.b));
-}
-
-void main() {
-  vec4 source = texture(u_source, v_uv);
-  vec3 color = applyGrade(srgbToLinear(source.rgb), true);
-  vec3 encoded = linearToSrgb(color);
-  vec3 lutCoordinate = (clamp(encoded, 0.0, 1.0) * (u_lutSize - 1.0) + 0.5) / u_lutSize;
-  color = srgbToLinear(texture(u_lut, lutCoordinate).rgb);
-  color = applyGrade(color, false);
-  outColor = vec4(linearToSrgb(color), source.a);
-}`;
-
 function compile(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -164,7 +28,7 @@ function compile(gl, type, source) {
   return shader;
 }
 
-function createProgram(gl) {
+function createProgram(gl, fragmentSource) {
   const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
   const program = gl.createProgram();
@@ -181,50 +45,44 @@ function createProgram(gl) {
   return program;
 }
 
-function floatArray(value, expected, fallback = 0) {
-  const result = new Float32Array(expected);
-  result.fill(fallback);
-  if (Array.isArray(value) || ArrayBuffer.isView(value)) result.set(Array.from(value).slice(0, expected));
-  return result;
+function asFloat32(values) {
+  return values instanceof Float32Array ? values : new Float32Array(values || []);
 }
 
-function curveTextureData(parameters) {
-  const master = floatArray(parameters?.masterCurve, 4096);
-  const red = floatArray(parameters?.redCurve, 4096);
-  const green = floatArray(parameters?.greenCurve, 4096);
-  const blue = floatArray(parameters?.blueCurve, 4096);
-  const result = new Float32Array(4096 * 4);
-  for (let index = 0; index < 4096; index++) {
-    result[index * 4] = red[index];
-    result[index * 4 + 1] = green[index];
-    result[index * 4 + 2] = blue[index];
-    result[index * 4 + 3] = master[index];
+function asUint8(values) {
+  if (values instanceof Uint8Array) return values;
+  if (typeof values === "string") {
+    const binary = atob(values);
+    const result = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index++) result[index] = binary.charCodeAt(index);
+    return result;
   }
-  return result;
+  return new Uint8Array(values || []);
 }
 
-function lutTextureData(values, size) {
-  const source = floatArray(values, size * size * size * 3);
-  const result = new Float32Array(size * size * size * 4);
-  for (let sourceIndex = 0, targetIndex = 0; sourceIndex < source.length; sourceIndex += 3, targetIndex += 4) {
-    result[targetIndex] = source[sourceIndex];
-    result[targetIndex + 1] = source[sourceIndex + 1];
-    result[targetIndex + 2] = source[sourceIndex + 2];
-    result[targetIndex + 3] = 1;
+function rgbaTextureData(values, width, height, depth, channels) {
+  const source = asFloat32(values);
+  if (channels === 4) return source;
+  const pixelCount = width * Math.max(1, height) * Math.max(1, depth);
+  const target = new Float32Array(pixelCount * 4);
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    const sourceOffset = pixel * channels;
+    const targetOffset = pixel * 4;
+    target[targetOffset] = source[sourceOffset] ?? 0;
+    target[targetOffset + 1] = channels > 1 ? source[sourceOffset + 1] : 0;
+    target[targetOffset + 2] = channels > 2 ? source[sourceOffset + 2] : 0;
+    target[targetOffset + 3] = 1;
   }
-  return result;
+  return target;
 }
 
-function createTexture(gl, target, unit) {
-  const texture = gl.createTexture();
-  gl.activeTexture(gl.TEXTURE0 + unit);
-  gl.bindTexture(target, texture);
-  gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  if (target === gl.TEXTURE_3D) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-  return texture;
+function transposeMat3(values) {
+  const value = asFloat32(values);
+  return new Float32Array([
+    value[0], value[3], value[6],
+    value[1], value[4], value[7],
+    value[2], value[5], value[8]
+  ]);
 }
 
 export function createColorPreview(canvas, callback) {
@@ -236,24 +94,32 @@ export function createColorPreview(canvas, callback) {
       antialias: false,
       depth: false,
       preserveDrawingBuffer: false,
-      premultipliedAlpha: true
+      premultipliedAlpha: false
     });
     if (!gl) throw new Error("当前WebView不支持WebGL2");
-    if (!gl.getExtension("OES_texture_float_linear")) throw new Error("当前GPU不支持浮点纹理线性采样");
-    const rendererExtension = gl.getExtension("WEBGL_debug_renderer_info");
-    const renderer = rendererExtension
-      ? gl.getParameter(rendererExtension.UNMASKED_RENDERER_WEBGL)
-      : gl.getParameter(gl.RENDERER);
+    if (!gl.getExtension("OES_texture_float_linear"))
+      throw new Error("当前GPU不支持浮点纹理线性采样");
+    // The standard renderer string is sufficient for cache partitioning and
+    // diagnostics. Some Android emulator/WebView combinations expose
+    // WEBGL_debug_renderer_info but reject its enum with GL_INVALID_ENUM.
+    const renderer = gl.getParameter(gl.RENDERER);
     capability = {
       supported: true,
       max3DTextureSize: gl.getParameter(gl.MAX_3D_TEXTURE_SIZE),
+      maxTextureUnits: gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
       pipelineVersion: colorPipelineVersion,
       validated: false,
       renderer,
       environmentKey: `${renderer}|${navigator.userAgent}`
     };
   } catch (error) {
-    capability = { supported: false, reason: error?.message || String(error), max3DTextureSize: 0 };
+    capability = {
+      supported: false,
+      reason: error?.message || String(error),
+      max3DTextureSize: 0,
+      pipelineVersion: colorPipelineVersion,
+      validated: true
+    };
   }
 
   if (!capability.supported) {
@@ -261,96 +127,209 @@ export function createColorPreview(canvas, callback) {
       getCapability: () => capability,
       getPipelineVersion: () => colorPipelineVersion,
       setSource: () => {},
-      setGeneratedLook: () => {},
-      setAdjustments: () => {},
-      setGradeAndHsl: () => {},
-      setCurve: () => {},
+      setProgram: () => {},
       render: () => {},
       dispose: () => {}
     };
   }
 
   const supportedCapability = { ...capability };
-
-  let program;
-  let buffer;
-  let sourceTexture;
-  let lutTexture;
-  let autoCurveTexture;
-  let userCurveTexture;
-
-  function initializeResources() {
-    program = createProgram(gl);
-    gl.useProgram(program);
-    const position = gl.getAttribLocation(program, "a_position");
-    buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(position);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-    sourceTexture = createTexture(gl, gl.TEXTURE_2D, 0);
-    lutTexture = createTexture(gl, gl.TEXTURE_3D, 1);
-    autoCurveTexture = createTexture(gl, gl.TEXTURE_2D, 2);
-    userCurveTexture = createTexture(gl, gl.TEXTURE_2D, 3);
-    gl.uniform1i(gl.getUniformLocation(program, "u_source"), 0);
-    gl.uniform1i(gl.getUniformLocation(program, "u_lut"), 1);
-    gl.uniform1i(gl.getUniformLocation(program, "u_autoCurves"), 2);
-    gl.uniform1i(gl.getUniformLocation(program, "u_userCurves"), 3);
-  }
-
-  try {
-    initializeResources();
-  } catch (error) {
-    capability = { supported: false, reason: error?.message || String(error), max3DTextureSize: capability.max3DTextureSize };
-    return {
-      getCapability: () => capability,
-      getPipelineVersion: () => colorPipelineVersion,
-      setSource: () => {},
-      setGeneratedLook: () => {},
-      setAdjustments: () => {},
-      setGradeAndHsl: () => {},
-      setCurve: () => {},
-      render: () => {},
-      dispose: () => {}
-    };
-  }
-
-  let frame = 0;
-  let disposed = false;
-  let sourceEpoch = 0;
-  let latestLook = null;
-  let latestAdjustments = null;
+  let program = null;
+  let programCacheId = null;
+  let positionBuffer = null;
+  let sourceTexture = null;
+  let latestSnapshot = null;
+  let pendingDynamicSnapshot = null;
   let latestSource = null;
   let latestSourceImage = null;
+  let sourceEpoch = 0;
+  let frame = 0;
   let drawCount = 0;
+  let disposed = false;
+  let restoreFailures = 0;
+  const ocioTextures = new Map();
 
-  function uploadCurves(texture, parameters, unit) {
-    gl.activeTexture(gl.TEXTURE0 + unit);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 4096, 1, 0, gl.RGBA, gl.FLOAT, curveTextureData(parameters));
+  function initializePersistentResources() {
+    positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW);
+    sourceTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
-  function uploadParameters(prefix, parameters, curveTexture, unit) {
+  function deleteProgramResources() {
+    if (program) gl.deleteProgram(program);
+    program = null;
+    programCacheId = null;
+    for (const item of ocioTextures.values()) gl.deleteTexture(item.texture);
+    ocioTextures.clear();
+  }
+
+  function bindGeometry() {
+    const position = gl.getAttribLocation(program, "a_position");
+    if (position < 0) throw new Error("OCIO Shader缺少 a_position 输入");
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+  }
+
+  function setUniform(uniform) {
+    const location = gl.getUniformLocation(program, uniform.name);
+    if (location === null) return;
+    const values = asFloat32(uniform.values);
+    switch (uniform.type) {
+      case 1:
+        gl.uniform1f(location, values[0] ?? 0);
+        break;
+      case 2:
+        gl.uniform1i(location, values[0] ? 1 : 0);
+        break;
+      case 3:
+        gl.uniform3fv(location, values);
+        break;
+      case 4:
+        gl.uniform1fv(location, values);
+        break;
+      case 5:
+        gl.uniform1iv(location, Int32Array.from(values));
+        break;
+      case 6:
+        gl.uniformMatrix3fv(location, false, transposeMat3(values));
+        break;
+      default:
+        throw new Error(`不支持的OCIO Uniform类型：${uniform.type}`);
+    }
+  }
+
+  function uploadTexture(description, unit) {
+    const target = description.dimension === 3 ? gl.TEXTURE_3D : gl.TEXTURE_2D;
+    const dynamic = description.samplerName?.startsWith("wm_dynamic_") === true;
+    if (unit >= capability.maxTextureUnits)
+      throw new Error(`OCIO纹理数量超过GPU上限 ${capability.maxTextureUnits}`);
+    let item = ocioTextures.get(description.samplerName);
+    if (!item || item.target !== target) {
+      if (item) gl.deleteTexture(item.texture);
+      item = { texture: gl.createTexture(), target, cacheId: null, width: 0, height: 0, depth: 0 };
+      ocioTextures.set(description.samplerName, item);
+    }
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(target, item.texture);
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER,
+      description.interpolation === 1 ? gl.NEAREST : gl.LINEAR);
+    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER,
+      description.interpolation === 1 ? gl.NEAREST : gl.LINEAR);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if (target === gl.TEXTURE_3D) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+    if (dynamic || item.cacheId !== programCacheId) {
+      const width = Math.max(1, description.width || 1);
+      const height = Math.max(1, description.height || 1);
+      const depth = Math.max(1, description.depth || 1);
+      const rgba = rgbaTextureData(description.values, width, height, depth,
+        Math.max(1, description.channels || 1));
+      const sameSize = item.width === width && item.height === height && item.depth === depth;
+      if (target === gl.TEXTURE_3D) {
+        if (width > capability.max3DTextureSize)
+          throw new Error(`OCIO 3D LUT ${width} 超过GPU上限 ${capability.max3DTextureSize}`);
+        if (sameSize)
+          gl.texSubImage3D(target, 0, 0, 0, 0, width, height, depth, gl.RGBA, gl.FLOAT, rgba);
+        else
+          gl.texImage3D(target, 0, gl.RGBA32F, width, height, depth, 0, gl.RGBA, gl.FLOAT, rgba);
+      } else {
+        if (sameSize)
+          gl.texSubImage2D(target, 0, 0, 0, width, height, gl.RGBA, gl.FLOAT, rgba);
+        else
+          gl.texImage2D(target, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, rgba);
+      }
+      item.cacheId = programCacheId;
+      item.width = width;
+      item.height = height;
+      item.depth = depth;
+    }
+    const sampler = gl.getUniformLocation(program, description.samplerName);
+    if (sampler !== null) gl.uniform1i(sampler, unit);
+  }
+
+  function setProgram(snapshot) {
+    if (disposed || !snapshot) return;
+    latestSnapshot = snapshot;
+    pendingDynamicSnapshot = null;
+    if (snapshot.pipelineVersion !== colorPipelineVersion)
+      throw new Error(`调色Pipeline版本不一致：JS=${colorPipelineVersion}，OCIO=${snapshot.pipelineVersion}`);
+
+    if (!program || programCacheId !== snapshot.shaderCacheId) {
+      deleteProgramResources();
+      program = createProgram(gl, snapshot.fragmentProgram);
+      programCacheId = snapshot.shaderCacheId;
+      gl.useProgram(program);
+      bindGeometry();
+      const source = gl.getUniformLocation(program, "wm_source");
+      if (source === null) throw new Error("OCIO Shader缺少 wm_source 纹理");
+      gl.uniform1i(source, 0);
+    } else {
+      gl.useProgram(program);
+    }
+
+    let unit = 1;
+    for (const texture of snapshot.textures || []) uploadTexture(texture, unit++);
+    for (const uniform of snapshot.uniforms || []) setUniform(uniform);
+    requestRender();
+  }
+
+  function isDynamicTexture(texture) {
+    return texture?.samplerName?.startsWith("wm_dynamic_") === true;
+  }
+
+  function setDynamicState(snapshot) {
+    if (disposed || !snapshot) return;
+    if (!program || !latestSnapshot)
+      throw new Error("OCIO静态Shader尚未初始化");
+    const uniforms = snapshot.uniforms ?? snapshot.Uniforms ?? [];
+    const dynamicTextures = snapshot.textures ?? snapshot.Textures ?? [];
+    const staticTextures = (latestSnapshot.textures ?? latestSnapshot.Textures ?? [])
+      .filter(texture => !isDynamicTexture(texture));
+    latestSnapshot = {
+      ...latestSnapshot,
+      uniforms,
+      textures: [...staticTextures, ...dynamicTextures]
+    };
+    pendingDynamicSnapshot = latestSnapshot;
+    requestRender();
+  }
+
+  function applyPendingDynamicState() {
+    const snapshot = pendingDynamicSnapshot;
+    pendingDynamicSnapshot = null;
+    if (!snapshot) return;
     gl.useProgram(program);
-    gl.uniform1fv(gl.getUniformLocation(program, `u_${prefix}Grade[0]`), floatArray(parameters?.grade, 10));
-    gl.uniform3fv(gl.getUniformLocation(program, `u_${prefix}Hsl[0]`), floatArray(parameters?.hsl, 24));
-    uploadCurves(curveTexture, parameters, unit);
+    let unit = 1;
+    for (const texture of snapshot.textures || []) uploadTexture(texture, unit++);
+    for (const uniform of snapshot.uniforms || []) setUniform(uniform);
   }
 
   function draw() {
     frame = 0;
-    if (disposed || gl.isContextLost() || canvas.width === 0 || canvas.height === 0) return;
+    if (disposed || !program || gl.isContextLost() || canvas.width === 0 || canvas.height === 0) return;
     const startedAt = performance.now();
+    applyPendingDynamicState();
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     drawCount += 1;
-    if (drawCount === 1 || drawCount % 60 === 0) {
+    if (drawCount === 1 || drawCount % 60 === 0)
       callback?.invokeMethodAsync?.("OnFrameMeasured", performance.now() - startedAt);
-    }
   }
 
   function requestRender() {
@@ -366,12 +345,12 @@ export function createColorPreview(canvas, callback) {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    const uploadMilliseconds = performance.now() - startedAt;
     requestRender();
-    callback?.invokeMethodAsync?.("OnSourceReady", latestSource, uploadMilliseconds);
+    callback?.invokeMethodAsync?.("OnSourceReady", latestSource, performance.now() - startedAt);
   }
 
   function setSource(url) {
+    if (url === latestSource && latestSourceImage?.naturalWidth > 0) return;
     latestSource = url;
     const epoch = ++sourceEpoch;
     const image = new Image();
@@ -381,74 +360,85 @@ export function createColorPreview(canvas, callback) {
       latestSourceImage = image;
       uploadSourceImage(image);
     };
+    image.onerror = () => {
+      if (epoch === sourceEpoch)
+        callback?.invokeMethodAsync?.("OnContextStateChanged", false, "无法加载调色预览代理图");
+    };
     image.src = url;
   }
 
-  function setSourcePixels(width, height, rgba) {
+  function validate(request) {
+    if (disposed || gl.isContextLost()) throw new Error("WebGL上下文不可用于OCIO校验");
+    const width = Number(request?.width ?? request?.Width ?? 0);
+    const height = Number(request?.height ?? request?.Height ?? 0);
+    const snapshot = request?.program ?? request?.Program;
+    const source = asUint8(request?.sourceRgba ?? request?.SourceRgba);
+    if (width < 1 || height < 1 || source.length !== width * height * 4)
+      throw new Error("OCIO GPU校验图尺寸或像素数据无效");
+
+    setProgram(snapshot);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
     canvas.width = width;
     canvas.height = height;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    const bytes = rgba instanceof Uint8Array ? rgba : new Uint8Array(rgba);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-  }
-
-  function setGeneratedLook(look) {
-    latestLook = look;
-    uploadParameters("auto", look?.automatic, autoCurveTexture, 2);
-    const size = Math.max(2, Math.min(capability.max3DTextureSize, look?.lutSize || 2));
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_3D, lutTexture);
-    gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA16F, size, size, size, 0, gl.RGBA, gl.FLOAT, lutTextureData(look?.lutValues, size));
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.uniform1f(gl.getUniformLocation(program, "u_lutSize"), size);
-    requestRender();
-  }
-
-  function setAdjustments(parameters) {
-    latestAdjustments = parameters;
-    uploadParameters("user", parameters, userCurveTexture, 3);
-    requestRender();
-  }
-
-  function setGradeAndHsl(parameters) {
-    latestAdjustments = parameters;
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0,
+      gl.RGBA, gl.UNSIGNED_BYTE, source);
     gl.useProgram(program);
-    gl.uniform1fv(gl.getUniformLocation(program, "u_userGrade[0]"), floatArray(parameters?.grade, 10));
-    gl.uniform3fv(gl.getUniformLocation(program, "u_userHsl[0]"), floatArray(parameters?.hsl, 24));
-    requestRender();
-  }
+    gl.viewport(0, 0, width, height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.finish();
 
-  function setCurve(name, values) {
-    if (!latestAdjustments || !["masterCurve", "redCurve", "greenCurve", "blueCurve"].includes(name)) return;
-    latestAdjustments = { ...latestAdjustments, [name]: floatArray(values, 4096) };
-    uploadCurves(userCurveTexture, latestAdjustments, 3);
-    requestRender();
+    const raw = new Uint8Array(source.length);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+    const result = new Uint8Array(raw.length);
+    const stride = width * 4;
+    for (let row = 0; row < height; row++)
+      result.set(raw.subarray((height - row - 1) * stride, (height - row) * stride), row * stride);
+    return result;
   }
 
   function restore() {
     try {
       capability = { ...supportedCapability, validated: false, reason: null };
-      initializeResources();
-      if (latestLook) setGeneratedLook(latestLook);
-      if (latestAdjustments) setAdjustments(latestAdjustments);
+      initializePersistentResources();
+      const snapshot = latestSnapshot;
+      latestSnapshot = null;
+      if (snapshot) setProgram(snapshot);
       if (latestSourceImage?.naturalWidth > 0) uploadSourceImage(latestSourceImage);
       else if (latestSource) setSource(latestSource);
+      restoreFailures = 0;
     } catch (error) {
-      capability = { supported: false, reason: error?.message || String(error), max3DTextureSize: capability.max3DTextureSize };
+      restoreFailures += 1;
+      capability = {
+        ...capability,
+        supported: restoreFailures < 2,
+        reason: error?.message || String(error),
+        validated: true
+      };
     }
   }
+
+  initializePersistentResources();
 
   canvas.addEventListener("webglcontextlost", event => {
     event.preventDefault();
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
+    program = null;
+    pendingDynamicSnapshot = null;
+    positionBuffer = null;
+    sourceTexture = null;
+    ocioTextures.clear();
     capability = { ...capability, supported: false, reason: "WebGL上下文已丢失", validated: false };
     callback?.invokeMethodAsync?.("OnContextStateChanged", false, capability.reason);
   });
+
   canvas.addEventListener("webglcontextrestored", () => {
     restore();
     if (capability.supported !== false) {
@@ -459,51 +449,22 @@ export function createColorPreview(canvas, callback) {
     }
   });
 
-  function readPixels() {
-    const raw = new Uint8Array(canvas.width * canvas.height * 4);
-    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, raw);
-    const topDown = new Uint8Array(raw.length);
-    const rowBytes = canvas.width * 4;
-    for (let y = 0; y < canvas.height; y++) {
-      topDown.set(raw.subarray((canvas.height - 1 - y) * rowBytes, (canvas.height - y) * rowBytes), y * rowBytes);
-    }
-    return topDown;
-  }
-
-  function validatePipeline(request) {
-    if (request?.pipelineVersion !== colorPipelineVersion) throw new Error("调色Pipeline版本不一致");
-    setSourcePixels(request.width, request.height, request.sourceRgba);
-    setGeneratedLook(request.look);
-    setAdjustments(request.adjustments);
-    if (frame) cancelAnimationFrame(frame);
-    frame = 0;
-    draw();
-    gl.finish();
-    return readPixels();
-  }
-
   return {
     getCapability: () => capability,
     getPipelineVersion: () => colorPipelineVersion,
     setSource,
-    setGeneratedLook,
-    setAdjustments,
-    setGradeAndHsl,
-    setCurve,
-    validatePipeline,
-    readPixels,
+    setProgram,
+    setDynamicState,
+    validate,
     render: requestRender,
     dispose() {
       disposed = true;
-      sourceEpoch++;
+      sourceEpoch += 1;
       latestSourceImage = null;
       if (frame) cancelAnimationFrame(frame);
-      gl.deleteTexture(sourceTexture);
-      gl.deleteTexture(lutTexture);
-      gl.deleteTexture(autoCurveTexture);
-      gl.deleteTexture(userCurveTexture);
-      gl.deleteBuffer(buffer);
-      gl.deleteProgram(program);
+      deleteProgramResources();
+      if (sourceTexture) gl.deleteTexture(sourceTexture);
+      if (positionBuffer) gl.deleteBuffer(positionBuffer);
     }
   };
 }

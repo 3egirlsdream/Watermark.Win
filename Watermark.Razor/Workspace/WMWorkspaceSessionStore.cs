@@ -57,6 +57,48 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
         return SessionDirectory(sessionId);
     }
 
+    public async Task<string> CreateEmptyAsync(
+        WMWorkspaceMode mode = WMWorkspaceMode.Template,
+        string? returnPath = null,
+        CancellationToken token = default)
+    {
+        if (mode == WMWorkspaceMode.TemplateDesign)
+            throw new ArgumentException("模板设计会话必须通过模板设计入口创建。", nameof(mode));
+
+        await CleanupExpiredAsync(token).ConfigureAwait(false);
+        var id = Guid.NewGuid().ToString("N");
+        var directory = SessionDirectory(id);
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var now = DateTime.UtcNow;
+            var session = new WMWorkspaceSession
+            {
+                Id = id,
+                Mode = mode,
+                ReturnPath = string.IsNullOrWhiteSpace(returnPath)
+                    ? null
+                    : WMReturnUrl.Normalize(returnPath, "/mac"),
+                Media = [],
+                MediaCatalog = [],
+                ActiveMediaIds = [],
+                Artifacts = [],
+                CurrentArtifactIdsByMediaId = new Dictionary<string, string>(StringComparer.Ordinal),
+                SelectedMediaIds = [],
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now,
+                ExpiresAtUtc = now.AddHours(24)
+            };
+            await SaveAsync(session, token).ConfigureAwait(false);
+            return id;
+        }
+        catch
+        {
+            TryDeleteDirectory(directory);
+            throw;
+        }
+    }
+
     public async Task<string> CreateAsync(WMWorkspaceCreateRequest request, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -318,6 +360,9 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
                 CurrentArtifactIdsByMediaId = source.CurrentArtifactIdsByMediaId
                     .Where(pair => !removedMediaIds.Contains(pair.Key))
                     .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal),
+                CropSettingsByMediaId = source.CropSettingsByMediaId
+                    .Where(pair => !removedMediaIds.Contains(pair.Key))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal),
                 Transactions = RemoveMediaFromTransactions(source.Transactions, removedMediaIds),
                 ActiveJobCheckpoint = null
             };
@@ -516,7 +561,7 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
             var current = await ReadManifestAsync(manifestPath, token).ConfigureAwait(false);
             if (current is { SchemaVersion: WMWorkspaceSession.CurrentSchemaVersion }) return current;
 
-            var sourceSchema = Math.Clamp(session.SchemaVersion, 1, 3);
+            var sourceSchema = Math.Clamp(session.SchemaVersion, 1, 4);
             var backup = Path.Combine(
                 Path.GetDirectoryName(manifestPath)!, $"manifest.v{sourceSchema}.bak");
             if (!File.Exists(backup)) File.Copy(manifestPath, backup, overwrite: false);
@@ -548,6 +593,20 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
                     inputArtifactIds.Select(_ => Guid.NewGuid().ToString("N")),
                     session.ColorRecipe));
             }
+            baselineOperations = UpgradeColorOperations(baselineOperations).ToList();
+            var migratedTransactions = session.SchemaVersion == 1
+                ? []
+                : UpgradeColorTransactions(NormalizeTransactions(session.Transactions, activeMediaIds));
+            var hasLegacyColor = session.ColorRecipe is not null
+                || session.ColorRecipesByMediaId.Values.Any(recipe => recipe is not null)
+                || baselineOperations.Any(operation => operation.Kind == WMImageOperationKind.ColorGrade)
+                || migratedTransactions.Any(transaction => transaction.EffectiveOperations.Any(
+                    operation => operation.Kind == WMImageOperationKind.ColorGrade));
+            var migratedRecipe = UpgradeRecipe(session.ColorRecipe);
+            var migratedRecipeOverrides = session.ColorRecipesByMediaId.ToDictionary(
+                pair => pair.Key,
+                pair => UpgradeRecipe(pair.Value),
+                StringComparer.Ordinal);
             var migrated = session with
             {
                 SchemaVersion = WMWorkspaceSession.CurrentSchemaVersion,
@@ -565,14 +624,15 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
                     .ToArray(),
                 CurrentArtifactIdsByMediaId = catalog.ToDictionary(
                     item => item.Id,
-                    item => session.CurrentArtifactIdsByMediaId.TryGetValue(item.Id, out var currentArtifactId)
+                    item => !hasLegacyColor
+                            && session.CurrentArtifactIdsByMediaId.TryGetValue(item.Id, out var currentArtifactId)
                         ? currentArtifactId
                         : item.Artifact.Id,
                     StringComparer.Ordinal),
                 Operations = baselineOperations,
-                Transactions = session.SchemaVersion == 1
-                    ? []
-                    : NormalizeTransactions(session.Transactions, activeMediaIds),
+                Transactions = migratedTransactions,
+                ColorRecipe = migratedRecipe,
+                ColorRecipesByMediaId = migratedRecipeOverrides,
                 HistoryCursor = session.SchemaVersion == 1
                     ? 0
                     : Math.Clamp(session.HistoryCursor, 0, session.Transactions.Count),
@@ -796,6 +856,42 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
             CurrentArtifactIdsByMediaId = current
         };
     }
+
+    private static WMColorRecipe? UpgradeRecipe(WMColorRecipe? recipe)
+    {
+        if (recipe is null) return null;
+        var upgraded = WMColorRecipeSnapshot.Copy(recipe)!;
+        upgraded.UpgradeToCurrentSchema();
+        return upgraded;
+    }
+
+    private static IReadOnlyList<WMImageOperation> UpgradeColorOperations(
+        IEnumerable<WMImageOperation> operations) => operations.Select(operation =>
+    {
+        if (operation.Kind != WMImageOperationKind.ColorGrade) return operation;
+        try
+        {
+            var recipe = JsonSerializer.Deserialize<WMColorRecipe>(operation.ParametersJson, JsonOptions);
+            recipe = UpgradeRecipe(recipe);
+            return recipe is null
+                ? operation
+                : operation with { ParametersJson = JsonSerializer.Serialize(recipe, JsonOptions) };
+        }
+        catch (JsonException)
+        {
+            return operation;
+        }
+    }).ToArray();
+
+    private static IReadOnlyList<WMWorkspaceTransaction> UpgradeColorTransactions(
+        IReadOnlyList<WMWorkspaceTransaction> transactions) => transactions.Select(transaction => transaction with
+    {
+        Assignments = transaction.Assignments.Select(assignment => assignment with
+        {
+            Operations = UpgradeColorOperations(assignment.Operations)
+        }).ToArray(),
+        Operations = UpgradeColorOperations(transaction.Operations)
+    }).ToArray();
 }
 
 public sealed class WMStaleSessionRevisionException(

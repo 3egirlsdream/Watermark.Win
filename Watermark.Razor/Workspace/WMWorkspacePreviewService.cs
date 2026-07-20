@@ -30,7 +30,7 @@ public sealed class WMWorkspacePreviewService(
     {
         ArgumentNullException.ThrowIfNull(plan);
         cancellationToken.ThrowIfCancellationRequested();
-        var material = $"workspace-preview-v3|{plan.GraphFingerprint}|{plan.Target.MaximumLongEdge}|"
+        var material = $"workspace-preview-v4|{plan.GraphFingerprint}|{plan.Target.MaximumLongEdge}|"
                        + $"{plan.PipelineVersion}|png|100";
         return Task.FromResult(Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(material))));
@@ -64,8 +64,16 @@ public sealed class WMWorkspacePreviewService(
             var cached = await artifactCache.TryGetAsync(
                 sessionDirectory, fingerprint, cancellationToken).ConfigureAwait(false);
             if (cached is not null && TryReadCachedSize(cached.FilePath, out var width, out var height))
-                return new WMWorkspacePreview(
-                    version, fingerprint, cached.FilePath, "image/png", width, height, CacheHit: true);
+            {
+                var expectsLayout = plan.Steps.Any(step => step.Operation.Kind == WMImageOperationKind.Template);
+                var cachedLayout = ReadLayout(cached.FilePath);
+                if (!expectsLayout || cachedLayout is not null)
+                    return new WMWorkspacePreview(
+                        version, fingerprint, cached.FilePath, "image/png", width, height,
+                        CacheHit: true, TemplateLayout: cachedLayout);
+                TryDelete(cached.FilePath);
+                TryDelete(LayoutPath(cached.FilePath));
+            }
 
             var sourcePath = plan.BaseArtifact.PreviewPath is { Length: > 0 } proxy && File.Exists(proxy)
                 ? proxy
@@ -95,6 +103,8 @@ public sealed class WMWorkspacePreviewService(
             {
                 TryDelete(temporary);
             }
+            if (rendered.TemplateLayout is not null)
+                await WriteLayoutAsync(outputPath, rendered.TemplateLayout, cancellationToken).ConfigureAwait(false);
             await artifactCache.CommitAsync(
                 sessionDirectory,
                 fingerprint,
@@ -102,11 +112,13 @@ public sealed class WMWorkspacePreviewService(
                 execution.PreviewCacheBudgetBytes,
                 cancellationToken).ConfigureAwait(false);
             return new WMWorkspacePreview(
-                version, fingerprint, outputPath, "image/png", rendered.Width, rendered.Height);
+                version, fingerprint, outputPath, "image/png", rendered.Width, rendered.Height,
+                TemplateLayout: rendered.TemplateLayout);
         }
         catch
         {
             TryDelete(outputPath);
+            TryDelete(LayoutPath(outputPath));
             throw;
         }
         finally
@@ -133,12 +145,14 @@ public sealed class WMWorkspacePreviewService(
             using var orientedOwner = ReferenceEquals(oriented, decoded) ? null : oriented;
             current = WMImageBitmap.NormalizeToSrgb(oriented);
         }
-        var prepared = ResizeIfNeeded(current, maximumEdge);
+        var hasCrop = plan.Steps.FirstOrDefault()?.Operation.Kind == WMImageOperationKind.Crop;
+        var prepared = hasCrop ? current : ResizeIfNeeded(current, maximumEdge);
         if (!ReferenceEquals(prepared, current))
         {
             current.Dispose();
             current = prepared;
         }
+        WMTemplateLayoutSnapshot? templateLayout = null;
         try
         {
             using (metrics.Measure(WMWorkspaceMetricStage.Replay))
@@ -148,11 +162,26 @@ public sealed class WMWorkspacePreviewService(
                     cancellationToken.ThrowIfCancellationRequested();
                     parallelOptions.CancellationToken.ThrowIfCancellationRequested();
                     SKBitmap next;
-                    if (step.Operation.Kind == WMImageOperationKind.Template)
+                    if (step.Operation.Kind == WMImageOperationKind.Crop)
+                    {
+                        var settings = (WMCropSettings)WMFullResolutionRenderPipeline.DeserializeSettings(
+                            step.Operation, plan.BaseArtifact);
+                        using (metrics.Measure(WMWorkspaceMetricStage.Crop))
+                            next = WMCropProcessor.Apply(current, settings, maximumEdge);
+                    }
+                    else if (step.Operation.Kind == WMImageOperationKind.Template)
                     {
                         var settings = (WMTemplateOperationSettings)
-                            WMFullResolutionRenderPipeline.DeserializeSettings(step.Operation);
-                        next = templateRenderer.RenderBitmap(settings.Canvas, current, cancellationToken);
+                            WMFullResolutionRenderPipeline.DeserializeSettings(
+                                step.Operation, plan.BaseArtifact);
+                        var templateResult = templateRenderer.RenderBitmapWithLayout(
+                            settings.Canvas, current, cancellationToken);
+                        next = templateResult.Bitmap;
+                        templateLayout = new WMTemplateLayoutSnapshot(
+                            templateResult.CanvasWidth,
+                            templateResult.CanvasHeight,
+                            templateResult.ContentViewport,
+                            templateResult.Bounds);
                     }
                     else if (step.Operation.Kind == WMImageOperationKind.ColorGrade)
                     {
@@ -175,7 +204,7 @@ public sealed class WMWorkspacePreviewService(
             using (var data = image.Encode(SKEncodedImageFormat.Png, 100)
                               ?? throw new InvalidOperationException("无法编码工作台预览。"))
             {
-                return new RenderedPreview(data.ToArray(), current.Width, current.Height);
+                return new RenderedPreview(data.ToArray(), current.Width, current.Height, templateLayout);
             }
         }
         finally
@@ -235,6 +264,38 @@ public sealed class WMWorkspacePreviewService(
         try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 
+    private static string LayoutPath(string imagePath) => imagePath + ".layout.json";
+
+    private static WMTemplateLayoutSnapshot? ReadLayout(string imagePath)
+    {
+        try
+        {
+            var path = LayoutPath(imagePath);
+            return File.Exists(path)
+                ? JsonSerializer.Deserialize<WMTemplateLayoutSnapshot>(File.ReadAllText(path))
+                : null;
+        }
+        catch { return null; }
+    }
+
+    private static async Task WriteLayoutAsync(
+        string imagePath,
+        WMTemplateLayoutSnapshot layout,
+        CancellationToken cancellationToken)
+    {
+        var path = LayoutPath(imagePath);
+        var temporary = path + $".{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllTextAsync(
+                temporary,
+                JsonSerializer.Serialize(layout),
+                cancellationToken).ConfigureAwait(false);
+            File.Move(temporary, path, true);
+        }
+        finally { TryDelete(temporary); }
+    }
+
     private static string MimeFromPath(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
         ".png" => "image/png",
@@ -242,5 +303,9 @@ public sealed class WMWorkspacePreviewService(
         _ => "image/jpeg"
     };
 
-    private sealed record RenderedPreview(byte[] Bytes, int Width, int Height);
+    private sealed record RenderedPreview(
+        byte[] Bytes,
+        int Width,
+        int Height,
+        WMTemplateLayoutSnapshot? TemplateLayout);
 }

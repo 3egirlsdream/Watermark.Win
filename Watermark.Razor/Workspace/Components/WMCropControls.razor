@@ -1,0 +1,66 @@
+@using Watermark.Shared.Models
+
+<section class="wm-crop-controls @(straightenOpen ? "is-straighten-open" : null) @Class" aria-label="裁切工具">
+    <div class="wm-crop-geometry @(ShowReset ? null : "without-reset")" role="group" aria-label="几何调整">
+        <button type="button" @onclick="Rotate" aria-label="顺时针旋转 90 度"><MIcon>mdi-rotate-right</MIcon><span>旋转</span></button>
+        <button type="button" class="@(Settings.FlipHorizontal ? "is-active" : null)" @onclick="FlipHorizontal" aria-pressed="@Settings.FlipHorizontal" aria-label="水平翻转"><MIcon>mdi-flip-horizontal</MIcon><span>水平翻转</span></button>
+        <button type="button" class="@(Settings.FlipVertical ? "is-active" : null)" @onclick="FlipVertical" aria-pressed="@Settings.FlipVertical" aria-label="垂直翻转"><MIcon>mdi-flip-vertical</MIcon><span>垂直翻转</span></button>
+        <button type="button" class="wm-crop-straighten-button @(straightenOpen || Math.Abs(Settings.StraightenDegrees) > .001 ? "is-active" : null)" @onclick="() => straightenOpen = !straightenOpen" aria-expanded="@straightenOpen"><output>@Settings.StraightenDegrees.ToString("0.0")°</output><MIcon>mdi-angle-acute</MIcon><span>拉直</span></button>
+        @if (ShowReset)
+        {
+            <button type="button" @onclick="Reset" aria-label="重置裁切"><MIcon>mdi-restore</MIcon><span>重置</span></button>
+        }
+    </div>
+    @if (straightenOpen)
+    {
+        <label class="wm-crop-straighten">
+            <span>拉直</span>
+            <input type="range" min="-45" max="45" step="0.1" value="@Settings.StraightenDegrees.ToString(System.Globalization.CultureInfo.InvariantCulture)" @oninput="Straighten" />
+            <output>@Settings.StraightenDegrees.ToString("0.0")°</output>
+        </label>
+    }
+    <div class="wm-crop-aspects" role="radiogroup" aria-label="裁切比例">
+        @foreach (var item in AspectItems)
+        {
+            <button type="button" class="@(Settings.AspectPreset == item.Preset ? "is-active" : null)"
+                    role="radio" aria-checked="@(Settings.AspectPreset == item.Preset)"
+                    @onclick="() => SelectAspect(item.Preset)">
+                <span class="wm-crop-aspect-symbol @item.SymbolClass" aria-hidden="true"></span>
+                <span>@item.Label</span>
+            </button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public WMCropSettings Settings { get; set; } = WMCropSettings.Identity;
+    [Parameter] public int SourceWidth { get; set; }
+    [Parameter] public int SourceHeight { get; set; }
+    [Parameter] public EventCallback<WMCropSettings> SettingsChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public bool ShowReset { get; set; } = true;
+    private bool straightenOpen;
+    private static readonly (WMCropAspectPreset Preset, string Label, string SymbolClass)[] AspectItems =
+    [
+        (WMCropAspectPreset.Free, "自由", "is-free"),
+        (WMCropAspectPreset.Original, "原始", "is-original"),
+        (WMCropAspectPreset.Square, "1:1", "is-square"),
+        (WMCropAspectPreset.FourThree, "4:3", "is-four-three"),
+        (WMCropAspectPreset.ThreeTwo, "3:2", "is-three-two"),
+        (WMCropAspectPreset.SixteenNine, "16:9", "is-sixteen-nine")
+    ];
+
+    private Task Rotate() => Change(WMCropPlanner.RotateClockwise(Settings, SourceWidth, SourceHeight));
+    private Task FlipHorizontal() => Change(Settings with { FlipHorizontal = !Settings.FlipHorizontal });
+    private Task FlipVertical() => Change(Settings with { FlipVertical = !Settings.FlipVertical });
+    private Task Reset() => Change(WMCropSettings.Identity);
+    private Task SelectAspect(WMCropAspectPreset preset) =>
+        Change(WMCropPlanner.SelectAspect(Settings, preset, SourceWidth, SourceHeight));
+    private Task Straighten(ChangeEventArgs args) =>
+        double.TryParse(args.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var value)
+            ? Change(Settings with { StraightenDegrees = Math.Abs(value) < .15 ? 0 : value })
+            : Task.CompletedTask;
+    private Task Change(WMCropSettings value) => SettingsChanged.InvokeAsync(
+        WMCropPlanner.Normalize(value, Math.Max(1, SourceWidth), Math.Max(1, SourceHeight)));
+}

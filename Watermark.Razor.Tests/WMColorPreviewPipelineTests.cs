@@ -29,7 +29,8 @@ public sealed class WMColorPreviewPipelineTests
     {
         var mapper = new RecordingLookMapper();
         var analysis = new RecordingAnalysisService();
-        var compiler = new WMColorPipelineCompiler(mapper, analysis);
+        var engine = RequireEngine();
+        using var compiler = new WMColorPipelineCompiler(mapper, analysis, engine);
         var recipe = new WMColorRecipe { Name = "manual" };
         recipe.Grade.Exposure = .5f;
 
@@ -38,50 +39,43 @@ public sealed class WMColorPreviewPipelineTests
             recipe,
             CancellationToken.None);
 
-        Assert.Equal("identity", program.Look.CacheKey);
-        Assert.Equal(2, program.Look.LutSize);
+        Assert.Equal(WMColorPipelineVersion.Current, program.PipelineVersion);
+        Assert.NotEmpty(program.GpuProgram.FragmentProgram);
+        Assert.NotEmpty(program.GpuProgram.ShaderCacheId);
         Assert.Equal(0, mapper.Count);
         Assert.Equal(0, analysis.Count);
-        Assert.Equal(.5f, program.Adjustments.Grade[0]);
     }
 
     [Fact]
-    public void Parameters_PreserveCpuGradeOrderAndCurveSampling()
+    public async Task DynamicGrade_ReusesStaticProcessorAndShaderTopology()
     {
-        var settings = new WMColorGradeSettings
-        {
-            Exposure = 1.25f,
-            Contrast = 20,
-            Highlights = 30,
-            Shadows = -40,
-            Whites = 50,
-            Blacks = -60,
-            Temperature = 70,
-            Tint = -80,
-            Vibrance = 90,
-            Saturation = -10,
-            MasterCurve =
-            [
-                new WMCurvePoint { X = 0, Y = 0 },
-                new WMCurvePoint { X = .5f, Y = .75f },
-                new WMCurvePoint { X = 1, Y = 1 }
-            ]
-        };
-        settings.Hsl[WMHslBand.Blue] = new WMHslAdjustment
-            { Hue = 11, Saturation = 22, Luminance = 33 };
+        var engine = RequireEngine();
+        engine.Metrics.Reset();
+        using var compiler = new WMColorPipelineCompiler(
+            new RecordingLookMapper(), new RecordingAnalysisService(), engine);
+        var target = new WMImageArtifact { Id = "target", FilePath = "/unused/source.jpg", ContentHash = "source" };
+        var recipe = new WMColorRecipe { Name = "manual" };
+        var first = await compiler.CompileAsync(target, recipe, CancellationToken.None);
+        recipe.Grade.Exposure = 1.25f;
+        var second = await compiler.CompileAsync(target, recipe, CancellationToken.None);
+        var metrics = engine.Metrics.Snapshot().Calls;
 
-        var result = WMColorPreviewParameters.From(settings);
-
-        Assert.Equal([1.25f, 20, 30, -40, 50, -60, 70, -80, 90, -10], result.Grade);
-        Assert.Equal(4096, result.MasterCurve.Length);
-        Assert.InRange(result.MasterCurve[2048], .749f, .753f);
-        Assert.Equal([11, 22, 33], result.Hsl.Skip((int)WMHslBand.Blue * 3).Take(3));
+        Assert.Equal(1, metrics.GetValueOrDefault(WMColorEngineMetricStage.ProcessorCompile));
+        Assert.Equal(2, metrics.GetValueOrDefault(WMColorEngineMetricStage.DynamicUpdate));
+        Assert.Equal(first.GpuProgram.ShaderCacheId, second.GpuProgram.ShaderCacheId);
+        Assert.Same(first.GpuProgram.FragmentProgram, second.GpuProgram.FragmentProgram);
+        Assert.NotEqual(first.ProgramFingerprint, second.ProgramFingerprint);
+        Assert.True(first.GpuProgram.Textures.SelectMany(texture => texture.Values)
+            .SequenceEqual(second.GpuProgram.Textures.SelectMany(texture => texture.Values)));
+        Assert.Contains(first.GpuProgram.Uniforms.Zip(second.GpuProgram.Uniforms), pair =>
+            string.Equals(pair.First.Name, pair.Second.Name, StringComparison.Ordinal)
+            && !pair.First.Values.SequenceEqual(pair.Second.Values));
     }
 
     [Fact]
     public void Validation_UsesCurrentPipelineAndRejectsVisibleShift()
     {
-        var validator = new WMColorPreviewValidator();
+        var validator = new WMColorPreviewValidator(RequireEngine());
         var request = validator.CreateRequest();
 
         var exact = validator.Evaluate(request, request.ExpectedRgba.ToArray());
@@ -95,6 +89,13 @@ public sealed class WMColorPreviewPipelineTests
         Assert.Equal(0, exact.AverageDeltaE);
         Assert.False(shifted.Passed);
         Assert.NotNull(shifted.Reason);
+    }
+
+    private static WMOcioColorEngine RequireEngine()
+    {
+        var engine = new WMOcioColorEngine();
+        Assert.True(engine.Capability.IsAvailable, engine.Capability.Error);
+        return engine;
     }
 
     private sealed class RecordingLookMapper : IWMColorLookMapper

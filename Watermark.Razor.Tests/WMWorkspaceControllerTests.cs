@@ -397,12 +397,30 @@ public sealed class WMWorkspaceControllerTests : IDisposable
                 executionProfiles: profiles);
             Assert.True(await controller.OpenAsync(initial.Id));
 
+            await controller.UpdateMultiFrameDraftAsync(
+                controller.State.MultiFrameTool.Draft with
+                {
+                    Advanced = new WMMultiFrameAdvancedDraft(
+                        WMAlignmentMode.Stars,
+                        WMReductionMode.SigmaClippedMean,
+                        AutomaticReduction: false,
+                        SigmaLow: 2.1,
+                        SigmaHigh: 3.4,
+                        SigmaIterations: 4,
+                        ReferenceMediaId: media[1].Id)
+                });
             await controller.ExecuteMultiFrameAsync(
-                WMMultiFrameStackSettings.CreateDefault(WMStackMode.StaticSky),
-                media.Select(item => item.Id).ToArray(),
-                []);
+                cancellationToken: CancellationToken.None);
 
             var output = Assert.Single(engine.Outputs);
+            var settings = Assert.Single(engine.Settings);
+            Assert.Equal(WMAlignmentMode.Stars, settings.Alignment);
+            Assert.Equal(WMReductionMode.SigmaClippedMean, settings.Reduction);
+            Assert.False(settings.AutomaticReduction);
+            Assert.Equal(2.1, settings.SigmaLow);
+            Assert.Equal(3.4, settings.SigmaHigh);
+            Assert.Equal(4, settings.SigmaIterations);
+            Assert.Equal(media[1].Artifact.Id, settings.ReferenceArtifactId);
             Assert.Equal(output.Id, controller.State.CurrentMedia!.Artifact.Id);
             Assert.Contains(store.Saved!.Artifacts, item => item.Id == output.Id);
             Assert.Equal(output.Id, store.Saved.CurrentArtifactIdsByMediaId[media[0].Id]);
@@ -416,6 +434,66 @@ public sealed class WMWorkspaceControllerTests : IDisposable
 
             await controller.RedoAsync();
             Assert.Equal(output.Id, controller.State.CurrentMedia!.Artifact.Id);
+        }
+        finally
+        {
+            try { if (Directory.Exists(root)) Directory.Delete(root, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task MultiFramePreview_IsLatestWins_AndCanceledResultCannotPublish()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"watermark-multiframe-preview-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(root);
+            var firstPath = Path.Combine(root, "frame-1.png");
+            var secondPath = Path.Combine(root, "frame-2.png");
+            WriteImage(firstPath, SKColors.Navy);
+            WriteImage(secondPath, SKColors.DarkBlue);
+            var initial = SessionForPaths("multi-preview-latest", firstPath, secondPath) with
+            {
+                Mode = WMWorkspaceMode.MultiFrame,
+                MultiFrameConfiguration = new WMMultiFrameDraft(
+                    WMStackMode.StarTrail,
+                    new Dictionary<string, WMFrameRole?>
+                    {
+                        ["media-1"] = WMFrameRole.Light,
+                        ["media-2"] = WMFrameRole.Light
+                    },
+                    NormalizeExposure: false,
+                    RepairHotPixels: true,
+                    AutoCrop: false)
+            };
+            var profiles = new TestExecutionProfileProvider();
+            var urls = new TrackingOwnerObjectUrlRegistry();
+            var engine = new LatestWinsStackEngine();
+            var controller = new WMWorkspaceController(
+                new RecordingSessionStore(initial),
+                new StrictlyIncreasingRenderCoordinator(firstPath),
+                urls,
+                CreatePreviewService(profiles),
+                null!,
+                null!,
+                imagingCapabilities: new AvailableImagingCapabilityProvider(),
+                imageStackEngine: engine,
+                executionProfiles: profiles);
+            Assert.True(await controller.OpenAsync(initial.Id));
+            var publishedBeforePreview = urls.PublishCountByPrefix("workspace:preview:");
+
+            var first = controller.PreviewMultiFrameAsync(CancellationToken.None);
+            await engine.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            var second = controller.PreviewMultiFrameAsync(CancellationToken.None);
+            await Task.WhenAll(first, second);
+
+            Assert.Equal(2, engine.CallCount);
+            Assert.Equal(1, engine.CanceledCount);
+            Assert.Equal(publishedBeforePreview + 1, urls.PublishCountByPrefix("workspace:preview:"));
+            Assert.Equal("preview-output-2", controller.State.PreviewPresentation.BaseFingerprint);
+            Assert.Equal(WMWorkspaceActivity.PreviewReady, controller.State.Activity);
+            Assert.False(controller.State.MultiFrameTool.IsBusy);
+            await controller.CloseAsync();
         }
         finally
         {
@@ -535,6 +613,40 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         Assert.True(controller.State.HasTransientEdits);
         Assert.Equal("draft-template", controller.State.TemplateId);
         Assert.Null(store.Saved);
+    }
+
+    [Fact]
+    public async Task SwitchingTemplate_InvalidatesPreviousLayoutUntilLatestPreviewPublishes()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var renderer = new BlockingSecondRenderCoordinator(previewPath);
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(Session("template-layout-switch", "template-layout-media")),
+            renderer,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync("template-layout-switch"));
+        Assert.NotNull(controller.State.TemplateLayout);
+        Assert.Equal(10, controller.State.TemplateLayout!.CanvasWidth);
+
+        var canvas = new WMCanvas { ID = "template-layout-next", Name = "next" };
+        var switching = controller.PreviewTemplateAsync(
+            new WMWorkspaceTemplateEdit(canvas.ID, Global.CanvasSerialize(canvas)),
+            WMApplyScope.Current);
+        await renderer.SecondPreviewQueued.WaitAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(canvas.ID, controller.State.TemplateEdit?.TemplateId);
+        Assert.Equal(WMWorkspaceActivity.Previewing, controller.State.Activity);
+        Assert.Null(controller.State.TemplateLayout);
+
+        renderer.ReleaseSecondPreview();
+        await switching;
+
+        Assert.NotNull(controller.State.TemplateLayout);
+        Assert.Equal(20, controller.State.TemplateLayout!.CanvasWidth);
+        Assert.Equal(10, controller.State.TemplateLayout.CanvasHeight);
     }
 
     [Fact]
@@ -790,6 +902,80 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task SwitchingMedia_KeepsUnappliedColorDraftWithoutCommittingIt()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = SessionWithTwoMedia("color-draft-switch") with
+        {
+            Mode = WMWorkspaceMode.ColorGrade
+        };
+        var store = new RecordingSessionStore(initial);
+        var controller = new WMWorkspaceController(
+            store,
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync(initial.Id));
+        var draft = Clone(controller.State.ColorGradeTool.Draft);
+        draft.Grade.Exposure = 1.75f;
+        await controller.UpdateColorGradeAsync(draft, createHistoryEntry: false, WMApplyScope.Current);
+
+        await controller.SelectMediaAsync("media-2");
+
+        Assert.Equal("media-2", controller.State.CurrentMediaId);
+        Assert.Equal(1.75f, controller.State.ColorGradeTool.Draft.Grade.Exposure);
+        Assert.Equal(1.75f, controller.State.ColorRecipe!.Grade.Exposure);
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Equal(WMWorkspaceMode.ColorGrade, controller.State.TransientEditMode);
+        Assert.Empty(store.Saved!.ColorRecipesByMediaId);
+        Assert.Empty(store.Saved.Transactions);
+
+        await controller.CommitColorDraftAsync(WMApplyScope.Current);
+
+        Assert.False(store.Saved.ColorRecipesByMediaId.ContainsKey("media-1"));
+        Assert.Equal(1.75f, store.Saved.ColorRecipesByMediaId["media-2"]!.Grade.Exposure);
+        Assert.Equal(["media-2"], Assert.Single(store.Saved.Transactions).Assignments.Single().MediaIds);
+    }
+
+    [Fact]
+    public async Task RepeatedMediaSwitches_SupersedeBlockedUnappliedColorPreview()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var renderer = new BlockingSecondRenderCoordinator(previewPath);
+        var initial = SessionWithTwoMedia("color-draft-latest-switch") with
+        {
+            Mode = WMWorkspaceMode.ColorGrade
+        };
+        var store = new RecordingSessionStore(initial);
+        var controller = new WMWorkspaceController(
+            store,
+            renderer,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync(initial.Id));
+        var draft = Clone(controller.State.ColorGradeTool.Draft);
+        draft.Grade.Shadows = 35;
+        await controller.UpdateColorDraftAsync(draft);
+        await renderer.SecondPreviewQueued.WaitAsync(TimeSpan.FromSeconds(3));
+
+        await controller.SelectMediaAsync("media-2");
+        await controller.SelectMediaAsync("media-1");
+
+        Assert.Equal("media-1", controller.State.CurrentMediaId);
+        Assert.Equal(35, controller.State.ColorGradeTool.Draft.Grade.Shadows);
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Empty(store.Saved!.Transactions);
+        Assert.Empty(store.Saved.ColorRecipesByMediaId);
+
+        renderer.ReleaseSecondPreview();
+        await controller.CloseAsync();
+    }
+
+    [Fact]
     public async Task HistoryProjection_TracksAppliedAndRedoItems()
     {
         CreateTemplate("history-a");
@@ -832,6 +1018,31 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task MissingOcio_BlocksColorModeAndEditsWithoutBlockingOtherModes()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(Session("ocio-unavailable", "media")),
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!,
+            colorEngine: new WMUnsupportedColorEngine("ABI 4 OCIO capability is missing"));
+        Assert.True(await controller.OpenAsync("ocio-unavailable"));
+
+        await controller.SetModeAsync(WMWorkspaceMode.ColorGrade);
+
+        Assert.NotEqual(WMWorkspaceMode.ColorGrade, controller.State.Mode);
+        Assert.Contains("OpenColorIO 2.5.2", controller.State.ErrorMessage);
+        await Assert.ThrowsAsync<PlatformNotSupportedException>(() =>
+            controller.UpdateColorGradeAsync(new WMColorRecipe(), createHistoryEntry: false));
+
+        await controller.SetModeAsync(WMWorkspaceMode.Template);
+        Assert.Equal(WMWorkspaceMode.Template, controller.State.Mode);
+    }
+
+    [Fact]
     public async Task WebGlDrafts_DoNotQueueCpuPreview_AndOnlyLastProgramPublishes()
     {
         await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
@@ -868,6 +1079,48 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         Assert.Equal(50, compiler.Count);
         Assert.Equal("program-49", controller.State.PreviewPresentation.ColorProgram?.ProgramFingerprint);
         Assert.False(controller.State.PreviewPresentation.IsSettled);
+    }
+
+    [Fact]
+    public async Task WebGlMediaSwitch_KeepsDraftAndLoadsTheSelectedMediaBase()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var compiler = new ImmediateColorPipelineCompiler();
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(SessionWithTwoMedia("gpu-media-switch") with
+                { Mode = WMWorkspaceMode.ColorGrade }),
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!,
+            colorPipelineCompiler: compiler);
+        Assert.True(await controller.OpenAsync("gpu-media-switch"));
+        await controller.SetColorPreviewCapabilityAsync(new WMColorPreviewCapability(
+            true,
+            Max3DTextureSize: 4096,
+            PipelineVersion: WMColorPipelineVersion.Current,
+            Validated: true,
+            Renderer: "test"));
+        var draft = Clone(controller.State.ColorGradeTool.Draft);
+        draft.Grade.Exposure = 1.25f;
+        await controller.UpdateColorDraftAsync(draft);
+        await WaitUntilAsync(() =>
+            controller.State.PreviewPresentation.ColorProgram is not null);
+        var firstBaseFingerprint = controller.State.PreviewPresentation.BaseFingerprint;
+        var firstBaseUrl = controller.State.PreviewPresentation.BaseUrl;
+
+        await controller.SelectMediaAsync("media-2");
+        await WaitUntilAsync(() =>
+            controller.State.CurrentMediaId == "media-2"
+            && controller.State.Activity == WMWorkspaceActivity.PreviewReady
+            && controller.State.PreviewPresentation.BaseFingerprint != firstBaseFingerprint);
+
+        Assert.Equal(1.25f, controller.State.ColorGradeTool.Draft.Grade.Exposure);
+        Assert.NotEqual(firstBaseFingerprint, controller.State.PreviewPresentation.BaseFingerprint);
+        Assert.NotEqual(firstBaseUrl, controller.State.PreviewPresentation.BaseUrl);
+        Assert.Equal(string.Empty, controller.State.Message);
+        Assert.False(controller.State.CanCancel);
     }
 
     [Fact]
@@ -995,6 +1248,136 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         Assert.False(reopened.State.CanUndo);
         Assert.Empty(reopened.State.History);
         await reopened.CloseAsync();
+    }
+
+    [Fact]
+    public async Task CropDraft_IsCurrentOnly_RenderFreeUntilCommit_AndUndoable()
+    {
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = SessionWithTwoMedia("crop-controller");
+        initial = initial with
+        {
+            Media = initial.Media.Select(item => item with
+            {
+                Artifact = item.Artifact with { Width = 100, Height = 100 }
+            }).ToArray()
+        };
+        var store = new RecordingSessionStore(initial);
+        var coordinator = new StrictlyIncreasingRenderCoordinator(previewPath);
+        var controller = new WMWorkspaceController(
+            store,
+            coordinator,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync("crop-controller"));
+        var rendersAfterOpen = coordinator.RequestedVersions.Count;
+
+        await controller.BeginCropEditAsync();
+        for (var index = 0; index < 12; index++)
+        {
+            await controller.UpdateCropDraftAsync(new WMCropSettings
+            {
+                CenterX = .5 + index * .001,
+                CenterY = .5,
+                VisibleWidth = .8,
+                VisibleHeight = .8,
+                AspectPreset = WMCropAspectPreset.Free
+            });
+        }
+        await controller.SelectMediaAsync("media-2");
+
+        Assert.Equal("media-1", controller.State.CurrentMediaId);
+        Assert.Equal(rendersAfterOpen, coordinator.RequestedVersions.Count);
+        Assert.True(controller.State.HasTransientEdits);
+        Assert.Equal(WMWorkspaceMode.Crop, controller.State.TransientEditMode);
+
+        await controller.CommitCropDraftAsync();
+
+        Assert.Equal(rendersAfterOpen + 1, coordinator.RequestedVersions.Count);
+        var transaction = Assert.Single(store.Saved!.Transactions);
+        Assert.Equal("裁切图片", transaction.Label);
+        Assert.Equal(["media-1"], Assert.Single(transaction.Assignments).MediaIds);
+        Assert.True(store.Saved.CropSettingsByMediaId.ContainsKey("media-1"));
+        Assert.False(store.Saved.CropSettingsByMediaId.ContainsKey("media-2"));
+
+        var rendersAfterCommit = coordinator.RequestedVersions.Count;
+        await controller.BeginCropEditAsync();
+        await controller.CommitCropDraftAsync();
+        Assert.Single(store.Saved.Transactions);
+        Assert.Equal(rendersAfterCommit, coordinator.RequestedVersions.Count);
+
+        await controller.BeginCropEditAsync();
+        await controller.UpdateCropDraftAsync(WMCropSettings.Identity);
+        await controller.CommitCropDraftAsync();
+        Assert.Equal(2, store.Saved.Transactions.Count);
+        Assert.True(WMCropPlanner.IsIdentity(store.Saved.CropSettingsByMediaId["media-1"]));
+
+        await controller.UndoAsync();
+        Assert.False(WMCropPlanner.IsIdentity(controller.State.CropTool.Committed));
+        await controller.RedoAsync();
+        Assert.True(WMCropPlanner.IsIdentity(controller.State.CropTool.Committed));
+
+        // Changing only identity preset metadata must not add history or render.
+        var rendersAfterReset = coordinator.RequestedVersions.Count;
+        await controller.BeginCropEditAsync();
+        await controller.UpdateCropDraftAsync(WMCropSettings.Identity with
+        {
+            AspectPreset = WMCropAspectPreset.Free
+        });
+        await controller.CommitCropDraftAsync();
+        Assert.Equal(2, store.Saved.Transactions.Count);
+        Assert.Equal(rendersAfterReset, coordinator.RequestedVersions.Count);
+    }
+
+    [Fact]
+    public async Task CropThenTemplatePreview_KeepsPublishedImageUrlAliveForDesktopEditor()
+    {
+        const string templateId = "crop-template-url-regression";
+        CreateTemplate(templateId);
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var initial = Session("crop-template-url", "crop-template-media");
+        initial = initial with
+        {
+            Media = initial.Media.Select(item => item with
+            {
+                Artifact = item.Artifact with { Width = 100, Height = 100 }
+            }).ToArray()
+        };
+        var urls = new TrackingOwnerObjectUrlRegistry();
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(initial),
+            new StrictlyIncreasingRenderCoordinator(previewPath, includeTemplateLayout: true),
+            urls,
+            CreatePreviewService(),
+            null!,
+            null!);
+        Assert.True(await controller.OpenAsync(initial.Id));
+
+        await controller.BeginCropEditAsync();
+        await controller.UpdateCropDraftAsync(new WMCropSettings
+        {
+            CenterX = .55,
+            CenterY = .5,
+            VisibleWidth = .8,
+            VisibleHeight = .8,
+            AspectPreset = WMCropAspectPreset.Free
+        });
+        await controller.CommitCropDraftAsync();
+        var cropUrl = controller.State.PreviewUrl;
+
+        await controller.PreviewTemplateAsync(
+            new WMWorkspaceTemplateEdit(templateId, null),
+            WMApplyScope.Current);
+
+        Assert.NotNull(controller.State.TemplateLayout);
+        Assert.NotEqual(cropUrl, controller.State.PreviewUrl);
+        Assert.True(urls.IsActive(controller.State.PreviewUrl));
+        Assert.Equal(2, urls.ActiveOwnerCountByPrefix("workspace:preview:"));
+
+        await controller.CloseAsync();
+        Assert.Equal(0, urls.ActiveLeaseCount);
     }
 
     private static WMWorkspaceController CreateController(RecordingSessionStore store)
@@ -1210,7 +1593,9 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         public Task CleanupExpiredAsync(CancellationToken token = default) => Task.CompletedTask;
     }
 
-    private sealed class StrictlyIncreasingRenderCoordinator(string previewPath)
+    private sealed class StrictlyIncreasingRenderCoordinator(
+        string previewPath,
+        bool includeTemplateLayout = false)
         : IWMWorkspaceRenderCoordinator
     {
         private long currentVersion;
@@ -1233,7 +1618,14 @@ public sealed class WMWorkspaceControllerTests : IDisposable
                 previewPath,
                 "image/jpeg",
                 10,
-                10);
+                10,
+                TemplateLayout: includeTemplateLayout
+                    ? new WMTemplateLayoutSnapshot(
+                        10,
+                        10,
+                        new WMDesignViewport(0, 0, 10, 10),
+                        [])
+                    : null);
             PreviewPublished?.Invoke(current);
             var completion = Task.FromResult(current);
             return new WMWorkspacePreviewTicket(
@@ -1243,6 +1635,71 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         public Task<WMWorkspacePreview> FlushAsync(
             WMWorkspacePreviewTicket ticket,
             CancellationToken token = default) => ticket.Completion.WaitAsync(token);
+
+        public void CancelPreview() { }
+    }
+
+    private sealed class BlockingSecondRenderCoordinator(string previewPath)
+        : IWMWorkspaceRenderCoordinator
+    {
+        private readonly TaskCompletionSource<bool> secondPreviewQueued =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<WMWorkspacePreview> secondPreviewCompletion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private WMWorkspacePreview? pendingSecondPreview;
+        private int requestCount;
+
+        public event Action<WMWorkspacePreview>? PreviewPublished;
+        public Task SecondPreviewQueued => secondPreviewQueued.Task;
+
+        public WMWorkspacePreviewTicket QueuePreview(
+            WMWorkspaceRenderRequest request,
+            CancellationToken token = default)
+        {
+            var index = Interlocked.Increment(ref requestCount);
+            var preview = new WMWorkspacePreview(
+                request.Version,
+                request.Fingerprint,
+                previewPath,
+                "image/jpeg",
+                index == 1 ? 10 : 20,
+                10,
+                TemplateLayout: new WMTemplateLayoutSnapshot(
+                    index == 1 ? 10 : 20,
+                    10,
+                    new WMDesignViewport(0, 0, index == 1 ? 10 : 20, 10),
+                    []));
+            Task<WMWorkspacePreview> completion;
+            if (index == 2)
+            {
+                pendingSecondPreview = preview;
+                secondPreviewQueued.TrySetResult(true);
+                completion = secondPreviewCompletion.Task;
+            }
+            else
+            {
+                PreviewPublished?.Invoke(preview);
+                completion = Task.FromResult(preview);
+            }
+            return new WMWorkspacePreviewTicket(
+                request.SessionId,
+                request.Epoch,
+                request.Version,
+                request.Fingerprint,
+                completion);
+        }
+
+        public Task<WMWorkspacePreview> FlushAsync(
+            WMWorkspacePreviewTicket ticket,
+            CancellationToken token = default) => ticket.Completion.WaitAsync(token);
+
+        public void ReleaseSecondPreview()
+        {
+            var preview = pendingSecondPreview
+                          ?? throw new InvalidOperationException("第二次预览尚未排队。");
+            PreviewPublished?.Invoke(preview);
+            secondPreviewCompletion.TrySetResult(preview);
+        }
 
         public void CancelPreview() { }
     }
@@ -1322,8 +1779,11 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             return Task.FromResult(new WMColorPipelineProgram(
                 WMColorPipelineVersion.Current,
                 $"program-{current - 1}",
-                WMColorPreviewLook.Identity,
-                WMColorPreviewParameters.From(recipe.Grade)));
+                new WMColorGpuProgram(
+                    "#version 300 es\nprecision highp float; out vec4 wm_result; void main(){wm_result=vec4(0.0);}",
+                    "test-identity",
+                    [],
+                    [])));
         }
     }
 
@@ -1436,6 +1896,26 @@ public sealed class WMWorkspaceControllerTests : IDisposable
         public int PublishCount(string ownerKey)
         {
             lock (gate) return publishCounts.GetValueOrDefault(ownerKey);
+        }
+
+        public int PublishCountByPrefix(string ownerPrefix)
+        {
+            lock (gate)
+                return publishCounts
+                    .Where(pair => pair.Key.StartsWith(ownerPrefix, StringComparison.Ordinal))
+                    .Sum(pair => pair.Value);
+        }
+
+        public int ActiveOwnerCountByPrefix(string ownerPrefix)
+        {
+            lock (gate)
+                return leases.Keys.Count(key => key.StartsWith(ownerPrefix, StringComparison.Ordinal));
+        }
+
+        public bool IsActive(string? url)
+        {
+            lock (gate)
+                return url is not null && leases.Values.Any(lease => lease.Url == url);
         }
 
         public ValueTask<WMObjectUrlLease?> PublishAsync(
@@ -1566,6 +2046,7 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     private sealed class RecordingStackEngine : IWMImageStackEngine
     {
         public List<WMImageArtifact> Outputs { get; } = [];
+        public List<WMMultiFrameStackSettings> Settings { get; } = [];
 
         public Task<WMOperationResult> ExecuteAsync(
             WMOperationRequest request,
@@ -1573,6 +2054,7 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Settings.Add(settings);
             Directory.CreateDirectory(request.WorkingDirectory);
             var outputPath = Path.Combine(request.WorkingDirectory, "stack-output.png");
             WriteImage(outputPath, SKColors.SteelBlue);
@@ -1595,6 +2077,56 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             operation = operation with { OutputArtifactIds = [output.Id] };
             Outputs.Add(output);
             return Task.FromResult(new WMOperationResult([output], operation));
+        }
+    }
+
+    private sealed class LatestWinsStackEngine : IWMImageStackEngine
+    {
+        private int callCount;
+        private int canceledCount;
+
+        public int CallCount => Volatile.Read(ref callCount);
+        public int CanceledCount => Volatile.Read(ref canceledCount);
+        public TaskCompletionSource FirstStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<WMOperationResult> ExecuteAsync(
+            WMOperationRequest request,
+            WMMultiFrameStackSettings settings,
+            CancellationToken cancellationToken = default)
+        {
+            var call = Interlocked.Increment(ref callCount);
+            if (call == 1)
+            {
+                FirstStarted.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    Interlocked.Increment(ref canceledCount);
+                    throw;
+                }
+            }
+
+            Directory.CreateDirectory(request.WorkingDirectory);
+            var outputPath = Path.Combine(request.WorkingDirectory, $"preview-output-{call}.png");
+            WriteImage(outputPath, SKColors.SteelBlue);
+            var output = new WMImageArtifact
+            {
+                Id = $"preview-output-{call}",
+                FilePath = outputPath,
+                ContentHash = $"preview-output-{call}",
+                Width = 32,
+                Height = 24
+            };
+            var operation = WMImageOperation.Create(
+                WMImageOperationKind.MultiFrameStack,
+                request.Inputs.Select(item => item.Id),
+                [output.Id],
+                settings);
+            return new WMOperationResult([output], operation);
         }
     }
 }

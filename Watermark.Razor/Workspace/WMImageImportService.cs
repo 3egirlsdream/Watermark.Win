@@ -146,6 +146,129 @@ public sealed class WMImageImportService
         return output;
     }
 
+    /// <summary>
+    /// Stages template-collage inputs without creating preview proxies. The
+    /// shared template renderer is the sole pixel decoder for these hidden
+    /// sources, so importing a collage cannot add an extra decode/scale/encode
+    /// pass before the final template render.
+    /// </summary>
+    public async Task<IReadOnlyList<WMWorkspaceMedia>> ImportTemplateCollageSourcesAsync(
+        IReadOnlyList<IWMPhotoImportSource> sources,
+        string sessionDirectory,
+        WMOperationExecutionOptions execution,
+        CancellationToken cancellationToken = default)
+    {
+        if (sources.Count == 0) return [];
+        var sourceDirectory = Path.Combine(sessionDirectory, "sources");
+        Directory.CreateDirectory(sourceDirectory);
+        var output = new WMWorkspaceMedia[sources.Count];
+        using var semaphore = new SemaphoreSlim(execution.MaxConcurrentImages, execution.MaxConcurrentImages);
+        var tasks = sources.Select(async (source, index) =>
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                output[index] = await StageTemplateCollageSourceAsync(
+                    source, sourceDirectory, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }).ToArray();
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+        return output;
+    }
+
+    private async Task<WMWorkspaceMedia> StageTemplateCollageSourceAsync(
+        IWMPhotoImportSource source,
+        string sourceDirectory,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var extension = SafeExtension(source.DisplayName);
+        if (RawExtensions.Contains(extension))
+            throw new NotSupportedException("拼图模板暂不支持 RAW 输入，请先转换为 JPEG、PNG 或 WebP。");
+        var stagedPath = Path.Combine(sourceDirectory, $"{Guid.NewGuid():N}{extension}");
+        try
+        {
+            await using (var input = await source.OpenReadAsync(cancellationToken).ConfigureAwait(false))
+            await using (var staged = new FileStream(
+                             stagedPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                             1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                await input.CopyToAsync(staged, cancellationToken).ConfigureAwait(false);
+                await staged.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            var metadataTask = metadataReader.ReadAsync(stagedPath, cancellationToken);
+            string contentHash;
+            await using (var stream = new FileStream(
+                             stagedPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                             1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                contentHash = Convert.ToHexString(
+                    await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false));
+            }
+
+            int width;
+            int height;
+            using (var codec = SKCodec.Create(stagedPath)
+                               ?? throw new InvalidDataException($"无法读取拼图素材：{source.DisplayName}"))
+            {
+                var swap = codec.EncodedOrigin is SKEncodedOrigin.LeftTop
+                    or SKEncodedOrigin.RightTop
+                    or SKEncodedOrigin.LeftBottom
+                    or SKEncodedOrigin.RightBottom;
+                width = swap ? codec.Info.Height : codec.Info.Width;
+                height = swap ? codec.Info.Width : codec.Info.Height;
+            }
+
+            var metadataResult = await metadataTask.ConfigureAwait(false);
+            var info = new FileInfo(stagedPath);
+            var orientation = metadataResult.Metadata.Orientation ?? 1;
+            var colorSpace = metadataResult.Metadata.ColorSpace ?? "sRGB";
+            var fingerprintMaterial = $"{contentHash}|{orientation}|{colorSpace}|{WMColorPipelineVersion.Current}";
+            var fingerprint = new WMSourceFingerprint
+            {
+                StableId = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(fingerprintMaterial))),
+                FileIdentity = Path.GetFullPath(stagedPath),
+                ContentHash = contentHash,
+                Length = info.Length,
+                LastWriteTimeUtcTicks = info.LastWriteTimeUtc.Ticks,
+                Orientation = orientation,
+                IccHash = colorSpace,
+                PipelineVersion = WMColorPipelineVersion.Current
+            };
+            var artifact = new WMImageArtifact
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                FilePath = stagedPath,
+                PreviewPath = stagedPath,
+                SourceOperation = WMImageOperationKind.Source,
+                Width = width,
+                Height = height,
+                Exif = metadataResult.ToCompatibilityExifDictionary(),
+                Metadata = metadataResult.Metadata,
+                ContentHash = contentHash,
+                SourceFingerprint = fingerprint
+            };
+            return new WMWorkspaceMedia
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                DisplayName = source.DisplayName,
+                OriginalReference = source.DisplayName,
+                Artifact = artifact,
+                IsSelected = false
+            };
+        }
+        catch
+        {
+            TryDelete(stagedPath);
+            throw;
+        }
+    }
+
     private async Task<WMWorkspaceMedia> ImportOneAsync(
         WMStagedSource staged,
         string previewDirectory,

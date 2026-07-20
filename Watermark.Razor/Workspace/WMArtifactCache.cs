@@ -254,6 +254,11 @@ public sealed class WMArtifactCache : IWMArtifactCache
         try
         {
             if (File.Exists(path)) File.Delete(path);
+            if (!path.EndsWith(".layout.json", StringComparison.OrdinalIgnoreCase))
+            {
+                var layoutPath = path + ".layout.json";
+                if (File.Exists(layoutPath)) File.Delete(layoutPath);
+            }
             return !File.Exists(path);
         }
         catch

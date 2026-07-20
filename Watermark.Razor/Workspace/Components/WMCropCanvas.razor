@@ -1,0 +1,99 @@
+@using Microsoft.JSInterop
+@using Watermark.Shared.Models
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+<div class="wm-crop-canvas @Class" @ref="root" tabindex="0" role="application"
+     aria-label="图片裁切画布。拖动裁切框移动范围，拖动边缘和角点改变大小，拖动画布移动图片。">
+    @if (string.IsNullOrWhiteSpace(ImageUrl))
+    {
+        <div class="wm-crop-empty"><MIcon>mdi-image-outline</MIcon><span>暂无可裁切图片</span></div>
+    }
+    else
+    {
+        <div class="wm-cropper-host" aria-hidden="true"></div>
+        <div class="wm-crop-loading" aria-hidden="true"><span></span></div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public int SourceWidth { get; set; }
+    [Parameter] public int SourceHeight { get; set; }
+    [Parameter] public WMCropSettings Settings { get; set; } = WMCropSettings.Identity;
+    [Parameter] public EventCallback<WMCropSettings> SettingsChanged { get; set; }
+    [Parameter] public EventCallback ApplyRequested { get; set; }
+    [Parameter] public EventCallback CancelRequested { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference root;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<WMCropCanvas>? reference;
+    private bool attached;
+    private bool disposed;
+    private long appliedGestureRevision;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (disposed || string.IsNullOrWhiteSpace(ImageUrl) || SourceWidth <= 0 || SourceHeight <= 0) return;
+        try
+        {
+            module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/Watermark.Razor/js/wm-crop-canvas.js");
+            if (!attached)
+            {
+                reference = DotNetObjectReference.Create(this);
+                await module.InvokeVoidAsync(
+                    "attach", root, reference, ImageUrl, Settings, SourceWidth, SourceHeight);
+                attached = true;
+            }
+            else
+            {
+                await module.InvokeVoidAsync(
+                    "update", root, ImageUrl, Settings, SourceWidth, SourceHeight);
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    [JSInvokable]
+    public Task OnCropGestureAsync(WMCropSettings settings, long revision)
+    {
+        if (revision <= appliedGestureRevision) return Task.CompletedTask;
+        appliedGestureRevision = revision;
+        return SettingsChanged.InvokeAsync(WMCropPlanner.Normalize(settings, SourceWidth, SourceHeight));
+    }
+
+    [JSInvokable]
+    public Task OnCropApplyAsync() => ApplyRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnCropCancelAsync() => CancelRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnCropFitAsync()
+    {
+        var fitted = WMCropPlanner.Normalize(Settings with
+        {
+            CenterX = 0.5,
+            CenterY = 0.5,
+            VisibleWidth = 1,
+            VisibleHeight = 1
+        }, SourceWidth, SourceHeight);
+        return SettingsChanged.InvokeAsync(fitted);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        if (module is not null && attached)
+        {
+            try { await module.InvokeVoidAsync("dispose", root); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+        if (module is not null) await module.DisposeAsync();
+        reference?.Dispose();
+    }
+}

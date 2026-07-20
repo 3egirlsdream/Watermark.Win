@@ -10,6 +10,8 @@ public static class WMApplicationServiceCollectionExtensions
         services.AddScoped<IWMNavigationHistory, WMNavigationHistory>();
         services.AddScoped<IWMAccountService, WMAccountService>();
         services.AddScoped<IWMApplicationStartupService, WMApplicationStartupService>();
+        services.AddScoped<IWMDesktopStartupService, WMDesktopStartupService>();
+        services.AddScoped<WMTemplateDesignerSession>();
         services.AddScoped<IWMAppSettingsService, WMAppSettingsService>();
         services.AddScoped<IWMCacheMaintenanceService, WMCacheMaintenanceService>();
         services.AddScoped<IWMResourceLibraryService, WMResourceLibraryService>();

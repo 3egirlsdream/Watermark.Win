@@ -15,7 +15,8 @@ namespace Watermark.Razor.Workspace;
 public sealed class WMCollageDerivedMediaProcessor(
     IWMArtifactCache cache,
     IWMExecutionProfileProvider executionProfiles,
-    IWMWorkspacePerformanceCounters metrics) : IWMDerivedMediaProcessor
+    IWMWorkspacePerformanceCounters metrics,
+    IWMTemplateRenderer? templateRenderer = null) : IWMDerivedMediaProcessor
 {
     private const int PipelineVersion = 1;
 
@@ -27,6 +28,9 @@ public sealed class WMCollageDerivedMediaProcessor(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(inputs);
+        if (request.Kind == WMDerivedMediaKind.TemplateCollage)
+            return await ExecuteTemplateCollageAsync(
+                request, inputs, sessionDirectory, cancellationToken).ConfigureAwait(false);
         if (request.Kind != WMDerivedMediaKind.Collage)
             throw new NotSupportedException($"不支持派生操作 {request.Kind}。");
         if (inputs.Count < 2)
@@ -124,6 +128,109 @@ public sealed class WMCollageDerivedMediaProcessor(
             request.SuggestedFileName ?? $"拼图-{DateTime.Now:yyyyMMdd-HHmmss}.png");
     }
 
+    private async Task<WMDerivedMediaOutput> ExecuteTemplateCollageAsync(
+        WMDerivedMediaRequest request,
+        IReadOnlyList<WMImageArtifact> inputs,
+        string sessionDirectory,
+        CancellationToken cancellationToken)
+    {
+        if (templateRenderer is null)
+            throw new InvalidOperationException("当前宿主未注册模板渲染器。");
+        var settings = request.TemplateCollage
+                       ?? throw new InvalidOperationException("拼图模板参数缺失。");
+        if (inputs.Count == 0) throw new InvalidOperationException("拼图模板至少需要一张素材。");
+
+        var canvas = Global.ReadConfig(settings.CanvasJson);
+        var slots = canvas.Children
+            .Where(container => container.ContainerProperties?.FixImage != true)
+            .ToArray();
+        if (slots.Length == 0) throw new InvalidOperationException("该模板没有可填充的图片容器。");
+        canvas.Exif ??= [];
+        for (var index = 0; index < Math.Min(slots.Length, inputs.Count); index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            slots[index].Path = inputs[index].FilePath;
+            canvas.Exif[slots[index].ID] = inputs[index].Exif.Count == 0
+                ? new Dictionary<string, string>(ExifHelper.DefaultMeta)
+                : new Dictionary<string, string>(inputs[index].Exif);
+        }
+
+        var fingerprint = CreateTemplateFingerprint(inputs, settings);
+        var cached = await cache.TryGetAsync(sessionDirectory, fingerprint, cancellationToken)
+            .ConfigureAwait(false);
+        var outputDirectory = Path.Combine(sessionDirectory, "artifacts", "derived");
+        Directory.CreateDirectory(outputDirectory);
+        var outputPath = cached?.FilePath
+                         ?? Path.Combine(outputDirectory, $"template-collage-{fingerprint[..24].ToLowerInvariant()}.png");
+        int width;
+        int height;
+        if (cached is null)
+        {
+            byte[] bytes;
+            using (metrics.Measure(WMWorkspaceMetricStage.Replay))
+            using (metrics.Measure(WMWorkspaceMetricStage.Encode))
+                bytes = await templateRenderer.RenderAsync(
+                    new WMTemplateRenderRequest(
+                        canvas,
+                        IsPreview: false,
+                        Format: SKEncodedImageFormat.Png,
+                        Quality: 100),
+                    cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            using (var stream = new SKMemoryStream(bytes))
+            using (var codec = SKCodec.Create(stream)
+                               ?? throw new InvalidDataException("拼图模板输出无法读取。"))
+            {
+                width = codec.Info.Width;
+                height = codec.Info.Height;
+            }
+            var temporary = outputPath + $".{Guid.NewGuid():N}.tmp";
+            try
+            {
+                await File.WriteAllBytesAsync(temporary, bytes, cancellationToken).ConfigureAwait(false);
+                File.Move(temporary, outputPath, true);
+                await cache.CommitAsync(
+                    sessionDirectory,
+                    fingerprint,
+                    outputPath,
+                    executionProfiles.GetInteractiveProfile().PreviewCacheBudgetBytes,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            finally { TryDelete(temporary); }
+        }
+        else
+        {
+            using var codec = SKCodec.Create(outputPath)
+                              ?? throw new InvalidDataException("缓存的拼图模板输出无法读取。");
+            width = codec.Info.Width;
+            height = codec.Info.Height;
+        }
+
+        var artifactId = Guid.NewGuid().ToString("N");
+        var operation = WMImageOperation.Create(
+            WMImageOperationKind.Collage,
+            inputs.Select(item => item.Id),
+            [artifactId],
+            settings);
+        var artifact = new WMImageArtifact
+        {
+            Id = artifactId,
+            FilePath = outputPath,
+            PreviewPath = outputPath,
+            ParentArtifactIds = inputs.Select(item => item.Id).ToArray(),
+            SourceOperation = WMImageOperationKind.Collage,
+            OperationId = operation.Id,
+            ContentHash = fingerprint,
+            Width = width,
+            Height = height,
+            ColorSpace = "sRGB"
+        };
+        return new WMDerivedMediaOutput(
+            artifact,
+            operation,
+            request.SuggestedFileName ?? $"拼图模板-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+    }
+
     private IReadOnlyList<(int Width, int Height)> ReadDimensions(IReadOnlyList<WMImageArtifact> inputs)
     {
         var result = new List<(int Width, int Height)>(inputs.Count);
@@ -207,6 +314,22 @@ public sealed class WMCollageDerivedMediaProcessor(
         WMCollageSettings settings)
     {
         var builder = new StringBuilder($"wm-collage-v{PipelineVersion}|{settings.Direction}|{settings.GapPixels}|{settings.BackgroundColor}");
+        foreach (var input in inputs)
+        {
+            var info = new FileInfo(input.FilePath);
+            builder.Append('|')
+                .Append(input.ContentHash ?? input.SourceFingerprint?.StableId ?? input.Id)
+                .Append(':').Append(info.Exists ? info.Length : 0)
+                .Append(':').Append(info.Exists ? info.LastWriteTimeUtc.Ticks : 0);
+        }
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
+    }
+
+    private static string CreateTemplateFingerprint(
+        IReadOnlyList<WMImageArtifact> inputs,
+        WMTemplateCollageSettings settings)
+    {
+        var builder = new StringBuilder($"wm-template-collage-v1|{settings.TemplateId}|{settings.CanvasJson}");
         foreach (var input in inputs)
         {
             var info = new FileInfo(input.FilePath);

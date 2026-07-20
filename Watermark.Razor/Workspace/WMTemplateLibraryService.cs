@@ -42,7 +42,8 @@ public sealed class WMTemplateLibraryEntry
 /// </summary>
 public class WMTemplateLibraryService : IAsyncDisposable
 {
-    private const int PreviewPipelineVersion = 2;
+    private const int PreviewPipelineVersion = 3;
+    private const string PreviewMimeType = "image/jpeg";
     private readonly IWMWatermarkHelper helper;
     private readonly IWMObjectUrlRegistry objectUrls;
     private readonly IWMWorkspacePerformanceCounters metrics;
@@ -209,7 +210,7 @@ public class WMTemplateLibraryService : IAsyncDisposable
                     .ConfigureAwait(false);
                 canvas.Exif[canvas.ID] = ExifHelper.DefaultMeta;
                 await Global.InitFonts([canvas]).ConfigureAwait(false);
-                var cachePath = Path.Combine(previewRoot, $"{fingerprint}.png");
+                var cachePath = Path.Combine(previewRoot, $"{fingerprint}.jpg");
                 var entry = new WMTemplateLibraryEntry
                 {
                     Key = pair.Key,
@@ -326,7 +327,7 @@ public class WMTemplateLibraryService : IAsyncDisposable
                 Owner(entry.TemplateId),
                 entry.PreviewVersion,
                 content,
-                "image/png",
+                PreviewMimeType,
                 cancellationToken).ConfigureAwait(false);
             if (lease is null) return;
             var accepted = false;

@@ -17,7 +17,8 @@ public sealed record WMRenderPlan(
     public bool RequiresReplay => Steps.Count > 0;
 
     public bool HasCommittedHighPrecision =>
-        CurrentArtifact.HighPrecision is { FilePath.Length: > 0 } highPrecision
+        !string.Equals(CurrentArtifact.Id, BaseArtifact.Id, StringComparison.Ordinal)
+        && CurrentArtifact.HighPrecision is { FilePath.Length: > 0 } highPrecision
         && File.Exists(highPrecision.FilePath);
 }
 
@@ -136,8 +137,15 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
                     ?? session.MediaCatalog.FirstOrDefault(item => item.Id == mediaId)
                     ?? throw new InvalidOperationException("工作台素材不存在。");
         var artifact = ResolveArtifact(session, media);
-        var steps = new List<WMRenderPlanStep>(2);
+        var steps = new List<WMRenderPlanStep>(3);
         var effective = ResolveEffectiveEdits(session, media, artifact);
+        if (!WMCropPlanner.IsIdentity(effective.CropSettings))
+        {
+            steps.Add(new WMRenderPlanStep(CreateOperation(
+                WMImageOperationKind.Crop,
+                artifact.Id,
+                effective.CropSettings)));
+        }
         var templateId = effective.TemplateId;
         if (!string.IsNullOrWhiteSpace(templateId))
         {
@@ -146,15 +154,9 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
             var canvas = Global.ReadConfig(effective.TemplateSnapshotJson);
             canvas = Global.ReadConfig(Global.CanvasSerialize(canvas));
             canvas.Path = string.Empty;
-            canvas.Exif = artifact.Exif.Count == 0
-                ? []
-                : new Dictionary<string, Dictionary<string, string>>
-                {
-                    [canvas.ID] = new Dictionary<string, string>(artifact.Exif)
-                };
             steps.Add(new WMRenderPlanStep(CreateOperation(
                 WMImageOperationKind.Template,
-                artifact.Id,
+                steps.Count == 0 ? artifact.Id : steps[^1].Operation.OutputArtifactIds[0],
                 new WMTemplateOperationSettings(canvas))));
         }
 
@@ -215,6 +217,15 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
             .Append('|').Append(WMColorPipelineVersion.Current);
         foreach (var step in steps)
             builder.Append('|').Append((int)step.Operation.Kind).Append(':').Append(step.Operation.ParametersJson);
+        if (steps.Any(step => step.Operation.Kind == WMImageOperationKind.Template))
+        {
+            builder.Append("|exif");
+            foreach (var pair in artifact.Exif.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                builder.Append('|').Append(pair.Key.Length).Append(':').Append(pair.Key)
+                    .Append('=').Append(pair.Value?.Length ?? 0).Append(':').Append(pair.Value);
+            }
+        }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
     }
 
@@ -256,6 +267,9 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
         string? templateId = session.TemplateId;
         string? templateSnapshot = artifact.CanvasSnapshotJson;
         var colorRecipe = CloneRecipeOrNull(session.ColorRecipe);
+        var cropSettings = session.CropSettingsByMediaId.TryGetValue(media.Id, out var projectedCrop)
+            ? projectedCrop
+            : WMCropSettings.Identity;
         foreach (var operation in operations)
         {
             var targetsMedia = targetsByOperation.TryGetValue(operation.Id, out var assigned)
@@ -278,6 +292,11 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
                 {
                     colorRecipe = JsonSerializer.Deserialize<WMColorRecipe>(operation.ParametersJson);
                 }
+                else if (operation.Kind == WMImageOperationKind.Crop)
+                {
+                    cropSettings = JsonSerializer.Deserialize<WMCropSettings>(operation.ParametersJson)
+                                   ?? WMCropSettings.Identity;
+                }
             }
             catch (JsonException)
             {
@@ -288,7 +307,9 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
             templateId = projectedTemplate;
         if (session.ColorRecipesByMediaId.TryGetValue(media.Id, out var projectedRecipe))
             colorRecipe = CloneRecipeOrNull(projectedRecipe);
-        return new EffectiveEdits(templateId, templateSnapshot, colorRecipe);
+        if (session.CropSettingsByMediaId.TryGetValue(media.Id, out projectedCrop))
+            cropSettings = projectedCrop;
+        return new EffectiveEdits(templateId, templateSnapshot, colorRecipe, cropSettings);
     }
 
     private static WMColorRecipe CloneRecipe(WMColorRecipe recipe) =>
@@ -300,5 +321,6 @@ public sealed class WMRenderPlanCompiler : IWMRenderPlanCompiler
     private sealed record EffectiveEdits(
         string? TemplateId,
         string? TemplateSnapshotJson,
-        WMColorRecipe? ColorRecipe);
+        WMColorRecipe? ColorRecipe,
+        WMCropSettings CropSettings);
 }

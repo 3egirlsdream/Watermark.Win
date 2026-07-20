@@ -21,21 +21,24 @@ public sealed record WMFullResolutionRenderRequest(
 
 public sealed class WMFastJpegExportService
 {
-    public const int PipelineVersion = 1;
+    public const int PipelineVersion = 2;
 
     private readonly IWMTemplateRenderer templateRenderer;
     private readonly WMColorGradeOperationProcessor colorProcessor;
     private readonly IWMProcessingScheduler scheduler;
+    private readonly IWMWorkspacePerformanceCounters metrics;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> cacheLocks = new(StringComparer.Ordinal);
 
     public WMFastJpegExportService(
         IWMTemplateRenderer templateRenderer,
         WMColorGradeOperationProcessor colorProcessor,
-        IWMProcessingScheduler scheduler)
+        IWMProcessingScheduler scheduler,
+        IWMWorkspacePerformanceCounters? metrics = null)
     {
         this.templateRenderer = templateRenderer;
         this.colorProcessor = colorProcessor;
         this.scheduler = scheduler;
+        this.metrics = metrics ?? new WMWorkspacePerformanceCounters();
     }
 
     public async Task RenderAsync(
@@ -116,11 +119,28 @@ public sealed class WMFastJpegExportService
         var oriented = WatermarkHelper.AutoOrient(codec, decoded);
         using var orientedOwner = ReferenceEquals(oriented, decoded) ? null : oriented;
         using var srgb = WMImageBitmap.NormalizeToSrgb(oriented);
-        var target = GetTargetSize(srgb.Width, srgb.Height, request.Resolution);
-        SKBitmap current = ResizeIfNeeded(srgb, target.Width, target.Height);
+        var firstCrop = request.Plan.Steps.FirstOrDefault()?.Operation.Kind == WMImageOperationKind.Crop
+            ? request.Plan.Steps[0].Operation
+            : null;
+        SKBitmap current;
+        var firstReplayIndex = 0;
+        if (firstCrop is not null)
+        {
+            var cropSettings = (WMCropSettings)WMFullResolutionRenderPipeline.DeserializeSettings(firstCrop);
+            var nativePlan = WMCropPlanner.CreatePlan(cropSettings, srgb.Width, srgb.Height);
+            var cropTarget = GetTargetSize(nativePlan.OutputWidth, nativePlan.OutputHeight, request.Resolution);
+            using (metrics.Measure(WMWorkspaceMetricStage.Crop))
+                current = WMCropProcessor.Apply(srgb, cropSettings, Math.Max(cropTarget.Width, cropTarget.Height));
+            firstReplayIndex = 1;
+        }
+        else
+        {
+            var target = GetTargetSize(srgb.Width, srgb.Height, request.Resolution);
+            current = ResizeIfNeeded(srgb, target.Width, target.Height);
+        }
         try
         {
-            for (var index = 0; index < request.Plan.Steps.Count; index++)
+            for (var index = firstReplayIndex; index < request.Plan.Steps.Count; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 parallelOptions.CancellationToken.ThrowIfCancellationRequested();
@@ -129,7 +149,13 @@ public sealed class WMFastJpegExportService
                     $"正在重放编辑 {index + 1}/{request.Plan.Steps.Count}",
                     WMOperationStage.Processing, ItemPercentage: 15 + 65d * index / Math.Max(1, request.Plan.Steps.Count)));
                 SKBitmap next;
-                if (operation.Kind == WMImageOperationKind.ColorGrade)
+                if (operation.Kind == WMImageOperationKind.Crop)
+                {
+                    var settings = (WMCropSettings)WMFullResolutionRenderPipeline.DeserializeSettings(operation);
+                    using (metrics.Measure(WMWorkspaceMetricStage.Crop))
+                        next = WMCropProcessor.Apply(current, settings);
+                }
+                else if (operation.Kind == WMImageOperationKind.ColorGrade)
                 {
                     var recipe = JsonSerializer.Deserialize<WMColorRecipe>(operation.ParametersJson)
                         ?? throw new InvalidOperationException("无法恢复调色参数。");
@@ -141,7 +167,8 @@ public sealed class WMFastJpegExportService
                 }
                 else if (operation.Kind == WMImageOperationKind.Template)
                 {
-                    var settings = (WMTemplateOperationSettings)WMFullResolutionRenderPipeline.DeserializeSettings(operation);
+                    var settings = (WMTemplateOperationSettings)WMFullResolutionRenderPipeline.DeserializeSettings(
+                        operation, request.Plan.BaseArtifact);
                     next = templateRenderer.RenderBitmap(settings.Canvas, current, cancellationToken);
                 }
                 else
@@ -236,6 +263,7 @@ public sealed class WMFullResolutionRenderPipeline
     private readonly IWMHighPrecisionTemplateRenderer highPrecisionTemplateRenderer;
     private readonly IWMTiff16Encoder tiff16Encoder;
     private readonly WMFastJpegExportService fastJpegExportService;
+    private readonly IWMWorkspacePerformanceCounters metrics;
 
     public WMFullResolutionRenderPipeline(
         WMTemplateOperationProcessor templateProcessor,
@@ -244,15 +272,18 @@ public sealed class WMFullResolutionRenderPipeline
         WMHighPrecisionColorPipeline? highPrecisionColorPipeline = null,
         IWMHighPrecisionTemplateRenderer? highPrecisionTemplateRenderer = null,
         IWMTiff16Encoder? tiff16Encoder = null,
-        WMFastJpegExportService? fastJpegExportService = null)
+        WMFastJpegExportService? fastJpegExportService = null,
+        IWMWorkspacePerformanceCounters? metrics = null)
     {
         this.scheduler = scheduler;
         this.highPrecisionColorPipeline = highPrecisionColorPipeline ?? new WMHighPrecisionColorPipeline();
         this.highPrecisionTemplateRenderer = highPrecisionTemplateRenderer
             ?? new WMHighPrecisionTemplateRenderer(new WatermarkHelper());
         this.tiff16Encoder = tiff16Encoder ?? new WMUnsupportedTiff16Encoder();
+        this.metrics = metrics ?? new WMWorkspacePerformanceCounters();
         this.fastJpegExportService = fastJpegExportService
-            ?? new WMFastJpegExportService(new WMTemplateRenderer(new WatermarkHelper()), colorProcessor, scheduler);
+            ?? new WMFastJpegExportService(
+                new WMTemplateRenderer(new WatermarkHelper()), colorProcessor, scheduler, this.metrics);
     }
 
     public async Task RenderAsync(
@@ -290,6 +321,12 @@ public sealed class WMFullResolutionRenderPipeline
             return false;
         foreach (var step in request.Plan.Steps)
         {
+            if (step.Operation.Kind == WMImageOperationKind.Crop)
+            {
+                try { _ = DeserializeSettings(step.Operation); }
+                catch { return false; }
+                continue;
+            }
             if (step.Operation.Kind == WMImageOperationKind.Template)
             {
                 try { _ = DeserializeSettings(step.Operation); }
@@ -301,7 +338,7 @@ public sealed class WMFullResolutionRenderPipeline
                 var recipe = JsonSerializer.Deserialize<WMColorRecipe>(step.Operation.ParametersJson);
                 if (recipe is null) return false;
                 recipe.UpgradeToCurrentSchema();
-                if (recipe.PipelineVersion != WMColorPipelineVersion.LinearSrgb16V1) return false;
+                if (recipe.PipelineVersion != WMColorPipelineVersion.OcioLinearSrgbV1) return false;
                 continue;
             }
             return false;
@@ -319,7 +356,9 @@ public sealed class WMFullResolutionRenderPipeline
         try
         {
             var committedPath = request.Plan.CurrentArtifact.HighPrecision?.FilePath;
-            var useCommittedVersion = !string.IsNullOrWhiteSpace(committedPath) && File.Exists(committedPath);
+            var useCommittedVersion = request.Plan.HasCommittedHighPrecision
+                                      && !string.IsNullOrWhiteSpace(committedPath)
+                                      && File.Exists(committedPath);
             var basePath = useCommittedVersion ? committedPath : request.Plan.BaseArtifact.HighPrecision?.FilePath;
             if (string.IsNullOrWhiteSpace(basePath) || !File.Exists(basePath))
             {
@@ -346,7 +385,24 @@ public sealed class WMFullResolutionRenderPipeline
                 progress?.Report(new WMOperationProgress(stage, request.Plan.Steps.Count + 1,
                     $"正在以16位精度重放编辑 {index + 1}/{replaySteps.Count}…",
                     WMOperationStage.Processing, ItemPercentage: 20));
-                if (operation.Kind == WMImageOperationKind.ColorGrade)
+                if (operation.Kind == WMImageOperationKind.Crop)
+                {
+                    var settings = (WMCropSettings)DeserializeSettings(operation);
+                    var cropMaximumEdge = ResolveCropMaximumLongEdge(
+                        currentPath, settings, request.Resolution);
+                    using (metrics.Measure(WMWorkspaceMetricStage.Crop))
+                    {
+                        currentPath = (await scheduler.RunAsync(_ => WMCropProcessor.ApplyHighPrecision(
+                            currentPath,
+                            output,
+                            settings,
+                            cropMaximumEdge,
+                            cancellationToken), request.Execution,
+                            EstimateHighPrecisionMemory(request.Plan.BaseArtifact, request.Execution),
+                            cancellationToken)).FilePath;
+                    }
+                }
+                else if (operation.Kind == WMImageOperationKind.ColorGrade)
                 {
                     var recipe = JsonSerializer.Deserialize<WMColorRecipe>(operation.ParametersJson)
                         ?? throw new InvalidOperationException("无法恢复高精度调色参数。");
@@ -357,7 +413,8 @@ public sealed class WMFullResolutionRenderPipeline
                 }
                 else if (operation.Kind == WMImageOperationKind.Template)
                 {
-                    var settings = (WMTemplateOperationSettings)DeserializeSettings(operation);
+                    var settings = (WMTemplateOperationSettings)DeserializeSettings(
+                        operation, request.Plan.BaseArtifact);
                     currentPath = (await scheduler.RunAsync(_ => highPrecisionTemplateRenderer.Render(
                         currentPath, output, settings.Canvas, cancellationToken), request.Execution,
                         EstimateHighPrecisionMemory(request.Plan.BaseArtifact, request.Execution), cancellationToken)).FilePath;
@@ -435,6 +492,24 @@ public sealed class WMFullResolutionRenderPipeline
         return output;
     }
 
+    private static int? ResolveCropMaximumLongEdge(
+        string currentPath,
+        WMCropSettings settings,
+        string resolution)
+    {
+        if (resolution == "default") return null;
+        using var reader = new WM16FileReader(currentPath);
+        var plan = WMCropPlanner.CreatePlan(settings, reader.Width, reader.Height);
+        if (resolution.StartsWith("max:", StringComparison.Ordinal)
+            && int.TryParse(resolution.AsSpan(4), out var maximumEdge))
+            return Math.Clamp(maximumEdge, 320, 16384);
+        var bounds = resolution == "1080" ? (Width: 1920, Height: 1080) : (Width: 3840, Height: 2160);
+        var scale = Math.Min(1d, Math.Min(
+            bounds.Width / (double)plan.OutputWidth,
+            bounds.Height / (double)plan.OutputHeight));
+        return Math.Max(1, (int)Math.Round(Math.Max(plan.OutputWidth, plan.OutputHeight) * scale));
+    }
+
     private static int CalculateTileHeight(int width, long memoryBudgetBytes) =>
         (int)Math.Clamp(Math.Max(8L * 1024 * 1024, memoryBudgetBytes / 16)
             / Math.Max(1L, width * 4L * sizeof(ushort) * 3L), 32, 256);
@@ -443,11 +518,16 @@ public sealed class WMFullResolutionRenderPipeline
         Math.Min(execution.MemoryBudgetBytes, Math.Max(128L * 1024 * 1024,
             (long)Math.Max(1, artifact.Width) * CalculateTileHeight(artifact.Width, execution.MemoryBudgetBytes) * 4 * 12));
 
-    internal static object DeserializeSettings(WMImageOperation operation)
+    internal static object DeserializeSettings(
+        WMImageOperation operation,
+        WMImageArtifact? runtimeArtifact = null)
     {
         if (operation.Kind == WMImageOperationKind.ColorGrade)
             return JsonSerializer.Deserialize<WMColorRecipe>(operation.ParametersJson)
                    ?? throw new InvalidOperationException("无法恢复调色参数。");
+        if (operation.Kind == WMImageOperationKind.Crop)
+            return JsonSerializer.Deserialize<WMCropSettings>(operation.ParametersJson)
+                   ?? throw new InvalidOperationException("无法恢复裁切参数。");
         if (operation.Kind == WMImageOperationKind.Template)
         {
             using var document = JsonDocument.Parse(operation.ParametersJson);
@@ -455,7 +535,18 @@ public sealed class WMFullResolutionRenderPipeline
                 || string.IsNullOrWhiteSpace(property.GetString()))
                 throw new InvalidOperationException("无法恢复模板参数。");
             var canvasJson = property.GetString()!;
-            return new WMTemplateOperationSettings(Global.ReadConfig(canvasJson)) { CanvasJson = canvasJson };
+            var canvas = Global.ReadConfig(canvasJson);
+            if (runtimeArtifact is not null)
+            {
+                // EXIF is runtime photo data and intentionally excluded from template JSON.
+                // Always attach one entry so a metadata-less photo renders empty fields
+                // instead of falling back to the template designer's sample metadata.
+                canvas.Exif = new Dictionary<string, Dictionary<string, string>>
+                {
+                    [canvas.ID] = new Dictionary<string, string>(runtimeArtifact.Exif)
+                };
+            }
+            return new WMTemplateOperationSettings(canvas) { CanvasJson = canvasJson };
         }
         throw new InvalidOperationException($"不支持重放操作 {operation.Kind}。");
     }
