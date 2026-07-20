@@ -29,9 +29,8 @@
         <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.2.19</ApplicationDisplayVersion>
-		<ApplicationVersion>3</ApplicationVersion>
-		<ApplicationBuildNumber>1</ApplicationBuildNumber>
+		<ApplicationDisplayVersion>1.2.21</ApplicationDisplayVersion>
+		<ApplicationVersion>5</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
@@ -89,8 +88,6 @@
 		<AndroidKeyStore>False</AndroidKeyStore>
 		<PublishTrimmed>True</PublishTrimmed>
 		<JavaMaximumHeapSize>2G</JavaMaximumHeapSize>
-		<ApplicationDisplayVersion>1.2.20</ApplicationDisplayVersion>
-		<ApplicationVersion>4</ApplicationVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
@@ -99,30 +96,23 @@
 		<ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
 		<AndroidKeyStore>False</AndroidKeyStore>
 		<JavaMaximumHeapSize>2G</JavaMaximumHeapSize>
-		<ApplicationDisplayVersion>1.2.20</ApplicationDisplayVersion>
-		<ApplicationVersion>4</ApplicationVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <RuntimeIdentifier>maccatalyst-arm64</RuntimeIdentifier>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-ios|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.19041.0|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.20</ApplicationDisplayVersion>
-	  <ApplicationVersion>4</ApplicationVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
 	  <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
@@ -135,13 +125,11 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-ios|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.19041.0|AnyCPU'">
-	  <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
 	  <ApplicationTitle>轻影</ApplicationTitle>
 	</PropertyGroup>
 	

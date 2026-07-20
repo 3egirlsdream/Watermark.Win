@@ -96,6 +96,24 @@ dotnet build Watermark.Andorid/Watermark.Andorid.csproj \
   -c Debug
 ```
 
+### Android Release APK（一键打包）
+
+在 macOS 或 Linux 安装 .NET 8 SDK、Android SDK 和 MAUI Android 工作负载后，直接从仓库根目录执行：
+
+```bash
+./scripts/build-android-release.sh
+```
+
+脚本会还原依赖、以单进程执行完整重建，并生成当前项目版本号对应的 APK。完整重建会刷新 Android 清单和打包中间文件，避免版本号变更后误复用旧 APK。
+
+产物位于：
+
+```text
+Watermark.Andorid/bin/Release/net8.0-android/com.top.thankful.watermark.andorid-Signed.apk
+```
+
+当前项目的 `AndroidKeyStore=False`，因此该 APK 适用于测试安装；上架应用商店前需要配置正式签名密钥。
+
 ### Windows
 
 在 Windows 开发环境运行：
