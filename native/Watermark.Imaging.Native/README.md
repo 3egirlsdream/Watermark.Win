@@ -1,98 +1,116 @@
 # Watermark.Imaging.Native
 
-Stable C ABI for the cross-platform imaging pipeline. The managed layer owns WM16,
-job scheduling and manifests; this library owns LibRaw decoding, deterministic
-star alignment, RGB16 preview/full-resolution transforms, native float32 stacking
-and LibTIFF output. The current public contract is ABI V3; ABI V2 is rejected.
+Stable C ABI for the cross-platform imaging pipeline. The managed layer owns
+WM16, job scheduling and manifests; this library owns LibRaw decoding,
+deterministic star alignment, RGB16 transforms, native float32 stacking,
+LibTIFF output and OpenColorIO color processing. The current public contract is
+ABI V4. ABI V3 packages remain usable for RAW/TIFF features, but do not expose
+`WMI_CAP_COLOR_OCIO` and therefore cannot enable production color grading.
 
-Pinned dependencies:
+Pinned native dependencies:
 
 - LibRaw 0.22.1
 - LibTIFF 4.7.2
+- OpenColorIO 2.5.2
+- Expat 2.7.2
+- yaml-cpp 0.8.0
+- Imath 3.2.1
+- pystring 1.1.4
+- minizip-ng 4.0.10
+- zlib 1.3.2
+- sse2neon commit `227cc413fb2d50b2a10073087be96b59d5364aea`
 
-Star alignment is implemented by this C++17 library with LoG-style detection,
-sub-pixel centroids, grid-balanced features, local triangle descriptor buckets and
-deterministic RANSAC. Preview stacking is bounded by the managed CPU budget and
-parallelized by output ranges, with NEON/SSE/AVX compiler paths and a scalar
-fallback. The release does not link or deploy OpenCV.
+The exact source URLs, revisions and SHA-256 values for OCIO and its transitive
+dependencies are stored in `native/dependencies.lock.json`. A maintainer places
+the archives in the ignored `native/downloads` directory. The preparation step
+verifies every archive before extracting it to ignored `native/third_party` and
+never downloads sources. Application builds only consume verified binaries
+under `native/artifacts`; they never download or compile native dependencies.
 
-Application builds consume the verified binaries committed under
-`native/artifacts`; they do not download or compile LibRaw. The repository does
-not track LibRaw implementation sources. It only keeps LibRaw's license and
-copyright files, while the exact official source URL and archive checksum are
-recorded in `native/artifacts/manifest.json` and `native/NATIVE-BINARY-COMMIT.md`.
-LibTIFF 4.7.2 sources are vendored under `native/third_party`.
+OpenColorIO is linked statically with apps, Python, Java, documentation, tests,
+GPU tests and OpenFX disabled. The wrapper exposes both the CPU Processor and an
+OCIO-authored GLSL ES 3.0 snapshot. No handwritten production color formula is
+used as a fallback. The build also excludes OpenCV, OpenMP, LCMS and lossy-DNG
+JPEG support.
 
-The build scripts below are maintainer-only workflows for regenerating native
-artifacts. They never download LibRaw automatically: obtain the pinned official
-archive yourself, verify its SHA-256, and place the extracted source at
-`native/third_party/LibRaw-0.22.1` before running them. Generated intermediate
-files stay under ignored `native/build` and `native/stage` directories.
+Offline preparation
+-------------------
+
+Place every archive named by `native/dependencies.lock.json` in
+`native/downloads`, then run:
+
+```sh
+cmake -DWMI_ROOT="$PWD" -DWMI_EXTRACT=ON \
+  -P native/cmake/PrepareLockedDependencies.cmake
+```
+
+Missing archives and checksum mismatches fail immediately. Generated build and
+stage files remain in ignored `native/build` and `native/stage` directories.
+
+Host smoke build
+----------------
+
+On macOS, the following command builds the locked OCIO dependency graph, ABI V4
+wrapper and native tests without changing packaged platform artifacts:
+
+```sh
+native/scripts/build-native-host.sh
+```
 
 Apple builds
 ------------
 
-Requirements: Xcode command-line tools, `pkg-config`, and the Autotools-compatible
-`make` shipped with macOS. Run:
+Requirements: Xcode command-line tools, CMake, Autotools-compatible `make`, and
+the pinned LibRaw/LibTIFF source trees. Run:
 
 ```sh
-native/scripts/build-libraw-apple.sh
+native/scripts/build-native-apple.sh
 ```
 
-This produces:
-
-- Mac Catalyst arm64/x86_64 static XCFramework
-- iOS device arm64 and simulator arm64/x86_64 static XCFramework
-
-LibRaw is built as the thread-safe static archive with system zlib,
-`LIBRAW_CALLOC_RAWSTORE`, and without OpenMP, LCMS, examples, or lossy-DNG JPEG.
-LibTIFF is built as a static library with Deflate support and without its tools,
-tests, documentation or optional image codecs. The C ABI wrapper, LibRaw and
-LibTIFF objects are merged into one archive per slice.
+This produces Mac Catalyst arm64/x86_64 and iOS device/simulator static
+XCFrameworks. `build-libraw-apple.sh` remains a compatibility entry and calls
+the same builder.
 
 Android builds
 --------------
 
-Install Android NDK `26.1.10909125` (the version used by the .NET 8 Android
-workload) under the standard Android SDK directory, or set `ANDROID_NDK_ROOT` to
-it, and run:
+Install Android NDK `26.1.10909125`, or set `ANDROID_NDK_ROOT` to that exact
+version, then run:
 
 ```sh
-native/scripts/build-libraw-android.sh
+native/scripts/build-native-android.sh
 ```
 
-The script automatically checks `$ANDROID_SDK_ROOT`, `$ANDROID_HOME`, and the
-default macOS path `$HOME/Library/Android/sdk` for that exact NDK version.
-
-The script produces arm64-v8a and x86_64 shared libraries for API 24. The C++
-runtime is linked statically, so no extra `libc++_shared.so` is deployed.
-
-Apple and Android builds refresh `native/artifacts/manifest.json` after they
-finish. To refresh it without rebuilding, run:
-
-```sh
-native/scripts/update-native-manifest.sh
-```
-
-The manifest records every Apple, Android and Windows artifact currently present,
-including its relative path, architecture and SHA-256 digest.
+The builder checks `ANDROID_SDK_ROOT`, `ANDROID_HOME`, and the default macOS SDK
+location. It produces API 24 `arm64-v8a` and `x86_64` shared libraries with the
+C++ runtime and OCIO dependency graph statically linked. `build-libraw-android.sh`
+is a compatibility entry.
 
 Windows builds
 --------------
 
-On a Windows VM with Visual Studio 2026 x64 and ARM64 C++ build tools installed,
-double-click `native\scripts\build-libraw-windows-all.cmd`, or run the builder
-from an ordinary PowerShell:
+On a Windows machine with Visual Studio C++ x64/ARM64 tools and CMake, run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File native/scripts/build-libraw-windows-all.ps1
+powershell -ExecutionPolicy Bypass -File native/scripts/build-ocio-windows-all.ps1
 ```
 
-It bootstraps vcpkg under `%LOCALAPPDATA%\Watermark.Native\vcpkg` when needed,
-installs static zlib for both
-architectures, creates isolated Visual Studio developer environments, builds and
-verifies both DLLs. An existing vcpkg checkout can be selected with
-`-VcpkgRoot D:\tools\vcpkg`.
+This named entry point is the recommended command when enabling OpenColorIO.
+OpenColorIO is statically linked into the final wrapper, so the command rebuilds
+the complete ABI 4 native wrapper rather than producing a standalone OCIO DLL.
+It reuses the same compatibility orchestrator as the historical LibRaw entry,
+which verifies the locked offline archives, creates
+isolated Visual Studio developer environments, invokes
+`build-native-windows.ps1` for x64 and ARM64, runs tests where the host can
+execute them, checks PE architecture and refreshes the manifest. It does not
+bootstrap vcpkg or access the network.
+
+`build-libraw-windows-all.ps1` remains available as a compatibility entry point
+for the same build.
+
+Subsequent runs reuse the generated dependency build and stage directories. Use
+`-Clean` after changing toolchains, compiler flags or locked dependency sources;
+use `-SkipTests` for a faster local iteration.
 
 The verified outputs are written to:
 
@@ -101,39 +119,42 @@ native\artifacts\win-x64\Watermark.Imaging.Native.dll
 native\artifacts\win-arm64\Watermark.Imaging.Native.dll
 ```
 
-To build only one architecture, use a Visual Studio 2026 Developer PowerShell
-matching the requested architecture and provide a matching static zlib prefix:
+Artifact manifest
+-----------------
 
-```powershell
-$env:ZLIB_ROOT = "C:\vcpkg\installed\x64-windows-static"
-native/scripts/build-libraw-windows.ps1 -Arch x64 -ZlibRoot $env:ZLIB_ROOT
+Apple and Android builders update only their own platform ABI markers. Windows
+updates its markers after both DLLs pass verification. Therefore a partial
+rebuild cannot incorrectly mark another platform as ABI V4. To refresh hashes
+without changing platform ABI markers, run:
+
+```sh
+native/scripts/update-native-manifest.sh
 ```
 
-The script builds the official LibRaw and LibTIFF static targets, then links them
-into the single `Watermark.Imaging.Native.dll` deployed by the WPF project. All
-three projects use the static MSVC runtime (`/MT`), so the package does not
-require a separate Visual C++ runtime installation.
+`native/artifacts/manifest.json` schema 3 records the source ABI, per-platform
+artifact ABI, dependency lock hash, architectures, minimum API and binary
+SHA-256 values. `artifactSetReady` is true only when Apple, Android and Windows
+artifacts are all ABI V4.
 
 CMake integration
 -----------------
 
-`WMI_LIBRAW_ROOT` accepts a staged LibRaw prefix and verifies the pinned header
-version before linking. Without it, CMake retains support for an explicitly
-provided `LibRawConfig.cmake` package. A developer can also build the ABI-only
-stub with LibRaw and LibTIFF disabled.
+`WMI_LIBRAW_ROOT`, `WMI_OCIO_ROOT` and the normal CMake prefix path accept the
+staged static dependency prefixes. A developer can still build an ABI-only stub
+with imaging features disabled:
 
 ```sh
-cmake -S . -B build -DWMI_ENABLE_LIBRAW=OFF -DWMI_ENABLE_TIFF=OFF
-cmake --build build --config Release
+cmake -S native/Watermark.Imaging.Native -B native/build/wrapper/stub \
+  -DWMI_ENABLE_LIBRAW=OFF -DWMI_ENABLE_TIFF=OFF -DWMI_ENABLE_OCIO=OFF
+cmake --build native/build/wrapper/stub --config Release
 ```
 
-Native smoke verification
--------------------------
+Native verification
+-------------------
 
-`tests/Watermark.Imaging.Native.Smoke.csproj` verifies that the static XCFramework
-is force-linked into a .NET Mac Catalyst or iOS application and that the WMI ABI
-and RAW capability exports can be resolved from the main executable.
-The CMake test targets also cover feature alignment, bicubic/Lanczos transforms,
-validity masks, maximum stacking and two-pass sigma rejection.
-
-No dependency or binary is downloaded at application runtime.
+The CMake suite covers ABI/capabilities, processor lifecycle, pixel formats,
+alpha passthrough, cancellation and the existing alignment/WM16 functionality.
+The managed suite additionally checks OCIO parameter semantics, session
+migration and the shared preview/export pipeline. Application UI validation for
+mobile must be performed in the Android emulator rather than using Mac Catalyst
+as a substitute.

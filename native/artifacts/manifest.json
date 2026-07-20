@@ -1,44 +1,150 @@
 {
-  "schemaVersion": 2,
-  "generatedAtUtc": "2026-07-14T08:38:39Z",
-  "nativeAbiVersion": 3,
-  "source": {
-    "name": "LibRaw",
-    "version": "0.22.1",
-    "url": "https://www.libraw.org/data/LibRaw-0.22.1.tar.gz",
-    "sha256": "a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786"
-  },
-  "tiffSource": {
-    "name": "LibTIFF",
-    "version": "4.7.2",
-    "url": "https://download.osgeo.org/libtiff/tiff-4.7.2.tar.xz",
-    "sha256": "4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88"
-  },
-  "toolchains": {
-    "android": { "ndkVersion": "26.1.10909125", "minimumApi": 24 }
-  },
-  "configuration": {
-    "threadSafeArchive": true,
-    "openMp": false,
-    "lcms": false,
-    "lossyDngJpeg": false,
-    "zlib": {
-      "apple": "system",
-      "android": "system",
-      "windows": "vcpkg-static"
-    },
-    "callocRawStore": true,
-    "starAlignment": "LoG+centroid+local-triangle-buckets+deterministic-RANSAC",
-    "previewPipeline": "WMPV1+Gray16+RGB16-bicubic+SIMD-stack",
-    "openCv": false
-  },
-  "artifacts": {
-    "maccatalyst": { "path": "maccatalyst/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-maccatalyst/libWatermark.Imaging.Native.a", "architectures": ["arm64", "x86_64"], "binarySha256": "94182e7497e8cc67b0ecf5e1b62f301babafeb43bb0b56c714ecf430d6ab82b8" },
-    "iosDevice": { "path": "ios/Watermark.Imaging.Native.xcframework/ios-arm64/libWatermark.Imaging.Native-device.a", "architectures": ["arm64"], "binarySha256": "ad99d7687163bce3d0c808357489f3783ea3f02b049e17968e507dca017a0d68" },
-    "iosSimulator": { "path": "ios/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-simulator/libWatermark.Imaging.Native-simulator.a", "architectures": ["arm64", "x86_64"], "binarySha256": "20e941a8fc20f426c1b68b191ed24bfd583011000813e838194533f56be3b70f" },
-    "androidArm64V8a": { "path": "android/arm64-v8a/libWatermark.Imaging.Native.so", "architectures": ["arm64-v8a"], "minimumApi": 24, "binarySha256": "792eca5b8f0cb70fead0a9c240faaadc6e83f76cd422e70436d02e65cdb45698" },
-    "androidX86_64": { "path": "android/x86_64/libWatermark.Imaging.Native.so", "architectures": ["x86_64"], "minimumApi": 24, "binarySha256": "b911a89ffc07adcf6a10507ff45852df67f12a5182af9ce5e6e089ebf308d0a5" },
-    "windowsX64": { "path": "win-x64/Watermark.Imaging.Native.dll", "architectures": ["x64"], "binarySha256": "05ed28cba4e912c03dffe313b56da7db4335c7c7f9fe5fcf7ca109215b4e13db" },
-    "windowsArm64": { "path": "win-arm64/Watermark.Imaging.Native.dll", "architectures": ["arm64"], "binarySha256": "edad3a1200ee8736d01762324053d718d620e99e3f6440c853a6dda259fd3021" }
-  }
+    "schemaVersion":  3,
+    "generatedAtUtc":  "2026-07-20T02:41:55Z",
+    "nativeAbiVersion":  4,
+    "artifactSetAbiVersion":  4,
+    "artifactSetReady":  true,
+    "dependencyLockSha256":  "dfdce35b589998e1e53c73e43316f8560309e092632c4986ab14997b8466d88d",
+    "source":  {
+                   "name":  "LibRaw",
+                   "version":  "0.22.1",
+                   "url":  "https://www.libraw.org/data/LibRaw-0.22.1.tar.gz",
+                   "sha256":  "a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786"
+               },
+    "tiffSource":  {
+                       "name":  "LibTIFF",
+                       "version":  "4.7.2",
+                       "url":  "https://download.osgeo.org/libtiff/tiff-4.7.2.tar.xz",
+                       "sha256":  "4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88"
+                   },
+    "colorEngine":  {
+                        "name":  "OpenColorIO",
+                        "version":  "2.5.2",
+                        "sha256":  "722601e01b78b7a12da4829cb450674935f404b0e508f3f20046fa77570e3272",
+                        "capability":  "WMI_CAP_COLOR_OCIO",
+                        "dependencies":  {
+                                             "Expat":  {
+                                                           "version":  "2.7.2",
+                                                           "sha256":  "d09e2dd23398805cec1bac2860304714c96dc2fde629a7a1a77d0880ab7cd242"
+                                                       },
+                                             "yaml-cpp":  {
+                                                              "version":  "0.8.0",
+                                                              "sha256":  "fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16"
+                                                          },
+                                             "Imath":  {
+                                                           "version":  "3.2.1",
+                                                           "sha256":  "b2c8a44c3e4695b74e9644c76f5f5480767355c6f98cde58ba0e82b4ad8c63ce"
+                                                       },
+                                             "pystring":  {
+                                                              "version":  "1.1.4",
+                                                              "sha256":  "49da0fe2a049340d3c45cce530df63a2278af936003642330287b68cefd788fb"
+                                                          },
+                                             "minizip-ng":  {
+                                                                "version":  "4.0.10",
+                                                                "sha256":  "c362e35ee973fa7be58cc5e38a4a6c23cc8f7e652555daf4f115a9eb2d3a6be7"
+                                                            },
+                                             "zlib":  {
+                                                          "version":  "1.3.2",
+                                                          "sha256":  "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+                                                      },
+                                             "sse2neon":  {
+                                                              "version":  "227cc413fb2d50b2a10073087be96b59d5364aea",
+                                                              "sha256":  "3427a495743bb6fd1b5f9f806b80f57d67b1ac7ccf39a5f44aedd487fd7e6da1"
+                                                          }
+                                         }
+                    },
+    "toolchains":  {
+                       "android":  {
+                                       "ndkVersion":  "26.1.10909125",
+                                       "minimumApi":  24
+                                   }
+                   },
+    "configuration":  {
+                          "threadSafeArchive":  true,
+                          "openMp":  false,
+                          "lcms":  false,
+                          "lossyDngJpeg":  false,
+                          "zlib":  {
+                                       "apple":  "pinned-static-1.3.2",
+                                       "android":  "pinned-static-1.3.2",
+                                       "windows":  "pinned-static-1.3.2"
+                                   },
+                          "callocRawStore":  true,
+                          "starAlignment":  "LoG+centroid+local-triangle-buckets+deterministic-RANSAC",
+                          "previewPipeline":  "WMPV1+Gray16+RGB16-bicubic+SIMD-stack",
+                          "openCv":  false,
+                          "openColorIO":  {
+                                              "buildSharedLibs":  false,
+                                              "installExtPackages":  "NONE",
+                                              "apps":  false,
+                                              "python":  false,
+                                              "java":  false,
+                                              "docs":  false,
+                                              "tests":  false,
+                                              "gpuTests":  false,
+                                              "openFx":  false
+                                          }
+                      },
+    "artifacts":  {
+                      "maccatalyst":  {
+                                          "path":  "maccatalyst/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-maccatalyst/libWatermark.Imaging.Native.a",
+                                          "architectures":  [
+                                                                "arm64",
+                                                                "x86_64"
+                                                            ],
+                                          "nativeAbiVersion":  4,
+                                          "binarySha256":  "b84d97fc532fb1e0ec910bd8beff7242f77d2d8c55dd2b11994fbf6c2d01000e"
+                                      },
+                      "iosDevice":  {
+                                        "path":  "ios/Watermark.Imaging.Native.xcframework/ios-arm64/libWatermark.Imaging.Native-device.a",
+                                        "architectures":  [
+                                                              "arm64"
+                                                          ],
+                                        "nativeAbiVersion":  4,
+                                        "binarySha256":  "bf511da76dec8d5769112200086116d7ab9ace2b029ddddc833c63fcedac59f3"
+                                    },
+                      "iosSimulator":  {
+                                           "path":  "ios/Watermark.Imaging.Native.xcframework/ios-arm64_x86_64-simulator/libWatermark.Imaging.Native-simulator.a",
+                                           "architectures":  [
+                                                                 "arm64",
+                                                                 "x86_64"
+                                                             ],
+                                           "nativeAbiVersion":  4,
+                                           "binarySha256":  "655d5a54e14519f3fd4fd8ea281069b664de2ec049403655f37a142a2be87085"
+                                       },
+                      "androidArm64V8a":  {
+                                              "path":  "android/arm64-v8a/libWatermark.Imaging.Native.so",
+                                              "architectures":  [
+                                                                    "arm64-v8a"
+                                                                ],
+                                              "minimumApi":  24,
+                                              "nativeAbiVersion":  4,
+                                              "binarySha256":  "c4a0ab4be1262c60371c557f96445a3fe617e862f4e0e949c4dd291a566ba4ba"
+                                          },
+                      "androidX86_64":  {
+                                            "path":  "android/x86_64/libWatermark.Imaging.Native.so",
+                                            "architectures":  [
+                                                                  "x86_64"
+                                                              ],
+                                            "minimumApi":  24,
+                                            "nativeAbiVersion":  4,
+                                            "binarySha256":  "c759ff864772adbe3488b086ed49c3b5cbfdddeacce59d7c337eb4e14dc1aa55"
+                                        },
+                      "windowsX64":  {
+                                         "path":  "win-x64/Watermark.Imaging.Native.dll",
+                                         "architectures":  [
+                                                               "x64"
+                                                           ],
+                                         "nativeAbiVersion":  4,
+                                         "binarySha256":  "73283e5a3cd7bdba1899cdd7cd4fd922beac37dca8dd840610858d0a0da5f06e"
+                                     },
+                      "windowsArm64":  {
+                                           "path":  "win-arm64/Watermark.Imaging.Native.dll",
+                                           "architectures":  [
+                                                                 "arm64"
+                                                             ],
+                                           "nativeAbiVersion":  4,
+                                           "binarySha256":  "1ffdafd850e86476376f265e937d2e4090a1692486459a48b351250395f3382a"
+                                       }
+                  }
 }

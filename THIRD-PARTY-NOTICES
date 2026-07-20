@@ -6,24 +6,36 @@ Source: https://www.libraw.org/data/LibRaw-0.22.1.tar.gz
 License: CDDL 1.0 (chosen distribution option)
 Official source archive SHA-256:
 a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786
-The unmodified corresponding source is available from the official archive above
-and is intentionally not stored in this binary dependency commit.
+The corresponding source archive is pinned by native/dependencies.lock.json and
+is supplied to the offline maintainer build through the ignored native/downloads
+directory.
 The complete CDDL text and LibRaw copyright inventory are included in the release
 under licenses/LibRaw-CDDL-1.0.txt and licenses/LibRaw-COPYRIGHT.txt.
 Apple, Android and Windows builds use static thread-safe libraw_r with
 OpenMP/LCMS/lossy-DNG JPEG disabled and LIBRAW_CALLOC_RAWSTORE enabled. Apple and
-Android use system zlib; Windows links the vcpkg static zlib package.
+Android and Windows link the locked static zlib 1.3.2 package.
 
 LibTIFF 4.7.2
 Source: https://download.osgeo.org/libtiff/
 License: libtiff BSD-style license
 Official source archive SHA-256:
 4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88
-The unmodified corresponding source is stored under native/third_party/tiff-4.7.2.
+The corresponding source is extracted from the verified offline archive into the
+ignored native/third_party/tiff-4.7.2 build directory.
 The complete LibTIFF license text is included in the release under
 licenses/LibTIFF-4.7.2.txt. Apple, Android and Windows builds use the static
 library with Deflate enabled; tools, tests, docs and optional
 JPEG/JBIG/LZMA/Zstd/WebP codecs are disabled.
+
+OpenColorIO 2.5.2 and static dependencies
+Source and immutable archive hashes: native/dependencies.lock.json
+License: BSD-3-Clause (OpenColorIO), MIT (Expat/yaml-cpp/sse2neon),
+BSD-3-Clause (pystring/Imath), zlib (minizip-ng)
+The complete notices are included in the release under
+licenses/OCIO-DEPENDENCIES.txt. Watermark.Imaging.Native statically links
+OpenColorIO 2.5.2, Expat 2.7.2, yaml-cpp 0.8.0, Imath 3.2.1, pystring 1.1.4,
+minizip-ng 4.0.10, zlib 1.3.2 and, for Apple ARM, the locked sse2neon revision. Apps, Python,
+Java, documentation, tests, GPU tests and OpenFX are disabled in release builds.
 
 MetadataExtractor 2.9.1
 Source: https://github.com/drewnoakes/metadata-extractor-dotnet
@@ -32,10 +44,10 @@ License: Apache License 2.0
 zlib 1.3.2
 Source: https://zlib.net/
 License: zlib License
-The Windows native DLL statically links the vcpkg zlib 1.3.2 package. Apple and
-Android use the operating-system zlib and do not deploy a separate zlib binary.
+All platform artifacts statically link the locked zlib 1.3.2 package; no separate
+zlib binary is deployed.
 
 This inventory is part of the standalone macOS, iOS, Android and Windows release
-payload. LibRaw implementation source is not bundled with the application or this
-binary dependency commit. Its exact corresponding source is identified above by
-the official download address, version and archive SHA-256.
+payload. Native implementation sources and download archives are not bundled with
+the application. Their exact corresponding sources are identified by the locked
+download addresses, versions and SHA-256 values.

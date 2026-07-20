@@ -18,7 +18,10 @@ param(
     [string]$VsInstallPath,
 
     [Parameter(DontShow = $true)]
-    [switch]$SkipTests
+    [switch]$SkipTests,
+
+    [Parameter(DontShow = $true)]
+    [switch]$Clean
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,6 +87,57 @@ function Find-VisualStudio {
     return $path[0].Trim().Trim('"')
 }
 
+function Find-CMake([string]$VsInstallPath) {
+    $candidates = @()
+    $pathCommand = Get-Command cmake.exe -ErrorAction SilentlyContinue
+    if ($pathCommand) {
+        $candidates += $pathCommand.Source
+    }
+    if ($VsInstallPath) {
+        $candidates += Join-Path $VsInstallPath "Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+    }
+    $programFilesRoots = @(
+        $env:ProgramFiles,
+        ${env:ProgramFiles(x86)}
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object {
+        $_.Trim().Trim('"')
+    } | Select-Object -Unique
+    $candidates += $programFilesRoots | ForEach-Object {
+        Join-Path $_ "CMake/bin/cmake.exe"
+    }
+
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+    }
+    throw "cmake.exe was not found. Install CMake or the Visual Studio C++ CMake tools."
+}
+
+function Find-Dumpbin([string]$VsInstallPath, [string]$TargetArch, [string]$HostArchitecture) {
+    $msvcRoot = Join-Path $VsInstallPath "VC/Tools/MSVC"
+    if (-not (Test-Path -LiteralPath $msvcRoot)) {
+        throw "Visual C++ tools directory was not found: $msvcRoot"
+    }
+
+    $targetDirectory = if ($TargetArch -eq "x64") { "x64" } else { "arm64" }
+    $hostDirectory = if ($HostArchitecture -eq "arm64") { "HostARM64" } else { "Hostx64" }
+    $preferred = @(Get-ChildItem -LiteralPath $msvcRoot -Filter dumpbin.exe -File -Recurse |
+        Where-Object { $_.FullName -match "\\$hostDirectory\\$targetDirectory\\dumpbin\.exe$" } |
+        Sort-Object FullName -Descending)
+    if ($preferred.Count -gt 0) {
+        return $preferred[0].FullName
+    }
+
+    $fallback = @(Get-ChildItem -LiteralPath $msvcRoot -Filter dumpbin.exe -File -Recurse |
+        Where-Object { $_.FullName -match "\\$targetDirectory\\dumpbin\.exe$" } |
+        Sort-Object FullName -Descending)
+    if ($fallback.Count -gt 0) {
+        return $fallback[0].FullName
+    }
+    throw "dumpbin.exe was not found under the Visual C++ tools directory. Install the MSVC build tools."
+}
+
 function Get-PeArchitecture([string]$Path) {
     $stream = [System.IO.File]::OpenRead($Path)
     try {
@@ -112,7 +166,6 @@ if ($ChildBuild) {
             throw "ChildBuild requires Arch and VsInstallPath."
         }
 
-        $VcpkgRoot = $VcpkgRoot.Trim().Trim('"')
         $VsInstallPath = $VsInstallPath.Trim().Trim('"')
         $resolvedHostArch = Resolve-HostArchitecture
         $targetArch = if ($Arch -eq "x64") { "amd64" } else { "arm64" }
@@ -130,14 +183,12 @@ if ($ChildBuild) {
             throw "cmake.exe is unavailable. Add C++ CMake tools in Visual Studio Installer."
         }
 
-        $triplet = if ($Arch -eq "x64") { "x64-windows-static" } else { "arm64-windows-static" }
-        $zlibRoot = Join-Path $VcpkgRoot "installed/$triplet"
-        $singleArchScript = Join-Path $PSScriptRoot "build-libraw-windows.ps1"
+        $singleArchScript = Join-Path $PSScriptRoot "build-native-windows.ps1"
         $buildParameters = @{
             Arch = $Arch
-            ZlibRoot = $zlibRoot
         }
         if ($SkipTests) { $buildParameters.SkipTests = $true }
+        if ($Clean) { $buildParameters.Clean = $true }
 
         Write-Step "Build Watermark.Imaging.Native.dll for $Arch"
         & $singleArchScript @buildParameters
@@ -155,19 +206,7 @@ try {
     }
 
     $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-    if ([string]::IsNullOrWhiteSpace($VcpkgRoot)) {
-        $localAppData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-        if ([string]::IsNullOrWhiteSpace($localAppData)) {
-            throw "LOCALAPPDATA is unavailable. Pass -VcpkgRoot with a local Windows path."
-        }
-        $VcpkgRoot = Join-Path $localAppData "Watermark.Native/vcpkg"
-    }
-    else {
-        $VcpkgRoot = $VcpkgRoot.Trim().Trim('"')
-        $VcpkgRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($VcpkgRoot)
-    }
     Write-Host "Workspace: $root"
-    Write-Host "vcpkg:    $VcpkgRoot"
     if ($root -like "C:\Mac\Home\*") {
         Write-Warning "The workspace is on a macOS shared folder. Dependencies stay on local Windows storage; if MSVC reports file locking errors, copy the repository to C:\Projects before building."
     }
@@ -186,37 +225,14 @@ try {
     $VsInstallPath = Find-VisualStudio
     Write-Host "Visual Studio: $VsInstallPath"
 
-    Write-Step "Prepare vcpkg"
-    $vcpkgExe = Join-Path $VcpkgRoot "vcpkg.exe"
-    if (-not (Test-Path $vcpkgExe)) {
-        $bootstrap = Join-Path $VcpkgRoot "bootstrap-vcpkg.bat"
-        if (-not (Test-Path $bootstrap)) {
-            $git = Get-Command git.exe -ErrorAction SilentlyContinue
-            if (-not $git) {
-                throw "git.exe is required to download vcpkg. Install Git for Windows or provide an existing -VcpkgRoot."
-            }
-            $parent = Split-Path $VcpkgRoot -Parent
-            New-Item -ItemType Directory -Path $parent -Force | Out-Null
-            & $git.Source clone --depth 1 https://github.com/microsoft/vcpkg.git $VcpkgRoot
-            Assert-LastExitCode "vcpkg clone"
-        }
-        & $bootstrap -disableMetrics
-        Assert-LastExitCode "vcpkg bootstrap"
-    }
+    $CMakePath = Find-CMake $VsInstallPath
+    Write-Host "CMake: $CMakePath"
+    $DumpbinPath = Find-Dumpbin $VsInstallPath "x64" (Resolve-HostArchitecture)
+    Write-Host "Dumpbin: $DumpbinPath"
 
-    Write-Step "Install static zlib for x64 and arm64"
-    & $vcpkgExe install zlib:x64-windows-static zlib:arm64-windows-static --disable-metrics
-    Assert-LastExitCode "zlib installation"
-
-    foreach ($triplet in @("x64-windows-static", "arm64-windows-static")) {
-        $zlibHeader = Join-Path $VcpkgRoot "installed/$triplet/include/zlib.h"
-        $zlibLibraries = @(Get-ChildItem (Join-Path $VcpkgRoot "installed/$triplet/lib") `
-            -Filter "*.lib" -File -ErrorAction SilentlyContinue)
-        if (-not (Test-Path $zlibHeader) -or $zlibLibraries.Count -eq 0) {
-            throw "The static zlib package is incomplete for $triplet."
-        }
-        Write-Host "$triplet zlib: $($zlibLibraries.Name -join ', ')"
-    }
+    Write-Step "Verify locked offline dependency archives"
+    & $CMakePath "-DWMI_ROOT=$root" -DWMI_EXTRACT=ON -P (Join-Path $root "native/cmake/PrepareLockedDependencies.cmake")
+    Assert-LastExitCode "Locked dependency verification"
 
     $resolvedHostArch = Resolve-HostArchitecture
     $currentPowerShell = (Get-Process -Id $PID).Path
@@ -227,11 +243,11 @@ try {
             "-File", $PSCommandPath,
             "-ChildBuild", "-Arch", $buildArch,
             "-HostArch", $resolvedHostArch,
-            "-VcpkgRoot", $VcpkgRoot,
             "-VsInstallPath", $VsInstallPath,
             "-NoPause"
         )
         if ($skipArchitectureTests) { $childArguments += "-SkipTests" }
+        if ($Clean) { $childArguments += "-Clean" }
         & $currentPowerShell @childArguments
         Assert-LastExitCode "$buildArch child build"
     }
@@ -252,9 +268,21 @@ try {
         }
         $file = Get-Item $output
         $hash = (Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+        $exports = (& $DumpbinPath /nologo /exports $output | Out-String)
+        Assert-LastExitCode "Inspect $expected exports"
+        foreach ($requiredExport in @("wmi_get_abi_version", "wmi_color_processor_create", "wmi_color_gpu_snapshot_create")) {
+            if (-not $exports.Contains($requiredExport)) {
+                throw "$output does not export $requiredExport."
+            }
+        }
         Write-Host "$expected  $([Math]::Round($file.Length / 1MB, 2)) MB  SHA256 $hash"
         Write-Host "  $output"
     }
+
+    Write-Step "Refresh Windows ABI markers and artifact hashes"
+    $manifestUpdater = Join-Path $root "native/scripts/update-native-manifest.ps1"
+    & $manifestUpdater -Arch x64
+    & $manifestUpdater -Arch arm64
 
     Write-Host ""
     Write-Host "All Windows native artifacts are ready." -ForegroundColor Green

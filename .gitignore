@@ -58,6 +58,14 @@ global.json
 /native/third_party/LibRaw-0.22.1/*
 !/native/third_party/LibRaw-0.22.1/COPYRIGHT
 !/native/third_party/LibRaw-0.22.1/LICENSE.CDDL
+/native/third_party/OpenColorIO-2.5.2/
+/native/third_party/libexpat-R_2_7_2/
+/native/third_party/yaml-cpp-0.8.0/
+/native/third_party/pystring-1.1.4/
+/native/third_party/Imath-3.2.1/
+/native/third_party/minizip-ng-4.0.10/
+/native/third_party/zlib-1.3.2/
+/native/third_party/sse2neon-227cc413fb2d50b2a10073087be96b59d5364aea/
 Watermark.Razor.Tests/bin
 Watermark.Razor.Tests/obj
 /Watermark.Andorid/ReleasePackages/

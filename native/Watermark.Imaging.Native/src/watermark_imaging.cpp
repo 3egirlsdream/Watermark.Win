@@ -1,4 +1,5 @@
 #include "watermark_imaging.h"
+#include "watermark_imaging_internal.h"
 
 #include <algorithm>
 #include <atomic>
@@ -217,6 +218,8 @@ struct tiff_writer_state {
 #endif
 }
 
+void wmi_set_last_error_internal(const char* message) { set_error(message); }
+
 uint32_t wmi_get_abi_version(void) { return WMI_ABI_VERSION; }
 
 uint32_t wmi_get_capabilities(void) {
@@ -227,6 +230,9 @@ uint32_t wmi_get_capabilities(void) {
     result |= WMI_CAP_STAR_ALIGNMENT | WMI_CAP_WARP | WMI_CAP_PREVIEW_PIPELINE;
 #if defined(WMI_HAS_TIFF)
     result |= WMI_CAP_TIFF16 | WMI_CAP_BIGTIFF;
+#endif
+#if defined(WMI_HAS_OCIO)
+    result |= WMI_CAP_COLOR_OCIO;
 #endif
     return result;
 }
@@ -250,6 +256,9 @@ const char* wmi_get_backend_version(void) {
 #endif
 #if defined(WMI_HAS_TIFF)
         value << " LibTIFF/4.7.2";
+#endif
+#if defined(WMI_HAS_OCIO)
+        value << " OpenColorIO/2.5.2";
 #endif
         return value.str();
     }();

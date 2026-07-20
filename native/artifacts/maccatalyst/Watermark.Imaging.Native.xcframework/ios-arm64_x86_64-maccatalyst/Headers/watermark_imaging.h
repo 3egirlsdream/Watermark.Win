@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-#define WMI_ABI_VERSION 3u
+#define WMI_ABI_VERSION 4u
 
 typedef enum wmi_status {
     WMI_OK = 0,
@@ -43,7 +43,8 @@ typedef enum wmi_capability {
     WMI_CAP_WARP = 1u << 3,
     WMI_CAP_TIFF16 = 1u << 4,
     WMI_CAP_BIGTIFF = 1u << 5,
-    WMI_CAP_PREVIEW_PIPELINE = 1u << 6
+    WMI_CAP_PREVIEW_PIPELINE = 1u << 6,
+    WMI_CAP_COLOR_OCIO = 1u << 7
 } wmi_capability;
 
 typedef int32_t (*wmi_cancel_callback)(void* user_data);
@@ -90,6 +91,99 @@ typedef struct wmi_star_feature {
 } wmi_star_feature;
 
 typedef void* wmi_tiff_writer;
+typedef void* wmi_color_processor;
+typedef void* wmi_color_gpu_snapshot;
+
+typedef enum wmi_color_encoding {
+    WMI_COLOR_ENCODING_SRGB = 1,
+    WMI_COLOR_ENCODING_LINEAR_SRGB = 2
+} wmi_color_encoding;
+
+typedef enum wmi_color_pixel_format {
+    WMI_COLOR_PIXEL_RGBA8 = 1,
+    WMI_COLOR_PIXEL_BGRA8 = 2,
+    WMI_COLOR_PIXEL_RGB16 = 3,
+    WMI_COLOR_PIXEL_RGBA16 = 4,
+    WMI_COLOR_PIXEL_RGB_F32 = 5,
+    WMI_COLOR_PIXEL_RGBA_F32 = 6
+} wmi_color_pixel_format;
+
+typedef enum wmi_color_gpu_uniform_type {
+    WMI_COLOR_GPU_UNIFORM_FLOAT = 1,
+    WMI_COLOR_GPU_UNIFORM_BOOL = 2,
+    WMI_COLOR_GPU_UNIFORM_FLOAT3 = 3,
+    WMI_COLOR_GPU_UNIFORM_FLOAT_VECTOR = 4,
+    WMI_COLOR_GPU_UNIFORM_INT_VECTOR = 5,
+    WMI_COLOR_GPU_UNIFORM_MATRIX3 = 6
+} wmi_color_gpu_uniform_type;
+
+typedef enum wmi_color_gpu_texture_dimension {
+    WMI_COLOR_GPU_TEXTURE_1D = 1,
+    WMI_COLOR_GPU_TEXTURE_2D = 2,
+    WMI_COLOR_GPU_TEXTURE_3D = 3
+} wmi_color_gpu_texture_dimension;
+
+typedef struct wmi_color_curve {
+    const float* points_xy;
+    int32_t point_count;
+} wmi_color_curve;
+
+typedef struct wmi_color_grade_state {
+    uint32_t struct_size;
+    float exposure;
+    float contrast;
+    float highlights;
+    float shadows;
+    float whites;
+    float blacks;
+    float temperature;
+    float tint;
+    float vibrance;
+    float saturation;
+    wmi_color_curve master_curve;
+    wmi_color_curve red_curve;
+    wmi_color_curve green_curve;
+    wmi_color_curve blue_curve;
+    const float* hsl_values;
+    int32_t hsl_value_count;
+} wmi_color_grade_state;
+
+typedef struct wmi_color_pipeline_desc {
+    uint32_t struct_size;
+    int32_t pipeline_version;
+    int32_t input_encoding;
+    int32_t output_encoding;
+    const wmi_color_grade_state* automatic_grade;
+    const float* reference_lut_rgb;
+    int32_t reference_lut_size;
+} wmi_color_pipeline_desc;
+
+typedef struct wmi_color_image_desc {
+    uint32_t struct_size;
+    void* pixels;
+    int32_t width;
+    int32_t height;
+    int32_t row_bytes;
+    int32_t pixel_format;
+} wmi_color_image_desc;
+
+typedef struct wmi_color_gpu_uniform_info {
+    char name[96];
+    int32_t type;
+    int32_t element_count;
+} wmi_color_gpu_uniform_info;
+
+typedef struct wmi_color_gpu_texture_info {
+    char texture_name[96];
+    char sampler_name[96];
+    int32_t dimension;
+    int32_t width;
+    int32_t height;
+    int32_t depth;
+    int32_t channels;
+    int32_t interpolation;
+    int32_t element_count;
+} wmi_color_gpu_texture_info;
 
 WMI_API uint32_t wmi_get_abi_version(void);
 WMI_API uint32_t wmi_get_capabilities(void);
@@ -137,6 +231,38 @@ WMI_API wmi_status wmi_tiff16_set_icc(wmi_tiff_writer writer, const uint8_t* pro
 WMI_API wmi_status wmi_tiff16_write(wmi_tiff_writer writer, int32_t row_start, int32_t row_count,
                                     const uint16_t* samples, const wmi_callbacks* callbacks);
 WMI_API wmi_status wmi_tiff16_close(wmi_tiff_writer writer, int32_t commit);
+WMI_API wmi_status wmi_color_processor_create(const wmi_color_pipeline_desc* pipeline,
+                                               const wmi_color_grade_state* initial_state,
+                                               wmi_color_processor* processor);
+WMI_API wmi_status wmi_color_processor_update(wmi_color_processor processor,
+                                               const wmi_color_grade_state* state);
+WMI_API wmi_status wmi_color_processor_apply(wmi_color_processor processor,
+                                              const wmi_color_image_desc* image,
+                                              const wmi_callbacks* callbacks);
+WMI_API void wmi_color_processor_destroy(wmi_color_processor processor);
+WMI_API wmi_status wmi_color_gpu_snapshot_create(wmi_color_processor processor,
+                                                  wmi_color_gpu_snapshot* snapshot);
+WMI_API void wmi_color_gpu_snapshot_destroy(wmi_color_gpu_snapshot snapshot);
+WMI_API wmi_status wmi_color_gpu_snapshot_get_program(wmi_color_gpu_snapshot snapshot,
+                                                       char* utf8_program,
+                                                       int32_t capacity,
+                                                       int32_t* required_length);
+WMI_API wmi_status wmi_color_gpu_snapshot_get_cache_id(wmi_color_gpu_snapshot snapshot,
+                                                        char* utf8_cache_id,
+                                                        int32_t capacity,
+                                                        int32_t* required_length);
+WMI_API int32_t wmi_color_gpu_snapshot_get_uniform_count(wmi_color_gpu_snapshot snapshot);
+WMI_API wmi_status wmi_color_gpu_snapshot_get_uniform(wmi_color_gpu_snapshot snapshot,
+                                                       int32_t index,
+                                                       wmi_color_gpu_uniform_info* info,
+                                                       float* values,
+                                                       int32_t capacity);
+WMI_API int32_t wmi_color_gpu_snapshot_get_texture_count(wmi_color_gpu_snapshot snapshot);
+WMI_API wmi_status wmi_color_gpu_snapshot_get_texture(wmi_color_gpu_snapshot snapshot,
+                                                       int32_t index,
+                                                       wmi_color_gpu_texture_info* info,
+                                                       float* values,
+                                                       int32_t capacity);
 
 #ifdef __cplusplus
 }

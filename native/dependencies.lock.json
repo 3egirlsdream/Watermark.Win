@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "dependencies": [
+    {
+      "name": "LibRaw",
+      "version": "0.22.1",
+      "archive": "LibRaw-0.22.1.tar.gz",
+      "sourceDirectory": "LibRaw-0.22.1",
+      "url": "https://www.libraw.org/data/LibRaw-0.22.1.tar.gz",
+      "sha256": "a789dc4e2409e2901d93793a4e0b80c7b49d0d97cf6ad71c850eb7616acfd786",
+      "revision": "0.22.1",
+      "license": "CDDL-1.0"
+    },
+    {
+      "name": "LibTIFF",
+      "version": "4.7.2",
+      "archive": "tiff-4.7.2.tar.xz",
+      "sourceDirectory": "tiff-4.7.2",
+      "url": "https://download.osgeo.org/libtiff/tiff-4.7.2.tar.xz",
+      "sha256": "4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88",
+      "revision": "v4.7.2",
+      "license": "libtiff"
+    },
+    {
+      "name": "OpenColorIO",
+      "version": "2.5.2",
+      "archive": "OpenColorIO-2.5.2.tar.gz",
+      "sourceDirectory": "OpenColorIO-2.5.2",
+      "url": "https://codeload.github.com/AcademySoftwareFoundation/OpenColorIO/tar.gz/refs/tags/v2.5.2",
+      "sha256": "722601e01b78b7a12da4829cb450674935f404b0e508f3f20046fa77570e3272",
+      "revision": "c52966a6677723d5bd2dbef0ccec3fed9cbc3790",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Expat",
+      "version": "2.7.2",
+      "archive": "expat-2.7.2.tar.gz",
+      "sourceDirectory": "libexpat-R_2_7_2",
+      "url": "https://codeload.github.com/libexpat/libexpat/tar.gz/refs/tags/R_2_7_2",
+      "sha256": "d09e2dd23398805cec1bac2860304714c96dc2fde629a7a1a77d0880ab7cd242",
+      "revision": "be40eba31d66ec184aff66bce6c287cffd380ee0",
+      "license": "MIT"
+    },
+    {
+      "name": "yaml-cpp",
+      "version": "0.8.0",
+      "archive": "yaml-cpp-0.8.0.tar.gz",
+      "sourceDirectory": "yaml-cpp-0.8.0",
+      "url": "https://codeload.github.com/jbeder/yaml-cpp/tar.gz/refs/tags/0.8.0",
+      "sha256": "fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16",
+      "revision": "f7320141120f720aecc4c32be25586e7da9eb978",
+      "license": "MIT"
+    },
+    {
+      "name": "pystring",
+      "version": "1.1.4",
+      "archive": "pystring-1.1.4.tar.gz",
+      "sourceDirectory": "pystring-1.1.4",
+      "url": "https://codeload.github.com/imageworks/pystring/tar.gz/refs/tags/v1.1.4",
+      "sha256": "49da0fe2a049340d3c45cce530df63a2278af936003642330287b68cefd788fb",
+      "revision": "7d16bc814ccb4cad03c300dcb77440034caa84f7",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Imath",
+      "version": "3.2.1",
+      "archive": "Imath-3.2.1.tar.gz",
+      "sourceDirectory": "Imath-3.2.1",
+      "url": "https://codeload.github.com/AcademySoftwareFoundation/Imath/tar.gz/refs/tags/v3.2.1",
+      "sha256": "b2c8a44c3e4695b74e9644c76f5f5480767355c6f98cde58ba0e82b4ad8c63ce",
+      "revision": "eb2937f5080ad22c25da63b5e48d9003fe81b23a",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "minizip-ng",
+      "version": "4.0.10",
+      "archive": "minizip-ng-4.0.10.tar.gz",
+      "sourceDirectory": "minizip-ng-4.0.10",
+      "url": "https://codeload.github.com/zlib-ng/minizip-ng/tar.gz/refs/tags/4.0.10",
+      "sha256": "c362e35ee973fa7be58cc5e38a4a6c23cc8f7e652555daf4f115a9eb2d3a6be7",
+      "revision": "f3ed731e27a97e30dffe076ed5e0537daae5c1bd",
+      "license": "Zlib"
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "archive": "zlib-1.3.2.tar.gz",
+      "sourceDirectory": "zlib-1.3.2",
+      "url": "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
+      "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+      "revision": "zlib-1.3.2",
+      "license": "Zlib"
+    },
+    {
+      "name": "sse2neon",
+      "version": "227cc413fb2d50b2a10073087be96b59d5364aea",
+      "archive": "sse2neon-227cc413.tar.gz",
+      "sourceDirectory": "sse2neon-227cc413fb2d50b2a10073087be96b59d5364aea",
+      "url": "https://codeload.github.com/DLTcollab/sse2neon/tar.gz/227cc413fb2d50b2a10073087be96b59d5364aea",
+      "sha256": "3427a495743bb6fd1b5f9f806b80f57d67b1ac7ccf39a5f44aedd487fd7e6da1",
+      "revision": "227cc413fb2d50b2a10073087be96b59d5364aea",
+      "license": "MIT"
+    }
+  ]
+}
