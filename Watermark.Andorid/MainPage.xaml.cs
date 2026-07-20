@@ -28,6 +28,21 @@ namespace Watermark.Andorid
 
 			webView.OnResume();
 			webView.ResumeTimers();
+			RedrawAndroidWebView();
+#endif
+		}
+
+		/// <summary>
+		/// Requests a new frame after Android has attached the activity window.
+		/// This is also called when the activity regains focus, which happens after
+		/// the WebView's compositor surface is available again.
+		/// </summary>
+		public void RedrawAndroidWebView()
+		{
+#if ANDROID
+			var webView = androidWebView;
+			if (webView is null) return;
+
 			webView.RequestLayout();
 			webView.Invalidate();
 			webView.PostInvalidateOnAnimation();

@@ -58,14 +58,17 @@ namespace Watermark.Andorid
 		{
 			base.OnResume();
 
-			// Android can recreate the WebView's compositor surface while this
-			// activity is backgrounded. Blazor's circuit is still valid, so only
-			// resume and redraw the existing WebView; never reload it here.
-			if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is MainPage page)
-			{
-				page.ResumeAndroidWebView();
-			}
+			GetMainPage()?.ResumeAndroidWebView();
 		}
+
+		public override void OnWindowFocusChanged(bool hasFocus)
+		{
+			base.OnWindowFocusChanged(hasFocus);
+			if (hasFocus) GetMainPage()?.RedrawAndroidWebView();
+		}
+
+		private static MainPage? GetMainPage() =>
+			Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page as MainPage;
 		public static MainActivity? Instance { get; private set; }
 
         public static Action<string>? SetColor;
@@ -262,9 +265,12 @@ namespace Watermark.Andorid
                 var dispatcher = IPlatformApplication.Current?.Services
                     .GetService<IWMSystemBackDispatcher>();
                 if (dispatcher?.TryDispatch() == true) return;
-                Enabled = false;
-                activity.OnBackPressedDispatcher.OnBackPressed();
-                Enabled = true;
+
+                // Returning from the root page must leave the task rather than
+                // finish the MAUI Activity. Finishing it leaves some Android
+                // WebView implementations with a detached compositor surface
+                // when the user restores the task from Recents.
+                activity.MoveTaskToBack(true);
             }
         }
 
