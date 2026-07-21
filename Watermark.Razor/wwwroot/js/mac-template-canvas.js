@@ -149,6 +149,82 @@ export function releasePointer(element, pointerId) {
   }
 }
 
+export function shouldFinishReleasedPointer(event, activePointerId) {
+  const eventPointerId = event?.pointerId;
+  if (Number.isFinite(activePointerId)
+    && Number.isFinite(eventPointerId)
+    && activePointerId !== eventPointerId) return false;
+
+  // WebKit may expose buttons === 0 for an active touch pointer. Treating that
+  // like a released mouse button commits the interaction on its first move.
+  return event?.pointerType !== "touch" && event?.buttons === 0;
+}
+
+export function createPreviewInteractionVisual(target, preview, stage) {
+  const source = preview?.currentSrc || preview?.src;
+  if (!target || !source || !stage) return null;
+
+  const targetRect = target.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  const previewRect = preview.getBoundingClientRect();
+  if (targetRect.width <= 0 || targetRect.height <= 0 || previewRect.width <= 0 || previewRect.height <= 0)
+    return null;
+
+  const document = stage.ownerDocument || preview.ownerDocument;
+  if (!document?.createElement || typeof preview.cloneNode !== "function") return null;
+
+  const element = document.createElement("div");
+  element.className = "canvas-interaction-ghost canvas-container-drag-ghost";
+  element.style.left = `${targetRect.left - stageRect.left}px`;
+  element.style.top = `${targetRect.top - stageRect.top}px`;
+  element.style.width = `${targetRect.width}px`;
+  element.style.height = `${targetRect.height}px`;
+
+  // Reuse the already decoded preview as an <img>. WKWebView can display a
+  // blob URL in an image while declining to repaint the same URL when it is
+  // assigned to CSS background-image, which leaves only the outline moving.
+  const image = preview.cloneNode(false);
+  image.removeAttribute?.("id");
+  image.className = "canvas-interaction-preview";
+  image.alt = "";
+  image.draggable = false;
+  image.src = source;
+  image.style.left = `${previewRect.left - targetRect.left}px`;
+  image.style.top = `${previewRect.top - targetRect.top}px`;
+  image.style.width = `${previewRect.width}px`;
+  image.style.height = `${previewRect.height}px`;
+  element.appendChild(image);
+  stage.appendChild(element);
+
+  return {
+    element,
+    image,
+    target,
+    startRect: targetRect,
+    stage,
+    previewWidth: previewRect.width,
+    previewHeight: previewRect.height,
+    previewOffsetX: previewRect.left - targetRect.left,
+    previewOffsetY: previewRect.top - targetRect.top
+  };
+}
+
+export function updatePreviewInteractionVisual(visual) {
+  if (!visual) return;
+  const rect = visual.target.getBoundingClientRect();
+  const stageRect = visual.stage.getBoundingClientRect();
+  const scaleX = visual.startRect.width > 0 ? rect.width / visual.startRect.width : 1;
+  const scaleY = visual.startRect.height > 0 ? rect.height / visual.startRect.height : 1;
+  visual.element.style.left = `${rect.left - stageRect.left}px`;
+  visual.element.style.top = `${rect.top - stageRect.top}px`;
+  visual.element.style.width = `${rect.width}px`;
+  visual.element.style.height = `${rect.height}px`;
+  visual.image.style.width = `${visual.previewWidth * scaleX}px`;
+  visual.image.style.height = `${visual.previewHeight * scaleY}px`;
+  visual.image.style.left = `${visual.previewOffsetX * scaleX}px`;
+  visual.image.style.top = `${visual.previewOffsetY * scaleY}px`;
+}
+
 export function focusSelectionName() {
   const input = document.querySelector(".mac-selection-inspector .selection-name-input:not(:disabled)");
   if (!input) return false;
@@ -210,7 +286,7 @@ export async function createEditor(root, callback) {
   }
 
   function rememberPointerStart(event) {
-    if (panMode) return;
+    if (panMode || event.isPrimary === false || event.button !== 0) return;
     if (interaction) {
       const active = interaction;
       event.preventDefault();
@@ -234,7 +310,9 @@ export async function createEditor(root, callback) {
       hitControlId,
       deferSelection,
       clientX: event.clientX,
-      clientY: event.clientY
+      clientY: event.clientY,
+      pointerId: event.pointerId,
+      pointerType: event.pointerType
     };
     if (!deferSelection && hitControlId && hitControlId !== selectedId) {
       select(hitControlId);
@@ -243,6 +321,11 @@ export async function createEditor(root, callback) {
   }
 
   function finishActivePointerInteraction(event) {
+    const activePointerId = interaction?.pointerId ?? pointerStart?.pointerId;
+    if (Number.isFinite(activePointerId)
+      && Number.isFinite(event?.pointerId)
+      && activePointerId !== event.pointerId) return;
+
     const pendingSelection = interaction?.kind === "drag"
       ? interaction.pendingSelection
       : null;
@@ -282,12 +365,15 @@ export async function createEditor(root, callback) {
   }
 
   function finishReleasedPointerInteraction(event) {
-    if (interaction && event.buttons === 0)
+    if (interaction && shouldFinishReleasedPointer(event, interaction.pointerId))
       finishActivePointerInteraction(event);
   }
 
-  function cancelActivePointerInteraction() {
+  function cancelActivePointerInteraction(event) {
     if (!interaction) return;
+    if (Number.isFinite(interaction.pointerId)
+      && Number.isFinite(event?.pointerId)
+      && interaction.pointerId !== event.pointerId) return;
     if (hasInteractionChange(interaction))
       void completeInteraction(interaction.kind, { lastEvent: true });
     else
@@ -379,48 +465,13 @@ export async function createEditor(root, callback) {
   function createInteractionVisual(item) {
     const target = overlays.get(item.id);
     const preview = root.parentElement?.querySelector?.(".mac-canvas-preview");
-    if (!target || !preview?.currentSrc && !preview?.src) return null;
-    const targetRect = target.getBoundingClientRect();
-    const stageRect = stage.getBoundingClientRect();
-    const previewRect = preview.getBoundingClientRect();
-    if (targetRect.width <= 0 || targetRect.height <= 0 || previewRect.width <= 0 || previewRect.height <= 0)
-      return null;
-
-    const ghost = document.createElement("div");
-    ghost.className = "canvas-interaction-ghost canvas-container-drag-ghost";
-    ghost.style.left = `${targetRect.left - stageRect.left}px`;
-    ghost.style.top = `${targetRect.top - stageRect.top}px`;
-    ghost.style.width = `${targetRect.width}px`;
-    ghost.style.height = `${targetRect.height}px`;
-    ghost.style.backgroundImage = `url(${JSON.stringify(preview.currentSrc || preview.src)})`;
-    ghost.style.backgroundSize = `${previewRect.width}px ${previewRect.height}px`;
-    ghost.style.backgroundPosition = `${previewRect.left - targetRect.left}px ${previewRect.top - targetRect.top}px`;
-    stage.appendChild(ghost);
-    return {
-      element: ghost,
-      target,
-      startRect: targetRect,
-      stage,
-      previewWidth: previewRect.width,
-      previewHeight: previewRect.height,
-      backgroundOffsetX: previewRect.left - targetRect.left,
-      backgroundOffsetY: previewRect.top - targetRect.top
-    };
+    return createPreviewInteractionVisual(target, preview, stage);
   }
 
   function updateInteractionVisual(active) {
     const ghost = active?.dragGhost;
     if (!ghost) return;
-    const rect = ghost.target.getBoundingClientRect();
-    const stageRect = ghost.stage.getBoundingClientRect();
-    const scaleX = ghost.startRect.width > 0 ? rect.width / ghost.startRect.width : 1;
-    const scaleY = ghost.startRect.height > 0 ? rect.height / ghost.startRect.height : 1;
-    ghost.element.style.left = `${rect.left - stageRect.left}px`;
-    ghost.element.style.top = `${rect.top - stageRect.top}px`;
-    ghost.element.style.width = `${rect.width}px`;
-    ghost.element.style.height = `${rect.height}px`;
-    ghost.element.style.backgroundSize = `${ghost.previewWidth * scaleX}px ${ghost.previewHeight * scaleY}px`;
-    ghost.element.style.backgroundPosition = `${ghost.backgroundOffsetX * scaleX}px ${ghost.backgroundOffsetY * scaleY}px`;
+    updatePreviewInteractionVisual(ghost);
   }
 
   function applyCommittedInteraction(active, committed) {
@@ -513,10 +564,11 @@ export async function createEditor(root, callback) {
       rotation: item.rotation
     };
     const pointerId = asFinite(initialPointer.pointerId, NaN);
+    if (Number.isFinite(pointerId)) active.pointerId = pointerId;
+    active.pointerType = initialPointer.pointerType;
     if (Number.isFinite(pointerId) && root.setPointerCapture) {
       try {
         root.setPointerCapture(pointerId);
-        active.pointerId = pointerId;
       } catch {
         // WKWebView may reject capture for a synthesized mouse gesture.
       }

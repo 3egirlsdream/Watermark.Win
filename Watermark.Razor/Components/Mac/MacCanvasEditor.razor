@@ -73,7 +73,9 @@
     private bool canvasInteractionActive;
     private string? canvasInteractionControlId;
     private string observedPreviewUrl = string.Empty;
+    private WMDesignRenderResult? observedRenderResult;
     private string inlinePreviewUrl = string.Empty;
+    private long previewElementVersion;
     private long? panPointerId;
     private double panStartX;
     private double panStartY;
@@ -86,9 +88,7 @@
         ? PreviewUrl
         : inlinePreviewUrl;
 
-    private string PreviewElementKey => string.IsNullOrWhiteSpace(inlinePreviewUrl)
-        ? PreviewUrl
-        : $"inline:{observedPreviewUrl}";
+    private string PreviewElementKey => $"preview:{previewElementVersion}:{(!string.IsNullOrWhiteSpace(inlinePreviewUrl) ? "fallback" : "source")}";
 
     private bool HasScene => RenderResult is { CanvasWidth: > 0, CanvasHeight: > 0 }
         && !string.IsNullOrWhiteSpace(DisplayedPreviewUrl);
@@ -139,9 +139,13 @@
 
     protected override void OnParametersSet()
     {
-        if (string.Equals(observedPreviewUrl, PreviewUrl, StringComparison.Ordinal)) return;
+        if (ReferenceEquals(observedRenderResult, RenderResult)
+            && string.Equals(observedPreviewUrl, PreviewUrl, StringComparison.Ordinal)) return;
+
+        observedRenderResult = RenderResult;
         observedPreviewUrl = PreviewUrl;
         inlinePreviewUrl = string.Empty;
+        previewElementVersion++;
     }
 
     private void UseInlinePreviewFallback()

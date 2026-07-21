@@ -78,7 +78,6 @@
 
 ::deep .canvas-interaction-ghost,
 ::deep .canvas-container-drag-ghost {
-    background-repeat: no-repeat;
     border-radius: 2px;
     box-shadow: 0 10px 28px rgba(31, 67, 120, 0.24);
     box-sizing: border-box;
@@ -86,8 +85,23 @@
     overflow: hidden;
     pointer-events: none;
     position: absolute;
-    will-change: left, top, width, height, background-size, background-position;
+    will-change: left, top, width, height;
     z-index: 6;
+}
+
+::deep .canvas-interaction-preview {
+    display: block;
+    max-height: none;
+    max-width: none;
+    object-fit: fill;
+    pointer-events: none;
+    position: absolute;
+    transform: none;
+    transform-origin: top left;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: left, top, width, height;
 }
 
 ::deep .canvas-control:hover:not(.selected) {
