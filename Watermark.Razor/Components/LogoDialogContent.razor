@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 <style>
     .wm-container {
         margin-left: 10px;
@@ -132,6 +133,7 @@
     [Parameter]
     public EventCallback<KeyValuePair<string, string>> OnClick { get; set; }
     ConcurrentDictionary<string, string> Logoes = new();
+    private readonly string legacyImageOwnerPrefix = $"logo-dialog:{Guid.NewGuid():N}:";
     void Click(KeyValuePair<string, string> pair)
     {
         if (OnClick.HasDelegate)
@@ -163,11 +165,12 @@
         await Task.WhenAll(mission);
         foreach (var e in dic)
         {
-            Logoes[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+            Logoes[e.Key] = await JSRuntime.InvokeAsync<string>(
+                "byteToUrl", e.Value, legacyImageOwnerPrefix + e.Key);
         }
     }
 
-    async void ImportLogo(IReadOnlyList<IBrowserFile> files)
+    async Task ImportLogo(IReadOnlyList<IBrowserFile> files)
     {
         var target = Global.AppPath.LogoesFolder;
         if (!Directory.Exists(target))
@@ -184,6 +187,17 @@
         }
         await Init();
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "watermarkLegacyObjectUrls.releasePrefix", legacyImageOwnerPrefix);
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
     }
 
 }

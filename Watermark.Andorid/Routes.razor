@@ -1,29 +1,51 @@
-﻿@using Watermark.Razor.BlazorPages
+﻿@using Microsoft.AspNetCore.Components
+@using Watermark.Razor.BlazorPages
 @using Watermark.Razor.Components.Layout
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 
-@if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
-{
-    <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
-        <Found Context="routeData">
-            <RouteView RouteData="@routeData" />
-            <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
-        </Found>
-        <NotFound><WMNotFoundPage /></NotFound>
-    </Router>
-}
-else
-{
-    <WMPrivacyStartupGate>
-        <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
-            <Found Context="routeData">
-                <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)"/>
-                <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
-            </Found>
-            <NotFound>
-                <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
-            </NotFound>
-        </Router>
-    </WMPrivacyStartupGate>
+<ErrorBoundary @ref="errorBoundary">
+    <ChildContent>
+        @if (Global.DeviceType is DeviceType.Mac or DeviceType.Win)
+        {
+            <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
+                <Found Context="routeData">
+                    <RouteView RouteData="@routeData" />
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+                </Found>
+                <NotFound><WMNotFoundPage /></NotFound>
+            </Router>
+        }
+        else
+        {
+            <WMPrivacyStartupGate>
+                <Router AppAssembly="@typeof(MauiProgram).Assembly" AdditionalAssemblies="@([typeof(WMRootRedirect).Assembly])">
+                    <Found Context="routeData">
+                        <RouteView RouteData="@routeData" DefaultLayout="@typeof(WMAppShellLayout)"/>
+                        <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+                    </Found>
+                    <NotFound>
+                        <LayoutView Layout="@typeof(WMAppShellLayout)"><WMNotFoundPage /></LayoutView>
+                    </NotFound>
+                </Router>
+            </WMPrivacyStartupGate>
+        }
+    </ChildContent>
+    <ErrorContent Context="exception">
+        <section class="wm-route-error" role="alert">
+            <h1>页面暂时遇到问题</h1>
+            <p>当前页面没有被关闭，修复后可以继续操作；如果仍然异常，请重新加载。</p>
+            <small>@exception.GetType().Name</small>
+            <div>
+                <button type="button" @onclick="RecoverPage">恢复页面</button>
+                <a href="">重新加载</a>
+            </div>
+        </section>
+    </ErrorContent>
+</ErrorBoundary>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    private void RecoverPage() => errorBoundary?.Recover();
 }

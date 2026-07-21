@@ -89,6 +89,32 @@ h1:focus {
     z-index: 1000;
 }
 
+.wm-route-error {
+    box-sizing: border-box;
+    min-height: 100%;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    padding: 40px;
+    text-align: center;
+    color: #172033;
+}
+
+.wm-route-error h1 { margin: 0; font-size: 1.35rem; }
+.wm-route-error p { margin: 0; color: #687386; }
+.wm-route-error small { color: #9a4c4c; }
+.wm-route-error div { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+.wm-route-error button, .wm-route-error a {
+    border: 0;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+.wm-route-error button { background: #155fcf; color: white; }
+.wm-route-error a { background: #eef4fd; color: #155fcf; }
+
     #blazor-error-ui .dismiss {
         cursor: pointer;
         position: absolute;
