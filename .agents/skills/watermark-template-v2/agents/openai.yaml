@@ -1,0 +1,4 @@
+interface:
+  display_name: "水印模板 V2 生成器"
+  short_description: "按统一 Flex/Absolute 模型生成并校验水印模板 V2"
+  default_prompt: "使用 $watermark-template-v2 根据我的版式与 EXIF 需求生成可导入的 V2 水印模板。"
