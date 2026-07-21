@@ -19,6 +19,32 @@ public sealed class WMTemplateDesignerSessionTests
     }
 
     [Fact]
+    public async Task RenderPreviewAsync_MobilePublishesEncodedBytesInlineWithoutCreatingBlob()
+    {
+        var helper = new InlineWatermarkHelper();
+        var urls = new FakeObjectUrlRegistry();
+        await using var session = new WMTemplateDesignerSession(helper, urls);
+
+        var first = await session.RenderPreviewAsync(
+            "mobile-designer",
+            new WMCanvas { Name = "first" },
+            publishObjectUrl: false);
+        var second = await session.RenderPreviewAsync(
+            "mobile-designer",
+            new WMCanvas { Name = "second" },
+            publishObjectUrl: false);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.StartsWith("data:image/jpeg;base64,", first.PreviewUrl, StringComparison.Ordinal);
+        Assert.StartsWith("data:image/jpeg;base64,", second.PreviewUrl, StringComparison.Ordinal);
+        Assert.NotEqual(first.PreviewUrl, second.PreviewUrl);
+        Assert.Equal(2, helper.CallCount);
+        Assert.Empty(urls.PublishedVersions);
+        Assert.Equal(0, urls.ActiveLeaseCount);
+    }
+
+    [Fact]
     public async Task RenderPreviewAsync_CancelsOlderRenderAndPublishesOnlyLatest()
     {
         var helper = new LatestWinsWatermarkHelper();
@@ -92,6 +118,30 @@ public sealed class WMTemplateDesignerSessionTests
                 80,
                 new WMDesignViewport(0, 0, 100, 80),
                 []);
+        }
+
+        public Task<byte[]> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate? ziped, bool isPreview, bool designMode = false) => throw new NotSupportedException();
+        public byte[] Generation(WMCanvas mainCanvas, WMZipedTemplate? ziped, bool isPreview, bool designMode = false) => throw new NotSupportedException();
+        public Task<byte[]> SplitImages(List<string> images, bool horizon, bool preview) => throw new NotSupportedException();
+    }
+
+    private sealed class InlineWatermarkHelper : IWMWatermarkHelper
+    {
+        public int CallCount { get; private set; }
+
+        public Task<WMDesignRenderResult> GenerationDesignPreviewAsync(
+            WMCanvas mainCanvas,
+            WMZipedTemplate? ziped,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            var marker = mainCanvas.Name == "second" ? (byte)0x02 : (byte)0x01;
+            return Task.FromResult(new WMDesignRenderResult(
+                [0xff, 0xd8, 0xff, marker],
+                100,
+                80,
+                new WMDesignViewport(0, 0, 100, 80),
+                []));
         }
 
         public Task<byte[]> GenerationAsync(WMCanvas mainCanvas, WMZipedTemplate? ziped, bool isPreview, bool designMode = false) => throw new NotSupportedException();

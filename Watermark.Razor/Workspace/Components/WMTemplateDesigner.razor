@@ -406,7 +406,8 @@
         {
             var preview = await DesignerSession.RenderPreviewAsync(
                 $"template-designer:{CanvasId}",
-                currentEditor.Draft);
+                currentEditor.Draft,
+                publishObjectUrl: false);
             if (preview is null || !IsCurrentRender(currentEditor, version)) return;
 
             renderResult = preview.RenderResult;

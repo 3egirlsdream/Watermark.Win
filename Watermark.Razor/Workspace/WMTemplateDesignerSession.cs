@@ -35,6 +35,7 @@ public sealed class WMTemplateDesignerSession(
     public async Task<WMTemplateDesignerPreview?> RenderPreviewAsync(
         string ownerKey,
         WMCanvas canvas,
+        bool publishObjectUrl = true,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerKey);
@@ -67,6 +68,28 @@ public sealed class WMTemplateDesignerSession(
                 null,
                 current.Token).ConfigureAwait(false);
             if (!IsCurrent(current, currentVersion)) return null;
+
+            if (!publishObjectUrl)
+            {
+                // Mobile WKWebView can keep painting an old blob-backed image
+                // without raising an error event. Publish the same encoded
+                // bytes inline on mobile; this does not decode, render, or
+                // encode again and avoids creating an unused Blob URL.
+                var inlineUrl = WMTemplatePreviewSource.CreateInlineDataUrl(result.ImageBytes);
+                if (!IsCurrent(current, currentVersion)) return null;
+
+                WMObjectUrlLease? retiredLease;
+                lock (gate)
+                {
+                    if (!IsCurrentUnsafe(current, currentVersion)) return null;
+                    retiredLease = previewLease;
+                    previewLease = null;
+                }
+                if (retiredLease is not null)
+                    await objectUrls.ReleaseAsync(retiredLease).ConfigureAwait(false);
+
+                return new WMTemplateDesignerPreview(result, inlineUrl, currentVersion);
+            }
 
             await using var content = new MemoryStream(result.ImageBytes, writable: false);
             var nextLease = await objectUrls.PublishAsync(
