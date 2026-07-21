@@ -34,6 +34,27 @@ public sealed class WMTemplateMarketPagingTests
         Assert.Equal("旅行", request.Keyword);
         Assert.Equal(40, request.Cursor);
         Assert.Equal(20, request.PageSize);
+        Assert.False(request.ForceRefresh);
+    }
+
+    [Fact]
+    public async Task Query_ForwardsManualRefreshToApiSource()
+    {
+        var source = new FakeSource((category, keyword, cursor, pageSize) => new WMTemplateMarketPage
+        {
+            Items = [Template(1)],
+            HasMore = false
+        });
+        var pager = new WMTemplateMarketPager(source);
+
+        await pager.QueryAsync(new WMTemplateMarketplaceQuery(
+            WMTemplateMarketCategory.Latest,
+            string.Empty,
+            0,
+            20,
+            ForceRefresh: true));
+
+        Assert.True(Assert.Single(source.Requests).ForceRefresh);
     }
 
     [Fact]
@@ -144,6 +165,28 @@ public sealed class WMTemplateMarketPagingTests
     }
 
     [Fact]
+    public void FeedStore_SetRecommended_UpdatesCachedCategoriesAndRemovesRecommendedItem()
+    {
+        var store = new WMTemplateMarketFeedStore();
+        var recommended = store.GetOrCreate(WMTemplateMarketCategory.Recommended, string.Empty);
+        var popular = store.GetOrCreate(WMTemplateMarketCategory.Popular, string.Empty);
+        recommended.AppendUnique([Template(1), Template(2)]);
+        popular.AppendUnique([Template(1)]);
+        recommended.NextStart = 2;
+
+        store.SetRecommended("1", true);
+
+        Assert.True(recommended.Items[0].Recommend);
+        Assert.True(popular.Items[0].Recommend);
+
+        store.SetRecommended("1", false);
+
+        Assert.DoesNotContain(recommended.Items, item => item.WatermarkId == "1");
+        Assert.False(popular.Items[0].Recommend);
+        Assert.Equal(1, recommended.NextStart);
+    }
+
+    [Fact]
     public void FeatureSelector_PicksAnImage_AndRemovesItFromTheGrid()
     {
         var items = new[]
@@ -184,10 +227,11 @@ public sealed class WMTemplateMarketPagingTests
             string keyword,
             int cursor,
             int pageSize,
+            bool forceRefresh,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Requests.Add(new Request(category, keyword, cursor, pageSize));
+            Requests.Add(new Request(category, keyword, cursor, pageSize, forceRefresh));
             return Task.FromResult(responseFactory(category, keyword, cursor, pageSize));
         }
     }
@@ -201,6 +245,7 @@ public sealed class WMTemplateMarketPagingTests
             string keyword,
             int cursor,
             int pageSize,
+            bool forceRefresh,
             CancellationToken cancellationToken = default)
         {
             CallCount++;
@@ -213,5 +258,6 @@ public sealed class WMTemplateMarketPagingTests
         WMTemplateMarketCategory Category,
         string Keyword,
         int Cursor,
-        int PageSize);
+        int PageSize,
+        bool ForceRefresh);
 }

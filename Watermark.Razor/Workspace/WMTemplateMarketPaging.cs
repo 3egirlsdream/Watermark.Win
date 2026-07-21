@@ -11,6 +11,7 @@ public interface IWMTemplateMarketPageSource
         string keyword,
         int cursor,
         int pageSize,
+        bool forceRefresh,
         CancellationToken cancellationToken = default);
 }
 
@@ -21,12 +22,14 @@ public sealed class WMTemplateMarketApiPageSource(APIHelper api) : IWMTemplateMa
         string keyword,
         int cursor,
         int pageSize,
+        bool forceRefresh,
         CancellationToken cancellationToken = default) =>
         api.GetMarketTemplatesAsync(
             category.ToString().ToLowerInvariant(),
             keyword,
             cursor,
             pageSize,
+            forceRefresh,
             cancellationToken);
 }
 
@@ -45,6 +48,7 @@ public sealed class WMTemplateMarketPager(IWMTemplateMarketPageSource source)
             query.Keyword.Trim(),
             cursor,
             pageSize,
+            query.ForceRefresh,
             cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         var items = page.Items
@@ -133,6 +137,28 @@ public sealed class WMTemplateMarketFeedStore
 
     public bool IsDownloaded(string templateId) =>
         !string.IsNullOrWhiteSpace(templateId) && downloadedIds.Contains(templateId);
+
+    public void SetRecommended(string templateId, bool recommended)
+    {
+        if (string.IsNullOrWhiteSpace(templateId)) return;
+        foreach (var state in feeds.Values)
+        {
+            foreach (var item in state.Items.Where(item => string.Equals(
+                         item.WatermarkId,
+                         templateId,
+                         StringComparison.OrdinalIgnoreCase)))
+            {
+                item.Recommend = recommended;
+            }
+
+            if (recommended || state.Category != WMTemplateMarketCategory.Recommended) continue;
+            var removed = state.Items.RemoveAll(item => string.Equals(
+                item.WatermarkId,
+                templateId,
+                StringComparison.OrdinalIgnoreCase));
+            if (removed > 0) state.NextStart = Math.Max(0, state.NextStart - removed);
+        }
+    }
 
     private void Prune(WMTemplateMarketFeedKey current)
     {

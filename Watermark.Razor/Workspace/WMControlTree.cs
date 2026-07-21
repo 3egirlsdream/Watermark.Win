@@ -186,6 +186,8 @@ public static class WMControlTree
         AssignNewUniqueId(control, usedIds);
         if (control is WMContainer container)
         {
+            if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+                WMLayoutMigration.ApplyNewNodeDefaults(container, isRoot: true);
             canvas.Children.Add(container);
             return container;
         }
@@ -195,9 +197,13 @@ public static class WMControlTree
         {
             parent = new WMContainer { Name = "新容器" };
             AssignNewUniqueId(parent, usedIds);
+            if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+                WMLayoutMigration.ApplyNewNodeDefaults(parent, isRoot: true);
             canvas.Children.Add(parent);
         }
 
+        if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+            WMLayoutMigration.ApplyNewNodeDefaults(control);
         parent.Controls.Add(control);
         return control;
     }
@@ -368,4 +374,3 @@ public static class WMControlTree
         control.ID = id;
     }
 }
-

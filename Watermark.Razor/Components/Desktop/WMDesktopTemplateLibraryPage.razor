@@ -42,6 +42,7 @@
                         </div>
                         <div class="library-card-copy"><strong title="@template.Canvas.Name">@template.Canvas.Name</strong><small>@TemplateDescription(template)</small></div>
                         <div class="library-card-actions">
+                            <button type="button" class="upload" disabled="@busy" @onclick="() => OpenUploadAsync(template)"><MIcon Small>mdi-cloud-upload-outline</MIcon><span>上传</span></button>
                             <button type="button" class="edit" @onclick="() => EditRequested.InvokeAsync(template.ID)"><MIcon Small>mdi-pencil-outline</MIcon><span>编辑</span></button>
                             <button type="button" class="delete" disabled="@busy" @onclick="() => DeleteAsync(template)" aria-label="删除 @template.Canvas.Name"><MIcon Small>mdi-delete-outline</MIcon></button>
                         </div>
@@ -50,11 +51,18 @@
             </div>
         }
     </div>
+    <MDialog @bind-Value="showUpload" Width="420" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+        @if (showUpload && uploadTemplate is not null)
+        {
+            <WMDesktopTemplateUploadDialog @key="uploadDialogVersion" Template="uploadTemplate" OnClose="CloseUploadDialog" OnUploaded="OnTemplateUploadedAsync" />
+        }
+    </MDialog>
 </section>
 
 @code {
     [Parameter] public EventCallback CreateRequested { get; set; }
     [Parameter] public EventCallback<string> EditRequested { get; set; }
+    [Parameter] public EventCallback LoginRequested { get; set; }
 
     private readonly List<WMTemplateList> templates = [];
     private string keyword = string.Empty;
@@ -62,6 +70,9 @@
     private string? undoToken;
     private bool messageIsError;
     private bool busy;
+    private bool showUpload;
+    private WMTemplateList? uploadTemplate;
+    private int uploadDialogVersion;
     private IReadOnlyList<WMTemplateList> FilteredTemplates => templates
         .Where(item => string.IsNullOrWhiteSpace(keyword)
             || (item.Canvas.Name ?? string.Empty).Contains(keyword.Trim(), StringComparison.OrdinalIgnoreCase))
@@ -106,6 +117,33 @@
             }
         }
         finally { busy = false; }
+    }
+
+    private async Task OpenUploadAsync(WMTemplateList template)
+    {
+        if (busy) return;
+        if (Global.CurrentUser is null || string.IsNullOrWhiteSpace(Global.CurrentUser.ID))
+        {
+            Show("登录后才能上传模板到市场。", true);
+            await LoginRequested.InvokeAsync();
+            return;
+        }
+        uploadDialogVersion++;
+        uploadTemplate = template;
+        showUpload = true;
+    }
+
+    private Task CloseUploadDialog()
+    {
+        showUpload = false;
+        uploadTemplate = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnTemplateUploadedAsync(string uploadMessage)
+    {
+        await CloseUploadDialog();
+        Show(string.IsNullOrWhiteSpace(uploadMessage) ? "模板已上传到市场。" : uploadMessage, false);
     }
 
     private async Task UndoDeleteAsync()

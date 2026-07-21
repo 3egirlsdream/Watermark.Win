@@ -210,9 +210,14 @@
         }
     }
 
-    private static MacCanvasSceneItem ToSceneItem(WMDesignBounds bounds)
+    private MacCanvasSceneItem ToSceneItem(WMDesignBounds bounds)
     {
         var transform = bounds.Transform ?? new WMTransform();
+        var control = WMControlTree.Find(Editor.Draft, bounds.ControlId);
+        var absolute = control?.Style.Position == WMPosition.Absolute
+            || (Editor.Draft.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion
+                && bounds.ParentId is null
+                && control is WMContainer);
         return new MacCanvasSceneItem(
             bounds.ControlId,
             bounds.ParentId,
@@ -228,6 +233,7 @@
             transform.ScaleX,
             transform.ScaleY,
             transform.Rotation,
+            absolute,
             bounds.IsLocked,
             bounds.IsVisible);
     }
@@ -244,12 +250,18 @@
     {
         if (canvasInteractionActive) return Task.FromResult(false);
         var control = WMControlTree.Find(Editor.Draft, controlId);
-        if (control is null || control.IsLocked || !control.Enabled) return Task.FromResult(false);
+        var parent = control is null ? null : WMControlTree.FindParent(Editor.Draft, control.ID);
+        if (control is null
+            || control.IsLocked
+            || !control.Enabled
+            || parent is { IsLocked: true }
+            || parent is { Enabled: false }
+            || (!IsAbsoluteNode(control) && parent is null)) return Task.FromResult(false);
 
         try
         {
             Editor.Select(controlId);
-            Editor.BeginTransaction("画布变换");
+            Editor.BeginTransaction(IsAbsoluteNode(control) ? "画布变换" : "调整流式顺序");
             canvasInteractionActive = true;
             canvasInteractionControlId = controlId;
             return Task.FromResult(true);
@@ -270,28 +282,68 @@
         try
         {
             var control = WMControlTree.Find(Editor.Draft, interaction.ControlId);
-            if (control is null || control.IsLocked || !control.Enabled)
+            var parent = control is null ? null : WMControlTree.FindParent(Editor.Draft, control.ID);
+            if (control is null
+                || control.IsLocked
+                || !control.Enabled
+                || parent is { IsLocked: true }
+                || parent is { Enabled: false })
             {
                 Editor.CancelTransaction();
                 return Task.FromResult<MacCanvasInteraction?>(null);
             }
 
             var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == interaction.ControlId);
-            var constrainedInteraction = bounds is null
-                ? interaction
-                : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
-
-            MacCanvasTransform.Apply(control, constrainedInteraction);
-            Editor.CommitTransaction();
-            var appliedTransform = control.EnsureTransform();
-            return Task.FromResult<MacCanvasInteraction?>(constrainedInteraction with
+            if (IsAbsoluteNode(control))
             {
-                OffsetXPercent = appliedTransform.OffsetXPercent,
-                OffsetYPercent = appliedTransform.OffsetYPercent,
-                ScaleX = appliedTransform.ScaleX,
-                ScaleY = appliedTransform.ScaleY,
-                Rotation = appliedTransform.Rotation
-            });
+                var constrainedInteraction = bounds is null
+                    ? interaction
+                    : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
+                MacCanvasTransform.Apply(control, constrainedInteraction);
+                Editor.CommitTransaction();
+                var appliedTransform = control.Style.Position == WMPosition.Absolute
+                    ? control.Style.Transform
+                    : control.EnsureTransform();
+                return Task.FromResult<MacCanvasInteraction?>(constrainedInteraction with
+                {
+                    OffsetXPercent = appliedTransform.OffsetXPercent,
+                    OffsetYPercent = appliedTransform.OffsetYPercent,
+                    ScaleX = appliedTransform.ScaleX,
+                    ScaleY = appliedTransform.ScaleY,
+                    Rotation = appliedTransform.Rotation
+                });
+            }
+
+            // Children stay in their parent's flow layout: a drag first finds
+            // its new sibling slot, then stores the remaining visual offset as
+            // four-way margins. It never writes a canvas transform.
+            if (parent is null || interaction.Kind != "drag" || bounds is null)
+            {
+                Editor.CancelTransaction();
+                return Task.FromResult<MacCanvasInteraction?>(null);
+            }
+
+            var drop = Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion
+                ? MacCanvasFlowLayout.ResolveV2Drop(
+                    parent,
+                    control,
+                    bounds,
+                    interaction,
+                    RenderResult?.Bounds ?? [],
+                    Math.Min(RenderResult?.CanvasWidth ?? 0, RenderResult?.CanvasHeight ?? 0))
+                : MacCanvasFlowLayout.ResolveDrop(parent, control, bounds, interaction, RenderResult?.Bounds ?? []);
+            if (!MacCanvasFlowLayout.ApplyDrop(Editor.Draft, parent, control, drop))
+            {
+                Editor.CancelTransaction();
+                return Task.FromResult<MacCanvasInteraction?>(null);
+            }
+
+            Editor.CommitTransaction();
+            // Flow movement is persisted as order + margins, not as a
+            // transform. Keep the finger-up visual at its dragged position
+            // until the newly rendered image/scene arrives; setScene then
+            // replaces this temporary offset with the authoritative bounds.
+            return Task.FromResult<MacCanvasInteraction?>(interaction);
         }
         finally
         {
@@ -461,7 +513,10 @@
     {
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
         var control = WMControlTree.Find(Editor.Draft, selectedId);
-        if (control is null || control.IsLocked || !control.Enabled) return;
+        if (control is null
+            || !IsAbsoluteNode(control)
+            || control.IsLocked
+            || !control.Enabled) return;
         var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == selectedId);
         if (bounds is null) return;
 
@@ -481,7 +536,9 @@
 
         Editor.Mutate("键盘移动", () =>
         {
-            var transform = control.EnsureTransform();
+            var transform = control.Style.Position == WMPosition.Absolute
+                ? control.Style.Transform
+                : control.EnsureTransform();
             var horizontalStep = bounds.ParentWidth > 0 ? step / bounds.ParentWidth * 100 : 0;
             var verticalStep = bounds.ParentHeight > 0 ? step / bounds.ParentHeight * 100 : 0;
             var desiredX = transform.OffsetXPercent;
@@ -492,8 +549,8 @@
             else if (key == "ArrowDown") desiredY += verticalStep;
             (transform.OffsetXPercent, transform.OffsetYPercent) = MacCanvasBoundary.ClampOffsets(
                 bounds,
-                Math.Clamp(desiredX, -500, 500),
-                Math.Clamp(desiredY, -500, 500),
+                Math.Clamp(desiredX, -100, 100),
+                Math.Clamp(desiredY, -100, 100),
                 transform.ScaleX,
                 transform.ScaleY,
                 transform.Rotation);
@@ -507,6 +564,11 @@
         keyboardMoveControlId = null;
         Editor.CommitTransaction();
     }
+
+    private bool IsAbsoluteNode(IWMControl? control) => control?.Style.Position == WMPosition.Absolute
+        || (Editor.Draft.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion
+            && control is WMContainer container
+            && Editor.Draft.Children.Any(root => ReferenceEquals(root, container)));
 
     private async Task CancelActiveInteractionAsync()
     {

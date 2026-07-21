@@ -52,7 +52,13 @@ public sealed class WMTemplateEditorState
     public static WMTemplateEditorState Create(WMCanvas original)
     {
         ArgumentNullException.ThrowIfNull(original);
-        return new WMTemplateEditorState(Clone(original));
+        var draft = Clone(original);
+        // Migration is intentionally editor-local. Reading a legacy template for
+        // export still uses its compatibility renderer, while opening it in the
+        // editor produces a V2 draft without marking it dirty until the user
+        // actually changes it or saves it.
+        WMLayoutMigration.UpgradeInMemory(draft);
+        return new WMTemplateEditorState(draft);
     }
 
     public static WMTemplateEditorState Restore(

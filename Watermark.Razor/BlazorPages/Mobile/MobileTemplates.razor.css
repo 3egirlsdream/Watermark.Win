@@ -46,6 +46,24 @@
 .templates-add:active { transform: scale(.94); }
 .templates-add:disabled { opacity: .45; }
 
+.templates-refresh {
+    align-items: center;
+    background: var(--wm-surface);
+    border: 1px solid var(--wm-divider);
+    border-radius: 50%;
+    color: var(--wm-primary);
+    display: flex;
+    height: 38px;
+    justify-content: center;
+    padding: 0;
+    transition: opacity 120ms ease, transform 120ms ease;
+    width: 38px;
+}
+.templates-refresh:active { transform: scale(.94); }
+.templates-refresh:disabled { opacity: .45; }
+.templates-refresh ::deep i.is-spinning { animation:templates-refresh-spin .75s linear infinite; }
+@keyframes templates-refresh-spin { to { transform:rotate(360deg); } }
+
 .templates-tabs {
     background: color-mix(in srgb, var(--wm-surface-subtle) 88%, var(--wm-page));
     border: 1px solid var(--wm-divider);

@@ -80,6 +80,98 @@ public sealed class WMTemplateStoreTests : IDisposable
     }
 
     [Fact]
+    public void Validator_RejectsInvalidV2TypographyAndBackdropBlurValues()
+    {
+        var canvas = SplitCanvas();
+        canvas.LayoutSchemaVersion = 2;
+        var container = new WMContainer
+        {
+            BackgroundColor = "#FFFFFF80",
+            ContainerProperties = new WMImage
+            {
+                EnableGaussianBlur = true,
+                GaussianDeep = 61
+            },
+            Style = new WMStyle
+            {
+                Position = WMPosition.Absolute,
+                Width = WMStyleLength.Percent(50),
+                Height = WMStyleLength.Percent(25),
+                Left = WMStyleLength.Percent(0),
+                Top = WMStyleLength.Percent(0)
+            }
+        };
+        container.Controls.Add(new WMText { LetterSpacing = 3.01 });
+        canvas.Children.Add(container);
+
+        var errors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+
+        Assert.Contains(errors, error => error.Field == "LetterSpacing" && error.Severity == WMValidationSeverity.Error);
+        Assert.Contains(errors, error => error.Field == "ContainerProperties.GaussianDeep" && error.Severity == WMValidationSeverity.Error);
+    }
+
+    [Fact]
+    public void Validator_WarnsWhenOpaqueFillCoversV2BackdropBlur()
+    {
+        var canvas = SplitCanvas();
+        canvas.LayoutSchemaVersion = 2;
+        var container = new WMContainer
+        {
+            BackgroundColor = "#FFFFFFFF",
+            ContainerProperties = new WMImage
+            {
+                EnableGaussianBlur = true,
+                GaussianDeep = 12
+            },
+            Style = new WMStyle
+            {
+                Position = WMPosition.Absolute,
+                Width = WMStyleLength.Percent(50),
+                Height = WMStyleLength.Percent(25),
+                Left = WMStyleLength.Percent(0),
+                Top = WMStyleLength.Percent(0)
+            }
+        };
+        canvas.Children.Add(container);
+
+        var errors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+
+        Assert.Contains(errors, error => error.Field == "BackgroundColor" && error.Severity == WMValidationSeverity.Warning);
+    }
+
+    [Fact]
+    public void Validator_RequiresV2PhotoInformationToBindCameraMetadata()
+    {
+        var canvas = SplitCanvas();
+        canvas.LayoutSchemaVersion = 2;
+        var container = new WMContainer
+        {
+            Style = new WMStyle
+            {
+                Position = WMPosition.Absolute,
+                Width = WMStyleLength.Percent(80),
+                Height = WMStyleLength.Percent(20),
+                Left = WMStyleLength.Percent(10),
+                Top = WMStyleLength.Percent(10)
+            }
+        };
+        var text = new WMText
+        {
+            Name = "曝光参数",
+            Exifs = [new WMExifConfigInfo { Prefix = "F2.8 35mm 1/250S" }]
+        };
+        container.Controls.Add(text);
+        canvas.Children.Add(container);
+
+        var fixedValueErrors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+        Assert.Contains(fixedValueErrors, error => error.Field == "Exifs" && error.Severity == WMValidationSeverity.Warning);
+
+        text.Exifs = [new WMExifConfigInfo { Key = "FNumber", Prefix = "F" }];
+        var metadataErrors = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+        Assert.DoesNotContain(metadataErrors, error => error.Field == "Exifs");
+    }
+
+    [Fact]
     public void Validator_AcceptsOffsetBoundaries()
     {
         AssertTransformValid("Transform.OffsetXPercent", transform => transform.OffsetXPercent = -500);

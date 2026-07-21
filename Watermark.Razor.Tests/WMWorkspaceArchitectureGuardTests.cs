@@ -115,6 +115,10 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.DoesNotContain("CancelTransaction", backHandler, StringComparison.Ordinal);
         Assert.DoesNotContain("Select(null)", backHandler, StringComparison.Ordinal);
         Assert.Contains("--mobile-designer-drawer-height", designerCss, StringComparison.Ordinal);
+        Assert.Contains(".wm-template-designer ::deep *", designerCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: none", designerCss, StringComparison.Ordinal);
+        Assert.Contains("::deep input", designerCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: text", designerCss, StringComparison.Ordinal);
         Assert.Contains("pointerdown", drawerJs, StringComparison.Ordinal);
         Assert.Contains("setPointerCapture", drawerJs, StringComparison.Ordinal);
         Assert.Contains("touch-action: pan-y", sliderCss, StringComparison.Ordinal);

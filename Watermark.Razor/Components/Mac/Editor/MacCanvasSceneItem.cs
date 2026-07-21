@@ -20,6 +20,7 @@ public sealed record MacCanvasSceneItem(
     double ScaleX,
     double ScaleY,
     double Rotation,
+    bool Absolute,
     bool Locked,
     bool Visible);
 
@@ -34,8 +35,8 @@ public sealed record MacCanvasInteraction(
 
 public static class MacCanvasBoundary
 {
-    private const double MinimumScale = 0.05;
-    private const double MaximumScale = 20;
+    private const double MinimumScale = 0.1;
+    private const double MaximumScale = 4;
 
     public static MacCanvasInteraction ConstrainTransform(WMDesignBounds bounds, MacCanvasInteraction interaction)
     {
@@ -165,6 +166,13 @@ public static class MacCanvasBoundary
 
 public static class MacCanvasFlowLayout
 {
+    public sealed record DropResult(
+        int Index,
+        double Left,
+        double Top,
+        double Right,
+        double Bottom);
+
     public static int GetDropIndex(
         WMContainer parent,
         IWMControl control,
@@ -206,10 +214,392 @@ public static class MacCanvasFlowLayout
 
         return index;
     }
+
+    /// <summary>
+    /// Resolves a flow-layout drag in two phases.  The insertion index is based
+    /// on the dragged component's visual center; margins are then calculated
+    /// from the component's position in that new order.  Calculating a margin
+    /// from the old position would make every cross-over jump by the width or
+    /// height of the sibling that was crossed.
+    /// </summary>
+    public static DropResult ResolveDrop(
+        WMContainer parent,
+        IWMControl control,
+        WMDesignBounds draggedBounds,
+        MacCanvasInteraction interaction,
+        IReadOnlyList<WMDesignBounds> bounds)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(draggedBounds);
+        ArgumentNullException.ThrowIfNull(interaction);
+        ArgumentNullException.ThrowIfNull(bounds);
+
+        var index = GetDropIndex(parent, control, draggedBounds, interaction, bounds);
+        var orderedControls = parent.Controls
+            .Where(item => !ReferenceEquals(item, control))
+            .ToList();
+        index = Math.Clamp(index, 0, orderedControls.Count);
+        orderedControls.Insert(index, control);
+
+        var predicted = GetVisualPosition(parent, orderedControls, control, draggedBounds, bounds);
+        var desiredX = draggedBounds.X + draggedBounds.ParentWidth * interaction.OffsetXPercent / 100d;
+        var desiredY = draggedBounds.Y + draggedBounds.ParentHeight * interaction.OffsetYPercent / 100d;
+        var deltaX = FiniteOr(desiredX - predicted.X, 0);
+        var deltaY = FiniteOr(desiredY - predicted.Y, 0);
+
+        var left = control.Margin.Left;
+        var top = control.Margin.Top;
+        var right = control.Margin.Right;
+        var bottom = control.Margin.Bottom;
+        ApplyHorizontalMarginOffset(ref left, ref right, deltaX, draggedBounds.ParentWidth);
+
+        if (parent.Orientation == Orientation.Horizontal)
+        {
+            ApplyPairedMarginOffset(ref top, ref bottom, deltaY, draggedBounds.ParentHeight);
+        }
+        else if (parent.VerticalAlignment == VerticalAlignment.Center)
+        {
+            // In centered vertical flow, Top moves this component forward and
+            // Bottom advances the following cursor back.  Moving both equally
+            // preserves the surrounding siblings while adjusting this item.
+            var minimumExtent = Math.Min(draggedBounds.ParentWidth, draggedBounds.ParentHeight);
+            var amount = ToPercent(deltaY, minimumExtent);
+            top += amount;
+            bottom += amount;
+        }
+        else
+        {
+            ApplyPairedMarginOffset(ref top, ref bottom, deltaY, draggedBounds.ParentHeight);
+        }
+
+        return new DropResult(
+            index,
+            ClampMargin(left),
+            ClampMargin(top),
+            ClampMargin(right),
+            ClampMargin(bottom));
+    }
+
+    /// <summary>
+    /// V2 counterpart of <see cref="ResolveDrop"/>.  The first phase derives an
+    /// insertion slot from Flex's visual order (including reverse directions).
+    /// Only after that slot is known do we calculate the residual four-way
+    /// margin, in canvas-short-edge percent.  This prevents a cross-over from
+    /// being interpreted as a giant margin on the old sibling order.
+    /// </summary>
+    public static DropResult ResolveV2Drop(
+        WMContainer parent,
+        IWMControl control,
+        WMDesignBounds draggedBounds,
+        MacCanvasInteraction interaction,
+        IReadOnlyList<WMDesignBounds> bounds,
+        double canvasShortEdge)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(draggedBounds);
+        ArgumentNullException.ThrowIfNull(interaction);
+        ArgumentNullException.ThrowIfNull(bounds);
+
+        var flowWithout = parent.Controls
+            .Where(item => !ReferenceEquals(item, control) && item.Style.Position == WMPosition.Static)
+            .ToList();
+        var insertion = GetV2FlowInsertion(parent, control, draggedBounds, interaction, bounds, flowWithout);
+        insertion = Math.Clamp(insertion, 0, flowWithout.Count);
+        flowWithout.Insert(insertion, control);
+
+        var predicted = GetV2VisualPosition(parent, flowWithout, control, draggedBounds, bounds, canvasShortEdge);
+        var desiredX = draggedBounds.X + draggedBounds.ParentWidth * interaction.OffsetXPercent / 100d;
+        var desiredY = draggedBounds.Y + draggedBounds.ParentHeight * interaction.OffsetYPercent / 100d;
+        var deltaX = FiniteOr(desiredX - predicted.X, 0);
+        var deltaY = FiniteOr(desiredY - predicted.Y, 0);
+
+        var left = control.Style.Margin.Left;
+        var top = control.Style.Margin.Top;
+        var right = control.Style.Margin.Right;
+        var bottom = control.Style.Margin.Bottom;
+        ApplyV2PairedMarginOffset(ref left, ref right, deltaX, canvasShortEdge);
+        ApplyV2PairedMarginOffset(ref top, ref bottom, deltaY, canvasShortEdge);
+
+        // WMControlTree.Move uses the full Children list. Locate the next flow
+        // sibling in that list so absolute decorative nodes keep their own
+        // z-index placement and never become part of the visual ordering.
+        var fullWithout = parent.Controls.Where(item => !ReferenceEquals(item, control)).ToList();
+        var nextFlow = insertion < flowWithout.Count - 1 ? flowWithout[insertion + 1] : null;
+        var fullIndex = nextFlow is null
+            ? fullWithout.Count
+            : fullWithout.IndexOf(nextFlow);
+
+        return new DropResult(
+            Math.Max(0, fullIndex),
+            ClampV2Margin(left),
+            ClampV2Margin(top),
+            ClampV2Margin(right),
+            ClampV2Margin(bottom));
+    }
+
+    /// <summary>
+    /// Persists the result of a direct flow drag. V2 writes only Style.Margin;
+    /// legacy templates keep using their legacy margin. Keeping this operation
+    /// beside drop resolution makes mobile and desktop commits identical and
+    /// gives the render-affecting mutation a focused test seam.
+    /// </summary>
+    public static bool ApplyDrop(
+        WMCanvas canvas,
+        WMContainer parent,
+        IWMControl control,
+        DropResult drop)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(drop);
+
+        if (!Watermark.Razor.Workspace.WMControlTree.Move(canvas, control.ID, parent.ID, drop.Index))
+            return false;
+
+        var margin = canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion
+            ? control.Style.Margin
+            : control.Margin;
+        margin.Left = drop.Left;
+        margin.Top = drop.Top;
+        margin.Right = drop.Right;
+        margin.Bottom = drop.Bottom;
+        return true;
+    }
+
+    private static int GetV2FlowInsertion(
+        WMContainer parent,
+        IWMControl control,
+        WMDesignBounds draggedBounds,
+        MacCanvasInteraction interaction,
+        IReadOnlyList<WMDesignBounds> bounds,
+        IReadOnlyList<IWMControl> flowWithout)
+    {
+        var byId = bounds.ToDictionary(item => item.ControlId, StringComparer.Ordinal);
+        var horizontal = parent.Style.FlexDirection == Orientation.Horizontal;
+        var extent = horizontal ? draggedBounds.ParentWidth : draggedBounds.ParentHeight;
+        var offset = horizontal ? interaction.OffsetXPercent : interaction.OffsetYPercent;
+        var center = (horizontal ? draggedBounds.X + draggedBounds.Width / 2d : draggedBounds.Y + draggedBounds.Height / 2d)
+            + extent * offset / 100d;
+        if (!double.IsFinite(center)) return Math.Clamp(parent.Controls.IndexOf(control), 0, flowWithout.Count);
+
+        var visual = parent.Style.FlexReverse ? flowWithout.Reverse().ToArray() : flowWithout.ToArray();
+        for (var visualIndex = 0; visualIndex < visual.Length; visualIndex++)
+        {
+            if (!byId.TryGetValue(visual[visualIndex].ID, out var sibling)) continue;
+            var siblingCenter = horizontal ? sibling.X + sibling.Width / 2d : sibling.Y + sibling.Height / 2d;
+            if (center < siblingCenter)
+                return parent.Style.FlexReverse ? flowWithout.Count - visualIndex : visualIndex;
+        }
+
+        return parent.Style.FlexReverse ? 0 : flowWithout.Count;
+    }
+
+    private static (double X, double Y) GetV2VisualPosition(
+        WMContainer parent,
+        IReadOnlyList<IWMControl> orderedFlow,
+        IWMControl target,
+        WMDesignBounds parentBounds,
+        IReadOnlyList<WMDesignBounds> bounds,
+        double canvasShortEdge)
+    {
+        var byId = bounds.ToDictionary(item => item.ControlId, StringComparer.Ordinal);
+        var horizontal = parent.Style.FlexDirection == Orientation.Horizontal;
+        var extent = horizontal ? parentBounds.ParentWidth : parentBounds.ParentHeight;
+        var gap = Math.Max(0, parent.Style.Gap) * Math.Max(0, canvasShortEdge) / 100d;
+        var unit = Math.Max(0, canvasShortEdge) / 100d;
+        var items = orderedFlow.Select(item =>
+        {
+            byId.TryGetValue(item.ID, out var rendered);
+            var size = horizontal ? rendered?.Width ?? item.Width : rendered?.Height ?? item.Height;
+            var before = (horizontal ? item.Style.Margin.Left : item.Style.Margin.Top) * unit;
+            var after = (horizontal ? item.Style.Margin.Right : item.Style.Margin.Bottom) * unit;
+            return (Control: item, Size: size, Before: before, After: after, Rendered: rendered);
+        }).ToArray();
+        var used = items.Sum(item => item.Before + item.Size + item.After) + gap * Math.Max(0, items.Length - 1);
+        var justify = parent.Style.JustifyContent switch
+        {
+            WMJustifyContent.Center => Math.Max(0, (extent - used) / 2d),
+            WMJustifyContent.End => Math.Max(0, extent - used),
+            _ => 0d
+        };
+
+        if (!parent.Style.FlexReverse)
+        {
+            var cursor = justify;
+            foreach (var item in items)
+            {
+                cursor += item.Before;
+                if (ReferenceEquals(item.Control, target))
+                    return horizontal
+                        ? (cursor, item.Rendered?.Y ?? parentBounds.Y)
+                        : (item.Rendered?.X ?? parentBounds.X, cursor);
+                cursor += item.Size + item.After + gap;
+            }
+        }
+        else
+        {
+            var cursor = extent - justify;
+            foreach (var item in items)
+            {
+                cursor -= item.After + item.Size;
+                if (ReferenceEquals(item.Control, target))
+                    return horizontal
+                        ? (cursor, item.Rendered?.Y ?? parentBounds.Y)
+                        : (item.Rendered?.X ?? parentBounds.X, cursor);
+                cursor -= item.Before + gap;
+            }
+        }
+
+        return (parentBounds.X, parentBounds.Y);
+    }
+
+    private static void ApplyV2PairedMarginOffset(ref double leading, ref double trailing, double offset, double canvasShortEdge)
+    {
+        var amount = canvasShortEdge > 0 && double.IsFinite(offset)
+            ? offset / canvasShortEdge * 100d / 2d
+            : 0;
+        leading += amount;
+        trailing -= amount;
+    }
+
+    private static double ClampV2Margin(double value) => Math.Clamp(double.IsFinite(value) ? value : 0, -25, 25);
+
+    private static (double X, double Y) GetVisualPosition(
+        WMContainer parent,
+        IReadOnlyList<IWMControl> controls,
+        IWMControl target,
+        WMDesignBounds parentBounds,
+        IReadOnlyList<WMDesignBounds> bounds)
+    {
+        var boundsById = bounds.ToDictionary(item => item.ControlId, StringComparer.Ordinal);
+        var width = parentBounds.ParentWidth;
+        var height = parentBounds.ParentHeight;
+        var occupyX = 0d;
+        var occupyY = 0d;
+
+        foreach (var component in controls)
+        {
+            var (componentWidth, componentHeight, transform) = GetMetrics(component, boundsById);
+            var x = 0d;
+            var y = 0d;
+
+            if (parent.Orientation == Orientation.Horizontal)
+            {
+                y = parent.VerticalAlignment switch
+                {
+                    VerticalAlignment.Top => 0,
+                    VerticalAlignment.Bottom => height - componentHeight,
+                    _ => (height - componentHeight) / 2d
+                };
+                y += (component.Margin.Top - component.Margin.Bottom) / 100d * height;
+
+                if (parent.HorizontalAlignment == HorizontalAlignment.Left)
+                {
+                    x = occupyX + width * (component.Margin.Left - component.Margin.Right) / 100d;
+                    occupyX = x + componentWidth;
+                }
+                else if (parent.HorizontalAlignment == HorizontalAlignment.Center)
+                {
+                    if (occupyX == 0)
+                    {
+                        // This deliberately mirrors WatermarkHelper's existing
+                        // layout rule so the editor's post-drop margin matches
+                        // the renderer, including old templates.
+                        var totalWidth = controls.Sum(item => GetMetrics(item, boundsById).Width)
+                            + controls.Sum(item => (item.Margin.Left + item.Margin.Right) / 100d * parent.HeightPercent);
+                        occupyX = (width - totalWidth) / 2d;
+                    }
+                    x = occupyX + width * (component.Margin.Left - component.Margin.Right) / 100d;
+                    occupyX = x + componentWidth;
+                }
+                else
+                {
+                    if (occupyX == 0) occupyX = width;
+                    x = occupyX - componentWidth - width * (component.Margin.Right - component.Margin.Left) / 100d;
+                    occupyX = x;
+                }
+            }
+            else
+            {
+                x = parent.HorizontalAlignment switch
+                {
+                    HorizontalAlignment.Left => 0,
+                    HorizontalAlignment.Right => width - componentWidth,
+                    _ => (width - componentWidth) / 2d
+                };
+                x += (component.Margin.Left - component.Margin.Right) / 100d * width;
+
+                if (parent.VerticalAlignment == VerticalAlignment.Top)
+                {
+                    y = height * (component.Margin.Top - component.Margin.Bottom) / 100d;
+                    occupyY = componentHeight + y;
+                }
+                else if (parent.VerticalAlignment == VerticalAlignment.Center)
+                {
+                    var minimumExtent = Math.Min(height, width);
+                    if (occupyY == 0)
+                    {
+                        var totalHeight = controls.Sum(item => GetMetrics(item, boundsById).Height)
+                            + controls.Sum(item => (item.Margin.Top - item.Margin.Bottom) / 100d * minimumExtent);
+                        occupyY = (height - totalHeight) / 2d;
+                    }
+                    occupyY += component.Margin.Top / 100d * minimumExtent;
+                    y = occupyY;
+                    occupyY = y + componentHeight - minimumExtent * component.Margin.Bottom / 100d;
+                }
+                else
+                {
+                    if (occupyY == 0) occupyY = height;
+                    y = occupyY - componentHeight - height * (component.Margin.Bottom - component.Margin.Top) / 100d;
+                    occupyY = y;
+                }
+            }
+
+            if (ReferenceEquals(component, target))
+                return (
+                    x + width * transform.OffsetXPercent / 100d,
+                    y + height * transform.OffsetYPercent / 100d);
+        }
+
+        return (parentBounds.X, parentBounds.Y);
+    }
+
+    private static (double Width, double Height, WMTransform Transform) GetMetrics(
+        IWMControl control,
+        IReadOnlyDictionary<string, WMDesignBounds> bounds)
+    {
+        if (bounds.TryGetValue(control.ID, out var rendered))
+            return (rendered.Width, rendered.Height, rendered.Transform ?? control.Transform ?? new WMTransform());
+        return (control.Width, control.Height, control.Transform ?? new WMTransform());
+    }
+
+    private static void ApplyHorizontalMarginOffset(ref double left, ref double right, double offset, double extent) =>
+        ApplyPairedMarginOffset(ref left, ref right, offset, extent);
+
+    private static void ApplyPairedMarginOffset(ref double leading, ref double trailing, double offset, double extent)
+    {
+        var amount = ToPercent(offset, extent) / 2d;
+        leading += amount;
+        trailing -= amount;
+    }
+
+    private static double ToPercent(double value, double extent) =>
+        extent > 0 && double.IsFinite(value) ? value / extent * 100d : 0;
+
+    private static double ClampMargin(double value) =>
+        Math.Clamp(double.IsFinite(value) ? value : 0, -100, 100);
+
+    private static double FiniteOr(double value, double fallback) => double.IsFinite(value) ? value : fallback;
 }
 
 public static class MacCanvasTransform
 {
+    private const double MinimumScale = 0.1;
+    private const double MaximumScale = 4;
+
     public static void Apply(IWMControl control, MacCanvasInteraction interaction)
     {
         ArgumentNullException.ThrowIfNull(control);
@@ -217,15 +607,17 @@ public static class MacCanvasTransform
         if (!string.Equals(control.ID, interaction.ControlId, StringComparison.Ordinal))
             throw new ArgumentException("交互目标与控件不匹配。", nameof(interaction));
 
-        var transform = control.EnsureTransform();
-        transform.OffsetXPercent = ClampFinite(interaction.OffsetXPercent, transform.OffsetXPercent, -500, 500);
-        transform.OffsetYPercent = ClampFinite(interaction.OffsetYPercent, transform.OffsetYPercent, -500, 500);
-        transform.ScaleX = ClampFinite(interaction.ScaleX, transform.ScaleX, 0.05, 20);
-        transform.ScaleY = ClampFinite(interaction.ScaleY, transform.ScaleY, 0.05, 20);
+        var transform = control.Style.Position == WMPosition.Absolute
+            ? control.Style.Transform
+            : control.EnsureTransform();
+        transform.OffsetXPercent = ClampFinite(interaction.OffsetXPercent, transform.OffsetXPercent, -100, 100);
+        transform.OffsetYPercent = ClampFinite(interaction.OffsetYPercent, transform.OffsetYPercent, -100, 100);
+        transform.ScaleX = ClampFinite(interaction.ScaleX, transform.ScaleX, MinimumScale, MaximumScale);
+        transform.ScaleY = ClampFinite(interaction.ScaleY, transform.ScaleY, MinimumScale, MaximumScale);
         transform.Rotation = double.IsFinite(interaction.Rotation)
             ? interaction.Rotation
             : transform.Rotation;
-        if (control is WMContainer container)
+        if (control.Style.Position != WMPosition.Absolute && control is WMContainer container)
             container.Angle = (int)Math.Round(transform.Rotation);
     }
 

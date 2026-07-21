@@ -1,0 +1,170 @@
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
+
+@if (Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+{
+    <section class="inspector-group node-style-inspector">
+        <div class="inspector-group-heading"><h3>布局样式</h3></div>
+        <MacInspectorOptionGroup TValue="WMPosition" Label="定位方式" Value="@Style.Position" Options="@PositionOptions" Disabled="@ReadOnly" ValueChanged="SetPosition" />
+        <MacInspectorOptionGroup TValue="WMStyleUnit" Label="宽度类型" Value="@Style.Width.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(true, value)" />
+        @if (!Style.Width.IsAuto)
+        {
+            <MacInspectorSlider Label="宽度" Value="@Style.Width.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(true, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        }
+        <MacInspectorOptionGroup TValue="WMStyleUnit" Label="高度类型" Value="@Style.Height.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(false, value)" />
+        @if (!Style.Height.IsAuto)
+        {
+            <MacInspectorSlider Label="高度" Value="@Style.Height.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(false, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        }
+
+        @if (Style.Position == WMPosition.Absolute)
+        {
+            <div class="inspector-group-heading compact"><h3>定位边距（相对父内容区）</h3></div>
+            @InsetEditor("上", Style.Top, value => Style.Top = value)
+            @InsetEditor("右", Style.Right, value => Style.Right = value)
+            @InsetEditor("下", Style.Bottom, value => Style.Bottom = value)
+            @InsetEditor("左", Style.Left, value => Style.Left = value)
+            <MacInspectorSlider Label="层叠顺序" Value="@Style.ZIndex" Min="-20" Max="20" Step="1" Disabled="@ReadOnly" ValueChanged="SetZIndex" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        }
+        else
+        {
+            <MacInspectorOptionGroup TValue="WMFlex" Label="伸缩方式" Value="@Style.Flex" Options="@FlexOptions" Disabled="@ReadOnly" ValueChanged="SetFlex" />
+        }
+
+        <div class="inspector-group-heading compact"><h3>间距（相对画布短边）</h3></div>
+        <MacInspectorSlider Label="上外边距" Value="@Style.Margin.Top" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(0, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        <MacInspectorSlider Label="右外边距" Value="@Style.Margin.Right" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(1, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        <MacInspectorSlider Label="下外边距" Value="@Style.Margin.Bottom" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(2, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        <MacInspectorSlider Label="左外边距" Value="@Style.Margin.Left" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(3, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        @if (Control is WMContainer)
+        {
+            <MacInspectorSlider Label="统一内边距" Value="@Style.Padding.Top" Min="0" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="SetUniformPadding" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        }
+        <MacInspectorOptionGroup TValue="WMOverflow" Label="溢出内容" Value="@Style.Overflow" Options="@OverflowOptions" Disabled="@ReadOnly" ValueChanged="SetOverflow" />
+
+        @if (Control is WMContainer)
+        {
+            <div class="inspector-group-heading compact"><h3>连续布局</h3></div>
+            <MacInspectorOptionGroup TValue="Orientation" Label="排列方向" Value="@Style.FlexDirection" Options="@DirectionOptions" Disabled="@ReadOnly" ValueChanged="SetDirection" />
+            <MacInspectorSwitch Label="反向排列" Value="@Style.FlexReverse" Disabled="@ReadOnly" ValueChanged="SetReverse" />
+            <MacInspectorOptionGroup TValue="WMJustifyContent" Label="主轴对齐" Value="@Style.JustifyContent" Options="@JustifyOptions" Disabled="@ReadOnly" ValueChanged="SetJustify" />
+            <MacInspectorOptionGroup TValue="WMAlignItems" Label="交叉轴对齐" Value="@Style.AlignItems" Options="@AlignOptions" Disabled="@ReadOnly" ValueChanged="SetAlign" />
+            <MacInspectorSlider Label="统一间距" Value="@Style.Gap" Min="0" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="SetGap" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+        }
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+    [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
+    [Parameter] public bool ReadOnly { get; set; }
+
+    private bool interactionActive;
+    private WMStyle Style => Control.Style;
+
+    private RenderFragment InsetEditor(string label, WMStyleLength? value, Action<WMStyleLength?> set) => builder =>
+    {
+        var enabled = value is not null;
+        builder.OpenComponent<MacInspectorSwitch>(0);
+        builder.AddAttribute(1, "Label", label);
+        builder.AddAttribute(2, "Value", enabled);
+        builder.AddAttribute(3, "Disabled", ReadOnly);
+        builder.AddAttribute(4, "ValueChanged", EventCallback.Factory.Create<bool>(this, next => ToggleInset(set, next)));
+        builder.CloseComponent();
+        if (!enabled) return;
+        builder.OpenComponent<MacInspectorSlider>(5);
+        builder.AddAttribute(6, "Label", label);
+        builder.AddAttribute(7, "Value", value!.Value);
+        builder.AddAttribute(8, "Min", -25d);
+        builder.AddAttribute(9, "Max", 125d);
+        builder.AddAttribute(10, "Step", .1d);
+        builder.AddAttribute(11, "Unit", "%");
+        builder.AddAttribute(12, "Disabled", ReadOnly);
+        builder.AddAttribute(13, "ValueChanged", EventCallback.Factory.Create<double>(this, next => SetInset(set, next)));
+        builder.AddAttribute(14, "InteractionStarted", EventCallback.Factory.Create(this, BeginInteractionAsync));
+        builder.AddAttribute(15, "InteractionEnded", EventCallback.Factory.Create(this, EndInteractionAsync));
+        builder.CloseComponent();
+    };
+
+    private Task BeginInteractionAsync()
+    {
+        if (ReadOnly || interactionActive) return Task.CompletedTask;
+        Editor.BeginTransaction("调整布局样式");
+        interactionActive = true;
+        return Task.CompletedTask;
+    }
+
+    private Task EndInteractionAsync()
+    {
+        if (!interactionActive) return Task.CompletedTask;
+        interactionActive = false;
+        Editor.CommitTransaction();
+        return Task.CompletedTask;
+    }
+
+    private void Mutate(string label, Action mutation)
+    {
+        if (ReadOnly) return;
+        Editor.Mutate(label, mutation);
+    }
+
+    private Task SetPosition(WMPosition value)
+    {
+        // Roots are always the canvas's absolute children; only nested nodes
+        // may switch between Flex flow and Absolute positioning.
+        var isRoot = Control is WMContainer && WMControlTree.FindParent(Editor.Draft, Control.ID) is null;
+        Mutate("修改定位方式", () => Style.Position = isRoot ? WMPosition.Absolute : value);
+        return Task.CompletedTask;
+    }
+    private Task SetFlex(WMFlex value) { Mutate("修改伸缩方式", () => Style.Flex = value); return Task.CompletedTask; }
+    private Task SetOverflow(WMOverflow value) { Mutate("修改溢出方式", () => Style.Overflow = value); return Task.CompletedTask; }
+    private Task SetDirection(Orientation value) { Mutate("修改排列方向", () => Style.FlexDirection = value); return Task.CompletedTask; }
+    private void SetReverse(bool value) => Mutate("修改反向排列", () => Style.FlexReverse = value);
+    private Task SetJustify(WMJustifyContent value) { Mutate("修改主轴对齐", () => Style.JustifyContent = value); return Task.CompletedTask; }
+    private Task SetAlign(WMAlignItems value) { Mutate("修改交叉轴对齐", () => Style.AlignItems = value); return Task.CompletedTask; }
+    private void SetGap(double value) => Mutate("修改统一间距", () => Style.Gap = value);
+    private void SetZIndex(double value) => Mutate("修改层叠顺序", () => Style.ZIndex = (int)Math.Round(value));
+
+    private void SetLengthUnit(bool width, WMStyleUnit unit) => Mutate(width ? "修改宽度类型" : "修改高度类型", () =>
+    {
+        var previous = width ? Style.Width : Style.Height;
+        var next = unit == WMStyleUnit.Auto ? WMStyleLength.Auto() : WMStyleLength.Percent(previous.Value);
+        if (width) Style.Width = next; else Style.Height = next;
+    });
+
+    private void SetLengthValue(bool width, double value) => Mutate(width ? "修改宽度" : "修改高度", () =>
+    {
+        if (width) Style.Width.Value = value; else Style.Height.Value = value;
+    });
+
+    private void SetMargin(int side, double value) => Mutate("修改外边距", () =>
+    {
+        switch (side)
+        {
+            case 0: Style.Margin.Top = value; break;
+            case 1: Style.Margin.Right = value; break;
+            case 2: Style.Margin.Bottom = value; break;
+            default: Style.Margin.Left = value; break;
+        }
+    });
+
+    private void SetUniformPadding(double value) => Mutate("修改统一内边距", () => Style.Padding = new WMThickness(value));
+    private void ToggleInset(Action<WMStyleLength?> set, bool value) => Mutate("修改定位边距", () => set(value ? WMStyleLength.Percent(0) : null));
+    private void SetInset(Action<WMStyleLength?> set, double value) => Mutate("修改定位边距", () => set(WMStyleLength.Percent(value)));
+
+    private static readonly IReadOnlyList<MacInspectorOption<WMPosition>> PositionOptions =
+    [new(WMPosition.Static, "流式布局"), new(WMPosition.Absolute, "自由定位")];
+    private static readonly IReadOnlyList<MacInspectorOption<WMStyleUnit>> LengthUnitOptions =
+    [new(WMStyleUnit.Auto, "自动"), new(WMStyleUnit.Percent, "百分比")];
+    private static readonly IReadOnlyList<MacInspectorOption<WMFlex>> FlexOptions =
+    [new(WMFlex.None, "固定尺寸"), new(WMFlex.Initial, "允许收缩"), new(WMFlex.Fill, "填充剩余")];
+    private static readonly IReadOnlyList<MacInspectorOption<WMOverflow>> OverflowOptions =
+    [new(WMOverflow.Hidden, "裁切"), new(WMOverflow.Visible, "显示")];
+    private static readonly IReadOnlyList<MacInspectorOption<Orientation>> DirectionOptions =
+    [new(Orientation.Horizontal, "横向", "mdi-border-horizontal"), new(Orientation.Vertical, "纵向", "mdi-border-vertical")];
+    private static readonly IReadOnlyList<MacInspectorOption<WMJustifyContent>> JustifyOptions =
+    [new(WMJustifyContent.Start, "开始"), new(WMJustifyContent.Center, "居中"), new(WMJustifyContent.End, "末尾")];
+    private static readonly IReadOnlyList<MacInspectorOption<WMAlignItems>> AlignOptions =
+    [new(WMAlignItems.Start, "开始"), new(WMAlignItems.Center, "居中"), new(WMAlignItems.End, "末尾"), new(WMAlignItems.Baseline, "文字基线")];
+}

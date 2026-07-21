@@ -21,6 +21,12 @@ public sealed class WMTemplateDesignerSession(
     private const string PreviewMimeType = "image/jpeg";
 
     private readonly object gate = new();
+    // GenerationDesignPreviewAsync cannot interrupt an encode that is already
+    // inside Skia. Keep that unavoidable render single-flight: a newer request
+    // cancels every waiter, then starts as soon as the current render unwinds.
+    // This prevents a slider/drag gesture from launching many obsolete renders
+    // in parallel while preserving latest-wins publication.
+    private readonly SemaphoreSlim renderGate = new(1, 1);
     private CancellationTokenSource? renderCancellation;
     private WMObjectUrlLease? previewLease;
     private long version;
@@ -47,9 +53,15 @@ public sealed class WMTemplateDesignerSession(
         }
         previousCancellation?.Cancel();
 
+        var enteredRenderGate = false;
         try
         {
+            // Capture before the first await so this request is immutable even
+            // if the editor continues changing while another render unwinds.
             var snapshot = WMTemplateEditorState.Create(canvas).Draft;
+            await renderGate.WaitAsync(current.Token).ConfigureAwait(false);
+            enteredRenderGate = true;
+            current.Token.ThrowIfCancellationRequested();
             var result = await watermarkHelper.GenerationDesignPreviewAsync(
                 snapshot,
                 null,
@@ -99,6 +111,7 @@ public sealed class WMTemplateDesignerSession(
         }
         finally
         {
+            if (enteredRenderGate) renderGate.Release();
             lock (gate)
             {
                 if (ReferenceEquals(renderCancellation, current))

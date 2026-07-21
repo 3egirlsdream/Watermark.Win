@@ -124,12 +124,17 @@ public sealed class WMControlTreeTests
         var first = new WMText { Name = "first" };
         var second = new WMText { Name = "second" };
         var third = new WMText { Name = "third" };
+        second.Margin = new WMThickness { Top = 7, Right = 3, Bottom = 5, Left = 1 };
         parent.Controls.AddRange([first, second, third]);
         canvas.Children.Add(parent);
 
         Assert.True(WMControlTree.Move(canvas, second.ID, parent.ID, 2));
 
         Assert.Equal(["first", "third", "second"], parent.Controls.Select(control => control.Name));
+        Assert.Equal(7, second.Margin.Top);
+        Assert.Equal(3, second.Margin.Right);
+        Assert.Equal(5, second.Margin.Bottom);
+        Assert.Equal(1, second.Margin.Left);
     }
 
     [Fact]

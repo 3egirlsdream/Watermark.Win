@@ -8,16 +8,16 @@
         <MButton Text Small Class="inspector-text-command" Disabled="@ReadOnly" OnClick="Reset">重置</MButton>
     </div>
 
-    <MacInspectorSlider Label="水平偏移" Value="@Transform.OffsetXPercent" Min="-500" Max="500" Step="0.1" Unit="%"
+    <MacInspectorSlider Label="水平坐标" Value="@Transform.OffsetXPercent" Min="-100" Max="100" Step="0.1" Unit="%"
                         Disabled="@ReadOnly" ValueChanged="SetOffsetX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-    <MacInspectorSlider Label="垂直偏移" Value="@Transform.OffsetYPercent" Min="-500" Max="500" Step="0.1" Unit="%"
+    <MacInspectorSlider Label="垂直坐标" Value="@Transform.OffsetYPercent" Min="-100" Max="100" Step="0.1" Unit="%"
                         Disabled="@ReadOnly" ValueChanged="SetOffsetY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
 
-    <MacInspectorCheckbox Label="保持宽高比例" Value="@keepRatio" Disabled="@ReadOnly" ValueChanged="ToggleKeepRatio" />
+    <MacInspectorSwitch Label="保持宽高比例" Value="@keepRatio" Disabled="@ReadOnly" ValueChanged="ToggleKeepRatio" />
 
-    <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.05" Max="20" Step="0.01"
+    <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.1" Max="4" Step="0.01" Unit="×"
                         Disabled="@ReadOnly" ValueChanged="SetScaleX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-    <MacInspectorSlider Label="垂直缩放" Value="@Transform.ScaleY" Min="0.05" Max="20" Step="0.01"
+    <MacInspectorSlider Label="垂直缩放" Value="@Transform.ScaleY" Min="0.1" Max="4" Step="0.01" Unit="×"
                         Disabled="@ReadOnly" ValueChanged="SetScaleY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
     <MacInspectorSlider Label="旋转" Value="@Transform.Rotation" Min="-180" Max="179.9" Step="0.1" Unit="°"
                         Disabled="@ReadOnly" ValueChanged="SetRotation" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
@@ -32,7 +32,9 @@
     private static readonly WMTransform Identity = new();
     private bool keepRatio = true;
     private bool interactionActive;
-    private WMTransform Transform => Control.Transform ?? Identity;
+    private bool UsesStyleTransform => Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion
+        && Control.Style.Position == WMPosition.Absolute;
+    private WMTransform Transform => UsesStyleTransform ? Control.Style.Transform : Control.Transform ?? Identity;
 
     private Task BeginInteractionAsync()
     {
@@ -70,7 +72,7 @@
     private void SetRotation(double value) => Mutate(transform =>
     {
         transform.Rotation = value;
-        if (Control is WMContainer container)
+        if (!UsesStyleTransform && Control is WMContainer container)
             container.Angle = (int)Math.Round(transform.Rotation);
     });
 
@@ -79,7 +81,7 @@
         if (ReadOnly) return;
         Editor.Mutate("调整变换", () =>
         {
-            var transform = Control.EnsureTransform();
+            var transform = UsesStyleTransform ? Control.Style.Transform : Control.EnsureTransform();
             mutation(transform);
             if (Bounds is null) return;
 
@@ -102,13 +104,13 @@
         if (ReadOnly) return;
         Editor.Mutate("重置变换", () =>
         {
-            var transform = Control.EnsureTransform();
+            var transform = UsesStyleTransform ? Control.Style.Transform : Control.EnsureTransform();
             transform.OffsetXPercent = 0;
             transform.OffsetYPercent = 0;
             transform.ScaleX = 1;
             transform.ScaleY = 1;
             transform.Rotation = 0;
-            if (Control is WMContainer container)
+            if (!UsesStyleTransform && Control is WMContainer container)
                 container.Angle = 0;
         });
     }

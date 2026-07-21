@@ -22,7 +22,7 @@
                 <MList Dense Class="add-layer-options">
                     <MListItem Title="容器" PrependIcon="mdi-folder-outline" OnClick="() => AddControl(typeof(WMContainer))" />
                     <MListItem Title="文字" PrependIcon="mdi-format-text" OnClick="() => AddControl(typeof(WMText))" />
-                    <MListItem Title="Logo" PrependIcon="mdi-image-outline" OnClick="() => AddControl(typeof(WMLogo))" />
+                    <MListItem Title="图标" PrependIcon="mdi-image-outline" OnClick="() => AddControl(typeof(WMLogo))" />
                     <MListItem Title="分割线" PrependIcon="mdi-minus" OnClick="() => AddControl(typeof(WMLine))" />
                 </MList>
             </ChildContent>
@@ -209,7 +209,7 @@
             added = WMControlTree.Add(Editor.Draft, type, PreferredParentId());
             added.Name = type == typeof(WMContainer) ? "新容器"
                 : type == typeof(WMText) ? "新文字"
-                : type == typeof(WMLogo) ? "新 Logo"
+                : type == typeof(WMLogo) ? "新图标"
                 : "新分割线";
         });
         if (added is not null) Editor.Select(added.ID);
@@ -507,7 +507,7 @@
         {
             WMContainer => "未命名容器",
             WMText => "未命名文字",
-            WMLogo => "未命名 Logo",
+            WMLogo => "未命名图标",
             WMLine => "未命名分割线",
             _ => "未命名图层"
         } : control.Name;

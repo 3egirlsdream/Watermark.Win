@@ -483,7 +483,12 @@ export async function createEditor(root, callback) {
     const target = targetFor(event);
     const controlId = target?.dataset.controlId;
     const item = controlId ? itemsById.get(controlId) : null;
-    if (!item || !item.visible || item.locked) {
+    const isAbsolute = Boolean(item?.absolute);
+    const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
+    // Any Absolute node supports direct transform interactions. Static children
+    // only support drag, which commits a flow-layout reorder plus margins.
+    if (!item || !item.visible || item.locked || (!isAbsolute && !isFlowChild)
+      || (kind !== "drag" && !isAbsolute)) {
       event.stop?.();
       return false;
     }
@@ -748,7 +753,12 @@ export async function createEditor(root, callback) {
     overlays.forEach((element, key) => element.classList.toggle("selected", key === id));
     const item = itemsById.get(id);
     const target = overlays.get(id) || null;
-    moveable.target = item && item.visible && !item.locked ? target : null;
+    const isAbsolute = Boolean(item?.absolute);
+    const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
+    moveable.target = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
+    moveable.resizable = isAbsolute;
+    moveable.rotatable = isAbsolute;
+    moveable.renderDirections = isAbsolute ? ["e", "se"] : [];
     moveable.elementGuidelines = Array.from(overlays.entries())
       .filter(([key]) => key !== id && itemsById.get(key)?.visible)
       .map(([, element]) => element);

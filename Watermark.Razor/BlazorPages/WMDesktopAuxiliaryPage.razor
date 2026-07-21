@@ -32,7 +32,7 @@
         @switch (ActiveSection)
         {
             case "templates":
-                <WMDesktopTemplateLibraryPage CreateRequested="OpenNewTemplateDialog" EditRequested="OpenDesigner" />
+                <WMDesktopTemplateLibraryPage CreateRequested="OpenNewTemplateDialog" EditRequested="OpenDesigner" LoginRequested='() => OpenAccountDialog("login")' />
                 break;
             case "market":
                 <div class="auxiliary-fill market-fill"><WMDesktopTemplateMarket Downloaded="RefreshTemplatesAsync" /></div>

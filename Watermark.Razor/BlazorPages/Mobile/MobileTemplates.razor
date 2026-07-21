@@ -21,7 +21,7 @@
 <NavigationLock OnBeforeInternalNavigation="HandleInternalNavigation" />
 
 <section id="@visibilityScope" class="templates-page" aria-labelledby="templates-title">
-    <header class="templates-header @(activeTab == TemplateTab.Local ? "has-action" : null)">
+    <header class="templates-header @(activeTab != TemplateTab.Favorites ? "has-action" : null)">
         <h1 id="templates-title">模板</h1>
         <label class="templates-search @(string.IsNullOrWhiteSpace(SearchText) ? "is-empty" : null)">
             <MIcon>mdi-magnify</MIcon>
@@ -35,6 +35,12 @@
         {
             <button class="templates-add" type="button" disabled="@busy" @onclick="CreateTemplateAsync" aria-label="新建模板">
                 <MIcon>mdi-plus</MIcon>
+            </button>
+        }
+        else if (activeTab == TemplateTab.Market)
+        {
+            <button class="templates-refresh" type="button" disabled="@ActiveMarketState.IsLoading" @onclick="RefreshMarketAsync" aria-label="刷新市场模板">
+                <MIcon Class="@(ActiveMarketState.IsLoading ? "is-spinning" : null)">mdi-refresh</MIcon>
             </button>
         }
     </header>
@@ -542,7 +548,11 @@
         activeMarketState = state;
         if (forceRefresh) state.Reset();
         if (!state.Initialized)
-            await LoadMarketPageAsync(state, reset: true, marketContextCancellation.Token);
+            await LoadMarketPageAsync(
+                state,
+                reset: true,
+                forceRefresh,
+                marketContextCancellation.Token);
         SelectFeaturedMarketItem(state);
         restoreMarketScrollPending = restoreScroll && state.ScrollTop > 0;
         resetInfinitePending = state.HasMore;
@@ -551,6 +561,7 @@
     private async Task<MarketLoadOutcome> LoadMarketPageAsync(
         WMTemplateMarketFeedState state,
         bool reset,
+        bool forceRefresh,
         CancellationToken cancellationToken)
     {
         if (state.IsLoading) return MarketLoadOutcome.Loading;
@@ -565,7 +576,8 @@
                     state.Category,
                     state.Keyword,
                     state.NextStart,
-                    MarketPageSize),
+                    MarketPageSize,
+                    ForceRefresh: forceRefresh),
                 cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!state.IsCurrentLoad(loadVersion)) return MarketLoadOutcome.Cancelled;
@@ -603,7 +615,11 @@
     private async Task HandleMarketLoadMoreAsync(InfiniteScrollLoadEventArgs args)
     {
         var cancellationToken = marketContextCancellation?.Token ?? CancellationToken.None;
-        var outcome = await LoadMarketPageAsync(ActiveMarketState, reset: false, cancellationToken);
+        var outcome = await LoadMarketPageAsync(
+            ActiveMarketState,
+            reset: false,
+            forceRefresh: false,
+            cancellationToken);
         args.Status = outcome switch
         {
             MarketLoadOutcome.Error => InfiniteScrollLoadStatus.Error,
@@ -613,7 +629,28 @@
         };
     }
 
-    private Task RetryMarketAsync() => ActivateMarketFeedAsync(forceRefresh: true);
+    private Task RetryMarketAsync() => RefreshMarketAsync();
+
+    private async Task RefreshMarketAsync()
+    {
+        if (activeTab != TemplateTab.Market || ActiveMarketState.IsLoading) return;
+        await ActivateMarketFeedAsync(forceRefresh: true);
+        if (marketScrollModule is not null)
+        {
+            try { await marketScrollModule.InvokeVoidAsync("setScrollTop", "#wm-main-content", 0); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+        if (ActiveMarketState.ErrorMessage is null)
+        {
+            HapticFeedback.Perform();
+            ShowMarketNotice("市场内容已刷新");
+        }
+        else
+        {
+            ShowMarketNotice(ActiveMarketState.ErrorMessage, isError: true);
+        }
+    }
 
     private async Task LoadFavoritesAsync()
     {

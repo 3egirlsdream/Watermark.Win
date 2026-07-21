@@ -66,6 +66,22 @@ public sealed class WMDesktopWorkspaceContractTests
     }
 
     [Fact]
+    public void DesktopTemplateEditors_PreventAccidentalInterfaceTextSelection()
+    {
+        var designerCss = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateDesigner.razor.css");
+        var appliedEditorCss = Read("Watermark.Razor/Components/Desktop/WMDesktopAppliedTemplateEditor.razor.css");
+
+        Assert.Contains(".mac-template-designer ::deep *", designerCss, StringComparison.Ordinal);
+        Assert.Contains(".desktop-applied-editor ::deep *", appliedEditorCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: none", designerCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: none", appliedEditorCss, StringComparison.Ordinal);
+        Assert.Contains("::deep input", designerCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: text", designerCss, StringComparison.Ordinal);
+        Assert.Contains("::deep input", appliedEditorCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: text", appliedEditorCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DesktopMembership_UsesHistoricalDialogInsteadOfMobilePage()
     {
         var page = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
@@ -169,6 +185,53 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.Contains("@page \"/desktop/templates/{TemplateId}/edit\"", route, StringComparison.Ordinal);
         Assert.Contains("<WMDesktopTemplateDesigner", route, StringComparison.Ordinal);
         Assert.DoesNotContain("<WMTemplateDesigner", route, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DesktopTemplateUpload_ResetsFormForEveryOpenedTemplate()
+    {
+        var library = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateLibraryPage.razor");
+        var upload = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateUploadDialog.razor");
+
+        Assert.Contains("@key=\"uploadDialogVersion\"", library, StringComparison.Ordinal);
+        Assert.Contains("uploadDialogVersion++;", library, StringComparison.Ordinal);
+        Assert.Contains("initializedTemplateId", upload, StringComparison.Ordinal);
+        Assert.Contains("ResetForm();", upload, StringComparison.Ordinal);
+        Assert.Contains("agreed = false;", upload, StringComparison.Ordinal);
+        Assert.DoesNotContain("private bool initialized;", upload, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DesktopTemplateMarket_ExposesRecommendationManagementOnlyToOfficialAccounts()
+    {
+        var market = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateMarket.razor");
+        var service = Read("Watermark.Razor/Workspace/WMTemplateMarketplaceService.cs");
+        var api = Read("Watermark.Shared/Models/APIHelper.cs");
+
+        Assert.Contains("AdminDashboard.IsAuthorized", market, StringComparison.Ordinal);
+        Assert.Contains("SetRecommendedAsync(item)", market, StringComparison.Ordinal);
+        Assert.Contains("下架推荐", market, StringComparison.Ordinal);
+        Assert.Contains("加入推荐", market, StringComparison.Ordinal);
+        Assert.Contains("AdminAccessPolicy.IsAdmin(Global.CurrentUser)", service, StringComparison.Ordinal);
+        Assert.Contains("ToggleWatermarkRecommendationAsync", service, StringComparison.Ordinal);
+        Assert.Contains("/api/Watermark/UpdateRecommend", api, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplateMarkets_ProvideExplicitCacheBypassingRefresh()
+    {
+        var desktop = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateMarket.razor");
+        var mobile = Read("Watermark.Razor/BlazorPages/Mobile/MobileTemplates.razor");
+        var api = Read("Watermark.Shared/Models/APIHelper.cs");
+
+        Assert.Contains("class=\"market-refresh-command\"", desktop, StringComparison.Ordinal);
+        Assert.Contains("RefreshAsync", desktop, StringComparison.Ordinal);
+        Assert.Contains("resetScrollPending = true;", desktop, StringComparison.Ordinal);
+        Assert.Contains("class=\"templates-refresh\"", mobile, StringComparison.Ordinal);
+        Assert.Contains("RefreshMarketAsync", mobile, StringComparison.Ordinal);
+        Assert.Contains("ForceRefresh: forceRefresh", desktop, StringComparison.Ordinal);
+        Assert.Contains("ForceRefresh: forceRefresh", mobile, StringComparison.Ordinal);
+        Assert.Contains("cacheBust", api, StringComparison.Ordinal);
     }
 
     [Fact]

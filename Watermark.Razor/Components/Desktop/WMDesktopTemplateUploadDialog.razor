@@ -1,0 +1,111 @@
+@namespace Watermark.Razor.Components.Desktop
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Models
+@inject IWMTemplateMarketplaceService Marketplace
+
+<MCard Flat Class="template-upload-dialog">
+    <div class="template-upload-header">
+        <div><small>Template market</small><h3>上传模板</h3></div>
+        <MButton Text Small Class="template-upload-close" OnClick="CloseAsync" Disabled="@busy"><MIcon Small>mdi-close</MIcon></MButton>
+    </div>
+    <div class="template-upload-body">
+        <p>上传后会生成市场预览图，并将模板及所需资源打包发布。</p>
+        <MTextField TValue="string" @bind-Value="name" Label="模板名称" Dense Outlined Required="true" RequiredMessage="模板名称不能为空" />
+        <MTextField TValue="string" @bind-Value="description" Label="模板描述" Dense Outlined />
+        <MTextField TValue="int" @bind-Value="coins" Label="下载点数" Dense Outlined />
+        <MTextField TValue="string" @bind-Value="tags" Label="标签" Hint="多个标签用分号分隔" PersistentHint Dense Outlined />
+        <MCheckbox TValue="bool" @bind-Value="agreed" Label="我确认模板内的图片、图标和字体可用于发布" />
+        @if (!string.IsNullOrWhiteSpace(message)) { <div class="template-upload-message is-error" role="status">@message</div> }
+        @if (busy) { <div class="template-upload-progress"><MProgressCircular Size="14" Indeterminate /><span>正在生成并上传模板…</span></div> }
+    </div>
+    <MCardActions Class="template-upload-actions"><MSpacer /><MButton Text OnClick="CloseAsync" Disabled="@busy">取消</MButton><MButton Color="primary" OnClick="UploadAsync" Disabled="@(busy || !agreed || string.IsNullOrWhiteSpace(name))">上传到市场</MButton></MCardActions>
+</MCard>
+
+@code {
+    [Parameter, EditorRequired] public WMTemplateList Template { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnUploaded { get; set; }
+
+    private string name = string.Empty;
+    private string description = string.Empty;
+    private string tags = string.Empty;
+    private int coins;
+    private bool agreed;
+    private bool busy;
+    private string? initializedTemplateId;
+    private long initializationVersion;
+    private string? message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var templateId = Template.ID;
+        if (string.Equals(initializedTemplateId, templateId, StringComparison.Ordinal)) return;
+
+        initializedTemplateId = templateId;
+        var version = ++initializationVersion;
+        ResetForm();
+
+        var defaults = await Marketplace.GetUploadDefaultsAsync(templateId);
+        if (version != initializationVersion) return;
+        if (defaults is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(defaults.Name)) name = defaults.Name;
+            description = defaults.Description;
+            coins = defaults.Coins;
+            tags = NormalizeTags(defaults.Tags);
+        }
+        var canvas = await Global.GetCanvasSerialize(templateId);
+        if (version != initializationVersion) return;
+        tags = canvas?.Logos?.Any(item => item.AutoSetLogo) == true
+            ? AddTag(tags, "自动图标")
+            : RemoveTag(tags, "自动图标");
+    }
+
+    private void ResetForm()
+    {
+        name = Template.Canvas?.Name ?? string.Empty;
+        description = string.Empty;
+        tags = string.Empty;
+        coins = 0;
+        agreed = false;
+        message = null;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (busy || !agreed || string.IsNullOrWhiteSpace(name)) return;
+        busy = true;
+        message = null;
+        try
+        {
+            var result = await Marketplace.UploadLocalAsync(new WMTemplateUploadRequest(
+                Template.ID,
+                name,
+                coins,
+                description,
+                NormalizeTags(tags)));
+            if (result.IsSuccess)
+            {
+                await OnUploaded.InvokeAsync(result.Message ?? "模板已上传到市场。");
+                return;
+            }
+            if (result.Status != WMTemplateMarketplaceStatus.Cancelled)
+                message = result.Message ?? "模板上传失败，请稍后重试。";
+        }
+        catch (Exception ex) { message = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private static string NormalizeTags(string value) => string.Join(';', value
+        .Split(new[] { ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Distinct(StringComparer.Ordinal));
+
+    private static string AddTag(string value, string tag) => NormalizeTags(
+        string.IsNullOrWhiteSpace(value) ? tag : $"{value};{tag}");
+
+    private static string RemoveTag(string value, string tag) => string.Join(';', value
+        .Split(new[] { ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(item => !string.Equals(item, tag, StringComparison.Ordinal)));
+}

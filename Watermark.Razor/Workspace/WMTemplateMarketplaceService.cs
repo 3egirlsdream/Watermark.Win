@@ -14,7 +14,8 @@ public sealed class WMTemplateMarketplaceService(
     IPopupService popupService,
     IClientInstance client,
     WMTemplateStore templateStore,
-    WMTemplateLibraryService templateLibrary) : IWMTemplateMarketplaceService
+    WMTemplateLibraryService templateLibrary,
+    IWMAccountService accounts) : IWMTemplateMarketplaceService
 {
     private readonly object deletionGate = new();
     private readonly Dictionary<string, DeletedTemplate> pendingDeletions = new(StringComparer.Ordinal);
@@ -101,6 +102,47 @@ public sealed class WMTemplateMarketplaceService(
             return success
                 ? new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Succeeded)
                 : new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Failed, "收藏状态更新失败，请检查网络后重试。");
+        }
+        catch (Exception ex)
+        {
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Failed, ex.Message);
+        }
+    }
+
+    public async Task<WMTemplateMarketplaceResult> SetRecommendedAsync(
+        WMZipedTemplate template,
+        bool recommended,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!accounts.State.IsAuthenticated || !AdminAccessPolicy.IsAdmin(Global.CurrentUser))
+            return new WMTemplateMarketplaceResult(
+                WMTemplateMarketplaceStatus.Denied,
+                "当前账号没有管理市场推荐的权限。");
+        if (string.IsNullOrWhiteSpace(template.WatermarkId))
+            return new WMTemplateMarketplaceResult(
+                WMTemplateMarketplaceStatus.Failed,
+                "模板标识无效。");
+        if (template.Recommend == recommended)
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Succeeded);
+
+        try
+        {
+            var response = await api.ToggleWatermarkRecommendationAsync(template.WatermarkId)
+                .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (response?.success != true)
+                return new WMTemplateMarketplaceResult(
+                    WMTemplateMarketplaceStatus.Failed,
+                    response?.message?.content ?? "推荐状态更新失败，请稍后重试。");
+
+            template.Recommend = recommended;
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Succeeded);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -222,6 +264,104 @@ public sealed class WMTemplateMarketplaceService(
         finally
         {
             TryDeleteFile(staging);
+        }
+    }
+
+    public async Task<WMTemplateMarketplaceResult> UploadLocalAsync(
+        WMTemplateUploadRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = Global.CurrentUser;
+        if (user is null || string.IsNullOrWhiteSpace(user.ID))
+            return new WMTemplateMarketplaceResult(
+                WMTemplateMarketplaceStatus.LoginRequired,
+                "登录后才能上传模板到市场。");
+        if (string.IsNullOrWhiteSpace(request.TemplateId))
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Failed, "模板标识无效。");
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Failed, "请输入模板名称。");
+
+        try
+        {
+            var ownership = await api.TemplateIsExsist(request.TemplateId, user.ID).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (ownership.Item1 && !ownership.Item2)
+                return new WMTemplateMarketplaceResult(
+                    WMTemplateMarketplaceStatus.Denied,
+                    "该模板属于其他创作者，请另存为新模板后再上传。");
+            if (ownership.Item1)
+            {
+                var confirmed = await popupService.ConfirmAsync(
+                    "确认覆盖",
+                    "该模板已上传，是否用当前本地版本覆盖市场版本？",
+                    AlertTypes.Info).ConfigureAwait(false);
+                if (confirmed != true)
+                    return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Cancelled);
+            }
+
+            var result = await api.UploadWatermark(
+                request.TemplateId,
+                request.Name.Trim(),
+                Math.Max(0, request.Coins),
+                request.Description?.Trim() ?? string.Empty,
+                request.Tags?.Trim() ?? string.Empty).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (result?.success == true)
+            {
+                return new WMTemplateMarketplaceResult(
+                    WMTemplateMarketplaceStatus.Succeeded,
+                    result.data == false ? "模板已上传，但市场缓存刷新失败。" : "模板已上传到市场。");
+            }
+
+            return new WMTemplateMarketplaceResult(
+                WMTemplateMarketplaceStatus.Failed,
+                result?.message?.content ?? "模板上传失败，请稍后重试。");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new WMTemplateMarketplaceResult(WMTemplateMarketplaceStatus.Failed, ex.Message);
+        }
+        finally
+        {
+            TryDeleteFile(Path.Combine(Global.AppPath.TemplatesFolder, $"{request.TemplateId}.zip"));
+        }
+    }
+
+    public async Task<WMTemplateUploadDefaults?> GetUploadDefaultsAsync(
+        string templateId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(templateId)) return null;
+        var user = Global.CurrentUser;
+        if (user is null || string.IsNullOrWhiteSpace(user.ID)) return null;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = await api.GetInfoById(templateId).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            var template = result?.success == true ? result.data : null;
+            if (template is null || !string.Equals(template.USER_ID, user.ID, StringComparison.Ordinal)) return null;
+            return new WMTemplateUploadDefaults(
+                template.NAME ?? string.Empty,
+                template.DESC ?? string.Empty,
+                Math.Max(0, template.COINS),
+                template.TAGS ?? string.Empty);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // Upload remains available with the local template values when its
+            // previous market metadata cannot be retrieved.
+            return null;
         }
     }
 

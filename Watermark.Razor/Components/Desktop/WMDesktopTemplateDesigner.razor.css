@@ -9,7 +9,21 @@
     outline: none;
     overflow: hidden;
     position: relative;
+    -webkit-user-select: none;
+    user-select: none;
     width: 100%;
+}
+
+.mac-template-designer ::deep * {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.mac-template-designer ::deep input,
+.mac-template-designer ::deep textarea,
+.mac-template-designer ::deep [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .designer-workspace {

@@ -1,9 +1,11 @@
 @using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IWMTemplateMarketplaceService Marketplace
 @inject WMTemplateMarketFeedStore MarketFeedStore
 @inject WMTemplateLibraryService TemplateLibrary
+@inject IWMAdminDashboardService AdminDashboard
+@inject IJSRuntime JSRuntime
 
 <section class="desktop-market" aria-label="模板市场">
     <div class="market-controls">
@@ -24,7 +26,12 @@
                 <button type="button" class="market-search-clear" @onclick="ClearSearchAsync" aria-label="清除搜索"><MIcon Small>mdi-close-circle</MIcon></button>
             }
         </label>
-        <button type="button" class="market-search-command" disabled="@ActiveState.IsLoading" @onclick="ReloadAsync">搜索</button>
+        <div class="market-command-group">
+            <button type="button" class="market-search-command" disabled="@ActiveState.IsLoading" @onclick="ReloadAsync">搜索</button>
+            <button type="button" class="market-refresh-command" disabled="@ActiveState.IsLoading" @onclick="RefreshAsync" aria-label="刷新市场模板">
+                <MIcon Small Class="@(ActiveState.IsLoading ? "is-spinning" : null)">mdi-refresh</MIcon><span>刷新</span>
+            </button>
+        </div>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(DisplayMessage))
@@ -67,6 +74,19 @@
                         @if (downloaded)
                         {
                             <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                        }
+                        @if (AdminDashboard.IsAuthorized)
+                        {
+                            <button type="button"
+                                    class="card-recommend @(item.Recommend ? "is-recommended" : null)"
+                                    disabled="@(recommendUpdatingId is not null)"
+                                    title="@(item.Recommend ? "下架推荐" : "加入推荐")"
+                                    aria-label="@(item.Recommend ? "下架推荐" : "加入推荐")"
+                                    @onclick="() => SetRecommendedAsync(item)"
+                                    @onclick:stopPropagation="true">
+                                <MIcon Small>@(item.Recommend ? "mdi-star-off-outline" : "mdi-star-plus-outline")</MIcon>
+                                <span>@(recommendUpdatingId == item.WatermarkId ? "处理中" : item.Recommend ? "下架推荐" : "加入推荐")</span>
+                            </button>
                         }
                         <button type="button"
                                 class="card-download @(downloaded ? "is-downloaded" : null)"
@@ -127,12 +147,15 @@
     private readonly string scrollId = $"desktop-market-scroll-{Guid.NewGuid():N}";
     private WMTemplateMarketFeedState? activeState;
     private MInfiniteScroll? marketInfiniteScroll;
+    private IJSObjectReference? scrollModule;
     private CancellationTokenSource? contextCancellation;
     private string keyword = string.Empty;
     private string? message;
     private string? downloadingId;
+    private string? recommendUpdatingId;
     private bool messageIsError;
     private bool resetInfinitePending;
+    private bool resetScrollPending;
     private WMTemplateMarketFeedState ActiveState => activeState ??= MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
     private string? DisplayMessage => message ?? ActiveState.ErrorMessage;
 
@@ -144,6 +167,26 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            try
+            {
+                scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/Watermark.Razor/js/wm-template-market.js");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        if (resetScrollPending && scrollModule is not null)
+        {
+            resetScrollPending = false;
+            try { await scrollModule.InvokeVoidAsync("setScrollTop", $"#{scrollId}", 0); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+            catch (ObjectDisposedException) { }
+        }
+
         if (!resetInfinitePending || marketInfiniteScroll is null) return;
         resetInfinitePending = false;
         try { await marketInfiniteScroll.ResetAsync(); }
@@ -178,6 +221,13 @@
         await ActivateFeedAsync(forceRefresh: true);
     }
 
+    private async Task RefreshAsync()
+    {
+        MarketFeedStore.Search = keyword.Trim();
+        await ActivateFeedAsync(forceRefresh: true);
+        if (ActiveState.ErrorMessage is null) message = "市场内容已刷新。";
+    }
+
     private async Task ActivateFeedAsync(bool forceRefresh = false)
     {
         contextCancellation?.Cancel();
@@ -186,13 +236,20 @@
         activeState = MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
         message = null;
         messageIsError = false;
-        if (forceRefresh) ActiveState.Reset();
+        if (forceRefresh)
+        {
+            ActiveState.Reset();
+            resetScrollPending = true;
+        }
         if (!ActiveState.Initialized)
-            await LoadPageAsync(ActiveState, contextCancellation.Token);
+            await LoadPageAsync(ActiveState, contextCancellation.Token, forceRefresh);
         resetInfinitePending = ActiveState.HasMore;
     }
 
-    private async Task<MarketLoadOutcome> LoadPageAsync(WMTemplateMarketFeedState state, CancellationToken token)
+    private async Task<MarketLoadOutcome> LoadPageAsync(
+        WMTemplateMarketFeedState state,
+        CancellationToken token,
+        bool forceRefresh = false)
     {
         if (state.IsLoading) return MarketLoadOutcome.Loading;
         if (!state.HasMore) return MarketLoadOutcome.End;
@@ -201,7 +258,12 @@
         try
         {
             var result = await Marketplace.SearchAsync(
-                new WMTemplateMarketplaceQuery(state.Category, state.Keyword, state.NextStart, PageSize),
+                new WMTemplateMarketplaceQuery(
+                    state.Category,
+                    state.Keyword,
+                    state.NextStart,
+                    PageSize,
+                    ForceRefresh: forceRefresh),
                 token);
             token.ThrowIfCancellationRequested();
             if (!state.IsCurrentLoad(version)) return MarketLoadOutcome.Cancelled;
@@ -278,6 +340,38 @@
         }
     }
 
+    private async Task SetRecommendedAsync(WMZipedTemplate item)
+    {
+        if (!AdminDashboard.IsAuthorized || recommendUpdatingId is not null) return;
+        var recommended = !item.Recommend;
+        recommendUpdatingId = item.WatermarkId;
+        message = null;
+        messageIsError = false;
+        try
+        {
+            var result = await Marketplace.SetRecommendedAsync(item, recommended);
+            if (result.IsSuccess)
+            {
+                MarketFeedStore.SetRecommended(item.WatermarkId, recommended);
+                message = recommended ? "模板已加入推荐。" : "模板已从推荐列表下架。";
+            }
+            else
+            {
+                message = result.Message ?? "推荐状态更新失败。";
+                messageIsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            messageIsError = true;
+        }
+        finally
+        {
+            recommendUpdatingId = null;
+        }
+    }
+
     private bool IsDownloaded(string templateId) =>
         MarketFeedStore.IsDownloaded(templateId)
         || TemplateLibrary.Templates.Any(item => string.Equals(item.ID, templateId, StringComparison.OrdinalIgnoreCase));
@@ -295,10 +389,15 @@
         _ => value.ToString()
     };
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         contextCancellation?.Cancel();
         contextCancellation?.Dispose();
+        if (scrollModule is null) return;
+        try { await scrollModule.DisposeAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        catch (ObjectDisposedException) { }
     }
 
     private enum MarketLoadOutcome { Ok, End, Error, Loading, Cancelled }

@@ -1,7 +1,11 @@
 @using System.Globalization
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
-<div class="mac-inspector-slider @(Disabled ? "disabled" : null)">
-    <div class="inspector-slider-controls">
+<div class="mac-inspector-slider @(Disabled ? "disabled" : null) @(touchGestureReady ? "touch-ready" : null)">
+    <label class="inspector-slider-label">@Label</label>
+    <div class="inspector-slider-range">
         <MacSlider Label="@Label"
                    Value="@Value"
                    Min="@Min"
@@ -10,10 +14,19 @@
                    Format="@(Step < 1 ? "0.##" : "0")"
                    Suffix="@Unit"
                    Compact
+                   ShowHeading="false"
                    Disabled="@Disabled"
                    ValueChanged="HandleSliderAsync"
                    InteractionStarted="InteractionStarted"
                    InteractionEnded="InteractionEnded" />
+        <span class="touch-slider-gesture"
+              @ref="touchGestureElement"
+              data-min="@MinString"
+              data-max="@MaxString"
+              data-step="@StepString"
+              aria-hidden="true"></span>
+    </div>
+    <div class="inspector-number-field @(HasLongUnit ? "long-unit" : null)">
         <input class="inspector-number-input"
                type="number"
                min="@MinString"
@@ -22,8 +35,14 @@
                value="@ValueString"
                disabled="@Disabled"
                aria-label="@Label"
-               @onchange="HandleInputAsync"
+               @oninput="HandleInputAsync"
+               @onfocus="BeginInputInteractionAsync"
+               @onblur="EndInputInteractionAsync"
                @onkeydown:stopPropagation />
+        @if (!string.IsNullOrWhiteSpace(Unit))
+        {
+            <span class="inspector-number-unit">@Unit</span>
+        }
     </div>
 </div>
 
@@ -39,13 +58,59 @@
     [Parameter] public EventCallback InteractionStarted { get; set; }
     [Parameter] public EventCallback InteractionEnded { get; set; }
 
+    private ElementReference touchGestureElement;
+    private IJSObjectReference? module;
+    private IJSObjectReference? touchGesture;
+    private DotNetObjectReference<MacInspectorSlider>? dotNetReference;
+    private bool disposed;
+    private bool touchGestureReady;
+    private bool inputInteractionActive;
+    private bool HasLongUnit => Unit.Length > 2;
     private string ValueString => Value.ToString("0.###", CultureInfo.InvariantCulture);
     private string MinString => Min.ToString("0.###", CultureInfo.InvariantCulture);
     private string MaxString => Max.ToString("0.###", CultureInfo.InvariantCulture);
     private string StepString => Step.ToString("0.###", CultureInfo.InvariantCulture);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || disposed) return;
+
+        try
+        {
+            module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/Watermark.Razor/js/mac-inspector-slider.js");
+            dotNetReference = DotNetObjectReference.Create(this);
+            touchGesture = await module.InvokeAsync<IJSObjectReference>(
+                "createTouchSlider", touchGestureElement, dotNetReference);
+            touchGestureReady = true;
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (JSException)
+        {
+        }
+    }
+
     private Task HandleSliderAsync(double value) => Disabled
         ? Task.CompletedTask
         : ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+
+    [JSInvokable]
+    public Task BeginTouchInteraction() => Disabled
+        ? Task.CompletedTask
+        : InteractionStarted.InvokeAsync();
+
+    [JSInvokable]
+    public Task ChangeTouchValue(double value) => Disabled
+        ? Task.CompletedTask
+        : ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+
+    [JSInvokable]
+    public Task EndTouchInteraction() => Disabled
+        ? Task.CompletedTask
+        : InteractionEnded.InvokeAsync();
 
     private async Task HandleInputAsync(ChangeEventArgs args)
     {
@@ -53,6 +118,44 @@
         if (!double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
             return;
         await ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+    }
+
+    private async Task BeginInputInteractionAsync()
+    {
+        if (Disabled || inputInteractionActive) return;
+        inputInteractionActive = true;
+        await InteractionStarted.InvokeAsync();
+    }
+
+    private async Task EndInputInteractionAsync()
+    {
+        if (!inputInteractionActive) return;
+        inputInteractionActive = false;
+        await InteractionEnded.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+
+        if (touchGesture is not null)
+        {
+            try
+            {
+                await touchGesture.InvokeVoidAsync("dispose");
+                await touchGesture.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+        if (module is not null)
+        {
+            try { await module.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+        dotNetReference?.Dispose();
     }
 
 }

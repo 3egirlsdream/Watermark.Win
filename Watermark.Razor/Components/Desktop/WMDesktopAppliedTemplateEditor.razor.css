@@ -7,6 +7,20 @@
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.desktop-applied-editor ::deep * {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.desktop-applied-editor ::deep input,
+.desktop-applied-editor ::deep textarea,
+.desktop-applied-editor ::deep [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .desktop-applied-editor.is-resizing,

@@ -1,4 +1,5 @@
 using Watermark.Razor.Workspace;
+using Watermark.Razor.Components.Mac.Editor;
 using Watermark.Shared.Models;
 using Xunit;
 
@@ -14,6 +15,27 @@ public sealed class WMTemplateEditorStateTests
         state.Mutate("rename", () => state.Draft.Name = "draft");
         Assert.Equal("original", original.Name);
         Assert.Equal("draft", state.Draft.Name);
+    }
+
+    [Fact]
+    public void Create_ConvertsLegacyLeafMetricsToV2CanvasUnits()
+    {
+        var original = new WMCanvas { CustomWidth = 1080, CustomHeight = 864 };
+        var root = new WMContainer { WidthPercent = 55, HeightPercent = 13 };
+        root.Controls.Add(new WMText { ID = "TEXT", FontSize = 28 });
+        root.Controls.Add(new WMLogo { ID = "LOGO", Percent = 20 });
+        original.Children.Add(root);
+
+        var state = WMTemplateEditorState.Create(original);
+        var text = Assert.IsType<WMText>(WMControlTree.Find(state.Draft, "TEXT"));
+        var logo = Assert.IsType<WMLogo>(WMControlTree.Find(state.Draft, "LOGO"));
+        var legacyShortEdge = 864d * 13 / 100d;
+
+        Assert.Equal(WMLayoutMigration.CurrentSchemaVersion, state.Draft.LayoutSchemaVersion);
+        Assert.Equal(28 * legacyShortEdge * 100 / (156 * 864), text.FontSize, 10);
+        Assert.Equal(20 * legacyShortEdge / 864, logo.Percent, 10);
+        Assert.Equal(28, Assert.IsType<WMText>(original.Children[0].Controls[0]).FontSize);
+        Assert.Equal(20, Assert.IsType<WMLogo>(original.Children[0].Controls[1]).Percent);
     }
 
     [Fact]
@@ -78,6 +100,32 @@ public sealed class WMTemplateEditorStateTests
 
         Assert.False(state.CommitTransaction());
         Assert.Equal(1, state.HistoryCount);
+    }
+
+    [Fact]
+    public void RootContainerCoordinateTransform_IsUndoableAndRedoable()
+    {
+        var canvas = new WMCanvas();
+        canvas.Children.Add(new WMContainer { ID = "ROOT" });
+        var state = WMTemplateEditorState.Create(canvas);
+        var root = Assert.Single(state.Draft.Children);
+
+        state.BeginTransaction("canvas drag");
+        MacCanvasTransform.Apply(root, new MacCanvasInteraction(root.ID, "drag", 12, -8, 1, 1, 0));
+        Assert.True(state.CommitTransaction());
+        Assert.Equal(WMPosition.Absolute, root.Style.Position);
+        Assert.Equal(12, root.Style.Transform.OffsetXPercent);
+        Assert.Equal(-8, root.Style.Transform.OffsetYPercent);
+
+        Assert.True(state.Undo());
+        var undone = Assert.Single(state.Draft.Children);
+        Assert.Equal(0, undone.Style.Transform.OffsetXPercent);
+        Assert.Equal(0, undone.Style.Transform.OffsetYPercent);
+
+        Assert.True(state.Redo());
+        var redone = Assert.Single(state.Draft.Children);
+        Assert.Equal(12, redone.Style.Transform.OffsetXPercent);
+        Assert.Equal(-8, redone.Style.Transform.OffsetYPercent);
     }
 
     [Fact]

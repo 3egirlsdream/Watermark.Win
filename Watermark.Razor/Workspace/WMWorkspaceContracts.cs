@@ -536,7 +536,8 @@ public sealed record WMTemplateMarketplaceQuery(
     WMTemplateMarketCategory Category,
     string Keyword,
     int Start,
-    int PageSize = 20);
+    int PageSize = 20,
+    bool ForceRefresh = false);
 
 public sealed record WMLocalTemplateResult(
     WMTemplateMarketplaceStatus Status,
@@ -546,6 +547,19 @@ public sealed record WMLocalTemplateResult(
 {
     public bool IsSuccess => Status == WMTemplateMarketplaceStatus.Succeeded;
 }
+
+public sealed record WMTemplateUploadRequest(
+    string TemplateId,
+    string Name,
+    int Coins,
+    string? Description,
+    string? Tags);
+
+public sealed record WMTemplateUploadDefaults(
+    string Name,
+    string Description,
+    int Coins,
+    string Tags);
 
 public sealed record WMColorReferenceImport(
     string DisplayName,
@@ -789,12 +803,22 @@ public interface IWMTemplateMarketplaceService
         WMZipedTemplate template,
         bool favorite,
         CancellationToken cancellationToken = default);
+    Task<WMTemplateMarketplaceResult> SetRecommendedAsync(
+        WMZipedTemplate template,
+        bool recommended,
+        CancellationToken cancellationToken = default);
     Task<WMTemplateMarketplaceResult> DownloadAsync(
         WMZipedTemplate template,
         CancellationToken cancellationToken = default);
     Task<WMLocalTemplateResult> CreateLocalAsync(
         IWMPhotoImportSource source,
         string name,
+        CancellationToken cancellationToken = default);
+    Task<WMTemplateMarketplaceResult> UploadLocalAsync(
+        WMTemplateUploadRequest request,
+        CancellationToken cancellationToken = default);
+    Task<WMTemplateUploadDefaults?> GetUploadDefaultsAsync(
+        string templateId,
         CancellationToken cancellationToken = default);
     Task<WMLocalTemplateResult> DeleteLocalAsync(
         WMTemplateList template,

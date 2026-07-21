@@ -1,0 +1,212 @@
+.mac-inspector-slider {
+    align-items: center;
+    box-sizing: border-box;
+    column-gap: 10px;
+    display: grid;
+    grid-template-areas: "label range value";
+    grid-template-columns: minmax(32px, max-content) minmax(70px, 1fr) 76px;
+    min-height: 38px;
+    min-width: 0;
+    padding: 4px 0;
+    width: 100%;
+}
+
+.mac-inspector-slider.disabled {
+    opacity: .56;
+}
+
+.inspector-slider-label {
+    color: #334155;
+    font-size: 11px;
+    font-weight: 650;
+    grid-area: label;
+    line-height: 1.35;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.inspector-slider-range {
+    grid-area: range;
+    min-width: 0;
+    position: relative;
+}
+
+.inspector-number-field {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #cfd6df;
+    border-radius: 5px;
+    box-sizing: border-box;
+    display: flex;
+    grid-area: value;
+    height: 30px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 8px;
+    transition: border-color 100ms ease, box-shadow 100ms ease;
+    width: 76px;
+}
+
+.inspector-number-field.long-unit {
+    justify-self: end;
+    width: 94px;
+}
+
+.inspector-number-field:focus-within {
+    border-color: #2878e5;
+    box-shadow: 0 0 0 2px rgba(40, 120, 229, .12);
+}
+
+.inspector-number-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    background: transparent;
+    border: 0;
+    box-sizing: border-box;
+    color: #253247;
+    font: inherit;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    height: 100%;
+    letter-spacing: 0;
+    min-width: 0;
+    outline: 0;
+    padding: 0;
+    text-align: right;
+    width: 100%;
+}
+
+.inspector-number-input::-webkit-inner-spin-button,
+.inspector-number-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.inspector-number-unit {
+    color: #516074;
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    margin-left: 2px;
+    white-space: nowrap;
+}
+
+.touch-slider-gesture {
+    display: none;
+}
+
+.inspector-slider-range ::deep .mac-slider {
+    gap: 0;
+    padding: 0;
+}
+
+.inspector-slider-range ::deep .mac-slider-control {
+    height: 30px;
+}
+
+.inspector-slider-range ::deep .mac-slider-control::-webkit-slider-runnable-track {
+    height: 4px;
+}
+
+.inspector-slider-range ::deep .mac-slider-control::-webkit-slider-thumb {
+    height: 15px;
+    margin-top: -5.5px;
+    width: 15px;
+}
+
+.inspector-slider-range ::deep .mac-slider-control::-moz-range-track,
+.inspector-slider-range ::deep .mac-slider-control::-moz-range-progress {
+    height: 4px;
+}
+
+.inspector-slider-range ::deep .mac-slider-control::-moz-range-thumb {
+    height: 11px;
+    width: 11px;
+}
+
+@media (pointer: coarse) {
+    .mac-inspector-slider.touch-ready .touch-slider-gesture {
+        cursor: ew-resize;
+        display: block;
+        inset: 0;
+        position: absolute;
+        touch-action: pan-y;
+        z-index: 2;
+    }
+
+    .mac-inspector-slider.touch-ready .inspector-slider-range ::deep .mac-slider-control {
+        pointer-events: none;
+    }
+}
+
+@media (pointer: coarse), (max-width: 860px) {
+    .mac-inspector-slider {
+        column-gap: 10px;
+        grid-template-areas:
+            "label value"
+            "range range";
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: 62px;
+        padding: 3px 0 5px;
+        row-gap: 2px;
+    }
+
+    .inspector-slider-label {
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .inspector-number-field,
+    .inspector-number-field.long-unit {
+        height: 38px;
+        justify-self: end;
+        padding: 0 9px;
+        width: 80px;
+    }
+
+    .inspector-number-field.long-unit {
+        width: 104px;
+    }
+
+    .inspector-number-input {
+        font-size: 13px;
+    }
+
+    .inspector-number-unit {
+        font-size: 12px;
+    }
+
+    .inspector-slider-range,
+    .inspector-slider-range ::deep .mac-slider,
+    .inspector-slider-range ::deep .mac-slider-control {
+        min-height: 38px;
+    }
+
+    .inspector-slider-range ::deep .mac-slider-control::-webkit-slider-runnable-track {
+        height: 6px;
+    }
+
+    .inspector-slider-range ::deep .mac-slider-control::-webkit-slider-thumb {
+        border-width: 3px;
+        height: 22px;
+        margin-top: -8px;
+        width: 22px;
+    }
+
+    .inspector-slider-range ::deep .mac-slider-control::-moz-range-track,
+    .inspector-slider-range ::deep .mac-slider-control::-moz-range-progress {
+        height: 6px;
+    }
+
+    .inspector-slider-range ::deep .mac-slider-control::-moz-range-thumb {
+        border-width: 3px;
+        height: 16px;
+        width: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .inspector-number-field {
+        transition: none;
+    }
+}
