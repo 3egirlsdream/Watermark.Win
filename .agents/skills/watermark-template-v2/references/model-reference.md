@@ -41,7 +41,7 @@ WMCanvasSerialize
 | `CustomWidth/CustomHeight` | `CanvasType=1` 时的参考尺寸 |
 | `BorderThickness` | 图片外边距，上右下左数值按画布边距规则计算 |
 | `BackgroundColor` | `#RRGGBBAA` |
-| `ImageProperties` | 主图片显示、圆角、阴影、模糊等 |
+| `ImageProperties` | 主图片显示、圆角、阴影、模糊，以及可选的等比覆盖裁切 |
 | `BorderSameWidth` | 外边距等宽配置 |
 | `FrameProperties` | 外框配置 |
 | `Containers/Texts/Logos/Lines` | 必须存在且为数组，空类型写 `[]` |
@@ -160,6 +160,24 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 `Width/Height` 只有 Auto 和 Percent，没有像素、Fill、Min/Max 或 flex-basis。`Flex=Fill` 是主轴剩余空间预设，不是尺寸单位。
 
 ## 7. 节点字段
+
+### 主图片等比覆盖（可选）
+
+当模板使用完整透明前景层定义了异形、圆角或装饰溢出的照片窗，并且不同原图比例不能露出黑边时，顶层 `ImageProperties` 可写：
+
+```json
+"ImageProperties": {
+  "Show": true,
+  "CoverPhoto": true,
+  "CoverPhotoAspectRatio": 1.5
+}
+```
+
+- `CoverPhoto=false` 或缺失：保持历史行为，不改变输入照片比例。
+- `CoverPhoto=true`：主渲染入口按 `CoverPhotoAspectRatio` 居中裁切来源图片，然后再走既有布局、预览与导出管道。
+- `CoverPhotoAspectRatio` 必须为正数，表示**照片内容窗**的 `宽 / 高`，不是整张水印卡片的比例。
+- 此模式是 `cover`，不是拉伸或 contain：始终保持原图像素比例，超出照片窗的部分会裁掉；生成模板时必须分别用横图、竖图、方图确认无黑边。
+- 不要为普通无固定照片窗的模板开启它；不要用它替代容器背景的 `FixImage`。
 
 ### 所有节点
 

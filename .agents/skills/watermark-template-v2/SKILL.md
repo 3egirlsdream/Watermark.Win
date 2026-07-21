@@ -19,6 +19,7 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 
 - `Watermark.Shared/Models/WMStyle.cs`
 - `Watermark.Shared/Models/WMText.cs`
+- `Watermark.Shared/Models/WMImage.cs`
 - `Watermark.Shared/Models/WMLayoutEngine.cs`
 - `Watermark.Shared/Models/WatermarkHelper.cs`
 - `Watermark.Shared/Models/Global.cs`
@@ -62,6 +63,7 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 - 当前持久化只可靠支持“顶级容器 → 可选二级容器 → 叶子节点”。禁止生成第三级容器。
 - 二级自动宽度内容组设置 `Style.Width=Auto`；高度使用明确的 `Style.Height=Percent`，避免依赖尚未实现的完整 auto-height 测量。
 - 新文本显式写入 `LetterSpacing`。它按画布短边百分比换算，并参与真实测量、换行和 Flex 本征宽度；不要用拉宽图片或字符中手工插空格替代字距。
+- 当完整前景 PNG 定义了固定照片窗、且用户要求不同来源比例都不能出现黑边时，在 `ImageProperties` 写入 `CoverPhoto=true` 与正数 `CoverPhotoAspectRatio`。渲染器会对主照片做一次居中等比 cover 裁切；它不会拉伸图片，超出照片窗的边缘会被裁掉。该比例必须等于照片内容区的宽÷高，而不是整张卡片的宽÷高。
 - 参考图里的机型、镜头、光圈、焦距、快门、ISO、时间、坐标和照片编号都只是预览样本。承担照片信息语义的文字必须配置非空 EXIF `Key`，不得把参考值写进空 Key 的 `Prefix`。空 Key 只用于栏目名、标题等与照片无关的装饰文案。
 - 不使用 `order`、`flex-basis`、`min/max size`、`align-self` 或 `flex-wrap`；项目没有这些字段。
 - 只使用 `Style` 表达布局。不要输出容器顶层的 `ContainerAlignment/Orientation/HorizontalAlignment/VerticalAlignment/WidthPercent/HeightPercent/XOffset/YOffset/Angle`，也不要输出节点顶层的 `Margin/Transform`。
@@ -90,7 +92,7 @@ python3 .agents/skills/watermark-template-v2/scripts/validate_template_v2.py /ab
 
 1. 用 `Global.ReadConfig` 读取配置，再用 `Global.CanvasSerialize` 回写，确认节点、顺序和 Style 未丢失。
 2. 复用 `WatermarkHelper.GenerationDesignPreviewAsync` 或当前模板预览入口，不创建平行渲染器。
-3. 分别使用横图、竖图和至少两组 EXIF 样本渲染。
+3. 分别使用横图、竖图和至少两组 EXIF 样本渲染。启用 `CoverPhoto` 时，横图、竖图和方图都必须覆盖完整照片窗；确认没有黑边或透明露底，且源图没有被非等比拉伸。
 4. 两组 EXIF 必须使用明显不同的机型、曝光、时间、坐标或编号，并确认相应文字像素确实随元数据变化；不能只检查配置里存在 Key。
 5. 使用空元数据再渲染一次：V2 动态片段缺少 Key 时，其 Prefix/Value/Suffix 应整体隐藏，不能留下 `F mm S` 一类占位符；装饰性固定文字仍应显示。
 6. 对动态文本使用最长样本，验证不重叠、不越界、右/左/上/下锚点不漂移。
