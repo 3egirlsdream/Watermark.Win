@@ -326,7 +326,7 @@
         }
         catch (Exception err)
         {
-            Common.ShowMsg(PopupService, err.Message, AlertTypes.Error);
+            Common.ShowToast(PopupService, err.Message, isError: true);
         }
     }
 

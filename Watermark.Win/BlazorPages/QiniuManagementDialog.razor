@@ -98,11 +98,11 @@
         {
             if (info.Code == (int)HttpCode.OK)
             {
-                Common.ShowMsg(PopupService, "delete success", AlertTypes.Success);
+                Common.ShowToast(PopupService, "delete success");
             }
             else
             {
-                Common.ShowMsg(PopupService, info.Data.Error, AlertTypes.Success);
+                Common.ShowToast(PopupService, info.Data.Error, isError: true);
             }
         }
         Init();

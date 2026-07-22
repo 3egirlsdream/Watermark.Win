@@ -5,6 +5,7 @@
 @inject IWMImagingDiagnosticsService Diagnostics
 @inject IWMWorkspaceTraceStore WorkspaceTraces
 @inject IWMDiagnosticReportExporter ReportExporter
+@inject IPopupService Popup
 @inject NavigationManager Navigation
 @inject IWMNavigationHistory NavigationHistory
 
@@ -27,11 +28,6 @@
             <MIcon>mdi-delete-outline</MIcon><span>@(clearingLogs ? "正在清除…" : "清除")</span>
         </button>
     </section>
-    @if (!string.IsNullOrWhiteSpace(reportMessage))
-    {
-        <p class="diagnostic-message" role="status">@reportMessage</p>
-    }
-
     @if (loading && snapshot is null)
     {
         <div class="diagnostic-loading" role="status"><MProgressCircular Indeterminate Size="28" Width="3" /><span>正在读取本机能力…</span></div>
@@ -104,7 +100,6 @@
     private bool loading;
     private bool exportingReport;
     private bool clearingLogs;
-    private string? reportMessage;
     private int WarningCount => logEvents.Count(item => item.Level == WMDiagnosticLogLevel.Warning);
     private int ErrorCount => logEvents.Count(item => item.Level >= WMDiagnosticLogLevel.Error);
     private WMDiagnosticLogEvent? LatestProblem => logEvents.FirstOrDefault(item =>
@@ -133,7 +128,6 @@
     {
         if (exportingReport) return;
         exportingReport = true;
-        reportMessage = null;
         try
         {
             await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
@@ -145,9 +139,12 @@
             var path = await WorkspaceTraces.CreateReportAsync(snapshot);
             var fileName = $"litograph-diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.json";
             var result = await ReportExporter.ExportAsync(path, fileName);
-            reportMessage = result.Succeeded
-                ? "诊断日志已导出，可以发送给开发人员分析。"
-                : result.ErrorMessage ?? "诊断日志导出失败。";
+            Common.ShowToast(
+                Popup,
+                result.Succeeded
+                    ? "诊断日志已导出，可以发送给开发人员分析。"
+                    : result.ErrorMessage ?? "诊断日志导出失败。",
+                isError: !result.Succeeded);
             await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
                 DateTime.UtcNow,
                 result.Succeeded ? WMDiagnosticLogLevel.Information : WMDiagnosticLogLevel.Warning,
@@ -155,10 +152,10 @@
                 result.Succeeded ? "diagnostic-export-completed" : "diagnostic-export-failed",
                 result.Succeeded ? "诊断日志已导出。" : result.ErrorMessage));
         }
-        catch (OperationCanceledException) { reportMessage = "已取消导出。"; }
+        catch (OperationCanceledException) { Common.ShowToast(Popup, "已取消导出。"); }
         catch (Exception ex)
         {
-            reportMessage = ex.Message;
+            Common.ShowToast(Popup, ex.Message, isError: true);
             try
             {
                 await WorkspaceTraces.RecordLogAsync(new WMDiagnosticLogEvent(
@@ -180,15 +177,14 @@
     {
         if (clearingLogs) return;
         clearingLogs = true;
-        reportMessage = null;
         try
         {
             await WorkspaceTraces.ClearAsync();
             traceEvents = [];
             logEvents = [];
-            reportMessage = "本地诊断日志已清除。";
+            Common.ShowToast(Popup, "本地诊断日志已清除。");
         }
-        catch (Exception ex) { reportMessage = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
         finally { clearingLogs = false; }
     }
 

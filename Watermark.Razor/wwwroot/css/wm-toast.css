@@ -1,0 +1,65 @@
+/*
+ * Shared transient-notification treatment for every host.
+ * Keep this aligned with the original desktop "check for updates" toast.
+ */
+.m-enqueued-snackbars.m-enqueued-snackbars--bottom.m-enqueued-snackbars--center {
+    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    max-width: calc(100vw - 32px) !important;
+    width: max-content !important;
+}
+
+.m-enqueued-snackbars .m-snack {
+    width: auto !important;
+}
+
+.m-enqueued-snackbars.m-enqueued-snackbars--center .m-snack__wrapper {
+    background: #263447 !important;
+    border-radius: 7px !important;
+    box-shadow: 0 10px 28px rgba(31, 41, 55, .2) !important;
+    color: #fff !important;
+    margin: 0 !important;
+    max-width: calc(100vw - 32px) !important;
+    min-height: 34px !important;
+    min-width: 0 !important;
+    width: auto !important;
+}
+
+.m-enqueued-snackbars .m-snack__content {
+    color: #fff !important;
+    flex: 0 1 auto !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    letter-spacing: normal !important;
+    line-height: 16px !important;
+    padding: 9px 13px !important;
+}
+
+.m-enqueued-snackbars .m-alert {
+    background: transparent !important;
+    color: inherit !important;
+    font-size: inherit !important;
+}
+
+.m-enqueued-snackbars .m-alert::before,
+.m-enqueued-snackbars .m-alert__icon,
+.m-enqueued-snackbars .m-snack__action > .m-btn::before {
+    display: none !important;
+}
+
+.m-enqueued-snackbars .m-snack__wrapper.error,
+.m-enqueued-snackbars .m-snack__wrapper:has(.m-alert.error),
+.m-enqueued-snackbars .m-snack__wrapper:has(.m-alert.error--text) {
+    background: #b34434 !important;
+}
+
+.m-enqueued-snackbars .m-snack__action {
+    margin-right: 5px !important;
+}
+
+.m-enqueued-snackbars .m-snack__action .m-btn {
+    color: #dceaff !important;
+    font-size: 11px !important;
+    height: 28px !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+}

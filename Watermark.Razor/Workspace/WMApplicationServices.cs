@@ -632,7 +632,8 @@ public sealed record WMUpdateState(
     bool IsChecking = false,
     bool UpdateAvailable = false,
     string? AvailableVersion = null,
-    string? Message = null);
+    string? Message = null,
+    bool HasError = false);
 
 public interface IWMAppUpdateService
 {
@@ -648,7 +649,7 @@ public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateSer
     public async Task<WMUpdateState> CheckAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        State = State with { IsChecking = true, Message = "正在检查更新…" };
+        State = State with { IsChecking = true, Message = "正在检查更新…", HasError = false };
         try
         {
             var available = await client.CheckUpdate().ConfigureAwait(false);
@@ -657,10 +658,11 @@ public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateSer
                 IsChecking = false,
                 UpdateAvailable = available,
                 AvailableVersion = available ? client.UpdateVersion : null,
-                Message = available ? $"发现新版本 {client.UpdateVersion}" : "已经是最新版本。"
+                Message = available ? $"发现新版本 {client.UpdateVersion}" : "已经是最新版本。",
+                HasError = false
             };
         }
-        catch (Exception ex) { State = State with { IsChecking = false, Message = ex.Message }; }
+        catch (Exception ex) { State = State with { IsChecking = false, Message = ex.Message, HasError = true }; }
         return State;
     }
 

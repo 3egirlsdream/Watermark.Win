@@ -14,6 +14,7 @@
 @inject IWMPhotoPicker PhotoPicker
 @inject IWMHapticFeedback HapticFeedback
 @inject IWMTemplateMarketplaceService Marketplace
+@inject IPopupService Popup
 @inject NavigationManager Navigation
 @inject IWMNavigationHistory NavigationHistory
 @inject IJSRuntime JSRuntime
@@ -351,25 +352,6 @@
     </div>
 }
 
-@if (!string.IsNullOrWhiteSpace(deletedUndoToken))
-{
-    <div class="template-undo" role="status">
-        <span>模板已移到回收区</span>
-        <button type="button" @onclick="UndoDeleteAsync">撤销</button>
-    </div>
-}
-
-@if (!string.IsNullOrWhiteSpace(marketNotice))
-{
-    <div class="market-notice @(marketNoticeIsError ? "is-error" : null)" role="status" aria-live="polite">
-        <span><MIcon>@(marketNoticeIsError ? "mdi-alert-circle" : "mdi-check-circle")</MIcon>@marketNotice</span>
-        @if (noticeTemplate is not null)
-        {
-            <button type="button" @onclick="UseNoticeTemplateAsync">立即使用</button>
-        }
-    </div>
-}
-
 @code {
     private const int MarketPageSize = 20;
     private static readonly MarketCategoryOption[] MarketCategories =
@@ -404,13 +386,9 @@
     private string? featuredMarketItemId;
     private CancellationTokenSource? marketContextCancellation;
     private CancellationTokenSource? searchDebounceCancellation;
-    private CancellationTokenSource? noticeCancellation;
     private string? errorMessage;
-    private string? marketNotice;
-    private bool marketNoticeIsError;
     private WMTemplateList? selectedLocal;
     private WMZipedTemplate? selectedCloud;
-    private WMZipedTemplate? noticeTemplate;
     private string? deletedUndoToken;
 
     private WMTemplateMarketFeedState ActiveMarketState =>
@@ -847,14 +825,6 @@
         await UseLocalAsync(local);
     }
 
-    private Task UseNoticeTemplateAsync()
-    {
-        var template = noticeTemplate;
-        marketNotice = null;
-        noticeTemplate = null;
-        return template is null ? Task.CompletedTask : UseDownloadedAsync(template);
-    }
-
     private async Task EditLocalAsync(WMTemplateList template)
     {
         var id = await SessionStore.CreateAsync(new WMWorkspaceCreateRequest(
@@ -917,6 +887,10 @@
         deletedUndoToken = result.UndoToken;
         selectedLocal = null;
         await RefreshLocalAsync();
+        if (string.IsNullOrWhiteSpace(deletedUndoToken))
+            Common.ShowToast(Popup, "模板已移到回收区。");
+        else
+            Common.ShowToast(Popup, "模板已移到回收区。", "撤销删除", UndoDeleteAsync);
     }
 
     private async Task UndoDeleteAsync()
@@ -1008,7 +982,7 @@
 
     private void ShowMarketNotice(WMZipedTemplate template)
     {
-        ShowMarketNotice("已添加到我的模板", template);
+        Common.ShowToast(Popup, "已添加到我的模板", "立即使用", () => UseDownloadedAsync(template));
     }
 
     private void ShowMarketNotice(
@@ -1016,29 +990,10 @@
         WMZipedTemplate? template = null,
         bool isError = false)
     {
-        noticeCancellation?.Cancel();
-        noticeCancellation?.Dispose();
-        noticeCancellation = new CancellationTokenSource();
-        noticeTemplate = template;
-        marketNotice = message;
-        marketNoticeIsError = isError;
-        _ = DismissMarketNoticeAsync(noticeCancellation.Token);
-    }
-
-    private async Task DismissMarketNoticeAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(TimeSpan.FromSeconds(6), cancellationToken);
-            await InvokeAsync(() =>
-            {
-                marketNotice = null;
-                noticeTemplate = null;
-                marketNoticeIsError = false;
-                StateHasChanged();
-            });
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        if (template is not null && !isError)
+            Common.ShowToast(Popup, message, "立即使用", () => UseDownloadedAsync(template));
+        else
+            Common.ShowToast(Popup, message, isError);
     }
 
     private void OnLibraryChanged() => _ = InvokeAsync(() =>
@@ -1066,8 +1021,6 @@
         CancelMarketContext();
         searchDebounceCancellation?.Cancel();
         searchDebounceCancellation?.Dispose();
-        noticeCancellation?.Cancel();
-        noticeCancellation?.Dispose();
         try { await JSRuntime.InvokeVoidAsync("watermarkTemplateVisibility.disconnect", visibilityScope); }
         catch (JSDisconnectedException) { }
         catch (JSException) { }

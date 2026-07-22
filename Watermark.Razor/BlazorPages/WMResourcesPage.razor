@@ -81,10 +81,6 @@
         }
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(message))
-    {
-        <div class="resources-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
-    }
 </section>
 
 @code {
@@ -94,8 +90,6 @@
     private readonly List<WMResourceItem> items = [];
     private bool loading = true;
     private bool busy;
-    private string? message;
-    private bool messageIsError;
     private WMResourceKind Kind => string.Equals(Tab, "fonts", StringComparison.OrdinalIgnoreCase) ? WMResourceKind.Font : WMResourceKind.Logo;
     private int InstalledCount => items.Count(item => item.Installed);
     private int AvailableCount => items.Count - InstalledCount;
@@ -150,6 +144,6 @@
     private void OpenFonts() => NavigationHistory.NavigateTo(BuildTabUrl("fonts"), replace: true);
     private string BuildTabUrl(string tab) => $"/settings/resources?tab={tab}&returnUrl={Uri.EscapeDataString(WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl, "/settings"))}";
     private void GoBack() => NavigationHistory.GoBack(WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl, "/settings"));
-    private void Show(WMResourceResult result) { message = result.Message; messageIsError = !result.Succeeded; }
+    private void Show(WMResourceResult result) => Common.ShowToast(Popup, result.Message, !result.Succeeded);
     private static string DisplayName(WMResourceItem item) => Path.GetFileNameWithoutExtension(item.Name);
 }

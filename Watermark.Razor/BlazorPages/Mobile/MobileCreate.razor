@@ -8,6 +8,7 @@
 @inject IWMWorkspaceSessionStore SessionStore
 @inject IWMWorkspaceLauncher WorkspaceLauncher
 @inject IWMExecutionProfileProvider ExecutionProfiles
+@inject IPopupService Popup
 @inject NavigationManager Navigation
 @inject IWMNavigationHistory NavigationHistory
 
@@ -87,19 +88,11 @@
         </div>
     }
 
-    @if (!string.IsNullOrWhiteSpace(errorMessage))
-    {
-        <div class="create-error" role="alert">
-            <MIcon>mdi-alert-circle-outline</MIcon>
-            <span>@errorMessage</span>
-        </div>
-    }
 </section>
 
 @code {
     private readonly List<WMWorkspaceSession> recentSessions = [];
     private bool busy;
-    private string? errorMessage;
     private bool CanUseMultiFrame => ExecutionProfiles.GetImagingCapabilities().CanMultiFrame;
 
     protected override async Task OnInitializedAsync()
@@ -112,7 +105,6 @@
     {
         if (busy) return;
         busy = true;
-        errorMessage = null;
         HapticFeedback.Perform();
         try
         {
@@ -123,7 +115,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message;
+            Common.ShowToast(Popup, ex.Message, isError: true);
         }
         finally
         {

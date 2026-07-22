@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject WMTemplateLibraryService TemplateLibrary
 @inject IWMTemplateMarketplaceService Marketplace
+@inject IPopupService Popup
 
 <section class="desktop-library" aria-labelledby="desktop-library-title">
     <header class="library-heading">
@@ -14,11 +15,6 @@
             <button type="button" class="primary-command" @onclick="CreateRequested"><MIcon Small>mdi-plus</MIcon><span>新建模板</span></button>
         </div>
     </header>
-
-    @if (!string.IsNullOrWhiteSpace(message))
-    {
-        <div class="library-message @(messageIsError ? "is-error" : null)" role="status"><span>@message</span>@if (!string.IsNullOrWhiteSpace(undoToken)){<button type="button" @onclick="UndoDeleteAsync">撤销删除</button>}</div>
-    }
 
     <div class="library-body" aria-busy="@busy">
         @if (busy && templates.Count == 0)
@@ -66,9 +62,7 @@
 
     private readonly List<WMTemplateList> templates = [];
     private string keyword = string.Empty;
-    private string? message;
     private string? undoToken;
-    private bool messageIsError;
     private bool busy;
     private bool showUpload;
     private WMTemplateList? uploadTemplate;
@@ -108,7 +102,10 @@
             if (result.IsSuccess)
             {
                 undoToken = result.UndoToken;
-                Show("模板已移到回收区。", false);
+                if (string.IsNullOrWhiteSpace(undoToken))
+                    Show("模板已移到回收区。", false);
+                else
+                    Common.ShowToast(Popup, "模板已移到回收区。", "撤销删除", UndoDeleteAsync);
                 await ReloadAfterMutationAsync();
             }
             else if (result.Status != WMTemplateMarketplaceStatus.Cancelled)
@@ -178,7 +175,7 @@
         StateHasChanged();
     });
 
-    private void Show(string value, bool error) { message = value; messageIsError = error; }
+    private void Show(string? value, bool error) => Common.ShowToast(Popup, value, error);
     private static string TemplateKind(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "拼图" : "水印";
     private static string TemplateDescription(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "多图容器模板" : "照片水印模板";
     public void Dispose() => TemplateLibrary.Changed -= OnLibraryChanged;

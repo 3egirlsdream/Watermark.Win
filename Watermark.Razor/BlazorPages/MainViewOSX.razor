@@ -18,6 +18,7 @@
 @inject IWMExternalActionService ExternalActions
 @inject IWMDesktopStartupService DesktopStartup
 @inject IWMAdminDashboardService AdminDashboard
+@inject IPopupService Popup
 
 <MacWorkspaceShell>
     <ToolbarContent>
@@ -130,9 +131,9 @@
         </div>
     </WorkspaceContent>
     <DialogContent>
-        @if (!string.IsNullOrWhiteSpace(State.ErrorMessage) || !string.IsNullOrWhiteSpace(message))
+        @if (!string.IsNullOrWhiteSpace(State.ErrorMessage))
         {
-            <div class="desktop-toast @(State.ErrorMessage is null ? null : "is-error")" role="status"><span>@(State.ErrorMessage ?? message)</span><button type="button" @onclick="() => message = null"><MIcon>mdi-close</MIcon></button></div>
+            <div class="desktop-toast is-error" role="status"><span>@State.ErrorMessage</span><button type="button" @onclick="Controller.ClearStatusMessage"><MIcon>mdi-close</MIcon></button></div>
         }
         <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMDesktopTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
         <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
@@ -175,7 +176,6 @@
     private double mediaStripDragStartY;
     private int mediaStripDragStartHeight = 126;
     private int mediaStripHeight = 126;
-    private string? message;
     private string? commonDialogUrl;
     private string accountDialogMode = "login";
     private string designerTemplateId = string.Empty;
@@ -254,7 +254,7 @@
     private async Task AppendMediaAsync()
     {
         try { var sources = await PhotoPicker.PickMultipleAsync(); if (sources.Count > 0) await Controller.ImportMediaAsync(sources); }
-        catch (Exception ex) { message = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
     }
 
     private async Task SetModeAsync(WMWorkspaceMode mode)
@@ -286,7 +286,7 @@
     {
         if (State.Media.Count == 0)
         {
-            message = "请先导入图片，再选择水印模板。";
+            Common.ShowToast(Popup, "请先导入图片，再选择水印模板。");
             return;
         }
         await Controller.PreviewTemplateAsync(new WMWorkspaceTemplateEdit(template.ID, null), State.ApplyScope);
@@ -301,7 +301,7 @@
             await Controller.CreateTemplateCollageAsync(new WMWorkspaceTemplateEdit(template.ID, Global.CanvasSerialize(template.Canvas)), sources);
             await Controller.SetModeAsync(WMWorkspaceMode.Template);
         }
-        catch (Exception ex) { message = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
     }
 
     private Task ToggleFrameAsync(string mediaId)
@@ -412,7 +412,7 @@
         var source = sources.FirstOrDefault();
         if (source is null) return;
         try { await Controller.ImportColorReferenceAsync(source); }
-        catch (Exception ex) { message = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
         finally
         {
             await source.DisposeAsync();
@@ -455,13 +455,13 @@
     private async Task RunStackAsync()
     {
         try { await Controller.ExecuteMultiFrameAsync(); }
-        catch (Exception ex) { message = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
     }
 
     private async Task PreviewStackAsync()
     {
         try { await Controller.PreviewMultiFrameAsync(); }
-        catch (Exception ex) { message = ex.Message; }
+        catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
     }
 
     private Task RetryFailedAsync() => Controller.RetryFailedExportAsync();

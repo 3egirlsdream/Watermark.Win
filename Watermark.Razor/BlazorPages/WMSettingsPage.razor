@@ -74,10 +74,6 @@
                 <button type="button" class="is-danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><MIcon>mdi-shield-off-outline</MIcon></button>
             </section>
         </div>
-        @if (!string.IsNullOrWhiteSpace(message))
-        {
-            <div class="settings-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
-        }
     }
 </section>
 
@@ -92,8 +88,6 @@
     private bool loading = true;
     private bool saving;
     private bool cacheBusy;
-    private string? message;
-    private bool messageIsError;
     private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
 
     protected override async Task OnInitializedAsync()
@@ -113,9 +107,9 @@
         try
         {
             draft = await Settings.UpdateAsync(enhancedExif, maximumThreads);
-            ShowMessage("设置已保存。", false);
+            ShowToast("设置已保存。");
         }
-        catch (Exception ex) { ShowMessage(ex.Message, true); }
+        catch (Exception ex) { ShowToast(ex.Message, true); }
         finally { saving = false; }
     }
 
@@ -132,7 +126,7 @@
         var result = await Cache.ClearAsync(area);
         cacheSummary = result.Summary;
         cacheBusy = false;
-        ShowMessage(result.Message, !result.Succeeded);
+        ShowToast(result.Message, !result.Succeeded);
     }
 
     private async Task RevokePrivacyAsync()
@@ -152,13 +146,13 @@
     private async Task CheckUpdateAsync()
     {
         await Updates.CheckAsync();
-        ShowMessage(Updates.State.Message ?? "检查完成。", false);
+        ShowToast(Updates.State.Message ?? "检查完成。", Updates.State.HasError);
     }
 
     private async Task StartUpdateAsync()
     {
         var result = await Updates.StartUpdateAsync();
-        ShowMessage(result.Message, !result.Succeeded);
+        ShowToast(result.Message, !result.Succeeded);
     }
 
     private string CurrentPage => new Uri(Navigation.Uri).PathAndQuery;
@@ -172,7 +166,7 @@
     private Task OpenProtocolAsync() => External.OpenUrlAsync("http://thankful.top/protocol");
     private Task OpenPrivacyAsync() => External.OpenUrlAsync("http://thankful.top/private");
     private Task OpenWebsiteAsync() => External.OpenUrlAsync("http://thankful.top/");
-    private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowMessage("群号已复制。", false); }
-    private void ShowMessage(string value, bool error) { message = value; messageIsError = error; }
+    private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowToast("群号已复制。"); }
+    private void ShowToast(string? value, bool error = false) => Common.ShowToast(Popup, value, error);
     private static string FormatBytes(long value) => value < 1024 * 1024 ? $"{value / 1024d:0.#} KB" : $"{value / 1024d / 1024d:0.#} MB";
 }

@@ -6,6 +6,7 @@
 @inject WMTemplateLibraryService TemplateLibrary
 @inject IWMAdminDashboardService AdminDashboard
 @inject IJSRuntime JSRuntime
+@inject IPopupService Popup
 
 <section class="desktop-market" aria-label="模板市场">
     <div class="market-controls">
@@ -33,11 +34,6 @@
             </button>
         </div>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(DisplayMessage))
-    {
-        <p class="market-message @(messageIsError ? "is-error" : null)" role="status">@DisplayMessage</p>
-    }
 
     <div id="@scrollId" class="market-results" aria-busy="@ActiveState.IsLoading">
         @if (ActiveState.IsLoading && ActiveState.Items.Count == 0)
@@ -150,14 +146,11 @@
     private IJSObjectReference? scrollModule;
     private CancellationTokenSource? contextCancellation;
     private string keyword = string.Empty;
-    private string? message;
     private string? downloadingId;
     private string? recommendUpdatingId;
-    private bool messageIsError;
     private bool resetInfinitePending;
     private bool resetScrollPending;
     private WMTemplateMarketFeedState ActiveState => activeState ??= MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
-    private string? DisplayMessage => message ?? ActiveState.ErrorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -225,7 +218,7 @@
     {
         MarketFeedStore.Search = keyword.Trim();
         await ActivateFeedAsync(forceRefresh: true);
-        if (ActiveState.ErrorMessage is null) message = "市场内容已刷新。";
+        if (ActiveState.ErrorMessage is null) ShowToast("市场内容已刷新。");
     }
 
     private async Task ActivateFeedAsync(bool forceRefresh = false)
@@ -234,8 +227,6 @@
         contextCancellation?.Dispose();
         contextCancellation = new CancellationTokenSource();
         activeState = MarketFeedStore.GetOrCreate(MarketFeedStore.SelectedCategory, MarketFeedStore.Search);
-        message = null;
-        messageIsError = false;
         if (forceRefresh)
         {
             ActiveState.Reset();
@@ -271,7 +262,7 @@
             if (!result.IsSuccess)
             {
                 state.ErrorMessage = result.Message ?? "模板市场加载失败，请稍后重试。";
-                messageIsError = true;
+                ShowToast(state.ErrorMessage, isError: true);
                 return MarketLoadOutcome.Error;
             }
 
@@ -290,7 +281,7 @@
         {
             state.Initialized = true;
             state.ErrorMessage = ex.Message;
-            messageIsError = true;
+            ShowToast(state.ErrorMessage, isError: true);
             return MarketLoadOutcome.Error;
         }
         finally
@@ -316,13 +307,12 @@
     {
         if (downloadingId is not null || IsDownloaded(item.WatermarkId)) return;
         downloadingId = item.WatermarkId;
-        message = null;
-        messageIsError = false;
         try
         {
             var result = await Marketplace.DownloadAsync(item);
-            message = result.IsSuccess ? "模板已下载到我的模板。" : result.Message ?? "模板下载失败。";
-            messageIsError = !result.IsSuccess;
+            ShowToast(
+                result.IsSuccess ? "模板已下载到我的模板。" : result.Message ?? "模板下载失败。",
+                isError: !result.IsSuccess);
             if (result.IsSuccess)
             {
                 MarketFeedStore.MarkDownloaded(item.WatermarkId);
@@ -331,8 +321,7 @@
         }
         catch (Exception ex)
         {
-            message = ex.Message;
-            messageIsError = true;
+            ShowToast(ex.Message, isError: true);
         }
         finally
         {
@@ -345,26 +334,22 @@
         if (!AdminDashboard.IsAuthorized || recommendUpdatingId is not null) return;
         var recommended = !item.Recommend;
         recommendUpdatingId = item.WatermarkId;
-        message = null;
-        messageIsError = false;
         try
         {
             var result = await Marketplace.SetRecommendedAsync(item, recommended);
             if (result.IsSuccess)
             {
                 MarketFeedStore.SetRecommended(item.WatermarkId, recommended);
-                message = recommended ? "模板已加入推荐。" : "模板已从推荐列表下架。";
+                ShowToast(recommended ? "模板已加入推荐。" : "模板已从推荐列表下架。");
             }
             else
             {
-                message = result.Message ?? "推荐状态更新失败。";
-                messageIsError = true;
+                ShowToast(result.Message ?? "推荐状态更新失败。", isError: true);
             }
         }
         catch (Exception ex)
         {
-            message = ex.Message;
-            messageIsError = true;
+            ShowToast(ex.Message, isError: true);
         }
         finally
         {
@@ -388,6 +373,9 @@
         >= 1000 => $"{value / 1000d:0.#}k",
         _ => value.ToString()
     };
+
+    private void ShowToast(string? value, bool isError = false) =>
+        Common.ShowToast(Popup, value, isError);
 
     public async ValueTask DisposeAsync()
     {

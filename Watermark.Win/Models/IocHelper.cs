@@ -47,7 +47,7 @@ namespace Watermark.Win.Models
                         PopupComponents.SNACKBAR, new Dictionary<string, object?>()
                         {
                             { nameof(PEnqueuedSnackbars.Closeable), false },
-                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.TopCenter },
+                            { nameof(PEnqueuedSnackbars.Position), SnackPosition.BottomCenter },
                             { nameof(PEnqueuedSnackbars.MaxCount), 1}
                         }
                     }

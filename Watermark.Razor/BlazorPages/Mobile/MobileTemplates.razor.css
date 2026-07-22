@@ -581,39 +581,6 @@
 .sheet-actions button.is-danger { color: var(--wm-danger); }
 .sheet-actions.cloud-actions { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
 
-.template-undo,
-.market-notice {
-    align-items: center;
-    background: #172033;
-    border-radius: 13px;
-    bottom: calc(82px + env(safe-area-inset-bottom));
-    box-shadow: 0 14px 32px rgba(16, 21, 30, .28);
-    color: #fff;
-    display: flex;
-    font-size: .73rem;
-    justify-content: space-between;
-    left: 16px;
-    min-height: 52px;
-    padding: 0 7px 0 14px;
-    position: fixed;
-    right: 16px;
-    z-index: 260;
-}
-.template-undo button,
-.market-notice button {
-    background: transparent;
-    border: 0;
-    color: #91baff;
-    font: inherit;
-    font-weight: 800;
-    min-height: 44px;
-    padding: 0 12px;
-}
-.market-notice span { align-items: center; display: flex; gap: 7px; }
-.market-notice span i { color: #6ed6a8; font-size: 19px; }
-.market-notice.is-error { background: #7a271a; }
-.market-notice.is-error span i { color: #ffb4ad; }
-
 @keyframes template-pulse {
     from { opacity: .56; }
     to { opacity: 1; }

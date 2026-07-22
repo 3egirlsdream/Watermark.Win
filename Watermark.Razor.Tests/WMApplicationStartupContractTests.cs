@@ -39,6 +39,40 @@ public sealed class WMApplicationStartupContractTests
         Assert.Contains("Preferences.Default.Set(preferenceKey, persistedId)", mobileClient, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void TransientNotifications_UseOneBottomCenteredToastContractOnMobileAndDesktop()
+    {
+        var common = Read("Watermark.Razor/Common.cs");
+        var mobileRegistration = Read("Watermark.Andorid/MauiProgram.cs");
+        var desktopRegistration = Read("Watermark.Win/Models/IocHelper.cs");
+        var mobileSettings = Read("Watermark.Razor/BlazorPages/WMSettingsPage.razor");
+        var desktopSettings = Read("Watermark.Razor/Components/Desktop/WMDesktopSettingsPage.razor");
+        var toastStyles = Read("Watermark.Razor/wwwroot/css/wm-toast.css");
+        var mobileHost = Read("Watermark.Andorid/wwwroot/index.html");
+        var desktopHost = Read("Watermark.Win/wwwroot/index.html");
+        var guidance = Read("AGENTS.md");
+
+        Assert.Contains("public static void ShowToast", common, StringComparison.Ordinal);
+        Assert.Contains("new SnackbarOptions(normalizedMessage)", common, StringComparison.Ordinal);
+        Assert.Contains("AlertTypes.Error", common, StringComparison.Ordinal);
+        Assert.Contains("SnackPosition.BottomCenter", mobileRegistration, StringComparison.Ordinal);
+        Assert.Contains("SnackPosition.BottomCenter", desktopRegistration, StringComparison.Ordinal);
+        Assert.Contains("nameof(PEnqueuedSnackbars.MaxCount), 1", mobileRegistration, StringComparison.Ordinal);
+        Assert.Contains("nameof(PEnqueuedSnackbars.MaxCount), 1", desktopRegistration, StringComparison.Ordinal);
+        Assert.Contains("Common.ShowToast(Popup", mobileSettings, StringComparison.Ordinal);
+        Assert.Contains("Common.ShowToast(Popup", desktopSettings, StringComparison.Ordinal);
+        Assert.DoesNotContain("settings-message", mobileSettings, StringComparison.Ordinal);
+        Assert.DoesNotContain("settings-message", desktopSettings, StringComparison.Ordinal);
+        Assert.Contains("background: #263447", toastStyles, StringComparison.Ordinal);
+        Assert.Contains("border-radius: 7px", toastStyles, StringComparison.Ordinal);
+        Assert.Contains("font-size: 11px", toastStyles, StringComparison.Ordinal);
+        Assert.Contains("min-width: 0", toastStyles, StringComparison.Ordinal);
+        Assert.Contains("padding: 9px 13px", toastStyles, StringComparison.Ordinal);
+        Assert.Contains("_content/Watermark.Razor/css/wm-toast.css", mobileHost, StringComparison.Ordinal);
+        Assert.Contains("_content/Watermark.Razor/css/wm-toast.css", desktopHost, StringComparison.Ordinal);
+        Assert.Contains("Common.ShowToast(IPopupService, ...)", guidance, StringComparison.Ordinal);
+    }
+
     private static int Count(string value, string fragment)
     {
         var count = 0;

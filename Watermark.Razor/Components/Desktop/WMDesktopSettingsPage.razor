@@ -64,10 +64,6 @@
             </div>
         </div>
     }
-    @if (!string.IsNullOrWhiteSpace(message))
-    {
-        <div class="settings-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
-    }
 </section>
 
 @code {
@@ -82,8 +78,6 @@
     private bool loading = true;
     private bool saving;
     private bool cacheBusy;
-    private string? message;
-    private bool messageIsError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,9 +95,9 @@
         try
         {
             draft = await Settings.UpdateAsync(enhancedExif, maximumThreads);
-            Show("设置已保存。", false);
+            ShowToast("设置已保存。");
         }
-        catch (Exception ex) { Show(ex.Message, true); }
+        catch (Exception ex) { ShowToast(ex.Message, true); }
         finally { saving = false; }
     }
 
@@ -119,7 +113,7 @@
         var result = await Cache.ClearAsync(area);
         cacheSummary = result.Summary;
         cacheBusy = false;
-        Show(result.Message, !result.Succeeded);
+        ShowToast(result.Message, !result.Succeeded);
     }
 
     private async Task SwitchAccountAsync()
@@ -128,16 +122,16 @@
         await OpenAccount.InvokeAsync("login");
     }
 
-    private async Task CheckUpdateAsync() { await Updates.CheckAsync(); Show(Updates.State.Message ?? "检查完成。", false); }
-    private async Task StartUpdateAsync() { var result = await Updates.StartUpdateAsync(); Show(result.Message, !result.Succeeded); }
-    private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); Show("群号已复制。", false); }
+    private async Task CheckUpdateAsync() { await Updates.CheckAsync(); ShowToast(Updates.State.Message ?? "检查完成。", Updates.State.HasError); }
+    private async Task StartUpdateAsync() { var result = await Updates.StartUpdateAsync(); ShowToast(result.Message, !result.Succeeded); }
+    private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowToast("群号已复制。"); }
     private async Task RevokePrivacyAsync()
     {
         var confirmed = await Popup.ConfirmAsync("撤回隐私授权", "将退出本机账号，下次进入移动端时需要重新确认隐私协议。继续吗？", AlertTypes.Warning);
         if (confirmed != true) return;
         await Settings.RevokePrivacyConsentAsync();
-        Show("本地隐私授权已撤回。", false);
+        ShowToast("本地隐私授权已撤回。");
     }
-    private void Show(string value, bool error) { message = value; messageIsError = error; }
+    private void ShowToast(string? value, bool error = false) => Common.ShowToast(Popup, value, error);
     private static string FormatBytes(long value) => value < 1024 * 1024 ? $"{value / 1024d:0.#} KB" : $"{value / 1024d / 1024d:0.#} MB";
 }

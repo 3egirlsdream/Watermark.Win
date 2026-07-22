@@ -880,11 +880,12 @@
 
 .workspace-toast {
     align-items: center;
-    background: #f8fbff;
-    border: 1px solid #bcd4f7;
+    background: #263447;
+    border: 0;
     border-radius: 11px;
     bottom: calc(var(--panel-height) + 10px);
-    color: #25568f;
+    box-shadow: 0 12px 34px rgba(34, 48, 66, .22);
+    color: #fff;
     display: flex;
     font-size: .68rem;
     justify-content: space-between;
@@ -896,7 +897,7 @@
     transition: bottom .24s ease;
     z-index: 35;
 }
-.workspace-toast.is-error { background: #fff3f4; border-color: #efc3c7; color: #9f3540; }
+.workspace-toast.is-error { background: #b42318; color: #fff; }
 .workspace-toast button { background: transparent; border: 0; color: currentColor; height: 40px; width: 40px; }
 
 .workspace-completion-backdrop {
