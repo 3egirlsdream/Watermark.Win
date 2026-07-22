@@ -316,14 +316,14 @@ a {
 .wm-product-float {
     position: absolute;
     z-index: 3;
-    left: -21%;
-    bottom: -106px;
-    width: 69%;
+    left: -9%;
+    bottom: -74px;
+    width: 64%;
     overflow: hidden;
     border: 1px solid rgba(25, 29, 36, 0.11);
     border-radius: 12px;
     background: #f6f8fb;
-    box-shadow: var(--wm-shadow);
+    box-shadow: 0 18px 44px rgba(24, 29, 38, 0.16);
 }
 
 .wm-product-float .wm-workspace-ui {
@@ -335,7 +335,7 @@ a {
 .wm-workspace-composite {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1484 / 768;
     overflow: hidden;
     background: #f5f7fa;
 }
@@ -343,29 +343,42 @@ a {
 .wm-workspace-composite .wm-workspace-ui {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
-.wm-workspace-composite .wm-workspace-content {
+.wm-workspace-canvas {
     position: absolute;
     z-index: 2;
-    left: 41.5%;
-    top: 21%;
-    width: 21%;
-    height: 62%;
-    object-fit: cover;
-    border: 5px solid #ffffff;
-    border-radius: 4px;
-    background: #ffffff;
-    box-shadow: 0 8px 22px rgba(28, 35, 47, 0.2);
+    left: 14%;
+    top: 5.7%;
+    width: 72.8%;
+    height: 84.2%;
+    padding: 5.8% 7.5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(145deg, #f0f3f7 0%, #e9eef5 100%);
 }
 
-.wm-workspace-composite .wm-workspace-content-landscape {
-    left: 31.5%;
-    top: 26%;
-    width: 43%;
-    height: 49%;
-    border-width: 3px;
+.wm-workspace-canvas img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: saturate(0.96) contrast(0.99);
+    box-shadow: 0 7px 18px rgba(28, 35, 47, 0.12);
+}
+
+.wm-workspace-canvas-portrait {
+    padding: 3.8% 24%;
+}
+
+.wm-workspace-canvas-portrait img {
+    box-shadow: 0 8px 20px rgba(28, 35, 47, 0.14);
+}
+
+.wm-workspace-canvas-night {
+    padding-block: 5.2%;
 }
 
 .wm-chapter {
@@ -376,6 +389,12 @@ a {
 .wm-chapter-template {
     padding-top: 142px;
     background: #ffffff;
+}
+
+.wm-chapter-ai {
+    --wm-ai-ink: #173f36;
+    --wm-ai-accent: #e86f4a;
+    background: #eef2ec;
 }
 
 .wm-chapter-grade {
@@ -409,6 +428,10 @@ a {
 
 .wm-chapter-grade .wm-chapter-number {
     color: #5b7cdd;
+}
+
+.wm-chapter-ai .wm-chapter-number {
+    color: #3c806d;
 }
 
 .wm-chapter-batch .wm-chapter-number {
@@ -495,7 +518,7 @@ a {
 
 .wm-workspace-frame .wm-workspace-composite {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1484 / 768;
     border: 1px solid #dfe2e7;
     border-radius: 12px;
     background: #f5f7fa;
@@ -503,10 +526,305 @@ a {
 }
 
 .wm-workspace-frame figcaption {
-    margin: 17px 6px 0;
+    margin: 14px 6px 0;
     color: var(--wm-muted);
     font-size: 13px;
     line-height: 1.65;
+}
+
+.wm-ai-layout {
+    display: grid;
+    grid-template-columns: minmax(340px, 0.78fr) minmax(520px, 1.22fr);
+    align-items: center;
+    gap: 72px;
+}
+
+.wm-ai-story {
+    min-width: 0;
+}
+
+.wm-ai-prompt-card {
+    overflow: hidden;
+    border: 1px solid rgba(23, 63, 54, 0.18);
+    border-radius: var(--wm-radius);
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 16px 36px rgba(40, 68, 58, 0.08);
+}
+
+.wm-ai-card-bar {
+    min-height: 42px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(23, 63, 54, 0.12);
+    color: #62746e;
+    font-size: 10px;
+    font-weight: 690;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.wm-ai-card-dots {
+    display: flex;
+    gap: 5px;
+}
+
+.wm-ai-card-dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a9b8b1;
+}
+
+.wm-ai-card-dots i:first-child {
+    background: var(--wm-ai-accent);
+}
+
+.wm-ai-prompt-card blockquote {
+    margin: 0;
+    padding: 26px 26px 20px;
+    color: var(--wm-ai-ink);
+    font-family: "Songti SC", "STSong", serif;
+    font-size: 19px;
+    font-weight: 620;
+    line-height: 1.7;
+}
+
+.wm-ai-prompt-tags {
+    padding: 0 26px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.wm-ai-prompt-tags span {
+    padding: 6px 10px;
+    border: 1px solid rgba(23, 63, 54, 0.15);
+    border-radius: 999px;
+    color: #527067;
+    font-size: 10px;
+    font-weight: 620;
+}
+
+.wm-ai-steps {
+    margin: 28px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    list-style: none;
+}
+
+.wm-ai-steps li {
+    min-width: 0;
+    padding-right: 14px;
+    display: grid;
+    gap: 8px;
+}
+
+.wm-ai-steps li + li {
+    padding-left: 14px;
+    border-left: 1px solid rgba(23, 63, 54, 0.16);
+}
+
+.wm-ai-steps > li > span {
+    color: var(--wm-ai-accent);
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.12em;
+}
+
+.wm-ai-steps li div {
+    display: grid;
+    gap: 5px;
+}
+
+.wm-ai-steps b {
+    color: var(--wm-ai-ink);
+    font-size: 13px;
+    font-weight: 690;
+}
+
+.wm-ai-steps small {
+    color: #6b7974;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.wm-ai-download {
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+.wm-button-ai {
+    border-color: var(--wm-ai-ink);
+    background: var(--wm-ai-ink);
+    box-shadow: 0 10px 22px rgba(23, 63, 54, 0.18);
+}
+
+.wm-button-ai:hover {
+    background: #0e3028;
+    box-shadow: 0 14px 30px rgba(23, 63, 54, 0.24);
+}
+
+.wm-button-ai .mdi {
+    margin-right: 9px;
+    font-size: 18px;
+}
+
+.wm-ai-download > span {
+    display: grid;
+    gap: 3px;
+    color: #63716c;
+    font-size: 9px;
+}
+
+.wm-ai-download > span b {
+    color: #334a43;
+    font-size: 11px;
+    font-weight: 680;
+}
+
+.wm-ai-output {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: #14231f;
+    box-shadow: 0 28px 60px rgba(21, 45, 38, 0.22);
+}
+
+.wm-ai-output-head {
+    min-height: 58px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    color: #dbe7e1;
+    font-size: 11px;
+}
+
+.wm-ai-output-head > div {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.wm-ai-output-head .mdi {
+    color: #f18c68;
+    font-size: 18px;
+}
+
+.wm-ai-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #a9bcb5;
+    font-size: 9px;
+}
+
+.wm-ai-status i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6fd0a5;
+    box-shadow: 0 0 0 4px rgba(111, 208, 165, 0.1);
+}
+
+.wm-ai-output-body {
+    padding: 26px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 170px;
+    align-items: center;
+    gap: 22px;
+}
+
+.wm-ai-result {
+    margin: 0;
+    padding: 9px 9px 0;
+    overflow: hidden;
+    border-radius: 5px;
+    background: #f8f7f2;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+    transform: rotate(-1.2deg);
+    transition: transform 300ms cubic-bezier(.2, .75, .2, 1);
+}
+
+.wm-ai-output:hover .wm-ai-result {
+    transform: rotate(0deg) translateY(-3px);
+}
+
+.wm-ai-result img {
+    width: 100%;
+    aspect-ratio: 1.32;
+    object-fit: cover;
+}
+
+.wm-ai-result figcaption {
+    min-height: 78px;
+    padding: 13px 7px 15px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    color: #1f2926;
+}
+
+.wm-ai-result figcaption div {
+    display: grid;
+    gap: 4px;
+}
+
+.wm-ai-result figcaption div:last-child {
+    text-align: right;
+}
+
+.wm-ai-result figcaption b {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+}
+
+.wm-ai-result figcaption span {
+    color: #66706c;
+    font-size: 7px;
+    letter-spacing: 0.04em;
+}
+
+.wm-ai-schema {
+    display: grid;
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.wm-ai-schema div {
+    min-height: 62px;
+    padding: 12px 13px;
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    background: #192b26;
+}
+
+.wm-ai-schema span {
+    color: #70bfa2;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.wm-ai-schema b {
+    color: #dce6e2;
+    font-size: 9px;
+    font-weight: 560;
+    line-height: 1.5;
 }
 
 .wm-tags {
@@ -528,6 +846,7 @@ a {
 
 .wm-grade-layout {
     grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    align-items: start;
 }
 
 .wm-before-after {
@@ -635,7 +954,7 @@ a {
 
 .wm-night-workspace .wm-workspace-composite {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1484 / 768;
 }
 
 .wm-pipeline {
@@ -861,12 +1180,13 @@ a {
     }
 
     .wm-product-float {
-        left: -17%;
-        width: 75%;
+        left: -7%;
+        width: 68%;
     }
 
     .wm-template-layout,
-    .wm-grade-layout {
+    .wm-grade-layout,
+    .wm-ai-layout {
         gap: 32px;
     }
 
@@ -957,9 +1277,14 @@ a {
     }
 
     .wm-template-layout,
-    .wm-grade-layout {
+    .wm-grade-layout,
+    .wm-ai-layout {
         grid-template-columns: 1fr;
         gap: 42px;
+    }
+
+    .wm-ai-output-body {
+        grid-template-columns: minmax(0, 1fr) 170px;
     }
 
     .wm-workspace-frame {
@@ -1118,6 +1443,51 @@ a {
 
     .wm-tags {
         gap: 6px;
+    }
+
+    .wm-ai-prompt-card blockquote {
+        padding: 22px 20px 17px;
+        font-size: 17px;
+    }
+
+    .wm-ai-prompt-tags {
+        padding: 0 20px 20px;
+    }
+
+    .wm-ai-steps {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .wm-ai-steps li {
+        padding: 13px 0;
+        grid-template-columns: 34px 1fr;
+        align-items: start;
+        gap: 0;
+    }
+
+    .wm-ai-steps li + li {
+        padding-left: 0;
+        border-top: 1px solid rgba(23, 63, 54, 0.13);
+        border-left: 0;
+    }
+
+    .wm-ai-download {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .wm-ai-output-body {
+        padding: 18px;
+        grid-template-columns: 1fr;
+    }
+
+    .wm-ai-schema {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .wm-ai-schema div {
+        min-height: 72px;
     }
 
     .wm-tags span {

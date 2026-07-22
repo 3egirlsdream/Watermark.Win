@@ -3,7 +3,7 @@
 
 <PageTitle>轻影 Litograph｜摄影模板设计与专业影像处理</PageTitle>
 <HeadContent>
-    <meta name="description" content="轻影 Litograph 是面向摄影师的跨平台影像工作台，支持水印模板设计、EXIF、16-bit 调色、RAW、多帧合成与批量导出。" />
+    <meta name="description" content="轻影 Litograph 是面向摄影师的跨平台影像工作台，支持 AI 技能生成水印模板、EXIF、16-bit 调色、RAW、多帧合成与批量导出。" />
     <meta name="theme-color" content="#fcfbf8" />
 </HeadContent>
 
@@ -16,6 +16,7 @@
         <nav class="wm-nav" aria-label="官网导航">
             <a href="#capabilities">能力</a>
             <a href="#templates">模板</a>
+            <a href="#ai-skill">AI 技能</a>
             <a href="#download">下载</a>
             <a href="#about">关于</a>
         </nav>
@@ -54,7 +55,9 @@
                     <div class="wm-product-float">
                         <div class="wm-workspace-composite wm-workspace-composite-hero">
                             <img class="wm-workspace-ui" src="images/home/preset-workspace.jpg" alt="轻影预设与模板工作区" />
-                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/misty-ridges.jpg" alt="模板工作区中正在编辑的雾岭照片" />
+                            <div class="wm-workspace-canvas wm-workspace-canvas-landscape">
+                                <img src="images/home/misty-ridges.jpg" alt="模板工作区中正在编辑的雾岭照片" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -89,7 +92,9 @@
                     <figure class="wm-workspace-frame">
                         <div class="wm-workspace-composite">
                             <img class="wm-workspace-ui" src="images/home/preset-workspace.jpg" alt="可视化水印模板设计器" />
-                            <img class="wm-workspace-content" src="images/home/exif-template.jpg" alt="模板设计器中的 EXIF 水印成片" />
+                            <div class="wm-workspace-canvas wm-workspace-canvas-portrait">
+                                <img src="images/home/exif-template.jpg" alt="模板设计器中的 EXIF 水印成片" />
+                            </div>
                         </div>
                         <figcaption>图层、图片、文字、边框与 EXIF 内容，在同一画布中完成。</figcaption>
                     </figure>
@@ -97,10 +102,78 @@
             </div>
         </section>
 
-        <section class="wm-chapter wm-chapter-grade" id="capabilities">
+        <section class="wm-chapter wm-chapter-ai" id="ai-skill">
             <div class="wm-shell">
                 <div class="wm-chapter-heading wm-chapter-heading-compact">
                     <span class="wm-chapter-number">02</span>
+                    <div>
+                        <p class="wm-kicker">AI × TEMPLATE SKILL</p>
+                        <h2>描述你的画面，让 AI 把灵感写成模板</h2>
+                        <p>安装轻影模板生成技能，用自然语言、参考图或 EXIF 文本告诉 AI 你想要的版式，即可生成可在轻影中继续编辑的模板。</p>
+                    </div>
+                </div>
+
+                <div class="wm-ai-layout">
+                    <div class="wm-ai-story">
+                        <div class="wm-ai-prompt-card">
+                            <div class="wm-ai-card-bar">
+                                <span class="wm-ai-card-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                                <span>给 AI 的一句话</span>
+                            </div>
+                            <blockquote>“做一款留白克制的雪山水印：底部显示相机、镜头和拍摄参数，品牌名放在右下角。”</blockquote>
+                            <div class="wm-ai-prompt-tags" aria-label="技能支持的输入方式">
+                                <span>自然语言</span>
+                                <span>参考图片</span>
+                                <span>EXIF 文本</span>
+                            </div>
+                        </div>
+
+                        <ol class="wm-ai-steps" aria-label="AI 技能生成模板的使用步骤">
+                            <li><span>01</span><div><b>下载技能</b><small>把模板规范交给你的 AI 助手</small></div></li>
+                            <li><span>02</span><div><b>说出版式</b><small>描述风格、信息与画面关系</small></div></li>
+                            <li><span>03</span><div><b>导入轻影</b><small>预览结果，并继续精细调整</small></div></li>
+                        </ol>
+
+                        <div class="wm-ai-download">
+                            <a class="wm-button wm-button-ai"
+                               href="https://cdn.thankful.top/skills/watermark-template-skill.zip"
+                               download="watermark-template-skill.zip"
+                               aria-label="下载轻影 AI 模板生成技能 ZIP 文件">
+                                <span class="mdi mdi-download" aria-hidden="true"></span>
+                                下载模板生成技能
+                            </a>
+                            <span><b>watermark-template-skill</b><small>技能包 · ZIP</small></span>
+                        </div>
+                    </div>
+
+                    <div class="wm-ai-output" aria-label="AI 生成轻影模板的结果示意">
+                        <div class="wm-ai-output-head">
+                            <div><span class="mdi mdi-auto-fix" aria-hidden="true"></span><b>轻影模板生成技能</b></div>
+                            <span class="wm-ai-status"><i aria-hidden="true"></i>已生成</span>
+                        </div>
+                        <div class="wm-ai-output-body">
+                            <figure class="wm-ai-result">
+                                <img src="images/home/winter-lake.jpg" alt="AI 技能生成的雪山 EXIF 水印模板示意" />
+                                <figcaption>
+                                    <div><b>WINTER SILENCE</b><span>LIGHT &amp; DISTANCE</span></div>
+                                    <div><b>SONY α7R V</b><span>24mm&nbsp;&nbsp; f/8&nbsp;&nbsp; 1/125s&nbsp;&nbsp; ISO 100</span></div>
+                                </figcaption>
+                            </figure>
+                            <div class="wm-ai-schema">
+                                <div><span>format</span><b>轻影模板文件</b></div>
+                                <div><span>layers</span><b>画布 · 图片 · 文字 · EXIF</b></div>
+                                <div><span>output</span><b>可编辑的轻影模板</b></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="wm-chapter wm-chapter-grade" id="capabilities">
+            <div class="wm-shell">
+                <div class="wm-chapter-heading wm-chapter-heading-compact">
+                    <span class="wm-chapter-number">03</span>
                     <div>
                         <p class="wm-kicker">COLOR STUDIO</p>
                         <h2>调色，不止几个滤镜</h2>
@@ -127,7 +200,9 @@
                     <figure class="wm-workspace-frame wm-workspace-grade">
                         <div class="wm-workspace-composite">
                             <img class="wm-workspace-ui" src="images/home/color-studio.jpg" alt="轻影 16-bit 调色工作台" />
-                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/color-grade-base.jpg" alt="调色工作台中正在处理的高山照片" />
+                            <div class="wm-workspace-canvas wm-workspace-canvas-landscape">
+                                <img src="images/home/color-grade-base.jpg" alt="调色工作台中正在处理的高山照片" />
+                            </div>
                         </div>
                         <figcaption>基础调色、曲线、HSL 与参考图匹配，共用高精度渲染管线。</figcaption>
                     </figure>
@@ -138,7 +213,7 @@
         <section class="wm-chapter wm-chapter-night">
             <div class="wm-shell">
                 <div class="wm-chapter-heading wm-chapter-heading-night">
-                    <span class="wm-chapter-number">03</span>
+                    <span class="wm-chapter-number">04</span>
                     <div>
                         <p class="wm-kicker">MULTI-FRAME STACK</p>
                         <h2>让时间参与成像</h2>
@@ -156,7 +231,9 @@
                     <figure class="wm-night-workspace">
                         <div class="wm-workspace-composite">
                             <img class="wm-workspace-ui" src="images/home/multi-frame-workspace.jpg" alt="轻影多帧合成工作区" />
-                            <img class="wm-workspace-content wm-workspace-content-landscape" src="images/home/star-trails.jpg" alt="多帧合成工作区中的星轨成片" />
+                            <div class="wm-workspace-canvas wm-workspace-canvas-landscape wm-workspace-canvas-night">
+                                <img src="images/home/star-trails.jpg" alt="多帧合成工作区中的星轨成片" />
+                            </div>
                         </div>
                     </figure>
                 </div>
@@ -166,7 +243,7 @@
         <section class="wm-chapter wm-chapter-batch">
             <div class="wm-shell">
                 <div class="wm-chapter-heading wm-chapter-heading-compact">
-                    <span class="wm-chapter-number">04</span>
+                    <span class="wm-chapter-number">05</span>
                     <div>
                         <p class="wm-kicker">BATCH WORKFLOW</p>
                         <h2>一次导入，成批完成</h2>
