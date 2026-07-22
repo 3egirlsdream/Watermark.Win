@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 @inject WMDesignFunc design
+@implements IAsyncDisposable
 <style>
     .container {
         display: flex;
@@ -79,12 +80,14 @@
         Fonts = await Task.Run(()=> Global.ReadFont());
     }
 
-    async void ImportLocalFont()
+    async Task ImportLocalFont()
     {
         if (design == null) return;
         await design.ImportFontEvt2.Invoke(ID);
         Fonts = await Task.Run(() => Global.ReadFont());
         StateHasChanged();
     }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 }

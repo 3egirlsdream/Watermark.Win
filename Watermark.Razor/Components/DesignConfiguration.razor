@@ -7,6 +7,7 @@
 @using Watermark.Shared.Models
 @inject IJSRuntime JSRuntime
 @inject IPopupService PopupService
+@implements IAsyncDisposable
 
 <div class="inspector-shell" style="@Style">
     <div class="inspector-sticky">
@@ -321,7 +322,8 @@
             });
             foreach (var e in dic)
             {
-                ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>("byteToUrl", e.Value);
+                ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>(
+                    "byteToUrl", e.Value, LegacyImageOwner(e.Key));
             }
         }
         catch (Exception err)
@@ -425,7 +427,9 @@
         </div>
     </div>;
 
-    async void SelectDefaultImage()
+    private string LegacyImageOwner(string imageKey) => $"design-images:{canvas.ID}:{imageKey}";
+
+    async Task SelectDefaultImage()
     {
         if (SelectDefaultImageEvt is null) return;
         var p = await SelectDefaultImageEvt.Invoke();
@@ -438,11 +442,12 @@
         using var bitmap2 = WatermarkHelper.AutoOrient(codec, bitmap);
         Global.WriteThumbnailImage(bitmap2, destFile);
         Global.ImageFile2Base64(dic, destFile, "default");
-        ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>(
+            "byteToUrl", dic.First().Value, LegacyImageOwner("default"));
         StateHasChanged();
     }
 
-    void RemoveImage(WMContainer container)
+    async Task RemoveImage(WMContainer container)
     {
         var filename = Global.AppPath.TemplatesFolder + canvas.ID + Path.DirectorySeparatorChar + container.Path;
         if (File.Exists(filename))
@@ -450,10 +455,12 @@
             File.Delete(filename);
             container.Path = string.Empty;
             ImagesBase64.Remove(container.ID, out string v);
+            await JSRuntime.InvokeVoidAsync(
+                "watermarkLegacyObjectUrls.release", LegacyImageOwner(container.ID));
         }
     }
 
-    async void SelectImage(IWMControl ctrl)
+    async Task SelectImage(IWMControl ctrl)
     {
         if (ctrl is WMLogo mLogo)
         {
@@ -474,19 +481,32 @@
             ConcurrentDictionary<string, byte[]> dic = [];
             Global.ImageFile2Base64(dic, destFile, mContainer.ID);
             mContainer.Path = Path.GetFileName(mContainer.Path);
-            ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+            ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>(
+                "byteToUrl", dic.First().Value, LegacyImageOwner(mContainer.ID));
         }
     }
 
-    async void SelectLogoCallback(KeyValuePair<string, string> pair)
+    async Task SelectLogoCallback(KeyValuePair<string, string> pair)
     {
         Logo.Path = pair.Key;
         var destFile = Global.AppPath.LogoesFolder + Path.DirectorySeparatorChar + Logo.Path;
         ConcurrentDictionary<string, byte[]> dic = [];
         Global.ImageFile2Base64(dic, destFile, Logo.ID);
-        ImagesBase64[Logo.ID] = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        ImagesBase64[Logo.ID] = await JSRuntime.InvokeAsync<string>(
+            "byteToUrl", dic.First().Value, LegacyImageOwner(Logo.ID));
         showLogoStore = false;
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "watermarkLegacyObjectUrls.releasePrefix", $"design-images:{canvas.ID}:");
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
     }
 
     void ValueChanged2(string v)

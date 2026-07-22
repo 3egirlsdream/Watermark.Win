@@ -4,6 +4,7 @@
 @using Watermark.Razor.Parts
 @using Watermark.Shared.Models
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <MCard Flat Class="new-template-dialog">
     <div class="template-dialog-header">
@@ -76,6 +77,7 @@
     bool _processing = false;
     string TemplateName;
     string Base64Src;
+    private readonly string legacyImageOwnerKey = $"new-template:{Guid.NewGuid():N}";
 
     async Task Cancel()
     {
@@ -102,7 +104,7 @@
         }
     }
 
-    async void SelectExampleImage()
+    async Task SelectExampleImage()
     {
         if (SelectDefaultImageAction is null) return;
         var p = await SelectDefaultImageAction!.Invoke();
@@ -125,8 +127,19 @@
             Global.WriteThumbnailImage(bitmap, destFile);
         });
 
-        Base64Src = await JSRuntime.InvokeAsync<string>("byteToUrl", dic.First().Value);
+        Base64Src = await JSRuntime.InvokeAsync<string>(
+            "byteToUrl", dic.First().Value, legacyImageOwnerKey);
         _processing = false;
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("watermarkLegacyObjectUrls.release", legacyImageOwnerKey);
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
     }
 }

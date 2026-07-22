@@ -32,6 +32,7 @@
 
     private IJSObjectReference? module;
     private IJSObjectReference? dropInstance;
+    private readonly string legacyImageOwnerPrefix = $"upload:{Guid.NewGuid():N}:";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -105,7 +106,8 @@
             Images.Add(new WMTemplateList
                 {
                     Canvas = canvas,
-                    Src = await JS.InvokeAsync<string>("byteToUrl", b64),
+                    Src = await JS.InvokeAsync<string>(
+                        "byteToUrl", b64, legacyImageOwnerPrefix + canvas.ID),
                     ID = canvas.ID,
                     Path = file
                 });
@@ -148,6 +150,14 @@
         {
             await module.DisposeAsync();
         }
+
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "watermarkLegacyObjectUrls.releasePrefix", legacyImageOwnerPrefix);
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
     }
 
     void ClickImage(WMTemplateList tp)

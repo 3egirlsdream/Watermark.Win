@@ -313,19 +313,19 @@
         }
     </div>;
 
-    void SelectImage(IWMControl mLogo)
+    async Task SelectImage(IWMControl mLogo)
     {
         if (SelectImageEvt.HasDelegate)
         {
-            SelectImageEvt.InvokeAsync(mLogo);
+            await SelectImageEvt.InvokeAsync(mLogo);
         }
     }
 
-    void RemoveImage(WMContainer container)
+    async Task RemoveImage(WMContainer container)
     {
         if (RemoveImageEvt.HasDelegate)
         {
-            RemoveImageEvt.InvokeAsync(container);
+            await RemoveImageEvt.InvokeAsync(container);
         }
     }
 

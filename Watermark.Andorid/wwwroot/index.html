@@ -32,8 +32,8 @@
     </div>
 
     <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
+        <span class="message">页面运行异常，当前页面需要恢复。</span>
+        <a href="" class="reload">重新加载</a>
         <a class="dismiss">🗙</a>
     </div>
 
@@ -188,14 +188,41 @@
         return { observe, disconnect };
     })();
 
-    function byteToUrl(blob) {
-        // 适配webview和web
-        var myBlob = new Blob([blob], { type: "image/jpeg" });
-        return (window.URL || window.webkitURL || window || {}).createObjectURL(myBlob);
+    window.watermarkLegacyObjectUrls = (() => {
+        const owners = new Map();
+        const urlApi = () => window.URL || window.webkitURL;
+
+        function release(ownerKey) {
+            if (!ownerKey) return;
+            const url = owners.get(ownerKey);
+            if (!url) return;
+            urlApi()?.revokeObjectURL(url);
+            owners.delete(ownerKey);
+        }
+
+        function releasePrefix(prefix) {
+            if (!prefix) return;
+            for (const ownerKey of Array.from(owners.keys())) {
+                if (ownerKey.startsWith(prefix)) release(ownerKey);
+            }
+        }
+
+        function create(blob, ownerKey) {
+            const api = urlApi();
+            if (!api?.createObjectURL) throw new Error("当前 WebView 不支持 Blob URL");
+            release(ownerKey);
+            const url = api.createObjectURL(new Blob([blob], { type: "image/jpeg" }));
+            if (ownerKey) owners.set(ownerKey, url);
+            return url;
+        }
+
+        return { create, release, releasePrefix };
+    })();
+
+    function byteToUrl(blob, ownerKey) {
+        return window.watermarkLegacyObjectUrls.create(blob, ownerKey);
     }
-    /**
-    * 释放url对象，因为createObjectURL创建的对象一直会存在可能会占用过多的内存，请注意释放
-    */
+
     function revokeUrl(url) {
         (window.URL || window.webkitURL || window || {}).revokeObjectURL(url);
     }
