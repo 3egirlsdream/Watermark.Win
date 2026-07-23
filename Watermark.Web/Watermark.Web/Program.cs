@@ -38,6 +38,15 @@ namespace Watermark.Web
             app.UseStaticFiles();
             app.UseAntiforgery();
 
+            app.MapGet("/private", (IWebHostEnvironment environment) =>
+            {
+                var policyFile = environment.WebRootFileProvider.GetFileInfo(
+                    "_content/Watermark.Razor/legal/privacy-policy.html");
+                return policyFile.Exists
+                    ? Results.Stream(policyFile.CreateReadStream(), "text/html; charset=utf-8")
+                    : Results.NotFound();
+            });
+
             app.MapRazorComponents<App>()
                 .AddInteractiveWebAssemblyRenderMode()
                 .AddInteractiveServerRenderMode()
