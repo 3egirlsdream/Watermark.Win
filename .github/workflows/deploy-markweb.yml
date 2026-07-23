@@ -139,6 +139,11 @@ jobs:
 
           rsync --archive --compress \
             --rsh="$SSH_COMMAND" \
+            "Watermark.Web/deploy/Caddyfile" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/Caddyfile.next"
+
+          rsync --archive --compress \
+            --rsh="$SSH_COMMAND" \
             "Watermark.Web/deploy/.dockerignore" \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.dockerignore"
 
@@ -160,6 +165,10 @@ jobs:
           cd "$DEPLOY_PATH"
           IMAGE="markweb:$DEPLOY_SHA"
           KEYS_PATH="$DEPLOY_PATH/data-protection-keys"
+          CADDY_DATA_PATH="$DEPLOY_PATH/caddy-data"
+          CADDY_CONFIG_PATH="$DEPLOY_PATH/caddy-config"
+          NETWORK="markweb-network"
+          proxy_ready=false
 
           restore_deploy_files() {
             rm -rf published
@@ -170,23 +179,60 @@ jobs:
             if [[ -f Dockerfile.backup ]]; then
               mv -f Dockerfile.backup Dockerfile
             fi
+
+            if [[ -f Caddyfile.backup ]]; then
+              mv -f Caddyfile.backup Caddyfile
+            fi
+          }
+
+          start_app() {
+            local image="$1"
+            local publish_port="$2"
+            docker run \
+              --name markweb \
+              --detach \
+              --restart unless-stopped \
+              --network "$NETWORK" \
+              --publish "$publish_port" \
+              --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
+              "$image"
+          }
+
+          start_proxy() {
+            docker rm -f markweb-proxy >/dev/null 2>&1 || true
+            docker run \
+              --name markweb-proxy \
+              --detach \
+              --restart unless-stopped \
+              --network "$NETWORK" \
+              --publish 80:80 \
+              --publish 443:443 \
+              --volume "$DEPLOY_PATH/Caddyfile:/etc/caddy/Caddyfile:ro" \
+              --volume "$CADDY_DATA_PATH:/data" \
+              --volume "$CADDY_CONFIG_PATH:/config" \
+              caddy:2.8-alpine
           }
 
           rollback_container() {
             docker rm -f markweb >/dev/null 2>&1 || true
             if docker image inspect markweb:previous >/dev/null 2>&1; then
-              docker run \
-                --name markweb \
-                --detach \
-                --restart unless-stopped \
-                --publish 80:8080 \
-                --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
-                markweb:previous
+              if [[ "$proxy_ready" == "true" ]]; then
+                start_app markweb:previous 127.0.0.1:8080:8080
+              else
+                docker run \
+                  --name markweb \
+                  --detach \
+                  --restart unless-stopped \
+                  --publish 80:8080 \
+                  --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
+                  markweb:previous
+              fi
             fi
           }
 
           rm -rf published.backup
           rm -f Dockerfile.backup
+          rm -f Caddyfile.backup
 
           if [[ -d published ]]; then
             mv published published.backup
@@ -197,6 +243,11 @@ jobs:
             cp Dockerfile Dockerfile.backup
           fi
           mv -f Dockerfile.next Dockerfile
+
+          if [[ -f Caddyfile ]]; then
+            cp Caddyfile Caddyfile.backup
+          fi
+          mv -f Caddyfile.next Caddyfile
 
           if docker container inspect markweb >/dev/null 2>&1; then
             docker tag "$(docker inspect --format '{{.Image}}' markweb)" markweb:previous
@@ -222,15 +273,19 @@ jobs:
           chown -R "$APP_UID:$APP_GID" "$KEYS_PATH"
           chmod 700 "$KEYS_PATH"
 
+          install -d -m 700 "$CADDY_DATA_PATH" "$CADDY_CONFIG_PATH"
+          docker network create "$NETWORK" >/dev/null 2>&1 || true
+
           docker rm -f markweb >/dev/null 2>&1 || true
 
-          if ! docker run \
-            --name markweb \
-            --detach \
-            --restart unless-stopped \
-            --publish 80:8080 \
-            --volume "$KEYS_PATH:/home/app/.aspnet/DataProtection-Keys" \
-            "$IMAGE"; then
+          if ! start_proxy; then
+            rollback_container
+            restore_deploy_files
+            exit 1
+          fi
+          proxy_ready=true
+
+          if ! start_app "$IMAGE" 127.0.0.1:8080:8080; then
             rollback_container
             restore_deploy_files
             exit 1
@@ -238,7 +293,7 @@ jobs:
 
           healthy=false
           for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1/ >/dev/null; then
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8080/private >/dev/null; then
               healthy=true
               break
             fi
@@ -263,6 +318,7 @@ jobs:
           docker image prune --force >/dev/null
           rm -rf published.backup
           rm -f Dockerfile.backup
+          rm -f Caddyfile.backup
 
           echo "Watermark.Web deployed successfully: $DEPLOY_SHA"
           REMOTE_SCRIPT

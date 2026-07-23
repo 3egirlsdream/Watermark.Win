@@ -1,0 +1,23 @@
+@page "/privacy-policy"
+@using Watermark.Razor.Components.Layout
+@using Watermark.Razor.Workspace
+@layout WMAppShellLayout
+@inject NavigationManager Navigation
+@inject IWMNavigationHistory NavigationHistory
+
+<section class="privacy-policy-page" aria-labelledby="privacy-policy-title">
+    <header>
+        <button type="button" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <div><span>PRIVACY POLICY</span><h1 id="privacy-policy-title">隐私政策</h1></div>
+    </header>
+    <iframe class="privacy-policy-document"
+            title="水印相框软件隐私政策"
+            src="/_content/Watermark.Razor/legal/privacy-policy.html"></iframe>
+</section>
+
+@code {
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
+    private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
+    private void GoBack() => NavigationHistory.GoBack(ReturnTarget);
+}

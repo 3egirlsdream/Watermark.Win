@@ -68,7 +68,7 @@
             <section class="settings-card" id="privacy">
                 <h2><MIcon>mdi-shield-lock-outline</MIcon><span>隐私与帮助</span></h2>
                 <button type="button" @onclick="OpenProtocolAsync"><span>用户协议</span><MIcon>mdi-open-in-new</MIcon></button>
-                <button type="button" @onclick="OpenPrivacyAsync"><span>隐私协议</span><MIcon>mdi-open-in-new</MIcon></button>
+                <button type="button" @onclick="OpenPrivacyPolicy"><span>隐私协议</span><MIcon>mdi-chevron-right</MIcon></button>
                 <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><MIcon>mdi-content-copy</MIcon></button>
                 <button type="button" @onclick="OpenWebsiteAsync"><span>官网与帮助</span><MIcon>mdi-open-in-new</MIcon></button>
                 <button type="button" class="is-danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><MIcon>mdi-shield-off-outline</MIcon></button>
@@ -164,7 +164,7 @@
     private void OpenDiagnostics() => NavigationHistory.NavigateTo($"/settings/imaging?returnUrl={Uri.EscapeDataString(CurrentPage)}");
     private void GoBack() => NavigationHistory.GoBack(ReturnTarget);
     private Task OpenProtocolAsync() => External.OpenUrlAsync("http://thankful.top/protocol");
-    private Task OpenPrivacyAsync() => External.OpenUrlAsync("http://thankful.top/private");
+    private void OpenPrivacyPolicy() => NavigationHistory.NavigateTo($"/privacy-policy?returnUrl={Uri.EscapeDataString(CurrentPage)}");
     private Task OpenWebsiteAsync() => External.OpenUrlAsync("http://thankful.top/");
     private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowToast("群号已复制。"); }
     private void ShowToast(string? value, bool error = false) => Common.ShowToast(Popup, value, error);

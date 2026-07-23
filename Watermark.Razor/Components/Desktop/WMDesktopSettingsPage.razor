@@ -57,7 +57,7 @@
                         <button type="button" class="primary-row" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><MIcon Small>mdi-open-in-new</MIcon></button>
                     }
                     <button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'><span>用户协议</span><MIcon Small>mdi-open-in-new</MIcon></button>
-                    <button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/private")'><span>隐私协议</span><MIcon Small>mdi-open-in-new</MIcon></button>
+                    <button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/private")'><span>隐私协议</span><MIcon Small>mdi-open-in-new</MIcon></button>
                     <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><MIcon Small>mdi-content-copy</MIcon></button>
                     <button type="button" class="danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><MIcon Small>mdi-shield-off-outline</MIcon></button>
                 </section>

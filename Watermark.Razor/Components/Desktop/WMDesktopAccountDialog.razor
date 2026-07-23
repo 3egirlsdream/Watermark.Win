@@ -33,7 +33,7 @@
         }
         @if (CurrentMode == AccountMode.Register)
         {
-            <label class="agreement"><input type="checkbox" @bind="agreementAccepted" /><span>我已阅读并同意<button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'>用户协议</button>和<button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/private")'>隐私协议</button></span></label>
+            <label class="agreement"><input type="checkbox" @bind="agreementAccepted" /><span>我已阅读并同意<button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'>用户协议</button>和<button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/private")'>隐私协议</button></span></label>
         }
         @if (CurrentMode == AccountMode.Delete)
         {

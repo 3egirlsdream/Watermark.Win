@@ -48,7 +48,14 @@ docker ps
 curl --version
 ```
 
-服务器端不需要安装 .NET SDK，只需要 Docker、SSH、`bash` 和 `curl`。端口 `80` 仍映射到容器的 `8080`，容器名和镜像名保持为 `markweb`。
+服务器端不需要安装 .NET SDK，只需要 Docker、SSH、`bash` 和 `curl`。工作流会启动 `markweb` 应用容器和 `markweb-proxy` Caddy 反向代理：应用仅绑定本机 `127.0.0.1:8080`，Caddy 对外监听 `80/443`，自动申请并续期 `thankful.top` 的 HTTPS 证书，并将 HTTP 请求重定向到 HTTPS。
+
+部署前请确认：
+
+- `thankful.top` 的 A/AAAA 记录指向该服务器；
+- 防火墙和云安全组同时放行 TCP 80、443；
+- 80、443 未被其他 Web 服务占用；
+- 首次部署后通过 `https://thankful.top/private` 检查证书、状态码和隐私政策正文。
 
 ## 创建部署专用密钥
 
