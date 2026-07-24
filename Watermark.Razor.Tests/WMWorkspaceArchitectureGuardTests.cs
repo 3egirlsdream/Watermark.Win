@@ -160,9 +160,10 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.DoesNotContain("appliedEditorRevision", canvas, StringComparison.Ordinal);
         Assert.Contains("clearPendingInteractionVisual(false)", canvasJs, StringComparison.Ordinal);
         Assert.Contains("coarseResizeDirections", canvasJs, StringComparison.Ordinal);
-        Assert.Contains("scalable: true", canvasJs, StringComparison.Ordinal);
-        Assert.Contains(".on(\"scale\"", canvasJs, StringComparison.Ordinal);
-        Assert.DoesNotContain("resizable: true", canvasJs, StringComparison.Ordinal);
+        Assert.Contains("resizable: true", canvasJs, StringComparison.Ordinal);
+        Assert.Contains(".on(\"resize\"", canvasJs, StringComparison.Ordinal);
+        Assert.Contains("scalable: false", canvasJs, StringComparison.Ordinal);
+        Assert.DoesNotContain(".on(\"scale\"", canvasJs, StringComparison.Ordinal);
         Assert.DoesNotContain("resolveResizeGeometry", canvasJs, StringComparison.Ordinal);
     }
 

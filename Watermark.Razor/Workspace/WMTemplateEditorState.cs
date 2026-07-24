@@ -33,7 +33,9 @@ public sealed class WMTemplateEditorState
     private string transactionLabel = string.Empty;
     private WMTemplateChangeKind transactionKind;
     private readonly HashSet<string> transactionNodeIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> unlockedLogoAspectRatioIds = new(StringComparer.Ordinal);
     private long revision;
+    private long interactionPreferenceVersion;
 
     private WMTemplateEditorState(WMCanvas draft)
     {
@@ -52,8 +54,24 @@ public sealed class WMTemplateEditorState
     public int HistoryCursor => historyIndex;
     public bool IsTransactionActive => transactionStart is not null;
     public long CurrentRevision => revision;
+    public long InteractionPreferenceVersion => interactionPreferenceVersion;
     public event Action? Changed;
     public event Action<WMTemplateChangeSet>? DetailedChanged;
+    public event Action? InteractionPreferencesChanged;
+
+    public bool IsLogoAspectRatioLocked(string controlId) =>
+        !unlockedLogoAspectRatioIds.Contains(controlId);
+
+    public void SetLogoAspectRatioLocked(string controlId, bool locked)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(controlId);
+        var changed = locked
+            ? unlockedLogoAspectRatioIds.Remove(controlId)
+            : unlockedLogoAspectRatioIds.Add(controlId);
+        if (!changed) return;
+        interactionPreferenceVersion++;
+        InteractionPreferencesChanged?.Invoke();
+    }
 
     public static WMTemplateEditorState Create(WMCanvas original)
     {

@@ -7,15 +7,18 @@
     <section class="inspector-group node-style-inspector">
         <div class="inspector-group-heading"><h3>布局样式</h3></div>
         <MacInspectorOptionGroup TValue="WMPosition" Label="定位方式" Value="@Style.Position" Options="@PositionOptions" Disabled="@ReadOnly" ValueChanged="SetPosition" />
-        <MacInspectorOptionGroup TValue="WMStyleUnit" Label="宽度类型" Value="@Style.Width.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(true, value)" />
-        @if (!Style.Width.IsAuto)
+        @if (Control is not WMLine)
         {
-            <MacInspectorSlider Label="宽度" Value="@Style.Width.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(true, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        }
-        <MacInspectorOptionGroup TValue="WMStyleUnit" Label="高度类型" Value="@Style.Height.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(false, value)" />
-        @if (!Style.Height.IsAuto)
-        {
-            <MacInspectorSlider Label="高度" Value="@Style.Height.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(false, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            <MacInspectorOptionGroup TValue="WMStyleUnit" Label="宽度类型" Value="@Style.Width.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(true, value)" />
+            @if (!Style.Width.IsAuto)
+            {
+                <MacInspectorSlider Label="宽度" Value="@Style.Width.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(true, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+            <MacInspectorOptionGroup TValue="WMStyleUnit" Label="高度类型" Value="@Style.Height.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(false, value)" />
+            @if (!Style.Height.IsAuto)
+            {
+                <MacInspectorSlider Label="高度" Value="@Style.Height.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(false, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
         }
 
         @if (Style.Position == WMPosition.Absolute)
@@ -122,7 +125,7 @@
     {
         // Roots are always the canvas's absolute children; only nested nodes
         // may switch between Flex flow and Absolute positioning.
-        var isRoot = Control is WMContainer && WMControlTree.FindParent(Editor.Draft, Control.ID) is null;
+        var isRoot = Editor.Draft.Children.Any(root => ReferenceEquals(root, Control));
         Mutate("修改定位方式", () => Style.Position = isRoot ? WMPosition.Absolute : value);
         return Task.CompletedTask;
     }

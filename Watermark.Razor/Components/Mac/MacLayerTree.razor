@@ -65,6 +65,7 @@
 
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
 
     private readonly HashSet<string> collapsedIds = new(StringComparer.Ordinal);
     private string editingId;
@@ -172,6 +173,17 @@
                 <div class="layer-context-menu" role="menu" @onclick:stopPropagation>
                     <button type="button" role="menuitem" @onclick="() => BeginRename(control)">重命名</button>
                     <button type="button" role="menuitem" @onclick="() => Duplicate(control)">复制</button>
+                    @if (control is WMContainer targetContainer)
+                    {
+                        <button type="button" role="menuitem" @onclick="() => AddToContainer(typeof(WMText), targetContainer)">添加文字到此容器</button>
+                        <button type="button" role="menuitem" @onclick="() => AddToContainer(typeof(WMLogo), targetContainer)">添加图片到此容器</button>
+                        <button type="button" role="menuitem" @onclick="() => AddToContainer(typeof(WMLine), targetContainer)">添加线条到此容器</button>
+                    }
+                    @if (WMControlTree.FindParent(Editor.Draft, control.ID) is not null
+                        && control.Style.Position == WMPosition.Absolute)
+                    {
+                        <button type="button" role="menuitem" @onclick="() => JoinAutomaticLayout(control)">加入自动布局</button>
+                    }
                     <button type="button" role="menuitem" class="danger-text" @onclick="() => RequestDelete(control)">删除</button>
                 </div>
             }
@@ -209,7 +221,7 @@
         IWMControl added = null;
         Editor.Mutate("添加图层", () =>
         {
-            added = WMControlTree.Add(Editor.Draft, type, PreferredParentId());
+            added = WMControlTree.Add(Editor.Draft, type, null);
             added.Name = type == typeof(WMContainer) ? "新容器"
                 : type == typeof(WMText) ? "新文字"
                 : type == typeof(WMLogo) ? "新图标"
@@ -218,12 +230,32 @@
         if (added is not null) Editor.Select(added.ID);
     }
 
-    private string PreferredParentId()
+    private void AddToContainer(Type type, WMContainer container)
     {
-        if (string.IsNullOrWhiteSpace(Editor.SelectedControlId)) return null;
-        var selected = WMControlTree.Find(Editor.Draft, Editor.SelectedControlId);
-        if (selected is WMContainer container) return container.ID;
-        return WMControlTree.FindParent(Editor.Draft, Editor.SelectedControlId)?.ID;
+        IWMControl added = null;
+        Editor.Mutate($"添加到{DisplayName(container)}", () =>
+        {
+            added = WMControlTree.Add(Editor.Draft, type, container.ID);
+            added.Name = type == typeof(WMText) ? "新文字"
+                : type == typeof(WMLogo) ? "新图标"
+                : "新分割线";
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [container.ID]);
+        contextId = null;
+        if (added is not null) Editor.Select(added.ID);
+    }
+
+    private void JoinAutomaticLayout(IWMControl control)
+    {
+        Editor.Mutate("加入自动布局", () =>
+        {
+            control.Style.Position = WMPosition.Static;
+            control.Style.Top = null;
+            control.Style.Right = null;
+            control.Style.Bottom = null;
+            control.Style.Left = null;
+            control.Style.Transform = new WMTransform();
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint, [control.ID]);
+        contextId = null;
     }
 
     private void BeginRename(IWMControl control)
@@ -412,7 +444,7 @@
         var target = parentId is null ? null : WMControlTree.Find(Editor.Draft, parentId) as WMContainer;
         var targetCount = target?.Controls.Count ?? Editor.Draft.Children.Count;
         var alreadyInTarget = target is null
-            ? control is WMContainer root && Editor.Draft.Children.Contains(root)
+            ? Editor.Draft.Children.Contains(control)
             : target.Controls.Contains(control);
         var maximum = alreadyInTarget ? targetCount - 1 : targetCount;
         var index = NormalizeDropIndex(parentId, rawIndex);
@@ -431,7 +463,14 @@
         var index = NormalizeDropIndex(parentId, rawIndex);
         Editor.Mutate("移动图层", () =>
         {
-            if (!WMControlTree.Move(Editor.Draft, movingId, parentId, index))
+            if (!WMControlTree.MovePreservingVisualBounds(
+                    Editor.Draft,
+                    movingId,
+                    parentId,
+                    index,
+                    RenderResult?.Bounds ?? [],
+                    RenderResult?.CanvasWidth ?? 0,
+                    RenderResult?.CanvasHeight ?? 0))
                 throw new InvalidOperationException("无法移动到目标位置。");
         }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order, [movingId]);
         Editor.Select(movingId);
@@ -445,9 +484,9 @@
         var moving = WMControlTree.Find(Editor.Draft, draggedId);
         if (moving is null) return rawIndex;
 
-        if (parentId is null && moving is WMContainer root)
+        if (parentId is null)
         {
-            var sourceIndex = Editor.Draft.Children.IndexOf(root);
+            var sourceIndex = Editor.Draft.Children.IndexOf(moving);
             return sourceIndex >= 0 && sourceIndex < rawIndex ? rawIndex - 1 : rawIndex;
         }
 

@@ -16,7 +16,7 @@
                 <div>
                     <div class="inspector-kicker">Inspector</div>
                     <div class="inspector-title">@(string.IsNullOrWhiteSpace(canvas.Name) ? "未命名模板" : canvas.Name)</div>
-                    <div class="inspector-subtitle">@CanvasTypeText · @canvas.Children.Count 个容器 · @ControlCount 个组件</div>
+                    <div class="inspector-subtitle">@CanvasTypeText · @canvas.Children.Count 个根节点 · @ControlCount 个组件</div>
                 </div>
                 <div class="inspector-status-pill">@CanvasTypeText</div>
             </div>
@@ -24,7 +24,7 @@
             <div class="inspector-metrics">
                 <div class="inspector-metric">
                     <span>@canvas.Children.Count</span>
-                    <small>容器</small>
+                    <small>根节点</small>
                 </div>
                 <div class="inspector-metric">
                     <span>@ControlCount</span>
@@ -305,21 +305,15 @@
             var p = Path.Combine(Global.AppPath.TemplatesFolder, canvas.ID, "default.jpg");
             Global.ImageFile2Base64(dic, p, "default");
             var folder = Global.AppPath.TemplatesFolder + canvas.ID + System.IO.Path.DirectorySeparatorChar;
-            canvas.Children.ForEach(c =>
+            foreach (var control in Global.EnumerateControls(canvas))
             {
-                if (!string.IsNullOrEmpty(c.Path)) Global.ImageFile2Base64(dic, folder + c.Path, c.ID);
-                c.Controls.ForEach(x =>
+                if (control is WMContainer container && !string.IsNullOrEmpty(container.Path))
+                    Global.ImageFile2Base64(dic, folder + container.Path, container.ID);
+                else if (control is WMLogo logo && !string.IsNullOrEmpty(logo.Path))
                 {
-                    if (x is WMLogo mLogo) Global.ImageFile2Base64(dic, folder + mLogo.Path, mLogo.ID);
-                    else if (x is WMContainer mContainer)
-                    {
-                        mContainer.Controls.ForEach(z =>
-                        {
-                            if (z is WMLogo logo1) Global.ImageFile2Base64(dic, folder + logo1.Path, logo1.ID);
-                        });
-                    };
-                });
-            });
+                    Global.ImageFile2Base64(dic, folder + logo.Path, logo.ID);
+                }
+            }
             foreach (var e in dic)
             {
                 ImagesBase64[e.Key] = await JSRuntime.InvokeAsync<string>(
@@ -521,9 +515,10 @@
         canvas.CustomHeight = (int)(xs * h);
     }
 
-    int CountControls(WMContainer container)
+    int CountControls(IWMControl control)
     {
-        if (container?.Controls is null) return 0;
+        if (control is not WMContainer container) return 1;
+        if (container.Controls is null) return 0;
         var count = container.Controls.Count;
         foreach (var child in container.Controls.OfType<WMContainer>())
         {
@@ -546,7 +541,7 @@
 
         foreach (var child in target.Children)
         {
-            EnsureContainerDefaults(child);
+            EnsureControlDefaults(child);
         }
     }
 

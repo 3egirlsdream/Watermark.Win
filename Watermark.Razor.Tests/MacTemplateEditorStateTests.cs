@@ -34,8 +34,9 @@ public sealed class WMTemplateEditorStateTests
         Assert.Equal(WMLayoutMigration.CurrentSchemaVersion, state.Draft.LayoutSchemaVersion);
         Assert.Equal(28 * legacyShortEdge * 100 / (156 * 864), text.FontSize, 10);
         Assert.Equal(20 * legacyShortEdge / 864, logo.Percent, 10);
-        Assert.Equal(28, Assert.IsType<WMText>(original.Children[0].Controls[0]).FontSize);
-        Assert.Equal(20, Assert.IsType<WMLogo>(original.Children[0].Controls[1]).Percent);
+        var originalRoot = Assert.IsType<WMContainer>(original.Children[0]);
+        Assert.Equal(28, Assert.IsType<WMText>(originalRoot.Controls[0]).FontSize);
+        Assert.Equal(20, Assert.IsType<WMLogo>(originalRoot.Controls[1]).Percent);
     }
 
     [Fact]

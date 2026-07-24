@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel
 @using Watermark.Razor.Parts
+@using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
@@ -32,7 +33,7 @@
         新增组件或者图层
     </div>
     
-    @foreach (var container in mCanvas.Children)
+    @foreach (var container in mCanvas.RootContainers)
     {
         <ExpandVisiblePanel Desc="图层" Class="my-1 pa-1" @bind-Visible="container.Enabled">
             <div class="edit-subtitle-box">
@@ -40,7 +41,7 @@
                 <div style="justify-self: end;">
                     <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(container.ID)" />
                     <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(container.ID)" />
-                    <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>mCanvas.Children.Remove(container) " />
+                    <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>Delete(container.ID)" />
                 </div>
             </div>
             @foreach (var comp in container.Controls)
@@ -55,7 +56,7 @@
                                 <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="()=>Move(container.ID, wc, ContainerLv.Lv2)" />
                                 <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(wc.ID)" />
                                 <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(wc.ID)" />
-                                <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
+                                <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>Delete(comp.ID)" />
                             </div>
                         </div>
                         @foreach (var cld_c in wc.Controls)
@@ -66,7 +67,7 @@
                                     <IconButton Icon="@ICONS.Edit" OnClick="()=>Move(wc.ID, cld_c, ContainerLv.Lv1)" />
                                     <IconButton Icon="@ICONS.ArrowUpward" OnClick="()=>Upward(cld_c.ID)" />
                                     <IconButton Icon="@ICONS.ArrowDownward" OnClick="()=>Downward(cld_c.ID)" />
-                                    <IconButton Icon="@ICONS.DeleteOutline" OnClick="()=>wc.Controls.Remove(cld_c) " />
+                                    <IconButton Icon="@ICONS.DeleteOutline" OnClick="()=>Delete(cld_c.ID)" />
                                 </div>
                             </div>
                         }
@@ -80,13 +81,27 @@
                             <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="() => Move(container.ID, comp, ContainerLv.Lv1)" />
                             <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(comp.ID)" />
                             <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(comp.ID)" />
-                            <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>container.Controls.Remove(comp) " />
+                            <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>Delete(comp.ID)" />
                         </div>
                     </div>
                 }
 
             }
 
+        </ExpandVisiblePanel>
+    }
+    @foreach (var rootLeaf in mCanvas.Children.Where(control => control is not WMContainer))
+    {
+        <ExpandVisiblePanel Desc="画布直属组件" Class="my-1 pa-1" @bind-Visible="rootLeaf.Enabled">
+            <div class="edit-subtitle-box">
+                <MTextField @bind-Value="@rootLeaf.Name" Label="名称" Required="true" HideDetails="true"/>
+                <div style="justify-self: end;">
+                    <IconButton Icon="@ICONS.Edit" Color="Color.Inherit" OnClick="()=>MoveRoot(rootLeaf)" />
+                    <IconButton Icon="@ICONS.ArrowUpward" Color="Color.Inherit" OnClick="()=>Upward(rootLeaf.ID)" />
+                    <IconButton Icon="@ICONS.ArrowDownward" Color="Color.Inherit" OnClick="()=>Downward(rootLeaf.ID)" />
+                    <IconButton Icon="@ICONS.DeleteOutline" Color="Color.Error" OnClick="()=>Delete(rootLeaf.ID)" />
+                </div>
+            </div>
         </ExpandVisiblePanel>
     }
 
@@ -181,26 +196,20 @@
         
         control.Name = param.CtrlName;
         control.Margin = new WMThickness(0);
-        control.Percent = 70;
+        if (mCanvas.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion)
+            control.Percent = 70;
 
         if (PropertyChanged != null)
         {
             control.PropertyChanged += PropertyChanged;
             control.Margin.PropertyChanged += PropertyChanged;
         }
-        if (param.ParentContainerId == "0")
-        {
-            if (param.CtrlType == CtrlEnum.Container)
-                mCanvas.Children.Add((WMContainer)control);
-        }
-        else
-        {
-            var ct = mContainers.FirstOrDefault(c => c.ID == param.ParentContainerId);
-            if (ct != null)
-            {
-                ct.Controls.Add(control);
-            }
-        }
+        WMControlTree.Add(
+            mCanvas,
+            control,
+            string.Equals(param.ParentContainerId, "0", StringComparison.Ordinal)
+                ? null
+                : param.ParentContainerId);
 
         InitAllContainer();
     }
@@ -213,8 +222,8 @@
         param = new AddParam();
         mContainers = new List<WMContainer>();
         mContainers.Add(new WMContainer() { Name = "根节点", ID = "0" });
-        mContainers.AddRange(mCanvas.Children);
-        mCanvas.Children.Select(c => c.Controls.Where(x => x is WMContainer)).ToList().ForEach(z =>
+        mContainers.AddRange(mCanvas.RootContainers);
+        mCanvas.RootContainers.Select(c => c.Controls.Where(x => x is WMContainer)).ToList().ForEach(z =>
         {
             if (z != null)
                 z.ToList().ForEach(v => mContainers.Add((WMContainer)v));
@@ -228,7 +237,7 @@
         InitAllContainer();
 
         controls = new List<IWMControl>();
-        mCanvas.Children.Select(c => c.Controls.Where(x => !(x is WMContainer))).ToList().ForEach(x =>
+        mCanvas.RootContainers.Select(c => c.Controls.Where(x => !(x is WMContainer))).ToList().ForEach(x =>
         {
             if (x != null)
             {
@@ -240,88 +249,30 @@
 
     void Upward(string id)
     {
-        foreach (var container in mCanvas.Children)
-        {
-            if (container.ID == id)
-            {
-                var idx = mCanvas.Children.IndexOf(container);
-                if (idx > 0)
-                {
-                    Swap(mCanvas.Children, idx - 1, idx);
-                }
-                break;
-            }
-            foreach (var child in container.Controls)
-            {
-                if (child.ID == id)
-                {
-                    var wcIdx = container.Controls.IndexOf(child);
-                    if (wcIdx > 0)
-                    {
-                        Swap(container.Controls, wcIdx - 1, wcIdx);
-                    }
-                    break;
-                }
-                if (child is WMContainer wc)
-                {
-                    foreach (var cc in wc.Controls)
-                    {
-                        if (cc.ID == id)
-                        {
-                            var ccIdx = wc.Controls.IndexOf(cc);
-                            if (ccIdx > 0)
-                            {
-                                Swap(wc.Controls, ccIdx - 1, ccIdx);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        MoveBy(id, -1);
     }
 
     void Downward(string id)
     {
-        foreach (var container in mCanvas.Children)
-        {
-            if (container.ID == id)
-            {
-                var idx = mCanvas.Children.IndexOf(container);
-                if (idx < mCanvas.Children.Count - 1)
-                {
-                    Swap(mCanvas.Children, idx, idx + 1);
-                }
-                break;
-            }
-            foreach (var child in container.Controls)
-            {
-                if (child.ID == id)
-                {
-                    var wcIdx = container.Controls.IndexOf(child);
-                    if (wcIdx < container.Controls.Count - 1)
-                    {
-                        Swap(container.Controls, wcIdx, wcIdx + 1);
-                    }
-                    break;
-                }
-                if (child is WMContainer wc)
-                {
-                    foreach (var cc in wc.Controls)
-                    {
-                        if (cc.ID == id)
-                        {
-                            var ccIdx = wc.Controls.IndexOf(cc);
-                            if (ccIdx < wc.Controls.Count - 1)
-                            {
-                                Swap(wc.Controls, ccIdx, ccIdx + 1);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        MoveBy(id, 1);
+    }
+
+    void Delete(string id)
+    {
+        if (WMControlTree.Remove(mCanvas, id))
+            InitAllContainer();
+    }
+
+    void MoveBy(string id, int delta)
+    {
+        var control = WMControlTree.Find(mCanvas, id);
+        if (control is null) return;
+        var parent = WMControlTree.FindParent(mCanvas, id);
+        var siblings = parent?.Controls ?? mCanvas.Children;
+        var current = siblings.IndexOf(control);
+        var next = Math.Clamp(current + delta, 0, siblings.Count - 1);
+        if (current >= 0 && current != next)
+            WMControlTree.Move(mCanvas, id, parent?.ID, next);
     }
     void Move(string parentId, IWMControl ctrl, ContainerLv lv)
     {
@@ -329,80 +280,20 @@
         MoveForwardConntainerId = parentId;
         MoveConntainerCtrl = ctrl;
         MoveLv = lv;
-        if (lv == ContainerLv.Lv2)
-        {
-            MoveContainers = mCanvas.Children;
-        }
-        else
-        {
-            MoveContainers = new List<WMContainer>(mContainers.Where(c => c.ID != "0"));
-        }
+        MoveContainers = new List<WMContainer>(mContainers);
         StateHasChanged();
     }
+    void MoveRoot(IWMControl control) => Move("0", control, ContainerLv.Lv1);
     void MoveOK()
     {
         MoveContainer = false;
-        if (MoveLv == ContainerLv.Lv2) // container
-        {
-            WMContainer mContainer = null;
-            foreach (var c in mCanvas.Children)
-            {
-                foreach (var child in c.Controls)
-                {
-                    if (child.ID == MoveConntainerCtrl.ID)
-                    {
-                        mContainer = child as WMContainer;
-                        c.Controls.Remove(child);
-                        break;
-                    }
-                }
-            }
-
-            if (mContainer != null)
-            {
-                var c = mCanvas.Children.Find(c => c.ID == MoveForwardConntainerId);
-                if (c!=null)
-                {
-                    c.Controls.Add(mContainer);
-                }
-            }
-        }
-        else
-        {
-            IWMControl mCtrl = null;
-            foreach (var c in mCanvas.Children)
-            {
-                foreach (var child in c.Controls)
-                {
-                    if (child.ID == MoveConntainerCtrl.ID)
-                    {
-                        mCtrl = child;
-                        c.Controls.Remove(child);
-                        break;
-                    }
-                    if (child is WMContainer wc)
-                    {
-                        foreach (var cc in wc.Controls)
-                        {
-                            if (cc.ID == MoveConntainerCtrl.ID)
-                            {
-                                mCtrl = cc;
-                                wc.Controls.Remove(cc);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            if (mCtrl != null)
-            {
-                var c = MoveContainers.FirstOrDefault(c => c.ID == MoveForwardConntainerId);
-                if (c!=null)
-                {
-                    c.Controls.Add(mCtrl);
-                }
-            }
-        }
+        var parentId = string.Equals(MoveForwardConntainerId, "0", StringComparison.Ordinal)
+            ? null
+            : MoveForwardConntainerId;
+        var target = parentId is null ? null : WMControlTree.Find(mCanvas, parentId) as WMContainer;
+        var index = target?.Controls.Count ?? mCanvas.Children.Count;
+        WMControlTree.Move(mCanvas, MoveConntainerCtrl.ID, parentId, index);
+        InitAllContainer();
     }
     bool MoveContainer = false;
     IWMControl MoveConntainerCtrl;
@@ -428,7 +319,7 @@
         public bool AddControl { get; set; } = false;
         public CtrlEnum CtrlType { get; set; }
         public string CtrlName { get; set; }
-        public string ParentContainerId { get; set; }
+        public string ParentContainerId { get; set; } = "0";
     }
     public static List<T> Swap<T>(List<T> list, int index1, int index2)
     {

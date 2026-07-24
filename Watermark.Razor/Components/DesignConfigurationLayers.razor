@@ -15,7 +15,7 @@
     }
     else
     {
-        @foreach (var container in canvas.Children)
+        @foreach (var container in canvas.RootContainers)
         {
             <article class="layer-card">
                 <header class="layer-header">
@@ -92,6 +92,10 @@
                 }
             </article>
         }
+        @foreach (var rootLeaf in canvas.Children.Where(control => control is not WMContainer))
+        {
+            @ControlCard(rootLeaf, 0)
+        }
     }
 </div>
 
@@ -129,7 +133,7 @@
     {
         get
         {
-            var dic = canvas.Children.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
+            var dic = canvas.RootContainers.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
             dic[canvas.ID] = canvas.Name;
             return dic.Reverse().ToDictionary();
         }
@@ -144,7 +148,7 @@
         canvas.Name ??= "未命名模板";
         canvas.Children ??= [];
 
-        foreach (var container in canvas.Children)
+        foreach (var container in canvas.RootContainers)
         {
             EnsureContainerDefaults(container);
         }
@@ -169,7 +173,10 @@
                 <SliderInput @bind-Value="@ctrl.Margin.Bottom" Name="下边距" Unit="%" />
                 <SliderInput @bind-Value="@ctrl.Margin.Left" Name="左边距" Unit="%" />
                 <SliderInput @bind-Value="@ctrl.Margin.Right" Name="右边距" Unit="%" />
-                <SliderInput @bind-Value="@ctrl.Percent" Name="占比" Unit="%" />
+                @if (ctrl is not WMLine)
+                {
+                    <SliderInput @bind-Value="@ctrl.Percent" Name="占比" Unit="%" />
+                }
             </div>
         </section>
 
@@ -222,9 +229,17 @@
         <ColorPicker Name="颜色" @bind-Color="mLine.Color" />
         <div class="control-row">
             <span>方向</span>
-            <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => mLine.Orientation = (Orientation)e" />
+            <ButtonGroup Type="ButtonGroup.GroupItemType.HorizonVertical" Value="(int)mLine.Orientation" ValueChanged="(e) => SetLineOrientation(mLine, (Orientation)e)" />
         </div>
-        <SliderInput Name="粗细" @bind-Value="@mLine.Thickness" Unit="px" />
+        <SliderInput TValue="int" Name="粗细" Value="@mLine.Thickness" ValueChanged="value => SetLineThickness(mLine, value)" Unit="px" />
+        @if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+        {
+            <SliderInput Name="长度" @bind-Value="@mLine.LengthPercent" Unit="%" />
+        }
+        else
+        {
+            <SliderInput Name="长度" @bind-Value="@mLine.Percent" Unit="%" />
+        }
     </section>;
 
     RenderFragment LogoSettings(WMLogo mLogo) => @<section class="object-section">
@@ -243,6 +258,22 @@
             <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="46" ObjectFit="contain" SelectDefaultImage="()=> SelectImage(mLogo)" Delete="()=>{mLogo.Path = string.Empty; ImagesBase64.Remove(mLogo.ID, out string v);}" />
         </div>
     </section>;
+
+    void SetLineOrientation(WMLine line, Orientation value)
+    {
+        if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+            line.SetOrientationPreservingLength(value);
+        else
+            line.Orientation = value;
+    }
+
+    void SetLineThickness(WMLine line, int value)
+    {
+        if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+            line.SetThicknessPreservingLength(value);
+        else
+            line.Thickness = value;
+    }
 
     RenderFragment TextSettings(WMText mText) => @<section class="object-section">
         <div class="section-label">文字内容</div>

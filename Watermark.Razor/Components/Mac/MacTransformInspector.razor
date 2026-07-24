@@ -13,6 +13,7 @@
     <MacInspectorSlider Label="垂直坐标" Value="@Transform.OffsetYPercent" Min="-100" Max="100" Step="0.1" Unit="%"
                         Disabled="@ReadOnly" ValueChanged="SetOffsetY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
 
+    <div class="inspector-group-heading compact"><h3>整体缩放（高级）</h3></div>
     <MacInspectorSwitch Label="保持宽高比例" Value="@keepRatio" Disabled="@ReadOnly" ValueChanged="ToggleKeepRatio" />
 
     <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.1" Max="4" Step="0.01" Unit="×"

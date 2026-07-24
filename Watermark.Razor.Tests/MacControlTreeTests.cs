@@ -24,6 +24,95 @@ public sealed class WMControlTreeTests
     }
 
     [Fact]
+    public void MovePreservingVisualBounds_ConvertsRootLeafIntoParentCoordinates()
+    {
+        var canvas = new WMCanvas { LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion };
+        var target = new WMContainer { ID = "TARGET" };
+        target.Style.Position = WMPosition.Absolute;
+        target.Style.Padding = new WMThickness { Left = 5, Top = 10, Right = 5 };
+        var text = new WMText { ID = "TEXT" };
+        text.Style.Position = WMPosition.Absolute;
+        text.Style.Transform.OffsetXPercent = 5;
+        canvas.Children.AddRange([target, text]);
+        var bounds = new[]
+        {
+            new WMDesignBounds(target.ID, null, nameof(WMContainer), 50, 20, 200, 100, 400, 200, new WMTransform(), false, true),
+            new WMDesignBounds(text.ID, null, nameof(WMText), 100, 50, 80, 20, 400, 200, text.Style.Transform, false, true)
+        };
+
+        var moved = WMControlTree.MovePreservingVisualBounds(
+            canvas,
+            text.ID,
+            target.ID,
+            0,
+            bounds,
+            400,
+            200);
+
+        Assert.True(moved);
+        Assert.Same(text, Assert.Single(target.Controls));
+        Assert.Equal(WMPosition.Absolute, text.Style.Position);
+        Assert.Equal(33.333333, text.Style.Left!.Value, 6);
+        Assert.Equal(12.5, text.Style.Top!.Value, 6);
+        Assert.Equal(0, text.Style.Transform.OffsetXPercent);
+    }
+
+    [Fact]
+    public void MovePreservingVisualBounds_InvertsTargetContainerTransform()
+    {
+        var canvas = new WMCanvas { LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion };
+        var target = new WMContainer { ID = "TARGET" };
+        target.Style.Position = WMPosition.Absolute;
+        target.Style.Transform.Rotation = 90;
+        var text = new WMText { ID = "TEXT" };
+        text.Style.Position = WMPosition.Absolute;
+        canvas.Children.AddRange([target, text]);
+        var bounds = new[]
+        {
+            new WMDesignBounds(
+                target.ID,
+                null,
+                nameof(WMContainer),
+                50,
+                20,
+                200,
+                100,
+                400,
+                200,
+                target.Style.Transform,
+                false,
+                true),
+            // This center (170, 30) is target-local (60, 30) after its 90°
+            // transform, so preserving it produces 25% Left and Top.
+            new WMDesignBounds(
+                text.ID,
+                null,
+                nameof(WMText),
+                160,
+                25,
+                20,
+                10,
+                400,
+                200,
+                text.Style.Transform,
+                false,
+                true)
+        };
+
+        Assert.True(WMControlTree.MovePreservingVisualBounds(
+            canvas,
+            text.ID,
+            target.ID,
+            0,
+            bounds,
+            400,
+            200));
+
+        Assert.Equal(25, text.Style.Left!.Value, 6);
+        Assert.Equal(25, text.Style.Top!.Value, 6);
+    }
+
+    [Fact]
     public void Move_ReparentRoundTripsThroughTemplateSerialization()
     {
         var canvas = new WMCanvas();
@@ -40,9 +129,11 @@ public sealed class WMControlTreeTests
         Assert.True(WMControlTree.Move(canvas, text.ID, right.ID, 0));
         var restored = Global.ReadConfig(Global.CanvasSerialize(canvas));
 
-        Assert.Empty(restored.Children.Single(container => container.ID == left.ID).Controls);
+        Assert.Empty(Assert.IsType<WMContainer>(
+            restored.Children.Single(container => container.ID == left.ID)).Controls);
         var restoredText = Assert.IsType<WMText>(Assert.Single(
-            restored.Children.Single(container => container.ID == right.ID).Controls));
+            Assert.IsType<WMContainer>(
+                restored.Children.Single(container => container.ID == right.ID)).Controls));
         Assert.Equal(text.ID, restoredText.ID);
         Assert.Equal(0, restoredText.Transform!.OffsetXPercent);
         Assert.Equal(0, restoredText.Transform.OffsetYPercent);
@@ -72,6 +163,25 @@ public sealed class WMControlTreeTests
         var duplicate = Assert.IsType<WMContainer>(WMControlTree.Duplicate(canvas, root.ID));
         Assert.NotEqual(root.ID, duplicate.ID);
         Assert.NotEqual(root.Controls[0].ID, duplicate.Controls[0].ID);
+        Assert.Equal([0, 1], canvas.Children.Select(control => control.PNode.SEQ));
+        Assert.Equal("0", duplicate.PNode.PID);
+        Assert.Equal(duplicate.ID, Assert.IsType<WMText>(Assert.Single(duplicate.Controls)).PNode.PID);
+    }
+
+    [Fact]
+    public void Remove_RenumbersRemainingMixedRootNodes()
+    {
+        var canvas = new WMCanvas();
+        var container = new WMContainer { ID = "CONTAINER" };
+        var text = new WMText { ID = "TEXT" };
+        var line = new WMLine { ID = "LINE" };
+        canvas.Children.AddRange([container, text, line]);
+
+        Assert.True(WMControlTree.Remove(canvas, text.ID));
+
+        Assert.Equal([container, line], canvas.Children);
+        Assert.Equal([0, 1], canvas.Children.Select(control => control.PNode.SEQ));
+        Assert.All(canvas.Children, control => Assert.Equal("0", control.PNode.PID));
     }
 
     [Fact]
@@ -89,15 +199,15 @@ public sealed class WMControlTreeTests
     }
 
     [Fact]
-    public void Add_TextWithoutParentCreatesRootContainer()
+    public void Add_TextWithoutParentCreatesRootLeaf()
     {
-        var canvas = new WMCanvas();
+        var canvas = new WMCanvas { LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion };
 
         var text = Assert.IsType<WMText>(WMControlTree.Add(canvas, typeof(WMText), null));
 
-        var parent = Assert.Single(canvas.Children);
-        Assert.Equal("新容器", parent.Name);
-        Assert.Same(text, Assert.Single(parent.Controls));
+        Assert.Same(text, Assert.Single(canvas.Children));
+        Assert.Equal(WMPosition.Absolute, text.Style.Position);
+        Assert.Equal("0", text.PNode.PID);
         var placeholder = Assert.Single(text.Exifs);
         Assert.Equal("文字", placeholder.Prefix);
         Assert.True(string.IsNullOrWhiteSpace(placeholder.Key));

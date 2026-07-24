@@ -140,6 +140,25 @@ public sealed class WMTemplateStoreTests : IDisposable
     }
 
     [Fact]
+    public void Validator_AcceptsMixedV2RootsAndRejectsStaleRootMetadata()
+    {
+        var canvas = SplitCanvas();
+        canvas.LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion;
+        var text = Assert.IsType<WMText>(WMControlTree.Add(canvas, typeof(WMText), null));
+        var logo = Assert.IsType<WMLogo>(WMControlTree.Add(canvas, typeof(WMLogo), null));
+        logo.Path = string.Empty;
+
+        var valid = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+
+        Assert.DoesNotContain(valid, error => error.Severity == WMValidationSeverity.Error);
+
+        logo.PNode = new WMPNode(text.PNode.SEQ, "0");
+        var invalid = WMTemplateValidator.Validate(canvas, Path.Combine(root, canvas.ID));
+
+        Assert.Contains(invalid, error => error.Field == "Hierarchy" && error.Severity == WMValidationSeverity.Error);
+    }
+
+    [Fact]
     public void Validator_RequiresV2PhotoInformationToBindCameraMetadata()
     {
         var canvas = SplitCanvas();
@@ -261,7 +280,7 @@ public sealed class WMTemplateStoreTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(templateDirectory, "default.jpg")));
         var persisted = Global.ReadConfigFromPath(Path.Combine(templateDirectory, "config.json"));
-        var persistedContainer = Assert.Single(persisted.Children);
+        var persistedContainer = Assert.IsType<WMContainer>(Assert.Single(persisted.Children));
         var persistedLogo = Assert.IsType<WMLogo>(Assert.Single(persistedContainer.Controls));
         Assert.False(Path.IsPathRooted(persistedContainer.Path));
         Assert.False(Path.IsPathRooted(persistedLogo.Path));

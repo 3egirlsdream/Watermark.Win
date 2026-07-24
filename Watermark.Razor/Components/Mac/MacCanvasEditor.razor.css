@@ -111,6 +111,31 @@ canvas.mac-canvas-base {
     will-change: transform;
 }
 
+::deep .canvas-line-drag-target {
+    cursor: move;
+    pointer-events: auto;
+    position: absolute;
+    touch-action: none;
+}
+
+::deep .canvas-control[data-resize-mode="horizontal"] > .canvas-line-drag-target {
+    height: 100%;
+    left: 0;
+    min-height: 20px;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+::deep .canvas-control[data-resize-mode="vertical"] > .canvas-line-drag-target {
+    bottom: 0;
+    left: 50%;
+    min-width: 20px;
+    top: 0;
+    transform: translateX(-50%);
+    width: 100%;
+}
+
 ::deep .canvas-control:hover:not(.selected) {
     outline: 1px solid rgba(23, 105, 224, 0.68);
     outline-offset: 1px;
@@ -129,7 +154,7 @@ canvas.mac-canvas-base {
     box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.86);
     min-height: 1px;
     min-width: 1px;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 ::deep .moveable-control {

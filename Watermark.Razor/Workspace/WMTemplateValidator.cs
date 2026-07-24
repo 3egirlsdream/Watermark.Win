@@ -48,8 +48,11 @@ public static class WMTemplateValidator
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
         var active = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
+        var v2 = canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion;
+        if (v2)
+            ValidateSiblingMetadata(canvas.Children ?? [], "0", errors);
         foreach (var root in canvas.Children ?? [])
-            ValidateControl(root, 1, canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion, true, templateDirectory, ids, visited, active, errors);
+            ValidateControl(root, root is WMContainer ? 1 : 0, v2, true, templateDirectory, ids, visited, active, errors);
 
         if (!string.IsNullOrWhiteSpace(canvas.Path))
             ValidateImagePath(canvas.ID, "Path", canvas.Path, templateDirectory, false, errors);
@@ -94,6 +97,8 @@ public static class WMTemplateValidator
                 ValidateContainerEffects(container, v2, errors);
                 if (!string.IsNullOrWhiteSpace(container.Path))
                     ValidateImagePath(control.ID, "Path", container.Path, templateDirectory, false, errors);
+                if (v2)
+                    ValidateSiblingMetadata(container.Controls ?? [], container.ID, errors);
                 foreach (var child in container.Controls ?? [])
                     ValidateControl(child, depth + (child is WMContainer ? 1 : 0), v2, false, templateDirectory, ids, visited, active, errors);
                 break;
@@ -111,6 +116,30 @@ public static class WMTemplateValidator
         }
 
         active.Remove(control);
+    }
+
+    private static void ValidateSiblingMetadata(
+        IReadOnlyList<IWMControl> siblings,
+        string expectedParentId,
+        List<WMTemplateValidationError> errors)
+    {
+        var sequences = new HashSet<int>();
+        for (var index = 0; index < siblings.Count; index++)
+        {
+            var node = siblings[index];
+            if (node.PNode is null)
+            {
+                errors.Add(new(node.ID, "Hierarchy", "V2 节点缺少父级和排序元数据。"));
+                continue;
+            }
+
+            if (!string.Equals(node.PNode.PID, expectedParentId, StringComparison.Ordinal))
+                errors.Add(new(node.ID, "Hierarchy", "节点父级元数据与实际控件树不一致。"));
+            if (!sequences.Add(node.PNode.SEQ))
+                errors.Add(new(node.ID, "Hierarchy", "同一父级内的节点排序序号不能重复。"));
+            if (node.PNode.SEQ != index)
+                errors.Add(new(node.ID, "Hierarchy", "同一父级内的节点排序序号必须从 0 连续排列。"));
+        }
     }
 
     private static void ValidatePhotoMetadataBinding(WMText text, List<WMTemplateValidationError> errors)
@@ -163,7 +192,7 @@ public static class WMTemplateValidator
     {
         var style = control.Style;
         if (isRoot && style.Position != WMPosition.Absolute)
-            errors.Add(new(control.ID, "position", "根容器必须使用自由定位。"));
+            errors.Add(new(control.ID, "position", "根节点必须使用自由定位。"));
         ValidateLength(control.ID, "width", style.Width, 0, 100, errors);
         ValidateLength(control.ID, "height", style.Height, 0, 100, errors);
         ValidateInsets(control.ID, style, errors);

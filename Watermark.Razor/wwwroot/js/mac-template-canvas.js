@@ -58,6 +58,15 @@ function compose(item, viewScale = 1, deltaX = 0, deltaY = 0, scaleX = item.scal
   return `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
 }
 
+export function applyOverlayGeometry(element, item, viewScale = 1) {
+  if (!element || !item) return;
+  element.style.left = `${toScenePixels(item.x, viewScale)}px`;
+  element.style.top = `${toScenePixels(item.y, viewScale)}px`;
+  element.style.width = `${Math.max(toScenePixels(item.width, viewScale), 1)}px`;
+  element.style.height = `${Math.max(toScenePixels(item.height, viewScale), 1)}px`;
+  element.style.transform = compose(item, viewScale);
+}
+
 function asFinite(value, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
@@ -97,8 +106,9 @@ export function clampChildTranslation(
   deltaY,
   scaleX = item?.scaleX,
   scaleY = item?.scaleY,
-  rotation = item?.rotation) {
-  if (!item?.parentId || item.parentWidth <= 0 || item.parentHeight <= 0) {
+  rotation = item?.rotation,
+  minimumVisible = 24) {
+  if (!item || item.parentWidth <= 0 || item.parentHeight <= 0) {
     return [asFinite(deltaX, 0), asFinite(deltaY, 0)];
   }
 
@@ -115,8 +125,19 @@ export function clampChildTranslation(
   const baseCenterY = asFinite(item.y, 0) + asFinite(item.height, 0) / 2;
   const desiredCenterX = baseCenterX + baseOffsetX + asFinite(deltaX, 0);
   const desiredCenterY = baseCenterY + baseOffsetY + asFinite(deltaY, 0);
-  const centerX = clampCenter(desiredCenterX, halfWidth, item.parentWidth);
-  const centerY = clampCenter(desiredCenterY, halfHeight, item.parentHeight);
+  const rootNode = !item.parentId;
+  const visibleX = Math.min(Math.max(0, minimumVisible), halfWidth);
+  const visibleY = Math.min(Math.max(0, minimumVisible), halfHeight);
+  const centerX = rootNode
+    ? Math.min(
+      Math.max(desiredCenterX, visibleX - halfWidth),
+      item.parentWidth - visibleX + halfWidth)
+    : clampCenter(desiredCenterX, halfWidth, item.parentWidth);
+  const centerY = rootNode
+    ? Math.min(
+      Math.max(desiredCenterY, visibleY - halfHeight),
+      item.parentHeight - visibleY + halfHeight)
+    : clampCenter(desiredCenterY, halfHeight, item.parentHeight);
   return [centerX - baseCenterX - baseOffsetX, centerY - baseCenterY - baseOffsetY];
 }
 
@@ -164,6 +185,141 @@ export function resolveScaleInteraction(event, fallbackScale = [1, 1]) {
     scaleY,
     deltaX,
     deltaY
+  };
+}
+
+export function resizeAspectRatio(mode, start, direction) {
+  const [directionX, directionY] = pair(direction, [0, 0]);
+  const corner = directionX !== 0 && directionY !== 0;
+  if (!corner || mode !== "ratio") return 0;
+  const width = asFinite(start?.width, 0);
+  const height = asFinite(start?.height, 0);
+  return width > 0 && height > 0 ? width / height : 0;
+}
+
+export function resolveTextCornerResize(start, requestedWidth, requestedHeight) {
+  const startWidth = Math.max(0.000001, asFinite(start?.width, 0));
+  const startHeight = Math.max(0.000001, asFinite(start?.height, 0));
+  const inset = Math.min(
+    Math.max(0, asFinite(start?.resizeInset, 0)),
+    Math.max(0, Math.min(startWidth, startHeight) - 0.000001));
+  const widthRatio = asFinite(requestedWidth, startWidth) / startWidth;
+  const heightRatio = asFinite(requestedHeight, startHeight) / startHeight;
+  let ratio = Math.abs(widthRatio - 1) >= Math.abs(heightRatio - 1)
+    ? widthRatio
+    : heightRatio;
+  const fontSize = asFinite(start?.resizeFontSize, 0);
+  if (fontSize > 0) ratio = Math.min(25 / fontSize, Math.max(0.1 / fontSize, ratio));
+  ratio = Math.max(0.000001, ratio);
+
+  return {
+    width: Math.max(0.000001, (startWidth - inset) * ratio + inset),
+    height: Math.max(0.000001, (startHeight - inset) * ratio + inset),
+    resizeRatio: ratio
+  };
+}
+
+export function resizeCenterDelta(start, direction, width, height) {
+  const [directionX, directionY] = pair(direction, [0, 0]);
+  const deltaWidth = asFinite(width, start?.width ?? 0) - asFinite(start?.width, 0);
+  const deltaHeight = asFinite(height, start?.height ?? 0) - asFinite(start?.height, 0);
+  const localX = directionX * deltaWidth / 2 * asFinite(start?.scaleX, 1);
+  const localY = directionY * deltaHeight / 2 * asFinite(start?.scaleY, 1);
+  const radians = asFinite(start?.rotation, 0) * Math.PI / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  return [
+    localX * cosine - localY * sine,
+    localX * sine + localY * cosine
+  ];
+}
+
+export function resolveConstrainedResizeTranslation(
+  mode,
+  start,
+  direction,
+  width,
+  height) {
+  const [directionX, directionY] = pair(direction, [0, 0]);
+  const textCorner = mode === "text"
+    && directionX !== 0
+    && directionY !== 0;
+  const lineLength = mode === "horizontal" || mode === "vertical";
+  if (!textCorner && !lineLength) return null;
+
+  const [centerDeltaX, centerDeltaY] = resizeCenterDelta(
+    start,
+    [directionX, directionY],
+    width,
+    height);
+  return {
+    centerDeltaX,
+    centerDeltaY,
+    deltaX: centerDeltaX
+      - (width - asFinite(start?.width, 0)) / 2,
+    deltaY: centerDeltaY
+      - (height - asFinite(start?.height, 0)) / 2
+  };
+}
+
+export function configureResizeGesture(event, active, minimumCssPixels = 8) {
+  const minimum = Math.max(1, asFinite(minimumCssPixels, 8));
+  event?.setMin?.([minimum, minimum]);
+  const ratio = resizeAspectRatio(
+    active?.start?.resizeMode,
+    active?.start,
+    event?.direction);
+  const ratioManagedByMoveable = ratio > 0
+    && typeof event?.setRatio === "function";
+  if (ratioManagedByMoveable) event.setRatio(ratio);
+  return ratioManagedByMoveable;
+}
+
+export function resolveResizeDimensions(
+  mode,
+  start,
+  direction,
+  requestedWidth,
+  requestedHeight,
+  ratioManagedByMoveable = false) {
+  const [directionX, directionY] = pair(direction, [0, 0]);
+  let width = asFinite(requestedWidth, start?.width ?? 0);
+  let height = asFinite(requestedHeight, start?.height ?? 0);
+  const corner = directionX !== 0 && directionY !== 0;
+
+  if (mode === "horizontal") {
+    height = start.height;
+  } else if (mode === "vertical") {
+    width = start.width;
+  } else if (mode === "text" && !corner) {
+    height = start.height;
+  } else if (mode === "text" && corner) {
+    const textResize = resolveTextCornerResize(start, width, height);
+    width = textResize.width;
+    height = textResize.height;
+    return {
+      width,
+      height,
+      keepAspectRatio: false,
+      resizeRatio: textResize.resizeRatio
+    };
+  } else if (!ratioManagedByMoveable
+    && mode === "ratio" && corner) {
+    const aspect = start.width / Math.max(start.height, 0.000001);
+    const widthRatio = width / Math.max(start.width, 0.000001);
+    const heightRatio = height / Math.max(start.height, 0.000001);
+    // Pick the axis the pointer changed most, rather than the numerically
+    // larger ratio. Math.max(widthRatio, heightRatio) blocks shrinking when
+    // one pointer axis has not moved and can oscillate as the ratios cross.
+    if (Math.abs(widthRatio - 1) >= Math.abs(heightRatio - 1))
+      height = width / Math.max(aspect, 0.000001);
+    else width = height * aspect;
+  }
+
+  return {
+    width,
+    height,
+    keepAspectRatio: mode === "ratio" && corner
   };
 }
 
@@ -291,13 +447,49 @@ export function createLayerInteractionVisual(layer, backdrop = null) {
   };
 }
 
+export function createSceneInteractionVisual(
+  controlId,
+  layers = [],
+  backdrops = [],
+  logicalGroups = []) {
+  if (!controlId) return null;
+  const layer = Array.from(layers)
+    .find(element => element?.dataset?.sceneControlId === controlId) || null;
+  const logicalGroup = Array.from(logicalGroups)
+    .find(element => element?.dataset?.sceneGroupId === controlId) || null;
+  const backdrop = Array.from(backdrops)
+    .find(element => element?.dataset?.sceneControlId === controlId) || null;
+  // Containers without an isolation surface are represented by a logical DOM
+  // group. Transform that group during the gesture so all descendant surfaces
+  // stay inside the live selection proxy until the authoritative rerender.
+  return createLayerInteractionVisual(layer || logicalGroup, backdrop);
+}
+
 export function updateLayerInteractionVisual(visual, active, viewScale = 1) {
   if (!visual || !active) return;
-  const translateX = toScenePixels(active.deltaX, viewScale);
-  const translateY = toScenePixels(active.deltaY, viewScale);
+  const resizeCenterDeltaX = asFinite(
+    active.centerDeltaX,
+    asFinite(active.deltaX, 0)
+      + (asFinite(active.width, active.start.width) - asFinite(active.start.width, 0)) / 2);
+  const resizeCenterDeltaY = asFinite(
+    active.centerDeltaY,
+    asFinite(active.deltaY, 0)
+      + (asFinite(active.height, active.start.height) - asFinite(active.start.height, 0)) / 2);
+  const translateX = toScenePixels(
+    active.kind === "resize" ? resizeCenterDeltaX : active.deltaX,
+    viewScale);
+  const translateY = toScenePixels(
+    active.kind === "resize" ? resizeCenterDeltaY : active.deltaY,
+    viewScale);
   const rotation = asFinite(active.rotation, active.start.rotation) - asFinite(active.start.rotation, 0);
-  const scaleX = asPositiveScale(active.scaleX) / asPositiveScale(active.start.scaleX);
-  const scaleY = asPositiveScale(active.scaleY) / asPositiveScale(active.start.scaleY);
+  const widthRatio = active.kind === "resize"
+    ? asPositiveScale(active.width) / asPositiveScale(active.start.width)
+    : 1;
+  const heightRatio = active.kind === "resize"
+    ? asPositiveScale(active.height) / asPositiveScale(active.start.height)
+    : 1;
+  const scaleX = widthRatio * asPositiveScale(active.scaleX) / asPositiveScale(active.start.scaleX);
+  const scaleY = heightRatio * asPositiveScale(active.scaleY) / asPositiveScale(active.start.scaleY);
   const delta = ` translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
   if (visual.layer) visual.layer.style.transform = `${visual.layerTransform}${delta}`;
   if (visual.backdrop) visual.backdrop.style.transform = `${visual.backdropTransform}${delta}`;
@@ -636,9 +828,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
     const surfaceRoot = root.parentElement;
     const layers = Array.from(surfaceRoot?.querySelectorAll?.(".mac-canvas-scene-layer") || []);
     const backdrops = Array.from(surfaceRoot?.querySelectorAll?.(".mac-canvas-backdrop") || []);
-    const layer = layers.find(element => element.dataset.sceneControlId === item.id) || null;
-    const backdrop = backdrops.find(element => element.dataset.sceneControlId === item.id) || null;
-    return createLayerInteractionVisual(layer, backdrop);
+    const logicalGroups = Array.from(surfaceRoot?.querySelectorAll?.(".mac-canvas-logical-group") || []);
+    return createSceneInteractionVisual(item.id, layers, backdrops, logicalGroups);
   }
 
   function updateInteractionVisual(active) {
@@ -651,8 +842,20 @@ export async function createEditor(root, callback, interactionProfile = null) {
 
     const current = itemsById.get(controlId);
     if (!current) return false;
+    const committedWidth = asFinite(committed.width, current.width);
+    const committedHeight = asFinite(committed.height, current.height);
+    const centerDeltaX = asFinite(committed.centerDeltaX, active.centerDeltaX || 0);
+    const centerDeltaY = asFinite(committed.centerDeltaY, active.centerDeltaY || 0);
     const next = {
       ...current,
+      x: active.kind === "resize"
+        ? current.x + centerDeltaX - (committedWidth - current.width) / 2
+        : current.x,
+      y: active.kind === "resize"
+        ? current.y + centerDeltaY - (committedHeight - current.height) / 2
+        : current.y,
+      width: committedWidth,
+      height: committedHeight,
       offsetXPercent: asFinite(committed.offsetXPercent, current.offsetXPercent),
       offsetYPercent: asFinite(committed.offsetYPercent, current.offsetYPercent),
       scaleX: asFinite(committed.scaleX, current.scaleX),
@@ -661,17 +864,23 @@ export async function createEditor(root, callback, interactionProfile = null) {
     };
     itemsById.set(controlId, next);
 
-    active.deltaX = next.parentWidth === 0
-      ? 0
-      : (next.offsetXPercent - active.start.offsetXPercent) / 100 * next.parentWidth;
-    active.deltaY = next.parentHeight === 0
-      ? 0
-      : (next.offsetYPercent - active.start.offsetYPercent) / 100 * next.parentHeight;
+    active.deltaX = active.kind === "resize"
+      ? next.x - active.start.x
+      : next.parentWidth === 0
+        ? 0
+        : (next.offsetXPercent - active.start.offsetXPercent) / 100 * next.parentWidth;
+    active.deltaY = active.kind === "resize"
+      ? next.y - active.start.y
+      : next.parentHeight === 0
+        ? 0
+        : (next.offsetYPercent - active.start.offsetYPercent) / 100 * next.parentHeight;
+    active.width = next.width;
+    active.height = next.height;
     active.scaleX = next.scaleX;
     active.scaleY = next.scaleY;
     active.rotation = next.rotation;
     const target = overlays.get(controlId);
-    if (target) target.style.transform = compose(next, viewScale);
+    applyOverlayGeometry(target, next, viewScale);
     updateInteractionVisual(active);
     moveable.updateRect();
     return true;
@@ -679,7 +888,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
 
   function restoreInteractionStart(active) {
     const target = overlays.get(active.start.id);
-    if (target) target.style.transform = compose(active.start, viewScale);
+    applyOverlayGeometry(target, active.start, viewScale);
     active.keepVisualUntilScene = false;
   }
 
@@ -719,7 +928,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
     // Any Absolute node supports direct transform interactions. Static children
     // only support drag, which commits a flow-layout reorder plus margins.
     if (!item || !item.visible || item.locked || (!isAbsolute && !isFlowChild)
-      || (kind !== "drag" && !isAbsolute)) {
+      || (kind === "rotate" && !isAbsolute)
+      || (kind !== "drag" && kind !== "resize" && kind !== "rotate")) {
       event.stop?.();
       return false;
     }
@@ -739,6 +949,11 @@ export async function createEditor(root, callback, interactionProfile = null) {
       keepRatio: item.type !== "WMContainer",
       deltaX: 0,
       deltaY: 0,
+      centerDeltaX: 0,
+      centerDeltaY: 0,
+      width: item.width,
+      height: item.height,
+      handle: "",
       scaleX: item.scaleX,
       scaleY: item.scaleY,
       rotation: item.rotation
@@ -761,7 +976,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
     interactionBusy = true;
     root.classList.add("canvas-interacting");
     clearDocumentSelection();
-    active.beginPromise = invoke("BeginCanvasInteraction", controlId).then(accepted => accepted === true);
+    active.beginPromise = invoke("BeginCanvasInteraction", controlId, kind).then(accepted => accepted === true);
     interactionLifecycle = active.beginPromise;
     return true;
   }
@@ -771,6 +986,10 @@ export async function createEditor(root, callback, interactionProfile = null) {
     const target = overlays.get(interaction.start.id);
     if (!target) return;
 
+    if (interaction.kind === "resize") {
+      target.style.width = `${Math.max(toScenePixels(interaction.width, viewScale), 1)}px`;
+      target.style.height = `${Math.max(toScenePixels(interaction.height, viewScale), 1)}px`;
+    }
     target.style.transform = compose(
       interaction.start,
       viewScale,
@@ -778,7 +997,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
       interaction.deltaY,
       interaction.scaleX,
       interaction.scaleY,
-      interaction.rotation);
+      interaction.rotation,
+      24 / asPositiveScale(viewScale));
     updateInteractionVisual(interaction);
   }
 
@@ -811,33 +1031,64 @@ export async function createEditor(root, callback, interactionProfile = null) {
     if (input?.buttons === 0) finishActivePointerInteraction(input);
   }
 
-  function updateScale(event) {
+  function updateResize(event) {
     if (!interaction) return;
     moveable.snappable = snappingEnabled && !inputEventFor(event)?.altKey;
-    const {
-      scaleX,
-      scaleY,
-      deltaX,
-      deltaY
-    } = resolveScaleInteraction(
-      event,
-      [interaction.start.scaleX, interaction.start.scaleY]);
-    interaction.scaleX = scaleX;
-    interaction.scaleY = scaleY;
-    [interaction.scaleX, interaction.scaleY] = clampChildScale(
+    const direction = pair(event?.direction, [0, 0]);
+    interaction.handle = `${direction[1] < 0 ? "n" : direction[1] > 0 ? "s" : ""}${direction[0] < 0 ? "w" : direction[0] > 0 ? "e" : ""}`;
+    const minimum = 8 / asPositiveScale(viewScale);
+    const requestedWidth = Math.max(
+      minimum,
+      toCanvasUnits(asFinite(event?.width, interaction.layoutWidth), viewScale));
+    const requestedHeight = Math.max(
+      minimum,
+      toCanvasUnits(asFinite(event?.height, interaction.layoutHeight), viewScale));
+    const mode = interaction.start.resizeMode;
+    const resolved = resolveResizeDimensions(
+      mode,
       interaction.start,
-      interaction.scaleX,
-      interaction.scaleY,
-      interaction.rotation);
-    interaction.deltaX = toCanvasUnits(deltaX, viewScale);
-    interaction.deltaY = toCanvasUnits(deltaY, viewScale);
-    [interaction.deltaX, interaction.deltaY] = clampChildTranslation(
+      direction,
+      requestedWidth,
+      requestedHeight,
+      interaction.ratioManagedByMoveable === true);
+    const width = resolved.width;
+    const height = resolved.height;
+    interaction.keepAspectRatio = resolved.keepAspectRatio;
+    interaction.resizeRatio = asFinite(resolved.resizeRatio, 1);
+    interaction.width = width;
+    interaction.height = height;
+    const constrainedTranslation = resolveConstrainedResizeTranslation(
+      mode,
       interaction.start,
-      interaction.deltaX,
-      interaction.deltaY,
-      interaction.scaleX,
-      interaction.scaleY,
-      interaction.rotation);
+      direction,
+      width,
+      height);
+    if (constrainedTranslation) {
+      interaction.centerDeltaX = constrainedTranslation.centerDeltaX;
+      interaction.centerDeltaY = constrainedTranslation.centerDeltaY;
+      interaction.deltaX = constrainedTranslation.deltaX;
+      interaction.deltaY = constrainedTranslation.deltaY;
+    } else {
+      const [screenDeltaX, screenDeltaY] = pair(event?.drag?.beforeDist ?? event?.drag?.dist);
+      const [parentDeltaX, parentDeltaY] = movementInParentSpace(
+        interaction.parentInverses,
+        screenDeltaX,
+        screenDeltaY);
+      interaction.deltaX = toCanvasUnits(parentDeltaX, viewScale);
+      interaction.deltaY = toCanvasUnits(parentDeltaY, viewScale);
+    }
+    if (interaction.start.absolute) {
+      [interaction.deltaX, interaction.deltaY] = clampChildTranslation(
+        { ...interaction.start, width, height },
+        interaction.deltaX,
+        interaction.deltaY,
+        interaction.scaleX,
+        interaction.scaleY,
+        interaction.rotation,
+        24 / asPositiveScale(viewScale));
+    }
+    interaction.centerDeltaX = interaction.deltaX + (width - interaction.start.width) / 2;
+    interaction.centerDeltaY = interaction.deltaY + (height - interaction.start.height) / 2;
     updateOverlay();
     const input = inputEventFor(event);
     if (input?.buttons === 0) finishActivePointerInteraction(input);
@@ -890,7 +1141,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
     interaction = null;
     moveable.snappable = snappingEnabled;
     const target = overlays.get(active.start.id);
-    if (target) target.style.transform = compose(active.start, viewScale);
+    applyOverlayGeometry(target, active.start, viewScale);
     return finishInteraction(active, () => invoke("CancelCanvasInteraction"));
   }
 
@@ -900,7 +1151,9 @@ export async function createEditor(root, callback, interactionProfile = null) {
       || Math.abs(active.deltaY) > epsilon
       || Math.abs(active.scaleX - active.start.scaleX) > epsilon
       || Math.abs(active.scaleY - active.start.scaleY) > epsilon
-      || Math.abs(active.rotation - active.start.rotation) > epsilon;
+      || Math.abs(active.rotation - active.start.rotation) > epsilon
+      || Math.abs(active.width - active.start.width) > epsilon
+      || Math.abs(active.height - active.start.height) > epsilon;
   }
 
   function completeInteraction(kind, event) {
@@ -915,10 +1168,10 @@ export async function createEditor(root, callback, interactionProfile = null) {
     interaction = null;
     active.keepVisualUntilScene = true;
     const { start } = active;
-    const offsetXPercent = start.parentWidth === 0
+    const offsetXPercent = kind === "resize" || start.parentWidth === 0
       ? start.offsetXPercent
       : start.offsetXPercent + active.deltaX / start.parentWidth * 100;
-    const offsetYPercent = start.parentHeight === 0
+    const offsetYPercent = kind === "resize" || start.parentHeight === 0
       ? start.offsetYPercent
       : start.offsetYPercent + active.deltaY / start.parentHeight * 100;
     return finishInteraction(active, async beginAccepted => {
@@ -933,7 +1186,15 @@ export async function createEditor(root, callback, interactionProfile = null) {
         offsetYPercent,
         scaleX: active.scaleX,
         scaleY: active.scaleY,
-        rotation: active.rotation
+        rotation: active.rotation,
+        width: active.width,
+        height: active.height,
+        handle: active.handle,
+        centerDeltaX: active.centerDeltaX,
+        centerDeltaY: active.centerDeltaY,
+        boundsVersion: start.boundsVersion,
+        keepAspectRatio: active.keepAspectRatio === true,
+        resizeRatio: asFinite(active.resizeRatio, 1)
       });
       if (!applyCommittedInteraction(active, committed)) restoreInteractionStart(active);
     });
@@ -943,7 +1204,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
     container: root,
     target: null,
     draggable: true,
-    scalable: true,
+    resizable: true,
+    scalable: false,
     renderDirections: finePointerMode ? absoluteResizeDirections : coarseResizeDirections,
     rotatable: true,
     origin: false,
@@ -960,14 +1222,20 @@ export async function createEditor(root, callback, interactionProfile = null) {
     })
     .on("drag", updateDrag)
     .on("dragEnd", event => { void completeInteraction("drag", event); })
-    .on("scaleStart", event => {
+    .on("resizeStart", event => {
       if (beginInteraction("resize", event)) {
-        event.set?.([interaction.start.scaleX, interaction.start.scaleY]);
+        event.set?.([interaction.layoutWidth, interaction.layoutHeight]);
+        // Keep Moveable's own control box on the same constrained geometry as
+        // the live proxy. Post-processing only our target lets Moveable cross
+        // through zero internally, which makes the handle lag and oscillate.
+        interaction.ratioManagedByMoveable = configureResizeGesture(
+          event,
+          interaction);
         event.dragStart?.set?.([0, 0]);
       }
     })
-    .on("scale", updateScale)
-    .on("scaleEnd", event => { void completeInteraction("resize", event); })
+    .on("resize", updateResize)
+    .on("resizeEnd", event => { void completeInteraction("resize", event); })
     .on("rotateStart", event => {
       if (beginInteraction("rotate", event)) event.set?.(0);
     })
@@ -984,18 +1252,27 @@ export async function createEditor(root, callback, interactionProfile = null) {
     overlays.forEach((element, key) => element.classList.toggle("selected", key === id));
     const item = itemsById.get(id);
     const target = overlays.get(id) || null;
+    const lineDragTarget = target?.querySelector?.("[data-line-drag-target]") || null;
     const isAbsolute = Boolean(item?.absolute);
     const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
     moveable.target = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
-    moveable.scalable = isAbsolute;
+    moveable.dragTarget = moveable.target ? lineDragTarget : null;
+    moveable.resizable = Boolean(item && (isAbsolute || isFlowChild));
+    moveable.scalable = false;
     moveable.rotatable = isAbsolute;
-    moveable.renderDirections = isAbsolute
-      ? (finePointerMode ? absoluteResizeDirections : coarseResizeDirections)
-      : [];
+    const allDirections = finePointerMode ? absoluteResizeDirections : coarseResizeDirections;
+    moveable.renderDirections = !item ? []
+      : item.resizeMode === "horizontal" ? ["w", "e"]
+      : item.resizeMode === "vertical" ? ["n", "s"]
+      : item.resizeMode === "text"
+        ? (finePointerMode ? ["nw", "n", "ne", "e", "se", "s", "sw", "w"].filter(direction => direction !== "n" && direction !== "s") : coarseResizeDirections)
+        : allDirections;
     moveable.elementGuidelines = Array.from(overlays.entries())
       .filter(([key]) => key !== id && itemsById.get(key)?.visible)
       .map(([, element]) => element);
-    if (item) moveable.keepRatio = item.type !== "WMContainer";
+    // Ratio is enforced manually only for corner handles. Enabling Moveable's
+    // global keepRatio would also make side handles resize both axes.
+    moveable.keepRatio = false;
     moveable.updateRect();
   }
 
@@ -1017,11 +1294,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
     overlays.forEach((element, id) => {
       const item = itemsById.get(id);
       if (!item) return;
-      element.style.left = `${toScenePixels(item.x, viewScale)}px`;
-      element.style.top = `${toScenePixels(item.y, viewScale)}px`;
-      element.style.width = `${Math.max(toScenePixels(item.width, viewScale), 1)}px`;
-      element.style.height = `${Math.max(toScenePixels(item.height, viewScale), 1)}px`;
-      element.style.transform = compose(item, viewScale);
+      applyOverlayGeometry(element, item, viewScale);
     });
   }
 
@@ -1061,9 +1334,21 @@ export async function createEditor(root, callback, interactionProfile = null) {
       const element = document.createElement("div");
       element.className = `canvas-control ${item.type.toLowerCase()}`;
       element.dataset.controlId = item.id;
+      element.dataset.resizeMode = item.resizeMode || "";
       element.style.position = "absolute";
       element.style.transformOrigin = "center";
       element.style.display = item.visible ? "block" : "none";
+      // A thin line can be only one or two CSS pixels high. Keep its layout
+      // bounds exact while giving pointer input a usable, invisible hit area.
+      if (item.type === "WMLine"
+        && (item.resizeMode === "horizontal" || item.resizeMode === "vertical")) {
+        const lineDragTarget = document.createElement("div");
+        lineDragTarget.className = "canvas-line-drag-target";
+        lineDragTarget.dataset.controlId = item.id;
+        lineDragTarget.dataset.lineDragTarget = "true";
+        lineDragTarget.setAttribute("aria-hidden", "true");
+        element.appendChild(lineDragTarget);
+      }
       element.addEventListener("pointerdown", event => {
         if (panMode) return;
         event.stopPropagation();

@@ -49,7 +49,7 @@
 
         <div class="designer-workspace" @ref="designerWorkspace">
             <aside class="designer-layer-region @(mobilePanel == MobileDesignerPanel.Layers ? "mobile-panel-visible" : null)">
-                <WMTemplateLayerPanel Editor="@editor" />
+                <WMTemplateLayerPanel Editor="@editor" RenderResult="@renderResult" />
             </aside>
             <div class="designer-canvas-region">
                 @if (isRendering)
@@ -368,20 +368,11 @@
         if (currentEditor is null) return;
 
         IWMControl? added = null;
-        var selected = string.IsNullOrWhiteSpace(currentEditor.SelectedControlId)
-            ? null
-            : WMControlTree.Find(currentEditor.Draft, currentEditor.SelectedControlId);
-        var preferredParentId = selected switch
-        {
-            WMContainer container => container.ID,
-            { } control => WMControlTree.FindParent(currentEditor.Draft, control.ID)?.ID,
-            _ => null
-        };
         currentEditor.Mutate(
             label,
-            () => added = WMControlTree.Add(currentEditor.Draft, controlType, preferredParentId),
+            () => added = WMControlTree.Add(currentEditor.Draft, controlType, null),
             WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint,
-            string.IsNullOrWhiteSpace(preferredParentId) ? [] : [preferredParentId]);
+            []);
         if (added is not null) currentEditor.Select(added.ID);
         mobilePanel = MobileDesignerPanel.Properties;
     }

@@ -1,8 +1,10 @@
 @using Watermark.Razor.Components.Mac
+@using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<MacLayerTree Editor="Editor" />
+<MacLayerTree Editor="Editor" RenderResult="RenderResult" />
 
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
+    [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
 }

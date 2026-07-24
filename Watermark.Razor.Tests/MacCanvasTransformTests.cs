@@ -110,12 +110,15 @@ public sealed class MacCanvasTransformTests
     }
 
     [Fact]
-    public void ConstrainDrag_DoesNotConstrainRootContainer()
+    public void ConstrainDrag_KeepsRootContainerPartiallyVisible()
     {
         var bounds = Bounds("ROOT", null, 20, 30, 40, 20, 100, 100);
         var interaction = new MacCanvasInteraction("ROOT", "drag", 175, -125, 1, 1, 0);
 
-        Assert.Same(interaction, MacCanvasBoundary.ConstrainDrag(bounds, interaction));
+        var constrained = MacCanvasBoundary.ConstrainDrag(bounds, interaction);
+
+        Assert.Equal(60, constrained.OffsetXPercent, 6);
+        Assert.Equal(-40, constrained.OffsetYPercent, 6);
     }
 
     [Fact]
@@ -147,12 +150,257 @@ public sealed class MacCanvasTransformTests
     }
 
     [Fact]
-    public void ConstrainTransform_DoesNotConstrainRootContainer()
+    public void ConstrainTransform_KeepsRotatedRootPartiallyVisible()
     {
         var bounds = Bounds("ROOT", null, 20, 30, 40, 20, 100, 100);
         var interaction = new MacCanvasInteraction("ROOT", "resize", 175, -125, 4, 3, 45);
 
-        Assert.Same(interaction, MacCanvasBoundary.ConstrainTransform(bounds, interaction));
+        var constrained = MacCanvasBoundary.ConstrainTransform(bounds, interaction);
+
+        Assert.InRange(constrained.OffsetXPercent, 113, 115);
+        Assert.InRange(constrained.OffsetYPercent, -95, -93);
+    }
+
+    [Fact]
+    public void Resize_ContainerWritesStyleSizeAndPreservesScale()
+    {
+        var container = new WMContainer { ID = "ROOT" };
+        container.Style.Position = WMPosition.Absolute;
+        container.Style.Transform.ScaleX = 1.5;
+        container.Style.Transform.ScaleY = .75;
+        var bounds = Bounds(container.ID, null, 10, 20, 100, 50, 400, 200);
+
+        var applied = MacCanvasResize.Apply(
+            container,
+            bounds,
+            new MacCanvasInteraction(
+                container.ID,
+                "resize",
+                0,
+                0,
+                1.5,
+                .75,
+                0,
+                160,
+                80,
+                "se",
+                30,
+                15));
+
+        Assert.Equal(40, container.Style.Width.Value, 6);
+        Assert.Equal(40, container.Style.Height.Value, 6);
+        Assert.Equal(1.5, container.Style.Transform.ScaleX);
+        Assert.Equal(.75, container.Style.Transform.ScaleY);
+        Assert.Equal(160, applied.Width, 6);
+        Assert.Equal(80, applied.Height, 6);
+    }
+
+    [Fact]
+    public void Resize_TextHorizontalHandleSetsWidthButKeepsAutoHeight()
+    {
+        var text = new WMText { ID = "TEXT", FontSize = 4 };
+        text.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(text.ID, null, 0, 0, 80, 20, 400, 200);
+
+        MacCanvasResize.Apply(
+            text,
+            bounds,
+            new MacCanvasInteraction(
+                text.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 120, Height: 20, Handle: "e"));
+
+        Assert.Equal(30, text.Style.Width.Value, 6);
+        Assert.True(text.Style.Height.IsAuto);
+        Assert.Equal(4, text.FontSize);
+    }
+
+    [Fact]
+    public void Resize_TextCornerChangesFontSizeWithoutScalingDecorations()
+    {
+        var text = new WMText
+        {
+            ID = "TEXT",
+            FontSize = 4,
+            BorderWidth = 3,
+            BorderPadding = 5,
+            BorderRadius = 7
+        };
+        text.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(text.ID, null, 0, 0, 80, 20, 400, 200);
+
+        MacCanvasResize.Apply(
+            text,
+            bounds,
+            new MacCanvasInteraction(
+                text.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 160, Height: 40, Handle: "se"));
+
+        Assert.Equal(8, text.FontSize);
+        Assert.Equal(3, text.BorderWidth);
+        Assert.Equal(5, text.BorderPadding);
+        Assert.Equal(7, text.BorderRadius);
+        Assert.True(text.Style.Width.IsAuto);
+        Assert.True(text.Style.Height.IsAuto);
+    }
+
+    [Fact]
+    public void Resize_TextCornerUsesTheLiveContentScaleAndKeepsAutoHeight()
+    {
+        var text = new WMText
+        {
+            ID = "TEXT",
+            FontSize = 10,
+            EnableBorder = true,
+            BorderWidth = 3,
+            BorderPadding = 7
+        };
+        text.Style.Position = WMPosition.Absolute;
+        text.Style.Width = WMStyleLength.Percent(75);
+        var bounds = Bounds(text.ID, null, 20, 30, 300, 100, 400, 200);
+
+        var applied = MacCanvasResize.Apply(
+            text,
+            bounds,
+            new MacCanvasInteraction(
+                text.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 524, Height: 164, Handle: "se",
+                CenterDeltaX: 112, CenterDeltaY: 32,
+                ResizeRatio: 1.8));
+
+        Assert.Equal(18, text.FontSize, 6);
+        Assert.Equal(131, text.Style.Width.Value, 6);
+        Assert.True(text.Style.Height.IsAuto);
+        Assert.Equal(5, text.Style.Left!.Value, 6);
+        Assert.Equal(15, text.Style.Top!.Value, 6);
+        Assert.Equal(524, applied.Width, 6);
+        Assert.Equal(164, applied.Height, 6);
+    }
+
+    [Fact]
+    public void Resize_StaticLineChangesLengthWithoutCreatingTransform()
+    {
+        var line = new WMLine { ID = "LINE", Orientation = Orientation.Horizontal };
+        line.Style.Position = WMPosition.Static;
+        var bounds = Bounds(line.ID, "PARENT", 0, 0, 80, 2, 400, 200);
+
+        MacCanvasResize.Apply(
+            line,
+            bounds,
+            new MacCanvasInteraction(
+                line.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 200, Height: 2, Handle: "e"));
+
+        Assert.Equal(50, line.Style.Width.Value, 6);
+        Assert.True(line.Style.Height.IsAuto);
+        Assert.Equal(50, line.LengthPercent, 6);
+        Assert.Equal(50, line.Percent, 6);
+        Assert.Null(line.Transform);
+        Assert.Equal(1, line.Style.Transform.ScaleX);
+    }
+
+    [Fact]
+    public void Resize_VerticalLineUpdatesOnlyHeightAndCompatibilityMirror()
+    {
+        var line = new WMLine { ID = "LINE", Orientation = Orientation.Vertical, Percent = 25 };
+        line.Style.Position = WMPosition.Absolute;
+        line.Style.Width = WMStyleLength.Percent(75);
+        var bounds = Bounds(line.ID, null, 10, 20, 4, 50, 400, 200);
+
+        MacCanvasResize.Apply(
+            line,
+            bounds,
+            new MacCanvasInteraction(
+                line.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 4, Height: 120, Handle: "s"));
+
+        Assert.True(line.Style.Width.IsAuto);
+        Assert.Equal(60, line.Style.Height.Value, 6);
+        Assert.Equal(60, line.LengthPercent, 6);
+        Assert.Equal(60, line.Percent, 6);
+    }
+
+    [Fact]
+    public void Resize_HorizontalLineIgnoresPerpendicularPointerNoise()
+    {
+        var line = new WMLine { ID = "LINE", Orientation = Orientation.Horizontal };
+        line.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(line.ID, null, 40, 60, 100, 4, 400, 200);
+
+        var applied = MacCanvasResize.Apply(
+            line,
+            bounds,
+            new MacCanvasInteraction(
+                line.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 160, Height: 7, Handle: "e",
+                CenterDeltaX: 30, CenterDeltaY: -1.25));
+
+        Assert.Equal(40, line.LengthPercent, 6);
+        Assert.Equal(10, line.Style.Left!.Value, 6);
+        Assert.Equal(30, line.Style.Top!.Value, 6);
+        Assert.Equal(30, applied.CenterDeltaX, 6);
+        Assert.Equal(0, applied.CenterDeltaY, 6);
+        Assert.Equal(160, applied.Width, 6);
+        Assert.Equal(4, applied.Height, 6);
+    }
+
+    [Fact]
+    public void Resize_LogoSideHandleChangesOnlyTheDraggedImageAxis()
+    {
+        var logo = new WMLogo { ID = "LOGO" };
+        logo.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(logo.ID, null, 0, 0, 100, 50, 400, 200);
+
+        MacCanvasResize.Apply(
+            logo,
+            bounds,
+            new MacCanvasInteraction(
+                logo.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 160, Height: 50, Handle: "e", KeepAspectRatio: true));
+
+        Assert.Equal(40, logo.Style.Width.Value, 6);
+        Assert.True(logo.Style.Height.IsAuto);
+    }
+
+    [Fact]
+    public void Resize_LogoCornerHandleKeepsAspectRatioWhenLocked()
+    {
+        var logo = new WMLogo { ID = "LOGO" };
+        logo.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(logo.ID, null, 0, 0, 100, 50, 400, 200);
+
+        MacCanvasResize.Apply(
+            logo,
+            bounds,
+            new MacCanvasInteraction(
+                logo.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 160, Height: 80, Handle: "se", KeepAspectRatio: true));
+
+        Assert.Equal(40, logo.Style.Width.Value, 6);
+        Assert.Equal(40, logo.Style.Height.Value, 6);
+    }
+
+    [Fact]
+    public void Resize_LogoCornerPersistsExactLiveProxyGeometry()
+    {
+        var logo = new WMLogo { ID = "LOGO" };
+        logo.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(logo.ID, null, 10, 20, 100, 50, 400, 200);
+
+        var applied = MacCanvasResize.Apply(
+            logo,
+            bounds,
+            new MacCanvasInteraction(
+                logo.ID, "resize", 0, 0, 1, 1, 0,
+                Width: 40, Height: 20, Handle: "nw",
+                CenterDeltaX: 30, CenterDeltaY: 15,
+                KeepAspectRatio: true));
+
+        Assert.Equal(10, logo.Style.Width.Value, 6);
+        Assert.Equal(10, logo.Style.Height.Value, 6);
+        Assert.Equal(17.5, logo.Style.Left!.Value, 6);
+        Assert.Equal(25, logo.Style.Top!.Value, 6);
+        Assert.Equal(40, applied.Width, 6);
+        Assert.Equal(20, applied.Height, 6);
     }
 
     [Fact]

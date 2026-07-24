@@ -26,7 +26,8 @@ public sealed class WMCanvasApplicationTests
         target.Canvas.Exif["camera"] = new Dictionary<string, string> { ["Model"] = "X-T5" };
 
         var applied = WMCanvasApplication.CreateForImage(source, target);
-        var logo = Assert.IsType<WMLogo>(Assert.Single(Assert.Single(applied.Children).Controls));
+        var root = Assert.IsType<WMContainer>(Assert.Single(applied.Children));
+        var logo = Assert.IsType<WMLogo>(Assert.Single(root.Controls));
 
         Assert.Equal("edited", applied.Name);
         Assert.Equal(24, logo.Transform!.OffsetXPercent);

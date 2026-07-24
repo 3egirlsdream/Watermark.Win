@@ -141,7 +141,7 @@ public sealed class WMCollageDerivedMediaProcessor(
         if (inputs.Count == 0) throw new InvalidOperationException("拼图模板至少需要一张素材。");
 
         var canvas = Global.ReadConfig(settings.CanvasJson);
-        var slots = canvas.Children
+        var slots = canvas.RootContainers
             .Where(container => container.ContainerProperties?.FixImage != true)
             .ToArray();
         if (slots.Length == 0) throw new InvalidOperationException("该模板没有可填充的图片容器。");

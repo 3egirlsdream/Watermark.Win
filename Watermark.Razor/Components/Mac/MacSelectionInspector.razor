@@ -241,6 +241,13 @@
                 </div>
                 <MacInspectorSwitch Label="白色转透明" Value="@logo.White2Transparent" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换白色转透明", () => logo.White2Transparent = value)' />
                 <MacInspectorSwitch Label="自动识别品牌 Logo" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动识别品牌 Logo", () => logo.AutoSetLogo = value)' />
+                @if (IsV2)
+                {
+                    <MacInspectorSwitch Label="角点调整保持图片比例"
+                                        Value="@Editor.IsLogoAspectRatioLocked(logo.ID)"
+                                        Disabled="@IsReadOnly"
+                                        ValueChanged="value => Editor.SetLogoAspectRatioLocked(logo.ID, value)" />
+                }
                 <MacInspectorSlider Label="尺寸" Value="@logo.Percent" Min="@(IsV2 ? 0.1 : 1)" Max="100" Step="@(IsV2 ? 0.1 : 1)" Unit="@(IsV2 ? "% 短边" : "% 容器短边")" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整图标尺寸", () => logo.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
             </section>
             <MacNodeStyleInspector Editor="@Editor" Control="@logo" ReadOnly="@IsReadOnly" />
@@ -265,8 +272,8 @@
                 <div class="inspector-group-heading"><h3>分割线</h3></div>
                 <MacInspectorOptionGroup TValue="Orientation" Label="方向" Value="@line.Orientation" Options="@OrientationOptions"
                                          Disabled="@IsReadOnly" ValueChanged="value => SetLineOrientation(line, value)" />
-                <MacInspectorSlider Label="粗细" Value="@line.Thickness" Min="1" Max="20" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线粗细", () => line.Thickness = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                <MacInspectorSlider Label="长度" Value="@line.Percent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线长度", () => line.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="粗细" Value="@line.Thickness" Min="1" Max="20" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线粗细", () => SetLineThickness(line, (int)value))' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <MacInspectorSlider Label="长度" Value="@(IsV2 ? line.LengthPercent : line.Percent)" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线长度", () => SetLineLength(line, value))' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 <MacColorInput Label="颜色" Value="@line.Color" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改分割线颜色", () => line.Color = value)' />
             </section>
             <MacNodeStyleInspector Editor="@Editor" Control="@line" ReadOnly="@IsReadOnly" />
@@ -340,7 +347,7 @@
     private string Breadcrumb => SelectedControl is null
         ? "模板 / 画布"
         : $"模板 / {(WMControlTree.FindParent(Editor.Draft, SelectedControl.ID) is { } parent ? ControlName(parent) + " / " : string.Empty)}{ControlName(SelectedControl)}";
-    private Dictionary<string, string> ContainerNames => Editor.Draft.Children
+    private Dictionary<string, string> ContainerNames => Editor.Draft.RootContainers
         .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
         .GroupBy(container => container.ID)
         .ToDictionary(group => group.Key, group => ControlName(group.First()));
@@ -478,7 +485,29 @@
         MutateAsync("修改垂直对齐", () => container.VerticalAlignment = value);
 
     private Task SetLineOrientation(WMLine line, Orientation value) =>
-        MutateAsync("修改分割线方向", () => line.Orientation = value);
+        MutateAsync("修改分割线方向", () =>
+        {
+            if (IsV2)
+                line.SetOrientationPreservingLength(value);
+            else
+                line.Orientation = value;
+        });
+
+    private void SetLineLength(WMLine line, double value)
+    {
+        if (IsV2)
+            line.LengthPercent = value;
+        else
+            line.Percent = value;
+    }
+
+    private void SetLineThickness(WMLine line, int value)
+    {
+        if (IsV2)
+            line.SetThicknessPreservingLength(value);
+        else
+            line.Thickness = value;
+    }
 
     private Task SetFontFamily(WMText text, string value) =>
         MutateAsync("修改字体", () => text.FontFamily = value);

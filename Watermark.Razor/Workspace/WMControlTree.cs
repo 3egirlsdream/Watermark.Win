@@ -18,7 +18,8 @@ public static class WMControlTree
         var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
         foreach (var root in canvas.Children ?? [])
         {
-            var parent = FindParent(root, id, visited);
+            if (root is not WMContainer rootContainer) continue;
+            var parent = FindParent(rootContainer, id, visited);
             if (parent != null) return parent;
         }
 
@@ -61,12 +62,6 @@ public static class WMControlTree
                 return false;
             }
         }
-        else if (control is not WMContainer)
-        {
-            error = "只有容器可以移动到根级。";
-            return false;
-        }
-
         if (control is WMContainer container)
         {
             var targetDepth = 0;
@@ -99,8 +94,9 @@ public static class WMControlTree
 
         if (target == null)
         {
-            var root = (WMContainer)control;
-            canvas.Children.Insert(index, root);
+            canvas.Children.Insert(index, control);
+            if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+                control.Style.Position = WMPosition.Absolute;
         }
         else
         {
@@ -118,13 +114,159 @@ public static class WMControlTree
         return true;
     }
 
+    public static bool MovePreservingVisualBounds(
+        WMCanvas canvas,
+        string controlId,
+        string? parentId,
+        int index,
+        IReadOnlyList<WMDesignBounds> bounds,
+        double canvasWidth,
+        double canvasHeight)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(bounds);
+        var control = Find(canvas, controlId);
+        if (control is null) return false;
+        var sourceParent = FindParent(canvas, controlId);
+        var targetParent = parentId is null ? null : Find(canvas, parentId) as WMContainer;
+        if (ReferenceEquals(sourceParent, targetParent))
+            return Move(canvas, controlId, parentId, index);
+
+        var byId = bounds.ToDictionary(item => item.ControlId, StringComparer.Ordinal);
+        if (!byId.TryGetValue(controlId, out var sourceBounds))
+            return Move(canvas, controlId, parentId, index);
+        var sourceCenter = CanvasVisualCenter(sourceBounds, byId);
+        var targetCenter = targetParent is not null
+            && byId.TryGetValue(targetParent.ID, out var targetBounds)
+                ? CanvasPointToLocal(sourceCenter, targetBounds, byId)
+                : sourceCenter;
+        var canvasUnit = Math.Min(canvasWidth, canvasHeight) / 100d;
+        var padding = targetParent?.Style.Padding ?? new WMThickness(0);
+        var targetWidth = targetParent is null
+            ? canvasWidth
+            : Math.Max(
+                0,
+                (byId.GetValueOrDefault(targetParent.ID)?.Width ?? 0)
+                - (padding.Left + padding.Right) * canvasUnit);
+        var targetHeight = targetParent is null
+            ? canvasHeight
+            : Math.Max(
+                0,
+                (byId.GetValueOrDefault(targetParent.ID)?.Height ?? 0)
+                - (padding.Top + padding.Bottom) * canvasUnit);
+        var mustBecomeAbsolute = targetParent is null || control.Style.Position == WMPosition.Absolute;
+
+        if (!Move(canvas, controlId, parentId, index)) return false;
+        if (!mustBecomeAbsolute || targetWidth <= 0 || targetHeight <= 0)
+            return true;
+
+        control.Style.Position = WMPosition.Absolute;
+        control.Style.Left = WMStyleLength.Percent(
+            (targetCenter.X - padding.Left * canvasUnit - sourceBounds.Width / 2d)
+            / targetWidth * 100d);
+        control.Style.Top = WMStyleLength.Percent(
+            (targetCenter.Y - padding.Top * canvasUnit - sourceBounds.Height / 2d)
+            / targetHeight * 100d);
+        control.Style.Right = null;
+        control.Style.Bottom = null;
+        control.Style.Transform.OffsetXPercent = 0;
+        control.Style.Transform.OffsetYPercent = 0;
+        SynchronizeParentMetadata(canvas);
+        return true;
+    }
+
+    private static (double X, double Y) CanvasVisualCenter(
+        WMDesignBounds bounds,
+        IReadOnlyDictionary<string, WMDesignBounds> byId)
+    {
+        var transform = bounds.Transform ?? new WMTransform();
+        var point = (
+            X: bounds.X + bounds.Width / 2d + bounds.ParentWidth * transform.OffsetXPercent / 100d,
+            Y: bounds.Y + bounds.Height / 2d + bounds.ParentHeight * transform.OffsetYPercent / 100d);
+        var parentId = bounds.ParentId;
+        var visited = new HashSet<string>(StringComparer.Ordinal) { bounds.ControlId };
+        while (parentId is not null
+               && visited.Add(parentId)
+               && byId.TryGetValue(parentId, out var parent))
+        {
+            point = LocalPointToParent(point, parent);
+            parentId = parent.ParentId;
+        }
+        return point;
+    }
+
+    private static (double X, double Y) CanvasPointToLocal(
+        (double X, double Y) canvasPoint,
+        WMDesignBounds target,
+        IReadOnlyDictionary<string, WMDesignBounds> byId)
+    {
+        var chain = new List<WMDesignBounds> { target };
+        var parentId = target.ParentId;
+        var visited = new HashSet<string>(StringComparer.Ordinal) { target.ControlId };
+        while (parentId is not null
+               && visited.Add(parentId)
+               && byId.TryGetValue(parentId, out var parent))
+        {
+            chain.Add(parent);
+            parentId = parent.ParentId;
+        }
+
+        var point = canvasPoint;
+        for (var index = chain.Count - 1; index >= 0; index--)
+            point = ParentPointToLocal(point, chain[index]);
+        return point;
+    }
+
+    private static (double X, double Y) LocalPointToParent(
+        (double X, double Y) point,
+        WMDesignBounds node)
+    {
+        var transform = node.Transform ?? new WMTransform();
+        var radians = transform.Rotation * Math.PI / 180d;
+        var cosine = Math.Cos(radians);
+        var sine = Math.Sin(radians);
+        var scaledX = (point.X - node.Width / 2d) * transform.ScaleX;
+        var scaledY = (point.Y - node.Height / 2d) * transform.ScaleY;
+        return (
+            node.X + node.Width / 2d
+                + node.ParentWidth * transform.OffsetXPercent / 100d
+                + scaledX * cosine - scaledY * sine,
+            node.Y + node.Height / 2d
+                + node.ParentHeight * transform.OffsetYPercent / 100d
+                + scaledX * sine + scaledY * cosine);
+    }
+
+    private static (double X, double Y) ParentPointToLocal(
+        (double X, double Y) point,
+        WMDesignBounds node)
+    {
+        var transform = node.Transform ?? new WMTransform();
+        var radians = -transform.Rotation * Math.PI / 180d;
+        var cosine = Math.Cos(radians);
+        var sine = Math.Sin(radians);
+        var translatedX = point.X
+            - node.X
+            - node.Width / 2d
+            - node.ParentWidth * transform.OffsetXPercent / 100d;
+        var translatedY = point.Y
+            - node.Y
+            - node.Height / 2d
+            - node.ParentHeight * transform.OffsetYPercent / 100d;
+        var scaleX = Math.Abs(transform.ScaleX) < 0.000001 ? 1d : transform.ScaleX;
+        var scaleY = Math.Abs(transform.ScaleY) < 0.000001 ? 1d : transform.ScaleY;
+        return (
+            node.Width / 2d + (translatedX * cosine - translatedY * sine) / scaleX,
+            node.Height / 2d + (translatedX * sine + translatedY * cosine) / scaleY);
+    }
+
     private static void SynchronizeParentMetadata(WMCanvas canvas)
     {
         for (var rootIndex = 0; rootIndex < canvas.Children.Count; rootIndex++)
         {
             var root = canvas.Children[rootIndex];
             root.PNode = new WMPNode(rootIndex, "0");
-            SynchronizeParentMetadata(root);
+            if (root is WMContainer container)
+                SynchronizeParentMetadata(container);
         }
     }
 
@@ -151,15 +293,14 @@ public static class WMControlTree
         var parent = FindParent(canvas, source.ID);
         if (parent == null)
         {
-            var root = source as WMContainer
-                ?? throw new InvalidOperationException("非容器控件不能位于根级。");
-            canvas.Children.Insert(canvas.Children.IndexOf(root) + 1, (WMContainer)copy);
+            canvas.Children.Insert(canvas.Children.IndexOf(source) + 1, copy);
         }
         else
         {
             parent.Controls.Insert(parent.Controls.IndexOf(source) + 1, copy);
         }
 
+        SynchronizeParentMetadata(canvas);
         return copy;
     }
 
@@ -167,7 +308,9 @@ public static class WMControlTree
     {
         ArgumentNullException.ThrowIfNull(canvas);
         var control = Find(canvas, controlId);
-        return control != null && RemoveByReference(canvas, control);
+        if (control == null || !RemoveByReference(canvas, control)) return false;
+        SynchronizeParentMetadata(canvas);
+        return true;
     }
 
     public static IWMControl Add(WMCanvas canvas, Type controlType, string? preferredParentId)
@@ -189,29 +332,40 @@ public static class WMControlTree
             // representation for intentional decorative copy.
             text.Exifs.Add(new WMExifConfigInfo { Prefix = "文字" });
         }
+        return Add(canvas, control, preferredParentId);
+    }
+
+    public static IWMControl Add(WMCanvas canvas, IWMControl control, string? preferredParentId)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(control);
+        if (control is not WMContainer
+            && control is not WMText
+            && control is not WMLogo
+            && control is not WMLine)
+            throw new ArgumentException("控件类型无效。", nameof(control));
+
         var usedIds = Flatten(canvas).Select(existing => existing.ID).ToHashSet(StringComparer.Ordinal);
         AssignNewUniqueId(control, usedIds);
-        if (control is WMContainer container)
-        {
-            if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
-                WMLayoutMigration.ApplyNewNodeDefaults(container, isRoot: true);
-            canvas.Children.Add(container);
-            return container;
-        }
-
         var parent = preferredParentId == null ? null : Find(canvas, preferredParentId) as WMContainer;
-        if (parent == null)
-        {
-            parent = new WMContainer { Name = "新容器" };
-            AssignNewUniqueId(parent, usedIds);
-            if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
-                WMLayoutMigration.ApplyNewNodeDefaults(parent, isRoot: true);
-            canvas.Children.Add(parent);
-        }
+        if (preferredParentId is not null && parent is null)
+            throw new ArgumentException("目标容器不存在。", nameof(preferredParentId));
 
         if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
-            WMLayoutMigration.ApplyNewNodeDefaults(control);
-        parent.Controls.Add(control);
+            WMLayoutMigration.ApplyNewNodeDefaults(control, isRoot: parent is null);
+        if (parent is null)
+        {
+            canvas.Children.Add(control);
+        }
+        else
+        {
+            if (control is WMContainer container
+                && (!TryGetContainerDepth(canvas, parent, out var parentDepth)
+                    || parentDepth + ContainerDepth(container) > MaxContainerDepth))
+                throw new InvalidOperationException("容器只能保留根级和一层嵌套，共两级。");
+            parent.Controls.Add(control);
+        }
+        SynchronizeParentMetadata(canvas);
         return control;
     }
 
@@ -219,7 +373,7 @@ public static class WMControlTree
     {
         var targetCount = target?.Controls.Count ?? canvas.Children.Count;
         var alreadyInTarget = target == null
-            ? control is WMContainer root && canvas.Children.Contains(root)
+            ? canvas.Children.Contains(control)
             : target.Controls.Contains(control);
         var maximum = alreadyInTarget ? targetCount - 1 : targetCount;
         return index >= 0 && index <= maximum;
@@ -267,7 +421,8 @@ public static class WMControlTree
     {
         foreach (var root in canvas.Children ?? [])
         {
-            if (TryGetContainerDepth(root, target, 1, new HashSet<IWMControl>(ReferenceEqualityComparer.Instance), out depth))
+            if (root is WMContainer rootContainer
+                && TryGetContainerDepth(rootContainer, target, 1, new HashSet<IWMControl>(ReferenceEqualityComparer.Instance), out depth))
                 return true;
         }
 
@@ -319,7 +474,7 @@ public static class WMControlTree
 
     private static bool RemoveByReference(WMCanvas canvas, IWMControl control)
     {
-        if (control is WMContainer root && canvas.Children.Remove(root)) return true;
+        if (canvas.Children.Remove(control)) return true;
         var parent = FindParentByReference(canvas, control);
         return parent != null && parent.Controls.Remove(control);
     }
@@ -329,7 +484,8 @@ public static class WMControlTree
         var visited = new HashSet<IWMControl>(ReferenceEqualityComparer.Instance);
         foreach (var root in canvas.Children ?? [])
         {
-            var parent = FindParentByReference(root, control, visited);
+            if (root is not WMContainer rootContainer) continue;
+            var parent = FindParentByReference(rootContainer, control, visited);
             if (parent != null) return parent;
         }
 

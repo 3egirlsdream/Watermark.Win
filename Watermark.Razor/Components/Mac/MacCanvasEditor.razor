@@ -94,6 +94,8 @@
     private IJSObjectReference? editorReference;
     private DotNetObjectReference<MacCanvasEditor>? dotNetReference;
     private WMDesignRenderResult? appliedRenderResult;
+    private WMTemplateEditorState? observedEditor;
+    private long appliedInteractionPreferenceVersion = -1;
     private string? appliedSelectionId;
     private double appliedZoom = double.NaN;
     private bool initialFitPending = true;
@@ -263,6 +265,13 @@
 
     protected override void OnParametersSet()
     {
+        if (!ReferenceEquals(observedEditor, Editor))
+        {
+            if (observedEditor is not null)
+                observedEditor.InteractionPreferencesChanged -= HandleInteractionPreferencesChanged;
+            observedEditor = Editor;
+            observedEditor.InteractionPreferencesChanged += HandleInteractionPreferencesChanged;
+        }
         if (ReferenceEquals(observedRenderResult, RenderResult)
             && ReferenceEquals(observedScene, Scene)
             && string.Equals(observedPreviewUrl, PreviewUrl, StringComparison.Ordinal)) return;
@@ -310,7 +319,8 @@
         // Rebuilding from the previous RenderResult here briefly restores the
         // old bounds after pointer-up. Keep the JS-committed geometry visible
         // until a new authoritative RenderResult instance arrives.
-        if (!ReferenceEquals(appliedRenderResult, RenderResult))
+        if (!ReferenceEquals(appliedRenderResult, RenderResult)
+            || appliedInteractionPreferenceVersion != Editor.InteractionPreferenceVersion)
         {
             var nextResult = RenderResult;
             var nextSelectionId = Editor.SelectedControlId;
@@ -324,6 +334,7 @@
                 items,
                 nextSelectionId);
             appliedRenderResult = nextResult;
+            appliedInteractionPreferenceVersion = Editor.InteractionPreferenceVersion;
             appliedSelectionId = nextSelectionId;
             appliedZoom = nextZoom;
             await ScrollSelectionIntoViewAsync();
@@ -353,6 +364,11 @@
             || (Editor.Draft.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion
                 && bounds.ParentId is null
                 && control is WMContainer);
+        var text = control as WMText;
+        var textPixelScale = Math.Max(0, (RenderResult?.CanvasWidth ?? 0) / 1080d);
+        var resizeInset = text?.EnableBorder == true
+            ? Math.Max(0, 2d * (text.BorderWidth + text.BorderPadding) * textPixelScale)
+            : 0;
         return new MacCanvasSceneItem(
             bounds.ControlId,
             bounds.ParentId,
@@ -372,7 +388,19 @@
             control?.IsLocked ?? bounds.IsLocked,
             control?.Enabled ?? bounds.IsVisible,
             sceneLayer?.HasSurface == true,
-            sceneLayer?.CompositeMode == WMDesignSceneCompositeMode.Backdrop);
+            sceneLayer?.CompositeMode == WMDesignSceneCompositeMode.Backdrop,
+            control switch
+            {
+                WMText => "text",
+                WMLogo logo when Editor.IsLogoAspectRatioLocked(logo.ID) => "ratio",
+                WMLogo => "free",
+                WMLine line when line.Orientation == Orientation.Horizontal => "horizontal",
+                WMLine => "vertical",
+                _ => "free"
+            },
+            resizeInset,
+            text?.FontSize ?? 0,
+            Scene?.Frame.Revision ?? 0);
     }
 
     [JSInvokable]
@@ -423,7 +451,7 @@
     }
 
     [JSInvokable]
-    public Task<bool> BeginCanvasInteraction(string controlId)
+    public Task<bool> BeginCanvasInteraction(string controlId, string kind)
     {
         if (canvasInteractionActive) return Task.FromResult(false);
         var control = WMControlTree.Find(Editor.Draft, controlId);
@@ -438,9 +466,14 @@
         try
         {
             Editor.Select(controlId);
+            var resize = string.Equals(kind, "resize", StringComparison.Ordinal);
             Editor.BeginTransaction(
-                IsAbsoluteNode(control) ? "画布变换" : "调整流式顺序",
-                IsAbsoluteNode(control)
+                resize ? "调整原生尺寸"
+                    : IsAbsoluteNode(control) ? "画布变换"
+                    : "调整流式顺序",
+                resize
+                    ? WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint
+                    : IsAbsoluteNode(control)
                     ? WMTemplateChangeKind.Geometry
                     : WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order,
                 [controlId]);
@@ -476,11 +509,27 @@
             }
 
             var bounds = RenderResult?.Bounds.FirstOrDefault(item => item.ControlId == interaction.ControlId);
+            if (string.Equals(interaction.Kind, "resize", StringComparison.Ordinal))
+            {
+                if (bounds is null
+                    || interaction.BoundsVersion != (Scene?.Frame.Revision ?? 0))
+                {
+                    Editor.CancelTransaction();
+                    return Task.FromResult<MacCanvasInteraction?>(null);
+                }
+
+                var applied = MacCanvasResize.Apply(control, bounds, interaction);
+                Editor.CommitTransaction(WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint);
+                return Task.FromResult<MacCanvasInteraction?>(applied);
+            }
+
             if (IsAbsoluteNode(control))
             {
                 var constrainedInteraction = bounds is null
                     ? interaction
-                    : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
+                    : string.Equals(interaction.Kind, "drag", StringComparison.Ordinal)
+                        ? MacCanvasBoundary.ConstrainDrag(bounds, interaction)
+                        : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
                 MacCanvasTransform.Apply(control, constrainedInteraction);
                 Editor.CommitTransaction(
                     string.Equals(interaction.Kind, "drag", StringComparison.Ordinal)
@@ -856,6 +905,8 @@
     {
         if (disposed) return;
         disposed = true;
+        if (observedEditor is not null)
+            observedEditor.InteractionPreferencesChanged -= HandleInteractionPreferencesChanged;
 
         if (keyboardMoveActive || canvasInteractionActive)
         {
@@ -886,6 +937,12 @@
         {
             dotNetReference?.Dispose();
         }
+    }
+
+    private void HandleInteractionPreferencesChanged()
+    {
+        if (!disposed)
+            _ = InvokeAsync(StateHasChanged);
     }
 
 #nullable restore

@@ -82,8 +82,8 @@ public sealed class WMCollageDerivedMediaProcessorTests : IDisposable
         var result = await processor.ExecuteAsync(request, [Artifact("slot", sourcePath)], root);
 
         Assert.Equal(1, renderer.RenderCalls);
-        Assert.Equal(sourcePath, renderer.RenderedCanvas!.Children[0].Path);
-        Assert.Equal("fixed.jpg", renderer.RenderedCanvas.Children[1].Path);
+        Assert.Equal(sourcePath, Assert.IsType<WMContainer>(renderer.RenderedCanvas!.Children[0]).Path);
+        Assert.Equal("fixed.jpg", Assert.IsType<WMContainer>(renderer.RenderedCanvas.Children[1]).Path);
         Assert.Equal(30, result.Artifact.Width);
         Assert.Equal(20, result.Artifact.Height);
         var snapshot = metrics.Snapshot();
