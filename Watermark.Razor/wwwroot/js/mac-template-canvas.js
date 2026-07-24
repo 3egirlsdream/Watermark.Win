@@ -1,5 +1,43 @@
 const vendorUrl = "../vendor/moveable/moveable.min.js";
 let vendorPromise;
+const sceneBitmaps = new Map();
+export const absoluteResizeDirections = Object.freeze([
+  "n", "ne", "e", "se", "s", "sw", "w", "nw"
+]);
+export const coarseResizeDirections = Object.freeze(["nw", "ne", "se", "sw"]);
+
+export async function publishSceneBitmap(key, streamReference, mimeType) {
+  if (!key || typeof globalThis.createImageBitmap !== "function") return false;
+  const buffer = await streamReference.arrayBuffer();
+  const blob = new Blob([buffer], { type: mimeType || "application/octet-stream" });
+  const bitmap = await createImageBitmap(blob);
+  const previous = sceneBitmaps.get(key);
+  previous?.close?.();
+  sceneBitmaps.set(key, bitmap);
+  return true;
+}
+
+export function bindSceneBitmaps(root) {
+  if (!root) return;
+  root.querySelectorAll?.("[data-scene-bitmap-key]")?.forEach(canvas => {
+    const key = canvas.dataset.sceneBitmapKey;
+    const bitmap = sceneBitmaps.get(key);
+    if (!bitmap || canvas.dataset.sceneBitmapBound === key) return;
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext?.("2d", { alpha: true });
+    context?.clearRect(0, 0, canvas.width, canvas.height);
+    context?.drawImage(bitmap, 0, 0);
+    canvas.dataset.sceneBitmapBound = key;
+  });
+}
+
+export function releaseSceneBitmap(key) {
+  const bitmap = sceneBitmaps.get(key);
+  if (!bitmap) return;
+  sceneBitmaps.delete(key);
+  bitmap.close?.();
+}
 
 function loadMoveable() {
   if (window.Moveable) return Promise.resolve();
@@ -117,9 +155,16 @@ function layoutDimension(size) {
   return Number.isFinite(size) && size > 0 ? size : null;
 }
 
-function relativeResizeSize(size, startSize) {
-  if (!Number.isFinite(size) || size < 0 || !Number.isFinite(startSize) || startSize <= 0) return null;
-  return size / startSize;
+export function resolveScaleInteraction(event, fallbackScale = [1, 1]) {
+  const [scaleX, scaleY] = pair(event?.scale, fallbackScale);
+  const [deltaX, deltaY] = pair(
+    event?.drag?.beforeDist ?? event?.drag?.dist);
+  return {
+    scaleX,
+    scaleY,
+    deltaX,
+    deltaY
+  };
 }
 
 function inputEventFor(event) {
@@ -135,6 +180,40 @@ export function getFitScale(element, canvasWidth, canvasHeight, padding = 56) {
   const availableWidth = Math.max(1, element.clientWidth - padding);
   const availableHeight = Math.max(1, element.clientHeight - padding);
   return Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight);
+}
+
+export function detectInteractionProfile() {
+  const hasHover = globalThis.matchMedia?.("(hover: hover)")?.matches === true;
+  const finePointer = globalThis.matchMedia?.("(pointer: fine)")?.matches === true;
+  const probe = document.createElement("div");
+  probe.style.cssText = [
+    "position:fixed",
+    "visibility:hidden",
+    "pointer-events:none",
+    "padding-top:env(safe-area-inset-top)",
+    "padding-right:env(safe-area-inset-right)",
+    "padding-bottom:env(safe-area-inset-bottom)",
+    "padding-left:env(safe-area-inset-left)"
+  ].join(";");
+  document.body.appendChild(probe);
+  const style = getComputedStyle(probe);
+  const number = value => Number.parseFloat(value) || 0;
+  const result = {
+    pointerType: finePointer ? "mouse" : "touch",
+    hasHover,
+    finePointer,
+    hasHardwareKeyboard: finePointer || (navigator.maxTouchPoints || 0) === 0,
+    supportsImageBitmap: typeof globalThis.createImageBitmap === "function",
+    supportsBlob: typeof globalThis.Blob === "function" && typeof globalThis.URL?.createObjectURL === "function",
+    supportsPointerCapture: typeof globalThis.Element?.prototype?.setPointerCapture === "function",
+    safeAreaTop: number(style.paddingTop),
+    safeAreaRight: number(style.paddingRight),
+    safeAreaBottom: number(style.paddingBottom),
+    safeAreaLeft: number(style.paddingLeft),
+    displayDensity: globalThis.devicePixelRatio || 1
+  };
+  probe.remove();
+  return result;
 }
 
 export function capturePointer(element, pointerId) {
@@ -160,69 +239,74 @@ export function shouldFinishReleasedPointer(event, activePointerId) {
   return event?.pointerType !== "touch" && event?.buttons === 0;
 }
 
-export function createPreviewInteractionVisual(target, preview, stage) {
-  const source = preview?.currentSrc || preview?.src;
-  if (!target || !source || !stage) return null;
+export function shouldIgnoreSynthesizedMouse(
+  pointerType,
+  eventTime,
+  lastTouchTime,
+  suppressionWindow = 500) {
+  return pointerType === "mouse"
+    && Number.isFinite(eventTime)
+    && Number.isFinite(lastTouchTime)
+    && eventTime - lastTouchTime >= 0
+    && eventTime - lastTouchTime < suppressionWindow;
+}
 
-  const targetRect = target.getBoundingClientRect();
-  const stageRect = stage.getBoundingClientRect();
-  const previewRect = preview.getBoundingClientRect();
-  if (targetRect.width <= 0 || targetRect.height <= 0 || previewRect.width <= 0 || previewRect.height <= 0)
-    return null;
+export function isPointerTap(start, end, threshold = 6) {
+  if (!start || !end) return false;
+  const deltaX = asFinite(end.clientX, 0) - asFinite(start.clientX, 0);
+  const deltaY = asFinite(end.clientY, 0) - asFinite(start.clientY, 0);
+  return Math.hypot(deltaX, deltaY) < threshold;
+}
 
-  const document = stage.ownerDocument || preview.ownerDocument;
-  if (!document?.createElement || typeof preview.cloneNode !== "function") return null;
-
-  const element = document.createElement("div");
-  element.className = "canvas-interaction-ghost canvas-container-drag-ghost";
-  element.style.left = `${targetRect.left - stageRect.left}px`;
-  element.style.top = `${targetRect.top - stageRect.top}px`;
-  element.style.width = `${targetRect.width}px`;
-  element.style.height = `${targetRect.height}px`;
-
-  // Reuse the already decoded preview as an <img>. WKWebView can display a
-  // blob URL in an image while declining to repaint the same URL when it is
-  // assigned to CSS background-image, which leaves only the outline moving.
-  const image = preview.cloneNode(false);
-  image.removeAttribute?.("id");
-  image.className = "canvas-interaction-preview";
-  image.alt = "";
-  image.draggable = false;
-  image.src = source;
-  image.style.left = `${previewRect.left - targetRect.left}px`;
-  image.style.top = `${previewRect.top - targetRect.top}px`;
-  image.style.width = `${previewRect.width}px`;
-  image.style.height = `${previewRect.height}px`;
-  element.appendChild(image);
-  stage.appendChild(element);
-
+export function touchPairMetrics(points) {
+  if (!Array.isArray(points) || points.length < 2) return null;
+  const [first, second] = points;
   return {
-    element,
-    image,
-    target,
-    startRect: targetRect,
-    stage,
-    previewWidth: previewRect.width,
-    previewHeight: previewRect.height,
-    previewOffsetX: previewRect.left - targetRect.left,
-    previewOffsetY: previewRect.top - targetRect.top
+    x: (asFinite(first?.x, 0) + asFinite(second?.x, 0)) / 2,
+    y: (asFinite(first?.y, 0) + asFinite(second?.y, 0)) / 2,
+    distance: Math.max(
+      1,
+      Math.hypot(
+        asFinite(second?.x, 0) - asFinite(first?.x, 0),
+        asFinite(second?.y, 0) - asFinite(first?.y, 0)))
   };
 }
 
-export function updatePreviewInteractionVisual(visual) {
+export function viewportGestureChange(start, latest) {
+  if (!start || !latest) return { deltaX: 0, deltaY: 0, scale: 1 };
+  return {
+    deltaX: latest.x - start.x,
+    deltaY: latest.y - start.y,
+    scale: latest.distance / Math.max(1, start.distance)
+  };
+}
+
+export function createLayerInteractionVisual(layer, backdrop = null) {
+  if (!layer && !backdrop) return null;
+  return {
+    layer,
+    backdrop,
+    layerTransform: layer?.style?.transform || "",
+    backdropTransform: backdrop?.style?.transform || ""
+  };
+}
+
+export function updateLayerInteractionVisual(visual, active, viewScale = 1) {
+  if (!visual || !active) return;
+  const translateX = toScenePixels(active.deltaX, viewScale);
+  const translateY = toScenePixels(active.deltaY, viewScale);
+  const rotation = asFinite(active.rotation, active.start.rotation) - asFinite(active.start.rotation, 0);
+  const scaleX = asPositiveScale(active.scaleX) / asPositiveScale(active.start.scaleX);
+  const scaleY = asPositiveScale(active.scaleY) / asPositiveScale(active.start.scaleY);
+  const delta = ` translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+  if (visual.layer) visual.layer.style.transform = `${visual.layerTransform}${delta}`;
+  if (visual.backdrop) visual.backdrop.style.transform = `${visual.backdropTransform}${delta}`;
+}
+
+export function restoreLayerInteractionVisual(visual) {
   if (!visual) return;
-  const rect = visual.target.getBoundingClientRect();
-  const stageRect = visual.stage.getBoundingClientRect();
-  const scaleX = visual.startRect.width > 0 ? rect.width / visual.startRect.width : 1;
-  const scaleY = visual.startRect.height > 0 ? rect.height / visual.startRect.height : 1;
-  visual.element.style.left = `${rect.left - stageRect.left}px`;
-  visual.element.style.top = `${rect.top - stageRect.top}px`;
-  visual.element.style.width = `${rect.width}px`;
-  visual.element.style.height = `${rect.height}px`;
-  visual.image.style.width = `${visual.previewWidth * scaleX}px`;
-  visual.image.style.height = `${visual.previewHeight * scaleY}px`;
-  visual.image.style.left = `${visual.previewOffsetX * scaleX}px`;
-  visual.image.style.top = `${visual.previewOffsetY * scaleY}px`;
+  if (visual.layer) visual.layer.style.transform = visual.layerTransform;
+  if (visual.backdrop) visual.backdrop.style.transform = visual.backdropTransform;
 }
 
 export function focusSelectionName() {
@@ -238,7 +322,7 @@ export function scrollSelectedLayerIntoView() {
     ?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
-export async function createEditor(root, callback) {
+export async function createEditor(root, callback, interactionProfile = null) {
   await loadMoveable();
 
   const stage = document.createElement("div");
@@ -264,9 +348,16 @@ export async function createEditor(root, callback) {
   let disposed = false;
   let panMode = false;
   let snappingEnabled = true;
+  let finePointerMode = interactionProfile?.finePointer !== false;
   let pointerStart = null;
   let pendingInteractionVisual = null;
   let pendingInteractionVisualTimer = null;
+  let pointerAnimationFrame = null;
+  let pendingPointerEvent = null;
+  let lastTouchPointerAt = Number.NEGATIVE_INFINITY;
+  const activeTouches = new Map();
+  let viewportGesture = null;
+  let viewportGestureFrame = null;
 
   function clearDocumentSelection() {
     root.ownerDocument.getSelection?.()?.removeAllRanges?.();
@@ -286,6 +377,21 @@ export async function createEditor(root, callback) {
   }
 
   function rememberPointerStart(event) {
+    const now = event.timeStamp || performance.now();
+    if (event.pointerType === "touch") lastTouchPointerAt = now;
+    if (shouldIgnoreSynthesizedMouse(event.pointerType, now, lastTouchPointerAt)) return;
+    const observedFinePointer = event.pointerType === "mouse"
+      || event.pointerType === "pen"
+      || globalThis.matchMedia?.("(pointer: fine)")?.matches === true;
+    if (finePointerMode !== observedFinePointer) {
+      finePointerMode = observedFinePointer;
+      select(selectedId);
+    }
+    void invoke(
+      "ReportEditorPointer",
+      event.pointerType || interactionProfile?.pointerType || "mouse",
+      globalThis.matchMedia?.("(hover: hover)")?.matches === true,
+      observedFinePointer);
     if (panMode || event.isPrimary === false || event.button !== 0) return;
     if (interaction) {
       const active = interaction;
@@ -330,7 +436,7 @@ export async function createEditor(root, callback) {
       ? interaction.pendingSelection
       : null;
     if (pendingSelection?.hitControlId
-      && Math.hypot(event.clientX - pendingSelection.clientX, event.clientY - pendingSelection.clientY) < 4) {
+      && isPointerTap(pendingSelection, event)) {
       pointerStart = null;
       void cancelInteraction();
       select(pendingSelection.hitControlId);
@@ -343,7 +449,7 @@ export async function createEditor(root, callback) {
       pointerStart = null;
       if (pending?.deferSelection
         && pending.hitControlId
-        && Math.hypot(event.clientX - pending.clientX, event.clientY - pending.clientY) < 4) {
+        && isPointerTap(pending, event)) {
         select(pending.hitControlId);
         void invoke("SelectCanvasControl", pending.hitControlId);
       }
@@ -380,13 +486,20 @@ export async function createEditor(root, callback) {
       void cancelInteraction();
   }
 
-  function applyActivePointerPosition(event) {
-    if (interaction?.kind === "drag") updateDrag(event);
+  function scheduleActivePointerPosition(event) {
+    pendingPointerEvent = event;
+    if (pointerAnimationFrame != null) return;
+    pointerAnimationFrame = requestAnimationFrame(() => {
+      pointerAnimationFrame = null;
+      const next = pendingPointerEvent;
+      pendingPointerEvent = null;
+      if (interaction?.kind === "drag") updateDrag(next);
+    });
   }
 
   root.addEventListener("pointerdown", rememberPointerStart, true);
   root.addEventListener("pointerdown", stopCanvasPointerPropagation);
-  root.addEventListener("pointermove", applyActivePointerPosition, true);
+  root.addEventListener("pointermove", scheduleActivePointerPosition, true);
   root.addEventListener("dragstart", preventNativeDrag, true);
   root.ownerDocument.addEventListener("selectstart", preventCanvasSelection, true);
   root.ownerDocument.addEventListener("pointerup", finishActivePointerInteraction, true);
@@ -397,6 +510,63 @@ export async function createEditor(root, callback) {
   root.ownerDocument.defaultView?.addEventListener("pointermove", finishReleasedPointerInteraction, true);
   root.ownerDocument.defaultView?.addEventListener("mousemove", finishReleasedPointerInteraction, true);
   root.addEventListener("lostpointercapture", finishLostPointerCapture, true);
+
+  const viewport = root.closest(".mac-canvas-viewport");
+  const surface = root.closest(".mac-canvas-surface");
+
+  function touchPair() {
+    return Array.from(activeTouches.values()).slice(0, 2);
+  }
+
+  function beginViewportGesture(event) {
+    if (event.pointerType !== "touch") return;
+    activeTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activeTouches.size !== 2 || viewportGesture) return;
+    const start = touchPairMetrics(touchPair());
+    viewportGesture = { start, latest: start };
+    void cancelInteraction();
+    event.preventDefault();
+  }
+
+  function updateViewportGesture(event) {
+    if (event.pointerType !== "touch" || !activeTouches.has(event.pointerId)) return;
+    activeTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (!viewportGesture || activeTouches.size < 2) return;
+    viewportGesture.latest = touchPairMetrics(touchPair());
+    event.preventDefault();
+    if (viewportGestureFrame != null) return;
+    viewportGestureFrame = requestAnimationFrame(() => {
+      viewportGestureFrame = null;
+      if (!viewportGesture || !surface) return;
+      const { deltaX, deltaY, scale } = viewportGestureChange(
+        viewportGesture.start,
+        viewportGesture.latest);
+      surface.style.setProperty("--gesture-x", `${deltaX}px`);
+      surface.style.setProperty("--gesture-y", `${deltaY}px`);
+      surface.style.setProperty("--gesture-scale", `${scale}`);
+    });
+  }
+
+  function finishViewportGesture(event) {
+    if (event.pointerType !== "touch") return;
+    activeTouches.delete(event.pointerId);
+    if (!viewportGesture || activeTouches.size >= 2) return;
+    const finished = viewportGesture;
+    viewportGesture = null;
+    const { deltaX, deltaY, scale } = viewportGestureChange(
+      finished.start,
+      finished.latest);
+    void invoke("CommitViewportGesture", deltaX, deltaY, scale).finally(() => {
+      surface?.style?.setProperty("--gesture-x", "0px");
+      surface?.style?.setProperty("--gesture-y", "0px");
+      surface?.style?.setProperty("--gesture-scale", "1");
+    });
+  }
+
+  viewport?.addEventListener("pointerdown", beginViewportGesture, true);
+  viewport?.addEventListener("pointermove", updateViewportGesture, true);
+  viewport?.addEventListener("pointerup", finishViewportGesture, true);
+  viewport?.addEventListener("pointercancel", finishViewportGesture, true);
 
   function invoke(method, ...args) {
     try {
@@ -463,15 +633,16 @@ export async function createEditor(root, callback) {
   }
 
   function createInteractionVisual(item) {
-    const target = overlays.get(item.id);
-    const preview = root.parentElement?.querySelector?.(".mac-canvas-preview");
-    return createPreviewInteractionVisual(target, preview, stage);
+    const surfaceRoot = root.parentElement;
+    const layers = Array.from(surfaceRoot?.querySelectorAll?.(".mac-canvas-scene-layer") || []);
+    const backdrops = Array.from(surfaceRoot?.querySelectorAll?.(".mac-canvas-backdrop") || []);
+    const layer = layers.find(element => element.dataset.sceneControlId === item.id) || null;
+    const backdrop = backdrops.find(element => element.dataset.sceneControlId === item.id) || null;
+    return createLayerInteractionVisual(layer, backdrop);
   }
 
   function updateInteractionVisual(active) {
-    const ghost = active?.dragGhost;
-    if (!ghost) return;
-    updatePreviewInteractionVisual(ghost);
+    updateLayerInteractionVisual(active?.dragGhost, active, viewScale);
   }
 
   function applyCommittedInteraction(active, committed) {
@@ -490,6 +661,15 @@ export async function createEditor(root, callback) {
     };
     itemsById.set(controlId, next);
 
+    active.deltaX = next.parentWidth === 0
+      ? 0
+      : (next.offsetXPercent - active.start.offsetXPercent) / 100 * next.parentWidth;
+    active.deltaY = next.parentHeight === 0
+      ? 0
+      : (next.offsetYPercent - active.start.offsetYPercent) / 100 * next.parentHeight;
+    active.scaleX = next.scaleX;
+    active.scaleY = next.scaleY;
+    active.rotation = next.rotation;
     const target = overlays.get(controlId);
     if (target) target.style.transform = compose(next, viewScale);
     updateInteractionVisual(active);
@@ -504,16 +684,16 @@ export async function createEditor(root, callback) {
   }
 
   function removeInteractionVisual(active) {
-    active?.dragGhost?.element?.remove();
+    restoreLayerInteractionVisual(active?.dragGhost);
     if (active) active.dragGhost = null;
   }
 
-  function clearPendingInteractionVisual() {
+  function clearPendingInteractionVisual(restore = true) {
     if (pendingInteractionVisualTimer != null) {
       clearTimeout(pendingInteractionVisualTimer);
       pendingInteractionVisualTimer = null;
     }
-    pendingInteractionVisual?.element?.remove();
+    if (restore) restoreLayerInteractionVisual(pendingInteractionVisual);
     pendingInteractionVisual = null;
   }
 
@@ -631,35 +811,26 @@ export async function createEditor(root, callback) {
     if (input?.buttons === 0) finishActivePointerInteraction(input);
   }
 
-  function updateResize(event) {
+  function updateScale(event) {
     if (!interaction) return;
     moveable.snappable = snappingEnabled && !inputEventFor(event)?.altKey;
-    const [resizeDeltaX, resizeDeltaY] = pair(event.dist);
-    const [directionX, directionY] = pair(event.direction);
-    const [dragDeltaX, dragDeltaY] = pair(event.drag?.beforeDist ?? event.drag?.dist, [resizeDeltaX / 2, resizeDeltaY / 2]);
-    const relativeWidth = directionX === 0
-      ? null
-      : relativeResizeSize(interaction.layoutWidth + directionX * resizeDeltaX, interaction.layoutWidth);
-    const relativeHeight = directionY === 0
-      ? null
-      : relativeResizeSize(interaction.layoutHeight + directionY * resizeDeltaY, interaction.layoutHeight);
-    interaction.deltaX = toCanvasUnits(dragDeltaX, viewScale);
-    interaction.deltaY = toCanvasUnits(dragDeltaY, viewScale);
-    if (interaction.keepRatio) {
-      const relativeSize = [relativeWidth, relativeHeight]
-        .filter(value => value != null)
-        .reduce((result, value) => Math.abs(value - 1) > Math.abs(result - 1) ? value : result, 1);
-      interaction.scaleX = interaction.start.scaleX * relativeSize;
-      interaction.scaleY = interaction.start.scaleY * relativeSize;
-    } else {
-      interaction.scaleX = interaction.start.scaleX * (relativeWidth ?? 1);
-      interaction.scaleY = interaction.start.scaleY * (relativeHeight ?? 1);
-    }
+    const {
+      scaleX,
+      scaleY,
+      deltaX,
+      deltaY
+    } = resolveScaleInteraction(
+      event,
+      [interaction.start.scaleX, interaction.start.scaleY]);
+    interaction.scaleX = scaleX;
+    interaction.scaleY = scaleY;
     [interaction.scaleX, interaction.scaleY] = clampChildScale(
       interaction.start,
       interaction.scaleX,
       interaction.scaleY,
       interaction.rotation);
+    interaction.deltaX = toCanvasUnits(deltaX, viewScale);
+    interaction.deltaY = toCanvasUnits(deltaY, viewScale);
     [interaction.deltaX, interaction.deltaY] = clampChildTranslation(
       interaction.start,
       interaction.deltaX,
@@ -772,8 +943,8 @@ export async function createEditor(root, callback) {
     container: root,
     target: null,
     draggable: true,
-    resizable: true,
-    renderDirections: ["e", "se"],
+    scalable: true,
+    renderDirections: finePointerMode ? absoluteResizeDirections : coarseResizeDirections,
     rotatable: true,
     origin: false,
     snappable: true,
@@ -789,16 +960,24 @@ export async function createEditor(root, callback) {
     })
     .on("drag", updateDrag)
     .on("dragEnd", event => { void completeInteraction("drag", event); })
-    .on("resizeStart", event => {
-      beginInteraction("resize", event);
+    .on("scaleStart", event => {
+      if (beginInteraction("resize", event)) {
+        event.set?.([interaction.start.scaleX, interaction.start.scaleY]);
+        event.dragStart?.set?.([0, 0]);
+      }
     })
-    .on("resize", updateResize)
-    .on("resizeEnd", event => { void completeInteraction("resize", event); })
+    .on("scale", updateScale)
+    .on("scaleEnd", event => { void completeInteraction("resize", event); })
     .on("rotateStart", event => {
       if (beginInteraction("rotate", event)) event.set?.(0);
     })
     .on("rotate", updateRotate)
-    .on("rotateEnd", event => { void completeInteraction("rotate", event); });
+    .on("rotateEnd", event => { void completeInteraction("rotate", event); })
+    .on("snap", event => {
+      const vertical = event?.guidelines?.vertical?.map(item => item.pos?.[0]).join(",") || "";
+      const horizontal = event?.guidelines?.horizontal?.map(item => item.pos?.[1]).join(",") || "";
+      void invoke("NotifyCanvasSnap", `${vertical}|${horizontal}`);
+    });
 
   function select(id) {
     selectedId = id;
@@ -808,9 +987,11 @@ export async function createEditor(root, callback) {
     const isAbsolute = Boolean(item?.absolute);
     const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
     moveable.target = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
-    moveable.resizable = isAbsolute;
+    moveable.scalable = isAbsolute;
     moveable.rotatable = isAbsolute;
-    moveable.renderDirections = isAbsolute ? ["e", "se"] : [];
+    moveable.renderDirections = isAbsolute
+      ? (finePointerMode ? absoluteResizeDirections : coarseResizeDirections)
+      : [];
     moveable.elementGuidelines = Array.from(overlays.entries())
       .filter(([key]) => key !== id && itemsById.get(key)?.visible)
       .map(([, element]) => element);
@@ -845,27 +1026,29 @@ export async function createEditor(root, callback) {
   }
 
   async function waitForPreviewImage() {
-    const preview = root.parentElement?.querySelector?.(".mac-canvas-preview");
-    if (!preview) return;
-
-    if (typeof preview.decode === "function") {
-      try {
-        await preview.decode();
-      } catch {
-        // A newer preview may replace the source while this scene is queued.
+    const images = Array.from(root.parentElement?.querySelectorAll?.(".wm-scene-image") || []);
+    await Promise.all(images.map(async image => {
+      if (typeof image.decode === "function") {
+        try {
+          await image.decode();
+        } catch {
+          // A newer layer version may replace this source while queued.
+        }
+        return;
       }
-      return;
-    }
-
-    if (preview.complete) return;
-    await new Promise(resolve => {
-      preview.addEventListener("load", resolve, { once: true });
-      preview.addEventListener("error", resolve, { once: true });
-    });
+      if (image.complete) return;
+      await new Promise(resolve => {
+        image.addEventListener("load", resolve, { once: true });
+        image.addEventListener("error", resolve, { once: true });
+      });
+    }));
   }
 
   function applyScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId) {
-    clearPendingInteractionVisual();
+    // Blazor has already applied this scene's authoritative layer styles.
+    // Forget the temporary gesture transform without restoring the pre-gesture
+    // transform over the newly committed frame.
+    clearPendingInteractionVisual(false);
     viewScale = asPositiveScale(nextViewScale);
     sceneWidth = asFinite(canvasWidth, 0);
     sceneHeight = asFinite(canvasHeight, 0);
@@ -933,6 +1116,9 @@ export async function createEditor(root, callback) {
     cancelInteraction() {
       return cancelInteraction();
     },
+    hasActiveInteraction() {
+      return Boolean(interaction || pointerStart || viewportGesture);
+    },
     dispose() {
       if (disposePromise) return disposePromise;
       cancelInteraction();
@@ -944,7 +1130,7 @@ export async function createEditor(root, callback) {
         await cancellation;
         root.removeEventListener("pointerdown", rememberPointerStart, true);
         root.removeEventListener("pointerdown", stopCanvasPointerPropagation);
-        root.removeEventListener("pointermove", applyActivePointerPosition, true);
+        root.removeEventListener("pointermove", scheduleActivePointerPosition, true);
         root.removeEventListener("dragstart", preventNativeDrag, true);
         root.ownerDocument.removeEventListener("selectstart", preventCanvasSelection, true);
         root.ownerDocument.removeEventListener("pointerup", finishActivePointerInteraction, true);
@@ -955,7 +1141,18 @@ export async function createEditor(root, callback) {
         root.ownerDocument.defaultView?.removeEventListener("pointermove", finishReleasedPointerInteraction, true);
         root.ownerDocument.defaultView?.removeEventListener("mousemove", finishReleasedPointerInteraction, true);
         root.removeEventListener("lostpointercapture", finishLostPointerCapture, true);
+        viewport?.removeEventListener("pointerdown", beginViewportGesture, true);
+        viewport?.removeEventListener("pointermove", updateViewportGesture, true);
+        viewport?.removeEventListener("pointerup", finishViewportGesture, true);
+        viewport?.removeEventListener("pointercancel", finishViewportGesture, true);
         clearPendingInteractionVisual();
+        if (pointerAnimationFrame != null) cancelAnimationFrame(pointerAnimationFrame);
+        pointerAnimationFrame = null;
+        pendingPointerEvent = null;
+        if (viewportGestureFrame != null) cancelAnimationFrame(viewportGestureFrame);
+        viewportGestureFrame = null;
+        activeTouches.clear();
+        viewportGesture = null;
         root.classList.remove("canvas-interacting");
         moveable.destroy();
         root.replaceChildren();
