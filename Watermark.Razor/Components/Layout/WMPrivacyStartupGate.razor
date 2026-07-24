@@ -32,10 +32,6 @@ else
         {
             var settings = await SettingsService.LoadAsync();
             privacyRequired = !settings.PrivacyAccepted;
-            if (settings.PrivacyAccepted)
-            {
-                await InitializeApplicationSafelyAsync();
-            }
         }
         catch
         {
@@ -45,6 +41,11 @@ else
         {
             settingsResolved = true;
         }
+
+        if (!privacyRequired)
+        {
+            StartApplicationInitialization();
+        }
     }
 
     private async Task OnPrivacyClosedAsync(bool accepted)
@@ -52,13 +53,26 @@ else
         await SettingsService.SetPrivacyConsentAsync(accepted);
         if (accepted)
         {
-            await InitializeApplicationSafelyAsync();
+            StartApplicationInitialization();
         }
         privacyRequired = false;
     }
 
+    private bool applicationInitializationStarted;
+
+    private void StartApplicationInitialization()
+    {
+        if (applicationInitializationStarted) return;
+        applicationInitializationStarted = true;
+        _ = InitializeApplicationSafelyAsync();
+    }
+
     private async Task InitializeApplicationSafelyAsync()
     {
+        // Let the consented route paint before account recovery and first-run
+        // resource downloads begin. Those operations remain best-effort and are
+        // deduplicated by the scoped startup service.
+        await Task.Yield();
         try
         {
             await StartupService.InitializeAfterPrivacyConsentAsync();

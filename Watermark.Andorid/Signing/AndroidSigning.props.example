@@ -1,0 +1,10 @@
+<Project>
+  <!-- Copy to AndroidSigning.props, then replace every placeholder locally. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(TargetFramework)' == 'net8.0-android'">
+    <AndroidKeyStore>True</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(MSBuildThisFileDirectory)Watermark.Release.keystore</AndroidSigningKeyStore>
+    <AndroidSigningStorePass>REPLACE_WITH_KEYSTORE_PASSWORD</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>temp</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass>REPLACE_WITH_KEY_PASSWORD</AndroidSigningKeyPass>
+  </PropertyGroup>
+</Project>

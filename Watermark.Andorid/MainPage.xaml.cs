@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.WebView;
+#if IOS
+using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+#endif
 
 namespace Watermark.Andorid
 {
@@ -11,6 +14,13 @@ namespace Watermark.Andorid
         public MainPage()
         {
             InitializeComponent();
+#if IOS
+            // Let the WebView own both safe areas. The shared mobile layout uses
+            // CSS env(safe-area-inset-*) so its bottom bar can paint continuously
+            // behind the Home Indicator instead of leaving a native white strip.
+            On<Microsoft.Maui.Controls.PlatformConfiguration.iOS>()
+                .SetUseSafeArea(false);
+#endif
 		}
 
 		/// <summary>
@@ -56,6 +66,14 @@ namespace Watermark.Andorid
 			androidWebView = e.WebView;
 			e.WebView.VerticalScrollBarEnabled = false;
             e.WebView.ScrollBarSize = 0;
+#elif IOS
+            // The page deliberately extends edge-to-edge. Prevent WKWebView from
+            // adding a second native content inset; the shared CSS consumes the
+            // reported safe-area values for headers and the bottom navigation.
+            e.WebView.ScrollView.ContentInsetAdjustmentBehavior =
+                UIKit.UIScrollViewContentInsetAdjustmentBehavior.Never;
+            e.WebView.ScrollView.ContentInset = UIKit.UIEdgeInsets.Zero;
+            e.WebView.ScrollView.ScrollIndicatorInsets = UIKit.UIEdgeInsets.Zero;
 #elif MACCATALYST
             // Configure WKWebView for macOS
             e.WebView.Configuration.Preferences.SetValueForKey(

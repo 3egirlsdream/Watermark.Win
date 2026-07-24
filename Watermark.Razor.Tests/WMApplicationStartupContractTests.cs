@@ -13,8 +13,35 @@ public sealed class WMApplicationStartupContractTests
 
         Assert.Contains("settings.PrivacyAccepted", gate, StringComparison.Ordinal);
         Assert.Contains("if (accepted)", gate, StringComparison.Ordinal);
-        Assert.Contains("await InitializeApplicationSafelyAsync();", gate, StringComparison.Ordinal);
+        Assert.Contains("StartApplicationInitialization();", gate, StringComparison.Ordinal);
+        Assert.Contains("await Task.Yield();", gate, StringComparison.Ordinal);
+        Assert.DoesNotContain("await InitializeApplicationSafelyAsync();", gate, StringComparison.Ordinal);
         Assert.Equal(1, Count(gate, "StartupService.InitializeAfterPrivacyConsentAsync()"));
+    }
+
+    [Fact]
+    public void AndroidColdStart_UsesOneBrandedSurfaceAndDefersLegacyAssets()
+    {
+        var project = Read("Watermark.Andorid/Watermark.Andorid.csproj");
+        var app = Read("Watermark.Andorid/App.xaml");
+        var activity = Read("Watermark.Andorid/Platforms/Android/MainActivity.cs");
+        var host = Read("Watermark.Andorid/wwwroot/index.html");
+        var hostStyles = Read("Watermark.Andorid/wwwroot/css/app.css");
+        var gateStyles = Read("Watermark.Razor/Components/Layout/WMPrivacyStartupGate.razor.css");
+
+        Assert.Contains("Color=\"#FAFAFA\" BaseSize=\"108,108\"", project, StringComparison.Ordinal);
+        Assert.Contains("<Color x:Key=\"PageBackgroundColor\">#FAFAFA</Color>", app, StringComparison.Ordinal);
+        Assert.Contains("Color.ParseColor(\"#FAFAFA\")", activity, StringComparison.Ordinal);
+        Assert.Contains("class=\"wm-startup-splash\"", host, StringComparison.Ordinal);
+        Assert.Contains("_content/Watermark.Razor/img/app-icon.svg", host, StringComparison.Ordinal);
+        Assert.Contains("css/app.css?v=20260724", host, StringComparison.Ordinal);
+        Assert.Contains("Litograph.styles.css?v=20260724", host, StringComparison.Ordinal);
+        Assert.Contains("height: 108px", hostStyles, StringComparison.Ordinal);
+        Assert.Contains("height: 108px", gateStyles, StringComparison.Ordinal);
+        Assert.Contains("background: #fafafa", hostStyles, StringComparison.Ordinal);
+        Assert.Contains("background: #fafafa", gateStyles, StringComparison.Ordinal);
+        Assert.DoesNotContain("swiper-bundle", host, StringComparison.Ordinal);
+        Assert.DoesNotContain("init-swiper", host, StringComparison.Ordinal);
     }
 
     [Fact]

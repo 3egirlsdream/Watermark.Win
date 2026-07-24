@@ -30,6 +30,7 @@ textarea {
 html,
 body,
 #app {
+    background: #fafafa;
     height: 100%;
     margin: 0;
     overflow: hidden;
@@ -132,39 +133,33 @@ h1:focus {
         content: "An error has occurred."
     }
 
-.status-bar-safe-area {
-    display: none;
-}
-
 @supports (-webkit-touch-callout: none) {
-    .status-bar-safe-area {
-        display: flex;
-        position: sticky;
-        top: 0;
-        height: env(safe-area-inset-top);
-        background-color: #f7f7f7;
-        width: 100%;
-        z-index: 1;
-    }
-
     .flex-column, .navbar-brand {
         padding-left: env(safe-area-inset-left);
     }
 }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 2000;
-    display: flex;
+.wm-startup-splash {
     align-items: center;
+    background: #fafafa;
+    display: flex;
+    height: 100vh;
+    inset: 0;
     justify-content: center;
-    flex-direction: column;
-    --sk-color: white;
+    position: fixed;
+    width: 100%;
+}
+
+.wm-startup-splash img {
+    border-radius: 24px;
+    height: 108px;
+    width: 108px;
+}
+
+@supports (height: 100dvh) {
+    .wm-startup-splash {
+        height: 100dvh;
+    }
 }
 
 .scrolling-touch {

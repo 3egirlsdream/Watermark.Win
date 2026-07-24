@@ -67,9 +67,12 @@
 
 .profile-membership {
     align-items: center;
-    background: linear-gradient(120deg, #172033, #27364e);
-    border: 0;
+    background:
+        radial-gradient(circle at 16% -20%, rgba(245, 194, 102, .2), transparent 40%),
+        linear-gradient(118deg, #111a2c 0%, #1b2942 54%, #293d5d 100%);
+    border: 1px solid rgba(255, 218, 145, .14);
     border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(17, 26, 44, .14);
     color: white;
     display: grid;
     font: inherit;
@@ -77,23 +80,39 @@
     grid-template-columns: 42px 1fr 24px;
     margin-top: 12px;
     min-height: 76px;
+    overflow: hidden;
     padding: 12px 14px;
+    position: relative;
     text-align: left;
+    transition: transform 120ms ease, box-shadow 120ms ease;
     width: 100%;
 }
-.membership-symbol {
-    align-items: center;
-    background: rgba(255, 205, 110, .15);
-    border-radius: 12px;
-    color: #ffce74;
-    display: flex;
-    height: 42px;
-    justify-content: center;
+
+.profile-membership::after {
+    background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .05), transparent 65%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: translateX(-55%);
 }
+
+.profile-membership:active {
+    box-shadow: 0 6px 16px rgba(17, 26, 44, .12);
+    transform: scale(.988);
+}
+
+.profile-membership > span,
+.profile-membership > ::deep .wm-icon {
+    position: relative;
+    z-index: 1;
+}
+
+.profile-membership > ::deep .wm-icon:last-child { color: #ffe2a2; }
 .profile-membership strong,
 .profile-membership small { display: block; }
-.profile-membership strong { font-size: .8rem; }
-.profile-membership small { color: rgba(255,255,255,.6); font-size: .62rem; margin-top: 3px; }
+.profile-membership strong { font-size: .82rem; letter-spacing: .01em; }
+.profile-membership small { color: rgba(238, 243, 252, .64); font-size: .62rem; margin-top: 4px; }
 
 .profile-group-label {
     color: var(--wm-text-muted);
@@ -153,7 +172,7 @@
     padding: 30px 0 10px;
     text-align: center;
 }
-.profile-footer small { font-size: .6rem; }
+.profile-footer small { font-size: .64rem; }
 
 @media (min-width: 720px) {
     .profile-page { padding: 46px max(32px, calc((100vw - 720px) / 2)) 120px; }

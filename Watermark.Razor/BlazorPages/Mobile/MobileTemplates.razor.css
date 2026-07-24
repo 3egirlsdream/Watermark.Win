@@ -1,6 +1,6 @@
 .templates-page {
     --market-coral: #ff6948;
-    background: #f8f9fb;
+    background: var(--wm-page);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;

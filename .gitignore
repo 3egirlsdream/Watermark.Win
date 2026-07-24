@@ -75,4 +75,9 @@ design
 Watermark.Web/Watermark.Web/design-qa.md
 design-qa.md
 
+# Android 发布签名材料和本机口令配置（不得提交）
+/Watermark.Andorid/Signing/*.keystore
+/Watermark.Andorid/Signing/*.keyInfo
+/Watermark.Andorid/Signing/AndroidSigning.props
+
 deliverables/

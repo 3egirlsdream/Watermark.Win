@@ -1,6 +1,6 @@
 .wm-privacy-bootstrap {
     align-items: center;
-    background: #f4f7fb;
+    background: #fafafa;
     display: flex;
     height: 100vh;
     inset: 0;
@@ -10,9 +10,9 @@
 }
 
 .wm-privacy-bootstrap img {
-    border-radius: 20px;
-    height: 72px;
-    width: 72px;
+    border-radius: 24px;
+    height: 108px;
+    width: 108px;
 }
 
 .wm-privacy-startup-app {

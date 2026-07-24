@@ -28,8 +28,9 @@ namespace Watermark.Andorid
 #if ANDROID
 			Instance = this;
 			//设置状态栏，导航样颜色为透明
-			Window?.SetStatusBarColor(Color.White);
-			Window?.SetNavigationBarColor(Color.White);
+			var startupBackground = Color.ParseColor("#FAFAFA");
+			Window?.SetStatusBarColor(startupBackground);
+			Window?.SetNavigationBarColor(startupBackground);
 #pragma warning disable CA1422
 			if (Window?.DecorView is not null)
 				Window.DecorView.SystemUiFlags = SystemUiFlags.LightStatusBar;

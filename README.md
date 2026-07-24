@@ -112,7 +112,10 @@ dotnet build Watermark.Andorid/Watermark.Andorid.csproj \
 Watermark.Andorid/bin/Release/net8.0-android/com.top.thankful.watermark.andorid-Signed.apk
 ```
 
-当前项目的 `AndroidKeyStore=False`，因此该 APK 适用于测试安装；上架应用商店前需要配置正式签名密钥。
+Release APK 使用项目本机的正式签名。首次打包前，请从
+[`Watermark.Andorid/Signing/AndroidSigning.props.example`](Watermark.Andorid/Signing/AndroidSigning.props.example)
+创建 `AndroidSigning.props`，填入密钥库口令、密钥别名和密钥口令；该配置和密钥库均已被 Git 忽略。详细说明见
+[Android 签名目录说明](Watermark.Andorid/Signing/README.md)。
 
 ### Windows
 

@@ -2,3 +2,21 @@
 
 /* Keep pricing in the first viewport on phones; benefits follow the purchase decision. */
 @media(max-width:719px){.membership-page{padding-top:16px}.membership-page>header{margin-bottom:12px}.membership-hero{align-items:center;flex-direction:row;gap:12px;padding:16px}.membership-mark{border-radius:14px;flex-basis:48px;height:48px}.membership-hero strong{font-size:1.08rem}.membership-hero p{font-size:.72rem}.membership-plans{display:grid;gap:10px;grid-auto-columns:minmax(154px,72vw);grid-auto-flow:column;grid-template-columns:none;margin:12px -18px 0;overflow-x:auto;padding:2px 18px 12px;scroll-snap-type:x mandatory}.membership-plans button{display:flex;min-height:116px;padding:17px 14px;scroll-snap-align:start;text-align:center}.membership-plans button>span:not(.plan-badge){text-align:center}.membership-benefits{grid-template-columns:1fr;margin-top:14px}.membership-benefits article{padding:14px}}
+
+.membership-hero {
+    background:
+        radial-gradient(circle at 12% -20%, rgba(245, 194, 102, .2), transparent 42%),
+        linear-gradient(125deg, #111a2c, #293d5d);
+    border: 1px solid rgba(255, 218, 145, .14);
+    box-shadow: 0 16px 36px rgba(17, 26, 44, .13);
+}
+
+.membership-benefits article > ::deep .wm-icon {
+    color: #a96e16;
+}
+
+@media (max-width: 719px) {
+    .membership-page {
+        padding-top: max(16px, env(safe-area-inset-top));
+    }
+}

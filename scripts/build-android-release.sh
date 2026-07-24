@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT/Watermark.Andorid/Watermark.Andorid.csproj"
 APK="$ROOT/Watermark.Andorid/bin/Release/net8.0-android/com.top.thankful.watermark.andorid-Signed.apk"
+SIGNING_PROPS="$ROOT/Watermark.Andorid/Signing/AndroidSigning.props"
 
 if ! command -v dotnet >/dev/null 2>&1; then
   echo "未找到 dotnet。请先安装 .NET 8 SDK 与 Android MAUI 工作负载。" >&2
@@ -12,6 +13,12 @@ fi
 
 if [[ ! -f "$PROJECT" ]]; then
   echo "未找到 Android 项目：$PROJECT" >&2
+  exit 1
+fi
+
+if [[ ! -f "$SIGNING_PROPS" ]]; then
+  echo "未找到 Android 发布签名配置：$SIGNING_PROPS" >&2
+  echo "请根据 Watermark.Andorid/Signing/AndroidSigning.props.example 创建本机配置。" >&2
   exit 1
 fi
 

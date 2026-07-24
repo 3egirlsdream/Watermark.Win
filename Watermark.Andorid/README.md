@@ -143,7 +143,15 @@ dotnet publish Watermark.Andorid.csproj -f net8.0-android -c Release
 # bin/Release/net8.0-android/publish/com.top.thankful.watermark.andorid.apk
 ```
 
-> Android Release 当前未配置签名（`AndroidKeyStore=False`），发布到应用商店前需配置签名密钥。
+Android Release 使用本机的正式密钥库。首次打包前，请复制
+[`Signing/AndroidSigning.props.example`](Signing/AndroidSigning.props.example) 为
+`Signing/AndroidSigning.props`，并填写口令与别名；该文件和密钥库均不会提交到 Git。推荐从仓库根目录运行：
+
+```bash
+./scripts/build-android-release.sh
+```
+
+详见 [Signing/README.md](Signing/README.md)。
 
 ### 五、iOS 构建
 
