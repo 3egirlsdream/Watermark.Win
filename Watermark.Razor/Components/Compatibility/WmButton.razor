@@ -1,7 +1,7 @@
 <MButton Class="@Class" Style="@Style" Color="@NormalizedColor" Disabled="@Disabled" OnClick="@OnClick" Href="@Href" Text="@IsText" Elevation="0" @attributes="AdditionalAttributes">
-    @if (!string.IsNullOrWhiteSpace(StartIcon)) { <MIcon Left Small>@StartIcon</MIcon> }
+    @if (!string.IsNullOrWhiteSpace(StartIcon)) { <WmIcon Left Small Icon="@StartIcon" /> }
     @ChildContent
-    @if (!string.IsNullOrWhiteSpace(EndIcon)) { <MIcon Right Small>@EndIcon</MIcon> }
+    @if (!string.IsNullOrWhiteSpace(EndIcon)) { <WmIcon Right Small Icon="@EndIcon" /> }
 </MButton>
 
 @code {

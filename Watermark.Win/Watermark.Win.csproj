@@ -13,6 +13,11 @@
 	<EnableNETAnalyzers>True</EnableNETAnalyzers>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <WatermarkNativeRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</WatermarkNativeRuntimeIdentifier>
+    <WatermarkNativeRuntimeIdentifier Condition="'$(WatermarkNativeRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</WatermarkNativeRuntimeIdentifier>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>embedded</DebugType>
   </PropertyGroup>
@@ -44,11 +49,11 @@
     <Content Include="..\native\artifacts\win-x64\Watermark.Imaging.Native.dll"
              Link="Watermark.Imaging.Native.dll"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always"
-             Condition="'$(RuntimeIdentifier)' == 'win-x64' And Exists('..\native\artifacts\win-x64\Watermark.Imaging.Native.dll')" />
+             Condition="'$(WatermarkNativeRuntimeIdentifier)' == 'win-x64' And Exists('..\native\artifacts\win-x64\Watermark.Imaging.Native.dll')" />
     <Content Include="..\native\artifacts\win-arm64\Watermark.Imaging.Native.dll"
              Link="Watermark.Imaging.Native.dll"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always"
-             Condition="'$(RuntimeIdentifier)' == 'win-arm64' And Exists('..\native\artifacts\win-arm64\Watermark.Imaging.Native.dll')" />
+             Condition="'$(WatermarkNativeRuntimeIdentifier)' == 'win-arm64' And Exists('..\native\artifacts\win-arm64\Watermark.Imaging.Native.dll')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,15 +7,15 @@
 <section class="desktop-resources" aria-labelledby="desktop-resources-title">
     <header class="resources-heading">
         <div><small>ASSETS</small><h1 id="desktop-resources-title">图标与字体</h1><p>统一管理模板设计器可用的本地图标和字体资源。</p></div>
-        <label class="import-command" aria-disabled="@busy"><MIcon Small>mdi-file-import-outline</MIcon><span>导入@(kind == WMResourceKind.Logo ? "图标" : "字体")</span><InputFile class="file-input" OnChange="ImportAsync" accept="@(kind == WMResourceKind.Logo ? ".png,.jpg,.jpeg,image/png,image/jpeg" : ".ttf,.otf,font/ttf,font/otf")" disabled="@busy" /></label>
+        <label class="import-command" aria-disabled="@busy"><WmIcon Small Icon="file-arrow-down" /><span>导入@(kind == WMResourceKind.Logo ? "图标" : "字体")</span><InputFile class="file-input" OnChange="ImportAsync" accept="@(kind == WMResourceKind.Logo ? ".png,.jpg,.jpeg,image/png,image/jpeg" : ".ttf,.otf,font/ttf,font/otf")" disabled="@busy" /></label>
     </header>
     <div class="resource-toolbar">
         <nav role="tablist" aria-label="资源类型">
-            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Logo)" class="@(kind == WMResourceKind.Logo ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Logo)"><MIcon Small>mdi-image-outline</MIcon><span>个人图标</span></button>
-            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Font)" class="@(kind == WMResourceKind.Font ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Font)"><MIcon Small>mdi-format-font</MIcon><span>字体库</span></button>
+            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Logo)" class="@(kind == WMResourceKind.Logo ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Logo)"><WmIcon Small Icon="image" /><span>个人图标</span></button>
+            <button type="button" role="tab" aria-selected="@(kind == WMResourceKind.Font)" class="@(kind == WMResourceKind.Font ? "is-active" : null)" @onclick="() => SelectKindAsync(WMResourceKind.Font)"><WmIcon Small Icon="text-aa" /><span>字体库</span></button>
         </nav>
         <span>@Summary</span>
-        <button type="button" class="refresh-command" disabled="@busy" @onclick="ReloadAsync"><MIcon Small>mdi-refresh</MIcon></button>
+        <button type="button" class="refresh-command" disabled="@busy" @onclick="ReloadAsync"><WmIcon Small Icon="arrows-clockwise" /></button>
     </div>
     <div class="resource-body">
         @if (loading)
@@ -24,7 +24,7 @@
         }
         else if (items.Count == 0)
         {
-            <div class="resource-empty"><MIcon Size="44">@(kind == WMResourceKind.Logo ? "mdi-image-plus-outline" : "mdi-format-font")</MIcon><strong>@(kind == WMResourceKind.Logo ? "还没有个人图标" : "还没有可用字体")</strong><span>使用右上角导入按钮添加本地资源。</span></div>
+            <div class="resource-empty"><WmIcon Size="44" Icon="@(kind == WMResourceKind.Logo ? "image-square" : "text-aa")" /><strong>@(kind == WMResourceKind.Logo ? "还没有个人图标" : "还没有可用字体")</strong><span>使用右上角导入按钮添加本地资源。</span></div>
         }
         else
         {
@@ -34,7 +34,7 @@
                     <article class="resource-card @(item.Kind == WMResourceKind.Font ? "is-font" : null)" @key="item.Id">
                         <div class="resource-preview">
                             @if (!string.IsNullOrWhiteSpace(item.PreviewUrl)) { <img src="@item.PreviewUrl" alt="" /> }
-                            else { <MIcon Size="34">@(item.Kind == WMResourceKind.Logo ? "mdi-image-outline" : "mdi-format-font")</MIcon> }
+                            else { <WmIcon Size="34" Icon="@(item.Kind == WMResourceKind.Logo ? "image" : "text-aa")" /> }
                         </div>
                         <div class="resource-copy"><strong title="@item.Name">@DisplayName(item)</strong><small>@(item.Installed ? "本地可用" : "云端字体")</small></div>
                         @if (item.Kind == WMResourceKind.Font && !item.Installed)
@@ -43,7 +43,7 @@
                         }
                         else
                         {
-                            <button type="button" class="resource-action delete" disabled="@busy" @onclick="() => DeleteAsync(item)" aria-label="删除 @item.Name"><MIcon Small>mdi-delete-outline</MIcon></button>
+                            <button type="button" class="resource-action delete" disabled="@busy" @onclick="() => DeleteAsync(item)" aria-label="删除 @item.Name"><WmIcon Small Icon="trash" /></button>
                         }
                     </article>
                 }

@@ -91,7 +91,7 @@
                 }
 
                 <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Basic ? "expanded" : null)">
-                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Basic)"><span><small>Basic</small><strong>基础调色</strong></span><span class="section-summary">10 项</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Basic)"><span><small>Basic</small><strong>基础调色</strong></span><span class="section-summary">10 项</span><span class="section-chevron"><WmIcon Size="16" Icon="caret-down" /></span></button>
                     @if (ActiveColorSection == ColorSection.Basic)
                     {
                         <div class="control-card grade-card adjustment-section-panel">
@@ -111,7 +111,7 @@
                 </section>
 
                 <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Curves ? "expanded" : null)">
-                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Curves)"><span><small>Curves</small><strong>色调曲线</strong></span><span class="section-summary">RGB · R · G · B</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Curves)"><span><small>Curves</small><strong>色调曲线</strong></span><span class="section-summary">RGB · R · G · B</span><span class="section-chevron"><WmIcon Size="16" Icon="caret-down" /></span></button>
                     @if (ActiveColorSection == ColorSection.Curves)
                     {
                         <div class="control-card curve-stack adjustment-section-panel">
@@ -134,7 +134,7 @@
                 </section>
 
                 <section class="inspector-block adjustment-section @(ActiveColorSection == ColorSection.Hsl ? "expanded" : null)">
-                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Hsl)"><span><small>HSL</small><strong>分色调整</strong></span><span class="section-summary">@BandLabel(SelectedBand)</span><span class="section-chevron"><MIcon Size="16">mdi-chevron-down</MIcon></span></button>
+                    <button type="button" class="adjustment-section-toggle" @onclick="() => ToggleColorSection(ColorSection.Hsl)"><span><small>HSL</small><strong>分色调整</strong></span><span class="section-summary">@BandLabel(SelectedBand)</span><span class="section-chevron"><WmIcon Size="16" Icon="caret-down" /></span></button>
                     @if (ActiveColorSection == ColorSection.Hsl)
                     {
                         <div class="control-card grade-card adjustment-section-panel">

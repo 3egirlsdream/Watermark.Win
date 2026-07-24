@@ -45,7 +45,7 @@
                         role="tab"
                         aria-selected="@(tab == sub.Value)"
                         @onclick="() => tab = sub.Value">
-                    <MIcon Size="15">@sub.Icon</MIcon>
+                    <WmIcon Size="15" Icon="@sub.Icon" />
                     <span>@sub.Label</span>
                 </button>
             }
@@ -242,11 +242,11 @@
     string tab = "画布";
     List<InspectorTab> tabs = new()
     {
-        new("结构", "结构", "mdi-file-tree-outline"),
-        new("画布", "画布", "mdi-image-outline"),
-        new("布局", "布局", "mdi-view-dashboard-outline"),
-        new("外观", "外观", "mdi-tune-variant"),
-        new("图层", "图层", "mdi-layers-outline"),
+        new("结构", "结构", "tree-structure"),
+        new("画布", "画布", "image"),
+        new("布局", "布局", "squares-four"),
+        new("外观", "外观", "sliders-horizontal"),
+        new("图层", "图层", "stack"),
     };
 
     [Parameter]

@@ -18,48 +18,48 @@
         <div class="settings-scroll">
             <div class="settings-grid">
                 <section class="settings-card account-card">
-                    <header><span class="card-icon"><MIcon>mdi-account-outline</MIcon></span><div><small>ACCOUNT</small><h2>账号与会员</h2></div></header>
+                    <header><span class="card-icon"><WmIcon Icon="user" /></span><div><small>ACCOUNT</small><h2>账号与会员</h2></div></header>
                     @if (Accounts.State.IsAuthenticated)
                     {
                         <div class="account-summary"><div class="account-avatar">@Accounts.State.DisplayName.FirstOrDefault()</div><span><strong>@Accounts.State.DisplayName</strong><small>@Accounts.State.UserName · @(Accounts.State.IsVip ? "会员" : "免费版")</small></span></div>
-                        <button type="button" @onclick="OpenMembership"><span>会员与权益</span><MIcon Small>mdi-chevron-right</MIcon></button>
-                        <button type="button" @onclick='() => OpenAccount.InvokeAsync("change-password")'><span>修改密码</span><MIcon Small>mdi-chevron-right</MIcon></button>
-                        <button type="button" @onclick="SwitchAccountAsync"><span>切换账号</span><MIcon Small>mdi-login-variant</MIcon></button>
-                        <button type="button" class="danger" @onclick='() => OpenAccount.InvokeAsync("delete")'><span>永久删除账号</span><MIcon Small>mdi-chevron-right</MIcon></button>
+                        <button type="button" @onclick="OpenMembership"><span>会员与权益</span><WmIcon Small Icon="caret-right" /></button>
+                        <button type="button" @onclick='() => OpenAccount.InvokeAsync("change-password")'><span>修改密码</span><WmIcon Small Icon="caret-right" /></button>
+                        <button type="button" @onclick="SwitchAccountAsync"><span>切换账号</span><WmIcon Small Icon="sign-in" /></button>
+                        <button type="button" class="danger" @onclick='() => OpenAccount.InvokeAsync("delete")'><span>永久删除账号</span><WmIcon Small Icon="caret-right" /></button>
                     }
                     else
                     {
-                        <div class="account-empty"><MIcon>mdi-account-circle-outline</MIcon><span>登录后同步会员和模板权益。</span></div>
-                        <button type="button" class="primary-row" @onclick='() => OpenAccount.InvokeAsync("login")'><span>登录或注册账号</span><MIcon Small>mdi-chevron-right</MIcon></button>
+                        <div class="account-empty"><WmIcon Icon="user-circle" /><span>登录后同步会员和模板权益。</span></div>
+                        <button type="button" class="primary-row" @onclick='() => OpenAccount.InvokeAsync("login")'><span>登录或注册账号</span><WmIcon Small Icon="caret-right" /></button>
                     }
                 </section>
 
                 <section class="settings-card processing-card">
-                    <header><span class="card-icon"><MIcon>mdi-tune-variant</MIcon></span><div><small>PROCESSING</small><h2>处理设置</h2></div></header>
+                    <header><span class="card-icon"><WmIcon Icon="sliders-horizontal" /></span><div><small>PROCESSING</small><h2>处理设置</h2></div></header>
                     <label class="switch-row"><span><strong>增强 EXIF 解析</strong><small>尝试读取厂商扩展元数据</small></span><input type="checkbox" @bind="enhancedExif" /></label>
                     <label class="range-row"><span><strong>最大处理线程</strong><small>建议为处理器核心数减一</small></span><output>@maximumThreads / @draft.MaximumAllowedThreads</output><input type="range" min="1" max="@draft.MaximumAllowedThreads" step="1" @bind="maximumThreads" @bind:event="oninput" /></label>
-                    <button type="button" class="save-command" disabled="@saving" @onclick="SaveSettingsAsync"><MIcon Small>mdi-content-save-outline</MIcon><span>保存处理设置</span></button>
+                    <button type="button" class="save-command" disabled="@saving" @onclick="SaveSettingsAsync"><WmIcon Small Icon="floppy-disk" /><span>保存处理设置</span></button>
                 </section>
 
                 <section class="settings-card resource-card">
-                    <header><span class="card-icon"><MIcon>mdi-database-outline</MIcon></span><div><small>STORAGE</small><h2>资源与缓存</h2></div></header>
-                    <button type="button" @onclick="OpenResources"><span>图标与字体</span><MIcon Small>mdi-chevron-right</MIcon></button>
-                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.Temporary)"><span>清理临时缓存 <small>@FormatBytes(cacheSummary?.TemporaryBytes ?? 0)</small></span><MIcon Small>mdi-delete-sweep-outline</MIcon></button>
-                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.MarketPreviews)"><span>重置市场预览 <small>@FormatBytes(cacheSummary?.MarketPreviewBytes ?? 0)</small></span><MIcon Small>mdi-refresh</MIcon></button>
-                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.LogoLibrary)"><span>重置图标库 <small>@FormatBytes(cacheSummary?.LogoBytes ?? 0)</small></span><MIcon Small>mdi-refresh</MIcon></button>
+                    <header><span class="card-icon"><WmIcon Icon="database" /></span><div><small>STORAGE</small><h2>资源与缓存</h2></div></header>
+                    <button type="button" @onclick="OpenResources"><span>图标与字体</span><WmIcon Small Icon="caret-right" /></button>
+                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.Temporary)"><span>清理临时缓存 <small>@FormatBytes(cacheSummary?.TemporaryBytes ?? 0)</small></span><WmIcon Small Icon="broom" /></button>
+                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.MarketPreviews)"><span>重置市场预览 <small>@FormatBytes(cacheSummary?.MarketPreviewBytes ?? 0)</small></span><WmIcon Small Icon="arrows-clockwise" /></button>
+                    <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.LogoLibrary)"><span>重置图标库 <small>@FormatBytes(cacheSummary?.LogoBytes ?? 0)</small></span><WmIcon Small Icon="arrows-clockwise" /></button>
                 </section>
 
                 <section class="settings-card update-card">
-                    <header><span class="card-icon"><MIcon>mdi-update</MIcon></span><div><small>VERSION</small><h2>版本与帮助</h2></div></header>
+                    <header><span class="card-icon"><WmIcon Icon="arrows-clockwise" /></span><div><small>VERSION</small><h2>版本与帮助</h2></div></header>
                     <div class="version-row"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "当前桌面版本")</small></span><button type="button" disabled="@Updates.State.IsChecking" @onclick="CheckUpdateAsync">检查更新</button></div>
                     @if (Updates.State.UpdateAvailable)
                     {
-                        <button type="button" class="primary-row" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><MIcon Small>mdi-open-in-new</MIcon></button>
+                        <button type="button" class="primary-row" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><WmIcon Small Icon="arrow-square-out" /></button>
                     }
-                    <button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'><span>用户协议</span><MIcon Small>mdi-open-in-new</MIcon></button>
-                    <button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/private")'><span>隐私协议</span><MIcon Small>mdi-open-in-new</MIcon></button>
-                    <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><MIcon Small>mdi-content-copy</MIcon></button>
-                    <button type="button" class="danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><MIcon Small>mdi-shield-off-outline</MIcon></button>
+                    <button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'><span>用户协议</span><WmIcon Small Icon="arrow-square-out" /></button>
+                    <button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/private")'><span>隐私协议</span><WmIcon Small Icon="arrow-square-out" /></button>
+                    <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><WmIcon Small Icon="copy" /></button>
+                    <button type="button" class="danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><WmIcon Small Icon="shield-slash" /></button>
                 </section>
             </div>
         </div>

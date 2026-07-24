@@ -30,7 +30,7 @@
                  ItemText="u => u.Value"
                  ItemValue="u => u.Key"
                  @bind-Value="mText.BindedContainerId"
-                 Label="°ó¶¨µÄÔªÊý¾ÝÀ´Ô´Í¼Æ¬ÈÝÆ÷"
+                 Label="ï¿½ó¶¨µï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Í¼Æ¬ï¿½ï¿½ï¿½ï¿½"
                  Style="margin:8px"
                  HideDetails="true"
                  Readonly="@(CanvasType == CanvasType.Normal)" />
@@ -48,8 +48,8 @@
         <div style="overflow:hidden;flex-direction:column; display:flex;justify-content:space-between;">
             <MCard Elevation="0" Flat Color="#ECEFF1" Class="ma-2" Style="scrollbar-width:none;overflow:auto;">
                 <MCard Style="display:flex; align-items:center;justify-content:flex-start;position:sticky;top:0;z-index:999;" Color="#ECEFF1">
-                    <MIcon>@ICONS.Warning</MIcon>
-                    <Label Name="ÒÔÏÂ¾ùÎªÊ¾ÀýÊý¾Ý£¬²»¿ÉÒÔ±à¼­£¬¿ÉÒÔÌí¼ÓÇ°ºó×º, µ¼³öÒÔÍ¼Æ¬Êµ¼ÊÔªÊý¾ÝÎª×¼" />
+                    <WmIcon Icon="@ICONS.Warning" />
+                    <Label Name="ï¿½ï¿½ï¿½Â¾ï¿½ÎªÊ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±à¼­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½×º, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬Êµï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½Îª×¼" />
                 </MCard>
                 <MChipGroup Multiple Style="display:flex;flex-wrap:wrap" Column Class="mx-1" Values="checkedChips" ValuesChanged="CheckedChipsChanged">
                     @foreach (var exif in DefaultExifLists)
@@ -65,7 +65,7 @@
             </MCard>
 
             <div class="px-1 ma-1">
-                <MButton Color="primary" OnClick="Submit" Elevation="0" Block>±£´æ</MButton>
+                <MButton Color="primary" OnClick="Submit" Elevation="0" Block>ï¿½ï¿½ï¿½ï¿½</MButton>
             </div>
         </div>
     </div>
@@ -76,7 +76,7 @@
     <MCard Flat Style="overflow:hidden;height:100%;display:flex;flex-direction:column" >
         <div style="display:flex;flex-direction:column;overflow:auto;scrollbar-width:none;" class="pa-2">
             <MCard Elevation="25" Style="padding:8px">
-                <MTextField @bind-Value="CurrentExif.Value" Label="²ÎÊý" Readonly="true" />
+                <MTextField @bind-Value="CurrentExif.Value" Label="ï¿½ï¿½ï¿½ï¿½" Readonly="true" />
                 <Watermark.Razor.Components.FontStyleComp fStyle="CurrentExif.ValueStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
@@ -84,16 +84,16 @@
                 <FontStyleComp fStyle="CurrentExif.PrefixStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.Suffix" Label="ºó×º" />
+                <MTextField @bind-Value="CurrentExif.Suffix" Label="ï¿½ï¿½×º" />
                 <FontStyleComp fStyle="CurrentExif.SuffixStyle" />
             </MCard>
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.RemoveString" Label="É¾³ý×Ö·û" />
+                <MTextField @bind-Value="CurrentExif.RemoveString" Label="É¾ï¿½ï¿½ï¿½Ö·ï¿½" />
 
                 @if (CurrentExif.Value.Contains(","))
                 {
                     <MSelect @bind-Value="CurrentExif.LocationType"
-                             Label="¾­Î³¶ÈÊ¶±ð"
+                             Label="ï¿½ï¿½Î³ï¿½ï¿½Ê¶ï¿½ï¿½"
                              Items="XY"
                              TValue="int"
                              TItemValue="int"
@@ -103,16 +103,16 @@
                 }
                 @if (DateTime.TryParse(CurrentExif.Value, out DateTime dt))
                 {
-                    <MTextField @bind-Value="CurrentExif.DateTimeFormat" Label="ÈÕÆÚ¸ñÊ½×ª»»" Dense HideDetails="true"/>
+                    <MTextField @bind-Value="CurrentExif.DateTimeFormat" Label="ï¿½ï¿½ï¿½Ú¸ï¿½Ê½×ªï¿½ï¿½" Dense HideDetails="true"/>
 
-                    <MCheckbox @bind-Value="CurrentExif.GanZhi" Label="¸ÉÖ§¼ÍÄê" Dense HideDetails="true"></MCheckbox>
+                    <MCheckbox @bind-Value="CurrentExif.GanZhi" Label="ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½" Dense HideDetails="true"></MCheckbox>
                 }
-                <MCheckbox @bind-Value="CurrentExif.ToLower" Label="È«²¿Ð¡Ð´" Dense HideDetails="true"></MCheckbox>
-                <MCheckbox @bind-Value="CurrentExif.ToUpper" Label="È«²¿´óÐ´" Dense HideDetails="true"></MCheckbox>
+                <MCheckbox @bind-Value="CurrentExif.ToLower" Label="È«ï¿½ï¿½Ð¡Ð´" Dense HideDetails="true"></MCheckbox>
+                <MCheckbox @bind-Value="CurrentExif.ToUpper" Label="È«ï¿½ï¿½ï¿½ï¿½Ð´" Dense HideDetails="true"></MCheckbox>
             </MCard>
         </div>
 
-        <MButton Color="Color.Primary" Elevation="0" OnClick="()=>detailShow = false" Class="ma-2">È·¶¨</MButton>
+        <MButton Color="Color.Primary" Elevation="0" OnClick="()=>detailShow = false" Class="ma-2">È·ï¿½ï¿½</MButton>
         
     </MCard>
 </MDialog>
@@ -152,14 +152,14 @@
 
     List<KeyValuePair<int, string>> XY = new()
     {
-        new KeyValuePair<int, string>(-1, "Ä¬ÈÏ"),
+        new KeyValuePair<int, string>(-1, "Ä¬ï¿½ï¿½"),
         new KeyValuePair<int, string>(0, ExifHelper.GetLocation().result.address),
         new KeyValuePair<int, string>(1, ExifHelper.GetLocation().result.ad_info.name),
         new KeyValuePair<int, string>(2, ExifHelper.GetLocation().result.ad_info.nation),
         new KeyValuePair<int, string>(3, ExifHelper.GetLocation().result.ad_info.province),
         new KeyValuePair<int, string>(4, ExifHelper.GetLocation().result.ad_info.city),
         new KeyValuePair<int, string>(5, ExifHelper.GetLocation().result.ad_info.district),
-        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " ¡ñ " + @ExifHelper.GetLocation().result.ad_info.city),
+        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " ï¿½ï¿½ " + @ExifHelper.GetLocation().result.ad_info.city),
     };
 
     //"F##4##suffix;"

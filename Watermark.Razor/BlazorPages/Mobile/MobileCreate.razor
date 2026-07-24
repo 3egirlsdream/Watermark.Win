@@ -25,12 +25,12 @@
     </header>
 
     <button class="create-primary" type="button" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Template)">
-        <span class="create-primary-icon"><MIcon>mdi-image-plus-outline</MIcon></span>
+        <span class="create-primary-icon"><WmIcon Icon="image-square" /></span>
         <span>
             <strong>@(busy ? "正在准备照片…" : "导入照片开始创作")</strong>
             <small>支持多选，导入后可切换模板与调色</small>
         </span>
-        <MIcon>mdi-arrow-right</MIcon>
+        <WmIcon Icon="arrow-right" />
     </button>
 
     <div class="create-section-heading">
@@ -42,22 +42,22 @@
 
     <div class="create-mode-grid">
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Template)">
-            <span class="mode-icon is-template"><MIcon>mdi-card-text-outline</MIcon></span>
+            <span class="mode-icon is-template"><WmIcon Icon="article" /></span>
             <strong>套用模板</strong>
             <small>水印、边框与 EXIF</small>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.ColorGrade)">
-            <span class="mode-icon is-color"><MIcon>mdi-tune-variant</MIcon></span>
+            <span class="mode-icon is-color"><WmIcon Icon="sliders-horizontal" /></span>
             <strong>照片调色</strong>
             <small>基础调整与风格预设</small>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.MultiFrame)">
-            <span class="mode-icon is-stack"><MIcon>mdi-layers-triple-outline</MIcon></span>
+            <span class="mode-icon is-stack"><WmIcon Icon="stack" /></span>
             <strong>多帧合成</strong>
             <small>@(CanUseMultiFrame ? "星轨、降噪与静态星空" : "已开放，运行前检查设备能力")</small>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Collage)">
-            <span class="mode-icon is-collage"><MIcon>mdi-view-split-vertical</MIcon></span>
+            <span class="mode-icon is-collage"><WmIcon Icon="columns" /></span>
             <strong>照片拼图</strong>
             <small>横向或纵向拼接多张照片</small>
         </button>
@@ -76,13 +76,13 @@
             {
                 <button class="recent-item" type="button" @onclick="() => OpenSession(item.Id)">
                     <span class="recent-thumb">
-                        <MIcon>@ModeIcon(item.Mode)</MIcon>
+                        <WmIcon Icon="@ModeIcon(item.Mode)" />
                     </span>
                     <span class="recent-copy">
                         <strong>@(item.Media.FirstOrDefault()?.DisplayName ?? item.TemplateId ?? "模板设计")</strong>
                         <small>@ModeName(item.Mode) · @LocalTime(item.UpdatedAtUtc)</small>
                     </span>
-                    <MIcon>mdi-chevron-right</MIcon>
+                    <WmIcon Icon="caret-right" />
                 </button>
             }
         </div>
@@ -140,11 +140,11 @@
 
     private static string ModeIcon(WMWorkspaceMode mode) => mode switch
     {
-        WMWorkspaceMode.ColorGrade => "mdi-tune-variant",
-        WMWorkspaceMode.MultiFrame => "mdi-layers-triple-outline",
-        WMWorkspaceMode.Collage => "mdi-view-split-vertical",
-        WMWorkspaceMode.TemplateDesign => "mdi-vector-square-edit",
-        _ => "mdi-card-text-outline"
+        WMWorkspaceMode.ColorGrade => "sliders-horizontal",
+        WMWorkspaceMode.MultiFrame => "stack",
+        WMWorkspaceMode.Collage => "columns",
+        WMWorkspaceMode.TemplateDesign => "bounding-box",
+        _ => "article"
     };
 
     private static string LocalTime(DateTime utc) => utc.ToLocalTime().ToString("MM-dd HH:mm");

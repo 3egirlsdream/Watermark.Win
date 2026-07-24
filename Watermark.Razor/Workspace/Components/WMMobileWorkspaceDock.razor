@@ -23,7 +23,7 @@
                     <button type="button" class="@(ActiveTool == tool.Tool ? "is-active" : null)"
                             data-mobile-tool="@tool.Tool" aria-pressed="@(ActiveTool == tool.Tool)"
                             @onclick="() => SelectToolAsync(tool.Tool)">
-                        <MIcon>@tool.Icon</MIcon><span>@tool.Label</span>
+                        <WmIcon Icon="@tool.Icon" /><span>@tool.Label</span>
                     </button>
                 }
             </div>
@@ -31,11 +31,11 @@
     </div>
 
     <nav class="wm-dock-modes" role="tablist" aria-label="编辑分类">
-        @ModeButton(WMWorkspaceMode.Crop, "裁切", "mdi-crop")
-        @ModeButton(WMWorkspaceMode.Template, "模板", "mdi-view-grid-outline")
-        @ModeButton(WMWorkspaceMode.ColorGrade, "调色", "mdi-tune-variant")
-        @ModeButton(WMWorkspaceMode.MultiFrame, "多帧", "mdi-layers-triple-outline")
-        @ModeButton(WMWorkspaceMode.Collage, "拼图", "mdi-view-split-vertical")
+        @ModeButton(WMWorkspaceMode.Crop, "裁切", "crop")
+        @ModeButton(WMWorkspaceMode.Template, "模板", "grid-four")
+        @ModeButton(WMWorkspaceMode.ColorGrade, "调色", "sliders-horizontal")
+        @ModeButton(WMWorkspaceMode.MultiFrame, "多帧", "stack")
+        @ModeButton(WMWorkspaceMode.Collage, "拼图", "columns")
     </nav>
 </section>
 
@@ -120,8 +120,8 @@
         <button type="button" class="@(active ? "is-active" : null)" role="tab"
                 aria-selected="@active" disabled="@ModeSwitchDisabled(mode)"
                 @onclick="() => ChangeModeAsync(mode)">
-            <MIcon>@icon</MIcon><span>@label</span>
-            @if (!active && HasCategoryDraft) { <MIcon Class="wm-dock-lock">mdi-lock</MIcon> }
+            <WmIcon Icon="@icon" /><span>@label</span>
+            @if (!active && HasCategoryDraft) { <WmIcon Class="wm-dock-lock" Icon="lock" /> }
         </button>
     };
 
@@ -163,12 +163,12 @@
         </div>
         <WMToolRail AriaLabel="模板列表" CssClass="wm-dock-card-rail">
             <button type="button" class="wm-dock-template-card @(State.TemplateId is null ? "is-active" : null)"
-                    @onclick="() => PreviewTemplateAsync(null)"><span><MIcon>mdi-cancel</MIcon></span><small>无模板</small></button>
+                    @onclick="() => PreviewTemplateAsync(null)"><span><WmIcon Icon="prohibit" /></span><small>无模板</small></button>
             @foreach (var template in Templates)
             {
                 <button type="button" class="wm-dock-template-card wm-template-card @(State.TemplateId == template.ID ? "is-active" : null)"
                         data-template-id="@template.ID" @onclick="() => PreviewTemplateAsync(template.ID)">
-                    <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <MIcon>mdi-image-outline</MIcon> }</span>
+                    <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <WmIcon Icon="image" /> }</span>
                     <small>@(template.Canvas?.Name ?? "未命名")</small>
                 </button>
             }
@@ -204,11 +204,11 @@
         <div class="wm-dock-look-content">
             <div class="wm-dock-heading"><div><strong>快捷风格</strong><small>预览中 · 顶部应用后写入历史</small></div></div>
             <WMToolRail AriaLabel="快捷风格" CssClass="wm-dock-card-rail wm-dock-look-rail">
-                @LookCard("自然", "mdi-leaf", 0, 0, 0, 0)
-                @LookCard("清透", "mdi-weather-sunny", .2f, 12, 8, 10)
-                @LookCard("电影", "mdi-movie-open-outline", -.1f, 18, -10, 8)
-                @LookCard("明亮", "mdi-white-balance-sunny", .35f, -5, 16, 10)
-                @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
+                @LookCard("自然", "leaf", 0, 0, 0, 0)
+                @LookCard("清透", "sun", .2f, 12, 8, 10)
+                @LookCard("电影", "film-strip", -.1f, 18, -10, 8)
+                @LookCard("明亮", "sun", .35f, -5, 16, 10)
+                @ChoiceCard("重置", "arrow-counter-clockwise", false, ResetColorPreviewAsync)
             </WMToolRail>
         </div>
     };
@@ -251,13 +251,13 @@
             @foreach (var preset in State.ColorGradeTool.Presets)
             {
                 <button type="button" class="wm-dock-preset-card @(State.ColorGradeTool.SelectedPresetId == preset.Id ? "is-active" : null)"
-                        @onclick="() => PreviewPresetAsync(preset)"><MIcon>mdi-palette-outline</MIcon><span>@preset.Name</span><small>预览</small></button>
+                        @onclick="() => PreviewPresetAsync(preset)"><WmIcon Icon="palette" /><span>@preset.Name</span><small>预览</small></button>
             }
-            @ChoiceCard("重置", "mdi-restore", false, ResetColorPreviewAsync)
-            @UtilityCard("保存预设", "mdi-content-save-outline", SavePresetRequested)
+            @ChoiceCard("重置", "arrow-counter-clockwise", false, ResetColorPreviewAsync)
+            @UtilityCard("保存预设", "floppy-disk", SavePresetRequested)
             @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.SelectedPresetId))
             {
-                @UtilityCard("删除预设", "mdi-delete-outline", DeletePresetRequested, danger: true)
+                @UtilityCard("删除预设", "trash", DeletePresetRequested, danger: true)
             }
         </WMToolRail>
     };
@@ -273,11 +273,11 @@
             @if (!string.IsNullOrWhiteSpace(State.ColorGradeTool.Reference.PreviewUrl))
             {
                 <figure><img src="@State.ColorGradeTool.Reference.PreviewUrl" alt="参考图片" /><figcaption><strong>@(State.ColorGradeTool.Reference.DisplayName ?? "参考图")</strong><small>已生成调色预览草稿</small></figcaption></figure>
-                <button type="button" @onclick="ClearReferenceRequested"><MIcon>mdi-image-remove-outline</MIcon><span>清除</span></button>
+                <button type="button" @onclick="ClearReferenceRequested"><WmIcon Icon="image-broken" /><span>清除</span></button>
             }
             else
             {
-                <button type="button" class="is-picker" disabled="@State.ColorGradeTool.IsBusy" @onclick="ChooseReferenceRequested"><MIcon>mdi-image-search-outline</MIcon><span><strong>选择参考图</strong><small>分析色彩后生成预览草稿</small></span></button>
+                <button type="button" class="is-picker" disabled="@State.ColorGradeTool.IsBusy" @onclick="ChooseReferenceRequested"><WmIcon Icon="file-magnifying-glass" /><span><strong>选择参考图</strong><small>分析色彩后生成预览草稿</small></span></button>
             }
         </div>
     };
@@ -301,13 +301,13 @@
     {
         if (State.MultiFrameTool.Capability?.IsAvailable != true)
         {
-            <div class="wm-dock-unavailable"><MIcon>mdi-weather-night</MIcon><span>@(State.MultiFrameTool.Capability?.UnavailableReason ?? "当前设备暂未开放多帧处理")</span></div>
+            <div class="wm-dock-unavailable"><WmIcon Icon="moon-stars" /><span>@(State.MultiFrameTool.Capability?.UnavailableReason ?? "当前设备暂未开放多帧处理")</span></div>
         }
         else
         {
             <WMToolRail AriaLabel="多帧模式" CssClass="wm-dock-card-rail">
-                @ChoiceCard("星轨", "mdi-star-four-points-outline", State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail, () => ChangeMultiFrameModeAsync(WMStackMode.StarTrail))
-                @ChoiceCard("静态星空 / 降噪", "mdi-weather-night", State.MultiFrameTool.Draft.Mode == WMStackMode.StaticSky, () => ChangeMultiFrameModeAsync(WMStackMode.StaticSky))
+                @ChoiceCard("星轨", "sparkle", State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail, () => ChangeMultiFrameModeAsync(WMStackMode.StarTrail))
+                @ChoiceCard("静态星空 / 降噪", "moon-stars", State.MultiFrameTool.Draft.Mode == WMStackMode.StaticSky, () => ChangeMultiFrameModeAsync(WMStackMode.StaticSky))
             </WMToolRail>
         }
     };
@@ -325,7 +325,7 @@
     {
         <div class="wm-dock-generate">
             <div><strong>@State.MultiFrameTool.Draft.Roles.Count(pair => pair.Value == WMFrameRole.Light) 张亮场</strong><span>@(State.MultiFrameTool.Draft.Mode == WMStackMode.StarTrail ? "星轨合成" : "静态星空 / 降噪")</span></div>
-            <button type="button" disabled="@(State.MultiFrameTool.IsBusy || State.MultiFrameTool.Capability?.IsAvailable != true)" @onclick="MultiFrameRunRequested"><MIcon>mdi-layers-triple-outline</MIcon><span>@(State.MultiFrameTool.IsBusy ? "处理中…" : "生成多帧结果")</span></button>
+            <button type="button" disabled="@(State.MultiFrameTool.IsBusy || State.MultiFrameTool.Capability?.IsAvailable != true)" @onclick="MultiFrameRunRequested"><WmIcon Icon="stack" /><span>@(State.MultiFrameTool.IsBusy ? "处理中…" : "生成多帧结果")</span></button>
         </div>
     };
 
@@ -338,12 +338,12 @@
                 var index = IndexOfCollage(media.Id);
                 <article class="wm-dock-media-card">
                     @MediaThumbnail(media)<strong>@(index + 1). @media.DisplayName</strong>
-                    <div><button type="button" disabled="@(index == 0)" @onclick="() => MoveCollageAsync(media.Id, -1)" aria-label="前移"><MIcon>mdi-chevron-left</MIcon></button><button type="button" @onclick="() => ToggleCollageAsync(media.Id)" aria-label="移除"><MIcon>mdi-close</MIcon></button></div>
+                    <div><button type="button" disabled="@(index == 0)" @onclick="() => MoveCollageAsync(media.Id, -1)" aria-label="前移"><WmIcon Icon="caret-left" /></button><button type="button" @onclick="() => ToggleCollageAsync(media.Id)" aria-label="移除"><WmIcon Icon="x" /></button></div>
                 </article>
             }
             @foreach (var media in AvailableCollageMedia)
             {
-                <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)">@MediaThumbnail(media)<span><MIcon>mdi-plus</MIcon>@media.DisplayName</span></button>
+                <button type="button" class="wm-dock-media-add" @onclick="() => ToggleCollageAsync(media.Id)">@MediaThumbnail(media)<span><WmIcon Icon="plus" />@media.DisplayName</span></button>
             }
         </WMToolRail>
     };
@@ -351,8 +351,8 @@
     private RenderFragment CollageLayoutContent => __builder =>
     {
         <WMToolRail AriaLabel="拼图布局" CssClass="wm-dock-card-rail">
-            @ChoiceCard("横向", "mdi-arrow-expand-horizontal", State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal, () => ChangeCollageDirectionAsync(WMCollageDirection.Horizontal))
-            @ChoiceCard("纵向", "mdi-arrow-expand-vertical", State.CollageTool.Draft.Direction == WMCollageDirection.Vertical, () => ChangeCollageDirectionAsync(WMCollageDirection.Vertical))
+            @ChoiceCard("横向", "arrows-out-line-horizontal", State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal, () => ChangeCollageDirectionAsync(WMCollageDirection.Horizontal))
+            @ChoiceCard("纵向", "arrows-out-line-vertical", State.CollageTool.Draft.Direction == WMCollageDirection.Vertical, () => ChangeCollageDirectionAsync(WMCollageDirection.Vertical))
         </WMToolRail>
     };
 
@@ -360,7 +360,7 @@
     {
         <div class="wm-dock-generate">
             <div><strong>@State.CollageTool.Draft.OrderedMediaIds.Count 张素材</strong><span>@(State.CollageTool.Draft.Direction == WMCollageDirection.Horizontal ? "横向拼接" : "纵向拼接") · 间距 0 · 白色背景</span></div>
-            <button type="button" disabled="@(!State.CollageTool.IsBusy && State.CollageTool.Draft.OrderedMediaIds.Count < 2)" @onclick="CollageRunOrCancelRequested"><MIcon>@(State.CollageTool.IsBusy ? "mdi-stop-circle-outline" : "mdi-view-split-vertical")</MIcon><span>@(State.CollageTool.IsBusy ? "取消生成" : "生成拼图")</span></button>
+            <button type="button" disabled="@(!State.CollageTool.IsBusy && State.CollageTool.Draft.OrderedMediaIds.Count < 2)" @onclick="CollageRunOrCancelRequested"><WmIcon Icon="@(State.CollageTool.IsBusy ? "stop-circle" : "columns")" /><span>@(State.CollageTool.IsBusy ? "取消生成" : "生成拼图")</span></button>
         </div>
     };
 
@@ -370,17 +370,17 @@
 
     private RenderFragment ChoiceCard(string label, string icon, bool active, Func<Task> action) => __builder =>
     {
-        <button type="button" class="wm-dock-control-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(active ? "is-active" : null)" aria-pressed="@active" @onclick="action"><WmIcon Icon="@icon" /><span>@label</span></button>
     };
 
     private RenderFragment ToggleCard(string label, bool value, EventCallback<bool> changed) => __builder =>
     {
-        <button type="button" class="wm-dock-control-card @(value ? "is-active" : null)" role="switch" aria-checked="@value" @onclick="() => changed.InvokeAsync(!value)"><MIcon>@(value ? "mdi-toggle-switch" : "mdi-toggle-switch-off-outline")</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(value ? "is-active" : null)" role="switch" aria-checked="@value" @onclick="() => changed.InvokeAsync(!value)"><WmIcon Icon="@(value ? "toggle-right" : "toggle-left")" /><span>@label</span></button>
     };
 
     private RenderFragment UtilityCard(string label, string icon, EventCallback action, bool danger = false) => __builder =>
     {
-        <button type="button" class="wm-dock-control-card @(danger ? "is-danger" : null)" @onclick="action"><MIcon>@icon</MIcon><span>@label</span></button>
+        <button type="button" class="wm-dock-control-card @(danger ? "is-danger" : null)" @onclick="action"><WmIcon Icon="@icon" /><span>@label</span></button>
     };
 
     private async Task SelectToolAsync(WMMobileEditorTool tool)
@@ -614,7 +614,7 @@
     {
         <span class="wm-dock-media-thumbnail">
             @if (MediaPreviewUrl?.Invoke(media) is { Length: > 0 } preview) { <img src="@preview" alt="" /> }
-            else { <MIcon>mdi-image-outline</MIcon> }
+            else { <WmIcon Icon="image" /> }
         </span>
     };
 
@@ -626,48 +626,48 @@
 
     private static readonly MobileToolSpec[] TemplateTools =
     [
-        new(WMMobileEditorTool.TemplatePicker, "模板", "mdi-view-grid-outline", WMMobileEditorSpace.Medium),
-        new(WMMobileEditorTool.TemplateBorderTop, "上边框", "mdi-border-top", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderRight, "右边框", "mdi-border-right", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderBottom, "下边框", "mdi-border-bottom", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderLeft, "左边框", "mdi-border-left", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateScope, "范围", "mdi-target", WMMobileEditorSpace.Small)
+        new(WMMobileEditorTool.TemplatePicker, "模板", "grid-four", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.TemplateBorderTop, "上边框", "align-top", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderRight, "右边框", "align-right", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderBottom, "下边框", "align-bottom", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateBorderLeft, "左边框", "align-left", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateScope, "范围", "target", WMMobileEditorSpace.Small)
     ];
 
     private static readonly MobileToolSpec[] ColorTools =
     [
-        new(WMMobileEditorTool.ColorStyle, "风格", "mdi-palette-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorExposure, "曝光", "mdi-white-balance-sunny", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorContrast, "对比度", "mdi-contrast-box", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorHighlights, "高光", "mdi-brightness-7", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorShadows, "阴影", "mdi-brightness-4", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorWhites, "白色", "mdi-circle-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorBlacks, "黑色", "mdi-circle", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorTemperature, "色温", "mdi-thermometer", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorTint, "色调", "mdi-eyedropper-variant", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorVibrance, "自然饱和度", "mdi-flower-tulip-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorSaturation, "饱和度", "mdi-water-opacity", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorHslHue, "HSL 色相", "mdi-palette-swatch-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorHslSaturation, "HSL 饱和度", "mdi-water-opacity", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorHslLuminance, "HSL 明度", "mdi-brightness-6", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorPresets, "预设", "mdi-view-grid-plus-outline", WMMobileEditorSpace.Medium),
-        new(WMMobileEditorTool.ColorCurve, "曲线", "mdi-chart-line-variant", WMMobileEditorSpace.Large),
-        new(WMMobileEditorTool.ColorReference, "参考图", "mdi-image-search-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.ColorScope, "范围", "mdi-target", WMMobileEditorSpace.Small)
+        new(WMMobileEditorTool.ColorStyle, "风格", "palette", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorExposure, "曝光", "sun", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorContrast, "对比度", "circle-half", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHighlights, "高光", "sun", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorShadows, "阴影", "moon", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorWhites, "白色", "circle", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorBlacks, "黑色", "circle", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorTemperature, "色温", "thermometer", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorTint, "色调", "eyedropper", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorVibrance, "自然饱和度", "flower-tulip", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorSaturation, "饱和度", "drop-half", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslHue, "HSL 色相", "swatches", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslSaturation, "HSL 饱和度", "drop-half", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorHslLuminance, "HSL 明度", "sun-dim", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorPresets, "预设", "grid-nine", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.ColorCurve, "曲线", "chart-line-up", WMMobileEditorSpace.Large),
+        new(WMMobileEditorTool.ColorReference, "参考图", "file-magnifying-glass", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.ColorScope, "范围", "target", WMMobileEditorSpace.Small)
     ];
 
     private static readonly MobileToolSpec[] MultiFrameTools =
     [
-        new(WMMobileEditorTool.MultiFrameMaterial, "素材", "mdi-image-multiple-outline", WMMobileEditorSpace.Medium),
-        new(WMMobileEditorTool.MultiFrameMode, "模式", "mdi-view-grid-outline", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.MultiFrameParameters, "参数", "mdi-tune-variant", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.MultiFrameGenerate, "生成", "mdi-star-four-points-outline", WMMobileEditorSpace.Small)
+        new(WMMobileEditorTool.MultiFrameMaterial, "素材", "images", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.MultiFrameMode, "模式", "grid-four", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.MultiFrameParameters, "参数", "sliders-horizontal", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.MultiFrameGenerate, "生成", "sparkle", WMMobileEditorSpace.Small)
     ];
 
     private static readonly MobileToolSpec[] CollageTools =
     [
-        new(WMMobileEditorTool.CollageMaterial, "素材", "mdi-image-multiple-outline", WMMobileEditorSpace.Medium),
-        new(WMMobileEditorTool.CollageLayout, "布局", "mdi-view-split-vertical", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.CollageGenerate, "生成", "mdi-star-four-points-outline", WMMobileEditorSpace.Small)
+        new(WMMobileEditorTool.CollageMaterial, "素材", "images", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.CollageLayout, "布局", "columns", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.CollageGenerate, "生成", "sparkle", WMMobileEditorSpace.Small)
     ];
 }

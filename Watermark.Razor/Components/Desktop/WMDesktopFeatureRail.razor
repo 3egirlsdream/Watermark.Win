@@ -1,9 +1,9 @@
 @using Watermark.Razor.Workspace
 <nav class="mac-feature-rail" aria-label="工作模式">
-    <MButton Text Class="@ButtonClass(WMWorkspaceMode.Crop)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.Crop)"><MIcon Size="22">mdi-crop</MIcon><span>裁切</span></MButton>
-    <MButton Text Class="@ButtonClass(WMWorkspaceMode.Template)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.Template)"><MIcon Size="22">mdi-palette-swatch-outline</MIcon><span>预设</span></MButton>
-    <MButton Text Class="@ButtonClass(WMWorkspaceMode.ColorGrade)" Disabled="@(!ColorEngineAvailable)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.ColorGrade)"><MIcon Size="22">mdi-tune-variant</MIcon><span>调色</span></MButton>
-    <MButton Text Class="@ButtonClass(WMWorkspaceMode.MultiFrame)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.MultiFrame)"><MIcon Size="22">mdi-weather-night</MIcon><span>多帧</span></MButton>
+    <MButton Text Class="@ButtonClass(WMWorkspaceMode.Crop)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.Crop)"><WmIcon Size="22" Icon="crop" /><span>裁切</span></MButton>
+    <MButton Text Class="@ButtonClass(WMWorkspaceMode.Template)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.Template)"><WmIcon Size="22" Icon="swatches" /><span>预设</span></MButton>
+    <MButton Text Class="@ButtonClass(WMWorkspaceMode.ColorGrade)" Disabled="@(!ColorEngineAvailable)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.ColorGrade)"><WmIcon Size="22" Icon="sliders-horizontal" /><span>调色</span></MButton>
+    <MButton Text Class="@ButtonClass(WMWorkspaceMode.MultiFrame)" OnClick="() => ModeChanged.InvokeAsync(WMWorkspaceMode.MultiFrame)"><WmIcon Size="22" Icon="moon-stars" /><span>多帧</span></MButton>
 </nav>
 @code {
     [Parameter] public WMWorkspaceMode Mode { get; set; }

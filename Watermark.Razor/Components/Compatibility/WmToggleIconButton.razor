@@ -1,4 +1,4 @@
-<MButton Icon Text OnClick="ToggleAsync"><MIcon>@(Toggled ? ToggledIcon : Icon)</MIcon></MButton>
+<MButton Icon Text OnClick="ToggleAsync"><WmIcon Icon="@(Toggled ? ToggledIcon : Icon)" /></MButton>
 @code {
     [Parameter] public bool Toggled { get; set; }
     [Parameter] public EventCallback<bool> ToggledChanged { get; set; }

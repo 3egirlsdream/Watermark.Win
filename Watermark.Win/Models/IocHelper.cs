@@ -3,6 +3,7 @@ using Masa.Blazor.Popup;
 using Masa.Blazor.Presets;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
+using Watermark.Razor.Components.Compatibility;
 
 namespace Watermark.Win.Models
 {
@@ -24,7 +25,7 @@ namespace Watermark.Win.Models
 #if DEBUG
             _services.AddBlazorWebViewDeveloperTools();
 #endif
-            _services.AddMasaBlazor(options =>
+            _services.AddWatermarkMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
                 {

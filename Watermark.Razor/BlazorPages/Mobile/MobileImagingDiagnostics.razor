@@ -11,21 +11,21 @@
 
 <section class="imaging-diagnostics" aria-labelledby="imaging-diagnostics-title">
     <header>
-        <button type="button" @onclick="NavigationBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <button type="button" @onclick="NavigationBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button>
         <div>
             <span>本机诊断</span>
             <h1 id="imaging-diagnostics-title">诊断与日志</h1>
         </div>
-        <button type="button" disabled="@loading" @onclick="RefreshAsync" aria-label="重新检测"><MIcon>mdi-refresh</MIcon></button>
+        <button type="button" disabled="@loading" @onclick="RefreshAsync" aria-label="重新检测"><WmIcon Icon="arrows-clockwise" /></button>
     </header>
 
     <section class="diagnostic-toolbar" aria-label="诊断日志操作">
         <button type="button" disabled="@(loading || exportingReport)" @onclick="ExportReportAsync">
-            <MIcon>mdi-file-export-outline</MIcon>
+            <WmIcon Icon="file-arrow-up" />
             <span><strong>@(exportingReport ? "正在导出…" : "导出诊断日志")</strong><small>保存脱敏后的日志与性能报告</small></span>
         </button>
         <button type="button" class="is-secondary" disabled="@(exportingReport || clearingLogs)" @onclick="ClearLogsAsync">
-            <MIcon>mdi-delete-outline</MIcon><span>@(clearingLogs ? "正在清除…" : "清除")</span>
+            <WmIcon Icon="trash" /><span>@(clearingLogs ? "正在清除…" : "清除")</span>
         </button>
     </section>
     @if (loading && snapshot is null)
@@ -36,7 +36,7 @@
     {
         <section class="backend-card">
             <div class="backend-status @(snapshot.NativeBackendLoaded ? "is-ready" : null)">
-                <span><MIcon>@(snapshot.NativeBackendLoaded ? "mdi-check" : "mdi-alert-outline")</MIcon></span>
+                <span><WmIcon Icon="@(snapshot.NativeBackendLoaded ? "check" : "warning")" /></span>
                 <div><strong>@(snapshot.NativeBackendLoaded ? "原生后端已加载" : "原生后端不可用")</strong><small>@snapshot.BackendVersion</small></div>
             </div>
             <dl>
@@ -54,7 +54,7 @@
             @foreach (var feature in snapshot.Features)
             {
                 <article>
-                    <span class="feature-icon @(feature.IsAvailable ? "is-ready" : null)"><MIcon>@FeatureIcon(feature.Feature)</MIcon></span>
+                    <span class="feature-icon @(feature.IsAvailable ? "is-ready" : null)"><WmIcon Icon="@FeatureIcon(feature.Feature)" /></span>
                     <div><strong>@FeatureName(feature.Feature)</strong><small>@FeatureDescription(feature)</small></div>
                     <span class="feature-state @(feature.IsAvailable ? "is-ready" : null)">@(feature.IsAvailable ? "可用" : "未开放")</span>
                 </article>
@@ -205,12 +205,12 @@
 
     private static string FeatureIcon(WMImagingFeature feature) => feature switch
     {
-        WMImagingFeature.Raw => "mdi-camera-iris",
-        WMImagingFeature.StarTrail => "mdi-weather-night",
-        WMImagingFeature.MultiFrame => "mdi-layers-triple-outline",
-        WMImagingFeature.Png16 => "mdi-image-outline",
-        WMImagingFeature.Tiff16 => "mdi-file-image-outline",
-        _ => "mdi-flask-outline"
+        WMImagingFeature.Raw => "aperture",
+        WMImagingFeature.StarTrail => "moon-stars",
+        WMImagingFeature.MultiFrame => "stack",
+        WMImagingFeature.Png16 => "image",
+        WMImagingFeature.Tiff16 => "file-image",
+        _ => "flask"
     };
 
     private static string FeatureDescription(WMImagingCapabilityStatus status) =>

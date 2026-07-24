@@ -14,16 +14,16 @@
         {
             <div class="selection-header-actions">
                 <MButton Icon Text Small title="显示或隐藏" aria-label="显示或隐藏图层" OnClick="ToggleSelectedVisible">
-                    <MIcon Size="15">@(SelectedControl.Enabled ? "mdi-eye-outline" : "mdi-eye-off-outline")</MIcon>
+                    <WmIcon Size="15" Icon="@(SelectedControl.Enabled ? "eye" : "eye-slash")" />
                 </MButton>
                 <MButton Icon Text Small title="锁定或解锁" aria-label="锁定或解锁图层" OnClick="ToggleSelectedLocked">
-                    <MIcon Size="15">@(SelectedControl.IsLocked ? "mdi-lock-outline" : "mdi-lock-open-variant-outline")</MIcon>
+                    <WmIcon Size="15" Icon="@(SelectedControl.IsLocked ? "lock" : "lock-open")" />
                 </MButton>
                 <MButton Icon Text Small title="复制" aria-label="复制图层" OnClick="DuplicateSelected">
-                    <MIcon Size="15">mdi-content-copy</MIcon>
+                    <WmIcon Size="15" Icon="copy" />
                 </MButton>
                 <MButton Icon Text Small title="删除" aria-label="删除图层" OnClick="RequestDeleteSelected">
-                    <MIcon Size="15">mdi-trash-can-outline</MIcon>
+                    <WmIcon Size="15" Icon="trash" />
                 </MButton>
             </div>
         }
@@ -191,8 +191,8 @@
                 }
                 <MacColorInput Label="文字颜色" Value="@text.FontColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改文字颜色", () => text.FontColor = value)' />
                 <div class="text-style-buttons" role="group" aria-label="文字样式">
-                    <MButton Text Small Class="@(text.IsBold ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换粗体", () => text.IsBold = !text.IsBold)'><MIcon Size="15">mdi-format-bold</MIcon>粗体</MButton>
-                    <MButton Text Small Class="@(text.IsItalic ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换斜体", () => text.IsItalic = !text.IsItalic)'><MIcon Size="15">mdi-format-italic</MIcon>斜体</MButton>
+                    <MButton Text Small Class="@(text.IsBold ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换粗体", () => text.IsBold = !text.IsBold)'><WmIcon Size="15" Icon="text-b" />粗体</MButton>
+                    <MButton Text Small Class="@(text.IsItalic ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换斜体", () => text.IsItalic = !text.IsItalic)'><WmIcon Size="15" Icon="text-italic" />斜体</MButton>
                 </div>
                 <MacInspectorSwitch Label="自动换行" Value="@text.TextWrap" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换文字换行", () => text.TextWrap = value)' />
                 <label class="inspector-field">
@@ -240,7 +240,7 @@
                     <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" OnClick='() => Mutate("清除图标", () => logo.Path = string.Empty)'>清除</MButton>
                 </div>
                 <MacInspectorSwitch Label="白色转透明" Value="@logo.White2Transparent" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换白色转透明", () => logo.White2Transparent = value)' />
-                <MacInspectorSwitch Label="自动品牌色" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动品牌色", () => logo.AutoSetLogo = value)' />
+                <MacInspectorSwitch Label="自动识别品牌 Logo" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动识别品牌 Logo", () => logo.AutoSetLogo = value)' />
                 <MacInspectorSlider Label="尺寸" Value="@logo.Percent" Min="@(IsV2 ? 0.1 : 1)" Max="100" Step="@(IsV2 ? 0.1 : 1)" Unit="@(IsV2 ? "% 短边" : "% 容器短边")" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整图标尺寸", () => logo.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
             </section>
             <MacNodeStyleInspector Editor="@Editor" Control="@logo" ReadOnly="@IsReadOnly" />
@@ -304,7 +304,7 @@
     @if (showExifEditor && SelectedControl is WMText exifText)
     {
         <MDialog Persistent @bind-Value="showExifEditor" ContentStyle="width:min(920px,92vw);height:min(700px,88vh);">
-            <div class="exif-editor-shell">
+            <div class="exif-editor-shell" style="height:100%;min-height:0;overflow:hidden;position:relative;">
                 <MButton Text Small Class="exif-cancel-command" OnClick="CancelExifEditor">取消</MButton>
                 <ExifConfig mText="@exifText"
                             CanvasType="@Editor.Draft.CanvasType"
@@ -358,7 +358,10 @@
     private Task BeginSliderAsync()
     {
         if (sliderInteractionActive) return Task.CompletedTask;
-        Editor.BeginTransaction("调整属性");
+        Editor.BeginTransaction(
+            "调整属性",
+            WMTemplateChangeKind.None,
+            SelectedControl is null ? [] : [SelectedControl.ID]);
         sliderInteractionActive = true;
         return Task.CompletedTask;
     }
@@ -374,31 +377,39 @@
     private void SetSlider(string label, Action mutation)
     {
         if (IsReadOnly) return;
-        Editor.Mutate(label, mutation);
+        Editor.Mutate(label, mutation, ChangeKindFor(label), SelectedNodeIds());
     }
 
     private void Mutate(string label, Action mutation)
     {
         if (IsReadOnly && SelectedControl is not null) return;
-        Editor.Mutate(label, mutation);
+        Editor.Mutate(label, mutation, ChangeKindFor(label), SelectedNodeIds());
     }
 
     private void RenameCurrent(ChangeEventArgs args)
     {
         var name = TextValue(args).Trim();
         if (string.IsNullOrWhiteSpace(name) || IsReadOnly) return;
-        if (SelectedControl is { } control) Mutate("重命名图层", () => control.Name = name);
-        else Editor.Mutate("重命名模板", () => Editor.Draft.Name = name);
+        if (SelectedControl is { } control)
+            Editor.Mutate("重命名图层", () => control.Name = name, WMTemplateChangeKind.Selection, [control.ID]);
+        else
+            Editor.Mutate("重命名模板", () => Editor.Draft.Name = name, WMTemplateChangeKind.Selection);
     }
 
     private void ToggleSelectedVisible()
     {
-        if (SelectedControl is { } control) Editor.Mutate("切换图层可见性", () => control.Enabled = !control.Enabled);
+        if (SelectedControl is { } control)
+            Editor.Mutate(
+                "切换图层可见性",
+                () => control.Enabled = !control.Enabled,
+                WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+                [control.ID]);
     }
 
     private void ToggleSelectedLocked()
     {
-        if (SelectedControl is { } control) Editor.Mutate("切换图层锁定", () => control.IsLocked = !control.IsLocked);
+        if (SelectedControl is { } control)
+            Editor.Mutate("切换图层锁定", () => control.IsLocked = !control.IsLocked, WMTemplateChangeKind.Selection, [control.ID]);
     }
 
     private void DuplicateSelected()
@@ -409,7 +420,7 @@
         {
             copy = WMControlTree.Duplicate(Editor.Draft, control.ID);
             copy.Name = $"{ControlName(control)} 副本";
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [control.ID]);
         if (copy is not null) Editor.Select(copy.ID);
     }
 
@@ -447,13 +458,13 @@
         {
             if (!WMControlTree.Remove(Editor.Draft, control.ID))
                 throw new InvalidOperationException($"无法删除图层 {control.ID}。");
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [control.ID]);
         Editor.Select(parentId);
     }
 
     private Task SetCanvasType(CanvasType value)
     {
-        Editor.Mutate("修改画布类型", () => Editor.Draft.CanvasType = value);
+        Editor.Mutate("修改画布类型", () => Editor.Draft.CanvasType = value, WMTemplateChangeKind.Canvas);
         return Task.CompletedTask;
     }
 
@@ -481,18 +492,18 @@
         return Task.CompletedTask;
     }
 
-    private void SetCanvasWidth(ChangeEventArgs args) => Editor.Mutate("修改画布宽度", () => Editor.Draft.CustomWidth = IntValue(args, Editor.Draft.CustomWidth, 1));
-    private void SetCanvasHeight(ChangeEventArgs args) => Editor.Mutate("修改画布高度", () => Editor.Draft.CustomHeight = IntValue(args, Editor.Draft.CustomHeight, 1));
-    private void SetCanvasRatio(ChangeEventArgs args) => Editor.Mutate("修改画布比例", () => Editor.Draft.LengthWidthRatio = TextValue(args));
+    private void SetCanvasWidth(ChangeEventArgs args) => Editor.Mutate("修改画布宽度", () => Editor.Draft.CustomWidth = IntValue(args, Editor.Draft.CustomWidth, 1), WMTemplateChangeKind.Canvas);
+    private void SetCanvasHeight(ChangeEventArgs args) => Editor.Mutate("修改画布高度", () => Editor.Draft.CustomHeight = IntValue(args, Editor.Draft.CustomHeight, 1), WMTemplateChangeKind.Canvas);
+    private void SetCanvasRatio(ChangeEventArgs args) => Editor.Mutate("修改画布比例", () => Editor.Draft.LengthWidthRatio = TextValue(args), WMTemplateChangeKind.Canvas);
 
     private async Task PickCanvasImageAsync()
     {
         if (DesignFunc?.SelectDefaultImageEvt is null) return;
         var path = await DesignFunc.SelectDefaultImageEvt();
-        if (!string.IsNullOrWhiteSpace(path)) Editor.Mutate("选择默认图片", () => Editor.Draft.Path = path);
+        if (!string.IsNullOrWhiteSpace(path)) Editor.Mutate("选择默认图片", () => Editor.Draft.Path = path, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
     }
 
-    private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () => Editor.Draft.Path = string.Empty);
+    private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () => Editor.Draft.Path = string.Empty, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
 
     private async Task PickContainerImageAsync(WMContainer container) =>
         await RunPickerTransactionAsync("选择容器图片", () => DesignFunc?.SelectContainer?.Invoke(container) ?? Task.CompletedTask);
@@ -503,7 +514,10 @@
     private async Task RunPickerTransactionAsync(string label, Func<Task> picker)
     {
         if (IsReadOnly) return;
-        Editor.BeginTransaction(label);
+        Editor.BeginTransaction(
+            label,
+            WMTemplateChangeKind.Resource | WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+            SelectedNodeIds());
         try
         {
             await picker();
@@ -528,7 +542,10 @@
     private void OpenExifEditor(WMText text)
     {
         if (IsReadOnly || showExifEditor) return;
-        Editor.BeginTransaction("配置拍摄信息");
+        Editor.BeginTransaction(
+            "配置拍摄信息",
+            WMTemplateChangeKind.Resource | WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+            [text.ID]);
         showExifEditor = true;
     }
 
@@ -544,6 +561,14 @@
         Editor.CancelTransaction();
     }
 
+    private string[] SelectedNodeIds() =>
+        SelectedControl is null ? [] : [SelectedControl.ID];
+
+    private WMTemplateChangeKind ChangeKindFor(string label)
+        => WMTemplatePropertyChangeClassifier.Classify(
+            SelectedControl is null,
+            label);
+
     private static string TextValue(ChangeEventArgs args) => args.Value?.ToString() ?? string.Empty;
     private static int IntValue(ChangeEventArgs args, int fallback, int minimum = int.MinValue) => int.TryParse(TextValue(args), out var value) ? Math.Max(value, minimum) : fallback;
     private static string ResourceName(string path) => string.IsNullOrWhiteSpace(path) ? "未选择" : Path.GetFileName(path);
@@ -551,28 +576,28 @@
     private static string TypeName(IWMControl control) => control switch { WMContainer => "容器", WMText => "文字", WMLogo => "图标", WMLine => "分割线", _ => "图层" };
     private static readonly List<MacInspectorOption<CanvasType>> CanvasTypeOptions =
     [
-        new(CanvasType.Normal, "普通", "mdi-image-outline"),
-        new(CanvasType.Split, "拼图", "mdi-view-grid-plus-outline")
+        new(CanvasType.Normal, "普通", "image"),
+        new(CanvasType.Split, "拼图", "grid-nine")
     ];
 
     private static readonly List<MacInspectorOption<Orientation>> OrientationOptions =
     [
-        new(Orientation.Horizontal, "横向", "mdi-border-horizontal"),
-        new(Orientation.Vertical, "纵向", "mdi-border-vertical")
+        new(Orientation.Horizontal, "横向", "rows"),
+        new(Orientation.Vertical, "纵向", "columns")
     ];
 
     private static readonly List<MacInspectorOption<HorizontalAlignment>> HorizontalAlignmentOptions =
     [
-        new(HorizontalAlignment.Left, "左", "mdi-format-horizontal-align-left"),
-        new(HorizontalAlignment.Center, "居中", "mdi-format-horizontal-align-center"),
-        new(HorizontalAlignment.Right, "右", "mdi-format-horizontal-align-right")
+        new(HorizontalAlignment.Left, "左", "align-left"),
+        new(HorizontalAlignment.Center, "居中", "align-center-horizontal"),
+        new(HorizontalAlignment.Right, "右", "align-right")
     ];
 
     private static readonly List<MacInspectorOption<VerticalAlignment>> VerticalAlignmentOptions =
     [
-        new(VerticalAlignment.Top, "顶部", "mdi-format-vertical-align-top"),
-        new(VerticalAlignment.Center, "居中", "mdi-format-vertical-align-center"),
-        new(VerticalAlignment.Bottom, "底部", "mdi-format-vertical-align-bottom")
+        new(VerticalAlignment.Top, "顶部", "align-top"),
+        new(VerticalAlignment.Center, "居中", "align-center-vertical"),
+        new(VerticalAlignment.Bottom, "底部", "align-bottom")
     ];
 
     private sealed record SelectOption<T>(T Value, string Label);

@@ -14,12 +14,12 @@
 
 <section class="account-page" aria-labelledby="account-title">
     <header>
-        <button type="button" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button>
         <div><span>ACCOUNT</span><h1 id="account-title">@Title</h1></div>
     </header>
 
     <main class="account-card">
-        <div class="account-symbol"><MIcon>@Icon</MIcon></div>
+        <div class="account-symbol"><WmIcon Icon="@Icon" /></div>
         <p>@Description</p>
 
         <form @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
@@ -99,7 +99,7 @@
     private bool NeedsVerificationCode => Mode is AccountMode.Register or AccountMode.Recover or AccountMode.Delete;
     private string Title => Mode switch { AccountMode.Register => "注册账号", AccountMode.Recover => "找回密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "删除账号", _ => "登录" };
     private string Description => Mode switch { AccountMode.Register => "创建账号后同步会员、收藏和市场权益。", AccountMode.Recover => "验证邮箱后设置新密码。", AccountMode.ChangePassword => "修改成功后会更新本机登录凭据。", AccountMode.Delete => "该操作将永久删除云端账号。", _ => "登录后继续刚才的操作。" };
-    private string Icon => Mode switch { AccountMode.Register => "mdi-account-plus-outline", AccountMode.Recover => "mdi-lock-reset", AccountMode.ChangePassword => "mdi-form-textbox-password", AccountMode.Delete => "mdi-account-remove-outline", _ => "mdi-login-variant" };
+    private string Icon => Mode switch { AccountMode.Register => "user-plus", AccountMode.Recover => "lock-key-open", AccountMode.ChangePassword => "password", AccountMode.Delete => "user-minus", _ => "sign-in" };
     private string SubmitLabel => Mode switch { AccountMode.Register => "注册并登录", AccountMode.Recover => "重置密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "永久删除账号", _ => "登录" };
 
     protected override void OnParametersSet()

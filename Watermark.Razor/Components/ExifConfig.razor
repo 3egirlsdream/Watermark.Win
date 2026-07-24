@@ -20,13 +20,14 @@
     }
 </style>
 
-<MCard Style="width:100%; height:100%;overflow:hidden;" Flat>
+<MCard Style="width:100%;height:100%;min-height:0;overflow:hidden;display:flex;flex-direction:column;position:relative;padding-bottom:56px;" Flat>
     <MToolbar Flat
               Color="primary"
-              Dark>
+              Dark
+              Style="flex:0 0 auto;">
         <MToolbarTitle>图片元数据配置</MToolbarTitle>
     </MToolbar>
-    <MCard Elevation="0" Style="white-space: nowrap; overflow-x:auto;display:flex;align-items:center;height:80px;" Flat Color="#ECEFF1" Class="mx-2 mt-2">
+    <MCard Elevation="0" Style="white-space:nowrap;overflow-x:auto;display:flex;align-items:center;height:80px;flex:0 0 80px;" Flat Color="#ECEFF1" Class="mx-2 mt-2">
         <MSelect Items="ContainerId2Name.ToList()"
                  TItem="KeyValuePair<string, string>"
                  TValue="string"
@@ -39,20 +40,20 @@
                  HideDetails="true"
                  Readonly="@(CanvasType == CanvasType.Normal)" />
     </MCard>
-    <div style="height:calc(100% - 144px);width:100%;overflow:hidden;display:flex;flex-direction: column;">
+    <div style="width:100%;min-height:0;overflow:hidden;display:flex;flex:1;flex-direction:column;">
         <MCard Elevation="0" Style="flex-wrap: wrap; overflow-y:auto;justify-content:flex-start;display:flex;max-height:80px; scrollbar-width:none;min-height: 52px;" Flat Class="pa-1 mx-2 mt-1" Color="#ECEFF1">
             @foreach (var exif in mText.Exifs)
             {
                 <MCard Elevation="0" Style="display:flex;align-items:center;justify-content:flex-start;gap: 0 10px;text-wrap: nowrap;" Color="#d8d8d8" Class="ma-1 pa-1">
-                    <Label Name="@(exif.Prefix + exif.GetMetaValue(exif.Value, true).Result + exif.Suffix)" Small="true" />
+                    <Label Name="@(exif.Prefix + PreviewValue(exif) + exif.Suffix)" Small="true" />
                     <IconButton Icon="@ICONS.Edit" Elevation="0" OnClick="@(()=>{CurrentExif = exif; detailShow = true;})" Text="true" />
                 </MCard>
             }
         </MCard>
-        <div style="overflow:hidden;flex-direction:column; display:flex;justify-content:space-between;flex: 1;">
-            <MCard Elevation="0" Flat Color="#ECEFF1" Class="mx-2 mt-1" Style="scrollbar-width:none;overflow:auto;">
+        <div style="overflow:hidden;min-height:0;flex-direction:column;display:flex;justify-content:space-between;flex:1;">
+            <MCard Elevation="0" Flat Color="#ECEFF1" Class="mx-2 mt-1" Style="flex:1;min-height:0;scrollbar-width:none;overflow:auto;">
                 <MCard Style="display:flex; align-items:center;justify-content:flex-start;position:sticky;top:0;z-index:999;" Color="#ECEFF1">
-                    <MIcon>@ICONS.Warning</MIcon>
+                    <WmIcon Icon="@ICONS.Warning" />
                     <Label Name="以下均为示例数据，不可以编辑，可以添加前后缀, 导出以图片实际元数据为准" />
                 </MCard>
                 <MChipGroup Multiple Style="display:flex;flex-wrap:wrap" Column Class="mx-1" Values="checkedChips" ValuesChanged="CheckedChipsChanged">
@@ -68,7 +69,7 @@
                 </MChipGroup>
             </MCard>
 
-            <div class="px-1 ma-1">
+            <div class="px-1 ma-1" style="position:absolute;left:0;right:0;bottom:0;z-index:1000;background:#fff;">
                 <MButton Color="primary" OnClick="Submit" Elevation="0" Block Class="my-2">保存</MButton>
             </div>
         </div>
@@ -94,7 +95,7 @@
             <MCard Elevation="25" Style="padding:8px" Class="mt-1">
                 <MTextField @bind-Value="CurrentExif.RemoveString" Label="删除字符" />
 
-                @if (CurrentExif.Value.Contains(","))
+                @if ((CurrentExif.Value ?? string.Empty).Contains(","))
                 {
                     <MSelect @bind-Value="CurrentExif.LocationType"
                              Label="经纬度识别"
@@ -169,6 +170,17 @@
     //"F##4##suffix;"
     WMExifConfigInfo CurrentExif = new();
     bool detailShow = false;
+
+    static string PreviewValue(WMExifConfigInfo exif)
+    {
+        if (string.IsNullOrEmpty(exif.Value))
+        {
+            return string.Empty;
+        }
+
+        return exif.GetMetaValue(exif.Value, true).GetAwaiter().GetResult();
+    }
+
     void Click(DefaultExifs exif)
     {
         var i = new WMExifConfigInfo
@@ -237,4 +249,4 @@
             mText.BindedContainerId = ContainerId2Name.FirstOrDefault().Key;
         }
     }
-} 
+}

@@ -13,7 +13,7 @@
 
 <section class="settings-page" aria-labelledby="settings-title">
     <header>
-        <button type="button" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button>
         <div><span>APPLICATION</span><h1 id="settings-title">设置</h1></div>
     </header>
 
@@ -25,53 +25,53 @@
     {
         <div class="settings-grid">
             <section class="settings-card" id="account">
-                <h2><MIcon>mdi-account-cog-outline</MIcon><span>账号与会员</span></h2>
+                <h2><WmIcon Icon="user-gear" /><span>账号与会员</span></h2>
                 @if (Accounts.State.IsAuthenticated)
                 {
                     <div class="settings-account"><strong>@Accounts.State.DisplayName</strong><small>@Accounts.State.UserName · @(Accounts.State.IsVip ? "会员" : "免费版")</small></div>
-                    <button type="button" @onclick="OpenMembership"><span>会员与权益</span><MIcon>mdi-chevron-right</MIcon></button>
-                    <button type="button" @onclick="OpenChangePassword"><span>修改密码</span><MIcon>mdi-chevron-right</MIcon></button>
-                    <button type="button" @onclick="SwitchAccountAsync"><span>切换账号</span><MIcon>mdi-login-variant</MIcon></button>
-                    <button type="button" class="is-danger" @onclick="OpenDeleteAccount"><span>永久删除账号</span><MIcon>mdi-chevron-right</MIcon></button>
+                    <button type="button" @onclick="OpenMembership"><span>会员与权益</span><WmIcon Icon="caret-right" /></button>
+                    <button type="button" @onclick="OpenChangePassword"><span>修改密码</span><WmIcon Icon="caret-right" /></button>
+                    <button type="button" @onclick="SwitchAccountAsync"><span>切换账号</span><WmIcon Icon="sign-in" /></button>
+                    <button type="button" class="is-danger" @onclick="OpenDeleteAccount"><span>永久删除账号</span><WmIcon Icon="caret-right" /></button>
                 }
                 else
                 {
-                    <button type="button" @onclick="OpenLogin"><span>登录或注册账号</span><MIcon>mdi-chevron-right</MIcon></button>
+                    <button type="button" @onclick="OpenLogin"><span>登录或注册账号</span><WmIcon Icon="caret-right" /></button>
                 }
             </section>
 
             <section class="settings-card" id="application">
-                <h2><MIcon>mdi-tune-variant</MIcon><span>处理设置</span></h2>
+                <h2><WmIcon Icon="sliders-horizontal" /><span>处理设置</span></h2>
                 <label class="settings-switch"><span><strong>增强EXIF解析</strong><small>尝试读取厂商扩展元数据</small></span><input type="checkbox" @bind="enhancedExif" /></label>
                 <label class="settings-range"><span><strong>最大处理线程</strong><small>1–@draft.MaximumAllowedThreads，受设备预算限制</small></span><output>@maximumThreads</output><input type="range" min="1" max="@draft.MaximumAllowedThreads" step="1" @bind="maximumThreads" @bind:event="oninput" /></label>
-                <button class="is-primary" type="button" disabled="@saving" @onclick="SaveSettingsAsync"><span>@(saving ? "正在保存…" : "保存处理设置")</span><MIcon>mdi-content-save-outline</MIcon></button>
+                <button class="is-primary" type="button" disabled="@saving" @onclick="SaveSettingsAsync"><span>@(saving ? "正在保存…" : "保存处理设置")</span><WmIcon Icon="floppy-disk" /></button>
             </section>
 
             <section class="settings-card" id="resources">
-                <h2><MIcon>mdi-shape-outline</MIcon><span>资源与缓存</span></h2>
-                <button type="button" @onclick="OpenResources"><span>图标与字体</span><MIcon>mdi-chevron-right</MIcon></button>
-                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.Temporary)"><span>清理临时缓存 <small>@FormatBytes(cacheSummary?.TemporaryBytes ?? 0)</small></span><MIcon>mdi-delete-sweep-outline</MIcon></button>
-                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.MarketPreviews)"><span>重置市场预览 <small>@FormatBytes(cacheSummary?.MarketPreviewBytes ?? 0)</small></span><MIcon>mdi-refresh</MIcon></button>
-                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.LogoLibrary)"><span>重置内置图标库 <small>@FormatBytes(cacheSummary?.LogoBytes ?? 0)</small></span><MIcon>mdi-refresh</MIcon></button>
+                <h2><WmIcon Icon="shapes" /><span>资源与缓存</span></h2>
+                <button type="button" @onclick="OpenResources"><span>图标与字体</span><WmIcon Icon="caret-right" /></button>
+                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.Temporary)"><span>清理临时缓存 <small>@FormatBytes(cacheSummary?.TemporaryBytes ?? 0)</small></span><WmIcon Icon="broom" /></button>
+                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.MarketPreviews)"><span>重置市场预览 <small>@FormatBytes(cacheSummary?.MarketPreviewBytes ?? 0)</small></span><WmIcon Icon="arrows-clockwise" /></button>
+                <button type="button" disabled="@cacheBusy" @onclick="() => ClearCacheAsync(WMCacheArea.LogoLibrary)"><span>重置内置图标库 <small>@FormatBytes(cacheSummary?.LogoBytes ?? 0)</small></span><WmIcon Icon="arrows-clockwise" /></button>
             </section>
 
             <section class="settings-card" id="update">
-                <h2><MIcon>mdi-update</MIcon><span>版本与诊断</span></h2>
+                <h2><WmIcon Icon="arrows-clockwise" /><span>版本与诊断</span></h2>
                 <div class="settings-version"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "点击检查是否有新版本")</small></span><button type="button" disabled="@Updates.State.IsChecking" @onclick="CheckUpdateAsync">检查</button></div>
                 @if (Updates.State.UpdateAvailable)
                 {
-                    <button class="is-primary" type="button" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><MIcon>mdi-open-in-new</MIcon></button>
+                    <button class="is-primary" type="button" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><WmIcon Icon="arrow-square-out" /></button>
                 }
-                <button type="button" @onclick="OpenDiagnostics"><span>诊断与日志</span><MIcon>mdi-chevron-right</MIcon></button>
+                <button type="button" @onclick="OpenDiagnostics"><span>诊断与日志</span><WmIcon Icon="caret-right" /></button>
             </section>
 
             <section class="settings-card" id="privacy">
-                <h2><MIcon>mdi-shield-lock-outline</MIcon><span>隐私与帮助</span></h2>
-                <button type="button" @onclick="OpenProtocolAsync"><span>用户协议</span><MIcon>mdi-open-in-new</MIcon></button>
-                <button type="button" @onclick="OpenPrivacyPolicy"><span>隐私协议</span><MIcon>mdi-chevron-right</MIcon></button>
-                <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><MIcon>mdi-content-copy</MIcon></button>
-                <button type="button" @onclick="OpenWebsiteAsync"><span>官网与帮助</span><MIcon>mdi-open-in-new</MIcon></button>
-                <button type="button" class="is-danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><MIcon>mdi-shield-off-outline</MIcon></button>
+                <h2><WmIcon Icon="shield-check" /><span>隐私与帮助</span></h2>
+                <button type="button" @onclick="OpenProtocolAsync"><span>用户协议</span><WmIcon Icon="arrow-square-out" /></button>
+                <button type="button" @onclick="OpenPrivacyPolicy"><span>隐私协议</span><WmIcon Icon="caret-right" /></button>
+                <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><WmIcon Icon="copy" /></button>
+                <button type="button" @onclick="OpenWebsiteAsync"><span>官网与帮助</span><WmIcon Icon="arrow-square-out" /></button>
+                <button type="button" class="is-danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><WmIcon Icon="shield-slash" /></button>
             </section>
         </div>
     }

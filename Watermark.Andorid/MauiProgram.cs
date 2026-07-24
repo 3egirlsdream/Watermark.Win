@@ -4,6 +4,7 @@ using Masa.Blazor.Presets;
 using Masa.Blazor;
 using Microsoft.Extensions.Logging;
 using Watermark.Andorid.Models;
+using Watermark.Razor.Components.Compatibility;
 using Watermark.Razor.Components.Mac;
 using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
@@ -27,7 +28,7 @@ namespace Watermark.Andorid
 
             builder.Services.AddFilePicker();
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddMasaBlazor(options =>
+            builder.Services.AddWatermarkMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
                 {

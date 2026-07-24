@@ -8,7 +8,7 @@
     @if (canvas?.Children == null || canvas.Children.Count == 0)
     {
         <div class="empty-layer-state">
-            <MIcon Size="34">mdi-layers-off-outline</MIcon>
+            <WmIcon Size="34" Icon="stack-minus" />
             <strong>还没有图层</strong>
             <span>在结构页添加容器、文字、Logo 或分割线后，这里会显示可编辑属性。</span>
         </div>
@@ -20,13 +20,13 @@
             <article class="layer-card">
                 <header class="layer-header">
                     <div class="layer-identity">
-                        <span class="layer-icon"><MIcon Size="18">mdi-image-filter-center-focus-strong-outline</MIcon></span>
+                        <span class="layer-icon"><WmIcon Size="18" Icon="crosshair" /></span>
                         <div>
                             <h3>@SafeName(container.Name, "容器")</h3>
                             <p>@container.Controls.Count 个组件 · @AlignmentText(container)</p>
                         </div>
                     </div>
-                    <ToggleButton Elevation="0" On="@("mdi-eye-outline")" Off="@("mdi-eye-off-outline")" Open="@container.Enabled" OpenChanged="(e)=> container.Enabled = e" />
+                    <ToggleButton Elevation="0" On="@("eye")" Off="@("eye-slash")" Open="@container.Enabled" OpenChanged="(e)=> container.Enabled = e" />
                 </header>
 
                 <section class="layer-section">
@@ -153,13 +153,13 @@
     RenderFragment ControlCard(IWMControl ctrl, int depth) => @<article class="@($"object-card depth-{depth}")">
         <header class="object-header">
             <div class="layer-identity">
-                <span class="object-icon"><MIcon Size="16">@ControlIcon(ctrl)</MIcon></span>
+                <span class="object-icon"><WmIcon Size="16" Icon="@ControlIcon(ctrl)" /></span>
                 <div>
                     <h4>@SafeName(ctrl.Name, ControlTypeName(ctrl))</h4>
                     <p>@ControlTypeName(ctrl)</p>
                 </div>
             </div>
-            <ToggleButton Elevation="0" On="@("mdi-eye-outline")" Off="@("mdi-eye-off-outline")" Open="@ctrl.Enabled" OpenChanged="(e)=> ctrl.Enabled = e" />
+            <ToggleButton Elevation="0" On="@("eye")" Off="@("eye-slash")" Open="@ctrl.Enabled" OpenChanged="(e)=> ctrl.Enabled = e" />
         </header>
 
         <section class="object-section">
@@ -248,7 +248,7 @@
         <div class="section-label">文字内容</div>
         <div class="metadata-box">
             <div class="metadata-copy">@(ExifSummary(mText))</div>
-            <IconButton Icon="@("mdi-open-in-new")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />
+            <IconButton Icon="@("arrow-square-out")" OnClick="(()=>{ wMText = mText; showExifConfig = true; })" />
         </div>
 
         <ColorPicker Name="颜色" @bind-Color="mText.FontColor" />
@@ -271,7 +271,7 @@
                      HideDetails="true"
                      Dense />
             <MButton Small OnClick="()=>{wMText = mText; showFontConfig = true;}" Class="font-library-button">
-                <MIcon Size="16">mdi-format-font</MIcon>
+                <WmIcon Size="16" Icon="text-aa" />
                 字体库
             </MButton>
         </div>
@@ -350,11 +350,11 @@
     {
         return ctrl switch
         {
-            WMContainer => "mdi-folder-outline",
-            WMText => "mdi-format-title",
-            WMLogo => "mdi-image-outline",
-            WMLine => "mdi-minus",
-            _ => "mdi-shape-outline"
+            WMContainer => "folder",
+            WMText => "text-h-one",
+            WMLogo => "image",
+            WMLine => "minus",
+            _ => "shapes"
         };
     }
 

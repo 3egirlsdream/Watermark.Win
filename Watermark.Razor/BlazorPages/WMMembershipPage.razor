@@ -8,14 +8,14 @@
 @inject IWMNavigationHistory NavigationHistory
 
 <section class="membership-page" aria-labelledby="membership-title">
-    <header><button type="button" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button><div><span>MEMBERSHIP</span><h1 id="membership-title">轻影会员</h1></div></header>
+    <header><button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button><div><span>MEMBERSHIP</span><h1 id="membership-title">轻影会员</h1></div></header>
     <section class="membership-hero">
-        <div class="membership-mark"><MIcon Size="36">mdi-diamond-stone</MIcon></div>
+        <WmMembershipMark />
         <div><strong>@(Accounts.State.IsVip ? "会员权益已生效" : "让每次创作更从容")</strong><p>@StatusText</p></div>
     </section>
     @if (!Accounts.State.IsAuthenticated)
     {
-        <button class="membership-login" type="button" @onclick="OpenLogin"><MIcon>mdi-login-variant</MIcon><span>登录后选择会员套餐</span></button>
+        <button class="membership-login" type="button" @onclick="OpenLogin"><WmIcon Icon="sign-in" /><span>登录后选择会员套餐</span></button>
     }
     else
     {
@@ -30,13 +30,13 @@
         </section>
     }
     <div class="membership-benefits">
-        <article><MIcon>mdi-image-multiple-outline</MIcon><strong>批量工作台</strong><span>多素材统一应用模板和调色</span></article>
-        <article><MIcon>mdi-cloud-download-outline</MIcon><strong>市场模板</strong><span>解锁更多高质量创作模板</span></article>
-        <article><MIcon>mdi-speedometer</MIcon><strong>高效处理</strong><span>获得更完整的批量能力</span></article>
+        <article><WmIcon Icon="images" /><strong>批量工作台</strong><span>多素材统一应用模板和调色</span></article>
+        <article><WmIcon Icon="cloud-arrow-down" /><strong>市场模板</strong><span>解锁更多高质量创作模板</span></article>
+        <article><WmIcon Icon="speedometer" /><strong>高效处理</strong><span>获得更完整的批量能力</span></article>
     </div>
     @if (!string.IsNullOrWhiteSpace(orderId))
     {
-        <button class="membership-refresh" type="button" disabled="@busy" @onclick="RefreshPaymentAsync"><MIcon>mdi-refresh</MIcon><span>我已完成支付，刷新状态</span></button>
+        <button class="membership-refresh" type="button" disabled="@busy" @onclick="RefreshPaymentAsync"><WmIcon Icon="arrows-clockwise" /><span>我已完成支付，刷新状态</span></button>
     }
     @if (!string.IsNullOrWhiteSpace(message))
     {

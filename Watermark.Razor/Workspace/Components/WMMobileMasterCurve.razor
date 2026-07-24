@@ -7,7 +7,7 @@
 <section class="wm-mobile-master-curve @(ShowPresets ? "has-presets" : "no-presets") @(Compact ? "is-compact" : null) wm-curve-channel-@Channel" aria-label="@Title 编辑器">
     <header>
         <div><strong>@Title</strong><small>@Description</small></div>
-        <button type="button" @onclick="ResetPresetAsync" aria-label="重置当前曲线预设"><MIcon>mdi-restore</MIcon></button>
+        <button type="button" @onclick="ResetPresetAsync" aria-label="重置当前曲线预设"><WmIcon Icon="arrow-counter-clockwise" /></button>
     </header>
 
     @if (ShowPresets)

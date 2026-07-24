@@ -50,7 +50,7 @@
                 }
                 else
                 {
-                    <section class="desktop-access-denied"><MIcon Size="42">mdi-shield-lock-outline</MIcon><h1>当前账号无法访问运营看板</h1><p>请使用具有管理权限的账号登录后重试。</p><button type="button" @onclick='() => OpenAccountDialog("login")'>登录其他账号</button></section>
+                    <section class="desktop-access-denied"><WmIcon Size="42" Icon="shield-check" /><h1>当前账号无法访问运营看板</h1><p>请使用具有管理权限的账号登录后重试。</p><button type="button" @onclick='() => OpenAccountDialog("login")'>登录其他账号</button></section>
                 }
                 break;
         }

@@ -8,7 +8,7 @@
 <div class="deploy-page">
     <header class="deploy-header">
         <a class="deploy-brand" href="/" aria-label="返回轻影官网">
-            <span class="deploy-brand-mark"><span class="mdi mdi-camera-iris" aria-hidden="true"></span></span>
+            <span class="deploy-brand-mark"><span class="mdi aperture" aria-hidden="true"></span></span>
             <span><b>轻影</b><small>LITOGRAPH / RELEASE DESK</small></span>
         </a>
         <div class="deploy-runtime">
@@ -51,10 +51,10 @@
                     @if (_analysis is null)
                     {
                         <button class="drop-zone" type="button" @onclick="OpenFilePickerAsync" disabled="@_busy">
-                            <span class="drop-visual"><span class="mdi mdi-package-variant-closed" aria-hidden="true"></span></span>
+                            <span class="drop-visual"><span class="mdi package" aria-hidden="true"></span></span>
                             <b>选择本地安装包</b>
                             <small>文件在浏览器中识别，最大 2 GB</small>
-                            <em>浏览文件 <span class="mdi mdi-arrow-up-right"></span></em>
+                            <em>浏览文件 <span class="mdi arrow-up-right"></span></em>
                         </button>
                     }
                     else
@@ -70,10 +70,10 @@
                                 <p>@FormatSize(_analysis.Size) · @_analysis.PlatformName · 本地读取完成</p>
                             </div>
                             <div class="package-status">
-                                <span class="mdi mdi-check-circle"></span>已识别
+                                <span class="mdi check-circle"></span>已识别
                             </div>
                             <button class="icon-action" type="button" title="重新选择" @onclick="OpenFilePickerAsync" disabled="@_busy">
-                                <span class="mdi mdi-swap-horizontal"></span>
+                                <span class="mdi swap"></span>
                             </button>
                         </article>
                     }
@@ -116,7 +116,7 @@
                         </dl>
 
                         <div class="route-preview">
-                            <span class="mdi mdi-cloud-outline"></span>
+                            <span class="mdi cloud"></span>
                             <div><small>DATABASE DOWNLOAD URL</small><p>@(ReleaseDownloadUrl ?? "选择文件并确认版本后生成地址")</p></div>
                         </div>
 
@@ -148,12 +148,12 @@
 
                         @if (!string.IsNullOrWhiteSpace(_error))
                         {
-                            <p class="inline-message is-error"><span class="mdi mdi-alert-circle-outline"></span>@_error</p>
+                            <p class="inline-message is-error"><span class="mdi warning-circle"></span>@_error</p>
                         }
 
                         <button class="publish-action" type="button" @onclick="PublishAsync" disabled="@(!CanPublish)">
                             <span>@PublishButtonText</span>
-                            <span class="mdi mdi-rocket-launch-outline" aria-hidden="true"></span>
+                            <span class="mdi rocket-launch" aria-hidden="true"></span>
                         </button>
                         <p class="publish-footnote">发布顺序：浏览器直传七牛 → 后端写入版本记录</p>
                     </div>
@@ -166,10 +166,10 @@
     private const string ModulePath = "./deploy.js?v=20260715d";
     private static readonly PlatformInfo[] Platforms =
     [
-        new("macos", "macOS", "mdi-apple", ".pkg"),
-        new("windows", "Windows", "mdi-microsoft-windows", ".zip"),
-        new("android", "Android", "mdi-android", ".apk"),
-        new("ios", "iOS", "mdi-cellphone", ".ipa")
+        new("macos", "macOS", "apple-logo", ".pkg"),
+        new("windows", "Windows", "windows-logo", ".zip"),
+        new("android", "Android", "android-logo", ".apk"),
+        new("ios", "iOS", "device-mobile", ".ipa")
     ];
 
     private IJSObjectReference? _module;
@@ -205,10 +205,10 @@
     private string PublishStateClass => _publishState is PublishState.Failed ? "is-error" : _publishState is PublishState.Success ? "is-success" : string.Empty;
     private string PublishStateIcon => _publishState switch
     {
-        PublishState.Uploading => "mdi-cloud-upload-outline",
-        PublishState.Recording => "mdi-database-arrow-up-outline",
-        PublishState.Success => "mdi-check-decagram-outline",
-        _ => "mdi-alert-circle-outline"
+        PublishState.Uploading => "cloud-arrow-up",
+        PublishState.Recording => "database",
+        PublishState.Success => "seal-check",
+        _ => "warning-circle"
     };
     private string PublishStateTitle => _publishState switch
     {
@@ -333,7 +333,7 @@
     private static PlatformInfo PlatformFor(string platform) => Platforms.First(item => item.Id == platform);
     private static string PlatformClass(string platform) => $"is-{platform}";
     private static string CheckClass(bool valid) => valid ? "is-ready" : string.Empty;
-    private static string CheckIcon(bool valid) => valid ? "mdi-check-circle" : "mdi-circle-outline";
+    private static string CheckIcon(bool valid) => valid ? "check-circle" : "circle";
     private static string FormatSize(long bytes) => bytes switch
     {
         >= 1024L * 1024 * 1024 => $"{bytes / (1024d * 1024 * 1024):0.00} GB",

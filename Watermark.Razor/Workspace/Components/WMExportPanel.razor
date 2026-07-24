@@ -3,18 +3,18 @@
 
 <details class="wm-export-panel @(Busy ? "is-busy" : null) @(!ShowSummary ? "hide-summary" : null)" open="@Expanded">
     <summary>
-        <span class="wm-export-summary-icon"><MIcon>mdi-export-variant</MIcon></span>
+        <span class="wm-export-summary-icon"><WmIcon Icon="export" /></span>
         <span class="wm-export-summary-copy">
             <small>Export studio</small>
             <strong>导出设置</strong>
         </span>
         <span class="wm-export-summary-meta">@SelectedCount 张 · @FormatLabel</span>
-        <MIcon Class="wm-export-summary-chevron">mdi-chevron-down</MIcon>
+        <WmIcon Class="wm-export-summary-chevron" Icon="caret-down" />
     </summary>
 
     <div class="wm-export-body">
         <section class="wm-export-overview" aria-label="本次导出摘要">
-            <span class="wm-export-overview-icon"><MIcon>mdi-image-multiple-outline</MIcon></span>
+            <span class="wm-export-overview-icon"><WmIcon Icon="images" /></span>
             <div>
                 <small>本次输出</small>
                 <strong>@SelectedCount 张照片</strong>
@@ -29,13 +29,13 @@
             </div>
             <div class="wm-export-choice-grid wm-export-format-grid">
                 <button type="button" class="@FormatButtonClass(WMExportFormat.Jpeg8)" aria-pressed="@AriaPressed(Format == WMExportFormat.Jpeg8)" @onclick="() => SelectFormatAsync(WMExportFormat.Jpeg8)">
-                    <span class="wm-export-choice-mark">JPG</span><span><strong>JPEG</strong><small>通用 · 文件更小</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                    <span class="wm-export-choice-mark">JPG</span><span><strong>JPEG</strong><small>通用 · 文件更小</small></span><span class="wm-export-choice-check"><WmIcon Icon="check" /></span>
                 </button>
                 <button type="button" class="@FormatButtonClass(WMExportFormat.Png16)" aria-pressed="@AriaPressed(Format == WMExportFormat.Png16)" disabled="@(!CanExportPng16)" title="@(!CanExportPng16 ? "当前设备不支持 16 位 PNG" : null)" @onclick="() => SelectFormatAsync(WMExportFormat.Png16)">
-                    <span class="wm-export-choice-mark">PNG</span><span><strong>PNG 16</strong><small>@(CanExportPng16 ? "无损 · 保留细节" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                    <span class="wm-export-choice-mark">PNG</span><span><strong>PNG 16</strong><small>@(CanExportPng16 ? "无损 · 保留细节" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><WmIcon Icon="check" /></span>
                 </button>
                 <button type="button" class="@FormatButtonClass(WMExportFormat.Tiff16)" aria-pressed="@AriaPressed(Format == WMExportFormat.Tiff16)" disabled="@(!CanExportTiff16)" title="@(!CanExportTiff16 ? "当前设备不支持 16 位 TIFF" : null)" @onclick="() => SelectFormatAsync(WMExportFormat.Tiff16)">
-                    <span class="wm-export-choice-mark">TIF</span><span><strong>TIFF 16</strong><small>@(CanExportTiff16 ? "专业 · 后期流程" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><MIcon>mdi-check</MIcon></span>
+                    <span class="wm-export-choice-mark">TIF</span><span><strong>TIFF 16</strong><small>@(CanExportTiff16 ? "专业 · 后期流程" : "当前设备不可用")</small></span><span class="wm-export-choice-check"><WmIcon Icon="check" /></span>
                 </button>
             </div>
         </section>
@@ -81,17 +81,17 @@
             </div>
             <div class="wm-export-destination-grid">
                 <button type="button" class="@DestinationButtonClass(WMExportDestinationKind.PlatformDefault)" aria-pressed="@AriaPressed(Destination == WMExportDestinationKind.PlatformDefault)" @onclick="() => SelectDestinationAsync(WMExportDestinationKind.PlatformDefault)">
-                    <MIcon>mdi-folder-image</MIcon><span><strong>默认目录</strong><small>快速保存</small></span><span class="wm-export-destination-check"><MIcon>mdi-check</MIcon></span>
+                    <WmIcon Icon="folder-open" /><span><strong>默认目录</strong><small>快速保存</small></span><span class="wm-export-destination-check"><WmIcon Icon="check" /></span>
                 </button>
                 <button type="button" class="@DestinationButtonClass(WMExportDestinationKind.SystemPicker)" aria-pressed="@AriaPressed(Destination == WMExportDestinationKind.SystemPicker)" @onclick="() => SelectDestinationAsync(WMExportDestinationKind.SystemPicker)">
-                    <MIcon>mdi-folder-search-outline</MIcon><span><strong>选择位置</strong><small>每次询问</small></span><span class="wm-export-destination-check"><MIcon>mdi-check</MIcon></span>
+                    <WmIcon Icon="magnifying-glass" /><span><strong>选择位置</strong><small>每次询问</small></span><span class="wm-export-destination-check"><WmIcon Icon="check" /></span>
                 </button>
             </div>
         </section>
 
         @if (FailedCount > 0)
         {
-            <button type="button" class="wm-retry" disabled="@Busy" @onclick="RetryFailedRequested"><MIcon>mdi-refresh</MIcon><span>仅重试失败的 @FailedCount 张</span></button>
+            <button type="button" class="wm-retry" disabled="@Busy" @onclick="RetryFailedRequested"><WmIcon Icon="arrows-clockwise" /><span>仅重试失败的 @FailedCount 张</span></button>
         }
         @if (Busy)
         {
@@ -105,7 +105,7 @@
             <ul class="wm-export-results" aria-label="导出结果">
                 @foreach (var item in Results)
                 {
-                    <li class="@(item.Status == WMExportItemStatus.Succeeded ? "is-success" : "is-error")"><MIcon>@(item.Status == WMExportItemStatus.Succeeded ? "mdi-check-circle-outline" : "mdi-alert-circle-outline")</MIcon><span><strong>@item.SuggestedFileName</strong><small>@(item.ErrorMessage ?? "已保存")</small></span></li>
+                    <li class="@(item.Status == WMExportItemStatus.Succeeded ? "is-success" : "is-error")"><WmIcon Icon="@(item.Status == WMExportItemStatus.Succeeded ? "check-circle" : "warning-circle")" /><span><strong>@item.SuggestedFileName</strong><small>@(item.ErrorMessage ?? "已保存")</small></span></li>
                 }
             </ul>
         }
@@ -113,9 +113,9 @@
 
     <footer class="wm-export-actions">
         <button type="button" class="wm-export-run @(Busy ? "is-cancel" : null)" disabled="@(!Busy && (SelectedCount == 0 || Disabled))" @onclick="RunOrCancelRequested">
-            <MIcon>@(Busy ? "mdi-stop-circle-outline" : "mdi-export-variant")</MIcon>
+            <WmIcon Icon="@(Busy ? "stop-circle" : "export")" />
             <span>@(Busy ? "取消导出" : $"导出 {SelectedCount} 张照片")</span>
-            @if (!Busy) { <MIcon>mdi-arrow-right</MIcon> }
+            @if (!Busy) { <WmIcon Icon="arrow-right" /> }
         </button>
         @if (!Busy)
         {

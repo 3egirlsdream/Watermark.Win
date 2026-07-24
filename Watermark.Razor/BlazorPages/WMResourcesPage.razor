@@ -9,27 +9,27 @@
 
 <section class="resources-page" aria-labelledby="resources-title">
     <header class="resources-header">
-        <button type="button" class="resources-back" @onclick="GoBack" aria-label="返回"><MIcon>mdi-arrow-left</MIcon></button>
+        <button type="button" class="resources-back" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button>
         <div><span>素材资源</span><h1 id="resources-title">图标与字体</h1></div>
     </header>
 
     <nav class="resources-tabs" aria-label="资源类型" role="tablist">
         <button type="button" role="tab" aria-selected="@(Kind == WMResourceKind.Logo)" class="@(Kind == WMResourceKind.Logo ? "is-active" : null)" @onclick="OpenLogos">
-            <MIcon>mdi-image-outline</MIcon><span>个人图标</span>
+            <WmIcon Icon="image" /><span>个人图标</span>
         </button>
         <button type="button" role="tab" aria-selected="@(Kind == WMResourceKind.Font)" class="@(Kind == WMResourceKind.Font ? "is-active" : null)" @onclick="OpenFonts">
-            <MIcon>mdi-format-font</MIcon><span>字体库</span>
+            <WmIcon Icon="text-aa" /><span>字体库</span>
         </button>
     </nav>
 
     <section class="resources-overview" aria-label="资源导入">
-        <span class="resources-overview-icon"><MIcon>@(Kind == WMResourceKind.Logo ? "mdi-shape-outline" : "mdi-text-recognition")</MIcon></span>
+        <span class="resources-overview-icon"><WmIcon Icon="@(Kind == WMResourceKind.Logo ? "shapes" : "text-t")" /></span>
         <div>
             <strong>@(Kind == WMResourceKind.Logo ? "我的图标" : "我的字体")</strong>
             <small>@ResourceSummary</small>
         </div>
         <label class="resources-import" aria-disabled="@busy">
-            <MIcon>mdi-file-import-outline</MIcon><span>导入</span>
+            <WmIcon Icon="file-arrow-down" /><span>导入</span>
             <InputFile class="resources-file-input" OnChange="ImportAsync" accept="@(Kind == WMResourceKind.Logo ? ".png,.jpg,.jpeg,image/png,image/jpeg" : ".ttf,.otf,font/ttf,font/otf")" disabled="@busy" />
         </label>
     </section>
@@ -42,7 +42,7 @@
         else if (items.Count == 0)
         {
             <div class="resources-state">
-                <span class="resources-state-icon"><MIcon Size="34">@(Kind == WMResourceKind.Logo ? "mdi-image-plus-outline" : "mdi-format-font")</MIcon></span>
+                <span class="resources-state-icon"><WmIcon Size="34" Icon="@(Kind == WMResourceKind.Logo ? "image-square" : "text-aa")" /></span>
                 <strong>@(Kind == WMResourceKind.Logo ? "还没有个人图标" : "还没有可用字体")</strong>
                 <span>@(Kind == WMResourceKind.Logo ? "导入常用标志，设计模板时可以直接使用。" : "导入本地字体，已下载字体也会自动显示在这里。")</span>
             </div>
@@ -60,7 +60,7 @@
                             }
                             else
                             {
-                                <MIcon Size="32">@(item.Kind == WMResourceKind.Logo ? "mdi-image-outline" : "mdi-format-font")</MIcon>
+                                <WmIcon Size="32" Icon="@(item.Kind == WMResourceKind.Logo ? "image" : "text-aa")" />
                             }
                         </div>
                         <div class="resource-meta">
@@ -73,7 +73,7 @@
                         }
                         else
                         {
-                            <button type="button" class="resource-action is-danger" disabled="@busy" @onclick="() => DeleteAsync(item)" aria-label="删除 @item.Name"><MIcon>mdi-delete-outline</MIcon></button>
+                            <button type="button" class="resource-action is-danger" disabled="@busy" @onclick="() => DeleteAsync(item)" aria-label="删除 @item.Name"><WmIcon Icon="trash" /></button>
                         }
                     </article>
                 }

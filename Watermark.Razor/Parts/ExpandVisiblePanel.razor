@@ -17,11 +17,11 @@
         <div style="display:flex;align-content:flex-start;align-items:center;">
             @if (ShowIcon)
             {
-                <ToggleButton Elevation="0" On="@("mdi-eye-outline")" Off="@("mdi-eye-off-outline")" Open="@Visible" OpenChanged="VisibleChanged" Class="mr-1"/>
+                <ToggleButton Elevation="0" On="@("eye")" Off="@("eye-slash")" Open="@Visible" OpenChanged="VisibleChanged" Class="mr-1"/>
             }
             <Label Name="@Desc" Small="false" Bold="@Bold"/>
         </div>
-        <ToggleButton On="@("mdi-arrow-down-drop-circle-outline")" Off="@("mdi-arrow-up-drop-circle-outline")" @bind-Open="@Expanded" OffColor="primary"/>
+        <ToggleButton On="@("caret-circle-down")" Off="@("caret-circle-up")" @bind-Open="@Expanded" OffColor="primary"/>
     </div>
     @if (Expanded && ChildContent != null)
     {

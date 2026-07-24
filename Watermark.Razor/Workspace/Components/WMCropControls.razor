@@ -2,13 +2,13 @@
 
 <section class="wm-crop-controls @(straightenOpen ? "is-straighten-open" : null) @Class" aria-label="裁切工具">
     <div class="wm-crop-geometry @(ShowReset ? null : "without-reset")" role="group" aria-label="几何调整">
-        <button type="button" @onclick="Rotate" aria-label="顺时针旋转 90 度"><MIcon>mdi-rotate-right</MIcon><span>旋转</span></button>
-        <button type="button" class="@(Settings.FlipHorizontal ? "is-active" : null)" @onclick="FlipHorizontal" aria-pressed="@Settings.FlipHorizontal" aria-label="水平翻转"><MIcon>mdi-flip-horizontal</MIcon><span>水平翻转</span></button>
-        <button type="button" class="@(Settings.FlipVertical ? "is-active" : null)" @onclick="FlipVertical" aria-pressed="@Settings.FlipVertical" aria-label="垂直翻转"><MIcon>mdi-flip-vertical</MIcon><span>垂直翻转</span></button>
-        <button type="button" class="wm-crop-straighten-button @(straightenOpen || Math.Abs(Settings.StraightenDegrees) > .001 ? "is-active" : null)" @onclick="() => straightenOpen = !straightenOpen" aria-expanded="@straightenOpen"><output>@Settings.StraightenDegrees.ToString("0.0")°</output><MIcon>mdi-angle-acute</MIcon><span>拉直</span></button>
+        <button type="button" @onclick="Rotate" aria-label="顺时针旋转 90 度"><WmIcon Icon="arrow-clockwise" /><span>旋转</span></button>
+        <button type="button" class="@(Settings.FlipHorizontal ? "is-active" : null)" @onclick="FlipHorizontal" aria-pressed="@Settings.FlipHorizontal" aria-label="水平翻转"><WmIcon Icon="flip-horizontal" /><span>水平翻转</span></button>
+        <button type="button" class="@(Settings.FlipVertical ? "is-active" : null)" @onclick="FlipVertical" aria-pressed="@Settings.FlipVertical" aria-label="垂直翻转"><WmIcon Icon="flip-vertical" /><span>垂直翻转</span></button>
+        <button type="button" class="wm-crop-straighten-button @(straightenOpen || Math.Abs(Settings.StraightenDegrees) > .001 ? "is-active" : null)" @onclick="() => straightenOpen = !straightenOpen" aria-expanded="@straightenOpen"><output>@Settings.StraightenDegrees.ToString("0.0")°</output><WmIcon Icon="angle" /><span>拉直</span></button>
         @if (ShowReset)
         {
-            <button type="button" @onclick="Reset" aria-label="重置裁切"><MIcon>mdi-restore</MIcon><span>重置</span></button>
+            <button type="button" @onclick="Reset" aria-label="重置裁切"><WmIcon Icon="arrow-counter-clockwise" /><span>重置</span></button>
         }
     </div>
     @if (straightenOpen)

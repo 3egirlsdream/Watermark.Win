@@ -13,7 +13,7 @@
             <p>选择套餐后前往支付宝网页付款，支付成功会自动刷新账号状态。</p>
         </div>
         <MButton Icon Small Text Class="vip-icon-button" OnClick="CloseAsync">
-            <MIcon>mdi-close</MIcon>
+            <WmIcon Icon="x" />
         </MButton>
     </header>
 
@@ -47,7 +47,7 @@
             else if (HasOrder)
             {
                 <div class="checkout-placeholder ready">
-                    <MIcon Size="52">mdi-open-in-new</MIcon>
+                    <WmIcon Size="52" Icon="arrow-square-out" />
                     <strong>支付宝收银台已打开</strong>
                     <span>请在浏览器中扫码或登录付款</span>
                 </div>
@@ -55,7 +55,7 @@
             else
             {
                 <div class="checkout-placeholder">
-                    <MIcon Size="52">mdi-web</MIcon>
+                    <WmIcon Size="52" Icon="globe" />
                     <strong>网页安全支付</strong>
                     <span>点击后将在系统浏览器打开</span>
                 </div>
@@ -86,14 +86,14 @@
 
     <footer class="vip-actions">
         <MButton Text Class="vip-secondary-button" OnClick="OpenPaymentPageAsync" Disabled="@(string.IsNullOrWhiteSpace(paymentUrl))">
-            <MIcon Left Small>mdi-open-in-new</MIcon>重新打开支付页
+            <WmIcon Left Small Icon="arrow-square-out" />重新打开支付页
         </MButton>
         <MSpacer />
         <MButton Text Class="vip-secondary-button" OnClick="RefreshStatusAsync" Disabled="@(!HasOrder || isPolling)">
-            <MIcon Left Small>mdi-refresh</MIcon>刷新状态
+            <WmIcon Left Small Icon="arrows-clockwise" />刷新状态
         </MButton>
         <MButton Color="primary" Class="vip-primary-button" OnClick="CreateOrderAsync" Disabled="@IsBusy">
-            <MIcon Left Small>mdi-open-in-new</MIcon>@PrimaryActionText
+            <WmIcon Left Small Icon="arrow-square-out" />@PrimaryActionText
         </MButton>
     </footer>
 </div>

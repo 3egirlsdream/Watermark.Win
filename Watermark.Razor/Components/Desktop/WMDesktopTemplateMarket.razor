@@ -20,17 +20,17 @@
             }
         </nav>
         <label class="market-search">
-            <MIcon Small>mdi-magnify</MIcon>
+            <WmIcon Small Icon="magnifying-glass" />
             <input value="@keyword" @oninput="UpdateKeyword" @onkeydown="SearchOnEnterAsync" placeholder="搜索模板" aria-label="搜索模板" />
             @if (!string.IsNullOrWhiteSpace(keyword))
             {
-                <button type="button" class="market-search-clear" @onclick="ClearSearchAsync" aria-label="清除搜索"><MIcon Small>mdi-close-circle</MIcon></button>
+                <button type="button" class="market-search-clear" @onclick="ClearSearchAsync" aria-label="清除搜索"><WmIcon Small Icon="x-circle" /></button>
             }
         </label>
         <div class="market-command-group">
             <button type="button" class="market-search-command" disabled="@ActiveState.IsLoading" @onclick="ReloadAsync">搜索</button>
             <button type="button" class="market-refresh-command" disabled="@ActiveState.IsLoading" @onclick="RefreshAsync" aria-label="刷新市场模板">
-                <MIcon Small Class="@(ActiveState.IsLoading ? "is-spinning" : null)">mdi-refresh</MIcon><span>刷新</span>
+                <WmIcon Small Class="@(ActiveState.IsLoading ? "is-spinning" : null)" Icon="arrows-clockwise" /><span>刷新</span>
             </button>
         </div>
     </div>
@@ -42,7 +42,7 @@
         }
         else if (ActiveState.Items.Count == 0)
         {
-            <div class="market-empty"><MIcon Size="42">mdi-store-search-outline</MIcon><strong>暂时没有匹配的模板</strong><span>换一个分类或搜索词试试。</span></div>
+            <div class="market-empty"><WmIcon Size="42" Icon="storefront" /><strong>暂时没有匹配的模板</strong><span>换一个分类或搜索词试试。</span></div>
         }
         else
         {
@@ -61,15 +61,15 @@
                         }
                         else
                         {
-                            <span class="template-skeleton"><MIcon Size="34">mdi-image-outline</MIcon></span>
+                            <span class="template-skeleton"><WmIcon Size="34" Icon="image" /></span>
                         }
                         @if (item.Recommend)
                         {
-                            <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                            <span class="template-badge" title="精选" aria-label="精选"><WmIcon Icon="star" /></span>
                         }
                         @if (downloaded)
                         {
-                            <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                            <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Icon="check" /></span>
                         }
                         @if (AdminDashboard.IsAuthorized)
                         {
@@ -80,7 +80,7 @@
                                     aria-label="@(item.Recommend ? "下架推荐" : "加入推荐")"
                                     @onclick="() => SetRecommendedAsync(item)"
                                     @onclick:stopPropagation="true">
-                                <MIcon Small>@(item.Recommend ? "mdi-star-off-outline" : "mdi-star-plus-outline")</MIcon>
+                                <WmIcon Small Icon="@(item.Recommend ? "star-half" : "star")" />
                                 <span>@(recommendUpdatingId == item.WatermarkId ? "处理中" : item.Recommend ? "下架推荐" : "加入推荐")</span>
                             </button>
                         }
@@ -88,7 +88,7 @@
                                 class="card-download @(downloaded ? "is-downloaded" : null)"
                                 disabled="@(downloadingId is not null || downloaded)"
                                 @onclick="() => DownloadAsync(item)">
-                            <MIcon Small>@(downloaded ? "mdi-check" : "mdi-tray-arrow-down")</MIcon>
+                            <WmIcon Small Icon="@(downloaded ? "check" : "tray-arrow-down")" />
                             <span>@(downloadingId == item.WatermarkId ? "下载中" : downloaded ? "已添加" : "下载")</span>
                         </button>
                     </div>
@@ -99,10 +99,10 @@
                                 <small>@CreatorName(item)</small>
                                 @if (IsVerifiedCreator(item))
                                 {
-                                    <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                    <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
                                 }
                             </span>
-                            <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                            <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Icon="tray-arrow-down" />@FormatDownloads(item.DownloadTimes)</small>
                         </div>
                     </div>
                 </article>

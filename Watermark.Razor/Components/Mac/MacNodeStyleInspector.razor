@@ -90,7 +90,10 @@
     private Task BeginInteractionAsync()
     {
         if (ReadOnly || interactionActive) return Task.CompletedTask;
-        Editor.BeginTransaction("调整布局样式");
+        Editor.BeginTransaction(
+            "调整布局样式",
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+            [Control.ID]);
         interactionActive = true;
         return Task.CompletedTask;
     }
@@ -106,7 +109,13 @@
     private void Mutate(string label, Action mutation)
     {
         if (ReadOnly) return;
-        Editor.Mutate(label, mutation);
+        Editor.Mutate(
+            label,
+            mutation,
+            label.Contains("层叠", StringComparison.Ordinal)
+                ? WMTemplateChangeKind.Order | WMTemplateChangeKind.Layout
+                : WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+            [Control.ID]);
     }
 
     private Task SetPosition(WMPosition value)
@@ -162,7 +171,7 @@
     private static readonly IReadOnlyList<MacInspectorOption<WMOverflow>> OverflowOptions =
     [new(WMOverflow.Hidden, "裁切"), new(WMOverflow.Visible, "显示")];
     private static readonly IReadOnlyList<MacInspectorOption<Orientation>> DirectionOptions =
-    [new(Orientation.Horizontal, "横向", "mdi-border-horizontal"), new(Orientation.Vertical, "纵向", "mdi-border-vertical")];
+    [new(Orientation.Horizontal, "横向", "rows"), new(Orientation.Vertical, "纵向", "columns")];
     private static readonly IReadOnlyList<MacInspectorOption<WMJustifyContent>> JustifyOptions =
     [new(WMJustifyContent.Start, "开始"), new(WMJustifyContent.Center, "居中"), new(WMJustifyContent.End, "末尾")];
     private static readonly IReadOnlyList<MacInspectorOption<WMAlignItems>> AlignOptions =

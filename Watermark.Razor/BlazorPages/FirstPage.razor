@@ -16,7 +16,7 @@
                 <span class="privacy-kicker">隐私优先 · 本地创作</span>
                 <h1 id="privacy-title">你的照片，只留在设备里</h1>
                 <p>模板、调色与导出默认在本机完成，不会为了处理照片而上传原图。</p>
-                <div class="privacy-local-badge"><MIcon>mdi-cellphone-lock</MIcon><span>默认本地处理 · 启动时不索取相册权限</span></div>
+                <div class="privacy-local-badge"><WmIcon Icon="device-mobile" /><span>默认本地处理 · 启动时不索取相册权限</span></div>
             </section>
 
             <section class="privacy-access" aria-labelledby="privacy-access-title">
@@ -26,20 +26,20 @@
                 </header>
                 <div class="privacy-access-list">
                     <article>
-                        <span class="privacy-access-icon is-photo"><MIcon>mdi-image-multiple-outline</MIcon></span>
+                        <span class="privacy-access-icon is-photo"><WmIcon Icon="images" /></span>
                         <div><strong>选择照片</strong><p>点击导入时才打开系统相册，不扫描整个相册。</p></div>
                     </article>
                     <article>
-                        <span class="privacy-access-icon is-save"><MIcon>mdi-tray-arrow-down</MIcon></span>
+                        <span class="privacy-access-icon is-save"><WmIcon Icon="tray-arrow-down" /></span>
                         <div><strong>保存作品</strong><p>点击导出时才写入照片或你选择的位置。</p></div>
                     </article>
                     <article>
-                        <span class="privacy-access-icon is-network"><MIcon>mdi-cloud-outline</MIcon></span>
+                        <span class="privacy-access-icon is-network"><WmIcon Icon="cloud" /></span>
                         <div><strong>联网服务</strong><p>仅用于账号、模板市场、收藏与版本更新。</p></div>
                     </article>
                 </div>
                 <div class="privacy-commitment">
-                    <MIcon>mdi-eye-off-outline</MIcon><span>创作图片默认不上云，权限可在系统设置中随时修改。</span>
+                    <WmIcon Icon="eye-slash" /><span>创作图片默认不上云，权限可在系统设置中随时修改。</span>
                 </div>
             </section>
         </main>
@@ -51,7 +51,7 @@
             <button type="button" @onclick="OpenPrivacyAsync">《隐私协议》</button>
         </p>
         <button type="button" class="privacy-primary" @onclick="AgreeAsync">
-            <span>同意并开始使用</span><MIcon>mdi-arrow-right</MIcon>
+            <span>同意并开始使用</span><WmIcon Icon="arrow-right" />
         </button>
         <button type="button" class="privacy-secondary" @onclick="DeclineAsync">暂不同意，先浏览应用</button>
     </footer>

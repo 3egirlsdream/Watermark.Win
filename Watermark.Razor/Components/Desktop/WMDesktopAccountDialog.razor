@@ -7,9 +7,9 @@
 
 <section class="desktop-account-dialog" aria-labelledby="desktop-account-title">
     <header>
-        <div class="account-symbol"><MIcon Size="26">@Icon</MIcon></div>
+        <div class="account-symbol"><WmIcon Size="26" Icon="@Icon" /></div>
         <div><small>ACCOUNT</small><h2 id="desktop-account-title">@Title</h2><p>@Description</p></div>
-        <button type="button" class="close-command" @onclick="Close" aria-label="关闭"><MIcon Small>mdi-close</MIcon></button>
+        <button type="button" class="close-command" @onclick="Close" aria-label="关闭"><WmIcon Small Icon="x" /></button>
     </header>
 
     <form @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
@@ -54,7 +54,7 @@
         }
         else
         {
-            <button type="button" @onclick='() => ChangeModeAsync("login")'><MIcon Small>mdi-arrow-left</MIcon><span>返回登录</span></button>
+            <button type="button" @onclick='() => ChangeModeAsync("login")'><WmIcon Small Icon="arrow-left" /><span>返回登录</span></button>
         }
     </footer>
 </section>
@@ -91,7 +91,7 @@
     private bool NeedsVerificationCode => CurrentMode is AccountMode.Register or AccountMode.Recover or AccountMode.Delete;
     private string Title => CurrentMode switch { AccountMode.Register => "注册账号", AccountMode.Recover => "找回密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "注销账号", _ => "登录" };
     private string Description => CurrentMode switch { AccountMode.Register => "创建账号并同步会员与模板权益。", AccountMode.Recover => "验证邮箱后重新设置密码。", AccountMode.ChangePassword => "更新当前账号的登录密码。", AccountMode.Delete => "永久删除云端账号和关联信息。", _ => "登录后继续使用会员和市场能力。" };
-    private string Icon => CurrentMode switch { AccountMode.Register => "mdi-account-plus-outline", AccountMode.Recover => "mdi-lock-reset", AccountMode.ChangePassword => "mdi-form-textbox-password", AccountMode.Delete => "mdi-account-remove-outline", _ => "mdi-login-variant" };
+    private string Icon => CurrentMode switch { AccountMode.Register => "user-plus", AccountMode.Recover => "lock-key-open", AccountMode.ChangePassword => "password", AccountMode.Delete => "user-minus", _ => "sign-in" };
     private string SubmitLabel => CurrentMode switch { AccountMode.Register => "注册并登录", AccountMode.Recover => "重置密码", AccountMode.ChangePassword => "修改密码", AccountMode.Delete => "永久删除账号", _ => "登录" };
 
     protected override void OnParametersSet()

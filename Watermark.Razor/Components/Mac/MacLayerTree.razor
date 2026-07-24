@@ -15,15 +15,15 @@
         <MMenu Bottom OffsetY>
             <ActivatorContent>
                 <MButton Text Small Class="add-layer-trigger" title="添加图层" aria-label="添加图层" @attributes="@context.Attrs">
-                    <MIcon Left Small>mdi-plus</MIcon>添加
+                    <WmIcon Left Small Icon="plus" />添加
                 </MButton>
             </ActivatorContent>
             <ChildContent>
                 <MList Dense Class="add-layer-options">
-                    <MListItem Title="容器" PrependIcon="mdi-folder-outline" OnClick="() => AddControl(typeof(WMContainer))" />
-                    <MListItem Title="文字" PrependIcon="mdi-format-text" OnClick="() => AddControl(typeof(WMText))" />
-                    <MListItem Title="图标" PrependIcon="mdi-image-outline" OnClick="() => AddControl(typeof(WMLogo))" />
-                    <MListItem Title="分割线" PrependIcon="mdi-minus" OnClick="() => AddControl(typeof(WMLine))" />
+                    <MListItem OnClick="() => AddControl(typeof(WMContainer))"><MListItemIcon><WmIcon Icon="folder" /></MListItemIcon><MListItemContent><MListItemTitle>容器</MListItemTitle></MListItemContent></MListItem>
+                    <MListItem OnClick="() => AddControl(typeof(WMText))"><MListItemIcon><WmIcon Icon="text-t" /></MListItemIcon><MListItemContent><MListItemTitle>文字</MListItemTitle></MListItemContent></MListItem>
+                    <MListItem OnClick="() => AddControl(typeof(WMLogo))"><MListItemIcon><WmIcon Icon="image" /></MListItemIcon><MListItemContent><MListItemTitle>图标</MListItemTitle></MListItemContent></MListItem>
+                    <MListItem OnClick="() => AddControl(typeof(WMLine))"><MListItemIcon><WmIcon Icon="minus" /></MListItemIcon><MListItemContent><MListItemTitle>分割线</MListItemTitle></MListItemContent></MListItem>
                 </MList>
             </ChildContent>
         </MMenu>
@@ -33,7 +33,7 @@
         @if (Editor.Draft.Children.Count == 0)
         {
             <div class="layer-empty-state">
-                <MIcon>mdi-layers-outline</MIcon>
+                <WmIcon Icon="stack" />
                 <span>暂无图层</span>
             </div>
         }
@@ -113,7 +113,7 @@
                 @if (control is WMContainer)
                 {
                     <button type="button" class="tree-toggle" title="@(IsCollapsed(control.ID) ? "展开" : "收起")" aria-label="@(IsCollapsed(control.ID) ? "展开容器" : "收起容器")" @onclick:stopPropagation @onclick="() => ToggleCollapsed(control.ID)">
-                        <MIcon Size="14">@(IsCollapsed(control.ID) ? "mdi-chevron-right" : "mdi-chevron-down")</MIcon>
+                        <WmIcon Size="14" Icon="@(IsCollapsed(control.ID) ? "caret-right" : "caret-down")" />
                     </button>
                 }
                 else
@@ -129,7 +129,7 @@
                       @onclick:stopPropagation
                       >⋮⋮</span>
 
-                <MIcon Size="15" Class="layer-type-icon">@IconFor(control)</MIcon>
+                <WmIcon Size="15" Class="layer-type-icon" Icon="@IconFor(control)" />
 
                 @if (editingId == control.ID)
                 {
@@ -149,17 +149,20 @@
                 }
 
                 <div class="layer-row-actions">
-                    <button type="button" class="layer-action" title="复制图层" aria-label="复制图层" @onclick:stopPropagation @onclick="() => Duplicate(control)">
-                        <MIcon Size="14">mdi-content-copy</MIcon>
+                    <button type="button" class="layer-action desktop-direct-action" title="复制图层" aria-label="复制图层" @onclick:stopPropagation @onclick="() => Duplicate(control)">
+                        <WmIcon Size="14" Icon="copy" />
                     </button>
-                    <button type="button" class="layer-action" title="删除图层" aria-label="删除图层" @onclick:stopPropagation @onclick="() => RequestDelete(control)">
-                        <MIcon Size="14">mdi-trash-can-outline</MIcon>
+                    <button type="button" class="layer-action desktop-direct-action" title="删除图层" aria-label="删除图层" @onclick:stopPropagation @onclick="() => RequestDelete(control)">
+                        <WmIcon Size="14" Icon="trash" />
                     </button>
                     <button type="button" class="layer-action persistent" title="显示或隐藏" aria-label="显示或隐藏图层" @onclick:stopPropagation @onclick="() => ToggleVisible(control)">
-                        <MIcon Size="14">@(control.Enabled ? "mdi-eye-outline" : "mdi-eye-off-outline")</MIcon>
+                        <WmIcon Size="14" Icon="@(control.Enabled ? "eye" : "eye-slash")" />
                     </button>
                     <button type="button" class="layer-action persistent" title="锁定或解锁" aria-label="锁定或解锁图层" @onclick:stopPropagation @onclick="() => ToggleLocked(control)">
-                        <MIcon Size="14">@(control.IsLocked ? "mdi-lock-outline" : "mdi-lock-open-variant-outline")</MIcon>
+                        <WmIcon Size="14" Icon="@(control.IsLocked ? "lock" : "lock-open")" />
+                    </button>
+                    <button type="button" class="layer-action persistent mobile-more-action" title="更多图层操作" aria-label="更多图层操作" aria-expanded="@(contextId == control.ID)" @onclick:stopPropagation @onclick="() => OpenContextMenu(control)">
+                        <WmIcon Size="16" Icon="dots-three" />
                     </button>
                 </div>
             </div>
@@ -211,7 +214,7 @@
                 : type == typeof(WMText) ? "新文字"
                 : type == typeof(WMLogo) ? "新图标"
                 : "新分割线";
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint);
         if (added is not null) Editor.Select(added.ID);
     }
 
@@ -244,7 +247,11 @@
         var value = editingName.Trim();
         editingId = null;
         if (string.IsNullOrWhiteSpace(value) || value == control.Name) return;
-        Editor.Mutate("重命名图层", () => control.Name = value);
+        Editor.Mutate(
+            "重命名图层",
+            () => control.Name = value,
+            WMTemplateChangeKind.Selection,
+            [control.ID]);
     }
 
     private void CancelRename()
@@ -254,10 +261,18 @@
     }
 
     private void ToggleVisible(IWMControl control) =>
-        Editor.Mutate("切换图层可见性", () => control.Enabled = !control.Enabled);
+        Editor.Mutate(
+            "切换图层可见性",
+            () => control.Enabled = !control.Enabled,
+            WMTemplateChangeKind.Paint,
+            [control.ID]);
 
     private void ToggleLocked(IWMControl control) =>
-        Editor.Mutate("切换图层锁定", () => control.IsLocked = !control.IsLocked);
+        Editor.Mutate(
+            "切换图层锁定",
+            () => control.IsLocked = !control.IsLocked,
+            WMTemplateChangeKind.Selection,
+            [control.ID]);
 
     private void Duplicate(IWMControl control)
     {
@@ -266,7 +281,7 @@
         {
             copy = WMControlTree.Duplicate(Editor.Draft, control.ID);
             copy.Name = $"{DisplayName(control)} 副本";
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [control.ID]);
         contextId = null;
         if (copy is not null) Editor.Select(copy.ID);
     }
@@ -305,7 +320,7 @@
         {
             if (!WMControlTree.Remove(Editor.Draft, control.ID))
                 throw new InvalidOperationException("无法删除图层。");
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [control.ID]);
         Editor.Select(parentId);
     }
 
@@ -418,7 +433,7 @@
         {
             if (!WMControlTree.Move(Editor.Draft, movingId, parentId, index))
                 throw new InvalidOperationException("无法移动到目标位置。");
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order, [movingId]);
         Editor.Select(movingId);
         EndDrag();
         await Task.CompletedTask;
@@ -514,11 +529,11 @@
 
     private static string IconFor(IWMControl control) => control switch
     {
-        WMContainer => "mdi-folder-outline",
-        WMText => "mdi-format-text",
-        WMLogo => "mdi-image-outline",
-        WMLine => "mdi-minus",
-        _ => "mdi-shape-outline"
+        WMContainer => "folder",
+        WMText => "text-t",
+        WMLogo => "image",
+        WMLine => "minus",
+        _ => "shapes"
     };
 
     public void Dispose() => CancelHoverExpand();

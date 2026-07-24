@@ -10,9 +10,9 @@
     <header class="library-heading">
         <div><small>TEMPLATES</small><h1 id="desktop-library-title">我的模板</h1><p>管理本机模板，编辑后会立即同步到桌面工作台。</p></div>
         <div class="library-heading-actions">
-            <label class="library-search"><MIcon Small>mdi-magnify</MIcon><input @bind="keyword" @bind:event="oninput" placeholder="搜索模板" /></label>
-            <button type="button" class="secondary-command" disabled="@busy" @onclick="ReloadAsync"><MIcon Small>mdi-refresh</MIcon><span>刷新</span></button>
-            <button type="button" class="primary-command" @onclick="CreateRequested"><MIcon Small>mdi-plus</MIcon><span>新建模板</span></button>
+            <label class="library-search"><WmIcon Small Icon="magnifying-glass" /><input @bind="keyword" @bind:event="oninput" placeholder="搜索模板" /></label>
+            <button type="button" class="secondary-command" disabled="@busy" @onclick="ReloadAsync"><WmIcon Small Icon="arrows-clockwise" /><span>刷新</span></button>
+            <button type="button" class="primary-command" @onclick="CreateRequested"><WmIcon Small Icon="plus" /><span>新建模板</span></button>
         </div>
     </header>
 
@@ -23,7 +23,7 @@
         }
         else if (FilteredTemplates.Count == 0)
         {
-            <div class="library-empty"><MIcon Size="42">mdi-image-filter-none</MIcon><strong>@(string.IsNullOrWhiteSpace(keyword) ? "还没有本地模板" : "没有匹配的模板")</strong><span>创建模板后，可在工作台中直接应用到照片。</span></div>
+            <div class="library-empty"><WmIcon Size="42" Icon="images-square" /><strong>@(string.IsNullOrWhiteSpace(keyword) ? "还没有本地模板" : "没有匹配的模板")</strong><span>创建模板后，可在工作台中直接应用到照片。</span></div>
         }
         else
         {
@@ -33,14 +33,14 @@
                     <article class="library-card" @key="template.ID">
                         <div class="library-preview">
                             @if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> }
-                            else { <MIcon Size="34">mdi-image-outline</MIcon> }
+                            else { <WmIcon Size="34" Icon="image" /> }
                             <span>@TemplateKind(template)</span>
                         </div>
                         <div class="library-card-copy"><strong title="@template.Canvas.Name">@template.Canvas.Name</strong><small>@TemplateDescription(template)</small></div>
                         <div class="library-card-actions">
-                            <button type="button" class="upload" disabled="@busy" @onclick="() => OpenUploadAsync(template)"><MIcon Small>mdi-cloud-upload-outline</MIcon><span>上传</span></button>
-                            <button type="button" class="edit" @onclick="() => EditRequested.InvokeAsync(template.ID)"><MIcon Small>mdi-pencil-outline</MIcon><span>编辑</span></button>
-                            <button type="button" class="delete" disabled="@busy" @onclick="() => DeleteAsync(template)" aria-label="删除 @template.Canvas.Name"><MIcon Small>mdi-delete-outline</MIcon></button>
+                            <button type="button" class="upload" disabled="@busy" @onclick="() => OpenUploadAsync(template)"><WmIcon Small Icon="cloud-arrow-up" /><span>上传</span></button>
+                            <button type="button" class="edit" @onclick="() => EditRequested.InvokeAsync(template.ID)"><WmIcon Small Icon="pencil" /><span>编辑</span></button>
+                            <button type="button" class="delete" disabled="@busy" @onclick="() => DeleteAsync(template)" aria-label="删除 @template.Canvas.Name"><WmIcon Small Icon="trash" /></button>
                         </div>
                     </article>
                 }

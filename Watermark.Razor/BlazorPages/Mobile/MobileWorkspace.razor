@@ -34,7 +34,7 @@ else if (!opened)
         }
         else
         {
-            <span><MIcon>mdi-alert-circle-outline</MIcon></span>
+            <span><WmIcon Icon="warning-circle" /></span>
             <strong>无法打开这个会话</strong>
             <p>@State.ErrorMessage</p>
             <button type="button" @onclick="BackToCreate">返回创作页</button>
@@ -53,17 +53,17 @@ else
         <header class="workspace-toolbar">
             @if (IsCropEditing)
             {
-                <button type="button" class="workspace-crop-cancel" disabled="@mobileEditConfirming" @onclick="CancelMobileEditAsync" aria-label="取消裁切"><MIcon>mdi-chevron-left</MIcon></button>
+                <button type="button" class="workspace-crop-cancel" disabled="@mobileEditConfirming" @onclick="CancelMobileEditAsync" aria-label="取消裁切"><WmIcon Icon="caret-left" /></button>
                 <strong class="workspace-crop-title">裁切</strong>
                 <div class="workspace-crop-actions">
-                    <button type="button" class="workspace-crop-reset" disabled="@mobileEditConfirming" @onclick="ResetCropDraftAsync" aria-label="重置裁切"><MIcon>mdi-undo</MIcon></button>
+                    <button type="button" class="workspace-crop-reset" disabled="@mobileEditConfirming" @onclick="ResetCropDraftAsync" aria-label="重置裁切"><WmIcon Icon="arrow-counter-clockwise" /></button>
                     <button type="button" class="workspace-crop-apply" disabled="@mobileEditConfirming" @onclick="ApplyMobileEditAsync">应用</button>
                 </div>
             }
             else
             {
             <div class="workspace-toolbar-leading">
-                <button type="button" class="workspace-icon-button workspace-close-button" @onclick="BackAsync" aria-label="返回上一页"><MIcon>mdi-chevron-left</MIcon></button>
+                <button type="button" class="workspace-icon-button workspace-close-button" @onclick="BackAsync" aria-label="返回上一页"><WmIcon Icon="caret-left" /></button>
                 <div class="workspace-title">
                     <strong>@(HasActiveMobileDraft ? $"{MobileModeLabel}草稿" : State.CurrentMedia?.DisplayName ?? "图片工作台")</strong>
                     <small>@WorkspaceSubtitle</small>
@@ -71,22 +71,22 @@ else
             </div>
             <div class="workspace-toolbar-actions">
                 <div class="workspace-history-actions" role="group" aria-label="编辑历史">
-                    <button type="button" class="workspace-icon-button" disabled="@(!State.CanUndo || HasActiveMobileDraft)" @onclick="() => Controller.UndoAsync()" aria-label="撤销"><MIcon>mdi-undo</MIcon></button>
-                    <button type="button" class="workspace-icon-button" disabled="@(!State.CanRedo || HasActiveMobileDraft)" @onclick="() => Controller.RedoAsync()" aria-label="重做"><MIcon>mdi-redo</MIcon></button>
+                    <button type="button" class="workspace-icon-button" disabled="@(!State.CanUndo || HasActiveMobileDraft)" @onclick="() => Controller.UndoAsync()" aria-label="撤销"><WmIcon Icon="arrow-counter-clockwise" /></button>
+                    <button type="button" class="workspace-icon-button" disabled="@(!State.CanRedo || HasActiveMobileDraft)" @onclick="() => Controller.RedoAsync()" aria-label="重做"><WmIcon Icon="arrow-clockwise" /></button>
                 </div>
                 @if (HasActiveMobileDraft)
                 {
                     <button type="button" class="workspace-cancel-button" disabled="@mobileEditConfirming" @onclick="CancelMobileEditAsync">取消</button>
                     <button type="button" class="workspace-apply-button" disabled="@mobileEditConfirming"
                             @onclick="ApplyMobileEditAsync" aria-label="应用当前分类设置">
-                        <MIcon>@(mobileEditConfirming ? "mdi-loading" : "mdi-check")</MIcon><span>应用</span>
+                        <WmIcon Icon="@(mobileEditConfirming ? "spinner-gap" : "check")" /><span>应用</span>
                     </button>
                 }
-                <button type="button" class="workspace-export-button" disabled="@HasActiveMobileDraft" @onclick="OpenExportDrawer"><MIcon>mdi-export-variant</MIcon><span>导出</span></button>
+                <button type="button" class="workspace-export-button" disabled="@HasActiveMobileDraft" @onclick="OpenExportDrawer"><WmIcon Icon="export" /><span>导出</span></button>
                 <button type="button" class="workspace-icon-button workspace-original-button @(State.IsComparingOriginal ? "is-active" : null)"
                         disabled="@HasActiveMobileDraft"
                         @onclick="ToggleOriginalAsync" aria-label="@(State.IsComparingOriginal ? "返回编辑预览" : "查看原图")"
-                        aria-pressed="@State.IsComparingOriginal"><MIcon>mdi-compare</MIcon></button>
+                        aria-pressed="@State.IsComparingOriginal"><WmIcon Icon="arrows-left-right" /></button>
             </div>
             }
         </header>
@@ -104,7 +104,7 @@ else
                                                PerformanceMeasured="HandleColorPreviewPerformanceAsync"
                                                Alt="当前照片预览">
                         <EmptyContent>
-                            <div class="workspace-stage-empty"><MIcon>mdi-image-outline</MIcon></div>
+                            <div class="workspace-stage-empty"><WmIcon Icon="image" /></div>
                         </EmptyContent>
                     </WMWorkspacePreviewSurface>
                 </div>
@@ -146,13 +146,13 @@ else
                                 }
                                 else
                                 {
-                                    <span class="workspace-media-placeholder"><MIcon>mdi-image-outline</MIcon></span>
+                                    <span class="workspace-media-placeholder"><WmIcon Icon="image" /></span>
                                 }
                             </button>
                             <button type="button" class="workspace-media-check @(media.IsSelected ? "is-selected" : null)"
                                     @onclick="() => Controller.ToggleMediaSelectionAsync(media.Id)"
                                     aria-pressed="@media.IsSelected" aria-label="@(media.IsSelected ? $"取消选择 {media.DisplayName}" : $"选择 {media.DisplayName}")">
-                                <MIcon>@(media.IsSelected ? "mdi-check" : "mdi-plus")</MIcon>
+                                <WmIcon Icon="@(media.IsSelected ? "check" : "plus")" />
                             </button>
                         </div>
                     }
@@ -165,20 +165,20 @@ else
             <div class="workspace-mode-tabs" role="tablist" aria-label="编辑模式">
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.Crop ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Crop)"
-                        @onclick="() => SetModeAsync(WMWorkspaceMode.Crop)"><MIcon>mdi-crop</MIcon><span>裁切</span></button>
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.Crop)"><WmIcon Icon="crop" /><span>裁切</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.Template ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Template)"
-                        @onclick="() => SetModeAsync(WMWorkspaceMode.Template)"><MIcon>mdi-card-text-outline</MIcon><span>模板</span></button>
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.Template)"><WmIcon Icon="article" /><span>模板</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.ColorGrade ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.ColorGrade)"
                         disabled="@(!ColorEngineAvailable)"
-                        @onclick="() => SetModeAsync(WMWorkspaceMode.ColorGrade)"><MIcon>mdi-tune-variant</MIcon><span>调色</span></button>
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.ColorGrade)"><WmIcon Icon="sliders-horizontal" /><span>调色</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.MultiFrame ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.MultiFrame)"
-                        @onclick="() => SetModeAsync(WMWorkspaceMode.MultiFrame)"><MIcon>mdi-layers-triple-outline</MIcon><span>多帧</span></button>
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.MultiFrame)"><WmIcon Icon="stack" /><span>多帧</span></button>
                 <button type="button" class="@(State.Mode == WMWorkspaceMode.Collage ? "is-active" : null)"
                         role="tab" aria-selected="@(State.Mode == WMWorkspaceMode.Collage)"
-                        @onclick="() => SetModeAsync(WMWorkspaceMode.Collage)"><MIcon>mdi-view-split-vertical</MIcon><span>拼图</span></button>
+                        @onclick="() => SetModeAsync(WMWorkspaceMode.Collage)"><WmIcon Icon="columns" /><span>拼图</span></button>
             </div>
 
             <div class="workspace-panel-content" role="tabpanel">
@@ -271,7 +271,7 @@ else
                 <header>
                     <span class="workspace-export-drawer-handle" aria-hidden="true"></span>
                     <div><small>Export studio</small><strong id="workspace-export-title">导出作品</strong><span>@SelectedCount 张已选 · 确认参数后开始生成</span></div>
-                    <button type="button" @onclick="CloseExportDrawer" aria-label="关闭导出设置"><MIcon>mdi-close</MIcon></button>
+                    <button type="button" @onclick="CloseExportDrawer" aria-label="关闭导出设置"><WmIcon Icon="x" /></button>
                 </header>
                 <div>
                     <WMExportPanel Expanded="true" ShowSummary="false" SelectedCount="SelectedCount"
@@ -292,14 +292,14 @@ else
         {
             <div class="workspace-toast @(State.ErrorMessage is not null ? "is-error" : null)" role="status">
                 <span>@(State.ErrorMessage ?? State.Message)</span>
-                <button type="button" @onclick="ClearMessage"><MIcon>mdi-close</MIcon></button>
+                <button type="button" @onclick="ClearMessage"><WmIcon Icon="x" /></button>
             </div>
         }
         @if (showExportCompletion)
         {
             <div class="workspace-completion-backdrop" role="presentation">
                 <section class="workspace-completion" role="dialog" aria-modal="true" aria-labelledby="workspace-export-complete-title">
-                    <span class="workspace-completion-icon"><MIcon>mdi-check</MIcon></span>
+                    <span class="workspace-completion-icon"><WmIcon Icon="check" /></span>
                     <strong id="workspace-export-complete-title">导出完成</strong>
                     <p>照片已保存。你可以继续编辑，或完成任务并清理本次临时会话。</p>
                     <div>

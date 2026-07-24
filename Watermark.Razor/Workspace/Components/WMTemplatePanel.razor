@@ -4,20 +4,20 @@
 <section class="wm-panel" aria-label="模板设置">
     <header class="wm-panel-heading">
         <div><strong>选择模板</strong><small>配置立即展示，预览后台补齐</small></div>
-        <button type="button" disabled="@Refreshing" @onclick="RefreshRequested" aria-label="刷新模板"><MIcon>mdi-refresh</MIcon></button>
+        <button type="button" disabled="@Refreshing" @onclick="RefreshRequested" aria-label="刷新模板"><WmIcon Icon="arrows-clockwise" /></button>
     </header>
     <WMApplyScopeSelector Value="Scope" ValueChanged="ChangeScopeAsync" SelectedCount="SelectedCount" />
     <WMToolRail AriaLabel="模板列表" CssClass="wm-template-track">
         <button type="button" class="wm-template-card @(TemplateId is null ? "is-active" : null)"
                 @onfocus="() => PreviewAsync(null)" @onclick="() => CommitAsync(null)">
-            <span class="wm-template-none"><MIcon>mdi-cancel</MIcon></span><small>无模板</small>
+            <span class="wm-template-none"><WmIcon Icon="prohibit" /></span><small>无模板</small>
         </button>
         @foreach (var template in Templates)
         {
             <button type="button" class="wm-template-card @(TemplateId == template.ID ? "is-active" : null)"
                     data-template-id="@template.ID" @onpointerenter="() => PreviewAsync(template.ID)"
                     @onfocus="() => PreviewAsync(template.ID)" @onclick="() => CommitAsync(template.ID)">
-                <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <MIcon>mdi-image-outline</MIcon> }</span>
+                <span>@if (!string.IsNullOrWhiteSpace(template.Src)) { <img src="@template.Src" alt="" /> } else { <WmIcon Icon="image" /> }</span>
                 <small>@(template.Canvas?.Name ?? "未命名")</small>
             </button>
         }
@@ -25,7 +25,7 @@
     @if (CurrentCanvas is { } canvas)
     {
         <details class="wm-template-parameters">
-            <summary><span><strong>画布与边框</strong><small>@canvas.CanvasType · @ExifFieldCount(canvas) 个 EXIF 字段</small></span><MIcon>mdi-chevron-down</MIcon></summary>
+            <summary><span><strong>画布与边框</strong><small>@canvas.CanvasType · @ExifFieldCount(canvas) 个 EXIF 字段</small></span><WmIcon Icon="caret-down" /></summary>
             <div class="wm-template-border-grid">
                 <WMTemplateBorderControl Label="上" Value="canvas.BorderThickness.Top"
                     PreviewValueChanged="PreviewTop" CommitValueChanged="CommitTop" />
@@ -39,7 +39,7 @@
             <p>边框调整只写入当前会话的模板快照，不修改模板库原文件。</p>
         </details>
     }
-    <p class="wm-panel-note"><MIcon>mdi-gesture-tap-hold</MIcon><span>在画布上按住可查看原图，双击恢复适配。</span></p>
+    <p class="wm-panel-note"><WmIcon Icon="hand-tap" /><span>在画布上按住可查看原图，双击恢复适配。</span></p>
 </section>
 
 @code {

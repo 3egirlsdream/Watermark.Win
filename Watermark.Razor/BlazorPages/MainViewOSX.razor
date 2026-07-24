@@ -133,9 +133,9 @@
     <DialogContent>
         @if (!string.IsNullOrWhiteSpace(State.ErrorMessage))
         {
-            <div class="desktop-toast is-error" role="status"><span>@State.ErrorMessage</span><button type="button" @onclick="Controller.ClearStatusMessage"><MIcon>mdi-close</MIcon></button></div>
+            <div class="desktop-toast is-error" role="status"><span>@State.ErrorMessage</span><button type="button" @onclick="Controller.ClearStatusMessage"><WmIcon Icon="x" /></button></div>
         }
-        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMDesktopTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
+        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
         <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
             @if (showNewTemplate)
             {

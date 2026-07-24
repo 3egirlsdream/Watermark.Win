@@ -7,7 +7,7 @@
         <div><div class="mode-kicker">@ModeKicker</div><h2>@ModeTitle</h2></div>
         @if (Mode == WMWorkspaceMode.Template)
         {
-            <MButton Text Small Class="icon-action" OnClick="CreateTemplate"><MIcon Small>mdi-plus</MIcon></MButton>
+            <MButton Text Small Class="icon-action" OnClick="CreateTemplate"><WmIcon Small Icon="plus" /></MButton>
         }
     </div>
     @if (Mode == WMWorkspaceMode.Crop)
@@ -42,7 +42,7 @@
                                 }
                                 else
                                 {
-                                    <span class="template-preview-placeholder" aria-label="模板预览生成中"><MIcon Small>mdi-image-outline</MIcon></span>
+                                    <span class="template-preview-placeholder" aria-label="模板预览生成中"><WmIcon Small Icon="image" /></span>
                                 }
                                 <span class="template-name">@item.Canvas.Name</span>
                             </button>
@@ -65,7 +65,7 @@
                                     aria-label="应用拼图模板 @item.Canvas.Name"
                                     @onclick="() => SplitTemplateSelected.InvokeAsync(item)">
                                 @if (!string.IsNullOrWhiteSpace(item.Src)) { <img src="@item.Src" alt="" /> }
-                                else { <span class="template-preview-placeholder"><MIcon Small>mdi-image-outline</MIcon></span> }
+                                else { <span class="template-preview-placeholder"><WmIcon Small Icon="image" /></span> }
                                 <span class="template-name">@item.Canvas.Name</span>
                             </button>
                         </article>
@@ -97,7 +97,7 @@
                 var selected = SelectedFrameIds.Contains(media.Id);
                 <button type="button" class="@(selected ? "stack-row selected" : "stack-row")" @onclick="() => FrameToggled.InvokeAsync(media.Id)">
                     @if (MediaPreviewUrl(media.Id) is { Length: > 0 } preview) { <img class="stack-thumb" src="@preview" alt="" /> }
-                    else { <span class="stack-thumb placeholder"><MIcon Small>mdi-image-outline</MIcon></span> }
+                    else { <span class="stack-thumb placeholder"><WmIcon Small Icon="image" /></span> }
                     @if (selected) { <span class="stack-order">@(SelectionIndex(media.Id) + 1)</span> }
                     <span class="stack-name">@media.DisplayName</span><span class="stack-check"><input type="checkbox" checked="@selected" tabindex="-1" /></span>
                 </button>

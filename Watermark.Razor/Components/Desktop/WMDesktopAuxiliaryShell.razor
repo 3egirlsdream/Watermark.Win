@@ -5,7 +5,7 @@
 <MacWorkspaceShell>
     <ToolbarContent>
         <header class="aux-toolbar">
-            <button type="button" class="aux-back" @onclick="Back" aria-label="返回工作台"><MIcon Small>mdi-arrow-left</MIcon></button>
+            <button type="button" class="aux-back" @onclick="Back" aria-label="返回工作台"><WmIcon Small Icon="arrow-left" /></button>
             <div class="aux-title">
                 <strong>@Title</strong>
                 <small>@Subtitle</small>
@@ -28,7 +28,7 @@
                         <button type="button"
                                 class="aux-nav-button @(ActiveSection == item.Section ? "is-active" : null)"
                                 @onclick="async () => await NavigateSection.InvokeAsync(item.Section)">
-                            <MIcon>@item.Icon</MIcon>
+                            <WmIcon Icon="@item.Icon" />
                             <span>@item.Label</span>
                         </button>
                     }
@@ -58,10 +58,10 @@
 
     private static readonly (string Section, string Icon, string Label)[] NavigationItems =
     [
-        ("templates", "mdi-view-grid-outline", "我的模板"),
-        ("market", "mdi-shopping-outline", "模板市场"),
-        ("resources", "mdi-image-multiple-outline", "图标与字体"),
-        ("settings", "mdi-cog-outline", "设置"),
-        ("admin", "mdi-view-dashboard-outline", "运营看板")
+        ("templates", "grid-four", "我的模板"),
+        ("market", "shopping-bag", "模板市场"),
+        ("resources", "images", "图标与字体"),
+        ("settings", "gear", "设置"),
+        ("admin", "squares-four", "运营看板")
     ];
 }

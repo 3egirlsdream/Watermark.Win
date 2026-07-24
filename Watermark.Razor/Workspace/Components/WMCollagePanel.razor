@@ -10,12 +10,12 @@
         <button type="button" class="@(Direction == WMCollageDirection.Horizontal ? "is-active" : null)"
                 aria-checked="@(Direction == WMCollageDirection.Horizontal)" role="radio"
                 @onclick="() => ChangeDirectionAsync(WMCollageDirection.Horizontal)">
-            <MIcon>mdi-arrow-expand-horizontal</MIcon><span>横向</span>
+            <WmIcon Icon="arrows-out-line-horizontal" /><span>横向</span>
         </button>
         <button type="button" class="@(Direction == WMCollageDirection.Vertical ? "is-active" : null)"
                 aria-checked="@(Direction == WMCollageDirection.Vertical)" role="radio"
                 @onclick="() => ChangeDirectionAsync(WMCollageDirection.Vertical)">
-            <MIcon>mdi-arrow-expand-vertical</MIcon><span>纵向</span>
+            <WmIcon Icon="arrows-out-line-vertical" /><span>纵向</span>
         </button>
     </div>
 
@@ -27,9 +27,9 @@
                 @Thumbnail(media)
                 <span title="@media.DisplayName"><strong>@(index + 1). @media.DisplayName</strong><small>已加入拼图</small></span>
                 <div>
-                    <button type="button" disabled="@(index <= 0 || Busy)" @onclick="() => MoveAsync(media.Id, -1)" aria-label="上移 @media.DisplayName"><MIcon>mdi-chevron-up</MIcon></button>
-                    <button type="button" disabled="@(index >= OrderedMediaIds.Count - 1 || Busy)" @onclick="() => MoveAsync(media.Id, 1)" aria-label="下移 @media.DisplayName"><MIcon>mdi-chevron-down</MIcon></button>
-                    <button type="button" disabled="@Busy" class="is-remove" @onclick="() => ToggleAsync(media.Id)" aria-label="移除 @media.DisplayName"><MIcon>mdi-close</MIcon></button>
+                    <button type="button" disabled="@(index <= 0 || Busy)" @onclick="() => MoveAsync(media.Id, -1)" aria-label="上移 @media.DisplayName"><WmIcon Icon="caret-up" /></button>
+                    <button type="button" disabled="@(index >= OrderedMediaIds.Count - 1 || Busy)" @onclick="() => MoveAsync(media.Id, 1)" aria-label="下移 @media.DisplayName"><WmIcon Icon="caret-down" /></button>
+                    <button type="button" disabled="@Busy" class="is-remove" @onclick="() => ToggleAsync(media.Id)" aria-label="移除 @media.DisplayName"><WmIcon Icon="x" /></button>
                 </div>
             </article>
         }
@@ -38,7 +38,7 @@
             <article class="is-available">
                 @Thumbnail(media)
                 <span title="@media.DisplayName"><strong>@media.DisplayName</strong><small>未加入</small></span>
-                <button type="button" disabled="@Busy" @onclick="() => ToggleAsync(media.Id)" aria-label="加入 @media.DisplayName"><MIcon>mdi-plus</MIcon></button>
+                <button type="button" disabled="@Busy" @onclick="() => ToggleAsync(media.Id)" aria-label="加入 @media.DisplayName"><WmIcon Icon="plus" /></button>
             </article>
         }
     </div>
@@ -113,7 +113,7 @@
         else
         {
             <span class="wm-collage-thumbnail">
-                <MIcon>mdi-image-outline</MIcon>
+                <WmIcon Icon="image" />
             </span>
         }
     };

@@ -25,23 +25,23 @@
     <header class="templates-header @(activeTab != TemplateTab.Favorites ? "has-action" : null)">
         <h1 id="templates-title">模板</h1>
         <label class="templates-search @(string.IsNullOrWhiteSpace(SearchText) ? "is-empty" : null)">
-            <MIcon>mdi-magnify</MIcon>
+            <WmIcon Icon="magnifying-glass" />
             <input value="@SearchText" @oninput="OnSearchAsync" placeholder="@SearchPlaceholder" aria-label="@SearchPlaceholder" />
             @if (!string.IsNullOrWhiteSpace(SearchText))
             {
-                <button type="button" @onclick="ClearSearchAsync" aria-label="清除搜索"><MIcon>mdi-close-circle</MIcon></button>
+                <button type="button" @onclick="ClearSearchAsync" aria-label="清除搜索"><WmIcon Icon="x-circle" /></button>
             }
         </label>
         @if (activeTab == TemplateTab.Local)
         {
             <button class="templates-add" type="button" disabled="@busy" @onclick="CreateTemplateAsync" aria-label="新建模板">
-                <MIcon>mdi-plus</MIcon>
+                <WmIcon Icon="plus" />
             </button>
         }
         else if (activeTab == TemplateTab.Market)
         {
             <button class="templates-refresh" type="button" disabled="@ActiveMarketState.IsLoading" @onclick="RefreshMarketAsync" aria-label="刷新市场模板">
-                <MIcon Class="@(ActiveMarketState.IsLoading ? "is-spinning" : null)">mdi-refresh</MIcon>
+                <WmIcon Class="@(ActiveMarketState.IsLoading ? "is-spinning" : null)" Icon="arrows-clockwise" />
             </button>
         }
     </header>
@@ -91,7 +91,7 @@
                                 }
                                 else
                                 {
-                                    <span class="template-skeleton"><MIcon>mdi-image-outline</MIcon></span>
+                                    <span class="template-skeleton"><WmIcon Icon="image" /></span>
                                 }
                             </span>
                             <span class="template-meta">
@@ -107,7 +107,7 @@
                 @if (!FilterLocal().Any())
                 {
                     <div class="templates-empty">
-                        <span><MIcon>mdi-card-plus-outline</MIcon></span>
+                        <span><WmIcon Icon="cards-three" /></span>
                         <strong>@(string.IsNullOrWhiteSpace(localSearch) ? "还没有本地模板" : "没有找到本地模板")</strong>
                         <p>@(string.IsNullOrWhiteSpace(localSearch) ? "创建自己的模板，或从市场下载一个开始。" : "换一个名称试试。")</p>
                         @if (string.IsNullOrWhiteSpace(localSearch))
@@ -136,7 +136,7 @@
             else if (marketState.Items.Count == 0)
             {
                 <div class="templates-empty">
-                    <span><MIcon>@(marketState.ErrorMessage is null ? "mdi-image-search-outline" : "mdi-wifi-off")</MIcon></span>
+                    <span><WmIcon Icon="@(marketState.ErrorMessage is null ? "file-magnifying-glass" : "wifi-slash")" /></span>
                     <strong>@MarketEmptyTitle(marketState)</strong>
                     <p>@(marketState.ErrorMessage ?? MarketEmptyMessage(marketState))</p>
                     @if (marketState.ErrorMessage is not null)
@@ -157,7 +157,7 @@
                             data-template-id="@featuredItem.WatermarkId"
                             aria-label="查看本周精选模板 @(featuredItem.Name ?? featuredItem.Desc ?? "未命名模板")"
                             @onclick="() => selectedCloud = featuredItem">
-                        <span class="market-featured-label"><MIcon>mdi-star</MIcon>@MarketFeatureLabel(marketState.Category)</span>
+                        <span class="market-featured-label"><WmIcon Icon="star" />@MarketFeatureLabel(marketState.Category)</span>
                         <span class="market-featured-preview">
                             <span class="market-featured-art">
                                 <img src="@featuredItem.Src"
@@ -174,7 +174,7 @@
                                     <small>@CreatorName(featuredItem)</small>
                                     @if (IsVerifiedCreator(featuredItem))
                                     {
-                                        <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                        <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
                                     }
                                 </span>
                             </span>
@@ -208,11 +208,11 @@
                                      fetchpriority="@(index < 4 ? "high" : "auto")" />
                                 @if (item.Recommend && marketState.Category != WMTemplateMarketCategory.Recommended)
                                 {
-                                    <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Icon="star" /></span>
                                 }
                                 @if (IsDownloaded(item.WatermarkId))
                                 {
-                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Icon="check" /></span>
                                 }
                             </span>
                             <span class="template-meta">
@@ -222,10 +222,10 @@
                                         <small>@CreatorName(item)</small>
                                         @if (IsVerifiedCreator(item))
                                         {
-                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
                                         }
                                     </span>
-                                    <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Icon="tray-arrow-down" />@FormatDownloads(item.DownloadTimes)</small>
                                 </span>
                             </span>
                         </button>
@@ -261,11 +261,11 @@
                                 <img src="@item.Src" alt="@(item.Name ?? item.Desc ?? "收藏模板预览")" loading="lazy" decoding="async" />
                                 @if (item.Recommend)
                                 {
-                                    <span class="template-badge" title="精选" aria-label="精选"><MIcon>mdi-star</MIcon></span>
+                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Icon="star" /></span>
                                 }
                                 @if (IsDownloaded(item.WatermarkId))
                                 {
-                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><MIcon>mdi-check</MIcon></span>
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Icon="check" /></span>
                                 }
                             </span>
                             <span class="template-meta">
@@ -275,10 +275,10 @@
                                         <small>@CreatorName(item)</small>
                                         @if (IsVerifiedCreator(item))
                                         {
-                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><MIcon>mdi-check</MIcon></span>
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
                                         }
                                     </span>
-                                    <small class="download-count" title="下载量 @item.DownloadTimes"><MIcon>mdi-tray-arrow-down</MIcon>@FormatDownloads(item.DownloadTimes)</small>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Icon="tray-arrow-down" />@FormatDownloads(item.DownloadTimes)</small>
                                 </span>
                             </span>
                         </button>
@@ -287,7 +287,7 @@
                 @if (!FilterFavorites().Any())
                 {
                     <div class="templates-empty">
-                        <span><MIcon>mdi-heart-outline</MIcon></span>
+                        <span><WmIcon Icon="heart" /></span>
                         <strong>@(string.IsNullOrWhiteSpace(favoriteSearch) ? "还没有收藏" : "没有找到收藏模板")</strong>
                         <p>@(errorMessage ?? (string.IsNullOrWhiteSpace(favoriteSearch) ? "在市场中收藏喜欢的模板，之后会显示在这里。" : "换一个名称试试。"))</p>
                     </div>
@@ -310,12 +310,12 @@
             </div>
             <div class="sheet-title">
                 <div><strong>@(selectedLocal.Canvas?.Name ?? "未命名模板")</strong><small>本地模板</small></div>
-                <button type="button" @onclick="CloseSheet" aria-label="关闭"><MIcon>mdi-close</MIcon></button>
+                <button type="button" @onclick="CloseSheet" aria-label="关闭"><WmIcon Icon="x" /></button>
             </div>
             <div class="sheet-actions">
-                <button class="is-primary" type="button" disabled="@busy" @onclick="() => UseLocalAsync(selectedLocal)"><MIcon>mdi-image-plus-outline</MIcon>使用模板</button>
-                <button type="button" disabled="@busy" @onclick="() => EditLocalAsync(selectedLocal)"><MIcon>mdi-pencil-outline</MIcon>编辑</button>
-                <button class="is-danger" type="button" disabled="@busy" @onclick="() => DeleteLocalAsync(selectedLocal)"><MIcon>mdi-delete-outline</MIcon>删除</button>
+                <button class="is-primary" type="button" disabled="@busy" @onclick="() => UseLocalAsync(selectedLocal)"><WmIcon Icon="image-square" />使用模板</button>
+                <button type="button" disabled="@busy" @onclick="() => EditLocalAsync(selectedLocal)"><WmIcon Icon="pencil" />编辑</button>
+                <button class="is-danger" type="button" disabled="@busy" @onclick="() => DeleteLocalAsync(selectedLocal)"><WmIcon Icon="trash" />删除</button>
             </div>
         </section>
     </div>
@@ -332,19 +332,19 @@
                     <strong>@(selectedCloud.Name ?? selectedCloud.Desc ?? "未命名模板")</strong>
                     <small>@(string.IsNullOrWhiteSpace(selectedCloud.UserDisplayName) ? "轻影创作者" : selectedCloud.UserDisplayName) · @selectedCloud.DownloadTimes 次下载</small>
                 </div>
-                <button type="button" @onclick="CloseSheet" aria-label="关闭"><MIcon>mdi-close</MIcon></button>
+                <button type="button" @onclick="CloseSheet" aria-label="关闭"><WmIcon Icon="x" /></button>
             </div>
             <div class="sheet-actions cloud-actions">
                 @if (IsDownloaded(selectedCloud.WatermarkId))
                 {
-                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => UseDownloadedAsync(selectedCloud)"><MIcon>mdi-image-plus-outline</MIcon>立即使用</button>
+                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => UseDownloadedAsync(selectedCloud)"><WmIcon Icon="image-square" />立即使用</button>
                 }
                 else
                 {
-                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => DownloadCloudAsync(selectedCloud)"><MIcon>mdi-download-outline</MIcon>@(busy ? "下载中…" : "下载到本地")</button>
+                    <button class="is-primary" type="button" disabled="@busy" @onclick="() => DownloadCloudAsync(selectedCloud)"><WmIcon Icon="download" />@(busy ? "下载中…" : "下载到本地")</button>
                 }
                 <button type="button" disabled="@busy" @onclick="() => ToggleFavoriteAsync(selectedCloud)">
-                    <MIcon>@(IsFavorite(selectedCloud.WatermarkId) ? "mdi-heart" : "mdi-heart-outline")</MIcon>
+                    <WmIcon Icon="@(IsFavorite(selectedCloud.WatermarkId) ? "heart" : "heart")" />
                     @(IsFavorite(selectedCloud.WatermarkId) ? "取消收藏" : "收藏")
                 </button>
             </div>

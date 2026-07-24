@@ -12,27 +12,28 @@
 @inject IWMSystemBackDispatcher SystemBackDispatcher
 @inject IWMNavigationHistory NavigationHistory
 
-<MApp Class="wm-app-shell">
-    <aside class="wm-shell-sidebar" aria-label="主导航">
+<MApp Class="wm-app-host">
+    <div class="wm-app-shell">
+        <aside class="wm-shell-sidebar" aria-label="主导航">
         <button type="button" class="wm-shell-brand" @onclick="OpenCreate" aria-label="轻影创作">
             <span>影</span><strong>轻影</strong><small>Litograph</small>
         </button>
         <nav>
             <button type="button" class="wm-shell-nav-item @(IsActive("/create") ? "is-active" : null)"
                     aria-current="@(IsActive("/create") ? "page" : null)" @onclick='() => NavigateRoot("/create")'>
-                <span class="wm-shell-nav-icon"><MIcon>mdi-image-plus-outline</MIcon></span><span>创作</span>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="image-square" /></span><span>创作</span>
             </button>
             <button type="button" class="wm-shell-nav-item @(IsActive("/templates") ? "is-active" : null)"
                     aria-current="@(IsActive("/templates") ? "page" : null)" @onclick='() => NavigateRoot("/templates")'>
-                <span class="wm-shell-nav-icon"><MIcon>mdi-view-grid-outline</MIcon></span><span>模板</span>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="grid-four" /></span><span>模板</span>
             </button>
             <button type="button" class="wm-shell-nav-item @(IsActive("/profile") ? "is-active" : null)"
                     aria-current="@(IsActive("/profile") ? "page" : null)" @onclick='() => NavigateRoot("/profile")'>
-                <span class="wm-shell-nav-icon"><MIcon>mdi-account-outline</MIcon></span><span>我的</span>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="user" /></span><span>我的</span>
             </button>
             <button type="button" class="wm-shell-nav-item @(IsActive("/settings") ? "is-active" : null)"
                     aria-current="@(IsActive("/settings") ? "page" : null)" @onclick='() => NavigateRoot("/settings")'>
-                <span class="wm-shell-nav-icon"><MIcon>mdi-tune-variant</MIcon></span><span>设置</span>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="sliders-horizontal" /></span><span>设置</span>
             </button>
         </nav>
         @if (recentSessions.Count > 0)
@@ -42,33 +43,34 @@
                 @foreach (var session in recentSessions)
                 {
                     <button type="button" @onclick="() => OpenSession(session.Id)">
-                        <MIcon>mdi-image-outline</MIcon><span>@SessionLabel(session)</span>
+                        <WmIcon Icon="image" /><span>@SessionLabel(session)</span>
                     </button>
                 }
             </section>
         }
-    </aside>
+        </aside>
 
-    <MMain Class="wm-shell-main">
-        <div class="wm-shell-content" id="wm-main-content" @ref="mainContent">
-            @Body
-        </div>
-    </MMain>
+        <main class="wm-shell-main">
+            <div class="wm-shell-content" id="wm-main-content" @ref="mainContent">
+                @Body
+            </div>
+        </main>
 
-    <nav class="wm-shell-bottom-navigation" aria-label="主导航">
-        <button type="button" class="wm-shell-nav-item @(IsActive("/create") ? "is-active" : null)"
-                aria-current="@(IsActive("/create") ? "page" : null)" @onclick='() => NavigateRoot("/create")'>
-            <span class="wm-shell-nav-icon"><MIcon>mdi-image-plus-outline</MIcon></span><span>创作</span>
-        </button>
-        <button type="button" class="wm-shell-nav-item @(IsActive("/templates") ? "is-active" : null)"
-                aria-current="@(IsActive("/templates") ? "page" : null)" @onclick='() => NavigateRoot("/templates")'>
-            <span class="wm-shell-nav-icon"><MIcon>mdi-view-grid-outline</MIcon></span><span>模板</span>
-        </button>
-        <button type="button" class="wm-shell-nav-item @(IsMobileProfileActive ? "is-active" : null)"
-                aria-current="@(IsMobileProfileActive ? "page" : null)" @onclick='() => NavigateRoot("/profile")'>
-            <span class="wm-shell-nav-icon"><MIcon>mdi-account-outline</MIcon></span><span>我的</span>
-        </button>
-    </nav>
+        <nav class="wm-shell-bottom-navigation" aria-label="主导航">
+            <button type="button" class="wm-shell-nav-item @(IsActive("/create") ? "is-active" : null)"
+                    aria-current="@(IsActive("/create") ? "page" : null)" @onclick='() => NavigateRoot("/create")'>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="image-square" Weight="@(IsActive("/create") ? "regular" : "light")" Size="30" /></span><span>创作</span>
+            </button>
+            <button type="button" class="wm-shell-nav-item @(IsActive("/templates") ? "is-active" : null)"
+                    aria-current="@(IsActive("/templates") ? "page" : null)" @onclick='() => NavigateRoot("/templates")'>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="squares-four" Weight="@(IsActive("/templates") ? "regular" : "light")" Size="30" /></span><span>模板</span>
+            </button>
+            <button type="button" class="wm-shell-nav-item @(IsMobileProfileActive ? "is-active" : null)"
+                    aria-current="@(IsMobileProfileActive ? "page" : null)" @onclick='() => NavigateRoot("/profile")'>
+                <span class="wm-shell-nav-icon"><WmIcon Icon="user" Weight="@(IsMobileProfileActive ? "regular" : "light")" Size="30" /></span><span>我的</span>
+            </button>
+        </nav>
+    </div>
 </MApp>
 
 @if (loading)

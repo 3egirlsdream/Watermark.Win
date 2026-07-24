@@ -3,14 +3,14 @@
 <header class="designer-toolbar" aria-label="模板编辑工具栏">
     <div class="toolbar-command-group toolbar-leading">
         <MButton Icon Text Small Class="icon-command exit-command" title="返回" aria-label="返回上一页" OnClick="async () => await Exit.InvokeAsync()">
-            <MIcon Small>mdi-chevron-left</MIcon>
+            <WmIcon Small Icon="caret-left" />
         </MButton>
         <span class="toolbar-divider" aria-hidden="true"></span>
         <MButton Icon Text Small Class="icon-command" title="撤销" aria-label="撤销" Disabled="@(!CanUndo)" OnClick="async () => await Undo.InvokeAsync()">
-            <MIcon Small>mdi-undo</MIcon>
+            <WmIcon Small Icon="arrow-counter-clockwise" />
         </MButton>
         <MButton Icon Text Small Class="icon-command" title="重做" aria-label="重做" Disabled="@(!CanRedo)" OnClick="async () => await Redo.InvokeAsync()">
-            <MIcon Small>mdi-redo</MIcon>
+            <WmIcon Small Icon="arrow-clockwise" />
         </MButton>
     </div>
 
@@ -24,15 +24,15 @@
 
     <div class="toolbar-command-group toolbar-trailing">
         <MButton Icon Text Small Class="icon-command" title="适合窗口" aria-label="适合窗口" OnClick="async () => await Fit.InvokeAsync()">
-            <MIcon Small>mdi-fit-to-screen-outline</MIcon>
+            <WmIcon Small Icon="corners-out" />
         </MButton>
         <div class="zoom-control" role="group" aria-label="画布缩放">
             <MButton Icon Text Small Class="icon-command compact" title="缩小" aria-label="缩小" Disabled="@(Zoom <= MinimumZoom)" OnClick="ZoomOutAsync">
-                <MIcon Small>mdi-minus</MIcon>
+                <WmIcon Small Icon="minus" />
             </MButton>
             <span class="zoom-readout" aria-live="polite">@ZoomLabel</span>
             <MButton Icon Text Small Class="icon-command compact" title="放大" aria-label="放大" Disabled="@(Zoom >= MaximumZoom)" OnClick="ZoomInAsync">
-                <MIcon Small>mdi-plus</MIcon>
+                <WmIcon Small Icon="plus" />
             </MButton>
         </div>
         @if (ShowSave)
@@ -45,7 +45,7 @@
                 }
                 else
                 {
-                    <MIcon Small>mdi-content-save-outline</MIcon>
+                    <WmIcon Small Icon="floppy-disk" />
                     <span>@SaveLabel</span>
                 }
             </MButton>

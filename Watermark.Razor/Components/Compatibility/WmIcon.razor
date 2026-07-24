@@ -1,12 +1,79 @@
-<MIcon Class="@Class" Style="@Style" Color="@Color" @attributes="AdditionalAttributes">
-    @if (!string.IsNullOrWhiteSpace(Icon)) { @Icon } else { @ChildContent }
-</MIcon>
+<svg class="@ComputedClass"
+     style="@ComputedStyle"
+     width="@ComputedSize"
+     height="@ComputedSize"
+     viewBox="0 0 256 256"
+     fill="currentColor"
+     shape-rendering="geometricPrecision"
+     role="@(string.IsNullOrWhiteSpace(AriaLabel) ? null : "img")"
+     aria-label="@AriaLabel"
+     aria-hidden="@(string.IsNullOrWhiteSpace(AriaLabel) ? "true" : null)"
+     focusable="false"
+     @onclick="OnClick"
+     @onclick:preventDefault="OnClickPreventDefault"
+     @onclick:stopPropagation="OnClickStopPropagation"
+     @attributes="AdditionalAttributes">
+    <path d="@PathData" />
+</svg>
 
 @code {
-    [Parameter] public string? Icon { get; set; }
-    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter] public string Weight { get; set; } = "regular";
+    [Parameter] public StringNumber? Size { get; set; }
+    [Parameter] public bool XSmall { get; set; }
+    [Parameter] public bool Small { get; set; }
+    [Parameter] public bool Large { get; set; }
+    [Parameter] public bool XLarge { get; set; }
+    [Parameter] public bool Left { get; set; }
+    [Parameter] public bool Right { get; set; }
+    [Parameter] public bool Disabled { get; set; }
     [Parameter] public string? Class { get; set; }
     [Parameter] public string? Style { get; set; }
     [Parameter] public string? Color { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public bool OnClickPreventDefault { get; set; }
+    [Parameter] public bool OnClickStopPropagation { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string PathData => WmPhosphorIconPaths.Get(Icon, Weight);
+
+    private string ComputedSize =>
+        Size?.ToString()
+        ?? (XSmall ? "12px"
+            : Small ? "16px"
+            : Large ? "36px"
+            : XLarge ? "40px"
+            : "24px");
+
+    private string ComputedClass => string.Join(
+        ' ',
+        new[]
+        {
+            "wm-icon",
+            "m-icon",
+            Left ? "wm-icon--left m-icon--left" : null,
+            Right ? "wm-icon--right m-icon--right" : null,
+            Disabled ? "wm-icon--disabled" : null,
+            ThemeColorClass,
+            Class
+        }.Where(item => !string.IsNullOrWhiteSpace(item)));
+
+    private string? ThemeColorClass =>
+        string.IsNullOrWhiteSpace(Color) || IsCssColor(Color) ? null : $"{Color}--text";
+
+    private string ComputedStyle => string.Join(
+        ';',
+        new[] { IsCssColor(Color) ? $"color:{Color}" : null, Style }
+            .Where(item => !string.IsNullOrWhiteSpace(item)));
+
+    private static bool IsCssColor(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && (value.StartsWith('#')
+            || value.StartsWith("rgb", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("hsl", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("var(", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("currentColor", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("inherit", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("transparent", StringComparison.OrdinalIgnoreCase));
 }

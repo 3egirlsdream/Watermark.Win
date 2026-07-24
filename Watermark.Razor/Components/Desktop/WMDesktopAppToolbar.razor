@@ -7,49 +7,58 @@
         <div class="toolbar-left">
             <div class="toolbar-brand"><div class="toolbar-icon"></div></div>
             <MButton Plain Small Class="toolbar-button" OnClick="ImportImages">
-                <MIcon Left Small>mdi-image-plus</MIcon>导入图片
+                <WmIcon Left Small Icon="image-square" />导入图片
             </MButton>
         </div>
         <div class="toolbar-center"><span>@ModeTitle</span><small>@ModeSubtitle</small></div>
         <div class="toolbar-fill"></div>
         <div class="toolbar-actions right">
-            <MButton Plain Small Class="toolbar-button" OnClick="Undo" Disabled="@(!CanUndo)" title="撤销"><MIcon Small>mdi-undo</MIcon></MButton>
-            <MButton Plain Small Class="toolbar-button" OnClick="Redo" Disabled="@(!CanRedo)" title="重做"><MIcon Small>mdi-redo</MIcon></MButton>
+            <MButton Plain Small Class="toolbar-button" OnClick="Undo" Disabled="@(!CanUndo)" title="撤销"><WmIcon Small Icon="arrow-counter-clockwise" /></MButton>
+            <MButton Plain Small Class="toolbar-button" OnClick="Redo" Disabled="@(!CanRedo)" title="重做"><WmIcon Small Icon="arrow-clockwise" /></MButton>
             <MMenu OffsetY>
                 <ActivatorContent>
-                    <MButton @attributes="@context.Attrs" Plain Small Class="toolbar-button" Disabled="@(History.Count == 0)"><MIcon Left Small>mdi-history</MIcon>历史</MButton>
+                    <MButton @attributes="@context.Attrs" Plain Small Class="toolbar-button" Disabled="@(History.Count == 0)"><WmIcon Left Small Icon="clock-counter-clockwise" />历史</MButton>
                 </ActivatorContent>
                 <ChildContent>
                     <MList Dense Style="min-width:220px">
                         @foreach (var item in History.Reverse())
                         {
-                            <MListItem Title="@item.Label" Subtitle="@(item.IsApplied ? item.CreatedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "已撤销")" PrependIcon="@(item.IsApplied ? "mdi-check-circle-outline" : "mdi-history")" OnClick="() => HistorySelected.InvokeAsync(item.Cursor)" />
+                            <MListItem OnClick="() => HistorySelected.InvokeAsync(item.Cursor)">
+                                <MListItemIcon><WmIcon Icon="@(item.IsApplied ? "check-circle" : "clock-counter-clockwise")" /></MListItemIcon>
+                                <MListItemContent>
+                                    <MListItemTitle>@item.Label</MListItemTitle>
+                                    <MListItemSubtitle>@(item.IsApplied ? item.CreatedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "已撤销")</MListItemSubtitle>
+                                </MListItemContent>
+                            </MListItem>
                         }
                     </MList>
                 </ChildContent>
             </MMenu>
-            <MButton Color="primary" Small Class="toolbar-button primary-toolbar-button" OnClick="Export"><MIcon Left Small>mdi-export-variant</MIcon>导出</MButton>
+            <MButton Color="primary" Small Class="toolbar-button primary-toolbar-button" OnClick="Export"><WmIcon Left Small Icon="export" />导出</MButton>
             <MMenu OffsetY>
-                <ActivatorContent><MButton @attributes="@context.Attrs" Plain Small Class="toolbar-button"><MIcon Left Small>@ICONS.Setting</MIcon>更多</MButton></ActivatorContent>
+                <ActivatorContent><MButton @attributes="@context.Attrs" Plain Small Class="toolbar-button"><WmIcon Left Small Icon="@ICONS.Setting" />更多</MButton></ActivatorContent>
                 <ChildContent>
                     <MList Dense>
-                        <MListItem OnClick="CreateTemplate" Title="新建模板" PrependIcon="@ICONS.Pencil" />
-                        <MListItem OnClick="OpenTemplates" Title="我的模板" PrependIcon="@ICONS.Star" />
-                        <MListItem OnClick="OpenMarket" Title="模板市场" PrependIcon="@ICONS.Market" />
-                        <MListItem OnClick="OpenLogos" Title="图标库" PrependIcon="@ICONS.ImageStore" />
+                        <MListItem Title="新建模板" OnClick="CreateTemplate"><MListItemIcon><WmIcon Icon="@ICONS.Pencil" /></MListItemIcon></MListItem>
+                        <MListItem Title="我的模板" OnClick="OpenTemplates"><MListItemIcon><WmIcon Icon="@ICONS.Star" /></MListItemIcon></MListItem>
+                        <MListItem Title="模板市场" OnClick="OpenMarket"><MListItemIcon><WmIcon Icon="@ICONS.Market" /></MListItemIcon></MListItem>
+                        <MListItem Title="图标库" OnClick="OpenLogos"><MListItemIcon><WmIcon Icon="@ICONS.ImageStore" /></MListItemIcon></MListItem>
                         <MDivider />
-                        <MListItem OnClick="SignUp" Title="注册账号" PrependIcon="@ICONS.AccountAdd" />
-                        <MListItem OnClick="LogoutAccount" Title="注销账号" PrependIcon="@ICONS.Logout" />
+                        <MListItem Title="注册账号" OnClick="SignUp"><MListItemIcon><WmIcon Icon="@ICONS.AccountAdd" /></MListItemIcon></MListItem>
+                        <MListItem Title="注销账号" OnClick="LogoutAccount"><MListItemIcon><WmIcon Icon="@ICONS.Logout" /></MListItemIcon></MListItem>
                         <MDivider />
-                        <MListItem OnClick="OpenSettings" Title="设置" PrependIcon="@ICONS.Setting" />
+                        <MListItem Title="设置" OnClick="OpenSettings"><MListItemIcon><WmIcon Icon="@ICONS.Setting" /></MListItemIcon></MListItem>
                         @if (CanOpenDashboard)
                         {
-                            <MListItem OnClick="OpenDashboard" Title="运营看板" PrependIcon="mdi-view-dashboard-outline" />
+                            <MListItem Title="运营看板" OnClick="OpenDashboard"><MListItemIcon><WmIcon Icon="squares-four" /></MListItemIcon></MListItem>
                         }
-                        <MListItem OnClick='() => OpenLink.InvokeAsync("http://www.thankful.top")' Title="网页版" PrependIcon="@ICONS.Web" />
-                        <MListItem OnClick='() => OpenLink.InvokeAsync("https://github.com/3egirlsdream/Watermark.Win/issues")' Title="提交反馈" PrependIcon="@ICONS.Feedback" />
-                        <MListItem OnClick='() => OpenCommonDialog.InvokeAsync("https://cdn.thankful.top/andorid.png")' Title="安卓版" PrependIcon="@ICONS.Android" />
-                        <MDivider /><MListItem Title="交流群：836325187" PrependIcon="@ICONS.QQ" />
+                        <MListItem Title="网页版" OnClick="OpenWeb"><MListItemIcon><WmIcon Icon="@ICONS.Web" /></MListItemIcon></MListItem>
+                        <MListItem Title="提交反馈" OnClick="OpenFeedback"><MListItemIcon><WmIcon Icon="@ICONS.Feedback" /></MListItemIcon></MListItem>
+                        <MListItem Title="安卓版" OnClick="OpenAndroidQr"><MListItemIcon><WmIcon Icon="@ICONS.Android" /></MListItemIcon></MListItem>
+                        <MDivider />
+                        <MListItem Title="交流群：836325187">
+                            <MListItemIcon><WmIcon Icon="@ICONS.QQ" /></MListItemIcon>
+                        </MListItem>
                     </MList>
                 </ChildContent>
             </MMenu>
@@ -127,4 +136,7 @@
 
     private string ModeTitle => Mode switch { WMWorkspaceMode.ColorGrade => "调色工作台", WMWorkspaceMode.MultiFrame => "多帧合成", _ => "模板预设" };
     private string ModeSubtitle => Mode switch { WMWorkspaceMode.ColorGrade => "参考风格与精细调色", WMWorkspaceMode.MultiFrame => "星轨 · 降噪 · 静态星空", _ => "水印与拼图模板" };
+    private Task OpenWeb() => OpenLink.InvokeAsync("http://www.thankful.top");
+    private Task OpenFeedback() => OpenLink.InvokeAsync("https://github.com/3egirlsdream/Watermark.Win/issues");
+    private Task OpenAndroidQr() => OpenCommonDialog.InvokeAsync("https://cdn.thankful.top/andorid.png");
 }

@@ -15,7 +15,7 @@
                     @onclick="() => Select(option.Value)">
                 @if (!string.IsNullOrWhiteSpace(option.Icon))
                 {
-                    <MIcon Size="16">@option.Icon</MIcon>
+                    <WmIcon Size="16" Icon="@option.Icon" />
                 }
                 <span>@option.Label</span>
             </button>

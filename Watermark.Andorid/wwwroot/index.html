@@ -6,28 +6,18 @@
     <title>Watermark.Andorid</title>
     <base href="/" />
     <link href="_content/Masa.Blazor/css/masa-blazor.min.css" rel="stylesheet" />
-    <link href="css/app.css?v=20260709" rel="stylesheet" />
-    <link href="Litograph.styles.css?v=20260709" rel="stylesheet" />
-    <link href="css/materialdesign/v7.1.96/css/materialdesignicons.min.css" rel="stylesheet"/>
+    <link href="css/app.css?v=20260724" rel="stylesheet" />
+    <link href="Litograph.styles.css?v=20260724" rel="stylesheet" />
     <link href="_content/Watermark.Razor/css/wm-toast.css?v=20260722" rel="stylesheet" />
    
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="css/swiper-bundle.min.css" rel="stylesheet" />
 </head>
 
 <body>
 
-    <div class="status-bar-safe-area"></div>
-
     <div id="app">
-        <div class="modal-overlay">
-            <div class="sk-wave">
-                <div class="sk-wave-rect"></div>
-                <div class="sk-wave-rect"></div>
-                <div class="sk-wave-rect"></div>
-                <div class="sk-wave-rect"></div>
-                <div class="sk-wave-rect"></div>
-            </div>
+        <div class="wm-startup-splash" role="status" aria-label="正在启动轻影">
+            <img src="_content/Watermark.Razor/img/app-icon.svg" alt="" />
         </div>
     </div>
 
@@ -37,8 +27,6 @@
         <a class="dismiss">🗙</a>
     </div>
 
-    <script src="js/swiper-bundle.min.js"></script>
-    <script src="js/init-swiper.js"></script>
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script src="_content/Masa.Blazor/js/masa-blazor.js"></script>
 

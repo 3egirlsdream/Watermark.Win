@@ -37,6 +37,13 @@ OpenColorIO 2.5.2, Expat 2.7.2, yaml-cpp 0.8.0, Imath 3.2.1, pystring 1.1.4,
 minizip-ng 4.0.10, zlib 1.3.2 and, for Apple ARM, the locked sse2neon revision. Apps, Python,
 Java, documentation, tests, GPU tests and OpenFX are disabled in release builds.
 
+Phosphor Icons Core 2.1.1
+Source: https://github.com/phosphor-icons/core
+License: MIT
+Only the regular and light SVG path data listed in scripts/phosphor-icons.txt is
+generated into the shared Watermark.Razor icon layer. The complete license text
+is included under wwwroot/vendor/phosphor/LICENSE.
+
 MetadataExtractor 2.9.1
 Source: https://github.com/drewnoakes/metadata-extractor-dotnet
 License: Apache License 2.0

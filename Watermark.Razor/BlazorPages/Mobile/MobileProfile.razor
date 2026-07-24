@@ -25,7 +25,7 @@
             }
             else
             {
-                <MIcon>mdi-account-outline</MIcon>
+                <WmIcon Icon="user" />
             }
         </div>
         <div class="profile-copy">
@@ -45,66 +45,66 @@
     @if (!Account.IsVip)
     {
         <button class="profile-membership" type="button" @onclick="OpenMembership">
-            <span class="membership-symbol"><MIcon>mdi-diamond-stone</MIcon></span>
+            <WmMembershipMark Compact />
             <span><strong>解锁轻影会员</strong><small>批量处理、更多模板与创作者权益</small></span>
-            <MIcon>mdi-arrow-right</MIcon>
+            <WmIcon Icon="arrow-right" />
         </button>
     }
 
     <div class="profile-group-label">资源管理</div>
     <section class="profile-list">
         <button type="button" @onclick="OpenTemplates">
-            <span class="profile-list-icon is-blue"><MIcon>mdi-view-grid-outline</MIcon></span>
+            <span class="profile-list-icon is-blue"><WmIcon Icon="grid-four" /></span>
             <span><strong>模板与收藏</strong><small>管理本地、市场和收藏模板</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
         <button type="button" @onclick="OpenResources">
-            <span class="profile-list-icon is-amber"><MIcon>mdi-shape-outline</MIcon></span>
+            <span class="profile-list-icon is-amber"><WmIcon Icon="shapes" /></span>
             <span><strong>图标与字体</strong><small>管理模板使用的个人素材</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
         <button type="button" disabled="@clearingCache" @onclick="ClearCacheAsync">
-            <span class="profile-list-icon is-green"><MIcon>mdi-database-outline</MIcon></span>
+            <span class="profile-list-icon is-green"><WmIcon Icon="database" /></span>
             <span><strong>缓存空间</strong><small>@(clearingCache ? "正在清理…" : cacheDescription)</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
     </section>
 
     <div class="profile-group-label">应用</div>
     <section class="profile-list">
         <button type="button" @onclick="OpenSettings">
-            <span class="profile-list-icon is-slate"><MIcon>mdi-cog-outline</MIcon></span>
+            <span class="profile-list-icon is-slate"><WmIcon Icon="gear" /></span>
             <span><strong>应用设置</strong><small>EXIF、并发、隐私和缓存选项</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
         <button type="button" @onclick="OpenDiagnostics">
-            <span class="profile-list-icon is-blue"><MIcon>mdi-chip</MIcon></span>
+            <span class="profile-list-icon is-blue"><WmIcon Icon="cpu" /></span>
             <span><strong>诊断与日志</strong><small>查看设备能力并导出脱敏日志</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
         <button type="button" disabled="@checkingUpdate" @onclick="CheckUpdateAsync">
-            <span class="profile-list-icon is-slate"><MIcon>mdi-update</MIcon></span>
+            <span class="profile-list-icon is-slate"><WmIcon Icon="arrows-clockwise" /></span>
             <span><strong>检查更新</strong><small>@updateDescription</small></span>
-            <MIcon>mdi-chevron-right</MIcon>
+            <WmIcon Icon="caret-right" />
         </button>
         @if (Admin.IsAuthorized)
         {
             <button type="button" @onclick="OpenAdmin">
-                <span class="profile-list-icon is-amber"><MIcon>mdi-view-dashboard-outline</MIcon></span>
+                <span class="profile-list-icon is-amber"><WmIcon Icon="squares-four" /></span>
                 <span><strong>运营看板</strong><small>管理员数据与运营指标</small></span>
-                <MIcon>mdi-chevron-right</MIcon>
+                <WmIcon Icon="caret-right" />
             </button>
         }
         <button type="button" @onclick="OpenWebsiteAsync">
-            <span class="profile-list-icon is-slate"><MIcon>mdi-help-circle-outline</MIcon></span>
+            <span class="profile-list-icon is-slate"><WmIcon Icon="question" /></span>
             <span><strong>帮助与反馈</strong><small>使用指南、问题反馈和官网</small></span>
-            <MIcon>mdi-open-in-new</MIcon>
+            <WmIcon Icon="arrow-square-out" />
         </button>
     </section>
 
     <footer class="profile-footer">
         <span>轻影 Watermark</span>
-        <small>v@Updates.State.CurrentVersion</small>
+        <small>版本 @(Updates.State.CurrentVersion)</small>
     </footer>
 </section>
 

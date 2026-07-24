@@ -92,9 +92,9 @@ public sealed class WMMobileWorkspaceDockContractTests
         AssertOrdered(SliceArray(dock, "MultiFrameTools", "CollageTools"), "MultiFrameMaterial", "MultiFrameMode", "MultiFrameParameters", "MultiFrameGenerate");
         AssertOrdered(SliceArray(dock, "CollageTools", null), "CollageMaterial", "CollageLayout", "CollageGenerate");
 
-        Assert.Contains("ColorPresets, \"预设\", \"mdi-view-grid-plus-outline\", WMMobileEditorSpace.Medium", dock, StringComparison.Ordinal);
-        Assert.Contains("ColorCurve, \"曲线\", \"mdi-chart-line-variant\", WMMobileEditorSpace.Large", dock, StringComparison.Ordinal);
-        Assert.Contains("TemplatePicker, \"模板\", \"mdi-view-grid-outline\", WMMobileEditorSpace.Medium", dock, StringComparison.Ordinal);
+        Assert.Contains("ColorPresets, \"预设\", \"grid-nine\", WMMobileEditorSpace.Medium", dock, StringComparison.Ordinal);
+        Assert.Contains("ColorCurve, \"曲线\", \"chart-line-up\", WMMobileEditorSpace.Large", dock, StringComparison.Ordinal);
+        Assert.Contains("TemplatePicker, \"模板\", \"grid-four\", WMMobileEditorSpace.Medium", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@SectionButton(\"光影\"", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@SectionButton(\"颜色\"", dock, StringComparison.Ordinal);
     }
@@ -150,7 +150,7 @@ public sealed class WMMobileWorkspaceDockContractTests
 
         Assert.Contains("HasCategoryDraft", dock, StringComparison.Ordinal);
         Assert.Contains("disabled=\"@ModeSwitchDisabled(mode)\"", dock, StringComparison.Ordinal);
-        Assert.Contains("mdi-lock", dock, StringComparison.Ordinal);
+        Assert.Contains("Icon=\"lock\"", dock, StringComparison.Ordinal);
         Assert.Contains("workspace-cancel-button", page, StringComparison.Ordinal);
         Assert.Contains("CancelMobileEditAsync", page, StringComparison.Ordinal);
         Assert.Contains("disabled=\"@(!State.CanUndo || HasActiveMobileDraft)\"", page, StringComparison.Ordinal);

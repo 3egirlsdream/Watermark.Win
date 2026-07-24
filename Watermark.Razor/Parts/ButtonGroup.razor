@@ -6,7 +6,7 @@
         @foreach (var item in TopCenterBottom)
         {
             <MButton Value="(int)item.Value">
-                <MIcon>@item.Icon</MIcon>
+                <WmIcon Icon="@item.Icon" />
             </MButton>
         }
     }
@@ -15,7 +15,7 @@
         @foreach (var item in HorizonVertical)
         {
             <MButton Value="(int)item.Value">
-                <MIcon>@item.Icon</MIcon>
+                <WmIcon Icon="@item.Icon" />
             </MButton>
         }
     }
@@ -24,7 +24,7 @@
         @foreach (var item in TBLR)
         {
             <MButton Value="(int)item.Value">
-                <MIcon>@item.Icon</MIcon>
+                <WmIcon Icon="@item.Icon" />
             </MButton>
         }
     }
@@ -33,7 +33,7 @@
         @foreach (var item in LeftCenterRight)
         {
             <MButton Value="(int)item.Value">
-                <MIcon>@item.Icon</MIcon>
+                <WmIcon Icon="@item.Icon" />
             </MButton>
         }
     }
@@ -44,30 +44,30 @@
     public StringNumber Value { get; set; }
     List<GroupItem<VerticalAlignment>> TopCenterBottom = new()
     {
-        new GroupItem<VerticalAlignment>(VerticalAlignment.Top, "mdi-format-vertical-align-top"),
-        new GroupItem<VerticalAlignment>(VerticalAlignment.Center, "mdi-format-vertical-align-center"),
-        new GroupItem<VerticalAlignment>(VerticalAlignment.Bottom, "mdi-format-vertical-align-bottom")
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Top, "align-top"),
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Center, "align-center-vertical"),
+        new GroupItem<VerticalAlignment>(VerticalAlignment.Bottom, "align-bottom")
     };
 
     List<GroupItem<Orientation>> HorizonVertical = new()
     {
-        new GroupItem<Orientation>(Orientation.Horizontal, "mdi-border-horizontal"),
-        new GroupItem<Orientation>(Orientation.Vertical, "mdi-border-vertical"),
+        new GroupItem<Orientation>(Orientation.Horizontal, "rows"),
+        new GroupItem<Orientation>(Orientation.Vertical, "columns"),
     };
 
     List<GroupItem<ContainerAlignment>> TBLR = new()
     {
-        new GroupItem<ContainerAlignment>(ContainerAlignment.Top, "mdi-format-vertical-align-top"),
-        new GroupItem<ContainerAlignment>(ContainerAlignment.Bottom, "mdi-format-vertical-align-bottom"),
-        new GroupItem<ContainerAlignment>(ContainerAlignment.Left, "mdi-format-horizontal-align-left"),
-        new GroupItem<ContainerAlignment>(ContainerAlignment.Right, "mdi-format-horizontal-align-right"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Top, "align-top"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Bottom, "align-bottom"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Left, "align-left"),
+        new GroupItem<ContainerAlignment>(ContainerAlignment.Right, "align-right"),
     };
 
     List<GroupItem<HorizontalAlignment>> LeftCenterRight = new()
     {
-        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Left, "mdi-format-horizontal-align-left"),
-        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Center, "mdi-format-horizontal-align-center"),
-        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Right, "mdi-format-horizontal-align-right"),
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Left, "align-left"),
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Center, "align-center-horizontal"),
+        new GroupItem<HorizontalAlignment>(HorizontalAlignment.Right, "align-right"),
     };
 
     [Parameter]

@@ -154,6 +154,6 @@
     margin: 0;
 }
 
-::deep .exif-selector .mdi-paperclip::before {
+::deep .exif-selector .paperclip::before {
     font-size: 20px;
 }

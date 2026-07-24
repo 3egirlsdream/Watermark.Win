@@ -9,14 +9,13 @@
 - 移动端和桌面端入口不同导向不同的UI，注意不要搞混。
 - 不要修改 `bin/`、`obj/`、`.vs/`、`.idea/` 等生成文件或 IDE 本地文件。
 - 除了模板编辑其余的可以不用考虑旧版兼容
+- 图标库统一使用Phosphor Icons + Regular/Light 线宽
 
 ## 项目说明
 
 ### `Watermark.Andorid`
 
-当前重点项目。它是基于 .NET 8 MAUI Blazor Hybrid 的多平台应用，目标框架包括 `net8.0-maccatalyst`、`net8.0-ios`、`net8.0-android`，在 Windows 环境下还会包含 Windows 目标框架。
-
-虽然目录名拼写为 `Andorid`，但这是现有项目名称，不要擅自重命名。当前只处理它的 macOS / Mac Catalyst 版本。
+基于 .NET 8 MAUI Blazor Hybrid 的多平台应用，目标框架包括 `net8.0-maccatalyst`、`net8.0-ios`、`net8.0-android`，在 Windows 环境下还会包含 Windows 目标框架。
 
 ### `Watermark.Razor`
 

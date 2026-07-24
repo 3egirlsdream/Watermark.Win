@@ -6,19 +6,19 @@
 <section class="wm-color-panel" aria-label="调色设置">
     <header class="wm-color-heading">
         <div><strong>基础调整</strong><small>拖动即时反馈，松手写入一条历史</small></div>
-        <button type="button" @onclick="ResetRequested" aria-label="重置调色"><MIcon>mdi-restore</MIcon></button>
+        <button type="button" @onclick="ResetRequested" aria-label="重置调色"><WmIcon Icon="arrow-counter-clockwise" /></button>
     </header>
     <WMApplyScopeSelector Value="Scope" ValueChanged="ScopeChanged" SelectedCount="SelectedCount" />
     <div class="wm-reference">
         @if (!string.IsNullOrWhiteSpace(ReferenceUrl))
         {
             <figure><img src="@ReferenceUrl" alt="调色参考图" /><figcaption><strong>@ReferenceName</strong><small>参考风格已写入当前配方</small></figcaption></figure>
-            <button type="button" disabled="@Busy" @onclick="ClearReferenceRequested" aria-label="清除参考图"><MIcon>mdi-close</MIcon></button>
+            <button type="button" disabled="@Busy" @onclick="ClearReferenceRequested" aria-label="清除参考图"><WmIcon Icon="x" /></button>
         }
         else
         {
             <button type="button" class="wm-reference-picker" disabled="@Busy" @onclick="ChooseReferenceRequested">
-                <MIcon>mdi-image-search-outline</MIcon><span><strong>@(Busy ? "正在分析…" : "选择参考图")</strong><small>从照片提取色彩风格</small></span>
+                <WmIcon Icon="file-magnifying-glass" /><span><strong>@(Busy ? "正在分析…" : "选择参考图")</strong><small>从照片提取色彩风格</small></span>
             </button>
         }
     </div>
@@ -56,10 +56,10 @@
         <div class="wm-look-row"><button type="button" @onclick='() => CurveAsync("linear")'>线性</button><button type="button" @onclick='() => CurveAsync("contrast")'>增强</button><button type="button" @onclick='() => CurveAsync("soft")'>柔和</button></div>
     </details>
     <div class="wm-preset-actions">
-        <button type="button" disabled="@Busy" @onclick="SavePresetRequested"><MIcon>mdi-content-save-outline</MIcon><span>保存当前预设</span></button>
+        <button type="button" disabled="@Busy" @onclick="SavePresetRequested"><WmIcon Icon="floppy-disk" /><span>保存当前预设</span></button>
         @if (!string.IsNullOrWhiteSpace(SelectedPresetId))
         {
-            <button type="button" class="is-danger" disabled="@Busy" @onclick="DeletePresetRequested"><MIcon>mdi-delete-outline</MIcon><span>删除预设</span></button>
+            <button type="button" class="is-danger" disabled="@Busy" @onclick="DeletePresetRequested"><WmIcon Icon="trash" /><span>删除预设</span></button>
         }
     </div>
 </section>

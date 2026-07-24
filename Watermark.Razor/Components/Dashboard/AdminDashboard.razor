@@ -7,7 +7,7 @@
 @if (!IsAuthorized)
 {
     <section class="dashboard-denied" role="alert">
-        <div class="denied-mark"><MIcon Size="34">mdi-shield-lock-outline</MIcon></div>
+        <div class="denied-mark"><WmIcon Size="34" Icon="shield-check" /></div>
         <span class="eyebrow">ADMINISTRATOR ACCESS</span>
         <h1>此区域仅对管理员开放</h1>
         <p>当前账号没有查看运营数据的权限，系统不会发起任何统计请求。</p>
@@ -36,12 +36,12 @@ else
                     <span class="generated-at">更新于 @Data.Range.GeneratedAt.ToString("MM-dd HH:mm")</span>
                 }
                 <MButton Text Small Class="icon-action" OnClick="Reload" Disabled="@Loading" title="刷新数据">
-                    <MIcon Small>mdi-refresh</MIcon>
+                    <WmIcon Small Icon="arrows-clockwise" />
                 </MButton>
                 @if (ShowClose)
                 {
                     <MButton Text Small Class="icon-action close-action" OnClick="Close" title="关闭看板">
-                        <MIcon Small>mdi-close</MIcon>
+                        <WmIcon Small Icon="x" />
                     </MButton>
                 }
             </div>
@@ -72,14 +72,14 @@ else
 
         @if (!string.IsNullOrWhiteSpace(FilterError))
         {
-            <div class="filter-error"><MIcon Small>mdi-alert-circle-outline</MIcon>@FilterError</div>
+            <div class="filter-error"><WmIcon Small Icon="warning-circle" />@FilterError</div>
         }
 
         <nav class="dashboard-tabs" aria-label="看板模块">
             @foreach (var tab in Tabs)
             {
                 <button type="button" class="dashboard-tab @(ActiveTab == tab.Value ? "active" : null)" @onclick="() => ActiveTab = tab.Value">
-                    <MIcon Small>@tab.Icon</MIcon>
+                    <WmIcon Small Icon="@tab.Icon" />
                     <span>@tab.Label</span>
                 </button>
             }
@@ -99,7 +99,7 @@ else
             else if (!string.IsNullOrWhiteSpace(ErrorMessage) && Data is null)
             {
                 <div class="dashboard-error" role="alert">
-                    <MIcon Size="34">mdi-cloud-alert-outline</MIcon>
+                    <WmIcon Size="34" Icon="cloud-warning" />
                     <h2>数据暂时没有抵达</h2>
                     <p>@ErrorMessage</p>
                     <MButton Color="primary" OnClick="Reload">重新加载</MButton>
@@ -118,7 +118,7 @@ else
                         @foreach (var item in OverviewKpis)
                         {
                             <article class="kpi-card" style="--accent:@item.Color">
-                                <div class="kpi-topline"><span>@item.Label</span><MIcon Small>@item.Icon</MIcon></div>
+                                <div class="kpi-topline"><span>@item.Label</span><WmIcon Small Icon="@item.Icon" /></div>
                                 <strong>@item.Value</strong>
                                 <small>@item.Note</small>
                             </article>
@@ -259,10 +259,10 @@ else
 
     private static readonly (DashboardTab Value, string Label, string Icon)[] Tabs =
     [
-        (DashboardTab.Overview, "概览", "mdi-view-dashboard-outline"),
-        (DashboardTab.Traffic, "流量", "mdi-chart-timeline-variant"),
-        (DashboardTab.Content, "内容", "mdi-image-multiple-outline"),
-        (DashboardTab.Commerce, "商业", "mdi-cash-multiple"),
+        (DashboardTab.Overview, "概览", "squares-four"),
+        (DashboardTab.Traffic, "流量", "chart-line"),
+        (DashboardTab.Content, "内容", "images"),
+        (DashboardTab.Commerce, "商业", "money-wavy"),
     ];
 
     private static readonly string[] Palette = ["#2864ff", "#00a892", "#f18c3c", "#cb5d78", "#7566d9", "#4c8d9b", "#ad7b45"];
@@ -408,14 +408,14 @@ else
 
     private IReadOnlyList<KpiItem> OverviewKpis => Data is null ? [] :
     [
-        new("用户总量", Data.Summary.TotalUsers.ToString("N0"), $"本期新增 {Data.Summary.NewUsers:N0}", "mdi-account-group-outline", "#2864ff"),
-        new("有效会员", Data.Summary.ActiveVipUsers.ToString("N0"), "当前会员库存", "mdi-crown-outline", "#d38a27"),
-        new("访问次数", Data.Summary.Visits.ToString("N0"), $"{RangeDays} 天汇总", "mdi-pulse", "#00a892"),
-        new("实收金额", $"¥{Data.Summary.PaidRevenue:N2}", $"{Data.Summary.PaidOrders:N0} 笔实付", "mdi-cash-check", "#cb5d78"),
-        new("模板总量", Data.Summary.TotalTemplates.ToString("N0"), $"本期新增 {Data.Summary.NewTemplates:N0}", "mdi-image-multiple-outline", "#7566d9"),
-        new("累计下载", Data.Summary.TotalDownloads.ToString("N0"), "历史累计快照", "mdi-download-outline", "#4c8d9b"),
-        new("累计收藏", Data.Summary.TotalLikes.ToString("N0"), "历史累计快照", "mdi-heart-outline", "#e06b62"),
-        new("有效订阅", Data.Summary.ActiveSubscriptions.ToString("N0"), $"本期新增 {Data.Summary.NewSubscriptions:N0}", "mdi-account-arrow-right-outline", "#ad7b45"),
+        new("用户总量", Data.Summary.TotalUsers.ToString("N0"), $"本期新增 {Data.Summary.NewUsers:N0}", "users", "#2864ff"),
+        new("有效会员", Data.Summary.ActiveVipUsers.ToString("N0"), "当前会员库存", "crown", "#d38a27"),
+        new("访问次数", Data.Summary.Visits.ToString("N0"), $"{RangeDays} 天汇总", "pulse", "#00a892"),
+        new("实收金额", $"¥{Data.Summary.PaidRevenue:N2}", $"{Data.Summary.PaidOrders:N0} 笔实付", "money", "#cb5d78"),
+        new("模板总量", Data.Summary.TotalTemplates.ToString("N0"), $"本期新增 {Data.Summary.NewTemplates:N0}", "images", "#7566d9"),
+        new("累计下载", Data.Summary.TotalDownloads.ToString("N0"), "历史累计快照", "download", "#4c8d9b"),
+        new("累计收藏", Data.Summary.TotalLikes.ToString("N0"), "历史累计快照", "heart", "#e06b62"),
+        new("有效订阅", Data.Summary.ActiveSubscriptions.ToString("N0"), $"本期新增 {Data.Summary.NewSubscriptions:N0}", "user-switch", "#ad7b45"),
     ];
 
     private IReadOnlyList<string> DailyLabels => Data?.DailySeries.Select(x => x.Date.ToString("MM-dd")).ToArray() ?? [];
