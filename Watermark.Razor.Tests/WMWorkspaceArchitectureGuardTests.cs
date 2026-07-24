@@ -84,7 +84,7 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("State.Recovery?.Status == WMWorkspaceOpenStatus.Missing", workspace, StringComparison.Ordinal);
         Assert.Contains("Navigation.NavigateTo(\"/create\", replace: true);", workspace, StringComparison.Ordinal);
         Assert.DoesNotContain("SessionId=\"SessionId\"", route, StringComparison.Ordinal);
-        Assert.Equal(1, Regex.Matches(route, "SessionId=\\\"@SessionId\\\"").Count);
+        Assert.Single(Regex.Matches(route, "SessionId=\\\"@SessionId\\\"").Cast<Match>());
         var desktopRoute = Read("Watermark.Razor/BlazorPages/WMDesktopWorkspacePage.razor");
         Assert.Contains("/mac/workspace/{SessionId}", desktopRoute, StringComparison.Ordinal);
         Assert.Contains("/desktop/workspace/{SessionId}", desktopRoute, StringComparison.Ordinal);
@@ -105,6 +105,7 @@ public sealed class WMWorkspaceArchitectureGuardTests
         var drawerJs = Read("Watermark.Razor/wwwroot/js/wm-template-designer.js");
         var sliderCss = Read("Watermark.Razor/Components/Mac/MacSlider.razor.css");
         var shell = Read("Watermark.Razor/Components/Layout/WMAppShellLayout.razor");
+        var workspace = Read("Watermark.Razor/BlazorPages/Mobile/MobileWorkspace.razor");
         var controller = Read("Watermark.Razor/Workspace/WMWorkspaceController.cs");
 
         Assert.Contains("TemplateLibrary.GetOrRefreshAsync()", designer, StringComparison.Ordinal);
@@ -125,9 +126,80 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("WMTemplateDesignerSession", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMWatermarkHelper", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMObjectUrlRegistry", designer, StringComparison.Ordinal);
+        var workspaceCss = Read("Watermark.Razor/BlazorPages/Mobile/MobileWorkspace.razor.css");
+        Assert.Contains("class=\"workspace-designer-host\"", workspace, StringComparison.Ordinal);
+        Assert.Contains(".workspace-designer-host", workspaceCss, StringComparison.Ordinal);
+        Assert.Contains("position: fixed", workspaceCss, StringComparison.Ordinal);
+        Assert.Contains("overflow: hidden", workspaceCss, StringComparison.Ordinal);
         Assert.Contains("aria-current", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("private RenderFragment NavItem", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("Message = \"预览已更新\"", controller, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplateDesigner_AllPlatformsUseSharedSceneAndVisualsOwnNoRenderingInfrastructure()
+    {
+        var shared = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
+        var desktop = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateDesigner.razor");
+        var desktopPage = Read("Watermark.Razor/BlazorPages/WMDesktopTemplateDesignerPage.razor");
+        var desktopWorkspace = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
+        var canvas = Read("Watermark.Razor/Components/Mac/MacCanvasEditor.razor");
+        var canvasJs = Read("Watermark.Razor/wwwroot/js/mac-template-canvas.js");
+        var combinedVisuals = shared + desktop + canvas;
+
+        Assert.Contains("<WMTemplateDesigner", desktop, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner", desktopPage, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner", desktopWorkspace, StringComparison.Ordinal);
+        Assert.Contains("RenderSceneAsync", shared, StringComparison.Ordinal);
+        Assert.Contains("WMDesignScenePresentation", canvas, StringComparison.Ordinal);
+        Assert.DoesNotContain("GenerationDesignPreviewAsync", combinedVisuals, StringComparison.Ordinal);
+        Assert.DoesNotContain("SKBitmap", combinedVisuals, StringComparison.Ordinal);
+        Assert.DoesNotContain("Blob(", combinedVisuals, StringComparison.Ordinal);
+        Assert.DoesNotContain("createPreviewInteractionVisual", canvasJs, StringComparison.Ordinal);
+        Assert.Contains("createLayerInteractionVisual", canvasJs, StringComparison.Ordinal);
+        Assert.DoesNotContain("appliedEditorRevision", canvas, StringComparison.Ordinal);
+        Assert.Contains("clearPendingInteractionVisual(false)", canvasJs, StringComparison.Ordinal);
+        Assert.Contains("coarseResizeDirections", canvasJs, StringComparison.Ordinal);
+        Assert.Contains("scalable: true", canvasJs, StringComparison.Ordinal);
+        Assert.Contains(".on(\"scale\"", canvasJs, StringComparison.Ordinal);
+        Assert.DoesNotContain("resizable: true", canvasJs, StringComparison.Ordinal);
+        Assert.DoesNotContain("resolveResizeGeometry", canvasJs, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplateVisualComponents_DoNotOwnFilesBlobsSkiaOrLayoutAlgorithms()
+    {
+        var componentRoots = new[]
+        {
+            Path.Combine(RazorRoot, "Components", "Mac"),
+            Path.Combine(RazorRoot, "Workspace", "Components")
+        };
+        var sources = componentRoots
+            .SelectMany(root => Directory.EnumerateFiles(
+                root,
+                "*.razor",
+                SearchOption.AllDirectories))
+            .Where(path =>
+                path.Contains($"{Path.DirectorySeparatorChar}Mac{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                || Path.GetFileName(path).StartsWith("WMTemplate", StringComparison.Ordinal))
+            .Select(File.ReadAllText)
+            .ToArray();
+        var combined = string.Join('\n', sources);
+
+        foreach (var forbidden in new[]
+                 {
+                     "IWMWatermarkHelper",
+                     "IWMObjectUrlRegistry",
+                     "WMLayoutEngine",
+                     "SKBitmap",
+                     "SKCanvas",
+                     "new Blob(",
+                     "File.Read",
+                     "File.Write"
+                 })
+        {
+            Assert.DoesNotContain(forbidden, combined, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

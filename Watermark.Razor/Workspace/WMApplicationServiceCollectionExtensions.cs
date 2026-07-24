@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Watermark.Shared.Models;
 
 namespace Watermark.Razor.Workspace;
 
@@ -11,7 +12,19 @@ public static class WMApplicationServiceCollectionExtensions
         services.AddScoped<IWMAccountService, WMAccountService>();
         services.AddScoped<IWMApplicationStartupService, WMApplicationStartupService>();
         services.AddScoped<IWMDesktopStartupService, WMDesktopStartupService>();
-        services.AddScoped<WMTemplateDesignerSession>();
+        services.AddSingleton<IWMDesignSceneRenderer, WMDesignSceneRenderer>();
+        services.AddScoped(static provider =>
+        {
+            var renderer = provider.GetRequiredService<IWMDesignSceneRenderer>();
+            var objectUrls = provider.GetRequiredService<IWMObjectUrlRegistry>();
+            var transport = provider.GetRequiredService<IWMSceneSurfaceTransport>();
+            var metrics = provider.GetService<IWMWorkspacePerformanceCounters>();
+            return metrics is null
+                ? new WMTemplateDesignerSession(renderer, objectUrls, transport)
+                : new WMTemplateDesignerSession(renderer, objectUrls, transport, metrics);
+        });
+        services.AddScoped<IWMEditorInteractionProfileProvider, WMEditorInteractionProfileProvider>();
+        services.AddScoped<IWMSceneSurfaceTransport, WMSceneSurfaceTransport>();
         services.AddScoped<IWMAppSettingsService, WMAppSettingsService>();
         services.AddScoped<IWMCacheMaintenanceService, WMCacheMaintenanceService>();
         services.AddScoped<IWMResourceLibraryService, WMResourceLibraryService>();

@@ -37,12 +37,13 @@ public sealed class WMDesktopWorkspaceContractTests
     }
 
     [Fact]
-    public void DesktopUsesDedicatedHistoricalPanelsAndDesignerMarkup()
+    public void DesktopUsesSharedResponsiveTemplateDesigner()
     {
         var page = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
         var sidebar = Read("Watermark.Razor/Components/Desktop/WMDesktopModeSidebar.razor");
         var inspector = Read("Watermark.Razor/Components/Desktop/WMDesktopModeInspector.razor");
-        var designer = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateDesigner.razor");
+        var designer = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
+        var forwardingWrapper = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateDesigner.razor");
 
         Assert.Contains("<WMDesktopModeInspector", page, StringComparison.Ordinal);
         Assert.DoesNotContain("<WMTemplatePanel", page, StringComparison.Ordinal);
@@ -52,17 +53,20 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.Contains("ColorSection.Basic", inspector, StringComparison.Ordinal);
         Assert.Contains("ColorSection.Curves", inspector, StringComparison.Ordinal);
         Assert.Contains("class=\"mode-card", inspector, StringComparison.Ordinal);
-        Assert.Contains("MacLayerTree", designer, StringComparison.Ordinal);
-        Assert.Contains("MacCanvasEditor", designer, StringComparison.Ordinal);
-        Assert.Contains("MacSelectionInspector", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner", page, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateLayerPanel", designer, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateCanvas", designer, StringComparison.Ordinal);
+        Assert.Contains("WMTemplatePropertyPanel", designer, StringComparison.Ordinal);
+        Assert.Contains("WMTemplateAddPanel", designer, StringComparison.Ordinal);
         Assert.Contains("WMTemplateDesignerSession", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMWatermarkHelper", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMObjectUrlRegistry", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("GenerationDesignPreviewAsync", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("PublishAsync", designer, StringComparison.Ordinal);
-        Assert.DoesNotContain("<WMTemplateDesigner", designer, StringComparison.Ordinal);
-        Assert.DoesNotContain("mobile-designer-tabs", designer, StringComparison.Ordinal);
-        Assert.DoesNotContain("designer-add-region", designer, StringComparison.Ordinal);
+        Assert.Contains("mobile-designer-tabs", designer, StringComparison.Ordinal);
+        Assert.Contains("designer-add-region", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner", forwardingWrapper, StringComparison.Ordinal);
+        Assert.DoesNotContain("WMTemplateDesignerSession", forwardingWrapper, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -183,8 +187,8 @@ public sealed class WMDesktopWorkspaceContractTests
 
         Assert.Contains("@page \"/mac/templates/{TemplateId}/edit\"", route, StringComparison.Ordinal);
         Assert.Contains("@page \"/desktop/templates/{TemplateId}/edit\"", route, StringComparison.Ordinal);
-        Assert.Contains("<WMDesktopTemplateDesigner", route, StringComparison.Ordinal);
-        Assert.DoesNotContain("<WMTemplateDesigner", route, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner", route, StringComparison.Ordinal);
+        Assert.DoesNotContain("<WMDesktopTemplateDesigner", route, StringComparison.Ordinal);
     }
 
     [Fact]

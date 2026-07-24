@@ -22,7 +22,9 @@ public sealed record MacCanvasSceneItem(
     double Rotation,
     bool Absolute,
     bool Locked,
-    bool Visible);
+    bool Visible,
+    bool HasSurface,
+    bool Backdrop);
 
 public sealed record MacCanvasInteraction(
     string ControlId,

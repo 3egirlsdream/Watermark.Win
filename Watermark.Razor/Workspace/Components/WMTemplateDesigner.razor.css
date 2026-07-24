@@ -85,33 +85,6 @@
     width: 22px;
 }
 
-.canvas-status-banner {
-    border: 1px solid;
-    border-radius: 6px;
-    box-shadow: 0 5px 16px rgba(31, 41, 55, 0.13);
-    font-size: 12px;
-    left: 50%;
-    letter-spacing: 0;
-    max-width: min(520px, calc(100% - 32px));
-    padding: 8px 12px;
-    position: absolute;
-    top: 12px;
-    transform: translateX(-50%);
-    z-index: 8;
-}
-
-.canvas-status-banner.error {
-    background: #fff5f3;
-    border-color: #efb4a8;
-    color: #9f3325;
-}
-
-.canvas-status-banner.success {
-    background: #eef9f2;
-    border-color: #9fd5ae;
-    color: #21693a;
-}
-
 .canvas-render-indicator {
     animation: render-pulse 850ms ease-in-out infinite alternate;
     background: #1769d2;

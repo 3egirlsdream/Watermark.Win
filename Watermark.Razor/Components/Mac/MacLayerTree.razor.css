@@ -247,6 +247,10 @@
     pointer-events: none;
 }
 
+.mobile-more-action {
+    display: none;
+}
+
 .layer-action.persistent,
 .layer-row:hover .layer-action,
 .layer-row.selected .layer-action,
@@ -379,6 +383,14 @@
     .layer-action {
         height: 40px;
         width: 40px;
+    }
+
+    .desktop-direct-action {
+        display: none;
+    }
+
+    .mobile-more-action {
+        display: inline-flex;
     }
 
     .drag-handle {

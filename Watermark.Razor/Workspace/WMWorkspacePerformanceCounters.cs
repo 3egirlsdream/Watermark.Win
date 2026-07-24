@@ -21,6 +21,24 @@ public sealed class WMWorkspacePerformanceCounters : IWMWorkspacePerformanceCoun
         lock (gate) calls[stage] = calls.GetValueOrDefault(stage) + 1;
     }
 
+    public void Record(
+        WMWorkspaceMetricStage stage,
+        int callCount,
+        double durationMilliseconds)
+    {
+        if (callCount <= 0 && durationMilliseconds <= 0) return;
+        lock (gate)
+        {
+            if (callCount > 0)
+                calls[stage] = calls.GetValueOrDefault(stage) + callCount;
+            if (durationMilliseconds > 0)
+            {
+                durations[stage] = durations.GetValueOrDefault(stage)
+                    + durationMilliseconds;
+            }
+        }
+    }
+
     public WMWorkspaceMetricSnapshot Snapshot()
     {
         lock (gate)

@@ -182,6 +182,13 @@ public static class WMControlTree
 
         var control = (IWMControl?)Activator.CreateInstance(controlType)
             ?? throw new ArgumentException("无法创建控件。", nameof(controlType));
+        if (control is WMText text && text.Exifs.Count == 0)
+        {
+            // A newly inserted text layer must have measurable content so it can
+            // be selected and dragged immediately. Empty-key entries are the V2
+            // representation for intentional decorative copy.
+            text.Exifs.Add(new WMExifConfigInfo { Prefix = "文字" });
+        }
         var usedIds = Flatten(canvas).Select(existing => existing.ID).ToHashSet(StringComparer.Ordinal);
         AssignNewUniqueId(control, usedIds);
         if (control is WMContainer container)

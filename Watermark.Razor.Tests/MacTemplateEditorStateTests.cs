@@ -96,10 +96,93 @@ public sealed class WMTemplateEditorStateTests
     public void CommitTransaction_WithNoChangesIsNoOp()
     {
         var state = WMTemplateEditorState.Create(new WMCanvas { Name = "one" });
+        var changedCount = 0;
+        var detailedChanges = new List<WMTemplateChangeSet>();
+        state.Changed += () => changedCount++;
+        state.DetailedChanged += detailedChanges.Add;
         state.BeginTransaction("slider");
 
         Assert.False(state.CommitTransaction());
         Assert.Equal(1, state.HistoryCount);
+        Assert.False(state.IsTransactionActive);
+        Assert.Equal(2, changedCount);
+        Assert.Single(detailedChanges);
+        Assert.Equal(WMTemplateChangePhase.Begin, detailedChanges[0].Phase);
+    }
+
+    [Fact]
+    public void DetailedChanges_PreserveTransactionPhaseKindAndNodeIds()
+    {
+        var canvas = new WMCanvas();
+        canvas.Children.Add(new WMContainer { ID = "ROOT" });
+        var state = WMTemplateEditorState.Create(canvas);
+        var changes = new List<WMTemplateChangeSet>();
+        state.DetailedChanged += changes.Add;
+
+        state.BeginTransaction(
+            "move",
+            WMTemplateChangeKind.Geometry,
+            ["ROOT"]);
+        state.Mutate(
+            "move",
+            () => state.Draft.Children[0].Style.Transform.OffsetXPercent = 5,
+            WMTemplateChangeKind.Geometry,
+            ["ROOT"]);
+        Assert.True(state.CommitTransaction());
+
+        Assert.Equal(
+            [
+                WMTemplateChangePhase.Begin,
+                WMTemplateChangePhase.Update,
+                WMTemplateChangePhase.Commit
+            ],
+            changes.Select(change => change.Phase));
+        Assert.All(changes, change => Assert.Equal(WMTemplateChangeKind.Geometry, change.Kind));
+        Assert.All(changes, change => Assert.Equal(["ROOT"], change.NodeIds));
+        Assert.True(changes[1].Revision > changes[0].Revision);
+        Assert.True(changes[2].Revision > changes[1].Revision);
+    }
+
+    [Fact]
+    public void CommitTransaction_CanEscalateFinalInvalidationWithoutChangingUpdates()
+    {
+        var canvas = new WMCanvas();
+        canvas.Children.Add(new WMContainer { ID = "ROOT" });
+        var state = WMTemplateEditorState.Create(canvas);
+        var changes = new List<WMTemplateChangeSet>();
+        state.DetailedChanged += changes.Add;
+
+        state.BeginTransaction(
+            "resize",
+            WMTemplateChangeKind.Geometry,
+            ["ROOT"]);
+        state.Mutate(
+            "resize",
+            () => state.Draft.Children[0].Style.Transform.ScaleX = 2,
+            WMTemplateChangeKind.Geometry,
+            ["ROOT"]);
+        Assert.True(state.CommitTransaction(WMTemplateChangeKind.Paint));
+
+        Assert.Equal(WMTemplateChangeKind.Geometry, changes[1].Kind);
+        Assert.Equal(
+            WMTemplateChangeKind.Geometry | WMTemplateChangeKind.Paint,
+            changes[2].Kind);
+    }
+
+    [Fact]
+    public void SelectionChange_DoesNotReportPaintOrLayoutInvalidation()
+    {
+        var canvas = new WMCanvas();
+        canvas.Children.Add(new WMContainer { ID = "ROOT" });
+        var state = WMTemplateEditorState.Create(canvas);
+        WMTemplateChangeSet? observed = null;
+        state.DetailedChanged += change => observed = change;
+
+        state.Select("ROOT");
+
+        Assert.NotNull(observed);
+        Assert.True(observed.IsSelectionOnly);
+        Assert.Equal(["ROOT"], observed.NodeIds);
     }
 
     [Fact]

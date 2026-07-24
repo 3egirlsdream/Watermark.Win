@@ -17,4 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj" />
   </ItemGroup>
+  <Import Project="..\native\Watermark.Native.Host.Tests.targets"
+          Condition="Exists('..\native\Watermark.Native.Host.Tests.targets')" />
 </Project>

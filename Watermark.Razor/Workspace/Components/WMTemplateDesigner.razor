@@ -9,7 +9,9 @@
 @inject WMWorkspaceController WorkspaceController
 @inject WMTemplateLibraryService TemplateLibrary
 @inject WMTemplateDesignerSession DesignerSession
+@inject IWMEditorInteractionProfileProvider InteractionProfiles
 @inject IJSRuntime JSRuntime
+@inject IPopupService Popup
 @implements IAsyncDisposable
 
 <div class="wm-template-designer" tabindex="0" @onkeydown="HandleKeyDown">
@@ -23,7 +25,7 @@
             }
             else
             {
-                <MIcon Color="error">mdi-alert-circle-outline</MIcon>
+                <WmIcon Color="error" Icon="warning-circle" />
                 <span>@loadError</span>
                 <MButton Text Class="secondary-command" OnClick="async () => await OnClose.InvokeAsync()">返回</MButton>
             }
@@ -50,14 +52,6 @@
                 <WMTemplateLayerPanel Editor="@editor" />
             </aside>
             <div class="designer-canvas-region">
-                @if (!string.IsNullOrWhiteSpace(renderError))
-                {
-                    <div class="canvas-status-banner error" role="status">@renderError</div>
-                }
-                else if (!string.IsNullOrWhiteSpace(saveNotice))
-                {
-                    <div class="canvas-status-banner success" role="status">@saveNotice</div>
-                }
                 @if (isRendering)
                 {
                     <div class="canvas-render-indicator" aria-label="正在更新预览"></div>
@@ -66,6 +60,7 @@
                                   Editor="@editor"
                                   RenderResult="@renderResult"
                                   PreviewUrl="@previewUrl"
+                                  Scene="@scenePresentation"
                                   Zoom="@zoom"
                                   ZoomChanged="SetZoomAsync"
                                   SaveRequested="SaveAsync" />
@@ -91,17 +86,17 @@
             <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Layers)"
                     class="@(mobilePanel == MobileDesignerPanel.Layers ? "is-active" : null)"
                     @onclick="() => mobilePanel = MobileDesignerPanel.Layers">
-                <span class="mobile-tab-icon"><MIcon>mdi-layers-triple-outline</MIcon></span><span>图层</span>
+                <span class="mobile-tab-icon"><WmIcon Icon="stack" /></span><span>图层</span>
             </button>
             <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Properties)"
                     class="@(mobilePanel == MobileDesignerPanel.Properties ? "is-active" : null)"
                     @onclick="() => mobilePanel = MobileDesignerPanel.Properties">
-                <span class="mobile-tab-icon"><MIcon>mdi-tune-variant</MIcon></span><span>属性</span>
+                <span class="mobile-tab-icon"><WmIcon Icon="sliders-horizontal" /></span><span>属性</span>
             </button>
             <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Add)"
                     class="@(mobilePanel == MobileDesignerPanel.Add ? "is-active" : null)"
                     @onclick="() => mobilePanel = MobileDesignerPanel.Add">
-                <span class="mobile-tab-icon"><MIcon>mdi-plus</MIcon></span><span>添加</span>
+                <span class="mobile-tab-icon"><WmIcon Icon="plus" /></span><span>添加</span>
             </button>
         </nav>
     }
@@ -134,6 +129,7 @@
     private WMTemplateCanvas? canvasEditor;
     private WMDesignFunc? designFunc;
     private WMDesignRenderResult? renderResult;
+    private WMDesignScenePresentation? scenePresentation;
     private string previewUrl = string.Empty;
     private ElementReference designerWorkspace;
     private ElementReference drawerHandle;
@@ -153,6 +149,8 @@
     private bool isSaving;
     private bool isRendering;
     private bool disposed;
+    private bool compatibilityToastShown;
+    private bool sceneFallbackToastShown;
     private double zoom = 1;
     private MobileDesignerPanel mobilePanel = MobileDesignerPanel.Properties;
 
@@ -189,12 +187,14 @@
         await ReleasePreviewAsync();
         previewUrl = string.Empty;
         renderResult = null;
+        scenePresentation = null;
         canvasEditor = null;
         designFunc = null;
         loadError = string.Empty;
         renderError = string.Empty;
         saveNotice = string.Empty;
         requestedSnapshot = string.Empty;
+        compatibilityToastShown = false;
         loadedCanvasId = CanvasId;
 
         if (string.IsNullOrWhiteSpace(CanvasId))
@@ -255,8 +255,11 @@
                 editor = WMTemplateEditorState.Create(loadedCanvas);
             }
             editor.Changed += HandleEditorChanged;
+            editor.DetailedChanged += HandleEditorDetailedChanged;
             PublishToolState();
-            await RequestPreviewAsync(force: true);
+            await RequestSceneAsync(
+                WMTemplateChangeSet.Initial(editor.CurrentRevision),
+                force: true);
         }
         catch (Exception ex)
         {
@@ -282,9 +285,18 @@
         draftDebounce?.Dispose();
         draftDebounce = new CancellationTokenSource();
         TrackDraftTask(PersistDraftAfterDelayAsync(editor, draftDebounce.Token));
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleEditorDetailedChanged(WMTemplateChangeSet changeSet)
+    {
+        if (changeSet.Phase == WMTemplateChangePhase.Begin
+            || changeSet.IsSelectionOnly)
+            return;
+
         _ = InvokeAsync(async () =>
         {
-            await RequestPreviewAsync();
+            await RequestSceneAsync(changeSet);
             StateHasChanged();
         });
     }
@@ -331,6 +343,7 @@
             if (!disposed && ReferenceEquals(editor, source))
             {
                 renderError = $"草稿保存失败：{ex.Message}";
+                Common.ShowToast(Popup, renderError, isError: true);
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -366,7 +379,9 @@
         };
         currentEditor.Mutate(
             label,
-            () => added = WMControlTree.Add(currentEditor.Draft, controlType, preferredParentId));
+            () => added = WMControlTree.Add(currentEditor.Draft, controlType, preferredParentId),
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint,
+            string.IsNullOrWhiteSpace(preferredParentId) ? [] : [preferredParentId]);
         if (added is not null) currentEditor.Select(added.ID);
         mobilePanel = MobileDesignerPanel.Properties;
     }
@@ -385,7 +400,9 @@
         Add
     }
 
-    private async Task RequestPreviewAsync(bool force = false)
+    private async Task RequestSceneAsync(
+        WMTemplateChangeSet changeSet,
+        bool force = false)
     {
         var currentEditor = editor;
         if (currentEditor is null || disposed) return;
@@ -404,14 +421,31 @@
 
         try
         {
-            var preview = await DesignerSession.RenderPreviewAsync(
+            var preview = await DesignerSession.RenderSceneAsync(
                 $"template-designer:{CanvasId}",
                 currentEditor.Draft,
-                publishObjectUrl: false);
+                changeSet,
+                changeSet.Phase == WMTemplateChangePhase.Update
+                    ? WMDesignSceneQuality.Interactive
+                    : WMDesignSceneQuality.Exact,
+                publishObjectUrl: Global.DeviceType is Watermark.Shared.Enums.DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win,
+                surfaceCacheBudgetBytes: InteractionProfiles.Current.SceneCacheBudgetBytes);
             if (preview is null || !IsCurrentRender(currentEditor, version)) return;
 
             renderResult = preview.RenderResult;
             previewUrl = preview.PreviewUrl;
+            scenePresentation = preview.Scene;
+            if (preview.UsesCompatibilityFallback && !sceneFallbackToastShown)
+            {
+                sceneFallbackToastShown = true;
+                Common.ShowToast(Popup, "分层场景初始化失败，已切换兼容预览。", isError: true);
+            }
+            if (scenePresentation?.UsesInlineFallback == true
+                && !compatibilityToastShown)
+            {
+                compatibilityToastShown = true;
+                Common.ShowToast(Popup, "当前 WebView 不支持分层位图直传，已切换兼容显示。");
+            }
         }
         catch (Exception ex)
         {
@@ -419,6 +453,7 @@
             {
                 requestedSnapshot = string.Empty;
                 renderError = ex.Message;
+                Common.ShowToast(Popup, renderError, isError: true);
             }
         }
         finally
@@ -454,11 +489,13 @@
         try
         {
             draftDebounce?.Cancel();
+            await DesignerSession.FlushRenderAsync();
             await TemplateStore.SaveAsync(currentEditor.Draft);
             currentEditor.MarkSaved();
             if (WorkspaceController.State.Mode == WMWorkspaceMode.TemplateDesign)
                 await WorkspaceController.ClearTemplateDraftAsync();
             saveNotice = "模板已保存";
+            Common.ShowToast(Popup, saveNotice);
             try
             {
                 await OnSaved.InvokeAsync(currentEditor.Draft.ID);
@@ -466,6 +503,7 @@
             catch (Exception ex)
             {
                 renderError = ex.Message;
+                Common.ShowToast(Popup, renderError, isError: true);
             }
             return true;
         }
@@ -475,11 +513,13 @@
             if (!string.IsNullOrWhiteSpace(first?.ControlId))
                 currentEditor.Select(first.ControlId);
             renderError = first?.Message ?? ex.Message;
+            Common.ShowToast(Popup, renderError, isError: true);
             return false;
         }
         catch (Exception ex)
         {
             renderError = ex.Message;
+            Common.ShowToast(Popup, renderError, isError: true);
             return false;
         }
         finally
@@ -507,6 +547,9 @@
             ContinueEditing();
             return;
         }
+        if (canvasEditor is not null
+            && await canvasEditor.CancelCurrentGestureAsync())
+            return;
         await RequestExitAsync();
     }
 
@@ -583,7 +626,10 @@
     private void DetachEditor()
     {
         if (editor is not null)
+        {
             editor.Changed -= HandleEditorChanged;
+            editor.DetailedChanged -= HandleEditorDetailedChanged;
+        }
         editor = null;
     }
 

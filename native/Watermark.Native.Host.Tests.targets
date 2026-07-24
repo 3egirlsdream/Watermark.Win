@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <WatermarkNativeHostTestArtifact>$(MSBuildThisFileDirectory)build/wrapper/host-ocio/libWatermark.Imaging.Native.dylib</WatermarkNativeHostTestArtifact>
+    <WatermarkNativeHostTestFileName>libWatermark.Imaging.Native.dylib</WatermarkNativeHostTestFileName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <WatermarkNativeWindowsTestRid Condition="$([System.String]::Copy('$(NETCoreSdkRuntimeIdentifier)').Contains('arm64'))">win-arm64</WatermarkNativeWindowsTestRid>
+    <WatermarkNativeWindowsTestRid Condition="'$(WatermarkNativeWindowsTestRid)' == ''">win-x64</WatermarkNativeWindowsTestRid>
+    <WatermarkNativeHostTestArtifact>$(MSBuildThisFileDirectory)artifacts/$(WatermarkNativeWindowsTestRid)/Watermark.Imaging.Native.dll</WatermarkNativeHostTestArtifact>
+    <WatermarkNativeHostTestFileName>Watermark.Imaging.Native.dll</WatermarkNativeHostTestFileName>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WatermarkNativeHostTestArtifact)' != '' And Exists('$(WatermarkNativeHostTestArtifact)')">
+    <Content Include="$(WatermarkNativeHostTestArtifact)"
+             Link="$(WatermarkNativeHostTestFileName)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="WarnWhenWatermarkNativeHostTestArtifactIsMissing"
+          BeforeTargets="VSTest"
+          Condition="'$(WatermarkNativeHostTestArtifact)' != '' And !Exists('$(WatermarkNativeHostTestArtifact)')">
+    <Warning Text="Watermark.Imaging.Native 宿主测试库不存在：$(WatermarkNativeHostTestArtifact)。macOS 请先运行 native/scripts/build-native-host.sh。" />
+  </Target>
+</Project>

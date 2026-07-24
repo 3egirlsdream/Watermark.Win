@@ -921,7 +921,14 @@ public enum WMWorkspaceMetricStage
     GpuUpload,
     GpuFrame,
     ContextCreated,
-    ContextLost
+    ContextLost,
+    SceneLayout,
+    LayerRaster,
+    SceneComposite,
+    LayerUpload,
+    LayerCacheHit,
+    LayerCacheMiss,
+    InteractionFrame
 }
 
 public sealed record WMWorkspaceMetricSnapshot(
@@ -932,6 +939,10 @@ public interface IWMWorkspacePerformanceCounters
 {
     IDisposable Measure(WMWorkspaceMetricStage stage);
     void Increment(WMWorkspaceMetricStage stage);
+    void Record(
+        WMWorkspaceMetricStage stage,
+        int calls,
+        double durationMilliseconds);
     WMWorkspaceMetricSnapshot Snapshot();
     void Reset();
 }

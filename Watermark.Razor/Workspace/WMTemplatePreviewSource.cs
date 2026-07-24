@@ -12,7 +12,7 @@ public static class WMTemplatePreviewSource
         return $"data:{DetectMimeType(imageBytes)};base64,{Convert.ToBase64String(imageBytes)}";
     }
 
-    private static string DetectMimeType(ReadOnlySpan<byte> bytes)
+    public static string DetectMimeType(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length >= 3
             && bytes[0] == 0xff

@@ -30,6 +30,10 @@ public sealed class WMTemplateEditorState
     private int historyIndex;
     private string savedSnapshot;
     private Snapshot? transactionStart;
+    private string transactionLabel = string.Empty;
+    private WMTemplateChangeKind transactionKind;
+    private readonly HashSet<string> transactionNodeIds = new(StringComparer.Ordinal);
+    private long revision;
 
     private WMTemplateEditorState(WMCanvas draft)
     {
@@ -47,7 +51,9 @@ public sealed class WMTemplateEditorState
     public int HistoryCount => history.Count;
     public int HistoryCursor => historyIndex;
     public bool IsTransactionActive => transactionStart is not null;
+    public long CurrentRevision => revision;
     public event Action? Changed;
+    public event Action<WMTemplateChangeSet>? DetailedChanged;
 
     public static WMTemplateEditorState Create(WMCanvas original)
     {
@@ -109,26 +115,58 @@ public sealed class WMTemplateEditorState
     {
         if (SelectedControlId == controlId) return;
         SelectedControlId = controlId;
-        Changed?.Invoke();
+        PublishChange(
+            WMTemplateChangePhase.Commit,
+            WMTemplateChangeKind.Selection,
+            string.IsNullOrWhiteSpace(controlId) ? [] : [controlId],
+            "选择图层");
     }
 
-    public void BeginTransaction(string label)
+    public void BeginTransaction(
+        string label,
+        WMTemplateChangeKind kind = WMTemplateChangeKind.All,
+        IEnumerable<string>? nodeIds = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         if (transactionStart != null)
             throw new InvalidOperationException("已有正在进行的编辑事务。");
 
         transactionStart = Snapshot.From(Draft);
-        Changed?.Invoke();
+        transactionLabel = label;
+        transactionKind = kind;
+        transactionNodeIds.Clear();
+        AddNodeIds(transactionNodeIds, nodeIds);
+        PublishChange(
+            WMTemplateChangePhase.Begin,
+            kind,
+            transactionNodeIds,
+            label,
+            incrementRevision: false);
     }
 
-    public bool CommitTransaction()
+    public bool CommitTransaction(
+        WMTemplateChangeKind additionalKind = WMTemplateChangeKind.None)
     {
         if (transactionStart == null) return false;
 
+        var start = transactionStart;
+        var label = transactionLabel;
+        var kind = transactionKind | additionalKind;
+        var nodeIds = transactionNodeIds.ToArray();
         transactionStart = null;
+        ResetTransactionDetails();
+        if (start.Matches(Draft))
+        {
+            // BeginTransaction publishes the active transaction state to the
+            // workspace toolbar. A no-op commit still has to publish that the
+            // transaction ended, but must not schedule a scene update.
+            Changed?.Invoke();
+            return false;
+        }
+
         var committed = CommitCurrentSnapshot();
-        if (committed) Changed?.Invoke();
+        if (committed)
+            PublishChange(WMTemplateChangePhase.Commit, kind, nodeIds, label);
         return committed;
     }
 
@@ -137,14 +175,31 @@ public sealed class WMTemplateEditorState
         if (transactionStart == null) return;
 
         var start = transactionStart;
+        var label = transactionLabel;
+        var kind = transactionKind;
+        var nodeIds = transactionNodeIds.ToArray();
         transactionStart = null;
-        if (start.Matches(Draft)) return;
+        ResetTransactionDetails();
+        if (start.Matches(Draft))
+        {
+            PublishChange(
+                WMTemplateChangePhase.Cancel,
+                kind,
+                nodeIds,
+                label,
+                incrementRevision: false);
+            return;
+        }
 
         Draft = start.Restore();
-        Changed?.Invoke();
+        PublishChange(WMTemplateChangePhase.Cancel, kind, nodeIds, label);
     }
 
-    public void Mutate(string label, Action mutation)
+    public void Mutate(
+        string label,
+        Action mutation,
+        WMTemplateChangeKind kind = WMTemplateChangeKind.All,
+        IEnumerable<string>? nodeIds = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(mutation);
@@ -154,9 +209,25 @@ public sealed class WMTemplateEditorState
         if (before.Matches(Draft)) return;
 
         if (transactionStart == null)
+        {
             CommitCurrentSnapshot();
-
-        Changed?.Invoke();
+            PublishChange(
+                WMTemplateChangePhase.Commit,
+                kind,
+                nodeIds?.ToArray() ?? [],
+                label);
+        }
+        else
+        {
+            transactionKind |= kind;
+            AddNodeIds(transactionNodeIds, nodeIds);
+            PublishChange(
+                WMTemplateChangePhase.Update,
+                transactionKind,
+                transactionNodeIds,
+                transactionLabel,
+                incrementRevision: true);
+        }
     }
 
     public bool Undo()
@@ -166,7 +237,7 @@ public sealed class WMTemplateEditorState
 
         historyIndex--;
         Draft = history[historyIndex].Restore();
-        Changed?.Invoke();
+        PublishChange(WMTemplateChangePhase.Commit, WMTemplateChangeKind.All, [], "撤销");
         return true;
     }
 
@@ -177,7 +248,7 @@ public sealed class WMTemplateEditorState
 
         historyIndex++;
         Draft = history[historyIndex].Restore();
-        Changed?.Invoke();
+        PublishChange(WMTemplateChangePhase.Commit, WMTemplateChangeKind.All, [], "重做");
         return true;
     }
 
@@ -185,6 +256,44 @@ public sealed class WMTemplateEditorState
     {
         savedSnapshot = Serialize(Draft);
         Changed?.Invoke();
+    }
+
+    private void PublishChange(
+        WMTemplateChangePhase phase,
+        WMTemplateChangeKind kind,
+        IEnumerable<string> nodeIds,
+        string label,
+        bool incrementRevision = true)
+    {
+        if (incrementRevision) revision++;
+        Changed?.Invoke();
+        DetailedChanged?.Invoke(new WMTemplateChangeSet(
+            revision,
+            phase,
+            kind,
+            nodeIds.Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray(),
+            label));
+    }
+
+    private static void AddNodeIds(
+        ISet<string> destination,
+        IEnumerable<string>? nodeIds)
+    {
+        if (nodeIds is null) return;
+        foreach (var nodeId in nodeIds)
+        {
+            if (!string.IsNullOrWhiteSpace(nodeId))
+                destination.Add(nodeId);
+        }
+    }
+
+    private void ResetTransactionDetails()
+    {
+        transactionLabel = string.Empty;
+        transactionKind = WMTemplateChangeKind.None;
+        transactionNodeIds.Clear();
     }
 
     private bool CommitCurrentSnapshot()

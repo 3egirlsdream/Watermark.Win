@@ -5,6 +5,8 @@
 @using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 @inject IJSRuntime JSRuntime
+@inject IWMEditorInteractionProfileProvider InteractionProfiles
+@inject IWMHapticFeedback HapticFeedback
 @implements IAsyncDisposable
 
 <div class="mac-canvas-viewport @(AllowViewportPan && spacePressed ? "pan-ready" : null) @(AllowViewportPan && panPointerId is not null ? "panning" : null)"
@@ -24,13 +26,40 @@
      @onpointercancel="HandlePointerCancelAsync">
     @if (HasScene)
     {
-        <div class="mac-canvas-surface" style="@SurfaceStyle">
-            <img @key="PreviewElementKey"
-                 class="mac-canvas-preview"
-                 src="@DisplayedPreviewUrl"
-                 alt="@Editor.Draft.Name 模板预览"
-                 @onerror="UseInlinePreviewFallback"
-                 draggable="false" />
+        <div class="mac-canvas-surface" style="@SurfaceStyle" @ref="surfaceElement">
+            @if (Scene is not null)
+            {
+                @if (IsBitmapResource(Scene.BaseUrl))
+                {
+                    <canvas @key="@($"base-bitmap:{Scene.Frame.BaseSurfaceVersion}")"
+                            class="mac-canvas-base wm-scene-bitmap"
+                            data-scene-bitmap-key="@BitmapResourceKey(Scene.BaseUrl)"
+                            aria-label="@($"{Editor.Draft.Name} 模板背景")"></canvas>
+                }
+                else
+                {
+                    <img @key="@($"base:{Scene.Frame.BaseSurfaceVersion}")"
+                         class="mac-canvas-base wm-scene-image"
+                         src="@Scene.BaseUrl"
+                         alt="@Editor.Draft.Name 模板背景"
+                         draggable="false" />
+                }
+                <div class="mac-canvas-layer-root" style="@OverlayStyle">
+                    @foreach (var presentation in Scene.Layers.Where(item => item.Layer.ParentId is null))
+                    {
+                        @RenderSceneNode(presentation)
+                    }
+                </div>
+            }
+            else
+            {
+                <img @key="PreviewElementKey"
+                     class="mac-canvas-preview wm-scene-image"
+                     src="@DisplayedPreviewUrl"
+                     alt="@Editor.Draft.Name 模板预览"
+                     @onerror="UseInlinePreviewFallback"
+                     draggable="false" />
+            }
             <div class="mac-canvas-overlay-root" style="@OverlayStyle" @ref="overlayElement"></div>
         </div>
     }
@@ -52,12 +81,14 @@
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public string PreviewUrl { get; set; } = string.Empty;
+    [Parameter] public WMDesignScenePresentation? Scene { get; set; }
     [Parameter] public double Zoom { get; set; } = 1;
     [Parameter] public bool AllowViewportPan { get; set; } = true;
     [Parameter] public EventCallback<double> ZoomChanged { get; set; }
     [Parameter] public EventCallback SaveRequested { get; set; }
 
     private ElementReference viewportElement;
+    private ElementReference surfaceElement;
     private ElementReference overlayElement;
     private IJSObjectReference? module;
     private IJSObjectReference? editorReference;
@@ -74,6 +105,7 @@
     private string? canvasInteractionControlId;
     private string observedPreviewUrl = string.Empty;
     private WMDesignRenderResult? observedRenderResult;
+    private WMDesignScenePresentation? observedScene;
     private string inlinePreviewUrl = string.Empty;
     private long previewElementVersion;
     private long? panPointerId;
@@ -83,6 +115,8 @@
     private double panOriginY;
     private double panX;
     private double panY;
+    private string lastSnapKey = string.Empty;
+    private DateTime lastSnapAtUtc;
 
     private string DisplayedPreviewUrl => string.IsNullOrWhiteSpace(inlinePreviewUrl)
         ? PreviewUrl
@@ -91,7 +125,8 @@
     private string PreviewElementKey => $"preview:{previewElementVersion}:{(!string.IsNullOrWhiteSpace(inlinePreviewUrl) ? "fallback" : "source")}";
 
     private bool HasScene => RenderResult is { CanvasWidth: > 0, CanvasHeight: > 0 }
-        && !string.IsNullOrWhiteSpace(DisplayedPreviewUrl);
+        && (Scene is { BaseUrl.Length: > 0 }
+            || !string.IsNullOrWhiteSpace(DisplayedPreviewUrl));
 
     private string SurfaceStyle => string.Create(CultureInfo.InvariantCulture,
         $"width:{RenderResult?.CanvasWidth * Zoom ?? 0:0.###}px;height:{RenderResult?.CanvasHeight * Zoom ?? 0:0.###}px;--pan-x:{panX:0.###}px;--pan-y:{panY:0.###}px;");
@@ -106,6 +141,93 @@
         }
     }
 
+    private string LayerStyle(WMDesignSceneLayer layer)
+    {
+        var current = layer.Bounds.Transform ?? new WMTransform();
+        var raster = layer.RasterTransform ?? current;
+        var scaleX = Math.Abs(raster.ScaleX) < .000001
+            ? 1
+            : current.ScaleX / raster.ScaleX;
+        var scaleY = Math.Abs(raster.ScaleY) < .000001
+            ? 1
+            : current.ScaleY / raster.ScaleY;
+        var rotation = current.Rotation - raster.Rotation;
+        return string.Create(CultureInfo.InvariantCulture,
+            $"left:{layer.SurfaceBounds.X * Zoom:0.###}px;top:{layer.SurfaceBounds.Y * Zoom:0.###}px;width:{layer.SurfaceBounds.Width * Zoom:0.###}px;height:{layer.SurfaceBounds.Height * Zoom:0.###}px;z-index:{layer.ZIndex};transform-origin:center;transform:rotate({rotation:0.###}deg) scale({scaleX:0.###},{scaleY:0.###});");
+    }
+
+    private string LogicalGroupStyle(WMDesignSceneLayer layer)
+    {
+        var transform = layer.Bounds.Transform ?? new WMTransform();
+        var offsetX = layer.Bounds.ParentWidth * transform.OffsetXPercent / 100d * Zoom;
+        var offsetY = layer.Bounds.ParentHeight * transform.OffsetYPercent / 100d * Zoom;
+        return string.Create(CultureInfo.InvariantCulture,
+            $"left:{layer.Bounds.X * Zoom:0.###}px;top:{layer.Bounds.Y * Zoom:0.###}px;width:{layer.Bounds.Width * Zoom:0.###}px;height:{layer.Bounds.Height * Zoom:0.###}px;z-index:{layer.ZIndex};overflow:{(layer.Overflow == WMOverflow.Hidden ? "hidden" : "visible")};transform:translate({offsetX:0.###}px,{offsetY:0.###}px) rotate({transform.Rotation:0.###}deg) scale({transform.ScaleX:0.###},{transform.ScaleY:0.###});");
+    }
+
+    private string BackdropStyle(WMDesignSceneLayer layer)
+    {
+        var transform = layer.Bounds.Transform ?? new WMTransform();
+        var offsetX = layer.Bounds.ParentWidth * transform.OffsetXPercent / 100d * Zoom;
+        var offsetY = layer.Bounds.ParentHeight * transform.OffsetYPercent / 100d * Zoom;
+        return string.Create(CultureInfo.InvariantCulture,
+            $"left:{layer.Bounds.X * Zoom:0.###}px;top:{layer.Bounds.Y * Zoom:0.###}px;width:{layer.Bounds.Width * Zoom:0.###}px;height:{layer.Bounds.Height * Zoom:0.###}px;z-index:{layer.ZIndex};border-radius:{layer.CornerRadius * Zoom:0.###}px;backdrop-filter:blur({layer.BackdropBlurRadius * Zoom:0.###}px);-webkit-backdrop-filter:blur({layer.BackdropBlurRadius * Zoom:0.###}px);transform:translate({offsetX:0.###}px,{offsetY:0.###}px) rotate({transform.Rotation:0.###}deg) scale({transform.ScaleX:0.###},{transform.ScaleY:0.###});");
+    }
+
+    private static bool IsBitmapResource(string? value) =>
+        value?.StartsWith("wmbitmap:", StringComparison.Ordinal) == true;
+
+    private static string BitmapResourceKey(string? value) =>
+        IsBitmapResource(value) ? value!["wmbitmap:".Length..] : string.Empty;
+
+    private RenderFragment RenderSceneNode(WMDesignSceneLayerPresentation presentation) => @<text>
+        @{
+            var layer = presentation.Layer;
+        }
+        @if (!layer.HasSurface)
+        {
+            <div @key="@($"group:{layer.NodeId}:{Scene?.Frame.Revision}")"
+                 class="mac-canvas-logical-group"
+                 data-scene-group-id="@layer.NodeId"
+                 style="@LogicalGroupStyle(layer)">
+                @foreach (var child in Scene?.Layers.Where(item => item.Layer.ParentId == layer.NodeId) ?? [])
+                {
+                    @RenderSceneNode(child)
+                }
+            </div>
+        }
+        else
+        {
+            @if (layer.CompositeMode == WMDesignSceneCompositeMode.Backdrop)
+            {
+                <div @key="@($"backdrop:{layer.NodeId}:{layer.SurfaceVersion}")"
+                     class="mac-canvas-backdrop"
+                     data-scene-control-id="@layer.NodeId"
+                     style="@BackdropStyle(layer)"></div>
+            }
+            @if (IsBitmapResource(presentation.SurfaceUrl))
+            {
+                <canvas @key="@($"layer-bitmap:{layer.NodeId}:{layer.SurfaceVersion}")"
+                        class="mac-canvas-scene-layer wm-scene-bitmap"
+                        data-scene-control-id="@layer.NodeId"
+                        data-scene-backdrop="@(layer.CompositeMode == WMDesignSceneCompositeMode.Backdrop ? "true" : "false")"
+                        data-scene-bitmap-key="@BitmapResourceKey(presentation.SurfaceUrl)"
+                        style="@LayerStyle(layer)"></canvas>
+            }
+            else
+            {
+                <img @key="@($"layer:{layer.NodeId}:{layer.SurfaceVersion}")"
+                     class="mac-canvas-scene-layer wm-scene-image"
+                     data-scene-control-id="@layer.NodeId"
+                     data-scene-backdrop="@(layer.CompositeMode == WMDesignSceneCompositeMode.Backdrop ? "true" : "false")"
+                     src="@presentation.SurfaceUrl"
+                     alt=""
+                     style="@LayerStyle(layer)"
+                     draggable="false" />
+            }
+        }
+    </text>;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (disposed || !HasScene) return;
@@ -117,8 +239,9 @@
             if (editorReference is null)
             {
                 dotNetReference = DotNetObjectReference.Create(this);
+                var interactionProfile = await InteractionProfiles.GetAsync();
                 editorReference = await module.InvokeAsync<IJSObjectReference>(
-                    "createEditor", overlayElement, dotNetReference);
+                    "createEditor", overlayElement, dotNetReference, interactionProfile);
             }
 
             if (initialFitPending)
@@ -127,6 +250,7 @@
                 await FitAsync();
             }
 
+            await module.InvokeVoidAsync("bindSceneBitmaps", surfaceElement);
             await SynchronizeSceneAsync();
         }
         catch (JSDisconnectedException)
@@ -140,9 +264,11 @@
     protected override void OnParametersSet()
     {
         if (ReferenceEquals(observedRenderResult, RenderResult)
+            && ReferenceEquals(observedScene, Scene)
             && string.Equals(observedPreviewUrl, PreviewUrl, StringComparison.Ordinal)) return;
 
         observedRenderResult = RenderResult;
+        observedScene = Scene;
         observedPreviewUrl = PreviewUrl;
         inlinePreviewUrl = string.Empty;
         previewElementVersion++;
@@ -180,6 +306,10 @@
     {
         if (editorReference is null || RenderResult is null) return;
 
+        // A draft revision is published before its asynchronous scene result.
+        // Rebuilding from the previous RenderResult here briefly restores the
+        // old bounds after pointer-up. Keep the JS-committed geometry visible
+        // until a new authoritative RenderResult instance arrives.
         if (!ReferenceEquals(appliedRenderResult, RenderResult))
         {
             var nextResult = RenderResult;
@@ -218,6 +348,7 @@
     {
         var transform = bounds.Transform ?? new WMTransform();
         var control = WMControlTree.Find(Editor.Draft, bounds.ControlId);
+        var sceneLayer = Scene?.Frame.Layers.FirstOrDefault(layer => layer.NodeId == bounds.ControlId);
         var absolute = control?.Style.Position == WMPosition.Absolute
             || (Editor.Draft.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion
                 && bounds.ParentId is null
@@ -238,14 +369,56 @@
             transform.ScaleY,
             transform.Rotation,
             absolute,
-            bounds.IsLocked,
-            bounds.IsVisible);
+            control?.IsLocked ?? bounds.IsLocked,
+            control?.Enabled ?? bounds.IsVisible,
+            sceneLayer?.HasSurface == true,
+            sceneLayer?.CompositeMode == WMDesignSceneCompositeMode.Backdrop);
     }
 
     [JSInvokable]
     public Task SelectCanvasControl(string controlId)
     {
         Editor.Select(controlId);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task ReportEditorPointer(
+        string pointerType,
+        bool hasHover,
+        bool finePointer)
+    {
+        InteractionProfiles.ObservePointer(pointerType, hasHover, finePointer);
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task CommitViewportGesture(
+        double deltaX,
+        double deltaY,
+        double scale)
+    {
+        if (!double.IsFinite(deltaX)
+            || !double.IsFinite(deltaY)
+            || !double.IsFinite(scale)
+            || scale <= 0)
+            return;
+        panX += deltaX;
+        panY += deltaY;
+        await SetZoomAsync(Zoom * scale);
+    }
+
+    [JSInvokable]
+    public Task NotifyCanvasSnap(string snapKey)
+    {
+        var now = DateTime.UtcNow;
+        if (!string.Equals(lastSnapKey, snapKey, StringComparison.Ordinal)
+            || now - lastSnapAtUtc > TimeSpan.FromMilliseconds(500))
+        {
+            lastSnapKey = snapKey;
+            lastSnapAtUtc = now;
+            HapticFeedback.Perform();
+        }
         return Task.CompletedTask;
     }
 
@@ -265,7 +438,12 @@
         try
         {
             Editor.Select(controlId);
-            Editor.BeginTransaction(IsAbsoluteNode(control) ? "画布变换" : "调整流式顺序");
+            Editor.BeginTransaction(
+                IsAbsoluteNode(control) ? "画布变换" : "调整流式顺序",
+                IsAbsoluteNode(control)
+                    ? WMTemplateChangeKind.Geometry
+                    : WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order,
+                [controlId]);
             canvasInteractionActive = true;
             canvasInteractionControlId = controlId;
             return Task.FromResult(true);
@@ -304,7 +482,10 @@
                     ? interaction
                     : MacCanvasBoundary.ConstrainTransform(bounds, interaction);
                 MacCanvasTransform.Apply(control, constrainedInteraction);
-                Editor.CommitTransaction();
+                Editor.CommitTransaction(
+                    string.Equals(interaction.Kind, "drag", StringComparison.Ordinal)
+                        ? WMTemplateChangeKind.None
+                        : WMTemplateChangeKind.Paint);
                 var appliedTransform = control.Style.Position == WMPosition.Absolute
                     ? control.Style.Transform
                     : control.EnsureTransform();
@@ -526,14 +707,20 @@
 
         if (!keyboardMoveActive)
         {
-            Editor.BeginTransaction("键盘移动");
+            Editor.BeginTransaction(
+                "键盘移动",
+                WMTemplateChangeKind.Geometry,
+                [selectedId]);
             keyboardMoveActive = true;
             keyboardMoveControlId = selectedId;
         }
         else if (!string.Equals(keyboardMoveControlId, selectedId, StringComparison.Ordinal))
         {
             CommitKeyboardMove();
-            Editor.BeginTransaction("键盘移动");
+            Editor.BeginTransaction(
+                "键盘移动",
+                WMTemplateChangeKind.Geometry,
+                [selectedId]);
             keyboardMoveActive = true;
             keyboardMoveControlId = selectedId;
         }
@@ -558,7 +745,7 @@
                 transform.ScaleX,
                 transform.ScaleY,
                 transform.Rotation);
-        });
+        }, WMTemplateChangeKind.Geometry, [selectedId]);
     }
 
     private void CommitKeyboardMove()
@@ -587,11 +774,28 @@
             await editorReference.InvokeVoidAsync("cancelInteraction");
     }
 
+    public async Task<bool> CancelCurrentGestureAsync()
+    {
+        var active = keyboardMoveActive || canvasInteractionActive;
+        if (!active && editorReference is not null)
+            active = await editorReference.InvokeAsync<bool>("hasActiveInteraction");
+        if (!active && panPointerId is null) return false;
+
+        if (panPointerId is { } pointerId)
+            await EndPanAsync(pointerId);
+        await CancelActiveInteractionAsync();
+        return true;
+    }
+
     private void DuplicateSelected()
     {
         if (Editor.SelectedControlId is not { Length: > 0 } selectedId) return;
         IWMControl? copy = null;
-        Editor.Mutate("复制图层", () => copy = WMControlTree.Duplicate(Editor.Draft, selectedId));
+        Editor.Mutate(
+            "复制图层",
+            () => copy = WMControlTree.Duplicate(Editor.Draft, selectedId),
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint,
+            [selectedId]);
         if (copy is not null) Editor.Select(copy.ID);
     }
 
@@ -614,7 +818,7 @@
         {
             if (!WMControlTree.Remove(Editor.Draft, selectedId))
                 throw new InvalidOperationException("无法删除图层。");
-        });
+        }, WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint, [selectedId]);
         Editor.Select(parentId);
     }
 

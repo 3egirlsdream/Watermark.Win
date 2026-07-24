@@ -98,6 +98,9 @@ public sealed class WMControlTreeTests
         var parent = Assert.Single(canvas.Children);
         Assert.Equal("新容器", parent.Name);
         Assert.Same(text, Assert.Single(parent.Controls));
+        var placeholder = Assert.Single(text.Exifs);
+        Assert.Equal("文字", placeholder.Prefix);
+        Assert.True(string.IsNullOrWhiteSpace(placeholder.Key));
     }
 
     [Fact]

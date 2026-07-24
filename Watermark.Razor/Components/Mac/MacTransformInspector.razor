@@ -16,11 +16,11 @@
     <MacInspectorSwitch Label="保持宽高比例" Value="@keepRatio" Disabled="@ReadOnly" ValueChanged="ToggleKeepRatio" />
 
     <MacInspectorSlider Label="水平缩放" Value="@Transform.ScaleX" Min="0.1" Max="4" Step="0.01" Unit="×"
-                        Disabled="@ReadOnly" ValueChanged="SetScaleX" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                        Disabled="@ReadOnly" ValueChanged="SetScaleX" InteractionStarted="BeginRasterInteractionAsync" InteractionEnded="EndInteractionAsync" />
     <MacInspectorSlider Label="垂直缩放" Value="@Transform.ScaleY" Min="0.1" Max="4" Step="0.01" Unit="×"
-                        Disabled="@ReadOnly" ValueChanged="SetScaleY" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                        Disabled="@ReadOnly" ValueChanged="SetScaleY" InteractionStarted="BeginRasterInteractionAsync" InteractionEnded="EndInteractionAsync" />
     <MacInspectorSlider Label="旋转" Value="@Transform.Rotation" Min="-180" Max="179.9" Step="0.1" Unit="°"
-                        Disabled="@ReadOnly" ValueChanged="SetRotation" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                        Disabled="@ReadOnly" ValueChanged="SetRotation" InteractionStarted="BeginRasterInteractionAsync" InteractionEnded="EndInteractionAsync" />
 </section>
 
 @code {
@@ -32,15 +32,24 @@
     private static readonly WMTransform Identity = new();
     private bool keepRatio = true;
     private bool interactionActive;
+    private bool interactionRequiresRaster;
     private bool UsesStyleTransform => Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion
         && Control.Style.Position == WMPosition.Absolute;
     private WMTransform Transform => UsesStyleTransform ? Control.Style.Transform : Control.Transform ?? Identity;
 
-    private Task BeginInteractionAsync()
+    private Task BeginInteractionAsync() => BeginInteractionAsync(requiresRaster: false);
+
+    private Task BeginRasterInteractionAsync() => BeginInteractionAsync(requiresRaster: true);
+
+    private Task BeginInteractionAsync(bool requiresRaster)
     {
         if (ReadOnly || interactionActive) return Task.CompletedTask;
-        Editor.BeginTransaction("调整变换");
+        Editor.BeginTransaction(
+            "调整变换",
+            WMTemplateChangeKind.Geometry,
+            [Control.ID]);
         interactionActive = true;
+        interactionRequiresRaster = requiresRaster;
         return Task.CompletedTask;
     }
 
@@ -48,7 +57,11 @@
     {
         if (!interactionActive) return Task.CompletedTask;
         interactionActive = false;
-        Editor.CommitTransaction();
+        var additionalKind = interactionRequiresRaster
+            ? WMTemplateChangeKind.Paint
+            : WMTemplateChangeKind.None;
+        interactionRequiresRaster = false;
+        Editor.CommitTransaction(additionalKind);
         return Task.CompletedTask;
     }
 
@@ -96,7 +109,7 @@
                     transform.ScaleY,
                     transform.Rotation));
             MacCanvasTransform.Apply(Control, constrained);
-        });
+        }, WMTemplateChangeKind.Geometry, [Control.ID]);
     }
 
     private void Reset()
@@ -112,6 +125,6 @@
             transform.Rotation = 0;
             if (!UsesStyleTransform && Control is WMContainer container)
                 container.Angle = 0;
-        });
+        }, WMTemplateChangeKind.Geometry | WMTemplateChangeKind.Paint, [Control.ID]);
     }
 }
