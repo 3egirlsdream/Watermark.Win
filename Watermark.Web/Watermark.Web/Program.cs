@@ -1,5 +1,6 @@
 using Watermark.Web.Client.Pages;
 using Watermark.Web.Components;
+using Watermark.Razor.Components.Compatibility;
 using Watermark.Shared.Models;
 namespace Watermark.Web
 {
@@ -18,7 +19,7 @@ namespace Watermark.Web
                 new WMStaticImagingCapabilities(WMImagingCapabilities.Unsupported));
             builder.Services.AddSingleton<IWMPhotoMetadataReader, WMMetadataExtractorReader>();
             builder.Services.AddSingleton<IWMColorEngine>(new WMUnsupportedColorEngine("Web 端不提供原生 OpenColorIO 调色。"));
-            builder.Services.AddMasaBlazor();
+            builder.Services.AddWatermarkMasaBlazor();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
