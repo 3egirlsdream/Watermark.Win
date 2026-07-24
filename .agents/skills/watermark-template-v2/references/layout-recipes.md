@@ -32,9 +32,9 @@
 
 不要为了视觉微调把动态正文改成 Absolute。先调整父容器的 Flex，再用 Gap 和局部 Margin。
 
-## 2. 顶级区域锚定
+## 2. 顶级节点锚定
 
-顶级容器固定 `Position=Absolute`。
+顶级容器、文字、Logo 和线条固定 `Position=Absolute`。独立组件直接挂在画布根级；只有需要连续排版、共同背景、裁切、阴影或整体效果时才创建容器。
 
 ### 左下区域
 
@@ -59,6 +59,19 @@ Right=2%, Top=2%, Width=10%, Height=10%, ZIndex=10
 将 `Width/Height` 设为 Auto，同时设置 `Top=Right=Bottom=Left=0%`。只对 Absolute 节点使用。
 
 避免同时保存互相矛盾的定位来源。例如右锚定节点优先写 `Right`，不再写 `Left`；需要拉伸时才同时写两侧 inset。
+
+### 直属文字、Logo 和线条
+
+```text
+PNode.PID="0"
+Position=Absolute
+Left/Top 或 Right/Bottom 指定画布锚点
+Width/Height 使用 Auto 或 Percent
+```
+
+四种根节点共享同一组 `SEQ`，不得分别从 0 编号。根级文字、Logo、线条不需要透明容器。动态内容需要和兄弟连续推挤、一起裁切或共同应用背景效果时，应放入根容器并使用 Flex。
+
+画布尺寸手柄默认修改原生尺寸：Logo/容器改 `Style.Width/Height`，文字左右改文本框宽度、角点改字号；横线长度写 `Style.Width`、竖线长度写 `Style.Height`，另一轴保持 Auto 并由 `Thickness` 决定。横线只显示左右长度手柄，竖线只显示上下长度手柄；调整长度时保持垂直轴坐标和对侧端点稳定。细线的透明拖动命中区不参与布局或序列化。`Transform.ScaleX/Y` 仅用于 Absolute 节点的高级整体缩放，不能用来代替普通 Resize。
 
 ## 3. 左侧连续信息
 
@@ -252,7 +265,7 @@ Overflow=Hidden
 - 分割线起止点；
 - 动态文本变长前后的锚定边漂移。
 
-全图 MAE 容易被照片主体稀释，只能作为附加指标，不能据此宣布模板一致。
+全图 MAE 容易被照片主体稀释，只能作为附加指标，不能据此宣布模板一致。根级叶子还需核对其场景层 `ParentId=null`，选择框 Bounds 与最终像素一致。
 
 ## 11. 动态内容压力测试
 

@@ -210,7 +210,7 @@
       "Style": {
         "Position": 0,
         "Width": { "Unit": 0, "Value": 0.0 },
-        "Height": { "Unit": 0, "Value": 0.0 },
+        "Height": { "Unit": 1, "Value": 70.0 },
         "Margin": { "Bottom": 0.0, "Left": 0.0, "Right": 0.0, "Top": 0.0 },
         "Padding": { "Bottom": 0.0, "Left": 0.0, "Right": 0.0, "Top": 0.0 },
         "Overflow": 1,

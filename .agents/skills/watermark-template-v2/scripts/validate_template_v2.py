@@ -129,7 +129,7 @@ def validate_style(findings: list[Finding], node: dict[str, Any], node_id: str, 
         return
     position = add_enum(findings, f"{location}.Position", style.get("Position"), {"static": 0, "absolute": 1}, {0, 1})
     if root and position != 1:
-        findings.append(Finding("error", f"{location}.Position", "顶级容器必须为 Absolute。"))
+        findings.append(Finding("error", f"{location}.Position", "根节点必须为 Absolute。"))
     if not root and position is None:
         return
     validate_length(findings, f"{location}.Width", style.get("Width"), 0, 100)
@@ -266,15 +266,13 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
             continue
         parent_of[node_id] = pid
         children.setdefault(pid, []).append((seq, node_id))
-        if kind == "Containers" and pid == "0":
+        if pid == "0":
             root_ids.add(node_id)
 
     for node_id, (kind, node) in by_id.items():
         pid = parent_of.get(node_id)
         if pid is None:
             continue
-        if kind != "Containers" and pid == "0":
-            findings.append(Finding("error", f"node[{node_id}].PNode.PID", "叶子节点不能直接挂在画布上。"))
         if pid != "0" and pid not in container_ids:
             findings.append(Finding("error", f"node[{node_id}].PNode.PID", f"父容器不存在：{pid}。"))
         if kind == "Containers" and pid != "0":
@@ -334,9 +332,26 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
         elif kind == "Logos":
             add_range(findings, f"node[{node_id}].Percent", node.get("Percent"), 0.01, 100)
         elif kind == "Lines":
-            add_range(findings, f"node[{node_id}].Percent", node.get("Percent"), 1, 100)
             add_range(findings, f"node[{node_id}].Thickness", node.get("Thickness"), 1, 20)
-            add_enum(findings, f"node[{node_id}].Orientation", node.get("Orientation"), {"horizontal": 0, "vertical": 1}, {0, 1})
+            orientation = add_enum(findings, f"node[{node_id}].Orientation", node.get("Orientation"), {"horizontal": 0, "vertical": 1}, {0, 1})
+            if orientation is not None:
+                length_name, thickness_name = ("Width", "Height") if orientation == 0 else ("Height", "Width")
+                length = style.get(length_name) if isinstance(style.get(length_name), dict) else {}
+                thickness_axis = style.get(thickness_name) if isinstance(style.get(thickness_name), dict) else {}
+                length_unit = enum_value(length.get("Unit"), {"auto": 0, "percent": 1})
+                thickness_unit = enum_value(thickness_axis.get("Unit"), {"auto": 0, "percent": 1})
+                if length_unit != 1:
+                    findings.append(Finding(
+                        "error",
+                        f"node[{node_id}].Style.{length_name}",
+                        "V2 分割线长度必须写入方向对应的 Percent 轴。",
+                    ))
+                if thickness_unit != 0:
+                    findings.append(Finding(
+                        "error",
+                        f"node[{node_id}].Style.{thickness_name}",
+                        "分割线粗细轴必须保持 Auto；粗细只由 Thickness 控制。",
+                    ))
             validate_color(findings, f"node[{node_id}].Color", node.get("Color"))
 
     for pid, entries in children.items():
@@ -348,10 +363,20 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
         expected = list(range(len(entries)))
         actual = sorted(seq for seq, _ in entries)
         if actual != expected:
-            findings.append(Finding("warning", f"parent[{pid}].SEQ", f"建议连续编号 0..{max(0, len(entries)-1)}，当前为 {actual}。"))
+            findings.append(Finding("error", f"parent[{pid}].SEQ", f"必须连续编号 0..{max(0, len(entries)-1)}，当前为 {actual}。"))
 
     if not root_ids:
-        findings.append(Finding("error", "$.Containers", "至少需要一个 PID=0 的顶级容器。"))
+        findings.append(Finding("error", "$", "至少需要一个 PID=0 的根节点。"))
+
+    for node_id in by_id:
+        seen: set[str] = set()
+        current = node_id
+        while current != "0":
+            if current in seen:
+                findings.append(Finding("error", f"node[{node_id}].PNode.PID", "层级存在循环引用。"))
+                break
+            seen.add(current)
+            current = parent_of.get(current, "0")
 
     validate_assets(findings, nodes, template_dir, strict_assets)
     return findings
