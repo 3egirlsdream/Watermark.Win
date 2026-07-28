@@ -12,12 +12,13 @@ namespace Watermark.Andorid;
 public sealed class WMAndroidPhotoPicker : IWMPhotoPicker
 {
     public async Task<IReadOnlyList<IWMPhotoImportSource>> PickMultipleAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        WMPhotoPickerPresentation presentation = WMPhotoPickerPresentation.SystemPhotoPicker)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var activity = MainActivity.Instance
             ?? throw new InvalidOperationException("Android 主界面尚未就绪。");
-        var uris = await activity.PickImagesAsync(cancellationToken).ConfigureAwait(false);
+        var uris = await activity.PickImagesAsync(cancellationToken, presentation).ConfigureAwait(false);
         if (uris.Count == 0) return [];
 
         var resolver = activity.ContentResolver

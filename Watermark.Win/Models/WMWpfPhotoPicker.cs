@@ -12,7 +12,8 @@ public sealed class WMWpfPhotoPicker : IWMPhotoPicker
         "照片与 RAW|*.jpg;*.jpeg;*.png;*.heic;*.heif;*.tif;*.tiff;*.dng;*.cr2;*.cr3;*.nef;*.nrw;*.arw;*.sr2;*.raf;*.orf;*.rw2;*.rwl;*.pef;*.3fr;*.iiq;*.srw|普通照片|*.jpg;*.jpeg;*.png;*.heic;*.heif;*.tif;*.tiff|RAW 照片|*.dng;*.cr2;*.cr3;*.nef;*.nrw;*.arw;*.sr2;*.raf;*.orf;*.rw2;*.rwl;*.pef;*.3fr;*.iiq;*.srw";
 
     public Task<IReadOnlyList<IWMPhotoImportSource>> PickMultipleAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        WMPhotoPickerPresentation presentation = WMPhotoPickerPresentation.SystemPhotoPicker)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var dialog = new Microsoft.Win32.OpenFileDialog

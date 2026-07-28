@@ -109,7 +109,8 @@ namespace Watermark.Andorid
 		}
 
 		public Task<IReadOnlyList<Android.Net.Uri>> PickImagesAsync(
-			CancellationToken cancellationToken = default)
+			CancellationToken cancellationToken = default,
+			WMPhotoPickerPresentation presentation = WMPhotoPickerPresentation.SystemPhotoPicker)
 		{
 			var completion = new TaskCompletionSource<IReadOnlyList<Android.Net.Uri>>(
 				TaskCreationOptions.RunContinuationsAsynchronously);
@@ -124,7 +125,7 @@ namespace Watermark.Andorid
 			{
 				try
 				{
-					StartActivityForResult(CreatePhotoPickerIntent(), PickImagesRequestCode);
+					StartActivityForResult(CreatePhotoPickerIntent(presentation), PickImagesRequestCode);
 				}
 				catch (Exception ex)
 				{
@@ -135,11 +136,21 @@ namespace Watermark.Andorid
 			return AwaitPhotoPickerRequestAsync(completion, cancellationToken);
 		}
 
-		private Intent CreatePhotoPickerIntent()
+		private Intent CreatePhotoPickerIntent(WMPhotoPickerPresentation presentation)
 		{
 			var packageManager = PackageManager;
+			// ACTION_PICK hands off to the installed gallery application. Unlike the
+			// Android 13+ Photo Picker bottom sheet, gallery apps normally expose a
+			// full-screen camera roll / album browser. Its exact presentation remains
+			// owned by the device and the chosen gallery application.
+			var galleryPicker = CreateGalleryPickerIntent();
+			if (presentation == WMPhotoPickerPresentation.FullScreenGallery
+				&& packageManager is not null
+				&& galleryPicker.ResolveActivity(packageManager) is not null)
+				return galleryPicker;
+
 			// Android 13+ uses the privacy-preserving system Photo Picker. It shows
-			// albums/photos directly and does not require storage permissions.
+			// the standard system bottom sheet and does not require storage permissions.
 			if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
 			{
 				var photoPicker = new Intent("android.provider.action.PICK_IMAGES");
@@ -150,12 +161,9 @@ namespace Watermark.Andorid
 					return photoPicker;
 			}
 
-			// API 24-32 opens an installed gallery/media application. ACTION_OPEN_DOCUMENT
-			// remains the last-resort fallback only when no gallery can handle ACTION_PICK.
-			var galleryPicker = new Intent(Intent.ActionPick);
-			galleryPicker.SetDataAndType(MediaStore.Images.Media.ExternalContentUri, "image/*");
-			galleryPicker.PutExtra(Intent.ExtraAllowMultiple, true);
-			galleryPicker.AddFlags(ActivityFlags.GrantReadUriPermission);
+			// API 24-32, and full-screen-gallery fallback on newer systems, open an
+			// installed gallery/media application. ACTION_OPEN_DOCUMENT remains the
+			// last-resort fallback only when no gallery can handle ACTION_PICK.
 			if (packageManager is not null && galleryPicker.ResolveActivity(packageManager) is not null)
 				return galleryPicker;
 
@@ -165,6 +173,15 @@ namespace Watermark.Andorid
 			documentPicker.PutExtra(Intent.ExtraAllowMultiple, true);
 			documentPicker.AddFlags(ActivityFlags.GrantReadUriPermission);
 			return documentPicker;
+		}
+
+		private static Intent CreateGalleryPickerIntent()
+		{
+			var galleryPicker = new Intent(Intent.ActionPick);
+			galleryPicker.SetDataAndType(MediaStore.Images.Media.ExternalContentUri, "image/*");
+			galleryPicker.PutExtra(Intent.ExtraAllowMultiple, true);
+			galleryPicker.AddFlags(ActivityFlags.GrantReadUriPermission);
+			return galleryPicker;
 		}
 
 		protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)

@@ -20,6 +20,7 @@ V2 的当前版本是 `LayoutSchemaVersion = 2`。布局由 `WMStyle` 和 `WMLay
 
 ```text
 WMCanvasSerialize
+├─ PosterManifest
 ├─ Containers[]
 ├─ Texts[]
 ├─ Logos[]
@@ -27,6 +28,11 @@ WMCanvasSerialize
 ```
 
 每个节点通过 `PNode` 指向父节点。`Global.ReadConfig` 会合并四个数组中的全部根节点，并重建最多两层容器；生成器不得输出更深的容器树。
+
+可替换图片不是新的布局节点。`WMLogo` 或 `WMContainer` 通过
+`PosterMetadata.AssetSlotId` 引用 `PosterManifest.AssetSlots` 中的槽位；槽位保存名称、接受的媒体类型、`Cover/Contain/Fill` 适配策略、是否必填和默认资产标识。一个槽位只能由一个节点拥有。复制节点时必须复制出新的槽位 ID，删除节点时必须清理不再被引用的槽位。
+
+槽位的 `Crop.Settings` 直接使用图片编辑器的 `WMCropSettings`：归一化中心点、可见宽高、90° 旋转、水平/垂直翻转、±45° 拉直和比例预设都由 `WMCropPlanner` 解释。预览和最终模板渲染重放同一矩阵，不生成独立裁切图片。旧模板中的 `Crop.AspectRatio/RotationDegrees` 仅用于读取迁移；新编辑不得继续把它们作为裁切主数据。
 
 ## 2. 顶层配置
 
@@ -44,6 +50,7 @@ WMCanvasSerialize
 | `ImageProperties` | 主图片显示、圆角、阴影、模糊，以及可选的等比覆盖裁切 |
 | `BorderSameWidth` | 外边距等宽配置 |
 | `FrameProperties` | 外框配置 |
+| `PosterManifest` | 海报作者声明的可替换图片槽、主题标签和建议素材分类；没有槽位时保持空集合 |
 | `Containers/Texts/Logos/Lines` | 必须存在且为数组，空类型写 `[]` |
 
 不要在配置里写画布 `Path`；`WMCanvas.Path` 被 `JsonIgnore`，设计图片由应用会话提供。
@@ -201,6 +208,7 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 - `Controls` 在扁平配置中写 `[]` 或省略；层级由 `PNode` 重建。
 - `BackgroundColor` 使用 `#RRGGBBAA`，透明可用 `#00000000`。
 - `Path` 为容器背景资源的模板相对路径。
+- 容器背景允许由使用者替换时，为节点设置 `PosterMetadata.AssetSlotId`，并在顶层 `PosterManifest.AssetSlots` 提供同 ID 的声明；槽位的 `Fit` 描述填充策略，`Crop.Settings` 保存共享图片裁切参数，外部布局几何仍由 `Style` 与容器字段负责。
 - `ContainerProperties` 控制背景图片的裁切、阴影、圆角和模糊。V2 的 `EnableGaussianBlur=true` 会模糊该容器下方已合成的像素，再按容器矩形/圆角裁切；`GaussianDeep` 使用设计像素并随输出比例缩放。
 - 背景模糊通常配合半透明 `BackgroundColor`。若背景色 Alpha 为 `FF`，模糊结果会被不透明填充遮住。
 - V2 排版读取 `Style.FlexDirection/JustifyContent/AlignItems/Gap`。
@@ -221,6 +229,7 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 ### WMLogo
 
 - `Percent` 是 Logo 短边相对画布短边的百分比。
+- 需要让使用者替换图片时，为节点设置 `PosterMetadata.AssetSlotId`，并在顶层 `PosterManifest.AssetSlots` 提供同 ID 的声明；槽位裁切使用共享 `WMCropSettings`，普通固定装饰图无需创建槽位。
 - V2 图片框就是 Logo 的可编辑图像几何：内容填满 `Style.Width/Height`。左右/上下手柄允许只改变一个轴，因此可能产生非等比图像缩放；角点在编辑器比例锁定开启时才等比缩放，不使用 contain 留白。
 - `Path` 使用模板目录内相对路径，不允许逃逸目录。
 - 普通模板渲染时，`AutoSetLogo=true` 会按相机 `Make` 从应用品牌 Logo 目录查找图片。
