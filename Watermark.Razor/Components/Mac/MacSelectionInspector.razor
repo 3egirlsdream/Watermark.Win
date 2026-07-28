@@ -3,11 +3,17 @@
 @using Watermark.Shared.Models
 @implements IDisposable
 
-<aside class="mac-selection-inspector" aria-label="属性检查器">
+<aside class="@InspectorClass" aria-label="属性检查器">
     <header class="selection-header">
         <div class="selection-heading-row">
             <input class="selection-name-input" value="@CurrentName" disabled="@IsReadOnly" @onchange="RenameCurrent" @onkeydown:stopPropagation aria-label="名称" />
             <span class="selection-type">@CurrentTypeName</span>
+            @if (CloseRequested.HasDelegate)
+            {
+                <button type="button" class="selection-close" aria-label="关闭属性面板" @onclick="CloseRequested">
+                    <WmIcon Icon="x" />
+                </button>
+            }
         </div>
         <div class="selection-breadcrumb" title="@Breadcrumb">@Breadcrumb</div>
         @if (SelectedControl is not null)
@@ -32,6 +38,8 @@
     <div class="selection-inspector-scroll" @onkeydown:stopPropagation>
         @if (SelectedControl is null)
         {
+            @if (Show(WMTemplateMobileInspectorSection.Canvas))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>画布</h3></div>
                 <MacInspectorOptionGroup TValue="CanvasType" Label="类型"
@@ -46,79 +54,164 @@
                     <MButton Text Small OnClick="PickCanvasImageAsync">选择</MButton>
                     <MButton Text Small Disabled="@string.IsNullOrWhiteSpace(Editor.Draft.Path)" OnClick="ClearCanvasImage">清除</MButton>
                 </div>
+            </section>
+            }
+
+            @if (Show(WMTemplateMobileInspectorSection.CanvasSize))
+            {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>尺寸</h3></div>
                 <div class="inspector-two-column">
                     <label class="inspector-field"><span>宽度（像素）</span><input type="number" value="@Editor.Draft.CustomWidth" min="1" @oninput="SetCanvasWidth" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
                     <label class="inspector-field"><span>高度（像素）</span><input type="number" value="@Editor.Draft.CustomHeight" min="1" @oninput="SetCanvasHeight" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
                 </div>
                 <label class="inspector-field"><span>画布比例</span><input value="@Editor.Draft.LengthWidthRatio" placeholder="例如 3:2" @oninput="SetCanvasRatio" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
             </section>
+            }
 
+            @if (Show(WMTemplateMobileInspectorSection.CanvasInsetTop)
+                || Show(WMTemplateMobileInspectorSection.CanvasInsetRight)
+                || Show(WMTemplateMobileInspectorSection.CanvasInsetBottom)
+                || Show(WMTemplateMobileInspectorSection.CanvasInsetLeft)
+                || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+            {
             <section class="inspector-group">
-                <div class="inspector-group-heading"><h3>边距（相对画布）</h3></div>
-                <MacInspectorSlider Label="上" Value="@Editor.Draft.BorderThickness.Top" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                <MacInspectorSlider Label="右" Value="@Editor.Draft.BorderThickness.Right" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                <MacInspectorSlider Label="下" Value="@Editor.Draft.BorderThickness.Bottom" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                <MacInspectorSlider Label="左" Value="@Editor.Draft.BorderThickness.Left" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                <div class="inspector-group-heading"><h3>@CanvasInsetHeading</h3></div>
+                @if (Show(WMTemplateMobileInspectorSection.CanvasInsetTop) || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+                {
+                    <MacInspectorSlider Label="上" Value="@Editor.Draft.BorderThickness.Top" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Top = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasInsetRight) || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+                {
+                    <MacInspectorSlider Label="右" Value="@Editor.Draft.BorderThickness.Right" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Right = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasInsetBottom) || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+                {
+                    <MacInspectorSlider Label="下" Value="@Editor.Draft.BorderThickness.Bottom" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Bottom = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasInsetLeft) || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+                {
+                    <MacInspectorSlider Label="左" Value="@Editor.Draft.BorderThickness.Left" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整画布边距", () => Editor.Draft.BorderThickness.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
             </section>
+            }
 
+            @if (Show(WMTemplateMobileInspectorSection.CanvasFrame)
+                || Show(WMTemplateMobileInspectorSection.CanvasFramePadding)
+                || Show(WMTemplateMobileInspectorSection.CanvasFrameCorner)
+                || Show(WMTemplateMobileInspectorSection.CanvasFrameShadow)
+                || Show(WMTemplateMobileInspectorSection.CanvasFrameBlur))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>外框</h3></div>
-                <MacInspectorSwitch Label="启用外框" Value="@Editor.Draft.FrameProperties.Enabled" ValueChanged='value => Mutate("切换外框", () => Editor.Draft.FrameProperties.Enabled = value)' />
-                <MacInspectorSlider Label="外框留白" Value="@Editor.Draft.FrameProperties.BorderPadding" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整外框留白", () => Editor.Draft.FrameProperties.BorderPadding = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                <MacInspectorSwitch Label="背景透明" Value="@Editor.Draft.FrameProperties.BeforeBkTransparent" ValueChanged='value => Mutate("切换外框背景", () => Editor.Draft.FrameProperties.BeforeBkTransparent = value)' />
-                <MacInspectorSwitch Label="圆角" Value="@Editor.Draft.FrameProperties.EnableRadius" ValueChanged='value => Mutate("切换外框圆角", () => Editor.Draft.FrameProperties.EnableRadius = value)' />
-                @if (Editor.Draft.FrameProperties.EnableRadius)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasFrame))
                 {
-                    <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.FrameProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框圆角", () => Editor.Draft.FrameProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    <div class="inspector-switch-grid" aria-label="外框操作">
+                        <MacInspectorSwitch Label="启用外框" Value="@Editor.Draft.FrameProperties.Enabled" ValueChanged='value => Mutate("切换外框", () => Editor.Draft.FrameProperties.Enabled = value)' />
+                        <MacInspectorSwitch Label="背景透明" Value="@Editor.Draft.FrameProperties.BeforeBkTransparent" ValueChanged='value => Mutate("切换外框背景", () => Editor.Draft.FrameProperties.BeforeBkTransparent = value)' />
+                        <MacInspectorSwitch Label="圆角" Value="@Editor.Draft.FrameProperties.EnableRadius" ValueChanged='value => Mutate("切换外框圆角", () => Editor.Draft.FrameProperties.EnableRadius = value)' />
+                        <MacInspectorSwitch Label="阴影" Value="@Editor.Draft.FrameProperties.EnableShadow" ValueChanged='value => Mutate("切换外框阴影", () => Editor.Draft.FrameProperties.EnableShadow = value)' />
+                        <MacInspectorSwitch Label="背景模糊" Value="@Editor.Draft.FrameProperties.EnableGaussianBlur" ValueChanged='value => Mutate("切换外框模糊", () => Editor.Draft.FrameProperties.EnableGaussianBlur = value)' />
+                    </div>
                 }
-                <MacInspectorSwitch Label="阴影" Value="@Editor.Draft.FrameProperties.EnableShadow" ValueChanged='value => Mutate("切换外框阴影", () => Editor.Draft.FrameProperties.EnableShadow = value)' />
-                @if (Editor.Draft.FrameProperties.EnableShadow)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasFramePadding) || Show(WMTemplateMobileInspectorSection.CanvasFrame))
                 {
-                    <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.FrameProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框阴影", () => Editor.Draft.FrameProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                    <MacColorInput Label="阴影颜色" Value="@Editor.Draft.FrameProperties.ShadowColor" ValueChanged='value => Mutate("修改外框阴影颜色", () => Editor.Draft.FrameProperties.ShadowColor = value)' />
+                    <MacInspectorSlider Label="外框留白" Value="@Editor.Draft.FrameProperties.BorderPadding" Min="0" Max="50" Step="1" Unit="%" ValueChanged='value => SetSlider("调整外框留白", () => Editor.Draft.FrameProperties.BorderPadding = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 }
-                <MacInspectorSwitch Label="背景模糊" Value="@Editor.Draft.FrameProperties.EnableGaussianBlur" ValueChanged='value => Mutate("切换外框模糊", () => Editor.Draft.FrameProperties.EnableGaussianBlur = value)' />
-                @if (Editor.Draft.FrameProperties.EnableGaussianBlur)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasFrameCorner) || Show(WMTemplateMobileInspectorSection.CanvasFrame))
                 {
-                    <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.FrameProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框模糊", () => Editor.Draft.FrameProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    @if (Editor.Draft.FrameProperties.EnableRadius)
+                    {
+                        <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.FrameProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框圆角", () => Editor.Draft.FrameProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“外框”中开启圆角后可调整半径。</p> }
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasFrameShadow) || Show(WMTemplateMobileInspectorSection.CanvasFrame))
+                {
+                    @if (Editor.Draft.FrameProperties.EnableShadow)
+                    {
+                        <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.FrameProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框阴影", () => Editor.Draft.FrameProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                        <MacColorInput Label="阴影颜色" Value="@Editor.Draft.FrameProperties.ShadowColor" ValueChanged='value => Mutate("修改外框阴影颜色", () => Editor.Draft.FrameProperties.ShadowColor = value)' />
+                    }
+                    else { <p class="inspector-operation-hint">在“外框”中开启阴影后可调整样式。</p> }
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasFrameBlur) || Show(WMTemplateMobileInspectorSection.CanvasFrame))
+                {
+                    @if (Editor.Draft.FrameProperties.EnableGaussianBlur)
+                    {
+                        <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.FrameProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整外框模糊", () => Editor.Draft.FrameProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“外框”中开启背景模糊后可调整强度。</p> }
                 }
             </section>
+            }
 
+            @if (Show(WMTemplateMobileInspectorSection.CanvasImage)
+                || Show(WMTemplateMobileInspectorSection.CanvasImageCorner)
+                || Show(WMTemplateMobileInspectorSection.CanvasImageShadow)
+                || Show(WMTemplateMobileInspectorSection.CanvasImageBlur))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>图片效果</h3></div>
-                <MacInspectorSwitch Label="显示图片" Value="@Editor.Draft.ImageProperties.Show" ValueChanged='value => Mutate("切换默认图片", () => Editor.Draft.ImageProperties.Show = value)' />
-                <MacInspectorSwitch Label="阴影" Value="@Editor.Draft.ImageProperties.EnableShadow" ValueChanged='value => Mutate("切换阴影", () => Editor.Draft.ImageProperties.EnableShadow = value)' />
-                @if (Editor.Draft.ImageProperties.EnableShadow)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasImage))
                 {
-                    <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.ImageProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整阴影", () => Editor.Draft.ImageProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                    <MacColorInput Label="阴影颜色" Value="@Editor.Draft.ImageProperties.ShadowColor" ValueChanged='value => Mutate("修改阴影颜色", () => Editor.Draft.ImageProperties.ShadowColor = value)' />
+                    <div class="inspector-switch-grid" aria-label="图片操作">
+                        <MacInspectorSwitch Label="显示图片" Value="@Editor.Draft.ImageProperties.Show" ValueChanged='value => Mutate("切换默认图片", () => Editor.Draft.ImageProperties.Show = value)' />
+                        <MacInspectorSwitch Label="圆角" Value="@Editor.Draft.ImageProperties.EnableRadius" ValueChanged='value => Mutate("切换圆角", () => Editor.Draft.ImageProperties.EnableRadius = value)' />
+                        <MacInspectorSwitch Label="阴影" Value="@Editor.Draft.ImageProperties.EnableShadow" ValueChanged='value => Mutate("切换阴影", () => Editor.Draft.ImageProperties.EnableShadow = value)' />
+                        <MacInspectorSwitch Label="高斯模糊" Value="@Editor.Draft.ImageProperties.EnableGaussianBlur" ValueChanged='value => Mutate("切换模糊", () => Editor.Draft.ImageProperties.EnableGaussianBlur = value)' />
+                    </div>
                 }
-                <MacInspectorSwitch Label="圆角" Value="@Editor.Draft.ImageProperties.EnableRadius" ValueChanged='value => Mutate("切换圆角", () => Editor.Draft.ImageProperties.EnableRadius = value)' />
-                @if (Editor.Draft.ImageProperties.EnableRadius)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasImageCorner) || Show(WMTemplateMobileInspectorSection.CanvasImage))
                 {
-                    <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.ImageProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整圆角", () => Editor.Draft.ImageProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    @if (Editor.Draft.ImageProperties.EnableRadius)
+                    {
+                        <MacInspectorSlider Label="圆角半径" Value="@Editor.Draft.ImageProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整圆角", () => Editor.Draft.ImageProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启圆角后可调整半径。</p> }
                 }
-                <MacInspectorSwitch Label="高斯模糊" Value="@Editor.Draft.ImageProperties.EnableGaussianBlur" ValueChanged='value => Mutate("切换模糊", () => Editor.Draft.ImageProperties.EnableGaussianBlur = value)' />
-                @if (Editor.Draft.ImageProperties.EnableGaussianBlur)
+                @if (Show(WMTemplateMobileInspectorSection.CanvasImageShadow) || Show(WMTemplateMobileInspectorSection.CanvasImage))
                 {
-                    <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.ImageProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整模糊", () => Editor.Draft.ImageProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    @if (Editor.Draft.ImageProperties.EnableShadow)
+                    {
+                        <MacInspectorSlider Label="阴影范围" Value="@Editor.Draft.ImageProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整阴影", () => Editor.Draft.ImageProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                        <MacColorInput Label="阴影颜色" Value="@Editor.Draft.ImageProperties.ShadowColor" ValueChanged='value => Mutate("修改阴影颜色", () => Editor.Draft.ImageProperties.ShadowColor = value)' />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启阴影后可调整样式。</p> }
+                }
+                @if (Show(WMTemplateMobileInspectorSection.CanvasImageBlur) || Show(WMTemplateMobileInspectorSection.CanvasImage))
+                {
+                    @if (Editor.Draft.ImageProperties.EnableGaussianBlur)
+                    {
+                        <MacInspectorSlider Label="模糊强度" Value="@Editor.Draft.ImageProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" ValueChanged='value => SetSlider("调整模糊", () => Editor.Draft.ImageProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启高斯模糊后可调整强度。</p> }
                 }
             </section>
+            }
         }
         else if (SelectedControl is WMContainer container)
         {
+            @if (Show(WMTemplateMobileInspectorSection.Container))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>容器</h3></div>
-                <div class="resource-field">
-                    <div><span>图片</span><small>@ResourceName(container.Path)</small></div>
-                    <MButton Text Small Disabled="@IsReadOnly" OnClick="() => PickContainerImageAsync(container)">选择</MButton>
-                    <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(container.Path))" OnClick='() => Mutate("清除容器图片", () => container.Path = string.Empty)'>清除</MButton>
-                </div>
+                @if (Section is null)
+                {
+                    <div class="resource-field">
+                        <div><span>图片</span><small>@ResourceName(container.Path)</small></div>
+                        <MButton Text Small Disabled="@IsReadOnly" OnClick="() => RequestAssetEditAsync(container)">资源库</MButton>
+                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(container.Path))" OnClick='() => Mutate("清除容器图片", () => container.Path = string.Empty)'>清除</MButton>
+                    </div>
+                }
+                <MacInspectorSwitch Label="允许作为可替换图片槽"
+                                    Value="@(WMPosterAssetSlots.Find(Editor.Draft, container) is not null)"
+                                    Disabled="@IsReadOnly"
+                                    ValueChanged="value => SetAssetSlotAsync(container, value)" />
                 @if (Editor.Draft.CanvasType == CanvasType.Split)
                 {
                     <MacInspectorSwitch Label="固定图片" Value="@container.ContainerProperties.FixImage" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换固定图片", () => container.ContainerProperties.FixImage = value)' />
                 }
-                <MacInspectorSwitch Label="裁切图片" Value="@container.EnableCrop" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换图片裁切", () => container.EnableCrop = value)' />
                 <MacColorInput Label="背景颜色" Value="@container.BackgroundColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改容器背景", () => container.BackgroundColor = value)' />
                 @if (!IsV2)
                 {
@@ -132,8 +225,9 @@
                     <MacInspectorSlider Label="高度" Value="@container.HeightPercent" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整容器高度", () => container.HeightPercent = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 }
             </section>
-            <MacNodeStyleInspector Editor="@Editor" Control="@container" ReadOnly="@IsReadOnly" />
-            @if (!IsV2 && !IsTopLevelContainer(container))
+            }
+            <MacNodeStyleInspector Editor="@Editor" Control="@container" ReadOnly="@IsReadOnly" Section="@Section" />
+            @if (!IsV2 && !IsTopLevelContainer(container) && Show(WMTemplateMobileInspectorSection.Spacing))
             {
                 <section class="inspector-group">
                     <div class="inspector-group-heading"><h3>外边距（相对容器）</h3></div>
@@ -143,71 +237,116 @@
                     <MacInspectorSlider Label="左" Value="@container.Margin.Left" Min="-100" Max="100" Step="0.1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整外边距", () => container.Margin.Left = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 </section>
             }
+            @if (Show(WMTemplateMobileInspectorSection.ContainerImage)
+                || Show(WMTemplateMobileInspectorSection.ContainerCorner)
+                || Show(WMTemplateMobileInspectorSection.ContainerShadow)
+                || Show(WMTemplateMobileInspectorSection.ContainerBlur))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>容器效果</h3></div>
-                <MacInspectorSwitch Label="显示图片" Value="@container.ContainerProperties.Show" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换容器图片", () => container.ContainerProperties.Show = value)' />
-                <MacInspectorSwitch Label="阴影" Value="@container.ContainerProperties.EnableShadow" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换阴影", () => container.ContainerProperties.EnableShadow = value)' />
-                @if (container.ContainerProperties.EnableShadow)
+                @if (Show(WMTemplateMobileInspectorSection.ContainerImage))
                 {
-                    <MacInspectorSlider Label="阴影范围" Value="@container.ContainerProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整阴影", () => container.ContainerProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
-                    <MacColorInput Label="阴影颜色" Value="@container.ContainerProperties.ShadowColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改阴影颜色", () => container.ContainerProperties.ShadowColor = value)' />
+                    <div class="inspector-switch-grid" aria-label="容器图片操作">
+                        <MacInspectorSwitch Label="显示图片" Value="@container.ContainerProperties.Show" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换容器图片", () => container.ContainerProperties.Show = value)' />
+                        <MacInspectorSwitch Label="裁切图片" Value="@container.EnableCrop" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换图片裁切", () => container.EnableCrop = value)' />
+                        <MacInspectorSwitch Label="圆角" Value="@container.ContainerProperties.EnableRadius" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换圆角", () => container.ContainerProperties.EnableRadius = value)' />
+                        <MacInspectorSwitch Label="阴影" Value="@container.ContainerProperties.EnableShadow" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换阴影", () => container.ContainerProperties.EnableShadow = value)' />
+                        <MacInspectorSwitch Label="背景模糊" Value="@container.ContainerProperties.EnableGaussianBlur" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换背景模糊", () => container.ContainerProperties.EnableGaussianBlur = value)' />
+                    </div>
                 }
-                <MacInspectorSwitch Label="圆角" Value="@container.ContainerProperties.EnableRadius" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换圆角", () => container.ContainerProperties.EnableRadius = value)' />
-                @if (container.ContainerProperties.EnableRadius)
+                @if (Show(WMTemplateMobileInspectorSection.ContainerCorner) || Show(WMTemplateMobileInspectorSection.ContainerImage))
                 {
-                    <MacInspectorSlider Label="圆角半径" Value="@container.ContainerProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整圆角", () => container.ContainerProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    @if (container.ContainerProperties.EnableRadius)
+                    {
+                        <MacInspectorSlider Label="圆角半径" Value="@container.ContainerProperties.CornerRadius" Min="0" Max="200" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整圆角", () => container.ContainerProperties.CornerRadius = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启圆角后可调整半径。</p> }
                 }
-                <MacInspectorSwitch Label="背景模糊" Value="@container.ContainerProperties.EnableGaussianBlur" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换背景模糊", () => container.ContainerProperties.EnableGaussianBlur = value)' />
-                @if (container.ContainerProperties.EnableGaussianBlur)
+                @if (Show(WMTemplateMobileInspectorSection.ContainerShadow) || Show(WMTemplateMobileInspectorSection.ContainerImage))
                 {
-                    <MacInspectorSlider Label="模糊强度" Value="@container.ContainerProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整模糊", () => container.ContainerProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    @if (container.ContainerProperties.EnableShadow)
+                    {
+                        <MacInspectorSlider Label="阴影范围" Value="@container.ContainerProperties.ShadowRange" Min="0" Max="100" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整阴影", () => container.ContainerProperties.ShadowRange = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                        <MacColorInput Label="阴影颜色" Value="@container.ContainerProperties.ShadowColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改阴影颜色", () => container.ContainerProperties.ShadowColor = value)' />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启阴影后可调整样式。</p> }
+                }
+                @if (Show(WMTemplateMobileInspectorSection.ContainerBlur) || Show(WMTemplateMobileInspectorSection.ContainerImage))
+                {
+                    @if (container.ContainerProperties.EnableGaussianBlur)
+                    {
+                        <MacInspectorSlider Label="模糊强度" Value="@container.ContainerProperties.GaussianDeep" Min="0" Max="60" Step="1" Unit="像素" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整模糊", () => container.ContainerProperties.GaussianDeep = (int)value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                    }
+                    else { <p class="inspector-operation-hint">在“图片”中开启背景模糊后可调整强度。</p> }
                 }
             </section>
+            }
             @if ((!IsV2 && IsTopLevelContainer(container)) || (IsV2 && container.Style.Position == WMPosition.Absolute))
             {
-                <MacTransformInspector Editor="@Editor" Control="@container" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" />
+                <MacTransformInspector Editor="@Editor" Control="@container" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" Section="@Section" />
             }
         }
         else if (SelectedControl is WMText text)
         {
+            @if (Show(WMTemplateMobileInspectorSection.TextTypography))
+            {
             <section class="inspector-group">
-                <div class="inspector-group-heading"><h3>文字</h3></div>
-                <div class="resource-field">
-                    <div><span>拍摄信息配置</span><small>@text.Exifs.Count 项</small></div>
-                    <MButton Text Small Disabled="@IsReadOnly" OnClick="() => OpenExifEditor(text)">配置</MButton>
+                <div class="inspector-group-heading"><h3>@(Section is null ? "文字" : "字体")</h3></div>
+                @if (Section is null)
+                {
+                    <div class="resource-field">
+                        <div><span>文字内容</span><small>@TextContentSummary(text)</small></div>
+                        <MButton Text Small Disabled="@IsReadOnly" OnClick="() => RequestTextContentEditAsync(text)">编辑</MButton>
+                    </div>
+                }
+                <div class="text-font-picker-row">
+                    <div class="inspector-field">
+                        <span>字体</span>
+                        <WmSelect TValue="string"
+                                  Value="@text.FontFamily"
+                                  ValueChanged="value => SetFontFamily(text, value)"
+                                  Options="@FontOptions"
+                                  AriaLabel="字体"
+                                  Disabled="@IsReadOnly" />
+                    </div>
+                    <MButton Text Small Class="wide-secondary-command" Disabled="@IsReadOnly" OnClick="ImportFontAsync">导入</MButton>
                 </div>
-                <label class="inspector-field">
-                    <span>字体</span>
-                    <MSelect Value="@text.FontFamily" ValueChanged="value => SetFontFamily(text, value)"
-                             Items="@FontOptions" ItemText="item => item.Label" ItemValue="item => item.Value"
-                             TValue="string" TItemValue="string" TItem="SelectOption<string>"
-                             Dense HideDetails="true" Disabled="@IsReadOnly" />
-                </label>
-                <MButton Text Small Class="wide-secondary-command" Disabled="@IsReadOnly" OnClick="ImportFontAsync">导入字体</MButton>
                 <MacInspectorSlider Label="字号" Value="@text.FontSize" Min="@(IsV2 ? 0.1 : 6)" Max="@(IsV2 ? 25 : 160)" Step="@(IsV2 ? 0.1 : 1)" Unit="@(IsV2 ? "% 短边" : "像素")" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整字号", () => text.FontSize = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 @if (IsV2)
                 {
                     <MacInspectorSlider Label="字距" Value="@text.LetterSpacing" Min="-1" Max="3" Step="0.05" Unit="% 短边" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整字距", () => text.LetterSpacing = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 }
                 <MacColorInput Label="文字颜色" Value="@text.FontColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改文字颜色", () => text.FontColor = value)' />
+            </section>
+            }
+
+            @if (Show(WMTemplateMobileInspectorSection.TextFormat))
+            {
+            <section class="inspector-group">
+                <div class="inspector-group-heading"><h3>排版</h3></div>
                 <div class="text-style-buttons" role="group" aria-label="文字样式">
-                    <MButton Text Small Class="@(text.IsBold ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换粗体", () => text.IsBold = !text.IsBold)'><WmIcon Size="15" Icon="text-b" />粗体</MButton>
-                    <MButton Text Small Class="@(text.IsItalic ? "selected" : null)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换斜体", () => text.IsItalic = !text.IsItalic)'><WmIcon Size="15" Icon="text-italic" />斜体</MButton>
+                    <MButton Text Small Class="@TextStyleClass(text.IsBold)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换粗体", () => text.IsBold = !text.IsBold)'><WmIcon Size="16" Icon="text-b" />粗体</MButton>
+                    <MButton Text Small Class="@TextStyleClass(text.IsItalic)" Disabled="@IsReadOnly" OnClick='() => Mutate("切换斜体", () => text.IsItalic = !text.IsItalic)'><WmIcon Size="16" Icon="text-italic" />斜体</MButton>
                 </div>
                 <MacInspectorSwitch Label="自动换行" Value="@text.TextWrap" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换文字换行", () => text.TextWrap = value)' />
-                <label class="inspector-field">
+                <div class="inspector-field">
                     <span>关联容器</span>
-                    <MSelect Value="@(text.BindedContainerId ?? string.Empty)" ValueChanged="value => SetBoundContainer(text, value)"
-                             Items="@BoundContainerOptions" ItemText="item => item.Label" ItemValue="item => item.Value"
-                             TValue="string" TItemValue="string" TItem="SelectOption<string>"
-                             Dense HideDetails="true" Disabled="@IsReadOnly" />
-                </label>
+                    <WmSelect TValue="string"
+                              Value="@(text.BindedContainerId ?? string.Empty)"
+                              ValueChanged="value => SetBoundContainer(text, value)"
+                              Options="@BoundContainerOptions"
+                              AriaLabel="关联容器"
+                              Disabled="@IsReadOnly" />
+                </div>
             </section>
-            <MacNodeStyleInspector Editor="@Editor" Control="@text" ReadOnly="@IsReadOnly" />
+            }
+            <MacNodeStyleInspector Editor="@Editor" Control="@text" ReadOnly="@IsReadOnly" Section="@Section" />
             @if (IsV2 && text.Style.Position == WMPosition.Absolute)
             {
-                <MacTransformInspector Editor="@Editor" Control="@text" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" />
+                <MacTransformInspector Editor="@Editor" Control="@text" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" Section="@Section" />
             }
+            @if (Show(WMTemplateMobileInspectorSection.TextBorder))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>文字边框</h3></div>
                 <MacInspectorSwitch Label="启用边框" Value="@text.EnableBorder" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换文字边框", () => text.EnableBorder = value)' />
@@ -219,7 +358,8 @@
                     <MacColorInput Label="边框颜色" Value="@text.BorderColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改边框颜色", () => text.BorderColor = value)' />
                 }
             </section>
-            @if (!IsV2)
+            }
+            @if (!IsV2 && Show(WMTemplateMobileInspectorSection.Spacing))
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>外边距（相对容器）</h3></div>
@@ -232,30 +372,49 @@
         }
         else if (SelectedControl is WMLogo logo)
         {
+            @if (Show(WMTemplateMobileInspectorSection.Logo)
+                || Show(WMTemplateMobileInspectorSection.LogoSizing))
+            {
             <section class="inspector-group">
-                <div class="inspector-group-heading"><h3>图标</h3></div>
-                <div class="resource-field">
-                    <div><span>图片</span><small>@ResourceName(logo.Path)</small></div>
-                    <MButton Text Small Disabled="@IsReadOnly" OnClick="() => PickLogoImageAsync(logo)">选择</MButton>
-                    <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" OnClick='() => Mutate("清除图标", () => logo.Path = string.Empty)'>清除</MButton>
-                </div>
-                <MacInspectorSwitch Label="白色转透明" Value="@logo.White2Transparent" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换白色转透明", () => logo.White2Transparent = value)' />
-                <MacInspectorSwitch Label="自动识别品牌 Logo" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动识别品牌 Logo", () => logo.AutoSetLogo = value)' />
-                @if (IsV2)
+                <div class="inspector-group-heading"><h3>@(Section == WMTemplateMobileInspectorSection.LogoSizing ? "缩放" : "图标")</h3></div>
+                @if (Section is null)
+                {
+                    <div class="resource-field">
+                        <div><span>图片</span><small>@ResourceName(logo.Path)</small></div>
+                        <MButton Text Small Disabled="@IsReadOnly" OnClick="() => RequestAssetEditAsync(logo)">资源库</MButton>
+                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" OnClick='() => Mutate("清除图标", () => logo.Path = string.Empty)'>清除</MButton>
+                    </div>
+                }
+                @if (Show(WMTemplateMobileInspectorSection.Logo))
+                {
+                    <div class="inspector-switch-grid" aria-label="图片操作">
+                        <MacInspectorSwitch Label="允许作为可替换图片槽"
+                                            Value="@(WMPosterAssetSlots.Find(Editor.Draft, logo) is not null)"
+                                            Disabled="@IsReadOnly"
+                                            ValueChanged="value => SetAssetSlotAsync(logo, value)" />
+                        <MacInspectorSwitch Label="白色转透明" Value="@logo.White2Transparent" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换白色转透明", () => logo.White2Transparent = value)' />
+                        <MacInspectorSwitch Label="自动识别品牌 Logo" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动识别品牌 Logo", () => logo.AutoSetLogo = value)' />
+                    </div>
+                }
+                @if (IsV2 && Show(WMTemplateMobileInspectorSection.LogoSizing))
                 {
                     <MacInspectorSwitch Label="角点调整保持图片比例"
                                         Value="@Editor.IsLogoAspectRatioLocked(logo.ID)"
                                         Disabled="@IsReadOnly"
                                         ValueChanged="value => Editor.SetLogoAspectRatioLocked(logo.ID, value)" />
                 }
-                <MacInspectorSlider Label="尺寸" Value="@logo.Percent" Min="@(IsV2 ? 0.1 : 1)" Max="100" Step="@(IsV2 ? 0.1 : 1)" Unit="@(IsV2 ? "% 短边" : "% 容器短边")" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整图标尺寸", () => logo.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                @if (Show(WMTemplateMobileInspectorSection.LogoSizing))
+                {
+                    <MacInspectorSlider Label="尺寸" Value="@logo.Percent" Min="@(IsV2 ? 0.1 : 1)" Max="100" Step="@(IsV2 ? 0.1 : 1)" Unit="@(IsV2 ? "% 短边" : "% 容器短边")" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整图标尺寸", () => logo.Percent = value)' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
+                }
             </section>
-            <MacNodeStyleInspector Editor="@Editor" Control="@logo" ReadOnly="@IsReadOnly" />
+            }
+            <MacNodeStyleInspector Editor="@Editor" Control="@logo" ReadOnly="@IsReadOnly" Section="@Section" />
             @if (IsV2 && logo.Style.Position == WMPosition.Absolute)
             {
-                <MacTransformInspector Editor="@Editor" Control="@logo" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" />
+                <MacTransformInspector Editor="@Editor" Control="@logo" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" Section="@Section" />
             }
-            @if (!IsV2)
+            @if (!IsV2 && Show(WMTemplateMobileInspectorSection.Spacing))
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>外边距（相对容器）</h3></div>
@@ -268,6 +427,8 @@
         }
         else if (SelectedControl is WMLine line)
         {
+            @if (Show(WMTemplateMobileInspectorSection.Line))
+            {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>分割线</h3></div>
                 <MacInspectorOptionGroup TValue="Orientation" Label="方向" Value="@line.Orientation" Options="@OrientationOptions"
@@ -276,12 +437,13 @@
                 <MacInspectorSlider Label="长度" Value="@(IsV2 ? line.LengthPercent : line.Percent)" Min="1" Max="100" Step="1" Unit="%" Disabled="@IsReadOnly" ValueChanged='value => SetSlider("调整分割线长度", () => SetLineLength(line, value))' InteractionStarted="BeginSliderAsync" InteractionEnded="EndSliderAsync" />
                 <MacColorInput Label="颜色" Value="@line.Color" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改分割线颜色", () => line.Color = value)' />
             </section>
-            <MacNodeStyleInspector Editor="@Editor" Control="@line" ReadOnly="@IsReadOnly" />
+            }
+            <MacNodeStyleInspector Editor="@Editor" Control="@line" ReadOnly="@IsReadOnly" Section="@Section" />
             @if (IsV2 && line.Style.Position == WMPosition.Absolute)
             {
-                <MacTransformInspector Editor="@Editor" Control="@line" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" />
+                <MacTransformInspector Editor="@Editor" Control="@line" Bounds="@SelectedBounds" ReadOnly="@IsReadOnly" Section="@Section" />
             }
-            @if (!IsV2)
+            @if (!IsV2 && Show(WMTemplateMobileInspectorSection.Spacing))
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>外边距（相对容器）</h3></div>
@@ -310,13 +472,17 @@
 
     @if (showExifEditor && SelectedControl is WMText exifText)
     {
-        <MDialog Persistent @bind-Value="showExifEditor" ContentStyle="width:min(920px,92vw);height:min(700px,88vh);">
+        <MDialog Persistent
+                 @bind-Value="showExifEditor"
+                 ContentStyle="@(Global.IsMobile
+                    ? "width:100vw;height:100vh;max-width:none;max-height:none;margin:0;"
+                    : "width:min(980px,94vw);height:min(760px,92vh);")">
             <div class="exif-editor-shell" style="height:100%;min-height:0;overflow:hidden;position:relative;">
-                <MButton Text Small Class="exif-cancel-command" OnClick="CancelExifEditor">取消</MButton>
                 <ExifConfig mText="@exifText"
                             CanvasType="@Editor.Draft.CanvasType"
                             ContainerId2Name="@ContainerNames"
-                            OnClose="CompleteExifEditor" />
+                            OnClose="CompleteExifEditor"
+                            OnCancel="CancelExifEditor" />
             </div>
         </MDialog>
     }
@@ -326,12 +492,20 @@
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public WMDesignFunc DesignFunc { get; set; }
+    [Parameter] public WMTemplateMobileInspectorSection? Section { get; set; }
+    [Parameter] public EventCallback<WMText> TextContentEditRequested { get; set; }
+    [Parameter] public EventCallback<IWMControl> AssetEditRequested { get; set; }
 
     private bool sliderInteractionActive;
+    private static string TextStyleClass(bool active) => active
+        ? "text-style-toggle is-active"
+        : "text-style-toggle";
     private bool showExifEditor;
     private IWMControl pendingDelete;
     private int pendingDescendantCount;
     private List<string> fontNames = [];
+
+    [Parameter] public EventCallback CloseRequested { get; set; }
 
     private IWMControl SelectedControl => string.IsNullOrWhiteSpace(Editor.SelectedControlId)
         ? null
@@ -341,6 +515,18 @@
         : RenderResult?.Bounds.FirstOrDefault(bounds => bounds.ControlId == Editor.SelectedControlId);
     private bool IsV2 => Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion;
     private bool IsReadOnly => SelectedControl?.IsLocked == true;
+    private bool Show(WMTemplateMobileInspectorSection section) => Section is null || Section == section;
+    private string CanvasInsetHeading => Section switch
+    {
+        WMTemplateMobileInspectorSection.CanvasInsetTop => "上边距（相对画布）",
+        WMTemplateMobileInspectorSection.CanvasInsetRight => "右边距（相对画布）",
+        WMTemplateMobileInspectorSection.CanvasInsetBottom => "下边距（相对画布）",
+        WMTemplateMobileInspectorSection.CanvasInsetLeft => "左边距（相对画布）",
+        _ => "边距（相对画布）"
+    };
+    private string InspectorClass => Section is null
+        ? "mac-selection-inspector"
+        : "mac-selection-inspector mobile-inspector-section";
     private bool IsTopLevelContainer(WMContainer container) => Editor.Draft.Children.Any(root => ReferenceEquals(root, container));
     private string CurrentName => SelectedControl is null ? Editor.Draft.Name : ControlName(SelectedControl);
     private string CurrentTypeName => SelectedControl is null ? "画布" : TypeName(SelectedControl);
@@ -351,14 +537,14 @@
         .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
         .GroupBy(container => container.ID)
         .ToDictionary(group => group.Key, group => ControlName(group.First()));
-    private List<SelectOption<string>> FontOptions =>
-        [new(Global.DefaultFont, "默认字体"), .. fontNames
+    private List<WmSelectOption<string>> FontOptions =>
+        [new("默认字体", Global.DefaultFont), .. fontNames
             .Where(font => !string.Equals(font, Global.DefaultFont, StringComparison.Ordinal))
-            .Select(font => new SelectOption<string>(font, font))];
-    private List<SelectOption<string>> BoundContainerOptions =>
-        [new(string.Empty, "不关联"), .. ContainerNames
+            .Select(font => new WmSelectOption<string>(font, font))];
+    private List<WmSelectOption<string>> BoundContainerOptions =>
+        [new("不关联", string.Empty), .. ContainerNames
             .OrderBy(item => item.Value, StringComparer.CurrentCulture)
-            .Select(item => new SelectOption<string>(item.Key, item.Value))];
+            .Select(item => new WmSelectOption<string>(item.Value, item.Key))];
 
     protected override void OnInitialized() => ReloadFonts();
 
@@ -515,6 +701,17 @@
     private Task SetBoundContainer(WMText text, string value) =>
         MutateAsync("修改关联容器", () => text.BindedContainerId = value);
 
+    private Task SetAssetSlotAsync(IWMControl control, bool value)
+    {
+        if (IsReadOnly) return Task.CompletedTask;
+        Editor.Mutate(
+            "切换可替换图片槽",
+            () => WMPosterAssetSlots.SetReplaceable(Editor.Draft, control, value),
+            WMTemplateChangeKind.Selection,
+            [control.ID]);
+        return Task.CompletedTask;
+    }
+
     private Task MutateAsync(string label, Action mutation)
     {
         Mutate(label, mutation);
@@ -534,11 +731,23 @@
 
     private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () => Editor.Draft.Path = string.Empty, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
 
-    private async Task PickContainerImageAsync(WMContainer container) =>
-        await RunPickerTransactionAsync("选择容器图片", () => DesignFunc?.SelectContainer?.Invoke(container) ?? Task.CompletedTask);
+    private async Task RequestAssetEditAsync(IWMControl control)
+    {
+        if (AssetEditRequested.HasDelegate)
+        {
+            await AssetEditRequested.InvokeAsync(control);
+            return;
+        }
 
-    private async Task PickLogoImageAsync(WMLogo logo) =>
-        await RunPickerTransactionAsync("选择图标", () => DesignFunc?.SelectLogo?.Invoke(logo) ?? Task.CompletedTask);
+        if (control is WMContainer container)
+            await RunPickerTransactionAsync(
+                "选择容器图片",
+                () => DesignFunc?.SelectContainer?.Invoke(container) ?? Task.CompletedTask);
+        else if (control is WMLogo logo)
+            await RunPickerTransactionAsync(
+                "选择图标",
+                () => DesignFunc?.SelectLogo?.Invoke(logo) ?? Task.CompletedTask);
+    }
 
     private async Task RunPickerTransactionAsync(string label, Func<Task> picker)
     {
@@ -578,6 +787,17 @@
         showExifEditor = true;
     }
 
+    private async Task RequestTextContentEditAsync(WMText text)
+    {
+        if (TextContentEditRequested.HasDelegate)
+        {
+            await TextContentEditRequested.InvokeAsync(text);
+            return;
+        }
+
+        OpenExifEditor(text);
+    }
+
     private void CompleteExifEditor(WMText text)
     {
         showExifEditor = false;
@@ -601,6 +821,13 @@
     private static string TextValue(ChangeEventArgs args) => args.Value?.ToString() ?? string.Empty;
     private static int IntValue(ChangeEventArgs args, int fallback, int minimum = int.MinValue) => int.TryParse(TextValue(args), out var value) ? Math.Max(value, minimum) : fallback;
     private static string ResourceName(string path) => string.IsNullOrWhiteSpace(path) ? "未选择" : Path.GetFileName(path);
+    private static string TextContentSummary(WMText text)
+    {
+        var value = WMTextContentPreview.Resolve(text.Exifs);
+        if (string.IsNullOrWhiteSpace(value)) return "尚未添加文字";
+        value = value.Replace("\r", " ").Replace("\n", " ");
+        return value.Length > 42 ? $"{value[..42]}…" : value;
+    }
     private static string ControlName(IWMControl control) => string.IsNullOrWhiteSpace(control.Name) ? TypeName(control) : control.Name;
     private static string TypeName(IWMControl control) => control switch { WMContainer => "容器", WMText => "文字", WMLogo => "图标", WMLine => "分割线", _ => "图层" };
     private static readonly List<MacInspectorOption<CanvasType>> CanvasTypeOptions =
@@ -628,8 +855,6 @@
         new(VerticalAlignment.Center, "居中", "align-center-vertical"),
         new(VerticalAlignment.Bottom, "底部", "align-bottom")
     ];
-
-    private sealed record SelectOption<T>(T Value, string Label);
 
     private static int DescendantCount(IWMControl control)
     {

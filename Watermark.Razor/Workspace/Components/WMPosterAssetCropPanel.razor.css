@@ -1,0 +1,232 @@
+.poster-asset-crop-panel {
+    background: #fbfbfc;
+    color: #202c3a;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.asset-crop-header {
+    align-items: center;
+    background: rgba(251, 251, 252, .98);
+    border-bottom: 1px solid #e1e4e9;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    min-height: 58px;
+    padding: 7px 12px;
+}
+
+.asset-crop-header > div {
+    min-width: 0;
+}
+
+.asset-crop-header h2 {
+    color: #20242a;
+    font-size: 15px;
+    font-weight: 760;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.asset-crop-header small {
+    color: #85858a;
+    display: block;
+    font-size: 10px;
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asset-crop-back {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #5f6065;
+    cursor: pointer;
+    display: inline-flex;
+    height: 38px;
+    justify-content: center;
+    width: 38px;
+}
+
+.asset-crop-back:hover {
+    background: #efeff0;
+}
+
+.asset-crop-step {
+    background: #f0f0f1;
+    border-radius: 999px;
+    color: #73747a;
+    font-size: 10px;
+    font-weight: 720;
+    padding: 5px 9px;
+}
+
+.asset-crop-body {
+    display: grid;
+    gap: 11px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 12px 14px;
+}
+
+.asset-crop-section {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+.asset-crop-section legend {
+    align-items: center;
+    color: #5c5d63;
+    display: flex;
+    font-size: 10px;
+    font-weight: 720;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    padding: 0;
+    width: 100%;
+}
+
+.asset-fit-options {
+    display: grid;
+    gap: 7px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.asset-fit-options button {
+    align-items: center;
+    background: #f2f2f3;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #66676d;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: 6px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    min-height: 48px;
+    padding: 6px 8px;
+    text-align: left;
+}
+
+.asset-fit-options button span {
+    display: grid;
+    min-width: 0;
+}
+
+.asset-fit-options button strong {
+    color: #34353a;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.asset-fit-options button small {
+    color: #8a8b90;
+    font-size: 9px;
+    line-height: 1.3;
+}
+
+.asset-fit-options button.is-active {
+    background: #fff8d9;
+    border-color: #e4be1b;
+    color: #594900;
+}
+
+.asset-fit-options button.is-active strong {
+    color: #332b00;
+}
+
+.asset-crop-footer {
+    align-items: center;
+    background: #fbfbfc;
+    border-top: 1px solid #e3e3e5;
+    display: flex;
+    justify-content: space-between;
+    min-height: 54px;
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+}
+
+.asset-crop-footer button {
+    align-items: center;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    justify-content: center;
+}
+
+.asset-crop-reset {
+    background: transparent;
+    border-radius: 8px !important;
+    color: #68696f;
+    font-size: 11px !important;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 10px;
+}
+
+.asset-crop-reset:hover {
+    background: #efeff0;
+}
+
+.asset-crop-complete {
+    background: #ffc400;
+    border-radius: 7px;
+    color: #292300;
+    font-size: 12px !important;
+    font-weight: 760 !important;
+    height: 36px;
+    min-width: 88px;
+    padding: 0 18px;
+}
+
+@media (min-width: 861px) {
+    .asset-crop-body {
+        align-content: start;
+        padding: 18px;
+    }
+
+    .asset-crop-footer {
+        padding: 12px 18px;
+    }
+}
+
+@media (max-width: 860px), (pointer: coarse) {
+    .poster-asset-crop-panel {
+        background: #fbfbfc;
+        grid-template-rows: minmax(0, 1fr) auto auto;
+    }
+
+    .asset-crop-header {
+        display: none;
+    }
+
+    .asset-crop-body {
+        align-content: start;
+        gap: 11px;
+        overflow-y: auto;
+        padding: 8px 12px 7px;
+    }
+
+    .asset-crop-footer {
+        align-items: flex-start;
+        min-height: 54px;
+        padding: 8px 12px;
+    }
+
+    .asset-crop-reset {
+        min-height: 34px;
+    }
+
+    .asset-crop-complete {
+        height: 34px;
+        min-width: 78px;
+    }
+}

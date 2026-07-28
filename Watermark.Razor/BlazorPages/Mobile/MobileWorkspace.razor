@@ -254,6 +254,7 @@ else
                 ColorEngineAvailable="@ColorEngineAvailable" ColorEngineUnavailableReason="@ColorEngineUnavailableReason"
                 ModeChanged="SetModeAsync" EditConfirmed="ConfirmMobileEditAsync" PresentationChanged="OnMobilePresentationChangedAsync" ScopeChanged="ChangeApplyScopeAsync"
                 TemplatePreviewChanged="PreviewTemplateAsync"
+                TemplateDesignerRequested="OpenWorkspaceTemplateDesignerAsync"
                 ColorPreviewChanged="HandleColorPreviewAsync"
                 ChooseReferenceRequested="ChooseColorReferenceAsync" ClearReferenceRequested="ClearColorReferenceAsync"
                 SavePresetRequested="SaveColorPresetAsync" DeletePresetRequested="DeleteColorPresetAsync"
@@ -310,6 +311,17 @@ else
             </div>
         }
     </section>
+
+    @if (showWorkspaceTemplateDesigner)
+    {
+        <MDialog Persistent @bind-Value="showWorkspaceTemplateDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">
+            <WMTemplateDesigner @ref="workspaceTemplateDesigner"
+                                CanvasId="@workspaceDesignerTemplateId"
+                                InitialMobileToolId="@workspaceDesignerInitialToolId"
+                                OnClose="CloseWorkspaceTemplateDesignerAsync"
+                                OnSaved="OnWorkspaceTemplateSavedAsync" />
+        </MDialog>
+    }
 }
 
 @code {
@@ -322,12 +334,14 @@ else
     private double originalStartX;
     private double originalStartY;
     private WMTemplateDesigner? templateDesigner;
+    private WMTemplateDesigner? workspaceTemplateDesigner;
     private WMMobileWorkspaceDock? mobileDock;
     private IDisposable? systemBackRegistration;
     private bool opened;
     private bool bypassNavigationGuard;
     private bool showExportCompletion;
     private bool showExportDrawer;
+    private bool showWorkspaceTemplateDesigner;
     private bool recovering;
     private bool mobileEditConfirming;
     private readonly string visibilityScope = $"workspace-template-library-{Guid.NewGuid():N}";
@@ -338,6 +352,8 @@ else
         WMMobileEditorTool.TemplatePicker,
         WMMobileEditorSpace.Medium);
     private WMMobileEditorTool? pendingToolScroll = WMMobileEditorTool.TemplatePicker;
+    private string workspaceDesignerTemplateId = string.Empty;
+    private string? workspaceDesignerInitialToolId;
     private string? completedExportJobId;
     private WMWorkspaceState State => Controller.State;
     private WMWorkspacePreviewPresentation PreviewPresentation => State.IsComparingOriginal
@@ -819,6 +835,14 @@ else
             await Controller.CloseAsync();
             return;
         }
+        if (showWorkspaceTemplateDesigner)
+        {
+            context.PreventNavigation();
+            if (workspaceTemplateDesigner is null
+                || await workspaceTemplateDesigner.CanNavigateAwayAsync())
+                await CloseWorkspaceTemplateDesignerAsync();
+            return;
+        }
         if (showExportDrawer)
         {
             context.PreventNavigation();
@@ -891,6 +915,31 @@ else
         NavigationHistory.GoBack(returnPath);
     }
 
+    private Task OpenWorkspaceTemplateDesignerAsync(WMTemplateDesignerLaunchRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.TemplateId) || HasActiveMobileDraft)
+            return Task.CompletedTask;
+
+        workspaceDesignerTemplateId = request.TemplateId;
+        workspaceDesignerInitialToolId = request.InitialMobileToolId;
+        showWorkspaceTemplateDesigner = true;
+        return Task.CompletedTask;
+    }
+
+    private Task CloseWorkspaceTemplateDesignerAsync()
+    {
+        showWorkspaceTemplateDesigner = false;
+        workspaceTemplateDesigner = null;
+        workspaceDesignerInitialToolId = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnWorkspaceTemplateSavedAsync(string templateId)
+    {
+        TemplateLibrary.Invalidate(templateId);
+        await RefreshTemplatesAsync();
+    }
+
     private bool HandleSystemBack()
     {
         if (!opened) return false;
@@ -908,6 +957,11 @@ else
             {
                 if (templateDesigner is not null) await templateDesigner.HandleBackAsync();
                 else await CloseTemplateDesignerAsync();
+            }
+            else if (showWorkspaceTemplateDesigner)
+            {
+                if (workspaceTemplateDesigner is not null) await workspaceTemplateDesigner.HandleBackAsync();
+                else await CloseWorkspaceTemplateDesignerAsync();
             }
             else if (HasActiveMobileDraft)
             {

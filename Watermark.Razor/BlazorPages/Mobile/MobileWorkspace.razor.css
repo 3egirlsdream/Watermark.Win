@@ -461,6 +461,9 @@
 .workspace-export-drawer > div { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px calc(12px + var(--workspace-safe-bottom)); }
 .workspace-export-drawer :deep(.wm-export-panel) { background: var(--wm-export-background); border: 0; border-radius: 0; color: var(--wm-export-text); margin: 0; overflow: visible; padding: 0; }
 .workspace-export-drawer :deep(.wm-export-panel > summary) { display: none; }
+.workspace-export-drawer.mobile-number-picker-open,
+.workspace-export-drawer.mobile-number-picker-open > div { overflow: visible; }
+.workspace-export-drawer.mobile-number-picker-open { z-index: 2147482500; }
 
 @keyframes workspace-export-rise { from { opacity: .72; transform: translateY(34px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes workspace-export-fade-in { from { opacity: 0; } to { opacity: 1; } }

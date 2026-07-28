@@ -1,7 +1,11 @@
 @typeparam TValue where TValue : struct, IComparable<TValue>
-<MSlider TValue="TValue" Value="@Value" ValueChanged="@ValueChanged" Min="@Min" Max="@Max" Step="@Step" Color="@Color" HideDetails="true" />
+<WmNumericSlider Label="@Label"
+                 Value="@NumericValue"
+                 Min="@Min" Max="@Max" Step="@NumericStep"
+                 ValueChanged="ChangeValueAsync" />
 
 @code {
+    [Parameter] public string Label { get; set; } = "数值";
     [Parameter] public TValue Value { get; set; }
     [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
     [Parameter] public double Min { get; set; }
@@ -9,4 +13,10 @@
     [Parameter] public TValue Step { get; set; } = (TValue)Convert.ChangeType(1, typeof(TValue));
     [Parameter] public string? Color { get; set; }
     [Parameter] public bool ValueLabel { get; set; }
+
+    private double NumericValue => Convert.ToDouble(Value, System.Globalization.CultureInfo.InvariantCulture);
+    private double NumericStep => Convert.ToDouble(Step, System.Globalization.CultureInfo.InvariantCulture);
+
+    private Task ChangeValueAsync(double value) =>
+        ValueChanged.InvokeAsync((TValue)Convert.ChangeType(value, typeof(TValue), System.Globalization.CultureInfo.InvariantCulture));
 }

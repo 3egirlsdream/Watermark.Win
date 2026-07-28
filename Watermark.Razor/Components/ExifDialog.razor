@@ -23,17 +23,13 @@
 
 <MCard Style="width:100%; height:100%;overflow:hidden;" Flat>
     <MCard Elevation="0" Style="white-space: nowrap; overflow-x:auto;display:flex;align-items:center;height:80px;" Flat>
-        <MSelect Items="ContainerId2Name.ToList()"
-                 TItem="KeyValuePair<string, string>"
-                 TValue="string"
-                 TItemValue="string"
-                 ItemText="u => u.Value"
-                 ItemValue="u => u.Key"
-                 @bind-Value="mText.BindedContainerId"
-                 Label="�󶨵�Ԫ������ԴͼƬ����"
-                 Style="margin:8px"
-                 HideDetails="true"
-                 Readonly="@(CanvasType == CanvasType.Normal)" />
+        <WmSelect TValue="string"
+                  @bind-Value="mText.BindedContainerId"
+                  Options="@ContainerOptions"
+                  Label="�󶨵�Ԫ������ԴͼƬ����"
+                  AriaLabel="元数据来源图片容器"
+                  Style="margin:8px;"
+                  ReadOnly="@(CanvasType == CanvasType.Normal)" />
     </MCard>
     <div style="height:calc(100% - 80px);width:100%;overflow:hidden;display:flex;flex-direction: column;">
         <MCard Elevation="0" Style="flex-wrap: wrap; overflow-y:auto;justify-content:flex-start;display:flex;max-height:80px; scrollbar-width:none;min-height: 52px;" Flat Class="pa-1 ma-2" Color="#ECEFF1">
@@ -92,14 +88,11 @@
 
                 @if (CurrentExif.Value.Contains(","))
                 {
-                    <MSelect @bind-Value="CurrentExif.LocationType"
-                             Label="��γ��ʶ��"
-                             Items="XY"
-                             TValue="int"
-                             TItemValue="int"
-                             TItem="KeyValuePair<int, string>"
-                             ItemText="u=> u.Value"
-                             ItemValue="u => u.Key" />
+                    <WmSelect TValue="int"
+                              @bind-Value="CurrentExif.LocationType"
+                              Options="@XY"
+                              Label="��γ��ʶ��"
+                              AriaLabel="经纬度识别" />
                 }
                 @if (DateTime.TryParse(CurrentExif.Value, out DateTime dt))
                 {
@@ -150,16 +143,21 @@
     [Parameter]
     public EventCallback<WMText> OnClose { get; set; }
 
-    List<KeyValuePair<int, string>> XY = new()
+    private IReadOnlyList<WmSelectOption<string>> ContainerOptions =>
+        (ContainerId2Name ?? [])
+            .Select(container => new WmSelectOption<string>(container.Value, container.Key))
+            .ToList();
+
+    List<WmSelectOption<int>> XY = new()
     {
-        new KeyValuePair<int, string>(-1, "Ĭ��"),
-        new KeyValuePair<int, string>(0, ExifHelper.GetLocation().result.address),
-        new KeyValuePair<int, string>(1, ExifHelper.GetLocation().result.ad_info.name),
-        new KeyValuePair<int, string>(2, ExifHelper.GetLocation().result.ad_info.nation),
-        new KeyValuePair<int, string>(3, ExifHelper.GetLocation().result.ad_info.province),
-        new KeyValuePair<int, string>(4, ExifHelper.GetLocation().result.ad_info.city),
-        new KeyValuePair<int, string>(5, ExifHelper.GetLocation().result.ad_info.district),
-        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " �� " + @ExifHelper.GetLocation().result.ad_info.city),
+        new("Ĭ��", -1),
+        new(ExifHelper.GetLocation().result.address, 0),
+        new(ExifHelper.GetLocation().result.ad_info.name, 1),
+        new(ExifHelper.GetLocation().result.ad_info.nation, 2),
+        new(ExifHelper.GetLocation().result.ad_info.province, 3),
+        new(ExifHelper.GetLocation().result.ad_info.city, 4),
+        new(ExifHelper.GetLocation().result.ad_info.district, 5),
+        new(ExifHelper.GetLocation().result.ad_info.province + " �� " + @ExifHelper.GetLocation().result.ad_info.city, 6),
     };
 
     //"F##4##suffix;"
@@ -233,4 +231,4 @@
             mText.BindedContainerId = ContainerId2Name.FirstOrDefault().Key;
         }
     }
-} 
+}

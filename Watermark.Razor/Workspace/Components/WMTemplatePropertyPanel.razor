@@ -2,10 +2,20 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<MacSelectionInspector Editor="Editor" RenderResult="RenderResult" DesignFunc="DesignFunc" />
+<MacSelectionInspector Editor="Editor"
+                       RenderResult="RenderResult"
+                       DesignFunc="DesignFunc"
+                       Section="Section"
+                       TextContentEditRequested="TextContentEditRequested"
+                       AssetEditRequested="AssetEditRequested"
+                       CloseRequested="CloseRequested" />
 
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
     [Parameter] public WMDesignFunc? DesignFunc { get; set; }
+    [Parameter] public WMTemplateMobileInspectorSection? Section { get; set; }
+    [Parameter] public EventCallback<WMText> TextContentEditRequested { get; set; }
+    [Parameter] public EventCallback<IWMControl> AssetEditRequested { get; set; }
+    [Parameter] public EventCallback CloseRequested { get; set; }
 }

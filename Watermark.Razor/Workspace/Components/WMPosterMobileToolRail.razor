@@ -1,0 +1,28 @@
+@using Watermark.Razor.Workspace
+@namespace Watermark.Razor.Workspace.Components
+
+<nav class="wm-poster-tool-rail"
+     role="tablist"
+     aria-label="@AriaLabel">
+    @foreach (var tool in Items)
+    {
+        <button @key="tool.Id"
+                type="button"
+                role="tab"
+                aria-selected="@(string.Equals(ActiveToolId, tool.Id, StringComparison.Ordinal))"
+                aria-controls="@tool.ControlsId"
+                class="@(string.Equals(ActiveToolId, tool.Id, StringComparison.Ordinal) ? "is-active" : null)"
+                data-mobile-tool="@tool.Id"
+                @onclick="() => ToolSelected.InvokeAsync(tool.Id)">
+            <span class="tool-icon"><WmIcon Icon="@tool.Icon" /></span>
+            <span class="tool-label">@tool.Label</span>
+        </button>
+    }
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<WMMobileToolRailItem> Items { get; set; } = [];
+    [Parameter] public string? ActiveToolId { get; set; }
+    [Parameter] public EventCallback<string> ToolSelected { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "模板设计工具";
+}

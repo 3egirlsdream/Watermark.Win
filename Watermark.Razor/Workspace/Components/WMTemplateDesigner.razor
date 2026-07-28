@@ -1,6 +1,6 @@
 @using Microsoft.AspNetCore.Components.Web
-@using Microsoft.JSInterop
 @using Watermark.Razor.Workspace
+@using Watermark.Razor.Components
 @using Watermark.Razor.Components.Mac
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
@@ -9,12 +9,12 @@
 @inject WMWorkspaceController WorkspaceController
 @inject WMTemplateLibraryService TemplateLibrary
 @inject WMTemplateDesignerSession DesignerSession
+@inject IWMPosterAssetLibrary PosterAssets
 @inject IWMEditorInteractionProfileProvider InteractionProfiles
-@inject IJSRuntime JSRuntime
 @inject IPopupService Popup
 @implements IAsyncDisposable
 
-<div class="wm-template-designer" tabindex="0" @onkeydown="HandleKeyDown">
+<div class="@DesignerClass" tabindex="0" @onkeydown="HandleKeyDown">
     @if (editor is null)
     {
         <div class="designer-loading-state" role="status">
@@ -35,70 +35,128 @@
     {
         <MacDesignerToolbar TemplateName="@editor.Draft.Name"
                             IsDirty="@editor.IsDirty"
-                            CanUndo="@editor.CanUndo"
-                            CanRedo="@editor.CanRedo"
+                            CanUndo="@(editor.CanUndo && !editor.IsTransactionActive)"
+                            CanRedo="@(editor.CanRedo && !editor.IsTransactionActive)"
                             IsSaving="@isSaving"
                             SaveLabel="保存"
                             Zoom="@zoom"
-                            Exit="RequestExitAsync"
+                            Exit="ToolbarExitAsync"
                             Save="SaveAsync"
                             Undo="UndoAsync"
                             Redo="RedoAsync"
                             Fit="FitAsync"
                             ZoomChanged="SetZoomAsync" />
 
-        <div class="designer-workspace" @ref="designerWorkspace">
-            <aside class="designer-layer-region @(mobilePanel == MobileDesignerPanel.Layers ? "mobile-panel-visible" : null)">
-                <WMTemplateLayerPanel Editor="@editor" RenderResult="@renderResult" />
+        <div class="designer-workspace">
+            <aside id="template-mobile-panel-Layers"
+                   class="designer-layer-region @(presentation.Panel == WMPosterMobilePanel.Layers ? "mobile-panel-visible" : null)">
+                <WMTemplateLayerPanel Editor="@editor"
+                                      RenderResult="@renderResult"
+                                      CloseRequested="CloseMobilePanelAsync" />
             </aside>
             <div class="designer-canvas-region">
-                @if (isRendering)
+                @if (isRendering && !IsAssetCropOpen)
                 {
                     <div class="canvas-render-indicator" aria-label="正在更新预览"></div>
                 }
-                <WMTemplateCanvas @ref="canvasEditor"
-                                  Editor="@editor"
-                                  RenderResult="@renderResult"
-                                  PreviewUrl="@previewUrl"
-                                  Scene="@scenePresentation"
-                                  Zoom="@zoom"
-                                  ZoomChanged="SetZoomAsync"
-                                  SaveRequested="SaveAsync" />
+                <div class="designer-template-canvas" hidden="@IsAssetCropOpen">
+                    <WMTemplateCanvas @ref="canvasEditor"
+                                      Editor="@editor"
+                                      RenderResult="@renderResult"
+                                      PreviewUrl="@previewUrl"
+                                      Scene="@scenePresentation"
+                                      Zoom="@zoom"
+                                      ZoomChanged="SetZoomAsync"
+                                      SaveRequested="SaveAsync" />
+                </div>
+                @if (IsAssetCropOpen && selectedPosterAsset is not null && assetSelection is not null)
+                {
+                    <WMCropCanvas @key="selectedPosterAsset.Id"
+                                  Class="poster-asset-crop-canvas"
+                                  ImageUrl="@selectedPosterAsset.PreviewUrl"
+                                  SourceWidth="@selectedPosterAsset.PixelWidth"
+                                  SourceHeight="@selectedPosterAsset.PixelHeight"
+                                  Settings="@assetSelection.CropSettings"
+                                  SettingsChanged="PreviewAssetCropAsync"
+                                  ApplyRequested="ConfirmAssetSelectionAsync"
+                                  CancelRequested="ReturnToAssetLibrary" />
+                }
             </div>
-            <aside class="designer-inspector-region @(mobilePanel == MobileDesignerPanel.Properties ? "mobile-panel-visible" : null)">
-                <WMTemplatePropertyPanel Editor="@editor" RenderResult="@renderResult" DesignFunc="@designFunc" />
+            <aside id="template-mobile-panel-Properties"
+                   class="designer-inspector-region @(presentation.Panel == WMPosterMobilePanel.Properties ? "mobile-panel-visible" : null)">
+                <div class="mobile-panel-body">
+                    <WMTemplatePropertyPanel Editor="@editor"
+                                             RenderResult="@renderResult"
+                                             DesignFunc="@designFunc"
+                                             Section="@presentation.InspectorSection"
+                                             TextContentEditRequested="OpenMobileTextContentFromInspector"
+                                             AssetEditRequested="OpenAssetLibraryFromInspectorAsync"
+                                             CloseRequested="CloseMobilePanelAsync" />
+                </div>
             </aside>
-            <section class="designer-add-region @(mobilePanel == MobileDesignerPanel.Add ? "mobile-panel-visible" : null)"
+            <section id="template-mobile-panel-Add"
+                     class="designer-add-region @(presentation.Panel == WMPosterMobilePanel.Add ? "mobile-panel-visible" : null)"
                      aria-label="添加模板对象">
-                <WMTemplateAddPanel AddRequested="AddControlFromPanel" />
+                <WMTemplateAddPanel AddRequested="AddControlFromPanel"
+                                    CloseRequested="CloseMobilePanelAsync" />
             </section>
-            <button type="button"
-                    class="mobile-designer-drawer-handle"
-                    @ref="drawerHandle"
-                    role="separator"
-                    aria-orientation="horizontal"
-                    aria-label="拖动调整工具面板高度">
-                <span aria-hidden="true"></span>
-            </button>
+            <section id="template-mobile-panel-TextContent"
+                     class="designer-text-content-region @(presentation.Panel == WMPosterMobilePanel.TextContent ? "mobile-panel-visible" : null)"
+                     aria-label="编辑文字内容">
+                @if (mobileTextContentTarget is not null)
+                {
+                    <div class="mobile-panel-body">
+                        <ExifConfig @ref="mobileTextContentEditor"
+                                    mText="@mobileTextContentTarget"
+                                    EmbeddedMobilePanel="@Global.IsMobile"
+                                    CanvasType="@editor.Draft.CanvasType"
+                                    ContainerId2Name="@ContainerNames"
+                                    FieldLibraryVisibilityChanged="HandleFieldLibraryVisibilityChanged"
+                                    OnClose="CompleteMobileTextContent"
+                                    OnCancel="CancelMobileTextContent" />
+                    </div>
+                }
+            </section>
+            <section id="template-mobile-panel-AssetLibrary"
+                     class="designer-asset-region @(presentation.Panel is WMPosterMobilePanel.AssetLibrary or WMPosterMobilePanel.AssetCrop ? "mobile-panel-visible" : null)"
+                     aria-label="素材替换">
+                @if (assetSelection is not null)
+                {
+                    <div class="asset-step"
+                         hidden="@(presentation.Panel != WMPosterMobilePanel.AssetLibrary)">
+                        <WMPosterAssetDrawer @key="assetSelection.TargetControlId"
+                                             TemplateId="@CanvasId"
+                                             TargetLabel="@AssetTargetLabel"
+                                             InitialSelectedAssetId="@(selectedPosterAsset?.Id ?? string.Empty)"
+                                             PreviewRequested="PreviewAssetAsync"
+                                             ConfirmRequested="OpenAssetCropAsync"
+                                             CancelRequested="CancelAssetSelectionAsync" />
+                    </div>
+                    <div class="asset-step"
+                         hidden="@(presentation.Panel != WMPosterMobilePanel.AssetCrop)">
+                        <WMPosterAssetCropPanel @key="assetSelection.TargetControlId"
+                                                TargetLabel="@AssetTargetLabel"
+                                                Fit="@assetSelection.Fit"
+                                                FitChanged="PreviewAssetFitAsync"
+                                                CropSettings="@assetSelection.CropSettings"
+                                                SourceWidth="@(selectedPosterAsset?.PixelWidth ?? 0)"
+                                                SourceHeight="@(selectedPosterAsset?.PixelHeight ?? 0)"
+                                                CropSettingsChanged="PreviewAssetCropAsync"
+                                                BackRequested="ReturnToAssetLibrary"
+                                                AssetToolRequested="HandleAssetEditToolAsync"
+                                                IsLogo="@(AssetTargetLogo is not null)"
+                                                WhiteToTransparent="@(AssetTargetLogo?.White2Transparent == true)"
+                                                AspectRatioLocked="@(AssetTargetLogo is not null && editor.IsLogoAspectRatioLocked(AssetTargetLogo.ID))"
+                                                CompleteRequested="ConfirmAssetSelectionAsync" />
+                    </div>
+                }
+            </section>
         </div>
 
-        <nav class="mobile-designer-tabs" role="tablist" aria-label="模板设计工具">
-            <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Layers)"
-                    class="@(mobilePanel == MobileDesignerPanel.Layers ? "is-active" : null)"
-                    @onclick="() => mobilePanel = MobileDesignerPanel.Layers">
-                <span class="mobile-tab-icon"><WmIcon Icon="stack" /></span><span>图层</span>
-            </button>
-            <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Properties)"
-                    class="@(mobilePanel == MobileDesignerPanel.Properties ? "is-active" : null)"
-                    @onclick="() => mobilePanel = MobileDesignerPanel.Properties">
-                <span class="mobile-tab-icon"><WmIcon Icon="sliders-horizontal" /></span><span>属性</span>
-            </button>
-            <button type="button" role="tab" aria-selected="@(mobilePanel == MobileDesignerPanel.Add)"
-                    class="@(mobilePanel == MobileDesignerPanel.Add ? "is-active" : null)"
-                    @onclick="() => mobilePanel = MobileDesignerPanel.Add">
-                <span class="mobile-tab-icon"><WmIcon Icon="plus" /></span><span>添加</span>
-            </button>
-        </nav>
+        <WMPosterMobileToolRail Items="@MobileToolRailItems"
+                                ActiveToolId="@presentation.ActiveToolId"
+                                ToolSelected="ActivateMobileToolByIdAsync"
+                                AriaLabel="模板配置" />
     }
 
     @if (editor is not null)
@@ -122,19 +180,20 @@
 @code {
 #nullable enable
     [Parameter] public string CanvasId { get; set; } = string.Empty;
+    [Parameter] public string? InitialMobileToolId { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnSaved { get; set; }
 
     private WMTemplateEditorState? editor;
     private WMTemplateCanvas? canvasEditor;
+    private ExifConfig? mobileTextContentEditor;
+    private WMText? mobileTextContentTarget;
+    private WMPosterAssetSelectionSession? assetSelection;
+    private WMPosterAssetReference? selectedPosterAsset;
     private WMDesignFunc? designFunc;
     private WMDesignRenderResult? renderResult;
     private WMDesignScenePresentation? scenePresentation;
     private string previewUrl = string.Empty;
-    private ElementReference designerWorkspace;
-    private ElementReference drawerHandle;
-    private IJSObjectReference? drawerModule;
-    private IJSObjectReference? drawerResize;
     private CancellationTokenSource? draftDebounce;
     private readonly object draftTaskGate = new();
     private readonly HashSet<Task> draftTasks = [];
@@ -142,6 +201,7 @@
     private string renderError = string.Empty;
     private string saveNotice = string.Empty;
     private string loadedCanvasId = string.Empty;
+    private string? appliedInitialMobileToolId;
     private string requestedSnapshot = string.Empty;
     private string originalCanvasJson = string.Empty;
     private long renderVersion;
@@ -151,8 +211,56 @@
     private bool disposed;
     private bool compatibilityToastShown;
     private bool sceneFallbackToastShown;
+    private string observedSelectionId = string.Empty;
     private double zoom = 1;
-    private MobileDesignerPanel mobilePanel = MobileDesignerPanel.Properties;
+    private readonly WMPosterEditorPresentationState presentation = new();
+
+    private string DesignerClass =>
+        $"wm-template-designer {presentation.SpaceCssClass}"
+        + (presentation.HasOpenPanel ? " mobile-panel-open" : " mobile-panel-none")
+        + (presentation.Panel == WMPosterMobilePanel.Properties ? " mobile-properties-panel" : string.Empty)
+        + (mobileTextContentTarget is not null ? " desktop-text-content-open" : string.Empty)
+        + (assetSelection is not null ? " desktop-asset-open" : string.Empty)
+        + (IsAssetCropOpen ? " asset-crop-preview-open" : string.Empty)
+        + (presentation.IsTextFieldLibraryOpen ? " mobile-field-library-open" : string.Empty);
+
+    private bool IsAssetCropOpen =>
+        presentation.Panel == WMPosterMobilePanel.AssetCrop;
+
+    private IWMControl? SelectedControl => editor is null
+        || string.IsNullOrWhiteSpace(editor.SelectedControlId)
+            ? null
+            : WMControlTree.Find(editor.Draft, editor.SelectedControlId);
+
+    private IReadOnlyList<WMPosterContextToolSpec> MobileTools =>
+        WMPosterEditorPresentationState.ToolsFor(SelectedControl);
+
+    private IReadOnlyList<WMMobileToolRailItem> MobileToolRailItems =>
+        MobileTools.Select(tool => new WMMobileToolRailItem(
+            tool.Id,
+            tool.Label,
+            tool.Icon,
+            $"template-mobile-panel-{tool.Panel}"))
+        .ToArray();
+
+    private IWMControl? AssetTargetControl => assetSelection is null || editor is null
+        ? null
+        : WMControlTree.Find(editor.Draft, assetSelection.TargetControlId);
+
+    private WMLogo? AssetTargetLogo => AssetTargetControl as WMLogo;
+
+    private string AssetTargetLabel => assetSelection is null || editor is null
+        ? "图片"
+        : AssetTargetControl is { } target
+            ? ControlName(target)
+            : "图片";
+
+    private Dictionary<string, string> ContainerNames => editor?.Draft.RootContainers
+        .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
+        .GroupBy(container => container.ID)
+        .ToDictionary(
+            group => group.Key,
+            group => ControlName(group.First())) ?? [];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -162,26 +270,11 @@
         await LoadEditorAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (disposed || editor is null || drawerResize is not null) return;
-        try
-        {
-            drawerModule ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/Watermark.Razor/js/wm-template-designer.js");
-            drawerResize = await drawerModule.InvokeAsync<IJSObjectReference>(
-                "attachDrawerResize", designerWorkspace, drawerHandle);
-        }
-        catch (JSDisconnectedException)
-        {
-        }
-        catch (JSException)
-        {
-        }
-    }
-
     private async Task LoadEditorAsync()
     {
+        assetSelection?.Cancel();
+        assetSelection = null;
+        selectedPosterAsset = null;
         DetachEditor();
         renderVersion++;
         await ReleasePreviewAsync();
@@ -196,6 +289,11 @@
         requestedSnapshot = string.Empty;
         compatibilityToastShown = false;
         loadedCanvasId = CanvasId;
+        mobileTextContentEditor = null;
+        mobileTextContentTarget = null;
+        observedSelectionId = string.Empty;
+        presentation.Reset();
+        appliedInitialMobileToolId = null;
 
         if (string.IsNullOrWhiteSpace(CanvasId))
         {
@@ -256,6 +354,14 @@
             }
             editor.Changed += HandleEditorChanged;
             editor.DetailedChanged += HandleEditorDetailedChanged;
+            observedSelectionId = editor.SelectedControlId ?? string.Empty;
+            if (OpenInitialMobileTool())
+            {
+                // The workspace requested one of the canvas configuration
+                // sections; do not replace it with the last selected object.
+            }
+            else if (!string.IsNullOrWhiteSpace(observedSelectionId))
+                OpenDefaultProperties();
             PublishToolState();
             await RequestSceneAsync(
                 WMTemplateChangeSet.Initial(editor.CurrentRevision),
@@ -281,6 +387,46 @@
     private void HandleEditorChanged()
     {
         PublishToolState();
+        var selectedId = editor?.SelectedControlId ?? string.Empty;
+        if (!string.Equals(selectedId, observedSelectionId, StringComparison.Ordinal))
+        {
+            observedSelectionId = selectedId;
+            if (assetSelection is not null
+                && !string.Equals(selectedId, assetSelection.TargetControlId, StringComparison.Ordinal))
+            {
+                _ = InvokeAsync(async () =>
+                {
+                    await CancelAssetSelectionAsync();
+                    if (!string.IsNullOrWhiteSpace(selectedId))
+                        OpenDefaultProperties();
+                    StateHasChanged();
+                });
+            }
+            else if (mobileTextContentTarget is not null
+                && !string.Equals(selectedId, mobileTextContentTarget.ID, StringComparison.Ordinal))
+            {
+                _ = InvokeAsync(async () =>
+                {
+                    await CancelMobileTextContent();
+                    if (!string.IsNullOrWhiteSpace(selectedId))
+                        OpenDefaultProperties();
+                    StateHasChanged();
+                });
+            }
+            else if (string.IsNullOrWhiteSpace(selectedId))
+            {
+                presentation.ClosePanel();
+            }
+            else if (presentation.Panel is WMPosterMobilePanel.None
+                     || (presentation.Panel == WMPosterMobilePanel.Properties
+                         && !MobileTools.Any(tool => string.Equals(
+                             tool.Id,
+                             presentation.ActiveToolId,
+                             StringComparison.Ordinal))))
+            {
+                OpenDefaultProperties();
+            }
+        }
         draftDebounce?.Cancel();
         draftDebounce?.Dispose();
         draftDebounce = new CancellationTokenSource();
@@ -370,11 +516,20 @@
         IWMControl? added = null;
         currentEditor.Mutate(
             label,
-            () => added = WMControlTree.Add(currentEditor.Draft, controlType, null),
+            () =>
+            {
+                added = WMControlTree.Add(currentEditor.Draft, controlType, null);
+                if (added is WMLogo)
+                    WMPosterAssetSlots.Ensure(currentEditor.Draft, added);
+            },
             WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order | WMTemplateChangeKind.Paint,
             []);
-        if (added is not null) currentEditor.Select(added.ID);
-        mobilePanel = MobileDesignerPanel.Properties;
+        if (added is null) return;
+        currentEditor.Select(added.ID);
+        if (added is WMLogo)
+            OpenAssetLibrary(added);
+        else
+            OpenDefaultProperties();
     }
 
     private void AddControlFromPanel(Type controlType) => AddControl(
@@ -384,12 +539,322 @@
         : controlType == typeof(WMLine) ? "添加线条"
         : "添加容器");
 
-    private enum MobileDesignerPanel
+    private Task ActivateMobileToolByIdAsync(string toolId)
     {
-        Layers,
-        Properties,
-        Add
+        var tool = MobileTools.FirstOrDefault(item => string.Equals(item.Id, toolId, StringComparison.Ordinal));
+        return tool is null ? Task.CompletedTask : ActivateMobileToolAsync(tool);
     }
+
+    private bool OpenInitialMobileTool()
+    {
+        if (string.IsNullOrWhiteSpace(InitialMobileToolId)
+            || string.Equals(appliedInitialMobileToolId, InitialMobileToolId, StringComparison.Ordinal))
+            return false;
+
+        var tool = WMPosterEditorPresentationState.CanvasConfigurationTools()
+            .FirstOrDefault(item => string.Equals(item.Id, InitialMobileToolId, StringComparison.Ordinal));
+        if (tool is null)
+            return false;
+
+        presentation.Open(tool);
+        appliedInitialMobileToolId = InitialMobileToolId;
+        return true;
+    }
+
+    private async Task ActivateMobileToolAsync(WMPosterContextToolSpec tool)
+    {
+        if (tool.Panel == WMPosterMobilePanel.AssetLibrary)
+        {
+            OpenAssetLibrary(SelectedControl);
+            return;
+        }
+
+        if (tool.Panel == WMPosterMobilePanel.TextContent)
+        {
+            OpenMobileTextContent();
+            return;
+        }
+
+        if (mobileTextContentTarget is not null)
+            await CancelMobileTextContent();
+        presentation.Open(tool);
+        StateHasChanged();
+    }
+
+    private void OpenDefaultProperties()
+    {
+        var tool = MobileTools.FirstOrDefault(item => item.Panel == WMPosterMobilePanel.Properties);
+        if (tool is not null)
+            presentation.Open(tool);
+        else
+            presentation.Open(WMPosterMobilePanel.Properties);
+    }
+
+    private bool OpenToolForPanel(WMPosterMobilePanel panel)
+    {
+        var tool = MobileTools.FirstOrDefault(item => item.Panel == panel);
+        if (tool is null)
+            return false;
+
+        presentation.Open(tool);
+        return true;
+    }
+
+    private Task OpenAssetLibraryFromInspectorAsync(IWMControl control)
+    {
+        OpenAssetLibrary(control);
+        return Task.CompletedTask;
+    }
+
+    private void OpenAssetLibrary(IWMControl? control)
+    {
+        var currentEditor = editor;
+        if (currentEditor is null || control is null || !WMPosterAssetSlots.Supports(control))
+            return;
+        if (mobileTextContentTarget is not null)
+        {
+            Common.ShowToast(Popup, "请先完成文字内容编辑。");
+            return;
+        }
+        if (assetSelection is not null)
+        {
+            if (string.Equals(assetSelection.TargetControlId, control.ID, StringComparison.Ordinal))
+                return;
+            Common.ShowToast(Popup, "请先完成当前素材替换。");
+            return;
+        }
+
+        try
+        {
+            assetSelection = WMPosterAssetSelectionSession.Begin(currentEditor, control);
+            selectedPosterAsset = null;
+            if (!OpenToolForPanel(WMPosterMobilePanel.AssetLibrary))
+                presentation.Open(WMPosterMobilePanel.AssetLibrary, WMMobileEditorSpace.Large);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: control.IsLocked == false);
+        }
+    }
+
+    private Task PreviewAssetAsync(WMPosterAssetReference asset)
+    {
+        try
+        {
+            assetSelection?.Preview(asset);
+            selectedPosterAsset = asset;
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmAssetSelectionAsync()
+    {
+        var session = assetSelection;
+        var asset = selectedPosterAsset;
+        if (session is null || asset is null || !session.CanConfirm) return;
+        assetSelection = null;
+        selectedPosterAsset = null;
+        presentation.ClosePanel();
+        session.Confirm();
+        try
+        {
+            await PosterAssets.RememberUseAsync(asset);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, $"素材已替换，但最近记录保存失败：{ex.Message}", isError: true);
+        }
+        StateHasChanged();
+    }
+
+    private Task OpenAssetCropAsync()
+    {
+        if (assetSelection?.CanConfirm != true) return Task.CompletedTask;
+        presentation.OpenRelatedPanel(
+            WMPosterMobilePanel.AssetCrop,
+            WMMobileEditorSpace.Medium);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ReturnToAssetLibrary()
+    {
+        if (assetSelection is null) return Task.CompletedTask;
+        if (!OpenToolForPanel(WMPosterMobilePanel.AssetLibrary))
+            presentation.Open(WMPosterMobilePanel.AssetLibrary, WMMobileEditorSpace.Large);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task PreviewAssetFitAsync(WMPosterAssetFit fit)
+    {
+        try
+        {
+            assetSelection?.PreviewFit(fit);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task PreviewAssetCropAsync(WMCropSettings settings)
+    {
+        try
+        {
+            assetSelection?.PreviewCrop(settings);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleAssetEditToolAsync(string toolId)
+    {
+        if (string.Equals(toolId, "replace", StringComparison.Ordinal))
+        {
+            await ReturnToAssetLibrary();
+            return;
+        }
+
+        if (string.Equals(toolId, "crop", StringComparison.Ordinal))
+            return;
+
+        var currentEditor = editor;
+        var logo = AssetTargetLogo;
+        if (currentEditor is null || logo is null)
+            return;
+
+        switch (toolId)
+        {
+            case "white-transparent":
+                currentEditor.Mutate(
+                    "切换白色转透明",
+                    () => logo.White2Transparent = !logo.White2Transparent,
+                    WMTemplateChangeKind.Paint,
+                    [logo.ID]);
+                break;
+            case "lock-ratio":
+                currentEditor.SetLogoAspectRatioLocked(
+                    logo.ID,
+                    !currentEditor.IsLogoAspectRatioLocked(logo.ID));
+                break;
+        }
+
+        StateHasChanged();
+    }
+
+    private Task CancelAssetSelectionAsync()
+    {
+        var session = assetSelection;
+        if (session is null) return Task.CompletedTask;
+        assetSelection = null;
+        selectedPosterAsset = null;
+        presentation.ClosePanel();
+        session.Cancel();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void OpenMobileTextContent()
+    {
+        var currentEditor = editor;
+        if (currentEditor is null
+            || SelectedControl is not WMText text
+            || mobileTextContentTarget is not null)
+            return;
+
+        if (text.IsLocked)
+        {
+            Common.ShowToast(Popup, "文字图层已锁定，解锁后再编辑。");
+            return;
+        }
+
+        if (currentEditor.IsTransactionActive)
+        {
+            Common.ShowToast(Popup, "请先完成当前属性调整。");
+            return;
+        }
+
+        mobileTextContentTarget = text;
+        currentEditor.BeginTransaction(
+            "配置文字内容",
+            WMTemplateChangeKind.Resource | WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint,
+            [text.ID]);
+        if (!OpenToolForPanel(WMPosterMobilePanel.TextContent))
+            presentation.Open(WMPosterMobilePanel.TextContent, WMMobileEditorSpace.Medium);
+        StateHasChanged();
+    }
+
+    private Task OpenMobileTextContentFromInspector(WMText text)
+    {
+        if (SelectedControl is WMText selected
+            && ReferenceEquals(selected, text))
+            OpenMobileTextContent();
+        return Task.CompletedTask;
+    }
+
+    private void CompleteMobileTextContent(WMText text)
+    {
+        if (mobileTextContentTarget is null) return;
+        mobileTextContentEditor = null;
+        mobileTextContentTarget = null;
+        presentation.ClosePanel();
+        editor?.CommitTransaction();
+        StateHasChanged();
+    }
+
+    private Task CancelMobileTextContent()
+    {
+        if (mobileTextContentTarget is null)
+            return Task.CompletedTask;
+
+        mobileTextContentEditor = null;
+        mobileTextContentTarget = null;
+        presentation.ClosePanel();
+        editor?.CancelTransaction();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task CloseMobilePanelAsync()
+    {
+        if (assetSelection is not null)
+            await CancelAssetSelectionAsync();
+        else if (mobileTextContentTarget is not null)
+            await CancelMobileTextContent();
+        else
+        {
+            presentation.ClosePanel();
+            StateHasChanged();
+        }
+    }
+
+    private void HandleFieldLibraryVisibilityChanged(bool isOpen)
+    {
+        presentation.SetTextFieldLibraryOpen(isOpen);
+        StateHasChanged();
+    }
+
+    private static string ControlName(IWMControl control) =>
+        string.IsNullOrWhiteSpace(control.Name)
+            ? control switch
+            {
+                WMContainer => "容器",
+                WMText => "文字",
+                WMLogo => "图片",
+                WMLine => "线条",
+                _ => "图层"
+            }
+            : control.Name;
 
     private async Task RequestSceneAsync(
         WMTemplateChangeSet changeSet,
@@ -472,6 +937,16 @@
     {
         var currentEditor = editor;
         if (currentEditor is null || isSaving) return false;
+        if (assetSelection is not null)
+        {
+            Common.ShowToast(Popup, "请先确认或取消素材替换。");
+            return false;
+        }
+        if (mobileTextContentTarget is not null)
+        {
+            Common.ShowToast(Popup, "请先完成文字内容编辑。");
+            return false;
+        }
 
         isSaving = true;
         saveNotice = string.Empty;
@@ -531,6 +1006,9 @@
         showExitDialog = true;
     }
 
+    private Task ToolbarExitAsync() =>
+        Global.IsMobile ? HandleBackAsync() : RequestExitAsync();
+
     public async Task HandleBackAsync()
     {
         if (showExitDialog)
@@ -538,18 +1016,88 @@
             ContinueEditing();
             return;
         }
+        if (presentation.Panel == WMPosterMobilePanel.TextContent)
+        {
+            if (presentation.IsTextFieldLibraryOpen)
+            {
+                await CloseMobileTextFieldLibraryAsync();
+                return;
+            }
+            await CancelMobileTextContent();
+            return;
+        }
+        if (presentation.Panel == WMPosterMobilePanel.AssetCrop)
+        {
+            await ReturnToAssetLibrary();
+            return;
+        }
+        if (presentation.Panel == WMPosterMobilePanel.AssetLibrary
+            || assetSelection is not null)
+        {
+            await CancelAssetSelectionAsync();
+            return;
+        }
+        if (presentation.TryClosePanel())
+        {
+            StateHasChanged();
+            return;
+        }
         if (canvasEditor is not null
             && await canvasEditor.CancelCurrentGestureAsync())
             return;
+        if (editor is not null
+            && !string.IsNullOrWhiteSpace(editor.SelectedControlId))
+        {
+            editor.Select(null);
+            return;
+        }
         await RequestExitAsync();
     }
 
-    public Task<bool> CanNavigateAwayAsync()
+    public async Task<bool> CanNavigateAwayAsync()
     {
-        if (editor is null || !editor.IsDirty) return Task.FromResult(true);
+        if (presentation.Panel == WMPosterMobilePanel.TextContent
+            && presentation.IsTextFieldLibraryOpen)
+        {
+            await CloseMobileTextFieldLibraryAsync();
+            return false;
+        }
+        if (mobileTextContentTarget is not null)
+        {
+            await CancelMobileTextContent();
+            return false;
+        }
+        if (assetSelection is not null)
+        {
+            await CancelAssetSelectionAsync();
+            return false;
+        }
+        if (presentation.TryClosePanel())
+        {
+            StateHasChanged();
+            return false;
+        }
+        if (canvasEditor is not null
+            && await canvasEditor.CancelCurrentGestureAsync())
+            return false;
+        if (editor is not null
+            && !string.IsNullOrWhiteSpace(editor.SelectedControlId))
+        {
+            editor.Select(null);
+            return false;
+        }
+        if (editor is null || !editor.IsDirty) return true;
         showExitDialog = true;
         StateHasChanged();
-        return Task.FromResult(false);
+        return false;
+    }
+
+    private async Task CloseMobileTextFieldLibraryAsync()
+    {
+        presentation.SetTextFieldLibraryOpen(false);
+        if (mobileTextContentEditor is not null)
+            await mobileTextContentEditor.TryCloseFieldLibraryAsync();
+        StateHasChanged();
     }
 
     private async Task SaveAndExitAsync()
@@ -599,9 +1147,9 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs args)
     {
-        if (showExitDialog && args.Key == "Escape")
+        if (args.Key == "Escape")
         {
-            ContinueEditing();
+            await HandleBackAsync();
             return;
         }
 
@@ -632,6 +1180,9 @@
     public async ValueTask DisposeAsync()
     {
         disposed = true;
+        assetSelection?.Cancel();
+        assetSelection = null;
+        selectedPosterAsset = null;
         renderVersion++;
         draftDebounce?.Cancel();
         draftDebounce?.Dispose();
@@ -645,19 +1196,6 @@
         }
         DetachEditor();
         await ReleasePreviewAsync();
-        if (drawerResize is not null)
-        {
-            try { await drawerResize.InvokeVoidAsync("dispose"); }
-            catch (JSDisconnectedException) { }
-            catch (JSException) { }
-            await drawerResize.DisposeAsync();
-            drawerResize = null;
-        }
-        if (drawerModule is not null)
-        {
-            await drawerModule.DisposeAsync();
-            drawerModule = null;
-        }
         previewUrl = string.Empty;
     }
 #nullable restore

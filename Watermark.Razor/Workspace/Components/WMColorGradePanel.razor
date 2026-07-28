@@ -46,7 +46,12 @@
 
     <details class="wm-color-advanced">
         <summary><strong>HSL 颜色</strong><small>@BandName(currentBand)</small></summary>
-        <select @bind="currentBand" aria-label="HSL 色彩范围">@foreach (var band in Enum.GetValues<WMHslBand>()) { <option value="@band">@BandName(band)</option> }</select>
+        <WmSelect TValue="WMHslBand"
+                  @bind-Value="currentBand"
+                  Options="@HslBandOptions"
+                  AriaLabel="HSL 色彩范围"
+                  Style="margin:12px 0;"
+                  Dark="@Global.IsMobile" />
         @HslSlider("色相", "Hue", CurrentHsl.Hue)
         @HslSlider("饱和度", "Saturation", CurrentHsl.Saturation)
         @HslSlider("明度", "Luminance", CurrentHsl.Luminance)
@@ -84,6 +89,10 @@
     [Parameter] public EventCallback DeletePresetRequested { get; set; }
 
     private WMHslBand currentBand = WMHslBand.Red;
+    private static readonly IReadOnlyList<WmSelectOption<WMHslBand>> HslBandOptions =
+        Enum.GetValues<WMHslBand>()
+            .Select(band => new WmSelectOption<WMHslBand>(BandName(band), band))
+            .ToList();
     private WMHslAdjustment CurrentHsl => Recipe.Grade.Hsl[currentBand];
 
     private RenderFragment BasicSlider(string label, string key, float value, double min, double max, double step, string unit) => __builder =>
@@ -95,7 +104,9 @@
 
     private RenderFragment HslSlider(string label, string key, float value) => __builder =>
     {
-        <label class="wm-color-control"><span><strong>@label</strong><output>@value.ToString("0")</output></span><input type="range" min="-100" max="100" step="1" value="@value.ToString(CultureInfo.InvariantCulture)" @oninput="args => ChangeHslAsync(key, args, false)" @onchange="args => ChangeHslAsync(key, args, true)" /></label>
+        <WMColorParameterControl Label="@label" Value="@value" Minimum="-100" Maximum="100" Step="1"
+            PreviewValueChanged="next => ChangeHslAsync(key, next, false)"
+            CommitValueChanged="next => ChangeHslAsync(key, next, true)" />
     };
 
     private async Task ChangeBasicAsync(string key, float value, bool commit)
@@ -104,9 +115,8 @@
         await (commit ? CommitRequested.InvokeAsync(next) : PreviewChanged.InvokeAsync(next));
     }
 
-    private async Task ChangeHslAsync(string key, ChangeEventArgs args, bool commit)
+    private async Task ChangeHslAsync(string key, float value, bool commit)
     {
-        if (!TryValue(args, out var value)) return;
         var next = Clone(Recipe); var adjustment = next.Grade.Hsl[currentBand];
         switch (key) { case "Hue": adjustment.Hue = value; break; case "Saturation": adjustment.Saturation = value; break; case "Luminance": adjustment.Luminance = value; break; }
         next.UserAdjustments = next.Grade;
@@ -123,7 +133,6 @@
         var next = Clone(Recipe); next.Grade.MasterCurve = preset switch { "contrast" => [new WMCurvePoint { X = 0, Y = 0 }, new WMCurvePoint { X = .25f, Y = .18f }, new WMCurvePoint { X = .75f, Y = .82f }, new WMCurvePoint { X = 1, Y = 1 }], "soft" => [new WMCurvePoint { X = 0, Y = .06f }, new WMCurvePoint { X = .5f, Y = .52f }, new WMCurvePoint { X = 1, Y = .96f }], _ => WMCurvePoint.Identity() }; next.UserAdjustments = next.Grade; return CommitRequested.InvokeAsync(next);
     }
 
-    private static bool TryValue(ChangeEventArgs args, out float value) => float.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     private static WMColorRecipe Clone(WMColorRecipe value) => JsonSerializer.Deserialize<WMColorRecipe>(JsonSerializer.Serialize(value))!;
     private static string BandName(WMHslBand band) => band switch { WMHslBand.Red => "红色", WMHslBand.Orange => "橙色", WMHslBand.Yellow => "黄色", WMHslBand.Green => "绿色", WMHslBand.Aqua => "青色", WMHslBand.Blue => "蓝色", WMHslBand.Purple => "紫色", _ => "洋红" };
 }

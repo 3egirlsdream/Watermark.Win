@@ -23,6 +23,10 @@
     justify-content: flex-end;
 }
 
+.designer-toolbar ::deep .mobile-more-command {
+    display: none;
+}
+
 .icon-command,
 .save-command {
     align-items: center;
@@ -33,7 +37,7 @@
     font: inherit;
     justify-content: center;
     letter-spacing: 0;
-    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
 .icon-command {
@@ -126,6 +130,7 @@
 
 .save-command {
     background: #1769d2;
+    box-shadow: 0 1px 2px rgba(16, 76, 153, .16);
     color: #ffffff;
     font-size: 12px;
     font-weight: 700;
@@ -180,29 +185,38 @@
 @media (max-width: 540px) {
     .designer-toolbar {
         box-sizing: border-box;
-        grid-template-columns: 144px minmax(48px, 1fr) 76px;
+        display: flex;
         height: 56px;
-        padding: 0 4px;
+        padding: 0 3px;
     }
 
-    .icon-command {
+    .designer-toolbar ::deep .icon-command {
         border-radius: 11px;
-        height: 48px;
-        width: 48px;
+        flex: 0 0 36px;
+        height: 44px;
+        width: 36px;
+    }
+
+    .toolbar-leading,
+    .toolbar-trailing {
+        display: contents;
     }
 
     .toolbar-divider,
     .zoom-control,
-    .toolbar-trailing > .icon-command {
+    .designer-toolbar ::deep .desktop-fit-command {
         display: none;
     }
 
-    .toolbar-leading {
-        gap: 0;
+    .designer-toolbar ::deep .exit-command {
+        order: 1;
     }
 
     .template-identity {
-        padding: 0 6px;
+        flex: 1 1 96px;
+        justify-content: flex-start;
+        order: 2;
+        padding: 0 4px 0 1px;
     }
 
     .template-name {
@@ -210,15 +224,45 @@
         max-width: 100%;
     }
 
-    .save-command {
-        border-radius: 11px;
-        font-size: 12px;
-        height: 48px;
-        min-width: 70px;
-        padding: 0 10px;
+    .unsaved-dot {
+        display: none;
     }
 
-    .save-command i {
-        display: none;
+    .designer-toolbar ::deep .undo-command {
+        order: 3;
+    }
+
+    .designer-toolbar ::deep .redo-command {
+        order: 4;
+    }
+
+    .designer-toolbar ::deep .mobile-more-command {
+        display: inline-flex;
+        order: 5;
+    }
+
+    .designer-toolbar ::deep .save-command {
+        background: #1769d2;
+        border: 0;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(17, 94, 190, .18);
+        font-size: 13px;
+        gap: 4px;
+        flex: 0 0 auto;
+        height: 36px;
+        min-width: 64px;
+        order: 6;
+        padding: 0 7px;
+    }
+
+    .designer-toolbar ::deep .save-command .wm-icon {
+        height: 16px;
+        width: 16px;
+    }
+
+    .designer-toolbar ::deep .save-command:active:not(:disabled) {
+        background: #125bb8;
+        box-shadow: inset 0 1px 2px rgba(8, 57, 122, .18);
+        transform: translateY(1px);
     }
 }

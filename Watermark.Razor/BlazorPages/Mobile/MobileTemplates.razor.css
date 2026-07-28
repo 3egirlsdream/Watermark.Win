@@ -61,7 +61,7 @@
 }
 .templates-refresh:active { transform: scale(.94); }
 .templates-refresh:disabled { opacity: .45; }
-.templates-refresh ::deep i.is-spinning { animation:templates-refresh-spin .75s linear infinite; }
+.templates-refresh ::deep .wm-icon.is-spinning { animation:templates-refresh-spin .75s linear infinite; }
 @keyframes templates-refresh-spin { to { transform:rotate(360deg); } }
 
 .templates-tabs {
@@ -255,12 +255,6 @@
     box-shadow: 0 3px 9px rgba(21, 95, 207, .24);
     right: 7px;
 }
-.template-badge ::deep i,
-.template-downloaded ::deep i {
-    color: #fff;
-    font-size: 11px;
-}
-
 .template-meta { display: block; padding: 9px 2px 0; }
 .template-meta strong,
 .template-meta small {
@@ -292,26 +286,19 @@
 .creator-line small { flex: 0 1 auto; margin-top: 0; min-width: 0; }
 .creator-verified {
     align-items: center;
-    background: var(--market-coral);
-    border-radius: 50%;
-    color: #fff;
+    color: var(--market-coral);
     display: flex;
     flex: 0 0 auto;
-    height: 13px;
+    height: 14px;
     justify-content: center;
-    width: 13px;
+    width: 14px;
 }
-.creator-verified ::deep i { color: #fff; font-size: 8px; }
 .template-meta-row > small:last-child {
     align-items: center;
     display: flex;
     flex: 0 0 auto;
     gap: 2px;
     height: 16px;
-    line-height: 16px;
-}
-.template-meta-row > small:last-child ::deep i {
-    font-size: 14px;
     line-height: 16px;
 }
 .download-count {
@@ -356,7 +343,7 @@
     padding: 0 7px;
     width: max-content;
 }
-.market-featured-label ::deep i { color: inherit; font-size: 12px; }
+.market-featured-label ::deep .wm-icon { color: inherit; }
 
 .market-featured-preview {
     aspect-ratio: 2.17 / 1;

@@ -60,15 +60,12 @@
 }
 else if (Global.DeviceType == Shared.Enums.DeviceType.Andorid || Global.DeviceType == Shared.Enums.DeviceType.IOS)
 {
-        <div class="slider-input-main ma-1">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-                <Label Name="@Name" Small="small"></Label>  
-                <div class="ml-2" style="width:70px">
-                    <MTextField Value="@Value" TValue="TValue" Solo Dense Suffix="@Unit" ValueChanged="ValueChanged" />
-                </div>
-            </div>
-            <MSlider Class="slider-input mt-2" Value="@Value" TValue="TValue" Step="Step" Max="100" Min="0" ValueChanged="ValueChanged"></MSlider>
-        </div>
+    <div class="slider-input-main ma-1">
+        <WmNumericSlider Label="@Name"
+                         Value="@MacValue"
+                         Min="0" Max="100" Step="@MacStep" Unit="@Unit"
+                         ValueChanged="OnMacValueChanged" />
+    </div>
 }
 else
 {

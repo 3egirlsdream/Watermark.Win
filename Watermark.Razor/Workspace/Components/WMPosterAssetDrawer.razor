@@ -1,0 +1,266 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+@inject IWMPosterAssetLibrary Assets
+@inject IPopupService Popup
+@implements IDisposable
+
+<section class="poster-asset-drawer" aria-labelledby="poster-assets-title">
+    <header class="asset-drawer-header">
+        <button type="button" class="asset-header-command" aria-label="取消替换素材" @onclick="CancelRequested">
+            <WmIcon Icon="arrow-left" />
+        </button>
+        <div>
+            <h2 id="poster-assets-title">素材资源库</h2>
+            <small>替换 @TargetLabel · 完成后记入一次撤销</small>
+        </div>
+        <button type="button"
+                class="asset-confirm-command"
+                disabled="@(!CanConfirm || busy)"
+                @onclick="ConfirmRequested">
+            下一步
+        </button>
+    </header>
+
+    <div class="asset-search-row">
+        <label>
+            <WmIcon Icon="magnifying-glass" />
+            <input value="@search"
+                   placeholder="搜索素材"
+                   aria-label="搜索素材"
+                   @oninput="UpdateSearch"
+                   @onkeydown:stopPropagation />
+        </label>
+    </div>
+
+    <nav class="asset-source-tabs" role="tablist" aria-label="素材来源">
+        @foreach (var tab in SourceTabs)
+        {
+            <button type="button"
+                    role="tab"
+                    aria-selected="@(source == tab.Source)"
+                    class="@(source == tab.Source ? "is-active" : null)"
+                    disabled="@busy"
+                    @onclick="() => SelectSourceAsync(tab.Source)">
+                @tab.Label
+            </button>
+        }
+    </nav>
+
+    <div class="asset-drawer-body">
+        @if (source == WMPosterAssetSource.Device)
+        {
+            <button type="button"
+                    class="device-import-card"
+                    disabled="@busy"
+                    @onclick="ImportFromDeviceAsync">
+                <span><WmIcon Size="24" Icon="images-square" /></span>
+                <strong>从设备选择照片</strong>
+                <small>仅在点击后打开系统照片选择器</small>
+            </button>
+        }
+
+        @if (loading)
+        {
+            <div class="asset-status" role="status">
+                <MProgressCircular Indeterminate Size="26" Width="3" />
+                <span>正在加载素材</span>
+            </div>
+        }
+        else if (FilteredItems.Count == 0)
+        {
+            <div class="asset-status">
+                <WmIcon Size="34" Icon="image-square" />
+                <strong>@EmptyTitle</strong>
+                <span>@EmptyDescription</span>
+            </div>
+        }
+        else
+        {
+            <div class="asset-grid" role="list">
+                @foreach (var item in FilteredItems)
+                {
+                    <button type="button"
+                            class="asset-card @(selectedAssetId == item.Id ? "is-selected" : null)"
+                            role="listitem"
+                            aria-label="选择素材 @item.DisplayName"
+                            aria-pressed="@(selectedAssetId == item.Id)"
+                            disabled="@busy"
+                            @key="item.Id"
+                            @onclick="() => PreviewAsync(item)">
+                        <span class="asset-thumbnail">
+                            <WmIcon Size="26" Icon="image" />
+                            @if (!string.IsNullOrWhiteSpace(item.PreviewUrl))
+                            {
+                                <img src="@item.PreviewUrl" alt="" draggable="false" />
+                            }
+                            @if (selectedAssetId == item.Id)
+                            {
+                                <span class="asset-selected-mark"><WmIcon Icon="check" /></span>
+                            }
+                        </span>
+                        <span class="asset-name" title="@item.DisplayName">@item.DisplayName</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string TemplateId { get; set; } = string.Empty;
+    [Parameter] public string TargetLabel { get; set; } = "图片";
+    [Parameter] public string InitialSelectedAssetId { get; set; } = string.Empty;
+    [Parameter] public EventCallback<WMPosterAssetReference> PreviewRequested { get; set; }
+    [Parameter] public EventCallback ConfirmRequested { get; set; }
+    [Parameter] public EventCallback CancelRequested { get; set; }
+
+    private readonly List<WMPosterAssetReference> items = [];
+    private CancellationTokenSource? loadCancellation;
+    private WMPosterAssetSource source = WMPosterAssetSource.Recent;
+    private string search = string.Empty;
+    private string selectedAssetId = string.Empty;
+    private bool loading = true;
+    private bool busy;
+    private bool initialized;
+
+    private bool CanConfirm => !string.IsNullOrWhiteSpace(selectedAssetId);
+    private List<WMPosterAssetReference> FilteredItems => items
+        .Where(item => string.IsNullOrWhiteSpace(search)
+            || item.DisplayName.Contains(search.Trim(), StringComparison.CurrentCultureIgnoreCase))
+        .ToList();
+    private string EmptyTitle => string.IsNullOrWhiteSpace(search)
+        ? source switch
+        {
+            WMPosterAssetSource.Recent => "还没有最近使用的素材",
+            WMPosterAssetSource.Device => "尚未导入设备照片",
+            WMPosterAssetSource.MyAssets => "我的素材为空",
+            _ => "当前模板没有图片素材"
+        }
+        : "没有匹配的素材";
+    private string EmptyDescription => string.IsNullOrWhiteSpace(search)
+        ? source == WMPosterAssetSource.Device
+            ? "点击上方入口选择照片。"
+            : "切换其它来源，或从设备导入照片。"
+        : "尝试缩短关键词或清空搜索。";
+
+    private static readonly (WMPosterAssetSource Source, string Label)[] SourceTabs =
+    [
+        (WMPosterAssetSource.Recent, "最近"),
+        (WMPosterAssetSource.Device, "设备照片"),
+        (WMPosterAssetSource.MyAssets, "我的素材"),
+        (WMPosterAssetSource.Template, "模板素材")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(InitialSelectedAssetId))
+            selectedAssetId = InitialSelectedAssetId;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialized) return;
+        initialized = true;
+        await LoadAsync();
+    }
+
+    private async Task SelectSourceAsync(WMPosterAssetSource value)
+    {
+        if (busy) return;
+        if (value == WMPosterAssetSource.Device)
+        {
+            // Device photos are a system-owned source, not another in-app
+            // gallery. Entering the tab opens the platform picker directly.
+            source = value;
+            search = string.Empty;
+            loadCancellation?.Cancel();
+            loading = false;
+            items.Clear();
+            await ImportFromDeviceAsync();
+            return;
+        }
+
+        if (source == value) return;
+        source = value;
+        search = string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loadCancellation?.Cancel();
+        loadCancellation?.Dispose();
+        loadCancellation = new CancellationTokenSource();
+        var token = loadCancellation.Token;
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var loaded = await Assets.ListAsync(source, TemplateId, token);
+            if (token.IsCancellationRequested) return;
+            items.Clear();
+            items.AddRange(loaded);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private async Task ImportFromDeviceAsync()
+    {
+        if (busy) return;
+        busy = true;
+        StateHasChanged();
+        try
+        {
+            var imported = await Assets.ImportFromDeviceAsync();
+            items.Clear();
+            items.AddRange(imported);
+            if (imported.Count > 0)
+            {
+                selectedAssetId = imported[0].Id;
+                await PreviewRequested.InvokeAsync(imported[0]);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        finally
+        {
+            busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviewAsync(WMPosterAssetReference item)
+    {
+        if (busy) return;
+        selectedAssetId = item.Id;
+        await PreviewRequested.InvokeAsync(item);
+    }
+
+    private void UpdateSearch(ChangeEventArgs args) =>
+        search = args.Value?.ToString() ?? string.Empty;
+
+    public void Dispose()
+    {
+        loadCancellation?.Cancel();
+        loadCancellation?.Dispose();
+    }
+}

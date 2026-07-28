@@ -1,0 +1,127 @@
+@using Watermark.Shared.Models
+
+<div class="@($"compact-font-style {(Style.Enabled ? "is-enabled" : string.Empty)}")">
+    <div class="compact-font-style__header">
+        <span class="compact-font-style__title">
+            <strong>@Label</strong>
+            <small>@(Style.Enabled ? "单独设置" : "跟随文字组件")</small>
+        </span>
+
+        <label class="compact-font-style__toggle">
+            <input type="checkbox"
+                   checked="@Style.Enabled"
+                   aria-label="@(Style.Enabled ? $"关闭{Label}样式覆盖" : $"开启{Label}样式覆盖")"
+                   @onchange="ChangeEnabled" />
+            <span aria-hidden="true"></span>
+        </label>
+    </div>
+
+    @if (Style.Enabled)
+    {
+        <div class="compact-font-style__body">
+            <div class="compact-font-style__emphasis" role="group" aria-label="@($"{Label}字形")">
+                <button type="button"
+                        class="@(Style.IsBold ? "is-active" : string.Empty)"
+                        aria-pressed="@Style.IsBold"
+                        title="粗体"
+                        @onclick="ToggleBold">
+                    <WmIcon Size="15" Icon="text-b" />
+                    <span>粗体</span>
+                </button>
+                <button type="button"
+                        class="@(Style.IsItalic ? "is-active" : string.Empty)"
+                        aria-pressed="@Style.IsItalic"
+                        title="斜体"
+                        @onclick="ToggleItalic">
+                    <WmIcon Size="15" Icon="text-italic" />
+                    <span>斜体</span>
+                </button>
+            </div>
+
+            <label class="compact-font-style__field is-color">
+                <span>颜色</span>
+                <span class="compact-font-style__color">
+                    <input type="color"
+                           value="@ColorValue"
+                           aria-label="@($"{Label}颜色")"
+                           @oninput="ChangeColor" />
+                    <code>@ColorValue.ToUpperInvariant()</code>
+                </span>
+            </label>
+
+            <div class="compact-font-style__field">
+                <span>字体</span>
+                <WmSelect TValue="string"
+                          Value="@(Style.FontFamily ?? string.Empty)"
+                          ValueChanged="ChangeFont"
+                          Options="@FontOptions"
+                          AriaLabel="@($"{Label}字体")" />
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public WMFontStyle Style { get; set; } = new();
+
+    [Parameter]
+    public string Label { get; set; } = "片段";
+
+    [Parameter]
+    public IReadOnlyList<string> Fonts { get; set; } = [];
+
+    private string ColorValue
+    {
+        get
+        {
+            var value = Style.FontColor;
+            return !string.IsNullOrWhiteSpace(value)
+                && value.StartsWith('#')
+                && value.Length >= 7
+                ? value[..7]
+                : "#000000";
+        }
+    }
+
+    private IReadOnlyList<WmSelectOption<string>> FontOptions
+    {
+        get
+        {
+            var options = new List<WmSelectOption<string>>
+            {
+                new("跟随主字体", string.Empty)
+            };
+            if (!string.IsNullOrWhiteSpace(Style.FontFamily)
+                && !Fonts.Contains(Style.FontFamily, StringComparer.Ordinal))
+            {
+                options.Add(new(FontLabel(Style.FontFamily), Style.FontFamily));
+            }
+            options.AddRange(Fonts.Select(font => new WmSelectOption<string>(FontLabel(font), font)));
+            return options;
+        }
+    }
+
+    private void ChangeEnabled(ChangeEventArgs args) =>
+        Style.Enabled = args.Value is bool value && value;
+
+    private void ToggleBold() => Style.IsBold = !Style.IsBold;
+    private void ToggleItalic() => Style.IsItalic = !Style.IsItalic;
+
+    private void ChangeColor(ChangeEventArgs args)
+    {
+        var color = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(color) || color.Length != 7)
+            return;
+
+        var alpha = !string.IsNullOrWhiteSpace(Style.FontColor) && Style.FontColor.Length == 9
+            ? Style.FontColor[^2..]
+            : "ff";
+        Style.FontColor = $"{color}{alpha}";
+    }
+
+    private void ChangeFont(string font) => Style.FontFamily = font;
+
+    private static string FontLabel(string font) =>
+        string.IsNullOrWhiteSpace(font) ? "跟随主字体" : Path.GetFileNameWithoutExtension(font);
+}

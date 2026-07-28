@@ -63,7 +63,8 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.DoesNotContain("IWMObjectUrlRegistry", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("GenerationDesignPreviewAsync", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("PublishAsync", designer, StringComparison.Ordinal);
-        Assert.Contains("mobile-designer-tabs", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterMobileToolRail", designer, StringComparison.Ordinal);
+        Assert.Contains("WMPosterEditorPresentationState.ToolsFor", designer, StringComparison.Ordinal);
         Assert.Contains("designer-add-region", designer, StringComparison.Ordinal);
         Assert.Contains("<WMTemplateDesigner", forwardingWrapper, StringComparison.Ordinal);
         Assert.DoesNotContain("WMTemplateDesignerSession", forwardingWrapper, StringComparison.Ordinal);
@@ -300,7 +301,7 @@ public sealed class WMDesktopWorkspaceContractTests
     }
 
     [Fact]
-    public void ExportPanel_UsesSharedModernChoicesAndLiveAccessibleQualitySlider()
+    public void ExportPanel_UsesSharedModernChoicesAndMobileNumericQualityControl()
     {
         var panel = Read("Watermark.Razor/Workspace/Components/WMExportPanel.razor");
         var css = Read("Watermark.Razor/Workspace/Components/WMExportPanel.razor.css");
@@ -310,13 +311,12 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.Contains("wm-export-format-grid", panel, StringComparison.Ordinal);
         Assert.Contains("wm-export-resolution-grid", panel, StringComparison.Ordinal);
         Assert.Contains("wm-export-destination-grid", panel, StringComparison.Ordinal);
-        Assert.Contains("type=\"range\"", panel, StringComparison.Ordinal);
-        Assert.Contains("@oninput=\"ChangeQualityAsync\"", panel, StringComparison.Ordinal);
+        Assert.Contains("<WmNumericSlider", panel, StringComparison.Ordinal);
+        Assert.Contains("ValueChanged=\"ChangeQualityAsync\"", panel, StringComparison.Ordinal);
         Assert.Contains("aria-pressed=\"@AriaPressed", panel, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", panel, StringComparison.Ordinal);
-        Assert.Contains("--wm-range-progress", css, StringComparison.Ordinal);
-        Assert.Contains("input::-webkit-slider-runnable-track", css, StringComparison.Ordinal);
-        Assert.Contains("height: 42px", css, StringComparison.Ordinal);
+        Assert.Contains(".mac-inspector-slider", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("input::-webkit-slider-runnable-track", css, StringComparison.Ordinal);
         Assert.Contains("workspace-export-drawer-handle", mobile, StringComparison.Ordinal);
         Assert.Contains("<WMExportPanel Expanded=\"true\"", desktop, StringComparison.Ordinal);
     }

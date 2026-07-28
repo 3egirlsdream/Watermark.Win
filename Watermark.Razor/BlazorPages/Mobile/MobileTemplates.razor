@@ -157,7 +157,7 @@
                             data-template-id="@featuredItem.WatermarkId"
                             aria-label="查看本周精选模板 @(featuredItem.Name ?? featuredItem.Desc ?? "未命名模板")"
                             @onclick="() => selectedCloud = featuredItem">
-                        <span class="market-featured-label"><WmIcon Icon="star" />@MarketFeatureLabel(marketState.Category)</span>
+                        <span class="market-featured-label"><WmIcon Size="12" Icon="star" />@MarketFeatureLabel(marketState.Category)</span>
                         <span class="market-featured-preview">
                             <span class="market-featured-art">
                                 <img src="@featuredItem.Src"
@@ -174,7 +174,7 @@
                                     <small>@CreatorName(featuredItem)</small>
                                     @if (IsVerifiedCreator(featuredItem))
                                     {
-                                        <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
+                                        <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Size="14" Icon="seal-check" /></span>
                                     }
                                 </span>
                             </span>
@@ -208,11 +208,11 @@
                                      fetchpriority="@(index < 4 ? "high" : "auto")" />
                                 @if (item.Recommend && marketState.Category != WMTemplateMarketCategory.Recommended)
                                 {
-                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Icon="star" /></span>
+                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Size="11" Icon="star" /></span>
                                 }
                                 @if (IsDownloaded(item.WatermarkId))
                                 {
-                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Icon="check" /></span>
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Size="11" Icon="check" /></span>
                                 }
                             </span>
                             <span class="template-meta">
@@ -222,10 +222,10 @@
                                         <small>@CreatorName(item)</small>
                                         @if (IsVerifiedCreator(item))
                                         {
-                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Size="14" Icon="seal-check" /></span>
                                         }
                                     </span>
-                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Icon="tray-arrow-down" />@FormatDownloads(item.DownloadTimes)</small>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Size="14" Weight="light" Icon="download-simple" />@FormatDownloads(item.DownloadTimes)</small>
                                 </span>
                             </span>
                         </button>
@@ -261,11 +261,11 @@
                                 <img src="@item.Src" alt="@(item.Name ?? item.Desc ?? "收藏模板预览")" loading="lazy" decoding="async" />
                                 @if (item.Recommend)
                                 {
-                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Icon="star" /></span>
+                                    <span class="template-badge" title="精选" aria-label="精选"><WmIcon Size="11" Icon="star" /></span>
                                 }
                                 @if (IsDownloaded(item.WatermarkId))
                                 {
-                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Icon="check" /></span>
+                                    <span class="template-downloaded" title="已添加" aria-label="已添加"><WmIcon Size="11" Icon="check" /></span>
                                 }
                             </span>
                             <span class="template-meta">
@@ -275,10 +275,10 @@
                                         <small>@CreatorName(item)</small>
                                         @if (IsVerifiedCreator(item))
                                         {
-                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Icon="check" /></span>
+                                            <span class="creator-verified" title="认证创作者" aria-label="认证创作者"><WmIcon Size="14" Icon="seal-check" /></span>
                                         }
                                     </span>
-                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Icon="tray-arrow-down" />@FormatDownloads(item.DownloadTimes)</small>
+                                    <small class="download-count" title="下载量 @item.DownloadTimes"><WmIcon Size="14" Weight="light" Icon="download-simple" />@FormatDownloads(item.DownloadTimes)</small>
                                 </span>
                             </span>
                         </button>

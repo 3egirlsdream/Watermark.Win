@@ -1,16 +1,13 @@
-@using System.Globalization
 @namespace Watermark.Razor.Workspace.Components
 
-<label class="wm-template-border-control @CssClass">
-    @if (ShowHeader)
-    {
-        <span><strong>@Label</strong><output>@Value.ToString("0.#")</output></span>
-    }
-    <input type="range" min="0" max="100" step="0.5"
-           value="@Value.ToString(CultureInfo.InvariantCulture)"
-           aria-label="@($"{Label}边框")" aria-valuetext="@Value.ToString("0.#")"
-           @oninput="PreviewAsync" @onchange="CommitAsync" />
-</label>
+<WmNumericSlider Label="@Label"
+                 Value="@Value"
+                 Min="0" Max="100" Step="0.5" Unit="%"
+                 ShowLabel="@ShowHeader"
+                 CssClass="@CssClass"
+                 ValueChanged="PreviewAsync"
+                 InteractionStarted="BeginInteractionAsync"
+                 InteractionEnded="CommitAsync" />
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
@@ -20,12 +17,32 @@
     [Parameter] public EventCallback<double> PreviewValueChanged { get; set; }
     [Parameter] public EventCallback<double> CommitValueChanged { get; set; }
 
-    private Task PreviewAsync(ChangeEventArgs args) =>
-        TryValue(args, out var value) ? PreviewValueChanged.InvokeAsync(value) : Task.CompletedTask;
+    private bool interactionActive;
+    private double pendingValue;
 
-    private Task CommitAsync(ChangeEventArgs args) =>
-        TryValue(args, out var value) ? CommitValueChanged.InvokeAsync(value) : Task.CompletedTask;
+    protected override void OnParametersSet()
+    {
+        if (!interactionActive) pendingValue = Value;
+    }
 
-    private static bool TryValue(ChangeEventArgs args, out double value) =>
-        double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    private Task BeginInteractionAsync()
+    {
+        interactionActive = true;
+        pendingValue = Value;
+        return Task.CompletedTask;
+    }
+
+    private async Task PreviewAsync(double value)
+    {
+        if (!interactionActive) await BeginInteractionAsync();
+        pendingValue = value;
+        await PreviewValueChanged.InvokeAsync(value);
+    }
+
+    private Task CommitAsync()
+    {
+        if (!interactionActive) return Task.CompletedTask;
+        interactionActive = false;
+        return CommitValueChanged.InvokeAsync(pendingValue);
+    }
 }

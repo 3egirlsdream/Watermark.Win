@@ -1,16 +1,14 @@
-@using System.Globalization
 @namespace Watermark.Razor.Workspace.Components
 
-<label class="wm-color-parameter @CssClass">
-    @if (ShowHeader)
-    {
-        <span><strong>@Label</strong><output>@DisplayValue</output></span>
-    }
-    <input type="range" min="@Minimum" max="@Maximum" step="@Step"
-           value="@Value.ToString(CultureInfo.InvariantCulture)" disabled="@Disabled"
-           aria-label="@Label" aria-valuetext="@DisplayValue"
-           @oninput="PreviewAsync" @onchange="CommitAsync" />
-</label>
+<WmNumericSlider Label="@Label"
+                 Value="@Value"
+                 Min="@Minimum" Max="@Maximum" Step="@Step" Unit="@Unit"
+                 Disabled="@Disabled"
+                 ShowLabel="@ShowHeader"
+                 CssClass="@CssClass"
+                 ValueChanged="PreviewAsync"
+                 InteractionStarted="BeginInteractionAsync"
+                 InteractionEnded="CommitAsync" />
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
@@ -25,14 +23,32 @@
     [Parameter] public EventCallback<float> PreviewValueChanged { get; set; }
     [Parameter] public EventCallback<float> CommitValueChanged { get; set; }
 
-    private string DisplayValue => $"{Value.ToString(Value % 1 == 0 ? "0" : "0.00")} {Unit}".TrimEnd();
+    private bool interactionActive;
+    private float pendingValue;
 
-    private Task PreviewAsync(ChangeEventArgs args) =>
-        TryValue(args, out var value) ? PreviewValueChanged.InvokeAsync(value) : Task.CompletedTask;
+    protected override void OnParametersSet()
+    {
+        if (!interactionActive) pendingValue = Value;
+    }
 
-    private Task CommitAsync(ChangeEventArgs args) =>
-        TryValue(args, out var value) ? CommitValueChanged.InvokeAsync(value) : Task.CompletedTask;
+    private Task BeginInteractionAsync()
+    {
+        interactionActive = true;
+        pendingValue = Value;
+        return Task.CompletedTask;
+    }
 
-    private static bool TryValue(ChangeEventArgs args, out float value) =>
-        float.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    private async Task PreviewAsync(double value)
+    {
+        if (!interactionActive) await BeginInteractionAsync();
+        pendingValue = (float)value;
+        await PreviewValueChanged.InvokeAsync(pendingValue);
+    }
+
+    private Task CommitAsync()
+    {
+        if (!interactionActive) return Task.CompletedTask;
+        interactionActive = false;
+        return CommitValueChanged.InvokeAsync(pendingValue);
+    }
 }

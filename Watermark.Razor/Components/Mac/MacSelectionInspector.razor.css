@@ -60,6 +60,19 @@
     padding: 3px 5px;
 }
 
+.selection-close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    color: #647287;
+    display: none;
+    flex: 0 0 auto;
+    height: 36px;
+    justify-content: center;
+    width: 36px;
+}
+
 .selection-breadcrumb {
     color: #8994a2;
     font-size: 10px;
@@ -97,8 +110,11 @@
 
 .selection-inspector-scroll {
     min-height: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
     padding-bottom: 18px;
+    scrollbar-gutter: stable;
 }
 
 .inspector-group,
@@ -148,8 +164,6 @@
 }
 
 .inspector-field input,
-.inspector-field select,
-.selection-inspector-scroll select,
 .selection-inspector-scroll input[type="number"] {
     background: #ffffff;
     border: 1px solid #cfd6df;
@@ -164,17 +178,13 @@
 }
 
 .inspector-field input:focus,
-.inspector-field select:focus,
-.selection-inspector-scroll select:focus,
 .selection-inspector-scroll input[type="number"]:focus {
     border-color: #4d80c8;
     outline: 2px solid rgba(45, 108, 223, 0.15);
 }
 
 .inspector-field input:disabled,
-.inspector-field select:disabled,
-.selection-inspector-scroll input:disabled,
-.selection-inspector-scroll select:disabled {
+.selection-inspector-scroll input:disabled {
     background: #f1f3f6;
     color: #8b95a3;
 }
@@ -188,11 +198,6 @@
 
 ::deep .inspector-field .m-input__slot {
     min-height: 30px;
-}
-
-::deep .inspector-field .m-select__selection {
-    color: #2e3a4a;
-    font-size: 12px;
 }
 
 .inspector-two-column {
@@ -294,6 +299,32 @@
     padding: 0;
 }
 
+.inspector-switch-grid {
+    display: grid;
+    gap: 7px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inspector-switch-grid ::deep .mac-inspector-switch {
+    background: #f1f3f6;
+    border: 1px solid rgba(62, 75, 91, .08);
+    border-radius: 9px;
+    box-sizing: border-box;
+    font-size: 10px;
+    min-height: 42px;
+    padding: 5px 7px 5px 9px;
+}
+
+.inspector-operation-hint {
+    background: #f1f3f6;
+    border-radius: 8px;
+    color: #6e7a89;
+    font-size: 11px;
+    line-height: 1.45;
+    margin: 0;
+    padding: 9px 10px;
+}
+
 ::deep .mac-inspector-option-group {
     display: grid;
     gap: 5px;
@@ -360,29 +391,73 @@
 
 .text-style-buttons {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     grid-template-columns: 1fr 1fr;
 }
 
-.text-style-buttons button {
+.text-style-buttons ::deep .text-style-toggle {
     align-items: center;
-    border: 1px solid #d2d9e2;
-    border-radius: 5px;
-    color: #586678;
+    background: #f5f7fa;
+    border: 1px solid #d8e0e9;
+    border-radius: 8px;
+    box-shadow: none;
+    box-sizing: border-box;
+    color: #48576a;
     display: inline-flex;
-    font-size: 10px;
-    font-weight: 700;
-    gap: 4px;
+    font-size: 12px;
+    font-weight: 720;
+    gap: 6px;
     justify-content: center;
-    min-height: 29px;
+    margin: 0;
+    min-height: 34px;
+    min-width: 0;
+    padding: 0 8px;
+    width: 100%;
 }
 
-.text-style-buttons button.selected { background: #e8f0fa; border-color: #6090ca; color: #215d9f; }
+.text-style-buttons ::deep .text-style-toggle.is-active {
+    background: #eaf3ff;
+    border-color: #83b3ed;
+    color: #1769d2;
+}
+
+.text-style-buttons ::deep .text-style-toggle:active:not(:disabled) { transform: scale(.985); }
+
+.text-font-picker-row {
+    align-items: end;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.text-font-picker-row .wide-secondary-command {
+    height: 30px;
+    width: auto;
+}
+
+::deep .node-style-size-grid {
+    display: grid;
+    gap: 7px;
+}
+
+::deep .node-style-size-row {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+}
 
 @media (pointer: coarse), (max-width: 720px) {
     .selection-header {
         gap: 3px;
-        padding: 6px 10px;
+        padding: 7px 10px 6px;
+    }
+
+    .selection-close {
+        display: inline-flex;
+    }
+
+    .selection-breadcrumb {
+        display: none;
     }
 
     .selection-inspector-scroll {
@@ -396,10 +471,25 @@
         display: none;
     }
 
+    .mobile-inspector-section .selection-inspector-scroll {
+        overflow-y: auto;
+        padding-bottom: 14px;
+        touch-action: pan-y;
+    }
+
+    .mobile-inspector-section.mobile-number-picker-open {
+        overflow: visible;
+        z-index: 2147483000;
+    }
+
+    .mobile-inspector-section.mobile-number-picker-open .selection-inspector-scroll {
+        overflow: visible;
+        position: relative;
+        z-index: 2147483000;
+    }
+
     .selection-name-input,
     .inspector-field input,
-    .inspector-field select,
-    .selection-inspector-scroll select,
     .selection-inspector-scroll input[type="number"] {
         font-size: 13px;
         height: 38px;
@@ -408,14 +498,83 @@
     .selection-header-actions button,
     .inspector-text-command,
     ::deep .inspector-text-command {
-        height: 38px;
-        min-width: 38px;
+        height: 34px;
+        min-width: 34px;
     }
 
     .inspector-group,
     ::deep .inspector-group {
+        gap: 7px;
+        padding: 8px 12px 10px;
+    }
+
+    .inspector-switch-grid {
+        gap: 6px;
+    }
+
+    .inspector-switch-grid ::deep .mac-inspector-switch {
+        min-height: 42px;
+        padding: 6px 8px 6px 10px;
+    }
+
+    .text-font-picker-row .wide-secondary-command {
+        height: 38px;
+        min-width: 54px;
+        padding: 0 10px;
+    }
+
+    .text-style-buttons ::deep .text-style-toggle {
+        border-radius: 9px;
+        font-size: 13px;
+        gap: 7px;
+        min-height: 40px;
+        padding: 0 10px;
+    }
+
+    .text-style-buttons ::deep .text-style-toggle .wm-icon {
+        height: 16px;
+        width: 16px;
+    }
+
+    ::deep .node-style-size-row {
+        align-items: center;
         gap: 8px;
-        padding: 10px 12px 11px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: 40px;
+    }
+
+    ::deep .node-style-size-unit {
+        align-items: center;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 34px minmax(0, 1fr);
+        min-width: 0;
+    }
+
+    ::deep .node-style-size-unit .mac-inspector-option-label {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    ::deep .node-style-size-unit .mac-inspector-option-buttons {
+        min-width: 0;
+    }
+
+    ::deep .node-style-size-unit .mac-inspector-option-buttons button {
+        font-size: 10px;
+        padding: 0 3px;
+    }
+
+    ::deep .node-style-size-value {
+        min-height: 40px;
+        padding: 0;
+        width: 80px;
+    }
+
+    ::deep .node-style-size-value .inspector-number-field,
+    ::deep .node-style-size-value .inspector-number-field.long-unit {
+        min-width: 72px;
+        width: 72px;
     }
 }
 
@@ -474,19 +633,4 @@
 ::deep .exif-editor-shell {
     height: 100%;
     position: relative;
-}
-
-::deep .exif-cancel-command {
-    background: #ffffff;
-    border: 1px solid #cbd3dd;
-    border-radius: 6px;
-    color: #445164;
-    cursor: pointer;
-    font-size: 12px;
-    height: 30px;
-    letter-spacing: 0;
-    position: absolute;
-    right: 12px;
-    top: 7px;
-    z-index: 10;
 }

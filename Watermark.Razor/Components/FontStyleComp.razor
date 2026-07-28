@@ -24,18 +24,12 @@
         <div style="display:flex;justify-content:space-between;align-items:center">
             @* <WmTextField @bind-Value="fStyle.FontSize" Label="字体大小" Variant="Variant.Text" Margin="Margin.Dense" Class="mt-5" Style="width:80px" /> *@
             <ColorPicker Name="颜色" @bind-Color="fStyle.FontColor" Class="mr-1 my-1"/>
-            <MSelect ItemText="u => u.Key"
-                     ItemValue="u => u.Key"
-                     Items="Fonts.ToList()"
-                     TItemValue="string"
-                     TValue="string"
-                     TItem="KeyValuePair<string, string>"
-                     Label="字体"
-                     @bind-Value="fStyle.FontFamily"
-                     Style="width: 50%"
-                     Dense
-                     HideDetails="true">
-            </MSelect>
+            <WmSelect TValue="string"
+                      @bind-Value="fStyle.FontFamily"
+                      Options="@FontOptions"
+                      Label="字体"
+                      AriaLabel="字体"
+                      Style="width:50%;" />
         </div>
 
     }
@@ -48,6 +42,22 @@
     protected override async Task OnInitializedAsync()
     {
         Fonts = await Task.Run(() => Global.ReadFont());
+    }
+    private IReadOnlyList<WmSelectOption<string>> FontOptions
+    {
+        get
+        {
+            var values = Fonts.Keys
+                .OrderBy(font => font, StringComparer.OrdinalIgnoreCase)
+                .Select(font => new WmSelectOption<string>(font, font))
+                .ToList();
+            if (!string.IsNullOrWhiteSpace(fStyle?.FontFamily)
+                && values.All(option => !string.Equals(option.Value, fStyle.FontFamily, StringComparison.Ordinal)))
+            {
+                values.Insert(0, new WmSelectOption<string>(fStyle.FontFamily, fStyle.FontFamily));
+            }
+            return values;
+        }
     }
     [Parameter]
     public WMFontStyle fStyle { get; set; }

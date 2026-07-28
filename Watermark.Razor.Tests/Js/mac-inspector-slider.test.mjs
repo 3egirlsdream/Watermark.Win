@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createTouchSlider,
   resolveTouchIntent,
+  syncMobilePickerLayer,
   valueFromPointer
 } from "../../Watermark.Razor/wwwroot/js/mac-inspector-slider.js";
 
@@ -11,6 +12,7 @@ function createGestureHarness() {
   const calls = [];
   const range = { value: "0", style: { setProperty() {} } };
   const number = { value: "0" };
+  const mobileNumber = { textContent: "0" };
   const element = {
     dataset: { min: "0", max: "100", step: "1" },
     addEventListener(name, listener) { listeners.set(name, listener); },
@@ -18,7 +20,9 @@ function createGestureHarness() {
     closest() {
       return {
         querySelector(selector) {
-          return selector.includes("range") ? range : number;
+          if (selector.includes("range")) return range;
+          if (selector.includes("mobile-number-value")) return mobileNumber;
+          return number;
         }
       };
     },
@@ -46,7 +50,7 @@ function createGestureHarness() {
     };
     listeners.get(name)?.(event);
   };
-  return { calls, dispatch, dotNetReference, element };
+  return { calls, dispatch, dotNetReference, element, mobileNumber };
 }
 
 test("vertical touch intent keeps the page scroll gesture away from parameter changes", () => {
@@ -69,6 +73,29 @@ test("pointer values clamp and snap to the configured step", () => {
   assert.equal(valueFromPointer(175, 100, 200, -25, 25, 0.1), -6.2);
   assert.equal(valueFromPointer(50, 100, 200, 0, 100, 1), 0);
   assert.equal(valueFromPointer(350, 100, 200, 0, 100, 1), 100);
+});
+
+test("an open numeric picker promotes its inspector above the mobile rail", () => {
+  const classes = new Set();
+  const inspectorClasses = new Set();
+  const designer = {
+    classList: { toggle(name, active) { active ? classes.add(name) : classes.delete(name); } },
+    querySelector(selector) { return selector === ".mobile-number-picker" ? {} : null; }
+  };
+  const inspector = {
+    classList: { toggle(name, active) { active ? inspectorClasses.add(name) : inspectorClasses.delete(name); } },
+    querySelector(selector) { return selector === ".mobile-number-picker" ? {} : null; }
+  };
+  const element = {
+    closest(selector) {
+      return selector === ".wm-template-designer" ? designer : inspector;
+    }
+  };
+
+  syncMobilePickerLayer(element);
+
+  assert.ok(classes.has("mobile-number-picker-open"));
+  assert.ok(inspectorClasses.has("mobile-number-picker-open"));
 });
 
 test("a vertical page swipe over the rail never opens an edit transaction", async () => {
@@ -100,6 +127,7 @@ test("a clearly horizontal swipe starts, changes and closes one edit transaction
   assert.equal(harness.calls[0][0], "BeginTouchInteraction");
   assert.equal(harness.calls.at(-1)[0], "EndTouchInteraction");
   assert.ok(harness.calls.some(call => call[0] === "ChangeTouchValue"));
+  assert.notEqual(harness.mobileNumber.textContent, "0");
 
   controller.dispose();
   globalThis.requestAnimationFrame = originalRequestAnimationFrame;

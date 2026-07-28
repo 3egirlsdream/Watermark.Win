@@ -58,6 +58,26 @@
     background: #e9edf3;
 }
 
+.layer-panel-commands {
+    align-items: center;
+    display: flex;
+    gap: 3px;
+}
+
+.mobile-layer-close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    color: #647287;
+    display: none;
+    height: 36px;
+    justify-content: center;
+    position: relative;
+    width: 36px;
+    z-index: 3;
+}
+
 .add-layer-options,
 .layer-context-menu {
     background: #ffffff;
@@ -374,6 +394,15 @@
 }
 
 @media (pointer: coarse), (max-width: 720px) {
+    .layer-panel-header {
+        min-height: 52px;
+        padding-left: 16px;
+    }
+
+    .mobile-layer-close {
+        display: inline-flex;
+    }
+
     .layer-row {
         grid-template-columns: 28px 22px 24px minmax(0, 1fr) auto;
         height: 44px;

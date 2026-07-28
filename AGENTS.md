@@ -50,11 +50,24 @@ Web端不用考虑，不报错即可。
 - 保持现有 .NET 8、MAUI、Blazor Hybrid、WPF 项目结构，不做无关重构。
 - 组件库尽量使用Masa Blazor
 
+## 通用表单组件规范
+
+- Razor UI 中需要下拉选择时统一使用公共组件 `Watermark.Razor/Components/Compatibility/WmSelect.razor`，选项统一使用强类型 `WmSelectOption<TValue>`。
+- 不得新增原生 `<select>`、Masa `MSelect`、基于 `MMenu` 拼装的下拉选择器或其他平行实现；桌面端和移动端共同复用 `WmSelect`。
+- `WmSelect` 必须保持显式开关状态：选择后关闭，后续点击可再次打开，并支持 `Esc` 关闭；修改公共组件时必须覆盖 Mac Catalyst、Windows WebView 和移动端触摸交互。
+
 ## 信息提示交互规范
 
 - 移动端和桌面端的一次性信息提示（成功、失败、普通说明）统一使用“检查更新”同款的底部居中 Toast，不在页面内容区新增横幅、卡片或常驻提示条。
 - Razor 组件统一通过 `Common.ShowToast(IPopupService, ...)` 触发 Toast；移动端和桌面端共同加载 `Watermark.Razor/wwwroot/css/wm-toast.css`，严格复用原“检查更新”提示的紧凑尺寸、深色背景、圆角、阴影和字号，不得直接使用 Masa 默认宽 Snackbar 样式。失败结果使用错误背景，同一时间最多显示一条。
 - 需要用户作出选择的确认操作继续使用 `ConfirmAsync`；表单字段校验、空状态、持续进度和需要长期保留的业务状态应留在对应内容区域，不应改成短暂 Toast。
+
+## 移动端数值参数组件规范
+
+- 移动端所有具有 `Min`、`Max` 和 `Step` 的连续数值参数，统一使用公共组件 `Watermark.Razor/Components/Compatibility/WmNumericSlider.razor`；不得新增原生 `input[type="range"]`、Masa `MSlider` 或页面内自定义滑条作为平行实现。
+- `WmNumericSlider` 在桌面端显示范围轨道与可编辑数值；在触摸设备上显示数值按钮，点按展开以当前值居中的五档滚轮，按钮区或滚轮中上下滑动按 `Step` 微调。浮层必须位于所属移动面板、底部工具栏和抽屉之上，不能被滚动容器裁切。
+- 连续预览使用 `ValueChanged`；需要撤销事务的场景通过 `InteractionStarted` 和 `InteractionEnded` 开启、提交一次编辑。父级已经提供字段标题时使用 `ShowLabel="false"`，不得重复显示标题。
+- 非连续枚举、日期时间、颜色二维选择和单次开关不使用本组件，应使用相应的选择器或开关组件。
 
 ## 渲染管道性能约束
 

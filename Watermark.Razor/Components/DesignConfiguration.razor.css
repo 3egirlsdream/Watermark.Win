@@ -340,8 +340,7 @@
     width: 100% !important;
 }
 
-::deep .m-text-field .m-input__slot,
-::deep .m-select .m-input__slot {
+::deep .m-text-field .m-input__slot {
     border-radius: 7px !important;
     min-height: 34px !important;
 }
@@ -351,7 +350,6 @@
     min-width: 0 !important;
 }
 
-::deep .m-select,
 ::deep .m-text-field,
 ::deep .m-slider {
     max-width: 100% !important;

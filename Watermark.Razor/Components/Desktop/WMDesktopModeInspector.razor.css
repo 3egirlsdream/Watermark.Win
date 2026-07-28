@@ -257,7 +257,6 @@
     font-weight: 680;
 }
 
-.field select,
 .field input[type="text"],
 .field input[readonly],
 .path-row input {
@@ -651,13 +650,11 @@
     min-width: 0;
 }
 
-select:disabled,
 input:disabled {
     cursor: default;
     opacity: 0.55;
 }
 
-::deep .m-select,
 ::deep .m-text-field {
     max-width: 100% !important;
     min-width: 0 !important;
@@ -1011,25 +1008,6 @@ input:disabled {
 .advanced-grid .check {
     align-items: center;
     flex-direction: row;
-}
-
-::deep .stack-select,
-::deep .stack-select .m-input__control,
-::deep .stack-select .m-input__slot {
-    max-width: 100% !important;
-    min-width: 0 !important;
-    width: 100% !important;
-}
-
-::deep .stack-select .m-input__slot {
-    background: #ffffff !important;
-    border-radius: 7px !important;
-    min-height: 34px !important;
-}
-
-::deep .stack-select .m-select__selection {
-    color: #2e3a4a !important;
-    font-size: 12px !important;
 }
 
 .progress-panel {

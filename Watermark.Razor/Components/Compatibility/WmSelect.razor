@@ -1,0 +1,122 @@
+@using Microsoft.AspNetCore.Components.Web
+@typeparam TValue
+
+<div class="@($"wm-select {(open ? "is-open" : string.Empty)} {(Dark ? "is-dark" : string.Empty)} {Class}")"
+     style="@Style"
+     @onkeydown="HandleKeyDown"
+     @onkeydown:stopPropagation>
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <span class="wm-select__label">@Label</span>
+    }
+    <button type="button"
+            class="wm-select__trigger"
+            disabled="@(Disabled || ReadOnly)"
+            aria-label="@AriaLabel"
+            aria-required="@Required"
+            aria-haspopup="listbox"
+            aria-expanded="@open"
+            @onclick="Toggle">
+        <span>@SelectedLabel</span>
+        <WmIcon Size="13" Icon="@(open ? "caret-up" : "caret-down")" />
+    </button>
+
+    @if (open)
+    {
+        <div class="wm-select__options"
+             role="listbox"
+             aria-label="@AriaLabel">
+            @foreach (var option in Options)
+            {
+                var selected = EqualityComparer<TValue>.Default.Equals(option.Value, Value);
+                <button @key="option"
+                        type="button"
+                        role="option"
+                        aria-selected="@selected"
+                        class="@(selected ? "is-selected" : string.Empty)"
+                        @onclick="() => SelectAsync(option.Value)">
+                    <span>@option.Label</span>
+                    @if (selected)
+                    {
+                        <WmIcon Size="13" Icon="check" />
+                    }
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public TValue Value { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TValue> ValueChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<WmSelectOption<TValue>> Options { get; set; } = [];
+
+    [Parameter]
+    public string AriaLabel { get; set; } = "选择选项";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "请选择";
+
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public bool Required { get; set; }
+
+    [Parameter]
+    public bool Dark { get; set; }
+
+    private bool open;
+
+    private string SelectedLabel
+    {
+        get
+        {
+            var selected = Options.FirstOrDefault(option =>
+                EqualityComparer<TValue>.Default.Equals(option.Value, Value));
+            if (selected is not null)
+                return selected.Label;
+
+            var valueText = Value?.ToString();
+            return string.IsNullOrWhiteSpace(valueText) ? Placeholder : valueText;
+        }
+    }
+
+    private void Toggle()
+    {
+        if (!Disabled && !ReadOnly)
+            open = !open;
+    }
+
+    private async Task SelectAsync(TValue value)
+    {
+        open = false;
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+            open = false;
+        else if ((args.Key is "ArrowDown" or "Enter") && !Disabled && !ReadOnly)
+            open = true;
+    }
+}

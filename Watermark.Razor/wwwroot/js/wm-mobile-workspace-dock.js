@@ -1,5 +1,5 @@
 export function scrollActiveToolIntoView(root, tool) {
-  const rail = root?.querySelector(".wm-dock-tools > div");
+  const rail = root?.querySelector(".wm-poster-tool-rail");
   const active = root?.querySelector(`[data-mobile-tool="${CSS.escape(tool)}"]`);
   if (!rail || !active) return;
 

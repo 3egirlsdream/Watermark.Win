@@ -679,6 +679,64 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task PreviewLegacyTemplateWithoutCanvasJson_UsesDesktopEditorsMigratedSnapshotOnFirstRender()
+    {
+        const string templateId = "legacy-preview-template";
+        var legacy = new WMCanvas
+        {
+            ID = templateId,
+            Name = templateId,
+            CustomWidth = 1080,
+            CustomHeight = 864
+        };
+        var root = new WMContainer { WidthPercent = 55, HeightPercent = 13 };
+        root.Controls.Add(new WMText { ID = "legacy-text", FontSize = 28 });
+        legacy.Children.Add(root);
+        var templateDirectory = Path.Combine(Global.AppPath.TemplatesFolder, templateId);
+        Directory.CreateDirectory(templateDirectory);
+        await File.WriteAllTextAsync(
+            Path.Combine(templateDirectory, "config.json"),
+            Global.CanvasSerialize(legacy));
+        templateDirectories.Add(templateDirectory);
+
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var renderer = new StrictlyIncreasingRenderCoordinator(previewPath);
+        var compiler = new RecordingRenderPlanCompiler();
+        var controller = new WMWorkspaceController(
+            new RecordingSessionStore(Session("legacy-template-preview", "legacy-template-media")),
+            renderer,
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!,
+            renderPlanCompiler: compiler);
+        Assert.True(await controller.OpenAsync("legacy-template-preview"));
+
+        await controller.PreviewTemplateAsync(
+            new WMWorkspaceTemplateEdit(templateId, null),
+            WMApplyScope.Current);
+
+        var snapshot = Global.ReadConfig(controller.State.TemplateEdit!.CanvasJson!);
+        Assert.Equal(WMLayoutMigration.CurrentSchemaVersion, snapshot.LayoutSchemaVersion);
+        var snapshotText = Assert.IsType<WMText>(WMControlTree.Find(snapshot, "legacy-text"));
+        var expectedText = Assert.IsType<WMText>(
+            WMControlTree.Find(WMTemplateEditorState.Create(legacy).Draft, "legacy-text"));
+        Assert.Equal(expectedText.FontSize, snapshotText.FontSize, 10);
+
+        var templateStep = Assert.Single(
+            compiler.Plans[^1].Steps,
+            step => step.Operation.Kind == WMImageOperationKind.Template);
+        using var parameters = System.Text.Json.JsonDocument.Parse(templateStep.Operation.ParametersJson);
+        var canvasJson = parameters.RootElement
+            .GetProperty(nameof(WMTemplateOperationSettings.CanvasJson))
+            .GetString();
+        Assert.Equal(
+            WMLayoutMigration.CurrentSchemaVersion,
+            Global.ReadConfig(canvasJson!).LayoutSchemaVersion);
+        Assert.Equal(2, renderer.RequestedVersions.Count);
+    }
+
+    [Fact]
     public async Task PreviewTemplate_OverridesExplicitNoTemplateProjectionInRenderPlan()
     {
         await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);

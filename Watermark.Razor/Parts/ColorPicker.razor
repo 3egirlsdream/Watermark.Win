@@ -110,16 +110,13 @@
                                         }
                                         else
                                         {
-                                            <MSlider Class="wm-picker-color-slider alpha ml-1"
-                                                     Style="width:220px"
-                                                     Value="@_value.Alpha"
-                                                     TValue="byte"
-                                                     Min="0"
-                                                     Max="255"
-                                                     TrackSize="8"
-                                                     ValueChanged="SliderChanged"
-                                                     HideDetails="true"
-                                                     Step="1" />
+                                            <div style="width:220px;margin-left:4px">
+                                                <WmNumericSlider Label="透明度"
+                                                                 Value="@_value.Alpha"
+                                                                 Min="0" Max="255" Step="1"
+                                                                 ShowLabel="false"
+                                                                 ValueChanged="value => SliderChanged((byte)Math.Round(value))" />
+                                            </div>
                                         }
                                     }
                                     @if (_collectionOpen)

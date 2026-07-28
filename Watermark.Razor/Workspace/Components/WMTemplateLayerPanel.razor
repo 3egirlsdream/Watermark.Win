@@ -2,9 +2,12 @@
 @using Watermark.Shared.Models
 @namespace Watermark.Razor.Workspace.Components
 
-<MacLayerTree Editor="Editor" RenderResult="RenderResult" />
+<MacLayerTree Editor="Editor"
+              RenderResult="RenderResult"
+              CloseRequested="CloseRequested" />
 
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
+    [Parameter] public EventCallback CloseRequested { get; set; }
 }

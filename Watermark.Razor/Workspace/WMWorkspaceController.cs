@@ -1076,7 +1076,15 @@ public sealed class WMWorkspaceController
             .WaitAsync(cancellationToken)
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException("所选模板已不存在。");
-        return new WMWorkspaceTemplateEdit(edit.TemplateId, Global.CanvasSerialize(canvas));
+        // The desktop applied-template editor upgrades legacy layouts when it
+        // creates its draft. Use that same upgraded snapshot for the very first
+        // preview so selecting a layer does not silently change the rendered
+        // layout and selecting the template again cannot fall back to legacy
+        // geometry.
+        var previewCanvas = WMTemplateEditorState.Create(canvas).Draft;
+        return new WMWorkspaceTemplateEdit(
+            edit.TemplateId,
+            Global.CanvasSerialize(previewCanvas));
     }
 
     public Task CommitTemplateAsync(

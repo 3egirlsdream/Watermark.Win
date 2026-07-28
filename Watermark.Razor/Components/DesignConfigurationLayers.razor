@@ -99,17 +99,25 @@
     }
 </div>
 
-<MDialog ContentStyle="width:90%;height:90%;" @bind-Value="showExifConfig">
+<MDialog Persistent
+         ContentStyle="@(Global.IsMobile
+            ? "width:100vw;height:100vh;max-width:none;max-height:none;margin:0;"
+            : "width:min(980px,94vw);height:min(760px,92vh);")"
+         @bind-Value="showExifConfig">
     @if (canvas != null && showExifConfig)
     {
-        <ExifConfig CanvasType="@canvas.CanvasType" ContainerId2Name="@containerId2Name" mText="wMText" OnClose="()=>showExifConfig = false" />
+        <ExifConfig CanvasType="@canvas.CanvasType"
+                    ContainerId2Name="@containerId2Name"
+                    mText="wMText"
+                    OnClose="()=>showExifConfig = false"
+                    OnCancel="()=>showExifConfig = false" />
     }
 </MDialog>
 
 <MDialog ContentStyle="width:90%;height:90%;" @bind-Value="showFontConfig">
     @if (showFontConfig && wMText != null)
     {
-        <FontsDialog ID="@canvas.ID" OnClose="(e)=>{wMText.FontFamily = e.Key; showFontConfig = false;}" />
+        <FontsDialog ID="@canvas.ID" OnClose="(e)=>{wMText!.FontFamily = e.Key; showFontConfig = false;}" />
     }
 </MDialog>
 
@@ -291,16 +299,11 @@
             </div>
         </div>
         <div class="font-row">
-            <MSelect ItemText="e => e"
-                     ItemValue="u => u"
-                     @bind-Value="mText.FontFamily"
-                     TValue="string"
-                     TItem="string"
-                     TItemValue="string"
-                     Items="SkiaSharp.SKFontManager.Default.FontFamilies.ToList()"
-                     Label="系统字体"
-                     HideDetails="true"
-                     Dense />
+            <WmSelect TValue="string"
+                      @bind-Value="mText.FontFamily"
+                      Options="@SystemFontOptions"
+                      Label="系统字体"
+                      AriaLabel="系统字体" />
             <MButton Small OnClick="()=>{wMText = mText; showFontConfig = true;}" Class="font-library-button">
                 <WmIcon Size="16" Icon="text-aa" />
                 字体库
@@ -398,9 +401,16 @@
     string ExifSummary(WMText text)
     {
         text.Exifs ??= [];
-        var value = string.Join(" ", text.Exifs.Select(x => x.Prefix + x.Value + x.Suffix));
-        return string.IsNullOrWhiteSpace(value) ? "未配置元数据参数" : value;
+        var value = WMTextContentPreview.Resolve(text.Exifs);
+        return string.IsNullOrWhiteSpace(value) ? "尚未添加文字" : value;
     }
+
+    private static readonly IReadOnlyList<WmSelectOption<string>> SystemFontOptions =
+        SkiaSharp.SKFontManager.Default.FontFamilies
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(font => font, StringComparer.OrdinalIgnoreCase)
+            .Select(font => new WmSelectOption<string>(font, font))
+            .ToList();
 
     void EnsureContainerDefaults(WMContainer container)
     {

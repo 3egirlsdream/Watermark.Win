@@ -289,6 +289,7 @@ public static class WMControlTree
         var copy = CloneControl(source);
         var ids = Flatten(canvas).Select(control => control.ID).ToHashSet(StringComparer.Ordinal);
         AssignIds(copy, ids, new HashSet<IWMControl>(ReferenceEqualityComparer.Instance));
+        WMPosterAssetSlots.RemapCopiedSlots(canvas, copy);
 
         var parent = FindParent(canvas, source.ID);
         if (parent == null)
@@ -310,6 +311,7 @@ public static class WMControlTree
         var control = Find(canvas, controlId);
         if (control == null || !RemoveByReference(canvas, control)) return false;
         SynchronizeParentMetadata(canvas);
+        WMPosterAssetSlots.Prune(canvas);
         return true;
     }
 

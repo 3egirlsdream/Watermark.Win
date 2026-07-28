@@ -2,6 +2,8 @@
 @using Watermark.Razor.Workspace
 @using Watermark.Shared.Models
 
+@if (Section is null || Section == WMTemplateMobileInspectorSection.Transform)
+{
 <section class="transform-inspector inspector-group">
     <div class="inspector-group-heading">
         <h3>变换</h3>
@@ -23,12 +25,14 @@
     <MacInspectorSlider Label="旋转" Value="@Transform.Rotation" Min="-180" Max="179.9" Step="0.1" Unit="°"
                         Disabled="@ReadOnly" ValueChanged="SetRotation" InteractionStarted="BeginRasterInteractionAsync" InteractionEnded="EndInteractionAsync" />
 </section>
+}
 
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
     [Parameter] public WMDesignBounds? Bounds { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public WMTemplateMobileInspectorSection? Section { get; set; }
 
     private static readonly WMTransform Identity = new();
     private bool keepRatio = true;

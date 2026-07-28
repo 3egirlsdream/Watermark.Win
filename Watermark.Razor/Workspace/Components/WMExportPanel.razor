@@ -45,12 +45,15 @@
             <section class="wm-export-section wm-export-quality" aria-labelledby="wm-export-quality-heading">
                 <div class="wm-export-section-heading">
                     <div><strong id="wm-export-quality-heading">图片质量</strong><small>更高质量会生成更大的文件</small></div>
-                    <output for="@qualityInputId">@Quality</output>
+                    <output>@Quality</output>
                 </div>
-                <label class="wm-export-range-wrap" for="@qualityInputId" style="--wm-range-progress: @(QualityProgress)%">
-                    <span class="wm-visually-hidden">JPEG 图片质量</span>
-                    <input id="@qualityInputId" type="range" min="60" max="100" step="1" value="@Quality" @oninput="ChangeQualityAsync" />
-                </label>
+                <div class="wm-export-range-wrap">
+                    <WmNumericSlider Label="JPEG 图片质量"
+                                     Value="@Quality"
+                                     Min="60" Max="100" Step="1"
+                                     ShowLabel="false"
+                                     ValueChanged="ChangeQualityAsync" />
+                </div>
                 <div class="wm-export-range-scale"><span>更小文件</span><span>最佳画质</span></div>
             </section>
         }
@@ -148,11 +151,9 @@
     [Parameter] public EventCallback RetryFailedRequested { get; set; }
     [Parameter] public EventCallback RunOrCancelRequested { get; set; }
 
-    private readonly string qualityInputId = $"wm-export-quality-{Guid.NewGuid():N}";
     private string FormatLabel => Format switch { WMExportFormat.Png16 => "PNG 16", WMExportFormat.Tiff16 => "TIFF 16", _ => "JPEG" };
     private string ResolutionLabel => MaximumLongEdge switch { 0 => "原尺寸", -1 => $"{CustomMaximumLongEdge}px", _ => $"{MaximumLongEdge}px" };
     private string ActionHint => Destination == WMExportDestinationKind.SystemPicker ? "导出时将询问保存位置" : "完成后保存到设备默认图片目录";
-    private int QualityProgress => (Math.Clamp(Quality, 60, 100) - 60) * 100 / 40;
 
     private string FormatButtonClass(WMExportFormat value) => $"wm-export-choice {(Format == value ? "is-selected" : null)}";
     private string ResolutionButtonClass(int value) => $"wm-export-resolution {(MaximumLongEdge == value ? "is-selected" : null)}";
@@ -162,5 +163,6 @@
     private Task SelectResolutionAsync(int value) => MaximumLongEdgeChanged.InvokeAsync(value);
     private Task SelectDestinationAsync(WMExportDestinationKind value) => DestinationChanged.InvokeAsync(value);
     private Task ChangeCustomMaximumLongEdgeAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? CustomMaximumLongEdgeChanged.InvokeAsync(Math.Clamp(value, 320, 16384)) : Task.CompletedTask;
-    private Task ChangeQualityAsync(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? QualityChanged.InvokeAsync(Math.Clamp(value, 60, 100)) : Task.CompletedTask;
+    private Task ChangeQualityAsync(double value) =>
+        QualityChanged.InvokeAsync(Math.Clamp((int)Math.Round(value), 60, 100));
 }

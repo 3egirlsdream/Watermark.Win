@@ -352,7 +352,7 @@ public sealed class WMApplicationMigrationTests
         Assert.Contains("border: 1px solid #9dbfff", templatesCss, StringComparison.Ordinal);
         Assert.Contains("SelectFeaturedMarketItem(state);", templates, StringComparison.Ordinal);
         Assert.Contains("WMTemplateMarketFeatureSelector.WithoutFeatured", templates, StringComparison.Ordinal);
-        Assert.Contains("Icon=\"tray-arrow-down\"", templates, StringComparison.Ordinal);
+        Assert.Contains("Icon=\"download-simple\"", templates, StringComparison.Ordinal);
         Assert.Contains("class=\"template-card market-card\"", templates, StringComparison.Ordinal);
         Assert.Contains("<span class=\"creator-line\"><small>本地模板</small></span>", templates, StringComparison.Ordinal);
         Assert.Contains("data-template-id=\"@featuredItem.WatermarkId\"", templates, StringComparison.Ordinal);

@@ -264,7 +264,6 @@
     min-width: 0 !important;
 }
 
-::deep .m-select,
 ::deep .m-text-field,
 ::deep .m-slider {
     max-width: 100% !important;

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Watermark.Razor.Components.Compatibility;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
@@ -98,11 +99,12 @@ public sealed class WMWorkspaceArchitectureGuardTests
     }
 
     [Fact]
-    public void MobileTemplateDesigner_UsesPageBackCanonicalPreviewAndResizableDrawer()
+    public void MobileTemplateDesigner_UsesPageBackCanonicalPreviewAndFixedPanelSpaces()
     {
         var designer = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
         var designerCss = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor.css");
-        var drawerJs = Read("Watermark.Razor/wwwroot/js/wm-template-designer.js");
+        var toolRailCss = Read("Watermark.Razor/Workspace/Components/WMPosterMobileToolRail.razor.css");
+        var canvasScript = Read("Watermark.Razor/wwwroot/js/mac-template-canvas.js");
         var sliderCss = Read("Watermark.Razor/Components/Mac/MacSlider.razor.css");
         var shell = Read("Watermark.Razor/Components/Layout/WMAppShellLayout.razor");
         var workspace = Read("Watermark.Razor/BlazorPages/Mobile/MobileWorkspace.razor");
@@ -112,17 +114,48 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("Global.InitFonts([loadedCanvas])", designer, StringComparison.Ordinal);
         Assert.Contains("CanNavigateAwayAsync", designer, StringComparison.Ordinal);
         var backHandler = designer[designer.IndexOf("public async Task HandleBackAsync()", StringComparison.Ordinal)..
-            designer.IndexOf("public Task<bool> CanNavigateAwayAsync()", StringComparison.Ordinal)];
-        Assert.DoesNotContain("CancelTransaction", backHandler, StringComparison.Ordinal);
-        Assert.DoesNotContain("Select(null)", backHandler, StringComparison.Ordinal);
-        Assert.Contains("--mobile-designer-drawer-height", designerCss, StringComparison.Ordinal);
+            designer.IndexOf("public async Task<bool> CanNavigateAwayAsync()", StringComparison.Ordinal)];
+        Assert.Contains("CloseMobileTextFieldLibraryAsync", backHandler, StringComparison.Ordinal);
+        Assert.Contains("CancelMobileTextContent", backHandler, StringComparison.Ordinal);
+        Assert.Contains("Select(null)", backHandler, StringComparison.Ordinal);
+        Assert.Contains("--mobile-designer-panel-height", designerCss, StringComparison.Ordinal);
+        Assert.Contains("min(232px, 30dvh)", designerCss, StringComparison.Ordinal);
+        Assert.Contains("min(340px, 44dvh)", designerCss, StringComparison.Ordinal);
+        Assert.Contains("min(480px, 62dvh)", designerCss, StringComparison.Ordinal);
+        Assert.DoesNotContain("mobile-designer-drawer-handle", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("role=\"separator\"", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("attachDrawerResize", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterMobileToolRail", designer, StringComparison.Ordinal);
+        Assert.Contains("ActiveToolId=\"@presentation.ActiveToolId\"", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("Compact=", designer, StringComparison.Ordinal);
+        Assert.Contains("mobile-panel-none", designer, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows: 52px minmax(0, 1fr) calc(78px + env(safe-area-inset-bottom));", designerCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-x: auto;", toolRailCss, StringComparison.Ordinal);
+        Assert.Contains("flex: 0 0 62px;", toolRailCss, StringComparison.Ordinal);
+        Assert.Contains("touch-action: pan-x;", toolRailCss, StringComparison.Ordinal);
+        Assert.Contains("mobile-space-large:not(.mobile-properties-panel) ::deep .designer-toolbar", designerCss, StringComparison.Ordinal);
+        Assert.Contains("mobile-space-large.mobile-properties-panel .designer-workspace", designerCss, StringComparison.Ordinal);
         Assert.Contains(".wm-template-designer ::deep *", designerCss, StringComparison.Ordinal);
         Assert.Contains("user-select: none", designerCss, StringComparison.Ordinal);
         Assert.Contains("::deep input", designerCss, StringComparison.Ordinal);
         Assert.Contains("user-select: text", designerCss, StringComparison.Ordinal);
-        Assert.Contains("pointerdown", drawerJs, StringComparison.Ordinal);
-        Assert.Contains("setPointerCapture", drawerJs, StringComparison.Ordinal);
         Assert.Contains("touch-action: pan-y", sliderCss, StringComparison.Ordinal);
+        Assert.Contains("<ExifConfig", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterAssetDrawer", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterAssetCropPanel", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMCropCanvas", designer, StringComparison.Ordinal);
+        Assert.DoesNotContain("WMPosterAssetCropPreview", designer, StringComparison.Ordinal);
+        Assert.Contains("WMPosterMobilePanel.AssetLibrary", designer, StringComparison.Ordinal);
+        Assert.Contains("WMPosterMobilePanel.AssetCrop", designer, StringComparison.Ordinal);
+        Assert.Contains("WMMobileEditorSpace.Medium", designer, StringComparison.Ordinal);
+        Assert.Contains("WMPosterAssetSelectionSession", designer, StringComparison.Ordinal);
+        Assert.Contains("moveable.waitToChangeTarget()", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("select(nextSelectedId);", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("new ResizeObserver", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("viewportResizeObserver?.disconnect();", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("EmbeddedMobilePanel=\"@Global.IsMobile\"", designer, StringComparison.Ordinal);
+        Assert.Contains("desktop-text-content-open", designer, StringComparison.Ordinal);
+        Assert.Contains("FieldLibraryVisibilityChanged", designer, StringComparison.Ordinal);
         Assert.Contains("WMTemplateDesignerSession", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMWatermarkHelper", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("IWMObjectUrlRegistry", designer, StringComparison.Ordinal);
@@ -134,6 +167,95 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("aria-current", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("private RenderFragment NavItem", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("Message = \"预览已更新\"", controller, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextContentEditor_ConstrainsDesktopAndMobileScrollingInsideFixedPanels()
+    {
+        var editorCss = Read("Watermark.Razor/Components/ExifConfig.razor.css");
+        var designerCss = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor.css");
+
+        Assert.Contains("grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr);", editorCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));", editorCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-y: auto;", editorCss, StringComparison.Ordinal);
+        Assert.Contains("overscroll-behavior-y: contain;", editorCss, StringComparison.Ordinal);
+        Assert.Contains("scrollbar-gutter: stable;", editorCss, StringComparison.Ordinal);
+        Assert.Contains(".is-embedded-mobile-panel .field-library", editorCss, StringComparison.Ordinal);
+        Assert.Contains(".designer-text-content-region .mobile-panel-body", designerCss, StringComparison.Ordinal);
+        Assert.Contains(".designer-text-content-region .mobile-panel-body ::deep .text-content-editor", designerCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows: minmax(0, 1fr);", designerCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplatePropertyInspector_ConstrainsDesktopAndMobileScrollingInsideFixedPanels()
+    {
+        var designer = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
+        var designerCss = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor.css");
+        var inspectorCss = Read("Watermark.Razor/Components/Mac/MacSelectionInspector.razor.css");
+
+        Assert.Contains("class=\"mobile-panel-body\"", designer, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplatePropertyPanel", designer, StringComparison.Ordinal);
+        Assert.Contains(".designer-inspector-region {", designerCss, StringComparison.Ordinal);
+        Assert.Contains(".designer-inspector-region .mobile-panel-body {", designerCss, StringComparison.Ordinal);
+        Assert.Contains(".designer-inspector-region .mobile-panel-body ::deep .mac-selection-inspector", designerCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows: minmax(0, 1fr);", designerCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-y: auto;", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains("overscroll-behavior-y: contain;", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains("scrollbar-gutter: stable;", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains(".mobile-inspector-section .selection-inspector-scroll", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-y: auto;", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains("touch-action: pan-y;", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains(".inspector-switch-grid", inspectorCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-columns: repeat(2, minmax(0, 1fr));", inspectorCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AssetCropPanel_UsesOnlyBundledPhosphorIcons()
+    {
+        var cropPanel = Read("Watermark.Razor/Workspace/Components/WMPosterAssetCropPanel.razor");
+        var cropPanelCss = Read("Watermark.Razor/Workspace/Components/WMPosterAssetCropPanel.razor.css");
+        var cropControls = Read("Watermark.Razor/Workspace/Components/WMCropControls.razor");
+        var toolRail = Read("Watermark.Razor/Workspace/Components/WMPosterAssetEditToolRail.razor");
+        var icons = new[]
+        {
+            "arrow-left",
+            "arrows-out-line-horizontal",
+            "resize",
+            "arrows-left-right",
+            "crop",
+            "arrow-counter-clockwise",
+            "arrow-clockwise",
+            "flip-horizontal",
+            "flip-vertical",
+            "angle",
+            "arrows-clockwise",
+            "drop-half",
+            "lock",
+            "lock-open"
+        };
+
+        Assert.All(icons, icon =>
+        {
+            Assert.True(
+                cropPanel.Contains($"\"{icon}\"", StringComparison.Ordinal)
+                || cropControls.Contains($"\"{icon}\"", StringComparison.Ordinal)
+                || toolRail.Contains($"\"{icon}\"", StringComparison.Ordinal));
+            Assert.False(string.IsNullOrWhiteSpace(WmPhosphorIconPaths.Get(icon)));
+        });
+
+        Assert.Contains("<WMCropControls", cropPanel, StringComparison.Ordinal);
+        Assert.Contains("WMCropSettings", cropPanel, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows: minmax(0, 1fr) auto auto;", cropPanelCss, StringComparison.Ordinal);
+        Assert.Contains("overflow-y: auto;", cropPanelCss, StringComparison.Ordinal);
+        Assert.DoesNotMatch(
+            new Regex(@"\.asset-fit-section\s*\{[^}]*display\s*:\s*none", RegexOptions.Singleline),
+            cropPanelCss);
+        Assert.Contains("\"white-transparent\"", toolRail, StringComparison.Ordinal);
+        Assert.Contains("\"lock-ratio\"", toolRail, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"auto-logo\"", toolRail, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"cutout\"", toolRail, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"effects\"", toolRail, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"mask\"", toolRail, StringComparison.Ordinal);
     }
 
     [Fact]

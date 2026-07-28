@@ -28,6 +28,7 @@ public static class WMApplicationServiceCollectionExtensions
         services.AddScoped<IWMAppSettingsService, WMAppSettingsService>();
         services.AddScoped<IWMCacheMaintenanceService, WMCacheMaintenanceService>();
         services.AddScoped<IWMResourceLibraryService, WMResourceLibraryService>();
+        services.AddScoped<IWMPosterAssetLibrary, WMPosterAssetLibrary>();
         services.AddScoped<IWMAppUpdateService, WMAppUpdateService>();
         services.AddScoped<IWMExternalActionService, WMExternalActionService>();
         services.AddScoped<IWMMembershipPaymentGateway, WMMembershipPaymentGateway>();

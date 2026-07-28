@@ -10,10 +10,12 @@ import {
   isPointerTap,
   resizeAspectRatio,
   resizeCenterDelta,
+  resolveMoveableRootContainer,
   resolveConstrainedResizeTranslation,
   resolveResizeDimensions,
   resolveScaleInteraction,
   resolveTextCornerResize,
+  resolveTextCornerResizeFromMovement,
   restoreLayerInteractionVisual,
   shouldFinishReleasedPointer,
   shouldIgnoreSynthesizedMouse,
@@ -27,6 +29,22 @@ test("resize handles follow desktop and touch editing conventions", () => {
     absoluteResizeDirections,
     ["n", "ne", "e", "se", "s", "sw", "w", "nw"]);
   assert.deepEqual(coarseResizeDirections, ["nw", "ne", "se", "sw"]);
+});
+
+test("nested controls measure Moveable against the untransformed canvas viewport", () => {
+  const viewport = {};
+  const documentRoot = {};
+  const root = {
+    closest: selector => selector === ".mac-canvas-viewport" ? viewport : null,
+    ownerDocument: { documentElement: documentRoot }
+  };
+
+  assert.equal(resolveMoveableRootContainer(root), viewport);
+  assert.equal(resolveMoveableRootContainer({
+    closest: () => null,
+    ownerDocument: { documentElement: documentRoot }
+  }), documentRoot);
+  assert.equal(resolveMoveableRootContainer(null), null);
 });
 
 test("locked image ratio applies only to corner resize handles", () => {
@@ -88,17 +106,73 @@ test("text corner resize scales content while keeping decoration inset fixed", (
     resizeFontSize: 10
   };
 
-  assert.deepEqual(
-    resolveTextCornerResize(start, 300, 180),
-    { width: 524, height: 164, resizeRatio: 1.8 });
-  assert.deepEqual(
-    resolveResizeDimensions("text", start, [1, 1], 300, 180),
-    {
-      width: 524,
-      height: 164,
-      keepAspectRatio: false,
-      resizeRatio: 1.8
-    });
+  const resized = resolveTextCornerResize(start, 300, 180);
+  const resolved = resolveResizeDimensions("text", start, [1, 1], 300, 180);
+
+  assert.ok(Math.abs(
+    Math.hypot(resized.width - start.width, resized.height - start.height)
+      - 80) < 0.000001);
+  assert.ok(Math.abs(resized.width - 376.9219158112658) < 0.000001);
+  assert.ok(Math.abs(resized.height - 121.97769023179023) < 0.000001);
+  assert.deepEqual(resolved, {
+    ...resized,
+    keepAspectRatio: false
+  });
+});
+
+test("text corner shrinking keeps the same one-to-one pointer travel", () => {
+  const start = {
+    width: 300,
+    height: 100,
+    resizeInset: 20,
+    resizeFontSize: 10
+  };
+
+  const resized = resolveTextCornerResize(start, 300, 20);
+
+  assert.ok(resized.resizeRatio < 1);
+  assert.ok(Math.abs(
+    Math.hypot(resized.width - start.width, resized.height - start.height)
+      - 80) < 0.000001);
+});
+
+test("all text corners stay under the pointer after component scale and rotation", () => {
+  const start = {
+    width: 300,
+    height: 100,
+    resizeInset: 20,
+    resizeFontSize: 10,
+    scaleX: 1.5,
+    scaleY: 0.75,
+    rotation: 30
+  };
+  const radians = start.rotation * Math.PI / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(direction => {
+    const outwardX = direction[0] * 280 * start.scaleX;
+    const outwardY = direction[1] * 80 * start.scaleY;
+    const rotatedX = outwardX * cosine - outwardY * sine;
+    const rotatedY = outwardX * sine + outwardY * cosine;
+    const length = Math.hypot(rotatedX, rotatedY);
+    const pointerX = rotatedX / length * 80;
+    const pointerY = rotatedY / length * 80;
+    const resized = resolveTextCornerResizeFromMovement(
+      start,
+      direction,
+      pointerX,
+      pointerY);
+    const deltaWidth = direction[0]
+      * (resized.width - start.width) * start.scaleX;
+    const deltaHeight = direction[1]
+      * (resized.height - start.height) * start.scaleY;
+    const handleX = deltaWidth * cosine - deltaHeight * sine;
+    const handleY = deltaWidth * sine + deltaHeight * cosine;
+
+    assert.ok(Math.abs(handleX - pointerX) < 0.000001);
+    assert.ok(Math.abs(handleY - pointerY) < 0.000001);
+  });
 });
 
 test("text resize does not give Moveable the old whitespace box ratio", () => {

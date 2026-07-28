@@ -2,51 +2,92 @@
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 
-@if (Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+@if (Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion && HasVisibleContent)
 {
     <section class="inspector-group node-style-inspector">
-        <div class="inspector-group-heading"><h3>布局样式</h3></div>
-        <MacInspectorOptionGroup TValue="WMPosition" Label="定位方式" Value="@Style.Position" Options="@PositionOptions" Disabled="@ReadOnly" ValueChanged="SetPosition" />
-        @if (Control is not WMLine)
+        @if (Show(WMTemplateMobileInspectorSection.Size))
         {
-            <MacInspectorOptionGroup TValue="WMStyleUnit" Label="宽度类型" Value="@Style.Width.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(true, value)" />
-            @if (!Style.Width.IsAuto)
+            <div class="inspector-group-heading"><h3>尺寸</h3></div>
+            @if (Control is not WMLine)
             {
-                <MacInspectorSlider Label="宽度" Value="@Style.Width.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(true, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-            }
-            <MacInspectorOptionGroup TValue="WMStyleUnit" Label="高度类型" Value="@Style.Height.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(false, value)" />
-            @if (!Style.Height.IsAuto)
-            {
-                <MacInspectorSlider Label="高度" Value="@Style.Height.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(false, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                <div class="node-style-size-grid">
+                    <div class="node-style-size-row">
+                        <MacInspectorOptionGroup TValue="WMStyleUnit" CssClass="node-style-size-unit" Label="宽度" Value="@Style.Width.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(true, value)" />
+                        @if (!Style.Width.IsAuto)
+                        {
+                            <MacInspectorSlider Label="宽度" ShowLabel="false" CssClass="node-style-size-value" Value="@Style.Width.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(true, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                        }
+                    </div>
+                    <div class="node-style-size-row">
+                        <MacInspectorOptionGroup TValue="WMStyleUnit" CssClass="node-style-size-unit" Label="高度" Value="@Style.Height.Unit" Options="@LengthUnitOptions" Disabled="@ReadOnly" ValueChanged="value => SetLengthUnit(false, value)" />
+                        @if (!Style.Height.IsAuto)
+                        {
+                            <MacInspectorSlider Label="高度" ShowLabel="false" CssClass="node-style-size-value" Value="@Style.Height.Value" Min="0" Max="100" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetLengthValue(false, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+                        }
+                    </div>
+                </div>
             }
         }
 
-        @if (Style.Position == WMPosition.Absolute)
+        @if (Show(WMTemplateMobileInspectorSection.Position))
         {
-            <div class="inspector-group-heading compact"><h3>定位边距（相对父内容区）</h3></div>
-            @InsetEditor("上", Style.Top, value => Style.Top = value)
-            @InsetEditor("右", Style.Right, value => Style.Right = value)
-            @InsetEditor("下", Style.Bottom, value => Style.Bottom = value)
-            @InsetEditor("左", Style.Left, value => Style.Left = value)
-            <MacInspectorSlider Label="层叠顺序" Value="@Style.ZIndex" Min="-20" Max="20" Step="1" Disabled="@ReadOnly" ValueChanged="SetZIndex" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        }
-        else
-        {
-            <MacInspectorOptionGroup TValue="WMFlex" Label="伸缩方式" Value="@Style.Flex" Options="@FlexOptions" Disabled="@ReadOnly" ValueChanged="SetFlex" />
+            <div class="inspector-group-heading"><h3>位置</h3></div>
+            <MacInspectorOptionGroup TValue="WMPosition" Label="定位方式" Value="@Style.Position" Options="@PositionOptions" Disabled="@ReadOnly" ValueChanged="SetPosition" />
+            @if (Style.Position == WMPosition.Absolute)
+            {
+                <div class="inspector-group-heading compact"><h3>定位边距（相对父内容区）</h3></div>
+                @InsetEditor("上", Style.Top, value => Style.Top = value)
+                @InsetEditor("右", Style.Right, value => Style.Right = value)
+                @InsetEditor("下", Style.Bottom, value => Style.Bottom = value)
+                @InsetEditor("左", Style.Left, value => Style.Left = value)
+                <MacInspectorSlider Label="层叠顺序" Value="@Style.ZIndex" Min="-20" Max="20" Step="1" Disabled="@ReadOnly" ValueChanged="SetZIndex" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+            else
+            {
+                <MacInspectorOptionGroup TValue="WMFlex" Label="伸缩方式" Value="@Style.Flex" Options="@FlexOptions" Disabled="@ReadOnly" ValueChanged="SetFlex" />
+            }
         }
 
-        <div class="inspector-group-heading compact"><h3>间距（相对画布短边）</h3></div>
-        <MacInspectorSlider Label="上外边距" Value="@Style.Margin.Top" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(0, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        <MacInspectorSlider Label="右外边距" Value="@Style.Margin.Right" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(1, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        <MacInspectorSlider Label="下外边距" Value="@Style.Margin.Bottom" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(2, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        <MacInspectorSlider Label="左外边距" Value="@Style.Margin.Left" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(3, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
-        @if (Control is WMContainer)
+        @if (HasVisibleMargins)
         {
+            <div class="inspector-group-heading compact"><h3>@MarginHeading</h3></div>
+            @if (ShowMargin(WMTemplateMobileInspectorSection.MarginTop))
+            {
+                <MacInspectorSlider Label="上外边距" Value="@Style.Margin.Top" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(0, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+            @if (ShowMargin(WMTemplateMobileInspectorSection.MarginRight))
+            {
+                <MacInspectorSlider Label="右外边距" Value="@Style.Margin.Right" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(1, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+            @if (ShowMargin(WMTemplateMobileInspectorSection.MarginBottom))
+            {
+                <MacInspectorSlider Label="下外边距" Value="@Style.Margin.Bottom" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(2, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+            @if (ShowMargin(WMTemplateMobileInspectorSection.MarginLeft))
+            {
+                <MacInspectorSlider Label="左外边距" Value="@Style.Margin.Left" Min="-25" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="value => SetMargin(3, value)" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
+            }
+        }
+
+        @if (Control is WMContainer && (Show(WMTemplateMobileInspectorSection.Padding) || IsSpacingSection))
+        {
+            @if (!IsSpacingSection)
+            {
+                <div class="inspector-group-heading compact"><h3>内边距（相对画布短边）</h3></div>
+            }
             <MacInspectorSlider Label="统一内边距" Value="@Style.Padding.Top" Min="0" Max="25" Step="0.1" Unit="%" Disabled="@ReadOnly" ValueChanged="SetUniformPadding" InteractionStarted="BeginInteractionAsync" InteractionEnded="EndInteractionAsync" />
         }
-        <MacInspectorOptionGroup TValue="WMOverflow" Label="溢出内容" Value="@Style.Overflow" Options="@OverflowOptions" Disabled="@ReadOnly" ValueChanged="SetOverflow" />
 
-        @if (Control is WMContainer)
+        @if (Show(WMTemplateMobileInspectorSection.Overflow) || IsSpacingSection)
+        {
+            @if (!IsSpacingSection)
+            {
+                <div class="inspector-group-heading compact"><h3>溢出内容</h3></div>
+            }
+            <MacInspectorOptionGroup TValue="WMOverflow" Label="溢出内容" Value="@Style.Overflow" Options="@OverflowOptions" Disabled="@ReadOnly" ValueChanged="SetOverflow" />
+        }
+
+        @if (Control is WMContainer && Show(WMTemplateMobileInspectorSection.Flow))
         {
             <div class="inspector-group-heading compact"><h3>连续布局</h3></div>
             <MacInspectorOptionGroup TValue="Orientation" Label="排列方向" Value="@Style.FlexDirection" Options="@DirectionOptions" Disabled="@ReadOnly" ValueChanged="SetDirection" />
@@ -62,9 +103,37 @@
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter, EditorRequired] public IWMControl Control { get; set; } = null!;
     [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public WMTemplateMobileInspectorSection? Section { get; set; }
 
     private bool interactionActive;
     private WMStyle Style => Control.Style;
+    private bool Show(WMTemplateMobileInspectorSection section) => Section is null || Section == section;
+    private bool IsSpacingSection => Section == WMTemplateMobileInspectorSection.Spacing;
+    private bool ShowMargin(WMTemplateMobileInspectorSection section) =>
+        Show(section) || IsSpacingSection;
+    private bool HasVisibleMargins => ShowMargin(WMTemplateMobileInspectorSection.MarginTop)
+        || ShowMargin(WMTemplateMobileInspectorSection.MarginRight)
+        || ShowMargin(WMTemplateMobileInspectorSection.MarginBottom)
+        || ShowMargin(WMTemplateMobileInspectorSection.MarginLeft);
+    private bool HasVisibleContent => Section is null
+        || Section is WMTemplateMobileInspectorSection.Size
+            or WMTemplateMobileInspectorSection.Position
+            or WMTemplateMobileInspectorSection.MarginTop
+            or WMTemplateMobileInspectorSection.MarginRight
+            or WMTemplateMobileInspectorSection.MarginBottom
+            or WMTemplateMobileInspectorSection.MarginLeft
+            or WMTemplateMobileInspectorSection.Spacing
+            or WMTemplateMobileInspectorSection.Padding
+            or WMTemplateMobileInspectorSection.Overflow
+            or WMTemplateMobileInspectorSection.Flow;
+    private string MarginHeading => Section switch
+    {
+        WMTemplateMobileInspectorSection.MarginTop => "上边距（相对画布短边）",
+        WMTemplateMobileInspectorSection.MarginRight => "右边距（相对画布短边）",
+        WMTemplateMobileInspectorSection.MarginBottom => "下边距（相对画布短边）",
+        WMTemplateMobileInspectorSection.MarginLeft => "左边距（相对画布短边）",
+        _ => "间距（相对画布短边）"
+    };
 
     private RenderFragment InsetEditor(string label, WMStyleLength? value, Action<WMStyleLength?> set) => builder =>
     {

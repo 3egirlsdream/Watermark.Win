@@ -33,9 +33,24 @@ public sealed class MacInspectorLocalizationTests
         Assert.DoesNotContain("<h3>Logo</h3>", selectionInspector, StringComparison.Ordinal);
         Assert.Contains("Label=\"定位方式\"", styleInspector, StringComparison.Ordinal);
         Assert.Contains("Label=\"主轴对齐\"", styleInspector, StringComparison.Ordinal);
-        Assert.Contains("拍摄信息配置", selectionInspector, StringComparison.Ordinal);
+        Assert.Contains("文字内容", selectionInspector, StringComparison.Ordinal);
         Assert.Contains("Label=\"字距\"", selectionInspector, StringComparison.Ordinal);
         Assert.Contains("Label=\"背景模糊\"", selectionInspector, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MobileSizeEditor_UsesOneRowPerDimension()
+    {
+        var root = FindRepositoryRoot();
+        var styleInspector = File.ReadAllText(Path.Combine(
+            root, "Watermark.Razor", "Components", "Mac", "MacNodeStyleInspector.razor"));
+
+        Assert.Contains("class=\"node-style-size-row\"", styleInspector, StringComparison.Ordinal);
+        Assert.Contains("CssClass=\"node-style-size-unit\" Label=\"宽度\"", styleInspector, StringComparison.Ordinal);
+        Assert.Contains("CssClass=\"node-style-size-unit\" Label=\"高度\"", styleInspector, StringComparison.Ordinal);
+        Assert.Contains("ShowLabel=\"false\" CssClass=\"node-style-size-value\"", styleInspector, StringComparison.Ordinal);
+        Assert.DoesNotContain("Label=\"宽度类型\"", styleInspector, StringComparison.Ordinal);
+        Assert.DoesNotContain("Label=\"高度类型\"", styleInspector, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

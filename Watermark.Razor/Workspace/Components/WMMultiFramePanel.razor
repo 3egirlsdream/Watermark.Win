@@ -3,7 +3,13 @@
 
 <section class="wm-multiframe" aria-label="多帧设置">
     <header><div><strong>多帧合成</strong><small>素材角色与参数保存在当前会话</small></div><span class="wm-capability @(Capability.IsAvailable ? "is-ready" : null)">@(Capability.IsAvailable ? "设备可用" : "暂未开放")</span></header>
-    <label class="wm-mode"><span>处理模式</span><select value="@Mode" @onchange="ChangeModeAsync"><option value="@WMStackMode.StarTrail">星轨</option><option value="@WMStackMode.StaticSky">静态星空 / 多帧降噪</option></select></label>
+    <WmSelect TValue="WMStackMode"
+              Value="@Mode"
+              ValueChanged="ChangeModeAsync"
+              Options="@ModeOptions"
+              Label="处理模式"
+              AriaLabel="多帧处理模式"
+              Dark="@Global.IsMobile" />
     @if (Capability.IsAvailable)
     {
         <div class="wm-frame-list" aria-label="多帧素材角色">
@@ -51,5 +57,10 @@
     private bool CanRun => Capability.IsAvailable && LightCount >= (Mode == WMStackMode.StarTrail ? 2 : 3);
     private WMFrameRole? Role(string mediaId) => Roles.TryGetValue(mediaId, out var role) ? role : null;
     private Task ChangeRoleAsync(string mediaId, WMFrameRole? role) => RoleChanged.InvokeAsync(new WMFrameRoleChange(mediaId, role));
-    private Task ChangeModeAsync(ChangeEventArgs args) => Enum.TryParse<WMStackMode>(args.Value?.ToString(), out var mode) ? ModeChanged.InvokeAsync(mode) : Task.CompletedTask;
+    private static readonly IReadOnlyList<WmSelectOption<WMStackMode>> ModeOptions =
+    [
+        new("星轨", WMStackMode.StarTrail),
+        new("静态星空 / 多帧降噪", WMStackMode.StaticSky)
+    ];
+    private Task ChangeModeAsync(WMStackMode mode) => ModeChanged.InvokeAsync(mode);
 }

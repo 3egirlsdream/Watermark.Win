@@ -43,7 +43,7 @@
             <section class="settings-card" id="application">
                 <h2><WmIcon Icon="sliders-horizontal" /><span>处理设置</span></h2>
                 <label class="settings-switch"><span><strong>增强EXIF解析</strong><small>尝试读取厂商扩展元数据</small></span><input type="checkbox" @bind="enhancedExif" /></label>
-                <label class="settings-range"><span><strong>最大处理线程</strong><small>1–@draft.MaximumAllowedThreads，受设备预算限制</small></span><output>@maximumThreads</output><input type="range" min="1" max="@draft.MaximumAllowedThreads" step="1" @bind="maximumThreads" @bind:event="oninput" /></label>
+                <div class="settings-range"><span><strong>最大处理线程</strong><small>1–@draft.MaximumAllowedThreads，受设备预算限制</small></span><WmNumericSlider Label="最大处理线程" Value="@maximumThreads" Min="1" Max="@draft.MaximumAllowedThreads" Step="1" ShowLabel="false" CssClass="settings-thread-slider" ValueChanged="ChangeMaximumThreads" /></div>
                 <button class="is-primary" type="button" disabled="@saving" @onclick="SaveSettingsAsync"><span>@(saving ? "正在保存…" : "保存处理设置")</span><WmIcon Icon="floppy-disk" /></button>
             </section>
 
@@ -111,6 +111,12 @@
         }
         catch (Exception ex) { ShowToast(ex.Message, true); }
         finally { saving = false; }
+    }
+
+    private Task ChangeMaximumThreads(double value)
+    {
+        maximumThreads = Math.Clamp((int)Math.Round(value), 1, draft?.MaximumAllowedThreads ?? 1);
+        return Task.CompletedTask;
     }
 
     private async Task ClearCacheAsync(WMCacheArea area)

@@ -6,10 +6,8 @@
     </div>
     <WmCardContent>
         <WmForm>
-            <MSelect @bind-Value="Global.Resolution" Items="ResolutionOptions" TItem="KeyValuePair<string, string>" TValue="string" TItemValue="string"
-                     ItemText="u => u.Value" ItemValue="u => u.Key" Label="分辨率" Dense />
-            <MSelect @bind-Value="Global.Quality" Items="QualityOptions" TItem="KeyValuePair<int, string>" TValue="int" TItemValue="int"
-                     ItemText="u => u.Value" ItemValue="u => u.Key" Label="图片质量" Dense />
+            <WmSelect TValue="string" @bind-Value="Global.Resolution" Options="@ResolutionOptions" Label="分辨率" AriaLabel="导出分辨率" />
+            <WmSelect TValue="int" @bind-Value="Global.Quality" Options="@QualityOptions" Label="图片质量" AriaLabel="图片质量" />
             @* <WmTextField Label="输出目录" Value="@("Pictures/DaVinciFrameMaster")" Variant="Variant.Text" ReadOnly="true" Margin="Margin.Dense" /> *@
         </WmForm>
     </WmCardContent>
@@ -17,10 +15,10 @@
 
             
 @code {
-    private static readonly List<KeyValuePair<string, string>> ResolutionOptions =
-    [new("default", "原图"), new("1080", "1080P"), new("2160", "4K")];
-    private static readonly List<KeyValuePair<int, string>> QualityOptions =
-    [new(100, "原图"), new(85, "高"), new(70, "中")];
+    private static readonly IReadOnlyList<WmSelectOption<string>> ResolutionOptions =
+    [new("原图", "default"), new("1080P", "1080"), new("4K", "2160")];
+    private static readonly IReadOnlyList<WmSelectOption<int>> QualityOptions =
+    [new("原图", 100), new("高", 85), new("中", 70)];
 
     [Parameter]
     public EventCallback ExportEvent { get; set; }

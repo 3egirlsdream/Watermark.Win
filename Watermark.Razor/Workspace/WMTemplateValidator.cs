@@ -53,11 +53,115 @@ public static class WMTemplateValidator
             ValidateSiblingMetadata(canvas.Children ?? [], "0", errors);
         foreach (var root in canvas.Children ?? [])
             ValidateControl(root, root is WMContainer ? 1 : 0, v2, true, templateDirectory, ids, visited, active, errors);
+        ValidatePosterAssetManifest(canvas, errors);
 
         if (!string.IsNullOrWhiteSpace(canvas.Path))
             ValidateImagePath(canvas.ID, "Path", canvas.Path, templateDirectory, false, errors);
 
         return errors;
+    }
+
+    private static void ValidatePosterAssetManifest(
+        WMCanvas canvas,
+        List<WMTemplateValidationError> errors)
+    {
+        var slots = canvas.PosterManifest?.AssetSlots ?? [];
+        var slotsById = new Dictionary<string, WMPosterAssetSlot>(StringComparer.Ordinal);
+        foreach (var slot in slots)
+        {
+            if (string.IsNullOrWhiteSpace(slot.Id))
+            {
+                errors.Add(new(canvas.ID, "PosterManifest.AssetSlots", "可替换图片槽标识不能为空。"));
+                continue;
+            }
+            if (!slotsById.TryAdd(slot.Id, slot))
+                errors.Add(new(canvas.ID, "PosterManifest.AssetSlots", "可替换图片槽标识必须唯一。"));
+            if (slot.AcceptedMediaTypes.Count == 0
+                || slot.AcceptedMediaTypes.Any(type =>
+                    string.IsNullOrWhiteSpace(type)
+                    || !type.StartsWith("image/", StringComparison.OrdinalIgnoreCase)))
+            {
+                errors.Add(new(
+                    canvas.ID,
+                    "PosterManifest.AssetSlots",
+                    $"图片槽“{slot.Name}”必须声明至少一种 image/* 媒体类型。"));
+            }
+            if (!Enum.IsDefined(slot.Fit))
+                errors.Add(new(canvas.ID, "PosterManifest.AssetSlots", $"图片槽“{slot.Name}”的裁切策略无效。"));
+            if (slot.Crop?.Settings is null
+                && slot.Crop is not null
+                && (!double.IsFinite(slot.Crop.AspectRatio)
+                    || slot.Crop.AspectRatio < 0
+                    || slot.Crop.AspectRatio > 10))
+            {
+                errors.Add(new(
+                    canvas.ID,
+                    "PosterManifest.AssetSlots",
+                    $"图片槽“{slot.Name}”的裁剪比例无效。"));
+            }
+            if (slot.Crop?.Settings is null
+                && slot.Crop is not null
+                && (!double.IsFinite(slot.Crop.RotationDegrees)
+                    || slot.Crop.RotationDegrees is < -30 or > 30))
+            {
+                errors.Add(new(
+                    canvas.ID,
+                    "PosterManifest.AssetSlots",
+                    $"图片槽“{slot.Name}”的素材旋转角度必须在 -30° 到 30° 之间。"));
+            }
+            if (slot.Crop?.Settings is { } cropSettings
+                && (!double.IsFinite(cropSettings.CenterX)
+                    || cropSettings.CenterX is < 0 or > 1
+                    || !double.IsFinite(cropSettings.CenterY)
+                    || cropSettings.CenterY is < 0 or > 1
+                    || !double.IsFinite(cropSettings.VisibleWidth)
+                    || cropSettings.VisibleWidth is <= 0 or > 1
+                    || !double.IsFinite(cropSettings.VisibleHeight)
+                    || cropSettings.VisibleHeight is <= 0 or > 1
+                    || !double.IsFinite(cropSettings.StraightenDegrees)
+                    || cropSettings.StraightenDegrees is < -45 or > 45
+                    || !Enum.IsDefined(cropSettings.AspectPreset)))
+            {
+                errors.Add(new(
+                    canvas.ID,
+                    "PosterManifest.AssetSlots",
+                    $"图片槽“{slot.Name}”的裁切参数无效。"));
+            }
+        }
+
+        var slotOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var control in Global.EnumerateControls(canvas))
+        {
+            var slotId = control.PosterMetadata?.AssetSlotId;
+            if (string.IsNullOrWhiteSpace(slotId)) continue;
+            if (!WMPosterAssetSlots.Supports(control))
+            {
+                errors.Add(new(control.ID, "PosterMetadata.AssetSlotId", "只有图片和容器背景可以引用可替换素材槽。"));
+                continue;
+            }
+            if (!slotsById.ContainsKey(slotId))
+            {
+                errors.Add(new(control.ID, "PosterMetadata.AssetSlotId", "图层引用的可替换图片槽不存在。"));
+                continue;
+            }
+            if (!slotOwners.TryAdd(slotId, control.ID))
+            {
+                errors.Add(new(
+                    control.ID,
+                    "PosterMetadata.AssetSlotId",
+                    "一个可替换图片槽不能同时绑定多个图层。"));
+            }
+        }
+
+        foreach (var slot in slots.Where(slot => !string.IsNullOrWhiteSpace(slot.Id)
+                                                && !slotOwners.ContainsKey(slot.Id)))
+        {
+            errors.Add(new(
+                canvas.ID,
+                "PosterManifest.AssetSlots",
+                $"图片槽“{slot.Name}”没有绑定图层。",
+                WMValidationSeverity.Warning));
+        }
     }
 
     private static void ValidateControl(

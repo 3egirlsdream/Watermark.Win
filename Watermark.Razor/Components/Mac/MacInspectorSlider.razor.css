@@ -15,6 +15,11 @@
     opacity: .56;
 }
 
+.mac-inspector-slider.no-label {
+    grid-template-areas: "range value";
+    grid-template-columns: minmax(70px, 1fr) 76px;
+}
+
 .inspector-slider-label {
     color: #334155;
     font-size: 11px;
@@ -91,6 +96,11 @@
     white-space: nowrap;
 }
 
+.mobile-number-trigger,
+.mobile-number-picker {
+    display: none;
+}
+
 .touch-slider-gesture {
     display: none;
 }
@@ -142,13 +152,18 @@
 @media (pointer: coarse), (max-width: 860px) {
     .mac-inspector-slider {
         column-gap: 10px;
-        grid-template-areas:
-            "label value"
-            "range range";
+        grid-template-areas: "label value";
         grid-template-columns: minmax(0, 1fr) auto;
-        min-height: 62px;
-        padding: 3px 0 5px;
-        row-gap: 2px;
+        min-height: 46px;
+        padding: 3px 0;
+        position: relative;
+        row-gap: 0;
+    }
+
+    .mac-inspector-slider.no-label {
+        grid-template-areas: "value";
+        grid-template-columns: auto;
+        justify-content: end;
     }
 
     .inspector-slider-label {
@@ -158,9 +173,13 @@
 
     .inspector-number-field,
     .inspector-number-field.long-unit {
-        height: 38px;
+        background: transparent;
+        border: 0;
+        height: 40px;
         justify-self: end;
-        padding: 0 9px;
+        overflow: visible;
+        padding: 0;
+        position: relative;
         width: 80px;
     }
 
@@ -168,45 +187,123 @@
         width: 104px;
     }
 
-    .inspector-number-input {
-        font-size: 13px;
-    }
-
+    .inspector-number-input,
     .inspector-number-unit {
-        font-size: 12px;
+        display: none;
     }
 
-    .inspector-slider-range,
-    .inspector-slider-range ::deep .mac-slider,
-    .inspector-slider-range ::deep .mac-slider-control {
-        min-height: 38px;
+    .mobile-number-trigger {
+        align-items: center;
+        background: #fff;
+        border: 1px solid #cfd6df;
+        border-radius: 9px;
+        box-shadow: 0 1px 2px rgba(27, 39, 57, .04);
+        box-sizing: border-box;
+        color: #176fe8;
+        cursor: ns-resize;
+        display: inline-flex;
+        font-family: inherit;
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        height: 40px;
+        justify-content: center;
+        line-height: 1;
+        min-width: 80px;
+        outline: 0;
+        padding: 0 9px;
+        touch-action: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+        width: 100%;
     }
 
-    .inspector-slider-range ::deep .mac-slider-control::-webkit-slider-runnable-track {
-        height: 6px;
+    .mobile-number-trigger:focus-visible,
+    .mobile-number-trigger[aria-expanded="true"] {
+        border-color: #2878e5;
+        box-shadow: 0 0 0 3px rgba(40, 120, 229, .13);
     }
 
-    .inspector-slider-range ::deep .mac-slider-control::-webkit-slider-thumb {
-        border-width: 3px;
-        height: 22px;
-        margin-top: -8px;
-        width: 22px;
+    .mobile-number-trigger:active {
+        transform: scale(.98);
     }
 
-    .inspector-slider-range ::deep .mac-slider-control::-moz-range-track,
-    .inspector-slider-range ::deep .mac-slider-control::-moz-range-progress {
-        height: 6px;
+    .mobile-number-trigger:disabled {
+        color: #728198;
+        cursor: default;
     }
 
-    .inspector-slider-range ::deep .mac-slider-control::-moz-range-thumb {
-        border-width: 3px;
-        height: 16px;
-        width: 16px;
+    .mobile-number-unit {
+        color: #53647a;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 3px;
+        white-space: nowrap;
+    }
+
+    .mobile-number-picker {
+        align-items: stretch;
+        backdrop-filter: blur(16px);
+        background: rgba(255, 255, 255, .96);
+        border: 1px solid rgba(191, 202, 218, .86);
+        border-radius: 12px;
+        box-shadow: 0 12px 28px rgba(38, 54, 75, .18), 0 2px 7px rgba(38, 54, 75, .09);
+        box-sizing: border-box;
+        display: grid;
+        grid-auto-rows: 31px;
+        min-width: 80px;
+        overflow: hidden;
+        padding: 5px;
+        position: absolute;
+        right: 0;
+        top: 50%;
+        touch-action: none;
+        transform: translateY(-50%);
+        width: 100%;
+        z-index: 24;
+    }
+
+    .mac-inspector-slider:has(.mobile-number-picker) {
+        isolation: isolate;
+        z-index: 2147483000;
+    }
+
+    .mobile-number-picker-option {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        border-radius: 7px;
+        color: #7a8799;
+        cursor: ns-resize;
+        font-family: inherit;
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        line-height: 31px;
+        min-width: 0;
+        padding: 0 8px;
+        text-align: center;
+    }
+
+    .mobile-number-picker-option.selected {
+        background: linear-gradient(90deg, rgba(28, 119, 235, .08), rgba(28, 119, 235, .16), rgba(28, 119, 235, .08));
+        color: #176fe8;
+        font-size: 18px;
+        font-weight: 750;
+    }
+
+    .mobile-number-picker-option:focus-visible {
+        outline: 2px solid #2878e5;
+        outline-offset: -2px;
+    }
+
+    .inspector-slider-range {
+        display: none;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .inspector-number-field {
+    .inspector-number-field,
+    .mobile-number-trigger {
         transition: none;
     }
 }

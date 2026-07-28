@@ -46,9 +46,25 @@ public enum WMMobileEditorHostKind
     StageOverlay
 }
 
+/// <summary>
+/// Chooses the system surface used to browse device media. The full-screen
+/// gallery option is intentionally advisory: each platform falls back to its
+/// privacy-preserving picker when no gallery application is available.
+/// </summary>
+public enum WMPhotoPickerPresentation
+{
+    SystemPhotoPicker,
+    FullScreenGallery
+}
+
 public enum WMMobileEditorTool
 {
     TemplatePicker,
+    TemplateCanvas,
+    TemplateCanvasSize,
+    TemplateCanvasInsets,
+    TemplateCanvasFrame,
+    TemplateCanvasImage,
     TemplateBorderTop,
     TemplateBorderRight,
     TemplateBorderBottom,
@@ -86,6 +102,25 @@ public sealed record WMMobileToolPresentation(
     WMMobileEditorTool Tool,
     WMMobileEditorSpace Space,
     WMMobileEditorHostKind HostKind = WMMobileEditorHostKind.Dock);
+
+/// <summary>
+/// A compact, presentation-only item for the shared mobile configuration rail.
+/// The application workspace and template designer deliberately use the same
+/// visual rail while retaining their own strongly typed tool state.
+/// </summary>
+public sealed record WMMobileToolRailItem(
+    string Id,
+    string Label,
+    string Icon,
+    string? ControlsId = null);
+
+/// <summary>
+/// Opens the shared template designer from another mobile surface. A section
+/// id keeps a workspace shortcut aligned with the designer's own tool rail.
+/// </summary>
+public sealed record WMTemplateDesignerLaunchRequest(
+    string TemplateId,
+    string? InitialMobileToolId = null);
 
 public enum WMApplyScope
 {
@@ -706,7 +741,8 @@ public interface IWMWorkspaceLauncher
 public interface IWMPhotoPicker
 {
     Task<IReadOnlyList<IWMPhotoImportSource>> PickMultipleAsync(
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        WMPhotoPickerPresentation presentation = WMPhotoPickerPresentation.SystemPhotoPicker);
 }
 
 public interface IWMColorReferenceService

@@ -23,6 +23,12 @@
     overflow: hidden;
 }
 
+/* The workspace has its own bottom mode bar that consumes the safe area. */
+.wm-dock-context ::deep .wm-poster-tool-rail {
+    height: 78px;
+    padding-bottom: 4px;
+}
+
 .wm-dock-control-region {
     box-sizing: border-box;
     min-height: 0;
@@ -40,57 +46,16 @@
 .wm-mobile-dock.is-large .wm-dock-control-region { overflow-y: auto; overscroll-behavior: contain; }
 .wm-mobile-dock.is-large .wm-dock-control-region { padding: 0; }
 
-.wm-dock-tools {
-    border-top: 1px solid rgba(37,37,37,.07);
-    box-sizing: border-box;
-    height: 78px;
-    min-width: 0;
-    overflow: hidden;
+.wm-mobile-dock.mobile-number-picker-open,
+.wm-mobile-dock.mobile-number-picker-open .wm-dock-context,
+.wm-mobile-dock.mobile-number-picker-open .wm-dock-control-region {
+    overflow: visible;
+}
+
+.wm-mobile-dock.mobile-number-picker-open {
     position: relative;
+    z-index: 2147482500;
 }
-
-.wm-dock-tools::after {
-    background: linear-gradient(90deg, transparent, #f4f4f4);
-    content: "";
-    inset: 0 0 0 auto;
-    pointer-events: none;
-    position: absolute;
-    width: 24px;
-}
-
-.wm-dock-tools > div {
-    align-items: stretch;
-    display: flex;
-    gap: 4px;
-    height: 100%;
-    overflow-x: auto;
-    padding: 4px 22px 4px 8px;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-}
-.wm-dock-tools > div::-webkit-scrollbar { display: none; }
-
-.wm-dock-tools button {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: 12px;
-    color: #777;
-    display: flex;
-    flex: 0 0 62px;
-    flex-direction: column;
-    font: inherit;
-    font-size: .58rem;
-    gap: 3px;
-    justify-content: center;
-    min-width: 62px;
-    padding: 4px 3px;
-    scroll-margin-inline: 22px;
-}
-.wm-dock-tools button ::deep .m-icon { font-size: 23px; }
-.wm-dock-tools button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wm-dock-tools button.is-active { background: var(--wm-control-active-surface); color: #252525; font-weight: 800; }
-.wm-dock-tools button:active { transform: scale(.97); }
 
 .wm-dock-modes {
     align-items: center;
@@ -181,9 +146,9 @@
     grid-template-columns: 1fr 1fr;
     padding: 3px;
 }
+.wm-dock-template-actions { align-items: center; display: flex; flex: 0 0 auto; }
 .wm-dock-scope-pills button { background: transparent; border: 0; border-radius: 8px; color: #777; font: inherit; font-size: .56rem; min-height: 30px; padding: 0 9px; }
 .wm-dock-scope-pills button.is-active { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.08); color: #252525; font-weight: 750; }
-
 .wm-dock-template-card {
     background: transparent;
     border: 0;
@@ -213,10 +178,8 @@
 .wm-dock-template-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wm-dock-template-card.is-active > span { border-color: #ffc200; box-shadow: 0 0 0 2px rgba(255,194,0,.18); }
 
-.wm-dock-parameter-editor { display: grid; gap: 2px; width: 100%; }
-.wm-dock-parameter-editor header { align-items: baseline; display: flex; justify-content: space-between; }
-.wm-dock-parameter-editor header strong { font-size: .8rem; }
-.wm-dock-parameter-editor header output { color: #3e3e3e; font-size: .72rem; font-variant-numeric: tabular-nums; }
+.wm-dock-parameter-editor { width: 100%; }
+.wm-dock-parameter-editor ::deep .mac-inspector-slider { padding: 0; }
 .wm-dock-centered-control { margin: auto 0; width: 100%; }
 
 .wm-dock-hsl-control { display: grid; gap: 5px; width: 100%; }
@@ -333,5 +296,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .wm-dock-tools > div { scroll-behavior: auto; }
+    .wm-dock-modes { scroll-behavior: auto; }
 }

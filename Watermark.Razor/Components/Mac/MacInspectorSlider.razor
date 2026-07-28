@@ -3,8 +3,11 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<div class="mac-inspector-slider @(Disabled ? "disabled" : null) @(touchGestureReady ? "touch-ready" : null)">
-    <label class="inspector-slider-label">@Label</label>
+<div class="mac-inspector-slider @(Disabled ? "disabled" : null) @(touchGestureReady ? "touch-ready" : null) @(!ShowLabel ? "no-label" : null) @CssClass">
+    @if (ShowLabel)
+    {
+        <label class="inspector-slider-label">@Label</label>
+    }
     <div class="inspector-slider-range">
         <MacSlider Label="@Label"
                    Value="@Value"
@@ -43,6 +46,50 @@
         {
             <span class="inspector-number-unit">@Unit</span>
         }
+        <button type="button"
+                class="mobile-number-trigger"
+                disabled="@Disabled"
+                aria-label="@($"{Label}，当前 {DisplayValueString}{Unit}")"
+                aria-haspopup="listbox"
+                aria-expanded="@showMobilePicker"
+                @onclick="ToggleMobilePickerAsync"
+                @onpointerdown="BeginNumberGestureAsync"
+                @onpointermove="MoveNumberGestureAsync"
+                @onpointerup="EndNumberGestureAsync"
+                @onpointercancel="CancelNumberGestureAsync"
+                @onkeydown="HandleNumberKeyDownAsync"
+                @onkeydown:preventDefault="true"
+                @onkeydown:stopPropagation>
+            <span class="mobile-number-value">@DisplayValueString</span>
+            @if (!string.IsNullOrWhiteSpace(Unit))
+            {
+                <span class="mobile-number-unit">@Unit</span>
+            }
+        </button>
+        @if (showMobilePicker)
+        {
+            <div class="mobile-number-picker"
+                 role="listbox"
+                 aria-label="@($"选择{Label}")"
+                 @onpointerdown="BeginPickerGestureAsync"
+                 @onpointermove="MovePickerGestureAsync"
+                 @onpointerup="EndPickerGestureAsync"
+                 @onpointercancel="CancelPickerGestureAsync"
+                 @onpointerleave="EndPickerGestureAsync"
+                 @onwheel="AdjustPickerWheelAsync"
+                 @onwheel:preventDefault="true">
+                @foreach (var pickerValue in PickerValues)
+                {
+                    <button type="button"
+                            class="mobile-number-picker-option @(IsCurrentPickerValue(pickerValue) ? "selected" : null)"
+                            role="option"
+                            aria-selected="@IsCurrentPickerValue(pickerValue)"
+                            @onclick="() => SelectPickerValueAsync(pickerValue)">
+                        @FormatValue(pickerValue)
+                    </button>
+                }
+            </div>
+        }
     </div>
 </div>
 
@@ -55,6 +102,8 @@
     [Parameter] public double Step { get; set; } = 1;
     [Parameter] public string Unit { get; set; } = string.Empty;
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowLabel { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
     [Parameter] public EventCallback InteractionStarted { get; set; }
     [Parameter] public EventCallback InteractionEnded { get; set; }
 
@@ -65,25 +114,60 @@
     private bool disposed;
     private bool touchGestureReady;
     private bool inputInteractionActive;
+    private bool showMobilePicker;
+    private bool mobileInteractionActive;
+    private bool? mobilePickerLayerApplied;
+    private bool suppressNumberTriggerClick;
+    private bool suppressPickerSelection;
+    private long? numberPointerId;
+    private long? pickerPointerId;
+    private double numberGestureStartY;
+    private double numberGestureStartValue;
+    private double pickerGestureStartY;
+    private double pickerGestureStartValue;
+    private bool numberGestureMoved;
+    private bool pickerGestureMoved;
     private bool HasLongUnit => Unit.Length > 2;
-    private string ValueString => Value.ToString("0.###", CultureInfo.InvariantCulture);
+    private double EffectiveStep => MacSlider.NormalizeStep(Step);
+    private int ValuePrecision => DecimalPlaces(EffectiveStep);
+    private string ValueString => FormatValue(Value);
+    private string DisplayValueString => FormatValue(NormalizeValue(Value));
     private string MinString => Min.ToString("0.###", CultureInfo.InvariantCulture);
     private string MaxString => Max.ToString("0.###", CultureInfo.InvariantCulture);
-    private string StepString => Step.ToString("0.###", CultureInfo.InvariantCulture);
+    private string StepString => EffectiveStep.ToString("0.########", CultureInfo.InvariantCulture);
+    private IEnumerable<double> PickerValues => Enumerable.Range(-2, 5)
+        .Select(offset => NormalizeValue(Value + offset * EffectiveStep))
+        .Distinct();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || disposed) return;
+        if (disposed) return;
 
+        if (firstRender)
+        {
+            try
+            {
+                module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/Watermark.Razor/js/mac-inspector-slider.js");
+                dotNetReference = DotNetObjectReference.Create(this);
+                touchGesture = await module.InvokeAsync<IJSObjectReference>(
+                    "createTouchSlider", touchGestureElement, dotNetReference);
+                touchGestureReady = true;
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (JSException)
+            {
+            }
+        }
+
+        if (module is null || mobilePickerLayerApplied == showMobilePicker) return;
         try
         {
-            module = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/Watermark.Razor/js/mac-inspector-slider.js");
-            dotNetReference = DotNetObjectReference.Create(this);
-            touchGesture = await module.InvokeAsync<IJSObjectReference>(
-                "createTouchSlider", touchGestureElement, dotNetReference);
-            touchGestureReady = true;
-            StateHasChanged();
+            await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
+            mobilePickerLayerApplied = showMobilePicker;
         }
         catch (JSDisconnectedException)
         {
@@ -95,7 +179,7 @@
 
     private Task HandleSliderAsync(double value) => Disabled
         ? Task.CompletedTask
-        : ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+        : ValueChanged.InvokeAsync(NormalizeValue(value));
 
     [JSInvokable]
     public Task BeginTouchInteraction() => Disabled
@@ -105,7 +189,7 @@
     [JSInvokable]
     public Task ChangeTouchValue(double value) => Disabled
         ? Task.CompletedTask
-        : ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+        : ValueChanged.InvokeAsync(NormalizeValue(value));
 
     [JSInvokable]
     public Task EndTouchInteraction() => Disabled
@@ -117,7 +201,7 @@
         if (Disabled) return;
         if (!double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
             return;
-        await ValueChanged.InvokeAsync(Math.Clamp(value, Min, Max));
+        await ValueChanged.InvokeAsync(NormalizeValue(value));
     }
 
     private async Task BeginInputInteractionAsync()
@@ -132,6 +216,182 @@
         if (!inputInteractionActive) return;
         inputInteractionActive = false;
         await InteractionEnded.InvokeAsync();
+    }
+
+    private async Task ToggleMobilePickerAsync()
+    {
+        if (Disabled) return;
+        if (suppressNumberTriggerClick)
+        {
+            suppressNumberTriggerClick = false;
+            return;
+        }
+
+        showMobilePicker = !showMobilePicker;
+        if (!showMobilePicker)
+            await EndMobileInteractionAsync();
+    }
+
+    private Task BeginNumberGestureAsync(PointerEventArgs args)
+    {
+        if (Disabled || args.Button != 0) return Task.CompletedTask;
+        numberPointerId = args.PointerId;
+        numberGestureStartY = args.ClientY;
+        numberGestureStartValue = NormalizeValue(Value);
+        numberGestureMoved = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task MoveNumberGestureAsync(PointerEventArgs args)
+    {
+        if (Disabled || numberPointerId != args.PointerId) return;
+        var distance = numberGestureStartY - args.ClientY;
+        if (!numberGestureMoved && Math.Abs(distance) < 10) return;
+
+        numberGestureMoved = true;
+        await BeginMobileInteractionAsync();
+        await ChangeMobileValueAsync(numberGestureStartValue + StepsFromDistance(distance) * EffectiveStep);
+    }
+
+    private async Task EndNumberGestureAsync(PointerEventArgs args)
+    {
+        if (numberPointerId != args.PointerId) return;
+        numberPointerId = null;
+        if (!numberGestureMoved) return;
+
+        suppressNumberTriggerClick = true;
+        await EndMobileInteractionAsync();
+    }
+
+    private Task CancelNumberGestureAsync(PointerEventArgs args) => EndNumberGestureAsync(args);
+
+    private async Task BeginPickerGestureAsync(PointerEventArgs args)
+    {
+        if (Disabled || args.Button != 0) return;
+        pickerPointerId = args.PointerId;
+        pickerGestureStartY = args.ClientY;
+        pickerGestureStartValue = NormalizeValue(Value);
+        pickerGestureMoved = false;
+        await Task.CompletedTask;
+    }
+
+    private async Task MovePickerGestureAsync(PointerEventArgs args)
+    {
+        if (Disabled || pickerPointerId != args.PointerId) return;
+        var distance = pickerGestureStartY - args.ClientY;
+        if (!pickerGestureMoved && Math.Abs(distance) < 8) return;
+
+        pickerGestureMoved = true;
+        suppressPickerSelection = true;
+        await BeginMobileInteractionAsync();
+        await ChangeMobileValueAsync(pickerGestureStartValue + StepsFromDistance(distance) * EffectiveStep);
+    }
+
+    private async Task EndPickerGestureAsync(PointerEventArgs args)
+    {
+        if (pickerPointerId != args.PointerId) return;
+        pickerPointerId = null;
+        if (!pickerGestureMoved) return;
+
+        await EndMobileInteractionAsync();
+    }
+
+    private Task CancelPickerGestureAsync(PointerEventArgs args) => EndPickerGestureAsync(args);
+
+    private async Task AdjustPickerWheelAsync(WheelEventArgs args)
+    {
+        if (Disabled || Math.Abs(args.DeltaY) < double.Epsilon) return;
+        await BeginMobileInteractionAsync();
+        await ChangeMobileValueAsync(Value + (args.DeltaY < 0 ? EffectiveStep : -EffectiveStep));
+        await EndMobileInteractionAsync();
+    }
+
+    private async Task SelectPickerValueAsync(double value)
+    {
+        if (Disabled) return;
+        if (suppressPickerSelection)
+        {
+            suppressPickerSelection = false;
+            return;
+        }
+
+        await BeginMobileInteractionAsync();
+        await ChangeMobileValueAsync(value);
+        await EndMobileInteractionAsync();
+        showMobilePicker = false;
+    }
+
+    private async Task HandleNumberKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (Disabled) return;
+        switch (args.Key)
+        {
+            case "ArrowUp":
+                await AdjustValueByStepAsync(1);
+                break;
+            case "ArrowDown":
+                await AdjustValueByStepAsync(-1);
+                break;
+            case "Enter":
+            case " ":
+                await ToggleMobilePickerAsync();
+                break;
+            case "Escape":
+                showMobilePicker = false;
+                await EndMobileInteractionAsync();
+                break;
+        }
+    }
+
+    private async Task AdjustValueByStepAsync(int direction)
+    {
+        await BeginMobileInteractionAsync();
+        await ChangeMobileValueAsync(Value + direction * EffectiveStep);
+        await EndMobileInteractionAsync();
+    }
+
+    private async Task BeginMobileInteractionAsync()
+    {
+        if (mobileInteractionActive) return;
+        mobileInteractionActive = true;
+        await InteractionStarted.InvokeAsync();
+    }
+
+    private async Task EndMobileInteractionAsync()
+    {
+        if (!mobileInteractionActive) return;
+        mobileInteractionActive = false;
+        await InteractionEnded.InvokeAsync();
+    }
+
+    private Task ChangeMobileValueAsync(double value) =>
+        ValueChanged.InvokeAsync(NormalizeValue(value));
+
+    private int StepsFromDistance(double distance) =>
+        (int)Math.Round(distance / 24d, MidpointRounding.AwayFromZero);
+
+    private double NormalizeValue(double value)
+    {
+        if (!double.IsFinite(value) || !double.IsFinite(Min) || !double.IsFinite(Max) || Max < Min)
+            return value;
+
+        var clamped = Math.Clamp(value, Min, Max);
+        var stepped = Min + Math.Round((clamped - Min) / EffectiveStep, MidpointRounding.AwayFromZero) * EffectiveStep;
+        return Math.Clamp(Math.Round(stepped, ValuePrecision, MidpointRounding.AwayFromZero), Min, Max);
+    }
+
+    private bool IsCurrentPickerValue(double value) =>
+        Math.Abs(value - NormalizeValue(Value)) < EffectiveStep / 100d;
+
+    private string FormatValue(double value) =>
+        Math.Round(value, ValuePrecision, MidpointRounding.AwayFromZero)
+            .ToString(ValuePrecision == 0 ? "0" : $"0.{new string('#', ValuePrecision)}", CultureInfo.InvariantCulture);
+
+    private static int DecimalPlaces(double value)
+    {
+        var text = value.ToString("0.########", CultureInfo.InvariantCulture);
+        var decimalIndex = text.IndexOf('.');
+        return decimalIndex < 0 ? 0 : text.Length - decimalIndex - 1;
     }
 
     public async ValueTask DisposeAsync()
@@ -151,7 +411,12 @@
         }
         if (module is not null)
         {
-            try { await module.DisposeAsync(); }
+            try
+            {
+                if (mobilePickerLayerApplied == true)
+                    await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
+                await module.DisposeAsync();
+            }
             catch (JSDisconnectedException) { }
             catch (JSException) { }
         }

@@ -1,0 +1,68 @@
+@namespace Watermark.Razor.Workspace.Components
+
+<nav class="poster-asset-edit-tool-rail"
+     style="--poster-asset-tool-count: @Tools.Count"
+     aria-label="图片编辑工具">
+    @foreach (var tool in Tools)
+    {
+        var isCurrent = tool.Id == "crop";
+        var isEnabled = IsEnabled(tool.Id);
+        <button type="button"
+                class="@ToolClass(isCurrent, isEnabled)"
+                aria-current="@(isCurrent ? "page" : null)"
+                aria-pressed="@AriaPressed(tool, isEnabled)"
+                @onclick="() => ToolRequested.InvokeAsync(tool.Id)">
+            <WmIcon Icon="@ToolIcon(tool, isEnabled)" Weight="light" />
+            <span>@tool.Label</span>
+        </button>
+    }
+</nav>
+
+@code {
+    [Parameter] public EventCallback<string> ToolRequested { get; set; }
+    [Parameter] public bool IsLogo { get; set; }
+    [Parameter] public bool WhiteToTransparent { get; set; }
+    [Parameter] public bool AspectRatioLocked { get; set; }
+
+    private IReadOnlyList<AssetTool> Tools => IsLogo
+        ?
+        [
+            new("replace", "替换", "arrows-clockwise"),
+            new("crop", "裁剪", "crop"),
+            new("white-transparent", "白转透明", "drop-half", IsToggle: true),
+            new("lock-ratio", "锁比例", "lock-open", "lock", IsToggle: true)
+        ]
+        :
+        [
+            new("replace", "替换", "arrows-clockwise"),
+            new("crop", "裁剪", "crop")
+        ];
+
+    private bool IsEnabled(string toolId) => toolId switch
+    {
+        "white-transparent" => WhiteToTransparent,
+        "lock-ratio" => AspectRatioLocked,
+        _ => false
+    };
+
+    private static string ToolClass(bool isCurrent, bool isEnabled) =>
+        (isCurrent ? "is-active" : string.Empty)
+        + (isEnabled ? " is-enabled" : string.Empty);
+
+    private static string ToolIcon(AssetTool tool, bool isEnabled) =>
+        isEnabled && !string.IsNullOrWhiteSpace(tool.EnabledIcon)
+            ? tool.EnabledIcon
+            : tool.Icon;
+
+    private static string? AriaPressed(AssetTool tool, bool isEnabled) =>
+        tool.IsToggle
+            ? isEnabled.ToString().ToLowerInvariant()
+            : null;
+
+    private sealed record AssetTool(
+        string Id,
+        string Label,
+        string Icon,
+        string? EnabledIcon = null,
+        bool IsToggle = false);
+}

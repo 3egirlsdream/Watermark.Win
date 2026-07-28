@@ -113,16 +113,11 @@
         @if (MoveContainer)
         {
             <MTextField @bind-Value="@MoveConntainerCtrl.Name" Label="名称" Required="true" />
-            <MSelect Items="MoveContainers"
-                     @bind-Value="MoveForwardConntainerId"
-                     TItem="WMContainer"
-                     TItemValue="string"
-                     TValue="string"
-                     Label="父级容器"
-                     Dense
-                     ItemText="e => e.Name"
-                     ItemValue="u => u.ID">
-            </MSelect>
+            <WmSelect TValue="string"
+                      @bind-Value="MoveForwardConntainerId"
+                      Options="@MoveContainerOptions"
+                      Label="父级容器"
+                      AriaLabel="移动到父级容器" />
 
 
         }
@@ -143,17 +138,12 @@
                     <MRadio Value="@CtrlEnum.Line" TValue="CtrlEnum" Label="线"></MRadio>
                 </MRadioGroup>
                 <MTextField @bind-Value="@param.CtrlName" Label="名称" Required="true" Dense />
-                <MSelect @bind-Value="param.ParentContainerId"
-                         Items="mContainers"
-                         TValue="string"
-                         TItemValue="string"
-                         TItem="WMContainer"
-                         Label="父级容器"
-                         ItemText="e => e.Name"
-                         ItemValue="u => u.ID"
-                         Dense
-                         Required>
-                </MSelect>
+                <WmSelect TValue="string"
+                          @bind-Value="param.ParentContainerId"
+                          Options="@ParentContainerOptions"
+                          Label="父级容器"
+                          AriaLabel="新增组件的父级容器"
+                          Required />
             </div>
         }
         <MButton OnClick="Add" Small Elevation="0">确定</MButton>
@@ -215,6 +205,14 @@
     }
 
     List<WMContainer> mContainers;
+    private IReadOnlyList<WmSelectOption<string>> ParentContainerOptions =>
+        (mContainers ?? [])
+            .Select(container => new WmSelectOption<string>(container.Name, container.ID))
+            .ToList();
+    private IReadOnlyList<WmSelectOption<string>> MoveContainerOptions =>
+        (MoveContainers ?? [])
+            .Select(container => new WmSelectOption<string>(container.Name, container.ID))
+            .ToList();
     List<IWMControl> controls;
 
     void InitAllContainer()

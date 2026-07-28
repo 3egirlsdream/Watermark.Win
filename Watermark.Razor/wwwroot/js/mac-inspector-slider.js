@@ -22,6 +22,23 @@ export function valueFromPointer(clientX, left, width, minimum, maximum, step) {
   return Math.min(max, Math.max(min, stable));
 }
 
+export function syncMobilePickerLayer(element) {
+  syncPickerLayer(element, ".wm-template-designer");
+  syncPickerLayer(element, ".mac-selection-inspector");
+  syncPickerLayer(element, ".wm-mobile-dock");
+  syncPickerLayer(element, ".workspace-mobile-crop-tools");
+  syncPickerLayer(element, ".workspace-export-drawer");
+  syncPickerLayer(element, ".settings-card");
+}
+
+function syncPickerLayer(element, selector) {
+  const host = element?.closest?.(selector);
+  if (!host) return;
+  host.classList.toggle(
+    "mobile-number-picker-open",
+    Boolean(host.querySelector(".mobile-number-picker")));
+}
+
 function numberAttribute(element, name, fallback) {
   const value = Number.parseFloat(element?.dataset?.[name] ?? "");
   return Number.isFinite(value) ? value : fallback;
@@ -60,13 +77,16 @@ export function createTouchSlider(element, dotNetReference) {
     const host = element.closest(".mac-inspector-slider");
     const nativeRange = host?.querySelector('input[type="range"]');
     const numberInput = host?.querySelector(".inspector-number-input");
+    const mobileNumberValue = host?.querySelector(".mobile-number-value");
     const { minimum, maximum } = settings();
     const progress = maximum > minimum ? (value - minimum) / (maximum - minimum) * 100 : 0;
+    const formatted = Number(value.toFixed(Math.min(8, decimalPlaces(step)))).toString();
     if (nativeRange) {
       nativeRange.value = String(value);
       nativeRange.style.setProperty("--mac-slider-progress", `${Math.min(100, Math.max(0, progress))}%`);
     }
-    if (numberInput) numberInput.value = value.toFixed(Math.min(8, decimalPlaces(step)));
+    if (numberInput) numberInput.value = formatted;
+    if (mobileNumberValue) mobileNumberValue.textContent = formatted;
   }
 
   function notifyValue(clientX) {

@@ -47,7 +47,7 @@ public sealed class WMMobileWorkspaceDockContractTests
         var resize = Read("Watermark.Razor", "wwwroot", "js", "wm-mobile-workspace-dock.js");
 
         var control = dock.IndexOf("wm-dock-control-region", StringComparison.Ordinal);
-        var tools = dock.IndexOf("wm-dock-tools", control, StringComparison.Ordinal);
+        var tools = dock.IndexOf("<WMPosterMobileToolRail", control, StringComparison.Ordinal);
         var modes = dock.IndexOf("wm-dock-modes", tools, StringComparison.Ordinal);
         Assert.True(control >= 0 && tools > control && modes > tools);
         Assert.Contains("grid-template-rows: minmax(0, 1fr) 78px", dockCss, StringComparison.Ordinal);
@@ -87,7 +87,7 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("multiFrameTool = WMMobileEditorTool.MultiFrameMaterial", dock, StringComparison.Ordinal);
         Assert.Contains("collageTool = WMMobileEditorTool.CollageMaterial", dock, StringComparison.Ordinal);
 
-        AssertOrdered(SliceArray(dock, "TemplateTools", "ColorTools"), "TemplatePicker", "TemplateBorderTop", "TemplateBorderRight", "TemplateBorderBottom", "TemplateBorderLeft", "TemplateScope");
+        AssertOrdered(SliceArray(dock, "TemplateTools", "ColorTools"), "TemplatePicker", "TemplateCanvas", "TemplateCanvasSize", "TemplateCanvasInsets", "TemplateCanvasFrame", "TemplateCanvasImage");
         AssertOrdered(SliceArray(dock, "ColorTools", "MultiFrameTools"), "ColorStyle", "ColorExposure", "ColorContrast", "ColorHighlights", "ColorShadows", "ColorWhites", "ColorBlacks", "ColorTemperature", "ColorTint", "ColorVibrance", "ColorSaturation", "ColorHslHue", "ColorHslSaturation", "ColorHslLuminance", "ColorPresets", "ColorCurve", "ColorReference", "ColorScope");
         AssertOrdered(SliceArray(dock, "MultiFrameTools", "CollageTools"), "MultiFrameMaterial", "MultiFrameMode", "MultiFrameParameters", "MultiFrameGenerate");
         AssertOrdered(SliceArray(dock, "CollageTools", null), "CollageMaterial", "CollageLayout", "CollageGenerate");
@@ -97,6 +97,21 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("TemplatePicker, \"模板\", \"grid-four\", WMMobileEditorSpace.Medium", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@SectionButton(\"光影\"", dock, StringComparison.Ordinal);
         Assert.DoesNotContain("@SectionButton(\"颜色\"", dock, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplateApplication_ReusesTheSharedConfigRailAndKeepsTemplateSwitchFirst()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var rail = Read("Watermark.Razor", "Workspace", "Components", "WMPosterMobileToolRail.razor");
+        var contracts = Read("Watermark.Razor", "Workspace", "WMWorkspaceContracts.cs");
+
+        Assert.Contains("<WMPosterMobileToolRail Items=\"@CurrentToolRailItems\"", dock, StringComparison.Ordinal);
+        Assert.Contains("ToolSelected=\"SelectToolByIdAsync\"", dock, StringComparison.Ordinal);
+        Assert.Contains("workspace-mobile-tool-panel", dock, StringComparison.Ordinal);
+        Assert.Contains("TemplatePicker, \"模板\"", SliceArray(dock, "TemplateTools", "ColorTools"), StringComparison.Ordinal);
+        Assert.Contains("public sealed record WMMobileToolRailItem", contracts, StringComparison.Ordinal);
+        Assert.Contains("data-mobile-tool=\"@tool.Id\"", rail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -110,6 +125,22 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains(".wm-dock-look-content .wm-dock-control-card", dockCss, StringComparison.Ordinal);
         Assert.Contains("height: 48px", dockCss, StringComparison.Ordinal);
         Assert.Contains(".wm-dock-look-content ::deep .wm-tool-rail > div", dockCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NumericParameters_UseTheSharedSingleRowControlWithoutDuplicateHeaders()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var dockCss = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor.css");
+        var settingsCss = Read("Watermark.Razor", "BlazorPages", "WMSettingsPage.razor.css");
+        var exportCss = Read("Watermark.Razor", "Workspace", "Components", "WMExportPanel.razor.css");
+
+        Assert.DoesNotContain("ShowHeader=\"false\" PreviewValueChanged=\"value => ChangeColorAsync", dock, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowHeader=\"false\" PreviewValueChanged=\"value => ChangeHslAsync", dock, StringComparison.Ordinal);
+        Assert.Contains(".wm-dock-parameter-editor ::deep .mac-inspector-slider { padding: 0; }", dockCss, StringComparison.Ordinal);
+        Assert.Contains(".settings-range ::deep .settings-thread-slider{grid-column:2", settingsCss, StringComparison.Ordinal);
+        Assert.Contains(".wm-export-quality .wm-export-range-wrap", exportCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-columns: minmax(0, 1fr) 80px", exportCss, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -140,6 +171,23 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("ResolveTemplatePreviewEditAsync(edit, cancellationToken)", controller, StringComparison.Ordinal);
         Assert.Contains("所选模板已不存在。", controller, StringComparison.Ordinal);
         Assert.Contains("会话模板快照已丢失", Read("Watermark.Razor", "Workspace", "WMRenderPlan.cs"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WorkspaceTemplateShortcut_OpensTheSharedTemplateDesignerInsteadOfASecondEditor()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var page = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileWorkspace.razor");
+
+        Assert.Contains("EventCallback<WMTemplateDesignerLaunchRequest> TemplateDesignerRequested", dock, StringComparison.Ordinal);
+        Assert.Contains("TemplateDesignerToolId(tool)", dock, StringComparison.Ordinal);
+        Assert.Contains("new WMTemplateDesignerLaunchRequest(State.TemplateId, initialToolId)", dock, StringComparison.Ordinal);
+        Assert.Contains("TemplateDesignerRequested=\"OpenWorkspaceTemplateDesignerAsync\"", page, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplateDesigner @ref=\"workspaceTemplateDesigner\"", page, StringComparison.Ordinal);
+        Assert.Contains("InitialMobileToolId=\"@workspaceDesignerInitialToolId\"", page, StringComparison.Ordinal);
+        Assert.Contains("OnClose=\"CloseWorkspaceTemplateDesignerAsync\"", page, StringComparison.Ordinal);
+        Assert.Contains("OnSaved=\"OnWorkspaceTemplateSavedAsync\"", page, StringComparison.Ordinal);
+        Assert.Contains("workspaceTemplateDesigner.CanNavigateAwayAsync", page, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -218,12 +266,13 @@ public sealed class WMMobileWorkspaceDockContractTests
     public void ActiveTool_AutoScrollsWithoutRestoringResizeSynchronization()
     {
         var page = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileWorkspace.razor");
-        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var rail = Read("Watermark.Razor", "Workspace", "Components", "WMPosterMobileToolRail.razor");
         var script = Read("Watermark.Razor", "wwwroot", "js", "wm-mobile-workspace-dock.js");
 
-        Assert.Contains("data-mobile-tool", dock, StringComparison.Ordinal);
+        Assert.Contains("data-mobile-tool", rail, StringComparison.Ordinal);
         Assert.Contains("pendingToolScroll", page, StringComparison.Ordinal);
         Assert.Contains("scrollActiveToolIntoView", page, StringComparison.Ordinal);
+        Assert.Contains(".wm-poster-tool-rail", script, StringComparison.Ordinal);
         Assert.Contains("scrollIntoView", script, StringComparison.Ordinal);
         Assert.DoesNotContain("--panel-height", script, StringComparison.Ordinal);
         Assert.DoesNotContain("invokeMethodAsync", script, StringComparison.Ordinal);

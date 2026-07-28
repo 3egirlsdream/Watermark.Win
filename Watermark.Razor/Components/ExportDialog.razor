@@ -34,22 +34,8 @@
 
             </MRow>
             <MCard Elevation="0" Width="300">
-                <MSelect @bind-Value="@Global.Resolution"
-                         TItem="KeyValuePair<string, string>"
-                         ItemText="u=> u.Value"
-                         ItemValue="u=> u.Key"
-                         Items="ex"
-                         TItemValue="string"
-                         TValue="string"
-                         Label="分辨率" />
-                <MSelect Items="quality"
-                         @bind-Value="@Global.Quality"
-                         TValue="int"
-                         TItemValue="int"
-                         TItem="KeyValuePair<int, string>"
-                         ItemValue="u=>u.Key"
-                         ItemText="u => u.Value"
-                         Label="图片质量" />
+                <WmSelect TValue="string" @bind-Value="Global.Resolution" Options="@ex" Label="分辨率" AriaLabel="导出分辨率" />
+                <WmSelect TValue="int" @bind-Value="Global.Quality" Options="@quality" Label="图片质量" AriaLabel="图片质量" />
                 <div class="mt-5" style="position:relative;display:flex;align-items:center;justify-content:flex-start">
                     <MTextField T="string" @bind-Value="@Global.OutPutPath" Label="路径" Dense Style="width:calc(100% - 50px)" HideDetails="true"/>
                     <IconButton Icon="@ICONS.OpenNew" OnClick="OpenFolder" Style="position:absolute;right:5px" />
@@ -79,16 +65,16 @@
     public Action OpenFolderAction { get; set; }
 
     bool CheckAll = false;
-    List<KeyValuePair<string, string>> ex = new() {
-        new KeyValuePair<string, string>("default", "原图"),
-        new KeyValuePair<string, string>("1080", "1080P"),
-        new KeyValuePair<string, string>("2160", "4K")
+    IReadOnlyList<WmSelectOption<string>> ex = new List<WmSelectOption<string>> {
+        new("原图", "default"),
+        new("1080P", "1080"),
+        new("4K", "2160")
     };
 
-    List<KeyValuePair<int, string>> quality = new() {
-        new KeyValuePair<int, string>(100, "原图"),
-        new KeyValuePair<int, string>(85, "高"),
-        new KeyValuePair<int, string>(70, "中")
+    IReadOnlyList<WmSelectOption<int>> quality = new List<WmSelectOption<int>> {
+        new("原图", 100),
+        new("高", 85),
+        new("中", 70)
     };
 
     protected override void OnInitialized()

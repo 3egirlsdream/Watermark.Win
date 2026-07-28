@@ -1,0 +1,92 @@
+@using Watermark.Shared.Models
+@namespace Watermark.Razor.Workspace.Components
+
+<section class="poster-asset-crop-panel" aria-labelledby="poster-asset-crop-title">
+    <header class="asset-crop-header">
+        <button type="button"
+                class="asset-crop-back"
+                aria-label="返回素材资源库"
+                @onclick="BackRequested">
+            <WmIcon Icon="arrow-left" />
+        </button>
+        <div>
+            <h2 id="poster-asset-crop-title">裁剪与适配</h2>
+            <small>调整 @TargetLabel · 完成后记入一次撤销</small>
+        </div>
+        <span class="asset-crop-step" aria-label="第 2 步，共 2 步">2 / 2</span>
+    </header>
+
+    <div class="asset-crop-body">
+        <fieldset class="asset-crop-section asset-fit-section">
+            <legend>适配方式</legend>
+            <div class="asset-fit-options">
+                @foreach (var option in FitOptions)
+                {
+                    <button type="button"
+                            class="@(Fit == option.Value ? "is-active" : null)"
+                            aria-pressed="@(Fit == option.Value)"
+                            @onclick="() => SetFitAsync(option.Value)">
+                        <WmIcon Icon="@option.Icon" />
+                        <span>
+                            <strong>@option.Label</strong>
+                            <small>@option.Description</small>
+                        </span>
+                    </button>
+                }
+            </div>
+        </fieldset>
+
+        <WMCropControls Class="is-poster-asset"
+                        Settings="@CropSettings"
+                        SourceWidth="@SourceWidth"
+                        SourceHeight="@SourceHeight"
+                        ShowReset="false"
+                        SettingsChanged="CropSettingsChanged" />
+    </div>
+
+    <footer class="asset-crop-footer">
+        <button type="button" class="asset-crop-reset" @onclick="ResetAsync">
+            <WmIcon Icon="arrow-counter-clockwise" />
+            重置
+        </button>
+        <button type="button" class="asset-crop-complete" @onclick="CompleteRequested">
+            完成
+        </button>
+    </footer>
+    <WMPosterAssetEditToolRail ToolRequested="AssetToolRequested"
+                               IsLogo="@IsLogo"
+                               WhiteToTransparent="@WhiteToTransparent"
+                               AspectRatioLocked="@AspectRatioLocked" />
+</section>
+
+@code {
+    [Parameter] public string TargetLabel { get; set; } = "图片";
+    [Parameter] public WMPosterAssetFit Fit { get; set; } = WMPosterAssetFit.Cover;
+    [Parameter] public EventCallback<WMPosterAssetFit> FitChanged { get; set; }
+    [Parameter] public WMCropSettings CropSettings { get; set; } = WMCropSettings.Identity;
+    [Parameter] public int SourceWidth { get; set; }
+    [Parameter] public int SourceHeight { get; set; }
+    [Parameter] public EventCallback<WMCropSettings> CropSettingsChanged { get; set; }
+    [Parameter] public EventCallback BackRequested { get; set; }
+    [Parameter] public EventCallback<string> AssetToolRequested { get; set; }
+    [Parameter] public EventCallback CompleteRequested { get; set; }
+    [Parameter] public bool IsLogo { get; set; }
+    [Parameter] public bool WhiteToTransparent { get; set; }
+    [Parameter] public bool AspectRatioLocked { get; set; }
+
+    private static readonly (WMPosterAssetFit Value, string Label, string Description, string Icon)[] FitOptions =
+    [
+        (WMPosterAssetFit.Cover, "裁满", "填满槽位", "arrows-out-line-horizontal"),
+        (WMPosterAssetFit.Contain, "完整", "显示全图", "resize"),
+        (WMPosterAssetFit.Fill, "拉伸", "铺满边界", "arrows-left-right")
+    ];
+
+    private Task SetFitAsync(WMPosterAssetFit value) =>
+        FitChanged.InvokeAsync(value);
+
+    private async Task ResetAsync()
+    {
+        await FitChanged.InvokeAsync(WMPosterAssetFit.Cover);
+        await CropSettingsChanged.InvokeAsync(WMCropSettings.Identity);
+    }
+}

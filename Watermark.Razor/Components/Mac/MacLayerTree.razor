@@ -12,21 +12,33 @@
             <h2>图层</h2>
             <span>@LayerCount</span>
         </div>
-        <MMenu Bottom OffsetY>
-            <ActivatorContent>
-                <MButton Text Small Class="add-layer-trigger" title="添加图层" aria-label="添加图层" @attributes="@context.Attrs">
-                    <WmIcon Left Small Icon="plus" />添加
-                </MButton>
-            </ActivatorContent>
-            <ChildContent>
-                <MList Dense Class="add-layer-options">
-                    <MListItem OnClick="() => AddControl(typeof(WMContainer))"><MListItemIcon><WmIcon Icon="folder" /></MListItemIcon><MListItemContent><MListItemTitle>容器</MListItemTitle></MListItemContent></MListItem>
-                    <MListItem OnClick="() => AddControl(typeof(WMText))"><MListItemIcon><WmIcon Icon="text-t" /></MListItemIcon><MListItemContent><MListItemTitle>文字</MListItemTitle></MListItemContent></MListItem>
-                    <MListItem OnClick="() => AddControl(typeof(WMLogo))"><MListItemIcon><WmIcon Icon="image" /></MListItemIcon><MListItemContent><MListItemTitle>图标</MListItemTitle></MListItemContent></MListItem>
-                    <MListItem OnClick="() => AddControl(typeof(WMLine))"><MListItemIcon><WmIcon Icon="minus" /></MListItemIcon><MListItemContent><MListItemTitle>分割线</MListItemTitle></MListItemContent></MListItem>
-                </MList>
-            </ChildContent>
-        </MMenu>
+        <div class="layer-panel-commands">
+            <MMenu Bottom OffsetY>
+                <ActivatorContent>
+                    <MButton Text Small Class="add-layer-trigger" title="添加图层" aria-label="添加图层" @attributes="@context.Attrs">
+                        <WmIcon Left Small Icon="plus" />添加
+                    </MButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MList Dense Class="add-layer-options">
+                        <MListItem OnClick="() => AddControl(typeof(WMContainer))"><MListItemIcon><WmIcon Icon="folder" /></MListItemIcon><MListItemContent><MListItemTitle>容器</MListItemTitle></MListItemContent></MListItem>
+                        <MListItem OnClick="() => AddControl(typeof(WMText))"><MListItemIcon><WmIcon Icon="text-t" /></MListItemIcon><MListItemContent><MListItemTitle>文字</MListItemTitle></MListItemContent></MListItem>
+                        <MListItem OnClick="() => AddControl(typeof(WMLogo))"><MListItemIcon><WmIcon Icon="image" /></MListItemIcon><MListItemContent><MListItemTitle>图标</MListItemTitle></MListItemContent></MListItem>
+                        <MListItem OnClick="() => AddControl(typeof(WMLine))"><MListItemIcon><WmIcon Icon="minus" /></MListItemIcon><MListItemContent><MListItemTitle>分割线</MListItemTitle></MListItemContent></MListItem>
+                    </MList>
+                </ChildContent>
+            </MMenu>
+            @if (CloseRequested.HasDelegate)
+            {
+                <button type="button"
+                        class="mobile-layer-close"
+                        aria-label="关闭图层面板"
+                        @onclick:stopPropagation
+                        @onclick="CloseRequested">
+                    <WmIcon Icon="x" />
+                </button>
+            }
+        </div>
     </header>
 
     <div class="layer-tree-scroll" role="tree" aria-label="模板图层结构" @onclick="CloseContextMenu">
@@ -66,6 +78,7 @@
 @code {
     [Parameter, EditorRequired] public WMTemplateEditorState Editor { get; set; } = null!;
     [Parameter] public WMDesignRenderResult? RenderResult { get; set; }
+    [Parameter] public EventCallback CloseRequested { get; set; }
 
     private readonly HashSet<string> collapsedIds = new(StringComparer.Ordinal);
     private string editingId;

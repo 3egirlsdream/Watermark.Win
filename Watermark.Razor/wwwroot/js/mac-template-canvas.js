@@ -203,18 +203,76 @@ export function resolveTextCornerResize(start, requestedWidth, requestedHeight) 
   const inset = Math.min(
     Math.max(0, asFinite(start?.resizeInset, 0)),
     Math.max(0, Math.min(startWidth, startHeight) - 0.000001));
-  const widthRatio = asFinite(requestedWidth, startWidth) / startWidth;
-  const heightRatio = asFinite(requestedHeight, startHeight) / startHeight;
-  let ratio = Math.abs(widthRatio - 1) >= Math.abs(heightRatio - 1)
-    ? widthRatio
-    : heightRatio;
+  const contentWidth = Math.max(0.000001, startWidth - inset);
+  const contentHeight = Math.max(0.000001, startHeight - inset);
+  const deltaWidth = asFinite(requestedWidth, startWidth) - startWidth;
+  const deltaHeight = asFinite(requestedHeight, startHeight) - startHeight;
+  const pointerTravel = Math.hypot(deltaWidth, deltaHeight);
+  const contentDiagonal = Math.hypot(contentWidth, contentHeight);
+  const direction = Math.sign(
+    deltaWidth * contentWidth + deltaHeight * contentHeight);
+  // Corner resizing is uniform, so project the pointer's travel distance onto
+  // the content diagonal. Choosing the larger axis ratio makes wide or tall
+  // text accelerate when the pointer moves mostly on the short axis.
+  let ratio = 1 + direction * pointerTravel / contentDiagonal;
+  return createTextCornerResizeResult(
+    start,
+    contentWidth,
+    contentHeight,
+    inset,
+    ratio);
+}
+
+export function resolveTextCornerResizeFromMovement(
+  start,
+  direction,
+  deltaX,
+  deltaY) {
+  const startWidth = Math.max(0.000001, asFinite(start?.width, 0));
+  const startHeight = Math.max(0.000001, asFinite(start?.height, 0));
+  const inset = Math.min(
+    Math.max(0, asFinite(start?.resizeInset, 0)),
+    Math.max(0, Math.min(startWidth, startHeight) - 0.000001));
+  const contentWidth = Math.max(0.000001, startWidth - inset);
+  const contentHeight = Math.max(0.000001, startHeight - inset);
+  const [directionX, directionY] = pair(direction, [0, 0]);
+  const localX = directionX * contentWidth * asFinite(start?.scaleX, 1);
+  const localY = directionY * contentHeight * asFinite(start?.scaleY, 1);
+  const radians = asFinite(start?.rotation, 0) * Math.PI / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const outwardX = localX * cosine - localY * sine;
+  const outwardY = localX * sine + localY * cosine;
+  const movementX = asFinite(deltaX, 0);
+  const movementY = asFinite(deltaY, 0);
+  const movement = Math.hypot(movementX, movementY);
+  const diagonal = Math.max(0.000001, Math.hypot(outwardX, outwardY));
+  const resizeDirection = Math.sign(
+    movementX * outwardX + movementY * outwardY);
+  const ratio = 1 + resizeDirection * movement / diagonal;
+
+  return createTextCornerResizeResult(
+    start,
+    contentWidth,
+    contentHeight,
+    inset,
+    ratio);
+}
+
+function createTextCornerResizeResult(
+  start,
+  contentWidth,
+  contentHeight,
+  inset,
+  requestedRatio) {
+  let ratio = requestedRatio;
   const fontSize = asFinite(start?.resizeFontSize, 0);
   if (fontSize > 0) ratio = Math.min(25 / fontSize, Math.max(0.1 / fontSize, ratio));
   ratio = Math.max(0.000001, ratio);
 
   return {
-    width: Math.max(0.000001, (startWidth - inset) * ratio + inset),
-    height: Math.max(0.000001, (startHeight - inset) * ratio + inset),
+    width: Math.max(0.000001, contentWidth * ratio + inset),
+    height: Math.max(0.000001, contentHeight * ratio + inset),
     resizeRatio: ratio
   };
 }
@@ -336,6 +394,13 @@ export function getFitScale(element, canvasWidth, canvasHeight, padding = 56) {
   const availableWidth = Math.max(1, element.clientWidth - padding);
   const availableHeight = Math.max(1, element.clientHeight - padding);
   return Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight);
+}
+
+export function resolveMoveableRootContainer(root) {
+  if (!root) return null;
+  return root.closest?.(".mac-canvas-viewport")
+    || root.ownerDocument?.documentElement
+    || null;
 }
 
 export function detectInteractionProfile() {
@@ -1044,13 +1109,39 @@ export async function createEditor(root, callback, interactionProfile = null) {
       minimum,
       toCanvasUnits(asFinite(event?.height, interaction.layoutHeight), viewScale));
     const mode = interaction.start.resizeMode;
-    const resolved = resolveResizeDimensions(
-      mode,
-      interaction.start,
-      direction,
-      requestedWidth,
-      requestedHeight,
-      interaction.ratioManagedByMoveable === true);
+    const textCorner = mode === "text"
+      && direction[0] !== 0
+      && direction[1] !== 0;
+    let resolved;
+    if (textCorner) {
+      // Moveable measures a free-form rectangle. Feeding its dimensions back
+      // after converting them to uniform text scaling creates a resize loop:
+      // the target mutation changes Moveable's next event dimensions even
+      // though the pointer did not move. Derive corner scaling from the
+      // gesture's stable start-to-pointer movement instead.
+      const [screenDeltaX, screenDeltaY] = pointerMovement(event, interaction);
+      const [parentDeltaX, parentDeltaY] = movementInParentSpace(
+        interaction.parentInverses,
+        screenDeltaX,
+        screenDeltaY);
+      const textResize = resolveTextCornerResizeFromMovement(
+        interaction.start,
+        direction,
+        toCanvasUnits(parentDeltaX, viewScale),
+        toCanvasUnits(parentDeltaY, viewScale));
+      resolved = {
+        ...textResize,
+        keepAspectRatio: false
+      };
+    } else {
+      resolved = resolveResizeDimensions(
+        mode,
+        interaction.start,
+        direction,
+        requestedWidth,
+        requestedHeight,
+        interaction.ratioManagedByMoveable === true);
+    }
     const width = resolved.width;
     const height = resolved.height;
     interaction.keepAspectRatio = resolved.keepAspectRatio;
@@ -1202,6 +1293,11 @@ export async function createEditor(root, callback, interactionProfile = null) {
 
   const moveable = new window.Moveable(stage, {
     container: root,
+    // The canvas surface is translated/scaled and nested controls add their
+    // own parent transforms. Moveable must measure its control box against an
+    // untransformed ancestor, otherwise child selections accumulate the
+    // container matrix twice and drift away from the pointer.
+    rootContainer: resolveMoveableRootContainer(root),
     target: null,
     draggable: true,
     resizable: true,
@@ -1247,7 +1343,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
       void invoke("NotifyCanvasSnap", `${vertical}|${horizontal}`);
     });
 
-  function select(id) {
+  function select(id, waitForTarget = false) {
     selectedId = id;
     overlays.forEach((element, key) => element.classList.toggle("selected", key === id));
     const item = itemsById.get(id);
@@ -1255,7 +1351,11 @@ export async function createEditor(root, callback, interactionProfile = null) {
     const lineDragTarget = target?.querySelector?.("[data-line-drag-target]") || null;
     const isAbsolute = Boolean(item?.absolute);
     const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
-    moveable.target = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
+    const nextTarget = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
+    const targetReady = waitForTarget && moveable.target !== nextTarget
+      ? moveable.waitToChangeTarget()
+      : Promise.resolve();
+    moveable.target = nextTarget;
     moveable.dragTarget = moveable.target ? lineDragTarget : null;
     moveable.resizable = Boolean(item && (isAbsolute || isFlowChild));
     moveable.scalable = false;
@@ -1274,7 +1374,25 @@ export async function createEditor(root, callback, interactionProfile = null) {
     // global keepRatio would also make side handles resize both axes.
     moveable.keepRatio = false;
     moveable.updateRect();
+    return targetReady;
   }
+
+  let viewportResizeFrame = 0;
+  const canvasViewport = root.closest(".mac-canvas-viewport") || root.parentElement || root;
+  const viewportResizeObserver = typeof ResizeObserver === "function"
+    ? new ResizeObserver(() => {
+        if (viewportResizeFrame) cancelAnimationFrame(viewportResizeFrame);
+        viewportResizeFrame = requestAnimationFrame(() => {
+          viewportResizeFrame = 0;
+          if (disposed || scenePending || interaction) return;
+          // Fixed mobile panel sizes animate the workspace grid for 180ms.
+          // Replaying selection keeps nested target controls aligned while the
+          // canvas viewport settles, without rebuilding the rendered preview.
+          select(selectedId);
+        });
+      })
+    : null;
+  viewportResizeObserver?.observe(canvasViewport);
 
   function enqueueScene(task) {
     const scheduled = sceneQueue.then(task, task);
@@ -1363,7 +1481,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
       (parent || stage).appendChild(element);
     });
     layoutScene();
-    select(nextSelectedId);
+    return select(nextSelectedId, true);
   }
 
   return {
@@ -1376,7 +1494,14 @@ export async function createEditor(root, callback, interactionProfile = null) {
         await cancellation;
         await waitForPreviewImage();
         if (disposed || epoch !== sceneEpoch) return;
-        applyScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId);
+        const targetReady = applyScene(canvasWidth, canvasHeight, nextViewScale, items, nextSelectedId);
+        await targetReady;
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (disposed || epoch !== sceneEpoch) return;
+        // Moveable applies a dynamic target asynchronously. Reapply the
+        // selection after its target component has mounted so nested flow
+        // children are measured with their final parent matrix.
+        select(nextSelectedId);
         scenePending = false;
       });
     },
@@ -1430,6 +1555,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
         viewport?.removeEventListener("pointermove", updateViewportGesture, true);
         viewport?.removeEventListener("pointerup", finishViewportGesture, true);
         viewport?.removeEventListener("pointercancel", finishViewportGesture, true);
+        viewportResizeObserver?.disconnect();
+        if (viewportResizeFrame) cancelAnimationFrame(viewportResizeFrame);
         clearPendingInteractionVisual();
         if (pointerAnimationFrame != null) cancelAnimationFrame(pointerAnimationFrame);
         pointerAnimationFrame = null;

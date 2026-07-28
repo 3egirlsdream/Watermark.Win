@@ -3,7 +3,7 @@
 
 <section class="wm-mobile-dock @SpaceClass" aria-label="移动编辑工具">
     <div class="wm-dock-context">
-        <div class="wm-dock-control-region">
+        <div id="workspace-mobile-tool-panel" class="wm-dock-control-region" role="tabpanel">
             @if (State.Mode == WMWorkspaceMode.ColorGrade && !ColorEngineAvailable)
             {
                 <div class="wm-dock-heading" role="alert">
@@ -16,18 +16,10 @@
             }
         </div>
 
-        <nav class="wm-dock-tools" aria-label="@($"{ModeLabel}功能")">
-            <div>
-                @foreach (var tool in CurrentTools)
-                {
-                    <button type="button" class="@(ActiveTool == tool.Tool ? "is-active" : null)"
-                            data-mobile-tool="@tool.Tool" aria-pressed="@(ActiveTool == tool.Tool)"
-                            @onclick="() => SelectToolAsync(tool.Tool)">
-                        <WmIcon Icon="@tool.Icon" /><span>@tool.Label</span>
-                    </button>
-                }
-            </div>
-        </nav>
+        <WMPosterMobileToolRail Items="@CurrentToolRailItems"
+                                ActiveToolId="@ActiveTool.ToString()"
+                                ToolSelected="SelectToolByIdAsync"
+                                AriaLabel="@($"{ModeLabel}功能")" />
     </div>
 
     <nav class="wm-dock-modes" role="tablist" aria-label="编辑分类">
@@ -48,6 +40,7 @@
     [Parameter] public EventCallback<WMMobileToolPresentation> PresentationChanged { get; set; }
     [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> TemplatePreviewChanged { get; set; }
+    [Parameter] public EventCallback<WMTemplateDesignerLaunchRequest> TemplateDesignerRequested { get; set; }
     [Parameter] public EventCallback<WMColorRecipe> ColorPreviewChanged { get; set; }
     [Parameter] public EventCallback ChooseReferenceRequested { get; set; }
     [Parameter] public EventCallback ClearReferenceRequested { get; set; }
@@ -102,6 +95,13 @@
         WMWorkspaceMode.Collage => CollageTools,
         _ => TemplateTools
     };
+    private IReadOnlyList<WMMobileToolRailItem> CurrentToolRailItems =>
+        CurrentTools.Select(tool => new WMMobileToolRailItem(
+            tool.Tool.ToString(),
+            tool.Label,
+            tool.Icon,
+            "workspace-mobile-tool-panel"))
+        .ToArray();
     private MobileToolSpec ActiveSpec => CurrentTools.First(item => item.Tool == ActiveTool);
     private WMMobileToolPresentation Presentation => new(
         State.Mode, ActiveTool, ActiveSpec.Space, WMMobileEditorHostKind.Dock);
@@ -128,9 +128,7 @@
     private RenderFragment ActiveToolContent => ActiveTool switch
     {
         WMMobileEditorTool.TemplatePicker => TemplatePickerContent,
-        WMMobileEditorTool.TemplateScope or WMMobileEditorTool.ColorScope => ScopeContent,
-        WMMobileEditorTool.TemplateBorderTop or WMMobileEditorTool.TemplateBorderRight
-            or WMMobileEditorTool.TemplateBorderBottom or WMMobileEditorTool.TemplateBorderLeft => TemplateBorderContent,
+        WMMobileEditorTool.ColorScope => ScopeContent,
         WMMobileEditorTool.ColorStyle => ColorStyleContent,
         WMMobileEditorTool.ColorPresets => ColorPresetContent,
         WMMobileEditorTool.ColorCurve => ColorCurveContent,
@@ -156,9 +154,11 @@
     {
         <div class="wm-dock-heading">
             <div><strong>选择模板</strong><small>@Templates.Count 个模板</small></div>
-            <div class="wm-dock-scope-pills" role="group" aria-label="模板应用范围">
-                <button type="button" class="@(State.ApplyScope == WMApplyScope.Current ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Current)">当前图片</button>
-                <button type="button" class="@(State.ApplyScope == WMApplyScope.Selected ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Selected)">已选 @SelectedCount</button>
+            <div class="wm-dock-template-actions">
+                <div class="wm-dock-scope-pills" role="group" aria-label="模板应用范围">
+                    <button type="button" class="@(State.ApplyScope == WMApplyScope.Current ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Current)">当前图片</button>
+                    <button type="button" class="@(State.ApplyScope == WMApplyScope.Selected ? "is-active" : null)" @onclick="() => ChangeScopeAsync(WMApplyScope.Selected)">已选 @SelectedCount</button>
+                </div>
             </div>
         </div>
         <WMToolRail AriaLabel="模板列表" CssClass="wm-dock-card-rail">
@@ -173,23 +173,6 @@
                 </button>
             }
         </WMToolRail>
-    };
-
-    private RenderFragment TemplateBorderContent => __builder =>
-    {
-        if (CurrentCanvas is not { } canvas)
-        {
-            <p class="wm-dock-empty">先选择一个模板，再调整画布边框。</p>
-            return;
-        }
-        var side = BorderSide(ActiveTool);
-        var parameter = BorderParameter(canvas, side);
-        <div class="wm-dock-parameter-editor">
-            <header><strong>@parameter.Label</strong><output>@parameter.Value.ToString("0.#")</output></header>
-            <WMTemplateBorderControl Label="@parameter.Label" Value="@parameter.Value" ShowHeader="false"
-                PreviewValueChanged="value => ChangeBorderAsync(side, value)"
-                CommitValueChanged="value => ChangeBorderAsync(side, value)" />
-        </div>
     };
 
     private RenderFragment ScopeContent => __builder =>
@@ -217,10 +200,9 @@
     {
         var parameter = ColorParameter(ActiveTool);
         <div class="wm-dock-parameter-editor">
-            <header><strong>@parameter.Label</strong><output>@DisplayValue(parameter.Value, parameter.Unit)</output></header>
             <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value"
                 Minimum="@parameter.Minimum" Maximum="@parameter.Maximum" Step="@parameter.Step" Unit="@parameter.Unit"
-                ShowHeader="false" PreviewValueChanged="value => ChangeColorAsync(parameter.Key, value)"
+                PreviewValueChanged="value => ChangeColorAsync(parameter.Key, value)"
                 CommitValueChanged="value => ChangeColorAsync(parameter.Key, value)" />
         </div>
     };
@@ -236,9 +218,8 @@
                 }
             </nav>
             <div class="wm-dock-parameter-editor">
-                <header><strong>@parameter.Label</strong><output>@parameter.Value.ToString("0")</output></header>
                 <WMColorParameterControl Label="@parameter.Label" Value="@parameter.Value" Minimum="-100" Maximum="100" Step="1"
-                    ShowHeader="false" PreviewValueChanged="value => ChangeHslAsync(parameter.Key, value)"
+                    PreviewValueChanged="value => ChangeHslAsync(parameter.Key, value)"
                     CommitValueChanged="value => ChangeHslAsync(parameter.Key, value)" />
             </div>
         </div>
@@ -383,8 +364,27 @@
         <button type="button" class="wm-dock-control-card @(danger ? "is-danger" : null)" @onclick="action"><WmIcon Icon="@icon" /><span>@label</span></button>
     };
 
+    private Task SelectToolByIdAsync(string toolId)
+    {
+        var tool = CurrentTools.FirstOrDefault(item => string.Equals(item.Tool.ToString(), toolId, StringComparison.Ordinal));
+        return tool is null ? Task.CompletedTask : SelectToolAsync(tool.Tool);
+    }
+
     private async Task SelectToolAsync(WMMobileEditorTool tool)
     {
+        if (State.Mode == WMWorkspaceMode.Template && TemplateDesignerToolId(tool) is { } initialToolId)
+        {
+            if (string.IsNullOrWhiteSpace(State.TemplateId) || State.HasTransientEdits)
+            {
+                templateTool = WMMobileEditorTool.TemplatePicker;
+                await PublishPresentationAsync();
+                return;
+            }
+
+            await TemplateDesignerRequested.InvokeAsync(new WMTemplateDesignerLaunchRequest(State.TemplateId, initialToolId));
+            return;
+        }
+
         switch (State.Mode)
         {
             case WMWorkspaceMode.ColorGrade: colorTool = tool; break;
@@ -430,27 +430,6 @@
         return new WMWorkspaceTemplateEdit(
             templateId,
             canvas is null ? null : Global.CanvasSerialize(canvas));
-    }
-
-    private Task ChangeBorderAsync(string side, double value)
-    {
-        if (CurrentCanvas is not { } current) return Task.CompletedTask;
-        var next = WMWorkspacePanelMutations.SetBorder(current, side, value);
-        return TemplatePreviewChanged.InvokeAsync(new WMWorkspaceTemplateEdit(State.TemplateId, Global.CanvasSerialize(next)));
-    }
-
-    private WMCanvas? CurrentCanvas
-    {
-        get
-        {
-            try
-            {
-                if (State.TemplateEdit is { CanvasJson.Length: > 0 } && State.TemplateEdit.TemplateId == State.TemplateId)
-                    return Global.ReadConfig(State.TemplateEdit.CanvasJson);
-                return Templates.FirstOrDefault(item => item.ID == State.TemplateId)?.Canvas;
-            }
-            catch { return null; }
-        }
     }
 
     private Task ChangeColorAsync(string key, float value)
@@ -579,22 +558,6 @@
         };
     }
 
-    private static string BorderSide(WMMobileEditorTool tool) => tool switch
-    {
-        WMMobileEditorTool.TemplateBorderRight => "Right",
-        WMMobileEditorTool.TemplateBorderBottom => "Bottom",
-        WMMobileEditorTool.TemplateBorderLeft => "Left",
-        _ => "Top"
-    };
-
-    private static (string Label, double Value) BorderParameter(WMCanvas canvas, string side) => side switch
-    {
-        "Right" => ("右边框", canvas.BorderThickness.Right),
-        "Bottom" => ("下边框", canvas.BorderThickness.Bottom),
-        "Left" => ("左边框", canvas.BorderThickness.Left),
-        _ => ("上边框", canvas.BorderThickness.Top)
-    };
-
     private static string DisplayValue(float value, string unit) =>
         $"{value.ToString(value % 1 == 0 ? "0" : "0.00")}{(string.IsNullOrWhiteSpace(unit) ? string.Empty : $" {unit}")}";
 
@@ -624,14 +587,24 @@
         string Icon,
         WMMobileEditorSpace Space);
 
+    private static string? TemplateDesignerToolId(WMMobileEditorTool tool) => tool switch
+    {
+        WMMobileEditorTool.TemplateCanvas => "canvas",
+        WMMobileEditorTool.TemplateCanvasSize => "canvas-size",
+        WMMobileEditorTool.TemplateCanvasInsets => "canvas-insets",
+        WMMobileEditorTool.TemplateCanvasFrame => "canvas-frame",
+        WMMobileEditorTool.TemplateCanvasImage => "canvas-image",
+        _ => null
+    };
+
     private static readonly MobileToolSpec[] TemplateTools =
     [
         new(WMMobileEditorTool.TemplatePicker, "模板", "grid-four", WMMobileEditorSpace.Medium),
-        new(WMMobileEditorTool.TemplateBorderTop, "上边框", "align-top", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderRight, "右边框", "align-right", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderBottom, "下边框", "align-bottom", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateBorderLeft, "左边框", "align-left", WMMobileEditorSpace.Small),
-        new(WMMobileEditorTool.TemplateScope, "范围", "target", WMMobileEditorSpace.Small)
+        new(WMMobileEditorTool.TemplateCanvas, "画布", "image-square", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.TemplateCanvasSize, "尺寸", "corners-out", WMMobileEditorSpace.Small),
+        new(WMMobileEditorTool.TemplateCanvasInsets, "边距", "frame-corners", WMMobileEditorSpace.Medium),
+        new(WMMobileEditorTool.TemplateCanvasFrame, "外框", "frame-corners", WMMobileEditorSpace.Large),
+        new(WMMobileEditorTool.TemplateCanvasImage, "图片效果", "magic-wand", WMMobileEditorSpace.Large)
     ];
 
     private static readonly MobileToolSpec[] ColorTools =

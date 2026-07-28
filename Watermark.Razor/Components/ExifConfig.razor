@@ -1,252 +1,939 @@
-﻿@using Masa.Blazor
-@using Watermark.Razor.Parts
+@using Microsoft.AspNetCore.Components.Web
 @using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 
-<style>
-    .ddd {
-        border: 0;
-        outline: 0;
-        text-decoration: 2px solid underline;
-        line-height: 2;
-        text-underline-offset: 10px;
-        display: inline-block;
-        border-bottom: 1px solid;
-        width: 10px;
+<div class="@($"text-content-editor {(EmbeddedMobilePanel ? "is-embedded-mobile-panel" : string.Empty)} {(showFieldLibrary ? "field-library-open" : string.Empty)}")"
+     @onkeydown:stopPropagation>
+    @if (!EmbeddedMobilePanel)
+    {
+        <header class="editor-header">
+            <button type="button" class="header-command" @onclick="CancelAsync">取消</button>
+            <div class="header-title">
+                <strong>编辑文字内容</strong>
+                <span>@draftEntries.Count 个内容片段</span>
+            </div>
+            <button type="button" class="header-command is-primary" @onclick="SubmitAsync">完成</button>
+        </header>
     }
 
-    input {
-        width: fit-content;
-    }
-</style>
+    <div class="editor-body">
+        <main class="compose-pane">
+            <section class="preview-section" aria-label="文字实际效果">
+                <div class="section-heading">
+                    <h2>实际效果</h2>
+                    <span>使用模板示例数据</span>
+                </div>
+                <div class="resolved-preview">
+                    <span class="preview-tag">LIVE PREVIEW</span>
+                    <div class="@($"resolved-copy {(string.IsNullOrWhiteSpace(PreviewText) ? "is-empty" : string.Empty)}")">
+                        @(string.IsNullOrWhiteSpace(PreviewText) ? "尚未添加文字" : PreviewText)
+                    </div>
+                </div>
+            </section>
 
-<MCard Style="width:100%;height:100%;min-height:0;overflow:hidden;display:flex;flex-direction:column;position:relative;padding-bottom:56px;" Flat>
-    <MToolbar Flat
-              Color="primary"
-              Dark
-              Style="flex:0 0 auto;">
-        <MToolbarTitle>图片元数据配置</MToolbarTitle>
-    </MToolbar>
-    <MCard Elevation="0" Style="white-space:nowrap;overflow-x:auto;display:flex;align-items:center;height:80px;flex:0 0 80px;" Flat Color="#ECEFF1" Class="mx-2 mt-2">
-        <MSelect Items="ContainerId2Name.ToList()"
-                 TItem="KeyValuePair<string, string>"
-                 TValue="string"
-                 TItemValue="string"
-                 ItemText="u => u.Value"
-                 ItemValue="u => u.Key"
-                 @bind-Value="mText.BindedContainerId"
-                 Label="绑定的元数据来源图片容器"
-                 Style="margin:8px"
-                 HideDetails="true"
-                 Readonly="@(CanvasType == CanvasType.Normal)" />
-    </MCard>
-    <div style="width:100%;min-height:0;overflow:hidden;display:flex;flex:1;flex-direction:column;">
-        <MCard Elevation="0" Style="flex-wrap: wrap; overflow-y:auto;justify-content:flex-start;display:flex;max-height:80px; scrollbar-width:none;min-height: 52px;" Flat Class="pa-1 mx-2 mt-1" Color="#ECEFF1">
-            @foreach (var exif in mText.Exifs)
-            {
-                <MCard Elevation="0" Style="display:flex;align-items:center;justify-content:flex-start;gap: 0 10px;text-wrap: nowrap;" Color="#d8d8d8" Class="ma-1 pa-1">
-                    <Label Name="@(exif.Prefix + PreviewValue(exif) + exif.Suffix)" Small="true" />
-                    <IconButton Icon="@ICONS.Edit" Elevation="0" OnClick="@(()=>{CurrentExif = exif; detailShow = true;})" Text="true" />
-                </MCard>
-            }
-        </MCard>
-        <div style="overflow:hidden;min-height:0;flex-direction:column;display:flex;justify-content:space-between;flex:1;">
-            <MCard Elevation="0" Flat Color="#ECEFF1" Class="mx-2 mt-1" Style="flex:1;min-height:0;scrollbar-width:none;overflow:auto;">
-                <MCard Style="display:flex; align-items:center;justify-content:flex-start;position:sticky;top:0;z-index:999;" Color="#ECEFF1">
-                    <WmIcon Icon="@ICONS.Warning" />
-                    <Label Name="以下均为示例数据，不可以编辑，可以添加前后缀, 导出以图片实际元数据为准" />
-                </MCard>
-                <MChipGroup Multiple Style="display:flex;flex-wrap:wrap" Column Class="mx-1" Values="checkedChips" ValuesChanged="CheckedChipsChanged">
-                    @foreach (var exif in DefaultExifLists)
+            <section class="composer-section" aria-label="文字内容">
+                <div class="section-heading">
+                    <h2>内容</h2>
+                    <span>固定文字与照片信息可以混排</span>
+                </div>
+
+                <div class="@($"composer-surface {(draftEntries.Count == 0 ? "is-empty" : string.Empty)}")">
+                    @if (draftEntries.Count == 0)
                     {
-                        @if (ExifHelper.GetName.TryGetValue(exif.Key, out string? v))
+                        <button type="button" class="empty-composer" @onclick="AddLiteral">
+                            <WmIcon Size="18" Icon="text-t" />
+                            <span><strong>输入自定义文字</strong><small>或从右侧插入照片信息</small></span>
+                        </button>
+                    }
+                    else
+                    {
+                        @foreach (var entry in draftEntries)
                         {
-                            <MChip Label Filter OnClick="() => Click(exif)">
-                                @(v + $"({exif.Value})")
-                            </MChip>
+                            @if (IsLineBreak(entry))
+                            {
+                                <button @key="entry"
+                                        type="button"
+                                        class="@EntryClass(entry, "content-token is-break")"
+                                        title="换行"
+                                        @onclick="() => SelectEntry(entry)">
+                                    <WmIcon Size="14" Icon="arrow-right" />
+                                    换行
+                                </button>
+                                <span class="composer-break" aria-hidden="true"></span>
+                            }
+                            else if (IsLiteral(entry))
+                            {
+                                <input @key="entry"
+                                       class="@EntryClass(entry, "literal-input")"
+                                       style="@LiteralWidth(entry)"
+                                       value="@(entry.Prefix ?? string.Empty)"
+                                       placeholder="输入文字"
+                                       aria-label="自定义文字"
+                                       @onclick="() => SelectEntry(entry)"
+                                       @oninput="args => UpdateLiteral(entry, args)"
+                                       @onkeydown:stopPropagation />
+                            }
+                            else
+                            {
+                                <button @key="entry"
+                                        type="button"
+                                        class="@EntryClass(entry, "content-token")"
+                                        title="@FieldName(entry.Key)"
+                                        @onclick="() => SelectEntry(entry)">
+                                    <WmIcon Size="14" Icon="database" />
+                                    <span>@FieldName(entry.Key)</span>
+                                    <strong>@EntryValuePreview(entry)</strong>
+                                </button>
+                            }
+                            @if (!IsLineBreak(entry) && entry.SeparatorAfter == "\n")
+                            {
+                                <span class="composer-break" aria-hidden="true"></span>
+                            }
                         }
                     }
-                </MChipGroup>
-            </MCard>
+                </div>
 
-            <div class="px-1 ma-1" style="position:absolute;left:0;right:0;bottom:0;z-index:1000;background:#fff;">
-                <MButton Color="primary" OnClick="Submit" Elevation="0" Block Class="my-2">保存</MButton>
+                <div class="composer-toolbar">
+                    <button type="button" class="secondary-command" @onclick="AddLiteral">
+                        <WmIcon Size="15" Icon="text-t" />
+                        自定义文字
+                    </button>
+                    <button type="button" class="secondary-command is-accent" @onclick="OpenFieldLibrary">
+                        <WmIcon Size="15" Icon="database" />
+                        插入照片信息
+                    </button>
+                    <button type="button" class="secondary-command" @onclick="AddLineBreak">
+                        <WmIcon Size="15" Icon="arrow-right" />
+                        换行
+                    </button>
+                </div>
+
+                @if (ShowContainerSource)
+                {
+                    <div class="source-row">
+                        <span class="source-label">
+                            <WmIcon Size="15" Icon="image" />
+                            <span><strong>照片来源</strong><small>选择读取元数据的图片容器</small></span>
+                        </span>
+                        <div class="source-picker">
+                            <WmSelect TValue="string"
+                                      Value="@draftBoundContainerId"
+                                      ValueChanged="ChangeBoundContainer"
+                                      Options="@ContainerOptions"
+                                      AriaLabel="照片来源" />
+                        </div>
+                    </div>
+                }
+            </section>
+
+            @if (selectedEntry is not null)
+            {
+                <section class="segment-settings" aria-label="片段设置">
+                    <div class="settings-heading">
+                        <div>
+                            <span class="@($"settings-icon {(IsLiteral(selectedEntry) ? "is-literal" : string.Empty)}")">
+                                <WmIcon Size="15" Icon="@(IsLiteral(selectedEntry) ? "text-t" : "database")" />
+                            </span>
+                            <span>
+                                <strong>@EntryTitle(selectedEntry)</strong>
+                                <small>@EntryKind(selectedEntry)</small>
+                            </span>
+                        </div>
+                        <div class="segment-actions">
+                            <button type="button"
+                                    disabled="@IsFirst(selectedEntry)"
+                                    title="上移"
+                                    aria-label="上移片段"
+                                    @onclick="() => MoveEntry(selectedEntry, -1)">
+                                <WmIcon Size="14" Icon="arrow-up" />
+                            </button>
+                            <button type="button"
+                                    disabled="@IsLast(selectedEntry)"
+                                    title="下移"
+                                    aria-label="下移片段"
+                                    @onclick="() => MoveEntry(selectedEntry, 1)">
+                                <WmIcon Size="14" Icon="arrow-down" />
+                            </button>
+                            <button type="button"
+                                    class="is-danger"
+                                    title="删除"
+                                    aria-label="删除片段"
+                                    @onclick="() => RemoveEntry(selectedEntry)">
+                                <WmIcon Size="14" Icon="trash" />
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (IsLineBreak(selectedEntry))
+                    {
+                        <div class="settings-note">
+                            <WmIcon Size="16" Icon="arrow-right" />
+                            <span><strong>强制换行</strong><small>后面的内容会从新的一行开始。</small></span>
+                        </div>
+                    }
+                    else if (IsLiteral(selectedEntry))
+                    {
+                        <div class="settings-grid is-two">
+                            <label class="field-control">
+                                <span>文字</span>
+                                <input value="@(selectedEntry.Prefix ?? string.Empty)"
+                                       placeholder="输入自定义文字"
+                                       @oninput="args => UpdateLiteral(selectedEntry, args)" />
+                            </label>
+                            @SeparatorEditor(selectedEntry)
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="settings-grid">
+                            <label class="field-control">
+                                <span>示例值</span>
+                                <input value="@EntryValuePreview(selectedEntry)" readonly />
+                            </label>
+                            <label class="field-control">
+                                <span>前缀</span>
+                                <input value="@(selectedEntry.Prefix ?? string.Empty)"
+                                       placeholder="例如 f/"
+                                       @oninput="ChangePrefix" />
+                            </label>
+                            <label class="field-control">
+                                <span>后缀</span>
+                                <input value="@(selectedEntry.Suffix ?? string.Empty)"
+                                       placeholder="例如 mm"
+                                       @oninput="ChangeSuffix" />
+                            </label>
+                            @SeparatorEditor(selectedEntry)
+                            <div class="field-control">
+                                <span>无数据时</span>
+                                <WmSelect TValue="string"
+                                          Value="@MissingMode(selectedEntry)"
+                                          ValueChanged="ChangeMissingMode"
+                                          Options="@MissingOptions"
+                                          AriaLabel="无数据时" />
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(selectedEntry.EmptyValueFallback))
+                            {
+                                <label class="field-control">
+                                    <span>替代文字</span>
+                                    <input value="@selectedEntry.EmptyValueFallback"
+                                           placeholder="例如 —"
+                                           @oninput="ChangeFallback" />
+                                </label>
+                            }
+                            @if (IsDateEntry(selectedEntry))
+                            {
+                                <div class="field-control">
+                                    <span>日期格式</span>
+                                    <WmSelect TValue="string"
+                                              Value="@selectedEntry.DateTimeFormat"
+                                              ValueChanged="ChangeDateFormat"
+                                              Options="@DateFormats"
+                                              AriaLabel="日期格式" />
+                                </div>
+                            }
+                            @if (IsLocationEntry(selectedEntry))
+                            {
+                                <div class="field-control">
+                                    <span>位置显示</span>
+                                    <WmSelect TValue="string"
+                                              Value="@selectedEntry.LocationType.ToString()"
+                                              ValueChanged="ChangeLocationType"
+                                              Options="@LocationOptions"
+                                              AriaLabel="位置显示" />
+                                </div>
+                            }
+                            <div class="field-control">
+                                <span>大小写</span>
+                                <WmSelect TValue="string"
+                                          Value="@CaseMode(selectedEntry)"
+                                          ValueChanged="ChangeCaseMode"
+                                          Options="@CaseOptions"
+                                          AriaLabel="大小写" />
+                            </div>
+                            <label class="field-control">
+                                <span>清理字符</span>
+                                <input value="@(selectedEntry.RemoveString ?? string.Empty)"
+                                       placeholder="多个字符用分号分隔"
+                                       @oninput="ChangeRemoveString" />
+                            </label>
+                        </div>
+
+                        <section class="advanced-settings">
+                            <button type="button"
+                                    class="advanced-toggle"
+                                    aria-expanded="@showStyleOverrides"
+                                    aria-controls="segment-style-overrides"
+                                    @onclick="ToggleStyleOverridesAsync">
+                                <span><WmIcon Size="15" Icon="text-aa" />片段样式覆盖</span>
+                                <WmIcon Size="14"
+                                        Icon="caret-down"
+                                        Class="@($"advanced-chevron {(showStyleOverrides ? "is-open" : string.Empty)}")" />
+                            </button>
+                            @if (showStyleOverrides)
+                            {
+                                <div id="segment-style-overrides" class="style-overrides">
+                                    @if (loadingFontOptions)
+                                    {
+                                        <div class="style-overrides-loading">
+                                            <span></span>
+                                            正在读取字体…
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <CompactFontStyleEditor Label="字段值"
+                                                                Style="@selectedEntry.ValueStyle"
+                                                                Fonts="@fontOptions" />
+                                        <CompactFontStyleEditor Label="前缀"
+                                                                Style="@selectedEntry.PrefixStyle"
+                                                                Fonts="@fontOptions" />
+                                        <CompactFontStyleEditor Label="后缀"
+                                                                Style="@selectedEntry.SuffixStyle"
+                                                                Fonts="@fontOptions" />
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
+                </section>
+            }
+
+            <section class="mobile-segments" aria-label="内容片段排序">
+                <div class="section-heading">
+                    <h2>内容片段</h2>
+                    <span>使用箭头调整顺序</span>
+                </div>
+                <div class="segment-list">
+                    @foreach (var entry in draftEntries)
+                    {
+                        <article @key="entry"
+                                 class="@($"segment-row {(ReferenceEquals(entry, selectedEntry) ? "is-selected" : string.Empty)}")">
+                            <button type="button" class="segment-main" @onclick="() => SelectEntry(entry)">
+                                <span>
+                                    <strong>@EntryTitle(entry)</strong>
+                                    <small>@EntryKind(entry)</small>
+                                </span>
+                            </button>
+                            <div class="segment-row-actions">
+                                <button type="button"
+                                        disabled="@IsFirst(entry)"
+                                        aria-label="上移"
+                                        @onclick="() => MoveEntry(entry, -1)">
+                                    <WmIcon Size="14" Icon="arrow-up" />
+                                </button>
+                                <button type="button"
+                                        disabled="@IsLast(entry)"
+                                        aria-label="下移"
+                                        @onclick="() => MoveEntry(entry, 1)">
+                                    <WmIcon Size="14" Icon="arrow-down" />
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </main>
+
+        <aside class="field-library" aria-label="照片信息字段">
+            <header class="field-library-header">
+                <button type="button" class="field-library-back" aria-label="返回内容编辑" @onclick="CloseFieldLibrary">
+                    <WmIcon Size="17" Icon="arrow-left" />
+                </button>
+                <div>
+                    <strong>照片信息</strong>
+                    <span>插入到当前片段之后</span>
+                </div>
+                <button type="button" class="field-library-close" aria-label="关闭照片信息" @onclick="CloseFieldLibrary">
+                    <WmIcon Size="16" Icon="x" />
+                </button>
+            </header>
+
+            <label class="field-search">
+                <WmIcon Size="16" Icon="magnifying-glass" />
+                <input value="@searchText"
+                       @oninput="UpdateSearch"
+                       placeholder="搜索名称、字段或示例值"
+                       aria-label="搜索照片信息" />
+                @if (!string.IsNullOrWhiteSpace(searchText))
+                {
+                    <button type="button" aria-label="清除搜索" @onclick="ClearSearch">
+                        <WmIcon Size="14" Icon="x" />
+                    </button>
+                }
+            </label>
+
+            <nav class="field-categories" aria-label="照片信息分类">
+                @foreach (var category in FieldCategories)
+                {
+                    <button type="button"
+                            class="@(selectedCategory == category.Value ? "is-active" : string.Empty)"
+                            @onclick="() => SelectCategory(category.Value)">
+                        @category.Label
+                    </button>
+                }
+            </nav>
+
+            <div class="field-list">
+                @if (!FilteredFields.Any())
+                {
+                    <div class="field-empty">
+                        <WmIcon Size="26" Icon="file-magnifying-glass" />
+                        <strong>没有匹配的照片信息</strong>
+                        <span>试试字段名称，例如“镜头”或“日期”。</span>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var field in FilteredFields)
+                    {
+                        var usedCount = UsedCount(field.Key);
+                        <article @key="field.Key" class="field-row">
+                            <button type="button" class="field-main" @onclick="() => AddField(field)">
+                                <span>
+                                    <strong>@field.Name</strong>
+                                    <small>@(string.IsNullOrWhiteSpace(field.Value) ? "当前示例无数据" : field.Value)</small>
+                                </span>
+                            </button>
+                            <div class="field-actions">
+                                @if (usedCount > 0)
+                                {
+                                    <span class="field-used">已使用 @usedCount 次</span>
+                                }
+                                <button type="button"
+                                        class="field-add"
+                                        aria-label="插入 @field.Name"
+                                        @onclick="() => AddField(field)">
+                                    <WmIcon Size="16" Icon="plus" />
+                                </button>
+                            </div>
+                        </article>
+                    }
+                }
             </div>
-        </div>
+        </aside>
     </div>
-</MCard>
 
-
-<MDialog @bind-Value="detailShow" ContentStyle="@($"height:{(Global.IsMobile ? "100%" : "470px")};width:{(Global.IsMobile ? "100%" : "330px")};")">
-    <MCard Flat Style="overflow:hidden;height:100%;display:flex;flex-direction:column">
-        <div style="display:flex;flex-direction:column;overflow:auto;scrollbar-width:none;" class="pa-2">
-            <MCard Elevation="25" Style="padding:8px">
-                <MTextField @bind-Value="CurrentExif.Value" Label="参数" Readonly="true" />
-                <Watermark.Razor.Components.FontStyleComp fStyle="CurrentExif.ValueStyle" />
-            </MCard>
-            <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.Prefix" Label="前缀" />
-                <FontStyleComp fStyle="CurrentExif.PrefixStyle" />
-            </MCard>
-            <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.Suffix" Label="后缀" />
-                <FontStyleComp fStyle="CurrentExif.SuffixStyle" />
-            </MCard>
-            <MCard Elevation="25" Style="padding:8px" Class="mt-1">
-                <MTextField @bind-Value="CurrentExif.RemoveString" Label="删除字符" />
-
-                @if ((CurrentExif.Value ?? string.Empty).Contains(","))
-                {
-                    <MSelect @bind-Value="CurrentExif.LocationType"
-                             Label="经纬度识别"
-                             Items="XY"
-                             TValue="int"
-                             TItemValue="int"
-                             TItem="KeyValuePair<int, string>"
-                             ItemText="u=> u.Value"
-                             ItemValue="u => u.Key" />
-                }
-                @if (DateTime.TryParse(CurrentExif.Value, out DateTime dt))
-                {
-                    <MTextField @bind-Value="CurrentExif.DateTimeFormat" Label="日期格式转换" Dense HideDetails="true" />
-
-                    <MCheckbox @bind-Value="CurrentExif.GanZhi" Label="干支纪年" Dense HideDetails="true"></MCheckbox>
-                }
-                <MCheckbox @bind-Value="CurrentExif.ToLower" Label="全部小写" Dense HideDetails="true"></MCheckbox>
-                <MCheckbox @bind-Value="CurrentExif.ToUpper" Label="全部大写" Dense HideDetails="true"></MCheckbox>
-            </MCard>
-        </div>
-
-        <MButton Color="Color.Primary" Elevation="0" OnClick="()=>detailShow = false" Class="ma-2">确定</MButton>
-
-    </MCard>
-</MDialog>
-
+    <footer class="mobile-footer">
+        <button type="button" @onclick="SubmitAsync">完成</button>
+    </footer>
+</div>
 
 @code {
-    List<StringNumber> checkedChips = new();
-    void CheckedChipsChanged(List<StringNumber> numbers)
-    {
-        checkedChips = numbers;
-        for (var i = 0; i < DefaultExifLists.Count; i++)
-        {
-            var e = DefaultExifLists[i];
-            if (numbers.Contains(i))
-            {
-                e.IsChecked = true;
-            }
-            else e.IsChecked = false;
-        }
-    }
+    private readonly string[] commonKeys =
+    [
+        "Make", "Model", "LensModel", "FocalLengthIn35mmFilm",
+        "FNumber", "ExposureTime", "ISOSpeedRatings", "DateTimeOriginal"
+    ];
 
-    void Submit()
-    {
-        if (OnClose.HasDelegate)
-        {
-            OnClose.InvokeAsync(mText);
-        }
-    }
+    private readonly IReadOnlyList<WmSelectOption<string>> DateFormats =
+    [
+        new("2026.07.25", "yyyy.MM.dd"),
+        new("2026-07-25", "yyyy-MM-dd"),
+        new("2026年07月25日", "yyyy年MM月dd日"),
+        new("2026.07.25 20:30", "yyyy.MM.dd HH:mm"),
+        new("保留完整时间", "yyyy-MM-dd HH:mm:ss")
+    ];
+
+    private readonly IReadOnlyList<WmSelectOption<string>> LocationOptions =
+    [
+        new("原始经纬度", "-1"),
+        new("完整地址", "0"),
+        new("国家、省、市、区", "1"),
+        new("国家", "2"),
+        new("省份", "3"),
+        new("城市", "4"),
+        new("区县", "5"),
+        new("省份 · 城市", "6")
+    ];
+
+    private readonly IReadOnlyList<WmSelectOption<string>> SeparatorOptions =
+    [
+        new("自动空格", "space"),
+        new("紧密连接", "none"),
+        new("换行", "line")
+    ];
+
+    private readonly IReadOnlyList<WmSelectOption<string>> MissingOptions =
+    [
+        new("隐藏整个片段", "hide"),
+        new("显示替代文字", "fallback")
+    ];
+
+    private readonly IReadOnlyList<WmSelectOption<string>> CaseOptions =
+    [
+        new("保持原样", "original"),
+        new("全部大写", "upper"),
+        new("全部小写", "lower")
+    ];
+
+    private readonly (string Label, ExifFieldCategory Value)[] FieldCategories =
+    [
+        ("常用", ExifFieldCategory.Common),
+        ("相机与镜头", ExifFieldCategory.Camera),
+        ("曝光", ExifFieldCategory.Exposure),
+        ("日期", ExifFieldCategory.Date),
+        ("位置", ExifFieldCategory.Location),
+        ("全部", ExifFieldCategory.All)
+    ];
+
+    private List<WMExifConfigInfo> draftEntries = [];
+    private List<ExifFieldOption> allFields = [];
+    private WMExifConfigInfo selectedEntry;
+    private WMText sourceText;
+    private string draftBoundContainerId = string.Empty;
+    private string searchText = string.Empty;
+    private ExifFieldCategory selectedCategory = ExifFieldCategory.Common;
+    private bool showFieldLibrary;
+    private bool showStyleOverrides;
+    private bool loadingFontOptions;
+    private bool fontOptionsLoaded;
+    private IReadOnlyList<string> fontOptions = [];
+
+    [Parameter, EditorRequired]
+    public WMText mText { get; set; } = new();
+
     [Parameter]
-    public WMText mText { get; set; }
-    [Parameter]
-    public Dictionary<string, string> ContainerId2Name { get; set; }
+    public Dictionary<string, string> ContainerId2Name { get; set; } = [];
+
     [Parameter]
     public CanvasType CanvasType { get; set; }
+
     [Parameter]
     public EventCallback<WMText> OnClose { get; set; }
 
-    List<KeyValuePair<int, string>> XY = new()
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> FieldLibraryVisibilityChanged { get; set; }
+
+    [Parameter]
+    public bool EmbeddedMobilePanel { get; set; }
+
+    private string PreviewText => WMTextContentPreview.Resolve(draftEntries);
+
+    private bool ShowContainerSource =>
+        CanvasType != CanvasType.Normal && ContainerId2Name.Count > 1;
+
+    private IReadOnlyList<WmSelectOption<string>> ContainerOptions =>
+        ContainerId2Name
+            .Select(container => new WmSelectOption<string>(container.Value, container.Key))
+            .ToList();
+
+    private IEnumerable<ExifFieldOption> FilteredFields
     {
-        new KeyValuePair<int, string>(-1, "默认"),
-        new KeyValuePair<int, string>(0, ExifHelper.GetLocation().result.address),
-        new KeyValuePair<int, string>(1, ExifHelper.GetLocation().result.ad_info.name),
-        new KeyValuePair<int, string>(2, ExifHelper.GetLocation().result.ad_info.nation),
-        new KeyValuePair<int, string>(3, ExifHelper.GetLocation().result.ad_info.province),
-        new KeyValuePair<int, string>(4, ExifHelper.GetLocation().result.ad_info.city),
-        new KeyValuePair<int, string>(5, ExifHelper.GetLocation().result.ad_info.district),
-        new KeyValuePair<int, string>(6, ExifHelper.GetLocation().result.ad_info.province + " ● " + @ExifHelper.GetLocation().result.ad_info.city),
+        get
+        {
+            IEnumerable<ExifFieldOption> result = allFields;
+            if (selectedCategory == ExifFieldCategory.Common)
+                result = result.Where(field => field.IsCommon);
+            else if (selectedCategory != ExifFieldCategory.All)
+                result = result.Where(field => field.Category == selectedCategory);
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                result = result.Where(field =>
+                    field.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                    || field.Key.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                    || field.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return result
+                .OrderBy(field => field.IsCommon ? Array.IndexOf(commonKeys, field.Key) : int.MaxValue)
+                .ThenBy(field => field.Name, StringComparer.Ordinal);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(sourceText, mText)) return;
+
+        sourceText = mText;
+        draftEntries = (mText.Exifs ?? []).Select(CloneEntry).ToList();
+        draftBoundContainerId = mText.BindedContainerId ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(draftBoundContainerId) && ContainerId2Name.Count > 0)
+            draftBoundContainerId = ContainerId2Name.First().Key;
+
+        allFields = BuildFields();
+        selectedEntry = draftEntries.FirstOrDefault();
+        showFieldLibrary = false;
+        showStyleOverrides = false;
+    }
+
+    private RenderFragment SeparatorEditor(WMExifConfigInfo entry) => @<div class="field-control">
+        <span>片段后</span>
+        <WmSelect TValue="string"
+                  Value="@SeparatorMode(entry)"
+                  ValueChanged="value => ChangeSeparator(entry, value)"
+                  Options="@SeparatorOptions"
+                  AriaLabel="片段后" />
+    </div>;
+
+    private async Task SubmitAsync()
+    {
+        mText.Exifs = draftEntries.Select(CloneEntry).ToList();
+        mText.BindedContainerId = draftBoundContainerId;
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync(mText);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (OnCancel.HasDelegate)
+            await OnCancel.InvokeAsync();
+    }
+
+    private void AddLiteral()
+    {
+        var entry = new WMExifConfigInfo
+        {
+            Prefix = draftEntries.Count == 0 ? "文字" : "自定义文字",
+            SeparatorAfter = " "
+        };
+        InsertAfterSelection(entry);
+    }
+
+    private void AddLineBreak()
+    {
+        var entry = new WMExifConfigInfo
+        {
+            Prefix = "\n",
+            SeparatorAfter = string.Empty
+        };
+        InsertAfterSelection(entry);
+    }
+
+    private async Task AddField(ExifFieldOption field)
+    {
+        var entry = new WMExifConfigInfo
+        {
+            Key = field.Key,
+            Value = field.Value,
+            Prefix = string.Empty,
+            Suffix = string.Empty,
+            SeparatorAfter = " "
+        };
+        InsertAfterSelection(entry);
+        if (Global.IsMobile)
+            await SetFieldLibraryVisibilityAsync(false);
+    }
+
+    private void InsertAfterSelection(WMExifConfigInfo entry)
+    {
+        var index = selectedEntry is null ? draftEntries.Count : draftEntries.IndexOf(selectedEntry) + 1;
+        index = Math.Clamp(index, 0, draftEntries.Count);
+        draftEntries.Insert(index, entry);
+        selectedEntry = entry;
+    }
+
+    private void RemoveEntry(WMExifConfigInfo entry)
+    {
+        var index = draftEntries.IndexOf(entry);
+        if (index < 0) return;
+
+        draftEntries.RemoveAt(index);
+        selectedEntry = draftEntries.Count == 0
+            ? null
+            : draftEntries[Math.Min(index, draftEntries.Count - 1)];
+    }
+
+    private void MoveEntry(WMExifConfigInfo entry, int offset)
+    {
+        var index = draftEntries.IndexOf(entry);
+        var target = index + offset;
+        if (index < 0 || target < 0 || target >= draftEntries.Count) return;
+        (draftEntries[index], draftEntries[target]) = (draftEntries[target], draftEntries[index]);
+    }
+
+    private void SelectEntry(WMExifConfigInfo entry) => selectedEntry = entry;
+
+    private void UpdateLiteral(WMExifConfigInfo entry, ChangeEventArgs args) =>
+        entry.Prefix = args.Value?.ToString() ?? string.Empty;
+
+    private void ChangePrefix(ChangeEventArgs args)
+    {
+        if (selectedEntry is not null)
+            selectedEntry.Prefix = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ChangeSuffix(ChangeEventArgs args)
+    {
+        if (selectedEntry is not null)
+            selectedEntry.Suffix = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ChangeFallback(ChangeEventArgs args)
+    {
+        if (selectedEntry is not null)
+            selectedEntry.EmptyValueFallback = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ChangeMissingMode(string value)
+    {
+        if (selectedEntry is null) return;
+        selectedEntry.EmptyValueFallback = value == "fallback"
+            ? (string.IsNullOrWhiteSpace(selectedEntry.EmptyValueFallback) ? "—" : selectedEntry.EmptyValueFallback)
+            : string.Empty;
+    }
+
+    private void ChangeDateFormat(string value)
+    {
+        if (selectedEntry is not null)
+            selectedEntry.DateTimeFormat = string.IsNullOrWhiteSpace(value)
+                ? "yyyy-MM-dd HH:mm:ss"
+                : value;
+    }
+
+    private void ChangeLocationType(string value)
+    {
+        if (selectedEntry is not null && int.TryParse(value, out var locationType))
+            selectedEntry.LocationType = locationType;
+    }
+
+    private void ChangeCaseMode(string mode)
+    {
+        if (selectedEntry is null) return;
+        selectedEntry.ToUpper = mode == "upper";
+        selectedEntry.ToLower = mode == "lower";
+    }
+
+    private void ChangeRemoveString(ChangeEventArgs args)
+    {
+        if (selectedEntry is not null)
+            selectedEntry.RemoveString = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ChangeSeparator(WMExifConfigInfo entry, string value)
+    {
+        entry.SeparatorAfter = value switch
+        {
+            "none" => string.Empty,
+            "line" => "\n",
+            _ => " "
+        };
+    }
+
+    private void ChangeBoundContainer(string value) =>
+        draftBoundContainerId = value;
+
+    private void UpdateSearch(ChangeEventArgs args) =>
+        searchText = args.Value?.ToString() ?? string.Empty;
+
+    private void ClearSearch() => searchText = string.Empty;
+    private void SelectCategory(ExifFieldCategory category) => selectedCategory = category;
+    private Task OpenFieldLibrary() => SetFieldLibraryVisibilityAsync(true);
+    private Task CloseFieldLibrary() => SetFieldLibraryVisibilityAsync(false);
+
+    public async Task<bool> TryCloseFieldLibraryAsync()
+    {
+        if (!showFieldLibrary) return false;
+        await SetFieldLibraryVisibilityAsync(false);
+        return true;
+    }
+
+    private async Task SetFieldLibraryVisibilityAsync(bool value)
+    {
+        if (showFieldLibrary == value) return;
+        showFieldLibrary = value;
+        if (FieldLibraryVisibilityChanged.HasDelegate)
+            await FieldLibraryVisibilityChanged.InvokeAsync(value);
+    }
+
+    private async Task ToggleStyleOverridesAsync()
+    {
+        showStyleOverrides = !showStyleOverrides;
+        if (!showStyleOverrides || fontOptionsLoaded || loadingFontOptions)
+            return;
+
+        loadingFontOptions = true;
+        try
+        {
+            fontOptions = await Task.Run(() => Global.ReadFont()
+                .Keys
+                .Where(font => !string.IsNullOrWhiteSpace(font))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(font => font, StringComparer.OrdinalIgnoreCase)
+                .ToList());
+        }
+        catch
+        {
+            fontOptions = [];
+        }
+        finally
+        {
+            fontOptionsLoaded = true;
+            loadingFontOptions = false;
+        }
+    }
+
+    private int UsedCount(string key) =>
+        draftEntries.Count(entry => string.Equals(entry.Key, key, StringComparison.Ordinal));
+
+    private bool IsFirst(WMExifConfigInfo entry) => draftEntries.IndexOf(entry) <= 0;
+    private bool IsLast(WMExifConfigInfo entry) => draftEntries.IndexOf(entry) == draftEntries.Count - 1;
+    private static bool IsLiteral(WMExifConfigInfo entry) => string.IsNullOrWhiteSpace(entry.Key);
+    private static bool IsLineBreak(WMExifConfigInfo entry) => IsLiteral(entry) && entry.Prefix == "\n";
+
+    private static string MissingMode(WMExifConfigInfo entry) =>
+        string.IsNullOrWhiteSpace(entry.EmptyValueFallback) ? "hide" : "fallback";
+
+    private static string CaseMode(WMExifConfigInfo entry) =>
+        entry.ToUpper ? "upper" : entry.ToLower ? "lower" : "original";
+
+    private static string SeparatorMode(WMExifConfigInfo entry) =>
+        entry.SeparatorAfter == "\n" ? "line" : entry.SeparatorAfter == string.Empty ? "none" : "space";
+
+    private static bool IsDateEntry(WMExifConfigInfo entry)
+    {
+        var raw = SampleValue(entry);
+        return !string.IsNullOrWhiteSpace(raw) && DateTime.TryParse(raw, out _);
+    }
+
+    private static bool IsLocationEntry(WMExifConfigInfo entry)
+    {
+        var raw = SampleValue(entry);
+        if (string.IsNullOrWhiteSpace(raw)) return false;
+        var parts = raw.Split(',');
+        return parts.Length == 2
+            && decimal.TryParse(parts[0], out _)
+            && decimal.TryParse(parts[1], out _);
+    }
+
+    private static string SampleValue(WMExifConfigInfo entry) =>
+        !string.IsNullOrWhiteSpace(entry.Key)
+        && ExifHelper.DefaultMeta.TryGetValue(entry.Key, out var value)
+            ? value
+            : entry.Value ?? string.Empty;
+
+    private static string EntryValuePreview(WMExifConfigInfo entry)
+    {
+        if (IsLiteral(entry)) return entry.Prefix ?? string.Empty;
+        var resolved = WMTextContentPreview.ResolveEntry(entry);
+        var prefix = entry.Prefix ?? string.Empty;
+        var suffix = entry.Suffix ?? string.Empty;
+        if (resolved.StartsWith(prefix, StringComparison.Ordinal))
+            resolved = resolved[prefix.Length..];
+        if (!string.IsNullOrEmpty(suffix) && resolved.EndsWith(suffix, StringComparison.Ordinal))
+            resolved = resolved[..^suffix.Length];
+        return string.IsNullOrWhiteSpace(resolved) ? "无示例数据" : resolved;
+    }
+
+    private static string EntryKind(WMExifConfigInfo entry) =>
+        IsLineBreak(entry) ? "布局控制" : IsLiteral(entry) ? "自定义文字" : "照片信息";
+
+    private static string EntryTitle(WMExifConfigInfo entry)
+    {
+        if (IsLineBreak(entry)) return "换行";
+        if (IsLiteral(entry))
+            return string.IsNullOrWhiteSpace(entry.Prefix) ? "空文字" : entry.Prefix;
+        var value = EntryValuePreview(entry);
+        return $"{FieldName(entry.Key)} · {value}";
+    }
+
+    private string EntryClass(WMExifConfigInfo entry, string baseClass) =>
+        $"{baseClass} {(ReferenceEquals(entry, selectedEntry) ? "is-selected" : string.Empty)}";
+
+    private static string LiteralWidth(WMExifConfigInfo entry)
+    {
+        var length = Math.Clamp((entry.Prefix ?? string.Empty).Length, 2, 32);
+        return $"--literal-ch:{length}";
+    }
+
+    private static string FieldName(string key) =>
+        !string.IsNullOrWhiteSpace(key) && ExifHelper.GetName.TryGetValue(key, out var name)
+            ? name
+            : key ?? "照片信息";
+
+    private List<ExifFieldOption> BuildFields()
+    {
+        var common = commonKeys.ToHashSet(StringComparer.Ordinal);
+        return ExifHelper.DefaultMeta
+            .Where(pair => pair.Key != "CustomCard")
+            .Select(pair => new ExifFieldOption(
+                pair.Key,
+                FieldName(pair.Key),
+                pair.Value ?? string.Empty,
+                CategoryFor(pair.Key),
+                common.Contains(pair.Key)))
+            .ToList();
+    }
+
+    private static ExifFieldCategory CategoryFor(string key)
+    {
+        if (key.Contains("GPS", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Longitude", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Latitude", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Altitude", StringComparison.OrdinalIgnoreCase))
+            return ExifFieldCategory.Location;
+
+        if (key.Contains("Date", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Time", StringComparison.OrdinalIgnoreCase))
+            return ExifFieldCategory.Date;
+
+        if (key.Contains("Exposure", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Aperture", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("FNumber", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("ISO", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Metering", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("WhiteBalance", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Flash", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Brightness", StringComparison.OrdinalIgnoreCase))
+            return ExifFieldCategory.Exposure;
+
+        if (key.Contains("Make", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Model", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Lens", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Focal", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("Serial", StringComparison.OrdinalIgnoreCase))
+            return ExifFieldCategory.Camera;
+
+        return ExifFieldCategory.Other;
+    }
+
+    private static WMExifConfigInfo CloneEntry(WMExifConfigInfo source) => new()
+    {
+        Prefix = source.Prefix ?? string.Empty,
+        PrefixStyle = CloneStyle(source.PrefixStyle),
+        Suffix = source.Suffix ?? string.Empty,
+        SuffixStyle = CloneStyle(source.SuffixStyle),
+        Value = source.Value ?? string.Empty,
+        ValueStyle = CloneStyle(source.ValueStyle),
+        Key = source.Key ?? string.Empty,
+        ToLower = source.ToLower,
+        ToUpper = source.ToUpper,
+        GanZhi = source.GanZhi,
+        LocationType = source.LocationType,
+        DateTimeFormat = source.DateTimeFormat ?? "yyyy-MM-dd HH:mm:ss",
+        RemoveString = source.RemoveString ?? string.Empty,
+        SeparatorAfter = source.SeparatorAfter,
+        EmptyValueFallback = source.EmptyValueFallback ?? string.Empty
     };
 
-    //"F##4##suffix;"
-    WMExifConfigInfo CurrentExif = new();
-    bool detailShow = false;
-
-    static string PreviewValue(WMExifConfigInfo exif)
+    private static WMFontStyle CloneStyle(WMFontStyle source) => new()
     {
-        if (string.IsNullOrEmpty(exif.Value))
-        {
-            return string.Empty;
-        }
+        Enabled = source.Enabled,
+        FontSize = source.FontSize,
+        IsBold = source.IsBold,
+        IsItalic = source.IsItalic,
+        FontColor = source.FontColor,
+        FontFamily = source.FontFamily
+    };
 
-        return exif.GetMetaValue(exif.Value, true).GetAwaiter().GetResult();
+    private enum ExifFieldCategory
+    {
+        Common,
+        Camera,
+        Exposure,
+        Date,
+        Location,
+        Other,
+        All
     }
 
-    void Click(DefaultExifs exif)
-    {
-        var i = new WMExifConfigInfo
-            {
-                Prefix = "",
-                Suffix = "",
-                Key = exif.Key,
-                Value = exif.Value
-            };
-        if (exif.IsChecked && !mText.Exifs.Any(c => c.Key == exif.Key))
-        {
-            mText.Exifs.Add(i);
-        }
-        else
-        {
-            var e = mText.Exifs.FirstOrDefault(c => c.Key == exif.Key);
-            if (e != null)
-            {
-                mText.Exifs.Remove(e);
-            }
-        }
-    }
-
-    void Delete(WMExifConfigInfo exif)
-    {
-        var e = DefaultExifLists.FirstOrDefault(x => x.Key == exif.Key);
-        if (e != null)
-        {
-            e.IsChecked = false;
-            mText.Exifs.Remove(exif);
-            StateHasChanged();
-        }
-    }
-
-
-    class DefaultExifs
-    {
-        public bool IsChecked { get; set; }
-        public string Key { get; set; }
-        public string Value { get; set; }
-    }
-
-    List<DefaultExifs> DefaultExifLists;
-
-
-    protected override void OnInitialized()
-    {
-        DefaultExifLists = new List<DefaultExifs>();
-        foreach (var pair in ExifHelper.DefaultMeta)
-        {
-            var de = new DefaultExifs
-                {
-                    IsChecked = false,
-                    Key = pair.Key,
-                    Value = pair.Value
-                };
-            if (mText.Exifs != null && mText.Exifs.Any(c => c.Key == pair.Key)) de.IsChecked = true;
-            DefaultExifLists.Add(de);
-            if (de.IsChecked)
-            {
-                checkedChips.Add(DefaultExifLists.IndexOf(de));
-            }
-        }
-        if (string.IsNullOrEmpty(mText.BindedContainerId) && ContainerId2Name.Count > 0)
-        {
-            mText.BindedContainerId = ContainerId2Name.FirstOrDefault().Key;
-        }
-    }
+    private sealed record ExifFieldOption(
+        string Key,
+        string Name,
+        string Value,
+        ExifFieldCategory Category,
+        bool IsCommon);
 }

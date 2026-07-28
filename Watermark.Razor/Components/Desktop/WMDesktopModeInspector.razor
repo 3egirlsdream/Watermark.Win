@@ -177,8 +177,8 @@
                     }
                 </div>
                 <details class="advanced"><summary>高级设置</summary><div class="advanced-grid">
-                    <label><span>对齐</span><select value="@Advanced.Alignment" @onchange="ChangeAlignment"><option value="@WMAlignmentMode.None">不对齐</option><option value="@WMAlignmentMode.Stars">星点配准</option></select></label>
-                    <label><span>合成算法</span><select value="@Advanced.Reduction" @onchange="ChangeReduction"><option value="@WMReductionMode.Maximum">最大值 Maximum</option><option value="@WMReductionMode.Lighten">变亮 Lighten</option><option value="@WMReductionMode.WinsorizedMean">Winsorized Mean</option><option value="@WMReductionMode.SigmaClippedMean">Sigma-Clipped Mean</option></select></label>
+                    <WmSelect TValue="WMAlignmentMode" Value="@Advanced.Alignment" ValueChanged="ChangeAlignment" Options="@AlignmentOptions" Label="对齐" AriaLabel="多帧对齐方式" />
+                    <WmSelect TValue="WMReductionMode" Value="@Advanced.Reduction" ValueChanged="ChangeReduction" Options="@ReductionOptions" Label="合成算法" AriaLabel="多帧合成算法" />
                     <label><span>Sigma Low</span><input type="number" min="1" max="8" step=".1" value="@Advanced.SigmaLow" @onchange="ChangeSigmaLow" /></label>
                     <label><span>Sigma High</span><input type="number" min="1" max="8" step=".1" value="@Advanced.SigmaHigh" @onchange="ChangeSigmaHigh" /></label>
                     <label><span>迭代</span><input type="number" min="1" max="5" value="@Advanced.SigmaIterations" @onchange="ChangeIterations" /></label>
@@ -280,8 +280,20 @@
     private Task ChangeRole(string mediaId, WMFrameRole role) { var roles = new Dictionary<string, WMFrameRole?>(MultiFrameDraft.Roles, StringComparer.Ordinal) { [mediaId] = role }; return MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Roles = roles }); }
     private Task SetReference(string mediaId) => MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { ReferenceMediaId = Advanced.ReferenceMediaId == mediaId ? null : mediaId } });
     private WMFrameRole? Role(string id) => MultiFrameDraft.Roles.TryGetValue(id, out var role) ? role : null;
-    private Task ChangeAlignment(ChangeEventArgs args) => Enum.TryParse<WMAlignmentMode>(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Alignment = value } }) : Task.CompletedTask;
-    private Task ChangeReduction(ChangeEventArgs args) => Enum.TryParse<WMReductionMode>(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Reduction = value, AutomaticReduction = false } }) : Task.CompletedTask;
+    private static readonly IReadOnlyList<WmSelectOption<WMAlignmentMode>> AlignmentOptions =
+    [
+        new("不对齐", WMAlignmentMode.None),
+        new("星点配准", WMAlignmentMode.Stars)
+    ];
+    private static readonly IReadOnlyList<WmSelectOption<WMReductionMode>> ReductionOptions =
+    [
+        new("最大值 Maximum", WMReductionMode.Maximum),
+        new("变亮 Lighten", WMReductionMode.Lighten),
+        new("Winsorized Mean", WMReductionMode.WinsorizedMean),
+        new("Sigma-Clipped Mean", WMReductionMode.SigmaClippedMean)
+    ];
+    private Task ChangeAlignment(WMAlignmentMode value) => MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Alignment = value } });
+    private Task ChangeReduction(WMReductionMode value) => MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { Reduction = value, AutomaticReduction = false } });
     private Task ChangeSigmaLow(ChangeEventArgs args) => ChangeAdvancedNumber(args, value => Advanced with { SigmaLow = value });
     private Task ChangeSigmaHigh(ChangeEventArgs args) => ChangeAdvancedNumber(args, value => Advanced with { SigmaHigh = value });
     private Task ChangeIterations(ChangeEventArgs args) => int.TryParse(args.Value?.ToString(), out var value) ? MultiFrameDraftChanged.InvokeAsync(MultiFrameDraft with { Advanced = Advanced with { SigmaIterations = Math.Clamp(value, 1, 5) } }) : Task.CompletedTask;

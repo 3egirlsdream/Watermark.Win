@@ -3,18 +3,27 @@
 
 <section class="wm-template-add-panel" aria-label="添加模板对象">
     <header>
-        <strong>添加对象</strong>
-        <small>添加后可在画布上拖动、缩放和旋转</small>
+        <div>
+            <strong>添加对象</strong>
+            <small>添加后可在画布上拖动、缩放和旋转</small>
+        </div>
+        @if (CloseRequested.HasDelegate)
+        {
+            <button type="button" class="add-panel-close" aria-label="关闭添加面板" @onclick="CloseRequested">
+                <WmIcon Icon="x" />
+            </button>
+        }
     </header>
     <div>
-        <button type="button" @onclick="() => AddAsync(typeof(WMText))"><WmIcon Icon="text-t" /><span>文字</span></button>
-        <button type="button" @onclick="() => AddAsync(typeof(WMLogo))"><WmIcon Icon="image" /><span>图片</span></button>
-        <button type="button" @onclick="() => AddAsync(typeof(WMLine))"><WmIcon Icon="minus" /><span>线条</span></button>
-        <button type="button" @onclick="() => AddAsync(typeof(WMContainer))"><WmIcon Icon="squares-four" /><span>容器</span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMText))"><WmIcon Icon="text-t" /><span><strong>文字</strong><small>标题或说明</small></span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMLogo))"><WmIcon Icon="image" /><span><strong>图片</strong><small>Logo 与图片槽</small></span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMContainer))"><WmIcon Icon="square" /><span><strong>形状</strong><small>背景与容器</small></span></button>
+        <button type="button" @onclick="() => AddAsync(typeof(WMLine))"><WmIcon Icon="minus" /><span><strong>线条</strong><small>分割与装饰</small></span></button>
     </div>
 </section>
 
 @code {
     [Parameter] public EventCallback<Type> AddRequested { get; set; }
+    [Parameter] public EventCallback CloseRequested { get; set; }
     private Task AddAsync(Type type) => AddRequested.InvokeAsync(type);
 }
