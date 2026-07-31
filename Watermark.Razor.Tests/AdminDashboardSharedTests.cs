@@ -41,6 +41,19 @@ public class AdminDashboardSharedTests
     }
 
     [Fact]
+    public void Dashboard_manual_refresh_bypasses_server_cache()
+    {
+        var result = APIHelper.BuildDashboardOverviewPath(
+            new DateTime(2026, 7, 1),
+            new DateTime(2026, 7, 31),
+            forceRefresh: true);
+
+        Assert.Equal(
+            "/api/Dashboard/GetOverview?startDate=2026-07-01&endDate=2026-07-31&refresh=true",
+            result);
+    }
+
+    [Fact]
     public void Dashboard_chart_handles_zero_and_single_point_series()
     {
         var zeroMaximum = DashboardChartMath.Maximum([

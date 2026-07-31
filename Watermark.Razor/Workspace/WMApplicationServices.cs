@@ -1102,7 +1102,11 @@ public sealed class WMMembershipService(
 public interface IWMAdminDashboardService
 {
     bool IsAuthorized { get; }
-    Task<DashboardOverview?> LoadAsync(DateTime startDate, DateTime endDate, CancellationToken token = default);
+    Task<DashboardOverview?> LoadAsync(
+        DateTime startDate,
+        DateTime endDate,
+        bool forceRefresh = false,
+        CancellationToken token = default);
     string? LastError { get; }
 }
 
@@ -1111,12 +1115,16 @@ public sealed class WMAdminDashboardService(APIHelper api, IWMAccountService acc
     public bool IsAuthorized => AdminAccessPolicy.IsAdmin(Global.CurrentUser) && accounts.State.IsAuthenticated;
     public string? LastError { get; private set; }
 
-    public async Task<DashboardOverview?> LoadAsync(DateTime startDate, DateTime endDate, CancellationToken token = default)
+    public async Task<DashboardOverview?> LoadAsync(
+        DateTime startDate,
+        DateTime endDate,
+        bool forceRefresh = false,
+        CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         LastError = null;
         if (!IsAuthorized) { LastError = "当前账号没有管理员权限。"; return null; }
-        var result = await api.GetDashboardOverviewAsync(startDate, endDate).ConfigureAwait(false);
+        var result = await api.GetDashboardOverviewAsync(startDate, endDate, forceRefresh, token).ConfigureAwait(false);
         if (result?.success == true && result.data is not null) return result.data;
         LastError = result?.message?.content ?? "看板数据加载失败。";
         return null;

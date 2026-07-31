@@ -2,6 +2,7 @@
 @using Watermark.Shared.Models
 @using Watermark.Razor.Workspace
 @namespace Watermark.Razor.Components.Dashboard
+@implements IDisposable
 @inject IWMAdminDashboardService DashboardService
 
 @if (!IsAuthorized)
@@ -166,8 +167,8 @@ else
                             <DashboardChart Type="DashboardChartType.Donut" Series="@TemplateStateSeries" AriaLabel="模板状态分布" Compact />
                         </article>
                         <article class="data-card">
-                            <CardHeading Eyebrow="CANVAS FORMAT" Title="模板类型" Note="普通模板与拼图模板" />
-                            <DashboardChart Type="DashboardChartType.Donut" Series="@TemplateTypeSeries" AriaLabel="模板类型分布" Compact />
+                            <CardHeading Eyebrow="CANVAS FORMAT" Title="画布策略" Note="跟随主图与固定画布" />
+                            <DashboardChart Type="DashboardChartType.Donut" Series="@TemplateTypeSeries" AriaLabel="海报画布策略分布" Compact />
                         </article>
                         <article class="data-card span-two table-card">
                             <CardHeading Eyebrow="TOP CONTENT" Title="热门模板" Note="下载优先，收藏次优先" />
@@ -188,7 +189,7 @@ else
                                                     <td class="rank">@((index + 1).ToString("00"))</td>
                                                     <td><strong>@template.Name</strong><small>@template.CreatedAt.ToString("yyyy-MM-dd")</small></td>
                                                     <td>@template.Author</td>
-                                                    <td>@template.CanvasType</td>
+                                                    <td>@CanvasSizingLabel(template.CanvasType)</td>
                                                     <td><span class="state-dot @(template.State == "已上架" ? "online" : null)"></span>@template.State</td>
                                                     <td class="numeric">@template.Downloads.ToString("N0")</td>
                                                     <td class="numeric">@template.Likes.ToString("N0")</td>
@@ -275,6 +276,7 @@ else
     private string? ErrorMessage;
     private string? FilterError;
     private int LoadVersion;
+    private CancellationTokenSource? LoadCancellation;
 
     private bool IsAuthorized => DashboardService.IsAuthorized;
     private static DateTime Today => DateTime.UtcNow.AddHours(8).Date;
@@ -293,7 +295,7 @@ else
         }
     }
 
-    private Task Reload() => LoadAsync();
+    private Task Reload() => LoadAsync(forceRefresh: true);
 
     private async Task SelectPreset(DashboardRangePreset preset)
     {
@@ -357,7 +359,7 @@ else
         return null;
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool forceRefresh = false)
     {
         if (!IsAuthorized)
         {
@@ -370,12 +372,20 @@ else
             return;
         }
 
+        LoadCancellation?.Cancel();
+        LoadCancellation?.Dispose();
+        LoadCancellation = new CancellationTokenSource();
+        var cancellation = LoadCancellation;
         var version = ++LoadVersion;
         Loading = true;
         ErrorMessage = null;
         try
         {
-            var result = await DashboardService.LoadAsync(StartDate, EndDate);
+            var result = await DashboardService.LoadAsync(
+                StartDate,
+                EndDate,
+                forceRefresh,
+                cancellation.Token);
             if (version != LoadVersion)
             {
                 return;
@@ -389,6 +399,9 @@ else
             {
                 ErrorMessage = DashboardService.LastError ?? "服务端没有返回可用数据";
             }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
@@ -404,6 +417,13 @@ else
                 Loading = false;
             }
         }
+    }
+
+    public void Dispose()
+    {
+        LoadCancellation?.Cancel();
+        LoadCancellation?.Dispose();
+        LoadCancellation = null;
     }
 
     private IReadOnlyList<KpiItem> OverviewKpis => Data is null ? [] :
@@ -429,7 +449,9 @@ else
     private IReadOnlyList<string> PageLabels => Data?.VisitPages.Select(x => x.Name).ToArray() ?? [];
     private IReadOnlyList<DashboardChartSeries> PageSeries => Data is null ? [] : [Series("访问量", "#00a892", Data.VisitPages.Select(x => (double)x.Count))];
     private IReadOnlyList<DashboardChartSeries> TemplateStateSeries => CountSeries(Data?.TemplateStates);
-    private IReadOnlyList<DashboardChartSeries> TemplateTypeSeries => CountSeries(Data?.TemplateCanvasTypes);
+    private IReadOnlyList<DashboardChartSeries> TemplateTypeSeries =>
+        Data?.TemplateCanvasTypes.Select((item, index) =>
+            Series(CanvasSizingLabel(item.Name), Palette[index % Palette.Length], [item.Count * 1d])).ToArray() ?? [];
     private IReadOnlyList<DashboardChartSeries> RevenueSeries => Data is null ? [] : [Series("实收", "#cb5d78", Data.DailySeries.Select(x => (double)x.PaidRevenue))];
     private IReadOnlyList<DashboardChartSeries> PaidOrderSeries => Data is null ? [] : [Series("实付订单", "#d38a27", Data.DailySeries.Select(x => (double)x.PaidOrders))];
     private IReadOnlyList<DashboardChartSeries> OrderStatusSeries => CountSeries(Data?.OrderStatuses);
@@ -440,6 +462,14 @@ else
     {
         return items?.Select((item, index) => Series(item.Name, Palette[index % Palette.Length], [item.Count * 1d])).ToArray() ?? [];
     }
+
+    private static string CanvasSizingLabel(string? value) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            "normal" or "0" or "普通模板" => "跟随主图",
+            "split" or "1" or "拼图模板" => "固定画布",
+            _ => string.IsNullOrWhiteSpace(value) ? "未标记" : value
+        };
 
     private sealed record KpiItem(string Label, string Value, string Note, string Icon, string Color);
     private enum DashboardTab { Overview, Traffic, Content, Commerce }
