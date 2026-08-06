@@ -38,7 +38,7 @@
                             CanUndo="@(editor.CanUndo && !editor.IsTransactionActive)"
                             CanRedo="@(editor.CanRedo && !editor.IsTransactionActive)"
                             IsSaving="@isSaving"
-                            SaveLabel="保存"
+                            SaveLabel="@(InstanceMode ? "完成" : "保存")"
                             Zoom="@zoom"
                             Exit="ToolbarExitAsync"
                             Save="SaveAsync"
@@ -109,7 +109,7 @@
                         <ExifConfig @ref="mobileTextContentEditor"
                                     mText="@mobileTextContentTarget"
                                     EmbeddedMobilePanel="@Global.IsMobile"
-                                    CanvasType="@editor.Draft.CanvasType"
+                                    MultipleAssetSources="@(ContainerNames.Count > 1)"
                                     ContainerId2Name="@ContainerNames"
                                     FieldLibraryVisibilityChanged="HandleFieldLibraryVisibilityChanged"
                                     OnClose="CompleteMobileTextContent"
@@ -180,9 +180,12 @@
 @code {
 #nullable enable
     [Parameter] public string CanvasId { get; set; } = string.Empty;
+    [Parameter] public bool InstanceMode { get; set; }
+    [Parameter] public string? InstanceCanvasJson { get; set; }
     [Parameter] public string? InitialMobileToolId { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnSaved { get; set; }
+    [Parameter] public EventCallback<WMCanvas> OnInstanceCompleted { get; set; }
 
     private WMTemplateEditorState? editor;
     private WMTemplateCanvas? canvasEditor;
@@ -201,6 +204,7 @@
     private string renderError = string.Empty;
     private string saveNotice = string.Empty;
     private string loadedCanvasId = string.Empty;
+    private string? loadedInstanceCanvasJson;
     private string? appliedInitialMobileToolId;
     private string requestedSnapshot = string.Empty;
     private string originalCanvasJson = string.Empty;
@@ -255,16 +259,26 @@
             ? ControlName(target)
             : "图片";
 
-    private Dictionary<string, string> ContainerNames => editor?.Draft.RootContainers
-        .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
-        .GroupBy(container => container.ID)
-        .ToDictionary(
-            group => group.Key,
-            group => ControlName(group.First())) ?? [];
+    private Dictionary<string, string> ContainerNames
+    {
+        get
+        {
+            if (editor is null) return [];
+            var names = Global.EnumerateControls(editor.Draft)
+                .Where(control => WMPosterAssetSlots.Find(editor.Draft, control)?.Purpose == WMPosterAssetPurpose.Photo)
+                .GroupBy(control => control.ID)
+                .ToDictionary(group => group.Key, group => ControlName(group.First()));
+            if (editor.Draft.HasPrimaryImage)
+                names[editor.Draft.ID] = editor.Draft.Name;
+            return names;
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (editor is not null && string.Equals(loadedCanvasId, CanvasId, StringComparison.Ordinal))
+        if (editor is not null
+            && string.Equals(loadedCanvasId, CanvasId, StringComparison.Ordinal)
+            && string.Equals(loadedInstanceCanvasJson, InstanceCanvasJson, StringComparison.Ordinal))
             return;
 
         await LoadEditorAsync();
@@ -289,6 +303,7 @@
         requestedSnapshot = string.Empty;
         compatibilityToastShown = false;
         loadedCanvasId = CanvasId;
+        loadedInstanceCanvasJson = InstanceCanvasJson;
         mobileTextContentEditor = null;
         mobileTextContentTarget = null;
         observedSelectionId = string.Empty;
@@ -303,10 +318,18 @@
 
         try
         {
-            var templates = await TemplateLibrary.GetOrRefreshAsync();
-            var sourceCanvas = templates.FirstOrDefault(item =>
-                string.Equals(item.ID, CanvasId, StringComparison.Ordinal))?.Canvas
-                ?? await Global.GetCanvas(CanvasId);
+            WMCanvas? sourceCanvas;
+            if (InstanceMode && !string.IsNullOrWhiteSpace(InstanceCanvasJson))
+            {
+                sourceCanvas = Global.ReadConfig(InstanceCanvasJson);
+            }
+            else
+            {
+                var templates = await TemplateLibrary.GetOrRefreshAsync();
+                sourceCanvas = templates.FirstOrDefault(item =>
+                    string.Equals(item.ID, CanvasId, StringComparison.Ordinal))?.Canvas
+                    ?? await Global.GetCanvas(CanvasId);
+            }
             if (sourceCanvas is null)
             {
                 loadError = "模板加载失败，请重试。";
@@ -467,6 +490,7 @@
             await Task.Delay(450, cancellationToken);
             if (source is null
                 || disposed
+                || InstanceMode
                 || !ReferenceEquals(editor, source)
                 || WorkspaceController.State.Mode != WMWorkspaceMode.TemplateDesign
                 || string.IsNullOrWhiteSpace(WorkspaceController.State.SessionId)
@@ -956,20 +980,39 @@
         {
             draftDebounce?.Cancel();
             await DesignerSession.FlushRenderAsync();
-            await TemplateStore.SaveAsync(currentEditor.Draft);
-            currentEditor.MarkSaved();
-            if (WorkspaceController.State.Mode == WMWorkspaceMode.TemplateDesign)
-                await WorkspaceController.ClearTemplateDraftAsync();
-            saveNotice = "模板已保存";
-            Common.ShowToast(Popup, saveNotice);
-            try
+            WMPosterTemplateMigration.Normalize(currentEditor.Draft);
+            if (InstanceMode)
             {
-                await OnSaved.InvokeAsync(currentEditor.Draft.ID);
+                var validation = WMTemplateValidator.Validate(
+                    currentEditor.Draft,
+                    Path.Combine(Global.AppPath.TemplatesFolder, CanvasId));
+                var blocking = validation
+                    .Where(error => error.Severity == WMValidationSeverity.Error)
+                    .ToList();
+                if (blocking.Count > 0)
+                    throw new WMTemplateValidationException(blocking);
+                await OnInstanceCompleted.InvokeAsync(CloneCanvas(currentEditor.Draft));
             }
-            catch (Exception ex)
+            else
             {
-                renderError = ex.Message;
-                Common.ShowToast(Popup, renderError, isError: true);
+                await TemplateStore.SaveAsync(currentEditor.Draft);
+            }
+            currentEditor.MarkSaved();
+            if (!InstanceMode && WorkspaceController.State.Mode == WMWorkspaceMode.TemplateDesign)
+                await WorkspaceController.ClearTemplateDraftAsync();
+            saveNotice = InstanceMode ? "海报已应用到当前工作台" : "模板已保存";
+            Common.ShowToast(Popup, saveNotice);
+            if (!InstanceMode)
+            {
+                try
+                {
+                    await OnSaved.InvokeAsync(currentEditor.Draft.ID);
+                }
+                catch (Exception ex)
+                {
+                    renderError = ex.Message;
+                    Common.ShowToast(Popup, renderError, isError: true);
+                }
             }
             return true;
         }
@@ -1105,7 +1148,8 @@
         if (await SaveCoreAsync())
         {
             showExitDialog = false;
-            await OnClose.InvokeAsync();
+            if (!InstanceMode)
+                await OnClose.InvokeAsync();
         }
     }
 

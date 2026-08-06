@@ -1,0 +1,131 @@
+@namespace Watermark.Razor.Components
+@using Watermark.Razor.Workspace
+@using Watermark.Shared.Models
+@implements IAsyncDisposable
+@inject IWMPhotoPicker PhotoPicker
+@inject IWMTemplateMarketplaceService Marketplace
+
+<MCard Flat Class="new-template-dialog">
+    <div class="template-dialog-header"><div><small>Template</small><h3>新建模板</h3></div><MButton Text Small Class="dialog-close-button" OnClick="CloseAsync"><WmIcon Small Icon="x" /></MButton></div>
+    <div class="template-dialog-body">
+        <MTextField @bind-Value="templateName" TValue="string" Label="模板名称" Dense Outlined Required="true" RequiredMessage="模板名称不能为空" />
+        <WmSelect TValue="WMCanvasSizingMode"
+                  Value="@sizingMode"
+                  ValueChanged="SetSizingMode"
+                  Options="@SizingOptions"
+                  Label="画布策略"
+                  AriaLabel="选择海报画布策略" />
+        @if (sizingMode == WMCanvasSizingMode.Fixed)
+        {
+            <WmSelect TValue="string"
+                      Value="@ratio"
+                      ValueChanged="SetRatio"
+                      Options="@RatioOptions"
+                      Label="画布比例"
+                      AriaLabel="选择海报画布比例" />
+            <div class="inline-field">
+                <span>启用主图</span>
+                <MSwitch @bind-Value="hasPrimaryAsset" Color="primary" Dense Inset HideDetails="true" />
+            </div>
+        }
+        <button type="button" class="image-select-card @(source is null ? null : "has-source")" disabled="@busy" @onclick="SelectSourceAsync">
+            <div class="image-empty-state">
+                <span class="image-empty-icon"><WmIcon Size="28" Icon="@(source is null ? "image-square" : "image-square")" /></span>
+                <span>@(source?.DisplayName ?? (sizingMode == WMCanvasSizingMode.FollowPrimary ? "选择默认主图（必选）" : "选择默认主图（可选）"))</span>
+                <small>@(source is null ? "固定画布可以创建纯文字或图形海报" : "点击可重新选择图片")</small>
+            </div>
+        </button>
+        @if (!string.IsNullOrWhiteSpace(message)) { <div class="template-message is-error" role="status">@message</div> }
+        @if (busy) { <div class="processing-line"><MProgressCircular Size="14" Indeterminate /><span>正在创建模板...</span></div> }
+    </div>
+    <MCardActions Class="template-dialog-actions"><MSpacer /><MButton Text Class="secondary-action" OnClick="CloseAsync" Disabled="@busy">取消</MButton><MButton OnClick="CreateAsync" Color="primary" Class="primary-action" Disabled="@(busy || !CanCreate)">创建并编辑</MButton></MCardActions>
+</MCard>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnCreated { get; set; }
+
+    private IWMPhotoImportSource? source;
+    private string templateName = $"我的模板 {DateTime.Now:MM-dd}";
+    private string? message;
+    private bool busy;
+    private WMCanvasSizingMode sizingMode = WMCanvasSizingMode.FollowPrimary;
+    private string ratio = "1:1";
+    private bool hasPrimaryAsset = true;
+
+    private bool CanCreate =>
+        !string.IsNullOrWhiteSpace(templateName)
+        && (sizingMode == WMCanvasSizingMode.Fixed || source is not null);
+
+    private static readonly IReadOnlyList<WmSelectOption<WMCanvasSizingMode>> SizingOptions =
+    [
+        new("跟随主图", WMCanvasSizingMode.FollowPrimary),
+        new("固定比例", WMCanvasSizingMode.Fixed)
+    ];
+
+    private static readonly IReadOnlyList<WmSelectOption<string>> RatioOptions =
+    [
+        new("1:1", "1:1"),
+        new("4:3", "4:3"),
+        new("3:4", "3:4"),
+        new("3:2", "3:2"),
+        new("2:3", "2:3"),
+        new("16:9", "16:9"),
+        new("9:16", "9:16")
+    ];
+
+    private async Task SelectSourceAsync()
+    {
+        var sources = await PhotoPicker.PickMultipleAsync();
+        if (sources.Count == 0) return;
+        var selected = sources[0];
+        foreach (var extra in sources.Skip(1)) await extra.DisposeAsync();
+        if (source is not null) await source.DisposeAsync();
+        source = selected;
+        hasPrimaryAsset = true;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (busy || !CanCreate) return;
+        busy = true;
+        message = null;
+        try
+        {
+            var sizing = new WMCanvasSizing { Mode = sizingMode };
+            if (WMAspectRatio.Parse(ratio) is { } parsed)
+                sizing.SetRatio(parsed.Width, parsed.Height);
+            var result = await Marketplace.CreateLocalAsync(
+                new WMNewPosterTemplateOptions(
+                    templateName,
+                    sizing,
+                    sizingMode == WMCanvasSizingMode.FollowPrimary || hasPrimaryAsset || source is not null,
+                    source));
+            if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.TemplateId))
+            {
+                message = result.Message ?? "模板创建失败。";
+                return;
+            }
+            await OnCreated.InvokeAsync(result.TemplateId);
+        }
+        catch (Exception ex) { message = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private Task SetSizingMode(WMCanvasSizingMode value)
+    {
+        sizingMode = value;
+        if (value == WMCanvasSizingMode.FollowPrimary)
+            hasPrimaryAsset = true;
+        return Task.CompletedTask;
+    }
+
+    private Task SetRatio(string value)
+    {
+        ratio = value;
+        return Task.CompletedTask;
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+    public async ValueTask DisposeAsync() { if (source is not null) await source.DisposeAsync(); }
+}

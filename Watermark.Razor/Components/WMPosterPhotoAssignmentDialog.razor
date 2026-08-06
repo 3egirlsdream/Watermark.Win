@@ -1,0 +1,160 @@
+@namespace Watermark.Razor.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Watermark.Razor.Workspace
+@inject IWMPhotoPicker PhotoPicker
+
+<MCard Flat Class="poster-assignment-dialog">
+    <header class="poster-assignment-header">
+        <div>
+            <small>PHOTO SLOTS</small>
+            <h3>确认照片顺序</h3>
+            <p>照片会按从上到下的顺序填入海报槽位。</p>
+        </div>
+        <MButton Text Small Disabled="@busy" OnClick="CancelAsync" AriaLabel="关闭照片确认">
+            <WmIcon Icon="x" />
+        </MButton>
+    </header>
+
+    <div class="poster-assignment-list">
+        @for (var index = 0; index < assignments.Count; index++)
+        {
+            var itemIndex = index;
+            var source = assignments[index];
+            <article class="poster-assignment-item @(dragIndex == index ? "is-dragging" : null)"
+                     draggable="true"
+                     @ondragstart="() => StartDrag(itemIndex)"
+                     @ondragend="EndDrag"
+                     @ondragover:preventDefault="true"
+                     @ondrop="() => DropAsync(itemIndex)">
+                <span class="poster-assignment-grip" aria-hidden="true"><WmIcon Icon="dots-six-vertical" /></span>
+                <span class="poster-assignment-index">@(index + 1)</span>
+                <span class="poster-assignment-copy">
+                    <strong>照片槽 @(index + 1)</strong>
+                    <small title="@source.DisplayName">@source.DisplayName</small>
+                </span>
+                <span class="poster-assignment-actions">
+                    <button type="button" disabled="@(busy || index == 0)" @onclick="() => MoveAsync(itemIndex, -1)" aria-label="上移照片">
+                        <WmIcon Icon="caret-up" />
+                    </button>
+                    <button type="button" disabled="@(busy || index == assignments.Count - 1)" @onclick="() => MoveAsync(itemIndex, 1)" aria-label="下移照片">
+                        <WmIcon Icon="caret-down" />
+                    </button>
+                    <button type="button" class="is-replace" disabled="@busy" @onclick="() => ReplaceAsync(itemIndex)">替换</button>
+                </span>
+            </article>
+        }
+        @for (var index = assignments.Count; index < SlotCount; index++)
+        {
+            <article class="poster-assignment-item is-empty">
+                <span class="poster-assignment-grip" aria-hidden="true"><WmIcon Icon="dots-six-vertical" /></span>
+                <span class="poster-assignment-index">@(index + 1)</span>
+                <span class="poster-assignment-copy">
+                    <strong>照片槽 @(index + 1)</strong>
+                    <small>保留模板默认素材或透明留空</small>
+                </span>
+            </article>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="poster-assignment-message" role="status">@message</div>
+    }
+
+    <MCardActions Class="poster-assignment-footer">
+        <span>已选择 @assignments.Count / @SlotCount</span>
+        <MSpacer />
+        <MButton Text Disabled="@busy" OnClick="CancelAsync">取消</MButton>
+        <MButton Color="primary" Disabled="@busy" OnClick="ConfirmAsync">生成海报</MButton>
+    </MCardActions>
+</MCard>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<IWMPhotoImportSource> Sources { get; set; } = [];
+    [Parameter] public int SlotCount { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<IWMPhotoImportSource>> SourcesChanged { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<IWMPhotoImportSource>> Confirmed { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<IWMPhotoImportSource>> Cancelled { get; set; }
+
+    private readonly List<IWMPhotoImportSource> assignments = [];
+    private IReadOnlyList<IWMPhotoImportSource>? initializedSources;
+    private int? dragIndex;
+    private bool busy;
+    private string? message;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(initializedSources, Sources)) return;
+        initializedSources = Sources;
+        assignments.Clear();
+        assignments.AddRange(Sources.Take(Math.Max(0, SlotCount)));
+    }
+
+    private void StartDrag(int index) => dragIndex = index;
+    private void EndDrag() => dragIndex = null;
+
+    private async Task DropAsync(int targetIndex)
+    {
+        if (dragIndex is not { } sourceIndex
+            || sourceIndex == targetIndex
+            || sourceIndex < 0
+            || sourceIndex >= assignments.Count
+            || targetIndex < 0
+            || targetIndex >= assignments.Count)
+        {
+            dragIndex = null;
+            return;
+        }
+
+        var source = assignments[sourceIndex];
+        assignments.RemoveAt(sourceIndex);
+        assignments.Insert(targetIndex, source);
+        dragIndex = null;
+        await NotifyChangedAsync();
+    }
+
+    private async Task MoveAsync(int index, int delta)
+    {
+        var target = index + delta;
+        if (index < 0 || index >= assignments.Count || target < 0 || target >= assignments.Count)
+            return;
+        (assignments[index], assignments[target]) = (assignments[target], assignments[index]);
+        await NotifyChangedAsync();
+    }
+
+    private async Task ReplaceAsync(int index)
+    {
+        if (busy || index < 0 || index >= assignments.Count) return;
+        busy = true;
+        message = null;
+        try
+        {
+            var selected = await PhotoPicker.PickMultipleAsync();
+            if (selected.Count == 0) return;
+            var replacement = selected[0];
+            foreach (var extra in selected.Skip(1))
+                await extra.DisposeAsync();
+            var previous = assignments[index];
+            assignments[index] = replacement;
+            await previous.DisposeAsync();
+            await NotifyChangedAsync();
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task NotifyChangedAsync() =>
+        SourcesChanged.InvokeAsync(assignments.ToArray());
+
+    private Task ConfirmAsync() =>
+        Confirmed.InvokeAsync(assignments.ToArray());
+
+    private Task CancelAsync() =>
+        Cancelled.InvokeAsync(assignments.ToArray());
+}

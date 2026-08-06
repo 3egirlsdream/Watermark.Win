@@ -56,31 +56,39 @@ public sealed class WMCollageDerivedMediaProcessorTests : IDisposable
     }
 
     [Fact]
-    public async Task TemplateCollage_MapsOnlyReplaceableSlotsAndInvokesSharedRendererOnce()
+    public async Task PosterApplication_MapsOnlyDeclaredPhotoSlotAndInvokesSharedRendererOnce()
     {
         var sourcePath = CreateImage("slot.png", 12, 8, SKColors.Green);
-        var canvas = new WMCanvas { Name = "split", CanvasType = Watermark.Shared.Enums.CanvasType.Split };
-        canvas.Children.Add(new WMContainer { ID = "replaceable", Path = "placeholder.jpg" });
-        canvas.Children.Add(new WMContainer
+        var canvas = new WMCanvas
         {
-            ID = "fixed",
-            Path = "fixed.jpg",
-            ContainerProperties = new WMImage { FixImage = true }
-        });
+            ID = "poster-template",
+            Name = "poster",
+            CanvasSizing = new WMCanvasSizing
+            {
+                Mode = WMCanvasSizingMode.Fixed,
+                ReferenceWidth = 30,
+                ReferenceHeight = 20
+            }
+        };
+        var replaceable = new WMContainer { ID = "replaceable", Path = "placeholder.jpg" };
+        var fixedLayer = new WMContainer { ID = "fixed", Path = "fixed.jpg" };
+        canvas.Children.Add(replaceable);
+        canvas.Children.Add(fixedLayer);
+        var slot = WMPosterAssetSlots.Ensure(canvas, replaceable);
+        slot.Purpose = WMPosterAssetPurpose.Photo;
         var renderer = new RecordingTemplateRenderer(CreatePngBytes(30, 20));
         var metrics = new WMWorkspacePerformanceCounters();
-        var processor = new WMCollageDerivedMediaProcessor(
-            new WMArtifactCache(), new TestProfiles(), metrics, renderer);
-        var settings = new WMTemplateCollageSettings("split-template", Global.CanvasSerialize(canvas));
-        var request = new WMDerivedMediaRequest(
-            WMDerivedMediaKind.TemplateCollage,
-            ["slot"],
-            "应用拼图模板",
-            new WMCollageSettings(["slot"], WMCollageDirection.Horizontal),
-            TemplateCollage: settings);
+        var processor = new WMPosterApplicationProcessor(
+            renderer, new WMArtifactCache(), new TestProfiles(), metrics);
+        var artifact = Artifact("slot", sourcePath);
+        var plan = WMPosterApplicationPlanner.FromTemplateFirst(canvas, [artifact.Id]);
 
-        var result = await processor.ExecuteAsync(request, [Artifact("slot", sourcePath)], root);
+        var results = await processor.ExecuteAsync(
+            plan,
+            new Dictionary<string, WMImageArtifact> { [artifact.Id] = artifact },
+            root);
 
+        var result = Assert.Single(results);
         Assert.Equal(1, renderer.RenderCalls);
         Assert.Equal(sourcePath, Assert.IsType<WMContainer>(renderer.RenderedCanvas!.Children[0]).Path);
         Assert.Equal("fixed.jpg", Assert.IsType<WMContainer>(renderer.RenderedCanvas.Children[1]).Path);
@@ -89,6 +97,47 @@ public sealed class WMCollageDerivedMediaProcessorTests : IDisposable
         var snapshot = metrics.Snapshot();
         Assert.Equal(1, snapshot.Calls[WMWorkspaceMetricStage.Replay]);
         Assert.Equal(1, snapshot.Calls[WMWorkspaceMetricStage.Encode]);
+    }
+
+    [Fact]
+    public async Task PosterApplication_SameInstanceAndAssetsReuseRenderedArtifact()
+    {
+        var sourcePath = CreateImage("poster-cache.png", 12, 8, SKColors.Green);
+        var canvas = new WMCanvas
+        {
+            ID = "poster-cache-template",
+            Name = "poster cache",
+            CanvasSizing = new WMCanvasSizing
+            {
+                Mode = WMCanvasSizingMode.Fixed,
+                ReferenceWidth = 30,
+                ReferenceHeight = 20
+            }
+        };
+        var owner = new WMContainer { ID = "photo" };
+        canvas.Children.Add(owner);
+        WMPosterAssetSlots.Ensure(canvas, owner).Purpose = WMPosterAssetPurpose.Photo;
+        var renderer = new RecordingTemplateRenderer(CreatePngBytes(30, 20));
+        var metrics = new WMWorkspacePerformanceCounters();
+        var processor = new WMPosterApplicationProcessor(
+            renderer, new WMArtifactCache(), new TestProfiles(), metrics);
+        var artifact = Artifact("photo", sourcePath);
+        var plan = WMPosterApplicationPlanner.FromTemplateFirst(canvas, [artifact.Id]);
+        var inputs = new Dictionary<string, WMImageArtifact> { [artifact.Id] = artifact };
+
+        var first = Assert.Single(await processor.ExecuteAsync(plan, inputs, root));
+        var before = metrics.Snapshot();
+        var second = Assert.Single(await processor.ExecuteAsync(plan, inputs, root));
+        var after = metrics.Snapshot();
+
+        Assert.Equal(first.Artifact.FilePath, second.Artifact.FilePath);
+        Assert.Equal(1, renderer.RenderCalls);
+        Assert.Equal(
+            before.Calls[WMWorkspaceMetricStage.Replay],
+            after.Calls[WMWorkspaceMetricStage.Replay]);
+        Assert.Equal(
+            before.Calls[WMWorkspaceMetricStage.Encode],
+            after.Calls[WMWorkspaceMetricStage.Encode]);
     }
 
     private WMCollageDerivedMediaProcessor CreateProcessor(IWMWorkspacePerformanceCounters metrics) =>

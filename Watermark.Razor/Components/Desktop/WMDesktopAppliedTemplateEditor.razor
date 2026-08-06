@@ -65,6 +65,7 @@
                 </label>
                 <div class="applied-commit-actions">
                     <MButton Text Class="applied-cancel-command" Disabled="busy" OnClick="CancelAsync">取消预览</MButton>
+                    <MButton Text Class="applied-cancel-command" Disabled="@(busy || State.TemplateEdit is null)" OnClick="OpenFullEditorAsync">完整编辑</MButton>
                     <MButton Color="primary" Class="applied-apply-command" Disabled="@(busy || editor is null)" OnClick="ApplyAsync">
                         @(State.ApplyScope == WMApplyScope.Selected && SelectedCount > 0 ? $"应用模板到 {SelectedCount} 张图片" : "应用模板到当前图片")
                     </MButton>
@@ -84,7 +85,7 @@
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> PreviewChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> CommitRequested { get; set; }
     [Parameter] public EventCallback DiscardRequested { get; set; }
-    [Parameter] public EventCallback<string> OpenDesignerRequested { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> OpenDesignerRequested { get; set; }
 
     private WMTemplateEditorState? editor;
     private WMDesignRenderResult? renderResult;
@@ -138,6 +139,11 @@
 
         return Task.CompletedTask;
     }
+
+    private Task OpenFullEditorAsync() =>
+        State.TemplateEdit is null
+            ? Task.CompletedTask
+            : OpenDesignerRequested.InvokeAsync(State.TemplateEdit);
 
     private void HandleEditorChanged()
     {

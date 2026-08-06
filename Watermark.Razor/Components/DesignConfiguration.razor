@@ -16,9 +16,9 @@
                 <div>
                     <div class="inspector-kicker">Inspector</div>
                     <div class="inspector-title">@(string.IsNullOrWhiteSpace(canvas.Name) ? "未命名模板" : canvas.Name)</div>
-                    <div class="inspector-subtitle">@CanvasTypeText · @canvas.Children.Count 个根节点 · @ControlCount 个组件</div>
+                    <div class="inspector-subtitle">@CanvasSizingText · @canvas.Children.Count 个根节点 · @ControlCount 个组件</div>
                 </div>
-                <div class="inspector-status-pill">@CanvasTypeText</div>
+                <div class="inspector-status-pill">@CanvasSizingText</div>
             </div>
 
             <div class="inspector-metrics">
@@ -80,52 +80,63 @@
                 <div class="property-card">
                     <Watermark.Razor.Parts.InputField Name="模板名称" @bind-Value="@canvas.Name" />
                     <Watermark.Razor.Parts.ColorPicker Name="背景颜色" @bind-Color="@canvas.BackgroundColor" />
-                    <div class="field-row">
-                        <span class="field-label">模板类型</span>
-                        <MRadioGroup @bind-Value="canvas.CanvasType" Row Class="mode-choice">
-                            <MRadio Label="单图" TValue="CanvasType" Value="@(CanvasType.Normal)" />
-                            <MRadio Label="拼图" TValue="CanvasType" Value="@(CanvasType.Split)" />
-                        </MRadioGroup>
-                    </div>
+                    <WmSelect TValue="WMCanvasSizingMode"
+                              Value="@canvas.CanvasSizing.Mode"
+                              ValueChanged="SetCanvasSizingMode"
+                              Options="@SizingOptions"
+                              Label="画布策略"
+                              AriaLabel="选择海报画布策略" />
                 </div>
             </section>
 
-            @if (canvas.CanvasType == CanvasType.Normal)
-            {
-                <section class="inspector-section">
-                    <div class="section-heading compact">
-                        <div>
-                            <h3>默认图片</h3>
-                            <p>设计预览和默认替换图。</p>
-                        </div>
-                        <MSwitch @bind-Value="canvas.ImageProperties.Show" Color="primary" Dense Inset HideDetails="true" />
+            <section class="inspector-section">
+                <div class="section-heading compact">
+                    <div>
+                        <h3>主图</h3>
+                        <p>主图保留边距、图片效果、裁切和 EXIF；固定画布也可以不设置主图。</p>
                     </div>
-                    @if (canvas.ImageProperties.Show)
-                    {
-                        <div class="property-card image-card">
-                            <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" Simple="true" Delete="@(() => ImagesBase64.Remove("default", out string v))" SelectDefaultImage="SelectDefaultImage" />
-                        </div>
-                    }
-                </section>
-            }
-            else
+                    <MSwitch TValue="bool"
+                             Value="@canvas.HasPrimaryImage"
+                             ValueChanged="SetPrimaryEnabled"
+                             Disabled="@(canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary)"
+                             Color="primary" Dense Inset HideDetails="true" />
+                </div>
+                @if (canvas.HasPrimaryImage)
+                {
+                    <div class="property-card image-card">
+                        <Watermark.Razor.Parts.ImageSelect ImagesBase64="@ImagesBase64" Key="default" Size="250" Simple="true" Delete="@RemoveDefaultImage" SelectDefaultImage="SelectDefaultImage" />
+                        @if (WMPosterAssetSlots.FindPrimary(canvas) is { } primarySlot)
+                        {
+                            <WmSelect TValue="WMPosterAssetFit"
+                                      @bind-Value="primarySlot.Fit"
+                                      Options="@PrimaryFitOptions"
+                                      Label="主图填充"
+                                      AriaLabel="选择主图填充方式" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@primarySlot.Crop.AspectRatio" Step="0.01" Name="裁切比例" />
+                            <Watermark.Razor.Parts.SliderInput @bind-Value="@primarySlot.Crop.RotationDegrees" Step="0.1" Name="微调旋转" Unit="°" />
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (canvas.CanvasSizing.Mode == WMCanvasSizingMode.Fixed)
             {
                 <section class="inspector-section">
                     <div class="section-heading">
                         <div>
-                            <h3>拼图尺寸</h3>
-                            <p>按比例生成画布，也可以微调自定义像素。</p>
+                            <h3>固定画布</h3>
+                            <p>参考尺寸就是最终基础画布尺寸；比例预设按最长边 6000px 生成。</p>
                         </div>
                     </div>
                     <div class="property-card">
                         <WmSelect TValue="string"
-                                  Value="@canvas.LengthWidthRatio"
-                                  ValueChanged="ValueChanged2"
+                                  Value="@CanvasRatio"
+                                  ValueChanged="SetCanvasRatio"
                                   Options="@RatioOptions"
                                   Label="比例"
-                                  AriaLabel="拼图比例" />
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomWidth" Step="1" Name="自定义宽度" Unit="px" />
-                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CustomHeight" Step="1" Name="自定义高度" Unit="px" />
+                                  AriaLabel="固定画布比例" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CanvasSizing.ReferenceWidth" Step="1" Name="参考宽度" Unit="px" />
+                        <Watermark.Razor.Parts.SliderInput @bind-Value="@canvas.CanvasSizing.ReferenceHeight" Step="1" Name="参考高度" Unit="px" />
                     </div>
                 </section>
             }
@@ -133,7 +144,7 @@
 
         @if (tab == "布局")
         {
-            @if (canvas.CanvasType == CanvasType.Normal)
+            @if (canvas.HasPrimaryImage)
             {
                 <section class="inspector-section">
                     <div class="section-heading">
@@ -180,7 +191,8 @@
                 {
                     <div class="property-card">
                         <WmSelect TValue="string"
-                                  @bind-Value="canvas.LengthWidthRatio"
+                                  Value="@FrameRatio"
+                                  ValueChanged="SetFrameRatio"
                                   Options="@RatioOptions"
                                   Label="画幅比例"
                                   AriaLabel="画幅比例" />
@@ -192,7 +204,7 @@
 
         @if (tab == "外观")
         {
-            @if (canvas.CanvasType == CanvasType.Normal)
+            @if (canvas.HasPrimaryImage)
             {
                 <section class="inspector-section">
                     <div class="section-heading">
@@ -256,6 +268,17 @@
     List<string> Radioes = new() { "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "21:9", "18:9", "2.39:1" };
     private IReadOnlyList<WmSelectOption<string>> RatioOptions =>
         Radioes.Select(value => new WmSelectOption<string>(value, value)).ToList();
+    private static readonly IReadOnlyList<WmSelectOption<WMCanvasSizingMode>> SizingOptions =
+    [
+        new("跟随主图", WMCanvasSizingMode.FollowPrimary),
+        new("固定画布", WMCanvasSizingMode.Fixed)
+    ];
+    private static readonly IReadOnlyList<WmSelectOption<WMPosterAssetFit>> PrimaryFitOptions =
+    [
+        new("覆盖裁切", WMPosterAssetFit.Cover),
+        new("完整包含", WMPosterAssetFit.Contain),
+        new("拉伸填充", WMPosterAssetFit.Fill)
+    ];
     bool showLogoStore = false;
 
     [Parameter]
@@ -273,7 +296,15 @@
         EnsureCanvasDefaults(canvas);
     }
 
-    string CanvasTypeText => canvas.CanvasType == CanvasType.Split ? "拼图模板" : "单图模板";
+    string CanvasSizingText =>
+        canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? "跟随主图"
+            : $"固定画布 · {CanvasRatio}";
+
+    string CanvasRatio =>
+        $"{canvas.CanvasSizing.ReferenceWidth}:{canvas.CanvasSizing.ReferenceHeight}";
+
+    string FrameRatio => canvas.FrameProperties.AspectRatio?.ToString() ?? "1:1";
 
     string TabClass(string value) => tab == value ? "inspector-tab active" : "inspector-tab";
 
@@ -439,7 +470,19 @@
         Global.ImageFile2Base64(dic, destFile, "default");
         ImagesBase64["default"] = await JSRuntime.InvokeAsync<string>(
             "byteToUrl", dic.First().Value, LegacyImageOwner("default"));
+        canvas.Path = destFile;
+        var primary = WMPosterAssetSlots.EnsurePrimary(canvas);
+        primary.DefaultAssetId = "default";
+        canvas.ImageProperties.Show = true;
         StateHasChanged();
+    }
+
+    void RemoveDefaultImage()
+    {
+        ImagesBase64.Remove("default", out _);
+        canvas.Path = string.Empty;
+        if (WMPosterAssetSlots.FindPrimary(canvas) is { } primary)
+            primary.DefaultAssetId = null;
     }
 
     async Task RemoveImage(WMContainer container)
@@ -449,6 +492,8 @@
         {
             File.Delete(filename);
             container.Path = string.Empty;
+            if (WMPosterAssetSlots.Find(canvas, container) is { } slot)
+                slot.DefaultAssetId = null;
             ImagesBase64.Remove(container.ID, out string v);
             await JSRuntime.InvokeVoidAsync(
                 "watermarkLegacyObjectUrls.release", LegacyImageOwner(container.ID));
@@ -476,6 +521,8 @@
             ConcurrentDictionary<string, byte[]> dic = [];
             Global.ImageFile2Base64(dic, destFile, mContainer.ID);
             mContainer.Path = Path.GetFileName(mContainer.Path);
+            if (WMPosterAssetSlots.Find(canvas, mContainer) is { } slot)
+                slot.DefaultAssetId = $"template:{mContainer.ID}";
             ImagesBase64[mContainer.ID] = await JSRuntime.InvokeAsync<string>(
                 "byteToUrl", dic.First().Value, LegacyImageOwner(mContainer.ID));
         }
@@ -484,6 +531,8 @@
     async Task SelectLogoCallback(KeyValuePair<string, string> pair)
     {
         Logo.Path = pair.Key;
+        if (WMPosterAssetSlots.Find(canvas, Logo) is { } slot)
+            slot.DefaultAssetId = pair.Key;
         var destFile = Global.AppPath.LogoesFolder + Path.DirectorySeparatorChar + Logo.Path;
         ConcurrentDictionary<string, byte[]> dic = [];
         Global.ImageFile2Base64(dic, destFile, Logo.ID);
@@ -504,16 +553,33 @@
         catch (JSException) { }
     }
 
-    void ValueChanged2(string v)
+    void SetCanvasRatio(string v)
     {
-        canvas.LengthWidthRatio = v;
-        if (string.IsNullOrEmpty(v)) return;
-        var wh = v.Split(":");
-        var w = Convert.ToDouble(wh[0]);
-        var h = Convert.ToDouble(wh[1]);
-        var xs = 6000 / w;
-        canvas.CustomWidth = 6000;
-        canvas.CustomHeight = (int)(xs * h);
+        if (WMAspectRatio.Parse(v) is not { } ratio) return;
+        canvas.CanvasSizing.SetRatio(ratio.Width, ratio.Height);
+        WMPosterTemplateMigration.SynchronizeCompatibilityProperties(canvas);
+    }
+
+    void SetFrameRatio(string value)
+    {
+        canvas.FrameProperties.AspectRatio = WMAspectRatio.Parse(value);
+        WMPosterTemplateMigration.SynchronizeCompatibilityProperties(canvas);
+    }
+
+    void SetCanvasSizingMode(WMCanvasSizingMode mode)
+    {
+        canvas.CanvasSizing.Mode = mode;
+        if (mode == WMCanvasSizingMode.FollowPrimary)
+            WMPosterAssetSlots.EnsurePrimary(canvas);
+        WMPosterTemplateMigration.SynchronizeCompatibilityProperties(canvas);
+    }
+
+    void SetPrimaryEnabled(bool enabled)
+    {
+        if (canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary)
+            enabled = true;
+        WMPosterAssetSlots.SetPrimaryEnabled(canvas, enabled);
+        WMPosterTemplateMigration.SynchronizeCompatibilityProperties(canvas);
     }
 
     int CountControls(IWMControl control)
@@ -538,7 +604,11 @@
         target.Children ??= [];
         target.BorderSameWidth ??= new WMBorderSameWidth();
         target.FrameProperties ??= new WMFrame();
-        target.LengthWidthRatio ??= "1:1";
+        target.CanvasSizing ??= new WMCanvasSizing();
+        target.PosterManifest ??= new WMPosterTemplateManifest();
+        if (target.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            && WMPosterAssetSlots.FindPrimary(target) is null)
+            WMPosterAssetSlots.EnsurePrimary(target);
 
         foreach (var child in target.Children)
         {

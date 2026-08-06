@@ -147,12 +147,12 @@ public sealed class WMImageImportService
     }
 
     /// <summary>
-    /// Stages template-collage inputs without creating preview proxies. The
+    /// Stages poster inputs without creating preview proxies. The
     /// shared template renderer is the sole pixel decoder for these hidden
     /// sources, so importing a collage cannot add an extra decode/scale/encode
     /// pass before the final template render.
     /// </summary>
-    public async Task<IReadOnlyList<WMWorkspaceMedia>> ImportTemplateCollageSourcesAsync(
+    public async Task<IReadOnlyList<WMWorkspaceMedia>> ImportPosterSourcesAsync(
         IReadOnlyList<IWMPhotoImportSource> sources,
         string sessionDirectory,
         WMOperationExecutionOptions execution,
@@ -168,7 +168,7 @@ public sealed class WMImageImportService
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                output[index] = await StageTemplateCollageSourceAsync(
+                output[index] = await StagePosterSourceAsync(
                     source, sourceDirectory, cancellationToken).ConfigureAwait(false);
             }
             finally
@@ -180,7 +180,7 @@ public sealed class WMImageImportService
         return output;
     }
 
-    private async Task<WMWorkspaceMedia> StageTemplateCollageSourceAsync(
+    private async Task<WMWorkspaceMedia> StagePosterSourceAsync(
         IWMPhotoImportSource source,
         string sourceDirectory,
         CancellationToken cancellationToken)
@@ -188,7 +188,7 @@ public sealed class WMImageImportService
         cancellationToken.ThrowIfCancellationRequested();
         var extension = SafeExtension(source.DisplayName);
         if (RawExtensions.Contains(extension))
-            throw new NotSupportedException("拼图模板暂不支持 RAW 输入，请先转换为 JPEG、PNG 或 WebP。");
+            throw new NotSupportedException("海报素材暂不支持 RAW 输入，请先转换为 JPEG、PNG 或 WebP。");
         var stagedPath = Path.Combine(sourceDirectory, $"{Guid.NewGuid():N}{extension}");
         try
         {
@@ -214,7 +214,7 @@ public sealed class WMImageImportService
             int width;
             int height;
             using (var codec = SKCodec.Create(stagedPath)
-                               ?? throw new InvalidDataException($"无法读取拼图素材：{source.DisplayName}"))
+                               ?? throw new InvalidDataException($"无法读取海报素材：{source.DisplayName}"))
             {
                 var swap = codec.EncodedOrigin is SKEncodedOrigin.LeftTop
                     or SKEncodedOrigin.RightTop

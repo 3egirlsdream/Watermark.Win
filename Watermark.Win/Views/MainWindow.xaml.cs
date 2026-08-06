@@ -93,6 +93,7 @@ namespace Watermark.Win
                 IocHelper.GetIoc().AddScoped<WMFullResolutionRenderService>();
                 IocHelper.GetIoc().AddScoped<WMFullResolutionRenderPipeline>();
                 IocHelper.GetIoc().AddScoped<IWMDerivedMediaProcessor, WMCollageDerivedMediaProcessor>();
+                IocHelper.GetIoc().AddScoped<IWMPosterApplicationProcessor, WMPosterApplicationProcessor>();
                 IocHelper.GetIoc().AddScoped<IWMColorPresetLibrary, WMColorPresetLibrary>();
                 IocHelper.GetIoc().AddScoped<WMTemplateSnapshotService>();
                 IocHelper.GetIoc().AddScoped<WMWorkspaceController>();

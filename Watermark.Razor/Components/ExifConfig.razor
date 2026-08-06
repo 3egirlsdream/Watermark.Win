@@ -496,7 +496,7 @@
     public Dictionary<string, string> ContainerId2Name { get; set; } = [];
 
     [Parameter]
-    public CanvasType CanvasType { get; set; }
+    public bool MultipleAssetSources { get; set; }
 
     [Parameter]
     public EventCallback<WMText> OnClose { get; set; }
@@ -513,7 +513,7 @@
     private string PreviewText => WMTextContentPreview.Resolve(draftEntries);
 
     private bool ShowContainerSource =>
-        CanvasType != CanvasType.Normal && ContainerId2Name.Count > 1;
+        MultipleAssetSources || ContainerId2Name.Count > 1;
 
     private IReadOnlyList<WmSelectOption<string>> ContainerOptions =>
         ContainerId2Name

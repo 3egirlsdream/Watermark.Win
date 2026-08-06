@@ -89,6 +89,23 @@ public sealed class MacSliderTests
     }
 
     [Fact]
+    public void InspectorSlider_SerializesJavascriptInitializationAndDisposal()
+    {
+        var componentPath = Path.Combine(
+            FindRepositoryRoot(),
+            "Watermark.Razor",
+            "Components",
+            "Mac",
+            "MacInspectorSlider.razor");
+        var source = File.ReadAllText(componentPath);
+
+        Assert.Contains("private readonly SemaphoreSlim jsLifecycleGate = new(1, 1);", source, StringComparison.Ordinal);
+        Assert.Equal(2, source.Split("await jsLifecycleGate.WaitAsync();", StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, source.Split("jsLifecycleGate.Release();", StringSplitOptions.None).Length - 1);
+        Assert.Contains("catch (ObjectDisposedException)", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MobileNumericSlider_IsTheDocumentedPublicControlForMobileParameterInputs()
     {
         var root = FindRepositoryRoot();
@@ -111,7 +128,12 @@ public sealed class MacSliderTests
         Assert.Contains("<MacInspectorSlider", component, StringComparison.Ordinal);
         Assert.Contains("InteractionStarted", component, StringComparison.Ordinal);
         Assert.Contains("InteractionEnded", component, StringComparison.Ordinal);
+        Assert.Contains("@inject IWMHapticFeedback HapticFeedback", component, StringComparison.Ordinal);
+        Assert.Contains("ValueChanged=\"HandleValueChangedAsync\"", component, StringComparison.Ordinal);
+        Assert.Contains("HapticFeedback.Perform()", component, StringComparison.Ordinal);
+        Assert.Contains("value.Equals(lastReportedValue)", component, StringComparison.Ordinal);
         Assert.Contains("不得新增原生 `input[type=\"range\"]`", guide, StringComparison.Ordinal);
+        Assert.Contains("数值实际切换到新的 `Step` 时统一触发一次轻触震动", guide, StringComparison.Ordinal);
         Assert.Contains(".wm-mobile-dock", script, StringComparison.Ordinal);
         Assert.Contains(".workspace-export-drawer", script, StringComparison.Ordinal);
 

@@ -1,6 +1,5 @@
 @using Masa.Blazor
 @using Watermark.Razor.Parts
-@using Watermark.Shared.Enums
 @using Watermark.Shared.Models
 @using Watermark.Win.Models
 
@@ -29,7 +28,7 @@
                   Label="�󶨵�Ԫ������ԴͼƬ����"
                   AriaLabel="元数据来源图片容器"
                   Style="margin:8px;"
-                  ReadOnly="@(CanvasType == CanvasType.Normal)" />
+                  ReadOnly="@(!MultipleAssetSources)" />
     </MCard>
     <div style="height:calc(100% - 80px);width:100%;overflow:hidden;display:flex;flex-direction: column;">
         <MCard Elevation="0" Style="flex-wrap: wrap; overflow-y:auto;justify-content:flex-start;display:flex;max-height:80px; scrollbar-width:none;min-height: 52px;" Flat Class="pa-1 ma-2" Color="#ECEFF1">
@@ -139,7 +138,7 @@
     [Parameter]
     public Dictionary<string, string> ContainerId2Name { get; set; }
     [Parameter]
-    public CanvasType CanvasType { get; set; }
+    public bool MultipleAssetSources { get; set; }
     [Parameter]
     public EventCallback<WMText> OnClose { get; set; }
 

@@ -1,6 +1,7 @@
 @page "/templates"
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.JSInterop
+@using Watermark.Razor.Components
 @using Watermark.Razor.Components.Layout
 @using Watermark.Razor.Workspace
 @using Watermark.Shared.Enums
@@ -11,6 +12,7 @@
 @inject WMTemplateMarketFeedStore MarketFeedStore
 @inject IWMWorkspaceSessionStore SessionStore
 @inject IWMWorkspaceLauncher WorkspaceLauncher
+@inject WMWorkspaceController Controller
 @inject IWMPhotoPicker PhotoPicker
 @inject IWMHapticFeedback HapticFeedback
 @inject IWMTemplateMarketplaceService Marketplace
@@ -352,6 +354,25 @@
     </div>
 }
 
+<MDialog Persistent @bind-Value="showNewTemplate" Fullscreen ContentStyle="padding:12px;background:var(--wm-surface,#fff);">
+    @if (showNewTemplate)
+    {
+        <WMNewPosterTemplateDialog OnClose="() => showNewTemplate = false"
+                                   OnCreated="OnMobileTemplateCreatedAsync" />
+    }
+</MDialog>
+
+<MDialog Persistent @bind-Value="showPosterAssignment" Fullscreen ContentStyle="padding:0;background:var(--wm-surface,#fff);">
+    @if (showPosterAssignment && pendingPosterTemplate is not null)
+    {
+        <WMPosterPhotoAssignmentDialog Sources="pendingPosterSources"
+                                       SlotCount="@pendingPosterSlotCount"
+                                       SourcesChanged="UpdatePendingPosterSources"
+                                       Confirmed="ConfirmPosterAssignmentAsync"
+                                       Cancelled="CancelPosterAssignmentAsync" />
+    }
+</MDialog>
+
 @code {
     private const int MarketPageSize = 20;
     private static readonly MarketCategoryOption[] MarketCategories =
@@ -373,6 +394,8 @@
     private bool loading = true;
     private bool localLoaded;
     private bool busy;
+    private bool showNewTemplate;
+    private bool showPosterAssignment;
     private bool favoritesLoaded;
     private bool bypassNavigationGuard;
     private bool restoreMarketScrollPending;
@@ -389,6 +412,9 @@
     private string? errorMessage;
     private WMTemplateList? selectedLocal;
     private WMZipedTemplate? selectedCloud;
+    private WMTemplateList? pendingPosterTemplate;
+    private IReadOnlyList<IWMPhotoImportSource> pendingPosterSources = [];
+    private int pendingPosterSlotCount;
     private string? deletedUndoToken;
 
     private WMTemplateMarketFeedState ActiveMarketState =>
@@ -769,8 +795,14 @@
     private static string CreatorName(WMZipedTemplate item) =>
         string.IsNullOrWhiteSpace(item.UserDisplayName) ? "轻影创作者" : item.UserDisplayName;
 
-    private static string LocalTemplateType(WMTemplateList item) =>
-        item.Canvas?.CanvasType == CanvasType.Split ? "拼图" : "单图";
+    private static string LocalTemplateType(WMTemplateList item)
+    {
+        if (item.Canvas is null) return "海报";
+        var sizing = item.Canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? "跟随主图"
+            : "固定画布";
+        return $"{sizing} · {WMPosterAssetSlots.OrderedPhotoSlots(item.Canvas).Count} 槽";
+    }
 
     private static bool IsVerifiedCreator(WMZipedTemplate item) =>
         string.Equals(CreatorName(item), "DFM Official", StringComparison.OrdinalIgnoreCase);
@@ -798,16 +830,141 @@
         busy = true;
         try
         {
-            var files = await PhotoPicker.PickMultipleAsync();
-            if (files.Count == 0) return;
-            var id = await WorkspaceLauncher.CreateFromSourcesAsync(
-                WMWorkspaceMode.Template, files, template.ID, CancellationToken.None);
-            bypassNavigationGuard = true;
-            NavigationHistory.NavigateTo($"/workspace/{id}");
+            var photoSlotCount = template.Canvas is null
+                ? 1
+                : WMPosterAssetSlots.OrderedPhotoSlots(template.Canvas).Count;
+            IReadOnlyList<IWMPhotoImportSource> files = photoSlotCount == 0
+                ? []
+                : await PhotoPicker.PickMultipleAsync();
+            if (photoSlotCount > 0 && files.Count == 0)
+                return;
+            if (photoSlotCount > 1 && files.Count > photoSlotCount)
+            {
+                foreach (var file in files) await file.DisposeAsync();
+                throw new InvalidOperationException($"该海报最多选择 {photoSlotCount} 张照片。");
+            }
+            if (photoSlotCount > 1 && files.Count > 0)
+            {
+                pendingPosterTemplate = template;
+                pendingPosterSources = files;
+                pendingPosterSlotCount = photoSlotCount;
+                selectedLocal = null;
+                selectedCloud = null;
+                showPosterAssignment = true;
+                return;
+            }
+
+            await LaunchPosterWorkspaceAsync(template, files);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            Common.ShowToast(Popup, ex.Message, isError: true);
         }
         finally
         {
             busy = false;
+        }
+    }
+
+    private Task UpdatePendingPosterSources(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        pendingPosterSources = sources;
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmPosterAssignmentAsync(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        if (busy) return;
+        var template = pendingPosterTemplate;
+        showPosterAssignment = false;
+        pendingPosterTemplate = null;
+        pendingPosterSources = [];
+        pendingPosterSlotCount = 0;
+        if (template is null)
+        {
+            foreach (var source in sources)
+                await source.DisposeAsync();
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            await LaunchPosterWorkspaceAsync(template, sources);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task CancelPosterAssignmentAsync(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        showPosterAssignment = false;
+        pendingPosterTemplate = null;
+        pendingPosterSources = [];
+        pendingPosterSlotCount = 0;
+        foreach (var source in sources)
+            await source.DisposeAsync();
+    }
+
+    private async Task LaunchPosterWorkspaceAsync(
+        WMTemplateList template,
+        IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        if (template.Canvas is null)
+            throw new InvalidOperationException("海报模板内容不完整。");
+
+        var photoSlotCount = WMPosterAssetSlots.OrderedPhotoSlots(template.Canvas).Count;
+        if (photoSlotCount == 1)
+        {
+            var launchedSessionId = await WorkspaceLauncher.CreateFromSourcesAsync(
+                WMWorkspaceMode.Template,
+                sources,
+                template.ID,
+                CancellationToken.None,
+                TemplateTabPath(activeTab));
+            bypassNavigationGuard = true;
+            NavigationHistory.NavigateTo($"/workspace/{launchedSessionId}");
+            return;
+        }
+
+        string? sessionId = null;
+        var handedToController = false;
+        try
+        {
+            sessionId = await SessionStore.CreateEmptyAsync(
+                WMWorkspaceMode.Template,
+                TemplateTabPath(activeTab),
+                CancellationToken.None);
+            if (!await Controller.OpenAsync(sessionId))
+                throw new InvalidOperationException("无法打开海报工作台。");
+            handedToController = true;
+            await Controller.ApplyPosterAsync(
+                new WMWorkspaceTemplateEdit(
+                    template.ID,
+                    Global.CanvasSerialize(template.Canvas)),
+                sources,
+                imagesFirst: false);
+            await Controller.CloseAsync();
+            bypassNavigationGuard = true;
+            NavigationHistory.NavigateTo($"/workspace/{sessionId}");
+        }
+        catch
+        {
+            if (!handedToController)
+                foreach (var source in sources)
+                    await source.DisposeAsync();
+            try { await Controller.CloseAsync(); } catch { }
+            if (!string.IsNullOrWhiteSpace(sessionId))
+                await SessionStore.DeleteAsync(sessionId);
+            throw;
         }
     }
 
@@ -845,37 +1002,15 @@
 
     private async Task CreateTemplateAsync()
     {
-        if (busy) return;
-        busy = true;
-        try
-        {
-            var sources = await PhotoPicker.PickMultipleAsync();
-            var source = sources.FirstOrDefault();
-            if (source is null) return;
-            WMLocalTemplateResult result;
-            try
-            {
-                result = await Marketplace.CreateLocalAsync(
-                    source,
-                    $"我的模板 {DateTime.Now:MM-dd}");
-            }
-            finally
-            {
-                foreach (var picked in sources) await picked.DisposeAsync();
-            }
-            if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.TemplateId))
-                throw new InvalidOperationException(result.Message ?? "模板创建失败。");
-            await RefreshLocalAsync();
-            await EditLocalAsync(new WMTemplateList { ID = result.TemplateId });
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            busy = false;
-        }
+        if (!busy) showNewTemplate = true;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnMobileTemplateCreatedAsync(string templateId)
+    {
+        showNewTemplate = false;
+        await RefreshLocalAsync();
+        await EditLocalAsync(new WMTemplateList { ID = templateId });
     }
 
     private async Task DeleteLocalAsync(WMTemplateList template)
@@ -1021,6 +1156,9 @@
         CancelMarketContext();
         searchDebounceCancellation?.Cancel();
         searchDebounceCancellation?.Dispose();
+        foreach (var source in pendingPosterSources)
+            await source.DisposeAsync();
+        pendingPosterSources = [];
         try { await JSRuntime.InvokeVoidAsync("watermarkTemplateVisibility.disconnect", visibilityScope); }
         catch (JSDisconnectedException) { }
         catch (JSException) { }

@@ -15,11 +15,17 @@ public sealed class WMWorkspaceLauncher(
         WMWorkspaceMode mode,
         IReadOnlyList<IWMPhotoImportSource> sources,
         string? templateId,
-        CancellationToken token)
+        CancellationToken token,
+        string? returnPath = null)
     {
         try
         {
-            var sessionId = await sessionStore.CreateAsync(mode, sources, templateId, token).ConfigureAwait(false);
+            var sessionId = await sessionStore.CreateAsync(
+                mode,
+                sources,
+                templateId,
+                token,
+                returnPath).ConfigureAwait(false);
             var verification = await sessionStore.OpenAsync(sessionId, token).ConfigureAwait(false);
             if (!verification.IsOpened)
             {

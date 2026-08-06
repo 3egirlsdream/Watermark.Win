@@ -155,10 +155,16 @@
     private bool HandleSystemBack()
     {
         var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
-        if (string.IsNullOrEmpty(path) || path.Equals("/create", StringComparison.OrdinalIgnoreCase)) return false;
+        if (IsMobileTabRoot(path)) return false;
         NavigationHistory.GoBack(DefaultBackTarget(path));
         return true;
     }
+
+    private static bool IsMobileTabRoot(string path) =>
+        string.IsNullOrEmpty(path)
+        || path.Equals("/create", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/templates", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/profile", StringComparison.OrdinalIgnoreCase);
 
     private static string DefaultBackTarget(string path)
     {

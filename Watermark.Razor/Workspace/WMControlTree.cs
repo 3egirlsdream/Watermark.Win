@@ -354,7 +354,11 @@ public static class WMControlTree
             throw new ArgumentException("目标容器不存在。", nameof(preferredParentId));
 
         if (canvas.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+        {
             WMLayoutMigration.ApplyNewNodeDefaults(control, isRoot: parent is null);
+            if (parent is null && control is not WMContainer)
+                OffsetNewRootLeaf(canvas, control);
+        }
         if (parent is null)
         {
             canvas.Children.Add(control);
@@ -369,6 +373,15 @@ public static class WMControlTree
         }
         SynchronizeParentMetadata(canvas);
         return control;
+    }
+
+    private static void OffsetNewRootLeaf(WMCanvas canvas, IWMControl control)
+    {
+        var existingLeafCount = canvas.Children.Count(existing => existing is not WMContainer);
+        var row = existingLeafCount % 8;
+        var column = existingLeafCount / 8;
+        control.Style.Top = WMStyleLength.Percent(10 + row * 10);
+        control.Style.Left = WMStyleLength.Percent(Math.Min(70, 10 + column * 10));
     }
 
     private static bool IsValidTargetIndex(WMCanvas canvas, IWMControl control, WMContainer? target, int index)

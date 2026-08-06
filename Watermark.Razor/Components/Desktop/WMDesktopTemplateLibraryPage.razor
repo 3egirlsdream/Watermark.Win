@@ -176,7 +176,15 @@
     });
 
     private void Show(string? value, bool error) => Common.ShowToast(Popup, value, error);
-    private static string TemplateKind(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "拼图" : "水印";
-    private static string TemplateDescription(WMTemplateList item) => item.Canvas.CanvasType == Watermark.Shared.Enums.CanvasType.Split ? "多图容器模板" : "照片水印模板";
+    private static string TemplateKind(WMTemplateList item) =>
+        item.Canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? "跟随主图"
+            : "固定画布";
+
+    private static string TemplateDescription(WMTemplateList item)
+    {
+        var slots = WMPosterAssetSlots.OrderedPhotoSlots(item.Canvas).Count;
+        return slots == 0 ? "纯文字 / 图形海报" : $"{slots} 个照片素材槽";
+    }
     public void Dispose() => TemplateLibrary.Changed -= OnLibraryChanged;
 }

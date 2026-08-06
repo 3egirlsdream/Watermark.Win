@@ -35,7 +35,7 @@
             <WMDesktopFeatureRail Mode="@DesktopMode" ColorEngineAvailable="@ColorEngineAvailable" ModeChanged="SetModeAsync" />
             <WMDesktopModeSidebar Mode="@DesktopMode" Templates="templates" TemplateId="@State.TemplateId" Presets="State.ColorGradeTool.Presets" SelectedPresetId="@State.ColorGradeTool.SelectedPresetId"
                                   ReferenceUrl="@State.ColorGradeTool.Reference.PreviewUrl" ReferenceName="@State.ColorGradeTool.Reference.DisplayName" Media="State.Media" SelectedFrameIds="SelectedFrameIds"
-                                  MediaPreviewUrl="MediaPreviewById" TemplateSelected="SelectTemplateAsync" SplitTemplateSelected="SelectSplitTemplateAsync" EditTemplate="item => OpenDesignerAsync(item.ID)"
+                                  MediaPreviewUrl="MediaPreviewById" TemplateSelected="SelectTemplateAsync" EditTemplate="item => OpenDesignerAsync(item.ID)"
                                   CreateTemplate="OpenNewTemplateDialog" OpenTemplates='() => NavigateDesktopSection("templates")' OpenMarket='() => NavigateDesktopSection("market")' ChooseReference="ChooseReferenceAsync"
                                   ResetColor="ResetColorAsync" PresetSelected="ApplyPresetAsync" FrameToggled="ToggleFrameAsync" />
             @if (ShowAppliedTemplateEditor)
@@ -49,7 +49,7 @@
                                                 PreviewChanged="PreviewTemplateAsync"
                                                 CommitRequested="CommitTemplateAsync"
                                                 DiscardRequested="() => Controller.DiscardTransientEditsAsync()"
-                                                OpenDesignerRequested="OpenDesignerAsync" />
+                                                OpenDesignerRequested="OpenInstanceDesignerAsync" />
             }
             else
             {
@@ -135,11 +135,21 @@
         {
             <div class="desktop-toast is-error" role="status"><span>@State.ErrorMessage</span><button type="button" @onclick="Controller.ClearStatusMessage"><WmIcon Icon="x" /></button></div>
         }
-        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMTemplateDesigner CanvasId="@designerTemplateId" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
+        <MDialog Persistent @bind-Value="showDesigner" Fullscreen ContentStyle="padding:0;overflow:hidden;">@if (showDesigner) { <WMTemplateDesigner CanvasId="@designerTemplateId" InstanceMode="@designerInstanceMode" InstanceCanvasJson="@designerInstanceJson" OnInstanceCompleted="OnPosterInstanceCompletedAsync" OnSaved="OnTemplateSavedAsync" OnClose="CloseDesignerAsync" /> }</MDialog>
         <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
             @if (showNewTemplate)
             {
-                <WMDesktopNewTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
+                <WMNewPosterTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
+            }
+        </MDialog>
+        <MDialog Persistent @bind-Value="showPosterAssignment" Width="560" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
+            @if (showPosterAssignment && pendingPosterTemplate is not null)
+            {
+                <WMPosterPhotoAssignmentDialog Sources="pendingPosterSources"
+                                               SlotCount="@pendingPosterSlotCount"
+                                               SourcesChanged="UpdatePendingPosterSources"
+                                               Confirmed="ConfirmPosterAssignmentAsync"
+                                               Cancelled="CancelPosterAssignmentAsync" />
             }
         </MDialog>
         <MDialog @bind-Value="showAccount" Width="390" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
@@ -170,6 +180,7 @@
     private bool showVipPurchase;
     private bool showCommonDialog;
     private bool showExportPanel;
+    private bool showPosterAssignment;
     private bool recovering;
     private bool mediaStripDragging;
     private bool desktopMultiFrameInitialized;
@@ -179,6 +190,11 @@
     private string? commonDialogUrl;
     private string accountDialogMode = "login";
     private string designerTemplateId = string.Empty;
+    private bool designerInstanceMode;
+    private string? designerInstanceJson;
+    private WMTemplateList? pendingPosterTemplate;
+    private IReadOnlyList<IWMPhotoImportSource> pendingPosterSources = [];
+    private int pendingPosterSlotCount;
     private WMWorkspaceState State => Controller.State;
     private WMWorkspacePreviewPresentation PreviewPresentation => State.IsComparingOriginal
         ? State.PreviewPresentation with
@@ -284,24 +300,107 @@
         Controller.UpdateCropDraftAsync(settings);
     private async Task SelectTemplateAsync(WMTemplateList template)
     {
-        if (State.Media.Count == 0)
-        {
-            Common.ShowToast(Popup, "请先导入图片，再选择水印模板。");
-            return;
-        }
-        await Controller.PreviewTemplateAsync(new WMWorkspaceTemplateEdit(template.ID, null), State.ApplyScope);
-    }
-
-    private async Task SelectSplitTemplateAsync(WMTemplateList template)
-    {
         try
         {
-            var sources = await PhotoPicker.PickMultipleAsync();
-            if (sources.Count == 0) return;
-            await Controller.CreateTemplateCollageAsync(new WMWorkspaceTemplateEdit(template.ID, Global.CanvasSerialize(template.Canvas)), sources);
-            await Controller.SetModeAsync(WMWorkspaceMode.Template);
+            if (State.Media.Count > 0)
+            {
+                if (!template.Canvas.HasPrimaryImage)
+                {
+                    await Controller.ApplyPosterAsync(
+                        new WMWorkspaceTemplateEdit(
+                            template.ID,
+                            Global.CanvasSerialize(template.Canvas)),
+                        [],
+                        imagesFirst: true);
+                    showExportPanel = true;
+                    return;
+                }
+                await Controller.PreviewTemplateAsync(
+                    new WMWorkspaceTemplateEdit(template.ID, null),
+                    State.ApplyScope);
+                return;
+            }
+
+            var photoSlotCount = WMPosterAssetSlots.OrderedPhotoSlots(template.Canvas).Count;
+            IReadOnlyList<IWMPhotoImportSource> sources = [];
+            if (photoSlotCount > 0)
+            {
+                sources = await PhotoPicker.PickMultipleAsync();
+                if (photoSlotCount > 1 && sources.Count > photoSlotCount)
+                {
+                    foreach (var source in sources)
+                        await source.DisposeAsync();
+                    Common.ShowToast(Popup, $"该海报最多选择 {photoSlotCount} 张照片。", isError: true);
+                    return;
+                }
+            }
+
+            if (photoSlotCount > 1 && sources.Count > 0)
+            {
+                pendingPosterTemplate = template;
+                pendingPosterSources = sources;
+                pendingPosterSlotCount = photoSlotCount;
+                showPosterAssignment = true;
+                return;
+            }
+
+            await ApplyPosterSelectionAsync(template, sources);
         }
         catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
+    }
+
+    private async Task ApplyPosterSelectionAsync(
+        WMTemplateList template,
+        IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        await Controller.ApplyPosterAsync(
+            new WMWorkspaceTemplateEdit(
+                template.ID,
+                Global.CanvasSerialize(template.Canvas)),
+            sources,
+            imagesFirst: false);
+        await Controller.SetModeAsync(WMWorkspaceMode.Template);
+        showExportPanel = true;
+    }
+
+    private Task UpdatePendingPosterSources(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        pendingPosterSources = sources;
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmPosterAssignmentAsync(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        var template = pendingPosterTemplate;
+        showPosterAssignment = false;
+        pendingPosterTemplate = null;
+        pendingPosterSources = [];
+        pendingPosterSlotCount = 0;
+        if (template is null)
+        {
+            foreach (var source in sources)
+                await source.DisposeAsync();
+            return;
+        }
+
+        try
+        {
+            await ApplyPosterSelectionAsync(template, sources);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+    }
+
+    private async Task CancelPosterAssignmentAsync(IReadOnlyList<IWMPhotoImportSource> sources)
+    {
+        showPosterAssignment = false;
+        pendingPosterTemplate = null;
+        pendingPosterSources = [];
+        pendingPosterSlotCount = 0;
+        foreach (var source in sources)
+            await source.DisposeAsync();
     }
 
     private Task ToggleFrameAsync(string mediaId)
@@ -491,8 +590,22 @@
     private async Task OpenDesignerAsync(string templateId)
     {
         designerTemplateId = templateId;
+        designerInstanceMode = false;
+        designerInstanceJson = null;
         showDesigner = true;
         await Task.CompletedTask;
+    }
+
+    private Task OpenInstanceDesignerAsync(WMWorkspaceTemplateEdit edit)
+    {
+        if (string.IsNullOrWhiteSpace(edit.TemplateId)
+            || string.IsNullOrWhiteSpace(edit.CanvasJson))
+            return Task.CompletedTask;
+        designerTemplateId = edit.TemplateId;
+        designerInstanceMode = true;
+        designerInstanceJson = edit.CanvasJson;
+        showDesigner = true;
+        return Task.CompletedTask;
     }
 
     private async Task RecoverAsync(WMWorkspaceRecoveryRequest request)
@@ -511,12 +624,32 @@
     private async Task CloseDesignerAsync()
     {
         showDesigner = false;
-        await Controller.DiscardTransientEditsAsync();
+        if (!designerInstanceMode)
+            await Controller.DiscardTransientEditsAsync();
+        designerInstanceMode = false;
+        designerInstanceJson = null;
+    }
+
+    private async Task OnPosterInstanceCompletedAsync(WMCanvas canvas)
+    {
+        await Controller.CommitTemplateAsync(
+            new WMWorkspaceTemplateEdit(designerTemplateId, Global.CanvasSerialize(canvas)),
+            State.ApplyScope);
+        showDesigner = false;
+        designerInstanceMode = false;
+        designerInstanceJson = null;
     }
     private async Task OnTemplateSavedAsync(string id) { TemplateLibrary.Invalidate(id); await RefreshTemplatesAsync(); }
     private void OnAccountChanged() => _ = InvokeAsync(StateHasChanged);
     public async ValueTask DisposeAsync()
     {
-        Controller.Changed -= OnWorkspaceChanged; TemplateLibrary.Changed -= OnTemplatesChanged; Accounts.Changed -= OnAccountChanged; if (opened) await Controller.CloseAsync(); SystemAppearance.SetWorkspaceActive(false);
+        Controller.Changed -= OnWorkspaceChanged;
+        TemplateLibrary.Changed -= OnTemplatesChanged;
+        Accounts.Changed -= OnAccountChanged;
+        foreach (var source in pendingPosterSources)
+            await source.DisposeAsync();
+        pendingPosterSources = [];
+        if (opened) await Controller.CloseAsync();
+        SystemAppearance.SetWorkspaceActive(false);
     }
 }

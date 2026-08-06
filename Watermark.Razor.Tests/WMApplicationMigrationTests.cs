@@ -68,6 +68,23 @@ public sealed class WMApplicationMigrationTests
     }
 
     [Fact]
+    public void MobileTabRoots_SystemBackMovesAndroidTaskToBackground()
+    {
+        var shell = Read("Watermark.Razor/Components/Layout/WMAppShellLayout.razor");
+        var activity = Read("Watermark.Andorid/Platforms/Android/MainActivity.cs");
+        var rootPolicy = shell[shell.IndexOf("private static bool IsMobileTabRoot", StringComparison.Ordinal)..
+            shell.IndexOf("private static string DefaultBackTarget", StringComparison.Ordinal)];
+
+        Assert.Contains("if (IsMobileTabRoot(path)) return false;", shell, StringComparison.Ordinal);
+        Assert.Contains("\"/create\"", rootPolicy, StringComparison.Ordinal);
+        Assert.Contains("\"/templates\"", rootPolicy, StringComparison.Ordinal);
+        Assert.Contains("\"/profile\"", rootPolicy, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"/settings\"", rootPolicy, StringComparison.Ordinal);
+        Assert.Contains("if (dispatcher?.TryDispatch() == true) return;", activity, StringComparison.Ordinal);
+        Assert.Contains("activity.MoveTaskToBack(true);", activity, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NavigationHistory_ReplaceWithPreviousPageDoesNotLeaveDuplicateBackEntry()
     {
         var navigation = new TestNavigationManager("/profile");

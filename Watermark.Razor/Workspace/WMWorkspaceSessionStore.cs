@@ -154,7 +154,8 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
         WMWorkspaceMode mode,
         IReadOnlyList<IWMPhotoImportSource> sources,
         string? templateId = null,
-        CancellationToken token = default)
+        CancellationToken token = default,
+        string? returnPath = null)
     {
         ArgumentNullException.ThrowIfNull(sources);
         if (mode != WMWorkspaceMode.TemplateDesign && sources.Count == 0)
@@ -175,6 +176,9 @@ public sealed class WMWorkspaceSessionStore : IWMWorkspaceSessionStore
             {
                 Id = id,
                 Mode = mode,
+                ReturnPath = string.IsNullOrWhiteSpace(returnPath)
+                    ? null
+                    : WMReturnUrl.Normalize(returnPath, "/create"),
                 TemplateId = templateId,
                 Media = media,
                 MediaCatalog = media,

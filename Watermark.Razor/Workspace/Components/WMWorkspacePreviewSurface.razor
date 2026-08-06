@@ -218,6 +218,12 @@
         catch (JSDisconnectedException)
         {
         }
+        // WebView may replace its document before the outgoing preview component
+        // is disposed. In that case the renderer handle no longer exists and
+        // disposal must not fail the navigation that is opening the editor.
+        catch (JSException)
+        {
+        }
         callbackReference?.Dispose();
     }
 }

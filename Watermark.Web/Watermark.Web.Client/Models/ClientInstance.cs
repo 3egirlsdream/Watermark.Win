@@ -1,9 +1,6 @@
 ﻿using SkiaSharp;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text;
-using Masa.Blazor;
-using Microsoft.JSInterop;
-using Masa.Blazor.Presets;
 
 namespace Watermark.Shared.Models
 {
@@ -64,11 +61,6 @@ namespace Watermark.Shared.Models
 
 
         public void Haptic()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DownloadTemplate(string watermarkId, ViewParameter parameter, IPopupService PopupService, List<WMZipedTemplate> ZipedTemplates, IWMWatermarkHelper helper, IJSRuntime JSRuntime, Dictionary<string, int> Versions, PageStackNavController NavController, FailedBox failedBox)
         {
             throw new NotImplementedException();
         }

@@ -1,0 +1,111 @@
+@using Watermark.Razor.Components.Mac
+@using Watermark.Shared.Models
+@implements IAsyncDisposable
+@namespace Watermark.Razor.Workspace.Components
+
+<div class="wm-mobile-applied-template-controls">
+    @if (editor is null)
+    {
+        <div class="wm-mobile-applied-template-empty" role="status">
+            <WmIcon Icon="grid-four" />
+            <span>请先为当前图片选择模板</span>
+        </div>
+    }
+    else
+    {
+        <WMTemplatePropertyPanel @key="editorKey"
+                                 Editor="editor"
+                                 Section="Section" />
+    }
+</div>
+
+@code {
+    [Parameter] public WMWorkspaceTemplateEdit? Edit { get; set; }
+    [Parameter] public WMTemplateMobileInspectorSection? Section { get; set; }
+    [Parameter] public EventCallback<WMWorkspaceTemplateEdit> PreviewChanged { get; set; }
+
+    private WMTemplateEditorState? editor;
+    private CancellationTokenSource? previewCancellation;
+    private string loadedTemplateId = string.Empty;
+    private string loadedCanvasJson = string.Empty;
+    private string requestedCanvasJson = string.Empty;
+    private string editorKey = string.Empty;
+    private bool disposed;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (Edit is null
+            || string.IsNullOrWhiteSpace(Edit.TemplateId)
+            || string.IsNullOrWhiteSpace(Edit.CanvasJson))
+        {
+            DetachEditor();
+            loadedTemplateId = string.Empty;
+            loadedCanvasJson = string.Empty;
+            requestedCanvasJson = string.Empty;
+            return Task.CompletedTask;
+        }
+
+        if (!string.Equals(loadedTemplateId, Edit.TemplateId, StringComparison.Ordinal)
+            || (!string.Equals(loadedCanvasJson, Edit.CanvasJson, StringComparison.Ordinal)
+                && !string.Equals(requestedCanvasJson, Edit.CanvasJson, StringComparison.Ordinal)))
+        {
+            DetachEditor();
+            editor = WMTemplateEditorState.Create(Global.ReadConfig(Edit.CanvasJson));
+            editor.Changed += HandleEditorChanged;
+            loadedTemplateId = Edit.TemplateId;
+            loadedCanvasJson = Edit.CanvasJson;
+            requestedCanvasJson = Edit.CanvasJson;
+            editorKey = $"{Edit.TemplateId}:{Guid.NewGuid():N}";
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void HandleEditorChanged()
+    {
+        if (disposed || editor is null) return;
+        _ = InvokeAsync(StateHasChanged);
+        var canvasJson = Global.CanvasSerialize(editor.Draft);
+        if (string.Equals(requestedCanvasJson, canvasJson, StringComparison.Ordinal)) return;
+
+        requestedCanvasJson = canvasJson;
+        loadedCanvasJson = canvasJson;
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        previewCancellation = new CancellationTokenSource();
+        _ = QueuePreviewAsync(
+            new WMWorkspaceTemplateEdit(loadedTemplateId, canvasJson),
+            previewCancellation.Token);
+    }
+
+    private async Task QueuePreviewAsync(
+        WMWorkspaceTemplateEdit edit,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(100, cancellationToken);
+            await PreviewChanged.InvokeAsync(edit);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private void DetachEditor()
+    {
+        if (editor is not null)
+            editor.Changed -= HandleEditorChanged;
+        editor = null;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        disposed = true;
+        DetachEditor();
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        previewCancellation = null;
+        return ValueTask.CompletedTask;
+    }
+}

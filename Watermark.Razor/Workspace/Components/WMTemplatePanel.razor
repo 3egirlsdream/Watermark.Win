@@ -25,18 +25,25 @@
     @if (CurrentCanvas is { } canvas)
     {
         <details class="wm-template-parameters">
-            <summary><span><strong>画布与边框</strong><small>@canvas.CanvasType · @ExifFieldCount(canvas) 个 EXIF 字段</small></span><WmIcon Icon="caret-down" /></summary>
-            <div class="wm-template-border-grid">
-                <WMTemplateBorderControl Label="上" Value="canvas.BorderThickness.Top"
-                    PreviewValueChanged="PreviewTop" CommitValueChanged="CommitTop" />
-                <WMTemplateBorderControl Label="右" Value="canvas.BorderThickness.Right"
-                    PreviewValueChanged="PreviewRight" CommitValueChanged="CommitRight" />
-                <WMTemplateBorderControl Label="下" Value="canvas.BorderThickness.Bottom"
-                    PreviewValueChanged="PreviewBottom" CommitValueChanged="CommitBottom" />
-                <WMTemplateBorderControl Label="左" Value="canvas.BorderThickness.Left"
-                    PreviewValueChanged="PreviewLeft" CommitValueChanged="CommitLeft" />
-            </div>
-            <p>边框调整只写入当前会话的模板快照，不修改模板库原文件。</p>
+            <summary><span><strong>画布与素材</strong><small>@CanvasCapability(canvas) · @ExifFieldCount(canvas) 个 EXIF 字段</small></span><WmIcon Icon="caret-down" /></summary>
+            @if (canvas.HasPrimaryImage)
+            {
+                <div class="wm-template-border-grid">
+                    <WMTemplateBorderControl Label="上" Value="canvas.BorderThickness.Top"
+                        PreviewValueChanged="PreviewTop" CommitValueChanged="CommitTop" />
+                    <WMTemplateBorderControl Label="右" Value="canvas.BorderThickness.Right"
+                        PreviewValueChanged="PreviewRight" CommitValueChanged="CommitRight" />
+                    <WMTemplateBorderControl Label="下" Value="canvas.BorderThickness.Bottom"
+                        PreviewValueChanged="PreviewBottom" CommitValueChanged="CommitBottom" />
+                    <WMTemplateBorderControl Label="左" Value="canvas.BorderThickness.Left"
+                        PreviewValueChanged="PreviewLeft" CommitValueChanged="CommitLeft" />
+                </div>
+                <p>主图边距只写入当前实例快照，不修改模板库原文件。</p>
+            }
+            else
+            {
+                <p>该海报没有主图；固定画布上的文字、图形和普通素材槽仍会保留。</p>
+            }
         </details>
     }
     <p class="wm-panel-note"><WmIcon Icon="hand-tap" /><span>在画布上按住可查看原图，双击恢复适配。</span></p>
@@ -104,4 +111,12 @@
 
     private static int ExifFieldCount(WMCanvas canvas) =>
         Global.EnumerateControls(canvas).OfType<WMText>().Sum(text => text.Exifs?.Count ?? 0);
+
+    private static string CanvasCapability(WMCanvas canvas)
+    {
+        var sizing = canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? "跟随主图"
+            : "固定画布";
+        return $"{sizing} · {WMPosterAssetSlots.OrderedPhotoSlots(canvas).Count} 个照片槽";
+    }
 }

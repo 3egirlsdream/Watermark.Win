@@ -31,6 +31,7 @@ public sealed class WMWorkspaceController
     private readonly IWMExecutionProfileProvider? executionProfiles;
     private readonly WMImageImportService? imageImporter;
     private readonly IWMDerivedMediaProcessor? derivedMediaProcessor;
+    private readonly IWMPosterApplicationProcessor? posterApplicationProcessor;
     private readonly IWMColorReferenceService? colorReferenceService;
     private readonly IWMColorPresetLibrary? colorPresetLibrary;
     private readonly IWMWorkspaceTraceStore? traceStore;
@@ -91,7 +92,8 @@ public sealed class WMWorkspaceController
         IWMWorkspacePerformanceCounters? performanceCounters = null,
         IWMRenderPlanCompiler? renderPlanCompiler = null,
         IWMColorPipelineCompiler? colorPipelineCompiler = null,
-        IWMColorEngine? colorEngine = null)
+        IWMColorEngine? colorEngine = null,
+        IWMPosterApplicationProcessor? posterApplicationProcessor = null)
     {
         this.sessionStore = sessionStore;
         this.renderCoordinator = renderCoordinator;
@@ -106,6 +108,7 @@ public sealed class WMWorkspaceController
         this.executionProfiles = executionProfiles;
         this.imageImporter = imageImporter;
         this.derivedMediaProcessor = derivedMediaProcessor;
+        this.posterApplicationProcessor = posterApplicationProcessor;
         this.colorReferenceService = colorReferenceService;
         this.colorPresetLibrary = colorPresetLibrary;
         this.traceStore = traceStore;
@@ -646,11 +649,8 @@ public sealed class WMWorkspaceController
                 if (derivedMediaProcessor is null)
                     throw new PlatformNotSupportedException("当前宿主未注册派生素材处理器。");
                 var sourceIds = request.SourceMediaIds.Distinct(StringComparer.Ordinal).ToArray();
-                var minimumSources = request.Kind == WMDerivedMediaKind.TemplateCollage ? 1 : 2;
-                if (sourceIds.Length < minimumSources)
-                    throw new InvalidOperationException(request.Kind == WMDerivedMediaKind.TemplateCollage
-                        ? "拼图模板至少需要一张素材。"
-                        : "派生素材至少需要两张源图片。");
+                if (sourceIds.Length < 2)
+                    throw new InvalidOperationException("派生素材至少需要两张源图片。");
                 var sourceById = Catalog(context.Session).ToDictionary(item => item.Id, StringComparer.Ordinal);
                 if (sourceIds.Any(id => !sourceById.ContainsKey(id)))
                     throw new InvalidOperationException("派生素材的源图片已不存在。");
@@ -1877,53 +1877,49 @@ public sealed class WMWorkspaceController
             cancellationToken);
     }
 
-    public async Task<string> CreateTemplateCollageAsync(
+    public async Task<IReadOnlyList<string>> ApplyPosterAsync(
         WMWorkspaceTemplateEdit edit,
         IReadOnlyList<IWMPhotoImportSource> sources,
+        bool imagesFirst,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(edit);
         ArgumentNullException.ThrowIfNull(sources);
-        if (sources.Count == 0) throw new InvalidOperationException("拼图模板至少需要一张素材。");
         if (string.IsNullOrWhiteSpace(edit.TemplateId) || string.IsNullOrWhiteSpace(edit.CanvasJson))
-            throw new InvalidOperationException("拼图模板内容不完整。");
+            throw new InvalidOperationException("海报模板内容不完整。");
         if (imageImporter is null || executionProfiles is null)
             throw new InvalidOperationException("当前宿主未注册工作台导入服务。");
-        if (derivedMediaProcessor is null)
-            throw new PlatformNotSupportedException("当前宿主未注册派生素材处理器。");
+        if (posterApplicationProcessor is null)
+            throw new PlatformNotSupportedException("当前宿主未注册海报应用处理器。");
 
-        var derivedMediaId = Guid.NewGuid().ToString("N");
+        IReadOnlyList<string> resultMediaIds = [];
         using var operation = jobs.Begin(cancellationToken);
         try
         {
             await RunDurableCommandAsync(async context =>
             {
-                IReadOnlyList<WMWorkspaceMedia> imported;
+                IReadOnlyList<WMWorkspaceMedia> imported = [];
                 try
                 {
-                    imported = await imageImporter.ImportTemplateCollageSourcesAsync(
-                        sources,
-                        sessionStore.GetSessionDirectory(context.Session.Id),
-                        executionProfiles.GetInteractiveProfile(),
-                        context.Token).ConfigureAwait(false);
+                    if (sources.Count > 0)
+                        imported = await imageImporter.ImportPosterSourcesAsync(
+                            sources,
+                            sessionStore.GetSessionDirectory(context.Session.Id),
+                            executionProfiles.GetInteractiveProfile(),
+                            context.Token).ConfigureAwait(false);
                 }
                 finally
                 {
                     foreach (var source in sources)
                         await source.DisposeAsync().ConfigureAwait(false);
                 }
-                if (imported.Count == 0)
-                    throw new InvalidOperationException("没有可用于拼图模板的素材。");
 
                 var importedIds = imported.Select(item => item.Id).ToArray();
-                var request = new WMDerivedMediaRequest(
-                    WMDerivedMediaKind.TemplateCollage,
-                    importedIds,
-                    "应用拼图模板",
-                    new WMCollageSettings(importedIds, WMCollageDirection.Horizontal),
-                    $"拼图模板-{DateTime.Now:yyyyMMdd-HHmmss}.png",
-                    true,
-                    new WMTemplateCollageSettings(edit.TemplateId, edit.CanvasJson));
+                var template = Global.ReadConfig(edit.CanvasJson);
+                var selectedArtifactIds = imported.Select(item => item.Artifact.Id).ToArray();
+                var plan = imagesFirst
+                    ? WMPosterApplicationPlanner.FromImagesFirst(template, selectedArtifactIds)
+                    : WMPosterApplicationPlanner.FromTemplateFirst(template, selectedArtifactIds);
                 var currentArtifacts = new Dictionary<string, string>(
                     context.Session.CurrentArtifactIdsByMediaId, StringComparer.Ordinal);
                 foreach (var source in imported) currentArtifacts[source.Id] = source.Artifact.Id;
@@ -1932,7 +1928,7 @@ public sealed class WMWorkspaceController
                     Guid.NewGuid().ToString("N"),
                     WMWorkspaceJobKind.DerivedMedia,
                     WMWorkspaceJobStatus.Running,
-                    System.Text.Json.JsonSerializer.Serialize(request),
+                    System.Text.Json.JsonSerializer.Serialize(plan),
                     [],
                     now,
                     now);
@@ -1951,17 +1947,20 @@ public sealed class WMWorkspaceController
                 {
                     ActiveJob = WMWorkspaceProjection.Job(checkpoint),
                     CollageTool = value.CollageTool with { IsBusy = true },
-                    Message = "正在生成拼图模板…",
+                    Message = "正在生成海报…",
                     CanCancel = true
                 });
                 await PersistAsync(working, context.Epoch, context.Token).ConfigureAwait(false);
 
-                WMDerivedMediaOutput generated;
+                IReadOnlyList<WMDerivedMediaOutput> generated;
                 try
                 {
-                    generated = await derivedMediaProcessor.ExecuteAsync(
-                        request,
-                        imported.Select(item => item.Artifact).ToArray(),
+                    generated = await posterApplicationProcessor.ExecuteAsync(
+                        plan,
+                        imported.ToDictionary(
+                            item => item.Artifact.Id,
+                            item => item.Artifact,
+                            StringComparer.Ordinal),
                         sessionStore.GetSessionDirectory(context.Session.Id),
                         context.Token).ConfigureAwait(false);
                 }
@@ -1986,71 +1985,77 @@ public sealed class WMWorkspaceController
                     throw;
                 }
 
-                var artifact = generated.Artifact;
-                if (!File.Exists(artifact.FilePath))
-                    throw new FileNotFoundException("拼图模板产物不存在。", artifact.FilePath);
-                var resultMedia = new WMWorkspaceMedia
+                if (generated.Count == 0)
+                    throw new InvalidOperationException("海报应用计划没有生成任何成片。");
+                foreach (var item in generated)
+                    if (!File.Exists(item.Artifact.FilePath))
+                        throw new FileNotFoundException("海报产物不存在。", item.Artifact.FilePath);
+
+                resultMediaIds = generated.Select(_ => Guid.NewGuid().ToString("N")).ToArray();
+                var resultMedia = generated.Select((item, index) => new WMWorkspaceMedia
                 {
-                    Id = derivedMediaId,
-                    DisplayName = request.SuggestedFileName ?? generated.SuggestedFileName,
-                    OriginalReference = imported[0].OriginalReference,
-                    Artifact = artifact,
+                    Id = resultMediaIds[index],
+                    DisplayName = item.SuggestedFileName,
+                    OriginalReference = imported.FirstOrDefault()?.OriginalReference
+                                        ?? $"poster:{edit.TemplateId}",
+                    Artifact = item.Artifact,
                     IsSelected = true
-                };
-                currentArtifacts[derivedMediaId] = artifact.Id;
+                }).ToArray();
+                for (var index = 0; index < resultMedia.Length; index++)
+                    currentArtifacts[resultMedia[index].Id] = generated[index].Artifact.Id;
                 var completedCheckpoint = checkpoint with
                 {
                     Status = WMWorkspaceJobStatus.Completed,
-                    StableArtifactIds = [artifact.Id],
+                    StableArtifactIds = generated.Select(item => item.Artifact.Id).ToArray(),
                     UpdatedAtUtc = DateTime.UtcNow
                 };
-                var assignments = new[]
-                {
-                    new WMWorkspaceOperationAssignment([derivedMediaId], [generated.Operation])
-                };
+                var assignments = generated
+                    .Select((item, index) =>
+                        new WMWorkspaceOperationAssignment([resultMediaIds[index]], [item.Operation]))
+                    .ToArray();
                 var updated = AppendStructuralTransaction(
                     working with
                     {
-                        MediaCatalog = Catalog(working).Append(resultMedia).ToArray(),
-                        Artifacts = working.Artifacts.Append(artifact)
+                        MediaCatalog = Catalog(working).Concat(resultMedia).ToArray(),
+                        Artifacts = working.Artifacts.Concat(generated.Select(item => item.Artifact))
                             .GroupBy(item => item.Id, StringComparer.Ordinal)
                             .Select(group => group.Last())
                             .ToArray(),
                         CurrentArtifactIdsByMediaId = currentArtifacts,
                         SelectedMediaIds = working.SelectedMediaIds
-                            .Append(derivedMediaId)
+                            .Concat(resultMediaIds)
                             .Distinct(StringComparer.Ordinal)
                             .ToArray(),
-                        CurrentMediaId = derivedMediaId,
+                        CurrentMediaId = resultMediaIds[0],
                         ActiveJobCheckpoint = completedCheckpoint
                     },
-                    request.Label,
+                    "应用海报",
                     assignments,
-                    importedIds.Append(derivedMediaId).ToArray(),
+                    importedIds.Concat(resultMediaIds).ToArray(),
                     importedIds);
                 updated = NextRevision(MaterializeAtCursor(updated, updated.HistoryCursor));
                 var intent = CommitSession(context.Epoch, updated, clearColorDraft: true, value => value with
                 {
                     Media = WMWorkspaceProjection.Media(updated),
-                    CurrentMediaId = derivedMediaId,
+                    CurrentMediaId = resultMediaIds[0],
                     HasTransientEdits = false,
                     TransientEditMode = null,
                     ActiveJob = WMWorkspaceProjection.Job(completedCheckpoint),
                     CollageTool = value.CollageTool with { IsBusy = false },
                     CanCancel = false,
-                    Message = "拼图模板已生成"
+                    Message = generated.Count == 1 ? "海报已生成" : $"已生成 {generated.Count} 张海报"
                 });
                 await PersistAndPreviewAsync(updated, context.Epoch, intent, context.Token).ConfigureAwait(false);
                 await RecordTraceAsync(
                     updated.Id,
-                    artifact.ContentHash,
+                    generated[0].Artifact.ContentHash,
                     checkpoint.Id,
-                    "template-collage-completed",
+                    "poster-application-completed",
                     cacheHit: false,
                     canceled: false,
                     errorCode: null).ConfigureAwait(false);
             }, operation.Token).ConfigureAwait(false);
-            return derivedMediaId;
+            return resultMediaIds;
         }
         finally
         {

@@ -19,11 +19,13 @@ public sealed class WMWorkspaceLauncherTests
             WMWorkspaceMode.Template,
             [source],
             null,
-            CancellationToken.None);
+            CancellationToken.None,
+            "/templates?tab=local");
 
         Assert.Equal(FakeSessionStore.SessionId, result);
         Assert.Equal(FakeSessionStore.SessionId, store.OpenedSessionId);
         Assert.Null(store.DeletedSessionId);
+        Assert.Equal("/templates?tab=local", store.ReturnPath);
         Assert.True(disposed);
     }
 
@@ -66,6 +68,7 @@ public sealed class WMWorkspaceLauncherTests
 
         public string? OpenedSessionId { get; private set; }
         public string? DeletedSessionId { get; private set; }
+        public string? ReturnPath { get; private set; }
 
         public IDisposable AcquireLease(string sessionId) => new NoopDisposable();
         public string GetSessionDirectory(string sessionId) => sessionId;
@@ -77,7 +80,12 @@ public sealed class WMWorkspaceLauncherTests
             WMWorkspaceMode mode,
             IReadOnlyList<IWMPhotoImportSource> sources,
             string? templateId = null,
-            CancellationToken token = default) => Task.FromResult(SessionId);
+            CancellationToken token = default,
+            string? returnPath = null)
+        {
+            ReturnPath = returnPath;
+            return Task.FromResult(SessionId);
+        }
 
         public Task<WMWorkspaceOpenResult> OpenAsync(
             string sessionId,

@@ -131,7 +131,8 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("mobile-panel-none", designer, StringComparison.Ordinal);
         Assert.Contains("grid-template-rows: 52px minmax(0, 1fr) calc(78px + env(safe-area-inset-bottom));", designerCss, StringComparison.Ordinal);
         Assert.Contains("overflow-x: auto;", toolRailCss, StringComparison.Ordinal);
-        Assert.Contains("flex: 0 0 62px;", toolRailCss, StringComparison.Ordinal);
+        Assert.Contains("flex: 1 1 50px;", toolRailCss, StringComparison.Ordinal);
+        Assert.Contains("min-width: 48px;", toolRailCss, StringComparison.Ordinal);
         Assert.Contains("touch-action: pan-x;", toolRailCss, StringComparison.Ordinal);
         Assert.Contains("mobile-space-large:not(.mobile-properties-panel) ::deep .designer-toolbar", designerCss, StringComparison.Ordinal);
         Assert.Contains("mobile-space-large.mobile-properties-panel .designer-workspace", designerCss, StringComparison.Ordinal);

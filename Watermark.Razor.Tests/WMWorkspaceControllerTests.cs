@@ -72,6 +72,43 @@ public sealed class WMWorkspaceControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task TemplateFirstThenSwitchingTemplate_AlwaysRendersOnceFromTheOriginalArtifact()
+    {
+        CreateTemplate("template-first");
+        CreateTemplate("template-replacement");
+        await File.WriteAllBytesAsync(previewPath, [1, 2, 3]);
+        var store = new RecordingSessionStore(
+            Session("template-switch-session", "original-media") with
+            {
+                TemplateId = "template-first"
+            });
+        var compiler = new RecordingRenderPlanCompiler();
+        var controller = new WMWorkspaceController(
+            store,
+            new StrictlyIncreasingRenderCoordinator(previewPath),
+            new NoopObjectUrlRegistry(),
+            CreatePreviewService(),
+            null!,
+            null!,
+            renderPlanCompiler: compiler);
+
+        Assert.True(await controller.OpenAsync("template-switch-session"));
+        await controller.CommitTemplateAsync(
+            new WMWorkspaceTemplateEdit("template-replacement", null),
+            WMApplyScope.Current);
+
+        Assert.Equal("template-replacement", controller.State.TemplateId);
+        Assert.NotEmpty(compiler.Plans);
+        Assert.All(compiler.Plans, plan =>
+        {
+            Assert.Equal("original-media", plan.BaseArtifact.Id);
+            Assert.Single(
+                plan.Steps,
+                step => step.Operation.Kind == WMImageOperationKind.Template);
+        });
+    }
+
+    [Fact]
     public async Task UpdateColorGradeAsync_PreservesNewGradeWhenCompatibilityCopyIsStale()
     {
         var initial = new WMColorRecipe { Name = "mobile" };
@@ -1580,7 +1617,8 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             WMWorkspaceMode mode,
             IReadOnlyList<IWMPhotoImportSource> sources,
             string? templateId = null,
-            CancellationToken token = default) => throw new NotSupportedException();
+            CancellationToken token = default,
+            string? returnPath = null) => throw new NotSupportedException();
 
         public Task<WMWorkspaceOpenResult> OpenAsync(string sessionId, CancellationToken token = default) =>
             Task.FromResult(WMWorkspaceOpenResult.Opened(opened));
@@ -1616,7 +1654,8 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             WMWorkspaceMode mode,
             IReadOnlyList<IWMPhotoImportSource> sources,
             string? templateId = null,
-            CancellationToken token = default) => throw new NotSupportedException();
+            CancellationToken token = default,
+            string? returnPath = null) => throw new NotSupportedException();
 
         public Task<WMWorkspaceOpenResult> OpenAsync(string sessionId, CancellationToken token = default)
         {

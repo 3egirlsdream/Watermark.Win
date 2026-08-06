@@ -108,6 +108,9 @@
     [Parameter] public EventCallback InteractionEnded { get; set; }
 
     private ElementReference touchGestureElement;
+    // Mobile tool switches can dispose this component while its first-render
+    // import is still in flight. Keep JS initialization and teardown exclusive.
+    private readonly SemaphoreSlim jsLifecycleGate = new(1, 1);
     private IJSObjectReference? module;
     private IJSObjectReference? touchGesture;
     private DotNetObjectReference<MacInspectorSlider>? dotNetReference;
@@ -141,19 +144,36 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (disposed) return;
-
-        if (firstRender)
+        await jsLifecycleGate.WaitAsync();
+        try
         {
+            if (disposed) return;
+
+            if (firstRender)
+            {
+                try
+                {
+                    module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                        "import", "./_content/Watermark.Razor/js/mac-inspector-slider.js");
+                    dotNetReference = DotNetObjectReference.Create(this);
+                    touchGesture = await module.InvokeAsync<IJSObjectReference>(
+                        "createTouchSlider", touchGestureElement, dotNetReference);
+                    touchGestureReady = true;
+                    StateHasChanged();
+                }
+                catch (JSDisconnectedException)
+                {
+                }
+                catch (JSException)
+                {
+                }
+            }
+
+            if (module is null || mobilePickerLayerApplied == showMobilePicker) return;
             try
             {
-                module = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                    "import", "./_content/Watermark.Razor/js/mac-inspector-slider.js");
-                dotNetReference = DotNetObjectReference.Create(this);
-                touchGesture = await module.InvokeAsync<IJSObjectReference>(
-                    "createTouchSlider", touchGestureElement, dotNetReference);
-                touchGestureReady = true;
-                StateHasChanged();
+                await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
+                mobilePickerLayerApplied = showMobilePicker;
             }
             catch (JSDisconnectedException)
             {
@@ -162,18 +182,9 @@
             {
             }
         }
-
-        if (module is null || mobilePickerLayerApplied == showMobilePicker) return;
-        try
+        finally
         {
-            await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
-            mobilePickerLayerApplied = showMobilePicker;
-        }
-        catch (JSDisconnectedException)
-        {
-        }
-        catch (JSException)
-        {
+            jsLifecycleGate.Release();
         }
     }
 
@@ -396,31 +407,41 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (disposed) return;
-        disposed = true;
+        await jsLifecycleGate.WaitAsync();
+        try
+        {
+            if (disposed) return;
+            disposed = true;
 
-        if (touchGesture is not null)
-        {
-            try
+            if (touchGesture is not null)
             {
-                await touchGesture.InvokeVoidAsync("dispose");
-                await touchGesture.DisposeAsync();
+                try
+                {
+                    await touchGesture.InvokeVoidAsync("dispose");
+                    await touchGesture.DisposeAsync();
+                }
+                catch (JSDisconnectedException) { }
+                catch (JSException) { }
+                catch (ObjectDisposedException) { }
             }
-            catch (JSDisconnectedException) { }
-            catch (JSException) { }
-        }
-        if (module is not null)
-        {
-            try
+            if (module is not null)
             {
-                if (mobilePickerLayerApplied == true)
-                    await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
-                await module.DisposeAsync();
+                try
+                {
+                    if (mobilePickerLayerApplied == true)
+                        await module.InvokeVoidAsync("syncMobilePickerLayer", touchGestureElement);
+                    await module.DisposeAsync();
+                }
+                catch (JSDisconnectedException) { }
+                catch (JSException) { }
+                catch (ObjectDisposedException) { }
             }
-            catch (JSDisconnectedException) { }
-            catch (JSException) { }
+            dotNetReference?.Dispose();
         }
-        dotNetReference?.Dispose();
+        finally
+        {
+            jsLifecycleGate.Release();
+        }
     }
 
 }

@@ -228,31 +228,71 @@ public sealed class WMTemplateMarketplaceService(
         IWMPhotoImportSource source,
         string name,
         CancellationToken cancellationToken = default)
+        => await CreateLocalAsync(
+            new WMNewPosterTemplateOptions(
+                name,
+                new WMCanvasSizing { Mode = WMCanvasSizingMode.FollowPrimary },
+                true,
+                source),
+            cancellationToken).ConfigureAwait(false);
+
+    public async Task<WMLocalTemplateResult> CreateLocalAsync(
+        WMNewPosterTemplateOptions options,
+        CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.CanvasSizing);
+        if (options.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            && options.DefaultPrimarySource is null)
+            return new WMLocalTemplateResult(
+                WMTemplateMarketplaceStatus.Failed,
+                Message: "跟随主图的海报必须选择默认预览图。");
+        if (options.DefaultPrimarySource is not null && !options.HasPrimaryAsset)
+            return new WMLocalTemplateResult(
+                WMTemplateMarketplaceStatus.Failed,
+                Message: "选择默认图片后需要启用主图槽。");
+
         var id = Guid.NewGuid().ToString("N").ToUpperInvariant();
-        var extension = Path.GetExtension(source.DisplayName).ToLowerInvariant();
+        var extension = options.DefaultPrimarySource is null
+            ? ".jpg"
+            : Path.GetExtension(options.DefaultPrimarySource.DisplayName).ToLowerInvariant();
         if (extension is not ".jpg" and not ".jpeg" and not ".png" and not ".webp") extension = ".jpg";
         var stagingRoot = Path.Combine(Global.AppPath.BasePath, "Cache", "template-imports");
         Directory.CreateDirectory(stagingRoot);
         var staging = Path.Combine(stagingRoot, $"{id}{extension}");
         try
         {
-            await using (var input = await source.OpenReadAsync(cancellationToken).ConfigureAwait(false))
-            await using (var output = new FileStream(
-                             staging, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                             128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            if (options.DefaultPrimarySource is not null)
             {
+                await using var input = await options.DefaultPrimarySource
+                    .OpenReadAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                await using var output = new FileStream(
+                    staging, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
                 await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
                 await output.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
+
             var canvas = new WMCanvas
             {
                 ID = id,
-                Name = string.IsNullOrWhiteSpace(name) ? $"我的模板 {DateTime.Now:MM-dd}" : name.Trim(),
-                Path = staging
+                Name = string.IsNullOrWhiteSpace(options.Name)
+                    ? $"我的海报 {DateTime.Now:MM-dd}"
+                    : options.Name.Trim(),
+                Path = options.DefaultPrimarySource is null ? string.Empty : staging,
+                LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion,
+                CanvasSizing = options.CanvasSizing.Clone()
             };
-            canvas.Exif[canvas.ID] = new Dictionary<string, string>(ExifHelper.DefaultMeta);
+            WMPosterAssetSlots.SetPrimaryEnabled(canvas, options.HasPrimaryAsset);
+            if (options.HasPrimaryAsset)
+            {
+                var primary = WMPosterAssetSlots.EnsurePrimary(canvas);
+                primary.DefaultAssetId = options.DefaultPrimarySource is null ? null : "default";
+            }
+            if (options.DefaultPrimarySource is not null)
+                canvas.Exif[canvas.ID] = new Dictionary<string, string>(ExifHelper.DefaultMeta);
+            WMPosterTemplateMigration.SynchronizeCompatibilityProperties(canvas);
             await templateStore.SaveAsync(canvas).ConfigureAwait(false);
             templateLibrary.Invalidate(id);
             return new WMLocalTemplateResult(WMTemplateMarketplaceStatus.Succeeded, id);

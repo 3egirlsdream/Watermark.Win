@@ -71,6 +71,29 @@ public sealed class WMDesktopWorkspaceContractTests
     }
 
     [Fact]
+    public void PosterPhotoAssignment_IsSharedByDesktopAndMobileAndSupportsReorderAndReplacement()
+    {
+        var dialog = Read("Watermark.Razor/Components/WMPosterPhotoAssignmentDialog.razor");
+        var desktop = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
+        var mobile = Read("Watermark.Razor/BlazorPages/Mobile/MobileTemplates.razor");
+
+        Assert.Contains("draggable=\"true\"", dialog, StringComparison.Ordinal);
+        Assert.Contains("@ondrop=\"() => DropAsync(itemIndex)\"", dialog, StringComparison.Ordinal);
+        Assert.Contains("MoveAsync(itemIndex, -1)", dialog, StringComparison.Ordinal);
+        Assert.Contains("MoveAsync(itemIndex, 1)", dialog, StringComparison.Ordinal);
+        Assert.Contains("ReplaceAsync(itemIndex)", dialog, StringComparison.Ordinal);
+        Assert.Contains("SourcesChanged.InvokeAsync", dialog, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterPhotoAssignmentDialog", desktop, StringComparison.Ordinal);
+        Assert.Contains("<WMPosterPhotoAssignmentDialog", mobile, StringComparison.Ordinal);
+        Assert.Contains("Controller.ApplyPosterAsync", desktop, StringComparison.Ordinal);
+        Assert.Contains("Controller.ApplyPosterAsync", mobile, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceLauncher.CreateFromSourcesAsync", mobile, StringComparison.Ordinal);
+        Assert.Contains("imagesFirst: false", mobile, StringComparison.Ordinal);
+        Assert.Contains("SessionStore.CreateEmptyAsync", mobile, StringComparison.Ordinal);
+        Assert.Contains("@inject IWMWorkspaceLauncher WorkspaceLauncher", mobile, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DesktopTemplateEditors_PreventAccidentalInterfaceTextSelection()
     {
         var designerCss = Read("Watermark.Razor/Components/Desktop/WMDesktopTemplateDesigner.razor.css");
@@ -144,7 +167,7 @@ public sealed class WMDesktopWorkspaceContractTests
         var workspace = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
         var auxiliary = Read("Watermark.Razor/BlazorPages/WMDesktopAuxiliaryPage.razor");
         var account = Read("Watermark.Razor/Components/Desktop/WMDesktopAccountDialog.razor");
-        var newTemplate = Read("Watermark.Razor/Components/Desktop/WMDesktopNewTemplateDialog.razor");
+        var newTemplate = Read("Watermark.Razor/Components/WMNewPosterTemplateDialog.razor");
 
         Assert.Contains("NavigateDesktopSection(\"templates\")", workspace, StringComparison.Ordinal);
         Assert.Contains("NavigateDesktopSection(\"market\")", workspace, StringComparison.Ordinal);
@@ -152,7 +175,7 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.Contains("NavigateDesktopSection(\"settings\")", workspace, StringComparison.Ordinal);
         Assert.Contains("NavigateDesktopSection(\"admin\")", workspace, StringComparison.Ordinal);
         Assert.Contains("<WMDesktopAccountDialog", workspace, StringComparison.Ordinal);
-        Assert.Contains("<WMDesktopNewTemplateDialog", workspace, StringComparison.Ordinal);
+        Assert.Contains("<WMNewPosterTemplateDialog", workspace, StringComparison.Ordinal);
         Assert.DoesNotContain("<WMAccountPage", workspace, StringComparison.Ordinal);
         Assert.DoesNotContain("<WMSettingsPage", workspace, StringComparison.Ordinal);
         Assert.DoesNotContain("<WMResourcesPage", workspace, StringComparison.Ordinal);

@@ -17,9 +17,12 @@ public sealed class WMTemplateStore
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentException.ThrowIfNullOrWhiteSpace(templatesRoot);
         EnsureSafeTemplateId(canvas.ID);
-
         var root = Path.GetFullPath(templatesRoot);
         var directory = Path.Combine(root, canvas.ID);
+        WMPosterTemplateMigration.UpgradeCodeConstructedLegacy(
+            canvas,
+            File.Exists(Path.Combine(directory, DefaultImageFileName)));
+        WMPosterTemplateMigration.Normalize(canvas);
         var errors = WMTemplateValidator.Validate(canvas, directory);
         var blocking = errors.Where(error => error.Severity == WMValidationSeverity.Error).ToList();
         if (blocking.Count > 0)
@@ -58,7 +61,7 @@ public sealed class WMTemplateStore
             // Normal templates load their default image by convention from
             // <template>/default.jpg. Canvas.Path is runtime-only, so an empty
             // value after loading does not mean the user asked us to delete it.
-            if (persistedCanvas.CanvasType != Watermark.Shared.Enums.CanvasType.Normal
+            if (persistedCanvas.CanvasSizing.Mode != WMCanvasSizingMode.FollowPrimary
                 && string.IsNullOrWhiteSpace(persistedCanvas.Path))
             {
                 var defaultImage = Path.Combine(staging, DefaultImageFileName);
@@ -228,4 +231,3 @@ public sealed class WMTemplateStore
             throw new ArgumentException("模板 ID 无效。", nameof(id));
     }
 }
-

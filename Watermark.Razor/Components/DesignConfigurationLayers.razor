@@ -32,13 +32,7 @@
                 <section class="layer-section">
                     <div class="section-label">图片与背景</div>
                     <div class="layer-field-grid">
-                        @if (canvas.CanvasType == CanvasType.Split)
-                        {
-                            <div class="inline-field">
-                                <span>固定图片</span>
-                                <MSwitch @bind-Value="@container.ContainerProperties.FixImage" Color="primary" Dense Inset HideDetails="true" />
-                            </div>
-                        }
+                        @AssetSlotSettings(container)
                         <ImageSelect ImagesBase64="ImagesBase64" Key="@container.ID" Delete="() => RemoveImage(container)" Size="250" SelectDefaultImage="()=> SelectImage(container)" Simple="true" />
                         <ColorPicker Name="背景颜色" @bind-Color="@container.BackgroundColor" />
                     </div>
@@ -106,7 +100,7 @@
          @bind-Value="showExifConfig">
     @if (canvas != null && showExifConfig)
     {
-        <ExifConfig CanvasType="@canvas.CanvasType"
+        <ExifConfig MultipleAssetSources="@(containerId2Name.Count > 1)"
                     ContainerId2Name="@containerId2Name"
                     mText="wMText"
                     OnClose="()=>showExifConfig = false"
@@ -141,8 +135,11 @@
     {
         get
         {
-            var dic = canvas.RootContainers.Where(x => !x.ContainerProperties.FixImage).ToDictionary((k) => k.ID, (v) => v.Name);
-            dic[canvas.ID] = canvas.Name;
+            var dic = Global.EnumerateControls(canvas)
+                .Where(control => WMPosterAssetSlots.Find(canvas, control)?.Purpose == WMPosterAssetPurpose.Photo)
+                .ToDictionary(control => control.ID, control => SafeName(control.Name, "照片槽"));
+            if (canvas.HasPrimaryImage)
+                dic[canvas.ID] = canvas.Name;
             return dic.Reverse().ToDictionary();
         }
     }
@@ -192,6 +189,7 @@
         {
             <section class="object-section">
                 <div class="section-label">容器布局</div>
+                @AssetSlotSettings(childContainer)
                 <div class="control-row">
                     <span>水平对齐</span>
                     <ButtonGroup Type="ButtonGroup.GroupItemType.LeftCenterRight" Value="(int)childContainer.HorizontalAlignment" ValueChanged="(e) => childContainer.HorizontalAlignment = (HorizontalAlignment)e" />
@@ -252,6 +250,7 @@
 
     RenderFragment LogoSettings(WMLogo mLogo) => @<section class="object-section">
         <div class="section-label">图片内容</div>
+        @AssetSlotSettings(mLogo)
         <div class="option-list">
             <div class="inline-field">
                 <span>白底转透明像素</span>
@@ -263,9 +262,45 @@
             </div>
         </div>
         <div class="logo-picker">
-            <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="46" ObjectFit="contain" SelectDefaultImage="()=> SelectImage(mLogo)" Delete="()=>{mLogo.Path = string.Empty; ImagesBase64.Remove(mLogo.ID, out string v);}" />
+            <ImageSelect ImagesBase64="@ImagesBase64" Key="@mLogo.ID" Size="46" ObjectFit="contain" SelectDefaultImage="()=> SelectImage(mLogo)" Delete="()=>RemoveLogoImage(mLogo)" />
         </div>
     </section>;
+
+    RenderFragment AssetSlotSettings(IWMControl control) => @<div class="option-list">
+        @{
+            var slot = WMPosterAssetSlots.Find(canvas, control);
+        }
+        <div class="inline-field">
+            <span>可替换素材</span>
+            <MSwitch TValue="bool"
+                     Value="@(slot is not null)"
+                     ValueChanged="value => SetReplaceable(control, value)"
+                     Color="primary" Dense Inset HideDetails="true" />
+        </div>
+        @if (slot is not null)
+        {
+            <InputField Name="槽位名称" @bind-Value="slot.Name" />
+            <WmSelect TValue="WMPosterAssetPurpose"
+                      Value="@slot.Purpose"
+                      ValueChanged="value => SetPurpose(slot, value)"
+                      Options="@PurposeOptions"
+                      Label="素材用途"
+                      AriaLabel="选择素材槽用途" />
+            <WmSelect TValue="WMPosterAssetFit"
+                      @bind-Value="slot.Fit"
+                      Options="@FitOptions"
+                      Label="填充方式"
+                      AriaLabel="选择素材填充方式" />
+            <div class="control-row">
+                <span>自动填充顺序</span>
+                <div class="style-buttons">
+                    <MButton Text Small Disabled="@IsFirstSlot(slot)" OnClick="() => MoveSlot(slot, -1)"><WmIcon Icon="arrow-up" /></MButton>
+                    <MButton Text Small Disabled="@IsLastSlot(slot)" OnClick="() => MoveSlot(slot, 1)"><WmIcon Icon="arrow-down" /></MButton>
+                </div>
+            </div>
+            <small>@(slot.Purpose == WMPosterAssetPurpose.Photo ? "照片选择、批量和合成会按此顺序填充。" : "图形素材不会被批量照片自动覆盖。")</small>
+        }
+    </div>;
 
     void SetLineOrientation(WMLine line, Orientation value)
     {
@@ -363,6 +398,14 @@
         }
     }
 
+    void RemoveLogoImage(WMLogo logo)
+    {
+        logo.Path = string.Empty;
+        ImagesBase64.Remove(logo.ID, out _);
+        if (WMPosterAssetSlots.Find(canvas, logo) is { } slot)
+            slot.DefaultAssetId = null;
+    }
+
     string SafeName(string value, string fallback)
     {
         return string.IsNullOrWhiteSpace(value) ? fallback : value;
@@ -411,6 +454,41 @@
             .OrderBy(font => font, StringComparer.OrdinalIgnoreCase)
             .Select(font => new WmSelectOption<string>(font, font))
             .ToList();
+
+    private static readonly IReadOnlyList<WmSelectOption<WMPosterAssetPurpose>> PurposeOptions =
+    [
+        new("照片", WMPosterAssetPurpose.Photo),
+        new("图形 / 贴图", WMPosterAssetPurpose.Graphic)
+    ];
+
+    private static readonly IReadOnlyList<WmSelectOption<WMPosterAssetFit>> FitOptions =
+    [
+        new("覆盖裁切", WMPosterAssetFit.Cover),
+        new("完整包含", WMPosterAssetFit.Contain),
+        new("拉伸填充", WMPosterAssetFit.Fill)
+    ];
+
+    void SetReplaceable(IWMControl control, bool replaceable) =>
+        WMPosterAssetSlots.SetReplaceable(canvas, control, replaceable);
+
+    void SetPurpose(WMPosterAssetSlot slot, WMPosterAssetPurpose purpose) =>
+        slot.Purpose = purpose;
+
+    void MoveSlot(WMPosterAssetSlot slot, int delta)
+    {
+        var current = canvas.PosterManifest.AssetSlots.IndexOf(slot);
+        WMPosterAssetSlots.Move(canvas, slot.Id, current + delta);
+    }
+
+    bool IsFirstSlot(WMPosterAssetSlot slot)
+    {
+        var index = canvas.PosterManifest.AssetSlots.IndexOf(slot);
+        var firstMovable = canvas.HasPrimaryImage ? 1 : 0;
+        return index <= firstMovable;
+    }
+
+    bool IsLastSlot(WMPosterAssetSlot slot) =>
+        canvas.PosterManifest.AssetSlots.IndexOf(slot) >= canvas.PosterManifest.AssetSlots.Count - 1;
 
     void EnsureContainerDefaults(WMContainer container)
     {

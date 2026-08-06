@@ -43,6 +43,9 @@ public static class WMTemplateValidator
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentException.ThrowIfNullOrWhiteSpace(templateDirectory);
+        WMPosterTemplateMigration.UpgradeCodeConstructedLegacy(
+            canvas,
+            File.Exists(Path.Combine(templateDirectory, "default.jpg")));
 
         var errors = new List<WMTemplateValidationError>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -53,7 +56,8 @@ public static class WMTemplateValidator
             ValidateSiblingMetadata(canvas.Children ?? [], "0", errors);
         foreach (var root in canvas.Children ?? [])
             ValidateControl(root, root is WMContainer ? 1 : 0, v2, true, templateDirectory, ids, visited, active, errors);
-        ValidatePosterAssetManifest(canvas, errors);
+        ValidateCanvasSizing(canvas, templateDirectory, errors);
+        ValidatePosterAssetManifest(canvas, templateDirectory, errors);
 
         if (!string.IsNullOrWhiteSpace(canvas.Path))
             ValidateImagePath(canvas.ID, "Path", canvas.Path, templateDirectory, false, errors);
@@ -61,8 +65,50 @@ public static class WMTemplateValidator
         return errors;
     }
 
+    private static void ValidateCanvasSizing(
+        WMCanvas canvas,
+        string templateDirectory,
+        List<WMTemplateValidationError> errors)
+    {
+        var sizing = canvas.CanvasSizing;
+        if (sizing is null || !Enum.IsDefined(sizing.Mode))
+        {
+            errors.Add(new(canvas.ID, "CanvasSizing.Mode", "画布尺寸策略无效。"));
+            return;
+        }
+
+        if (sizing.Mode == WMCanvasSizingMode.Fixed
+            && (sizing.ReferenceWidth is < 1 or > 32768
+                || sizing.ReferenceHeight is < 1 or > 32768))
+        {
+            errors.Add(new(
+                canvas.ID,
+                "CanvasSizing",
+                "固定画布参考宽高必须介于 1 和 32768 像素之间。"));
+        }
+
+        if (sizing.Mode != WMCanvasSizingMode.FollowPrimary) return;
+        if (WMPosterAssetSlots.FindPrimary(canvas) is null)
+        {
+            errors.Add(new(canvas.ID, "PosterManifest.PrimaryAssetSlotId", "跟随主图画布必须声明主图槽。"));
+            return;
+        }
+
+        var hasRuntimeDefault = !string.IsNullOrWhiteSpace(canvas.Path)
+                                && File.Exists(canvas.Path);
+        var hasStoredDefault = File.Exists(Path.Combine(templateDirectory, "default.jpg"));
+        if (!hasRuntimeDefault && !hasStoredDefault)
+        {
+            errors.Add(new(
+                canvas.ID,
+                "Path",
+                "跟随主图画布必须提供默认主图，才能在未选择照片时确定画布比例。"));
+        }
+    }
+
     private static void ValidatePosterAssetManifest(
         WMCanvas canvas,
+        string templateDirectory,
         List<WMTemplateValidationError> errors)
     {
         var slots = canvas.PosterManifest?.AssetSlots ?? [];
@@ -88,6 +134,8 @@ public static class WMTemplateValidator
             }
             if (!Enum.IsDefined(slot.Fit))
                 errors.Add(new(canvas.ID, "PosterManifest.AssetSlots", $"图片槽“{slot.Name}”的裁切策略无效。"));
+            if (!Enum.IsDefined(slot.Purpose))
+                errors.Add(new(canvas.ID, "PosterManifest.AssetSlots", $"图片槽“{slot.Name}”的用途无效。"));
             if (slot.Crop?.Settings is null
                 && slot.Crop is not null
                 && (!double.IsFinite(slot.Crop.AspectRatio)
@@ -130,6 +178,35 @@ public static class WMTemplateValidator
         }
 
         var slotOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(canvas.PosterManifest?.PrimaryAssetSlotId))
+        {
+            var primaryId = canvas.PosterManifest.PrimaryAssetSlotId;
+            if (!slotsById.TryGetValue(primaryId, out var primary))
+            {
+                errors.Add(new(
+                    canvas.ID,
+                    "PosterManifest.PrimaryAssetSlotId",
+                    "主图槽引用不存在。"));
+            }
+            else
+            {
+                slotOwners[primaryId] = canvas.ID;
+                if (primary.Purpose != WMPosterAssetPurpose.Photo)
+                {
+                    errors.Add(new(
+                        canvas.ID,
+                        "PosterManifest.PrimaryAssetSlotId",
+                        "主图槽必须使用照片用途。"));
+                }
+                if (!ReferenceEquals(slots.FirstOrDefault(), primary))
+                {
+                    errors.Add(new(
+                        canvas.ID,
+                        "PosterManifest.AssetSlots",
+                        "主图槽必须排在素材槽列表首位。"));
+                }
+            }
+        }
         foreach (var control in Global.EnumerateControls(canvas))
         {
             var slotId = control.PosterMetadata?.AssetSlotId;
@@ -161,6 +238,43 @@ public static class WMTemplateValidator
                 "PosterManifest.AssetSlots",
                 $"图片槽“{slot.Name}”没有绑定图层。",
                 WMValidationSeverity.Warning));
+        }
+
+        foreach (var slot in slots.Where(slot => !string.IsNullOrWhiteSpace(slot.Id)
+                                                && slotOwners.TryGetValue(slot.Id, out _)))
+        {
+            var ownerId = slotOwners[slot.Id];
+            var isPrimaryOwner = string.Equals(ownerId, canvas.ID, StringComparison.Ordinal);
+            var resourcePath = isPrimaryOwner
+                ? canvas.Path
+                : Global.EnumerateControls(canvas)
+                    .FirstOrDefault(control => string.Equals(control.ID, ownerId, StringComparison.Ordinal))
+                    switch
+                    {
+                        WMContainer container => container.Path,
+                        WMLogo logo => logo.Path,
+                        _ => string.Empty
+                    };
+            var hasDefaultResource = !string.IsNullOrWhiteSpace(resourcePath)
+                                     || (isPrimaryOwner
+                                         && File.Exists(Path.Combine(templateDirectory, "default.jpg")));
+            if (!string.IsNullOrWhiteSpace(slot.DefaultAssetId)
+                && !hasDefaultResource)
+            {
+                errors.Add(new(
+                    ownerId,
+                    "PosterManifest.AssetSlots.DefaultAssetId",
+                    $"图片槽“{slot.Name}”声明了默认素材，但绑定图层没有默认图片资源。"));
+            }
+            else if (string.IsNullOrWhiteSpace(slot.DefaultAssetId)
+                     && hasDefaultResource)
+            {
+                errors.Add(new(
+                    ownerId,
+                    "PosterManifest.AssetSlots.DefaultAssetId",
+                    $"图片槽“{slot.Name}”已有默认图片，但没有记录默认素材标识。",
+                    WMValidationSeverity.Warning));
+            }
         }
     }
 

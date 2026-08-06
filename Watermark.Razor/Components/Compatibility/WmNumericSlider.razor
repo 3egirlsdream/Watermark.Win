@@ -1,10 +1,11 @@
 @using Watermark.Razor.Components.Mac
+@using Watermark.Razor.Workspace
 @namespace Watermark.Razor.Components.Compatibility
+@inject IWMHapticFeedback HapticFeedback
 
 @* Public numeric input for every mobile parameter adjustment. *@
 <MacInspectorSlider Label="@Label"
                      Value="@Value"
-                     ValueChanged="@ValueChanged"
                      Min="@Min"
                      Max="@Max"
                      Step="@Step"
@@ -12,6 +13,7 @@
                      Disabled="@Disabled"
                      ShowLabel="@ShowLabel"
                      CssClass="@CssClass"
+                     ValueChanged="HandleValueChangedAsync"
                      InteractionStarted="@InteractionStarted"
                      InteractionEnded="@InteractionEnded" />
 
@@ -28,4 +30,34 @@
     [Parameter] public string? CssClass { get; set; }
     [Parameter] public EventCallback InteractionStarted { get; set; }
     [Parameter] public EventCallback InteractionEnded { get; set; }
+
+    private bool hasReportedValue;
+    private double lastReportedValue;
+
+    protected override void OnParametersSet()
+    {
+        // Keep externally-applied changes silent, while retaining the latest value
+        // emitted during a drag before the parent has completed its re-render.
+        if (!hasReportedValue || !Value.Equals(lastReportedValue))
+        {
+            lastReportedValue = Value;
+            hasReportedValue = true;
+        }
+    }
+
+    private async Task HandleValueChangedAsync(double value)
+    {
+        if (Disabled) return;
+
+        var valueChanged = !hasReportedValue || !value.Equals(lastReportedValue);
+        lastReportedValue = value;
+        hasReportedValue = true;
+
+        await ValueChanged.InvokeAsync(value);
+
+        // IWMHapticFeedback is a platform-safe adapter: mobile hosts provide a
+        // light click, while desktop and unsupported environments safely no-op.
+        if (valueChanged)
+            HapticFeedback.Perform();
+    }
 }

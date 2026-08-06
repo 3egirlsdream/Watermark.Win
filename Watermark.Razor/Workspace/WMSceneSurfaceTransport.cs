@@ -172,6 +172,7 @@ public sealed class WMSceneSurfaceTransport(IJSRuntime jsRuntime) : IWMSceneSurf
         {
             try { await module.DisposeAsync(); }
             catch (JSDisconnectedException) { }
+            catch (JSException) { }
             module = null;
         }
     }
@@ -181,6 +182,11 @@ public sealed class WMSceneSurfaceTransport(IJSRuntime jsRuntime) : IWMSceneSurf
         if (module is null) return;
         try { await module.InvokeVoidAsync("releaseSceneBitmap", resourceKey); }
         catch (JSDisconnectedException) { }
+        // WebView can recreate its document while the scoped renderer is
+        // disposing. The bitmap is already unreachable in that document, so
+        // treating the stale module handle as a fatal error only whitescreens
+        // the replacement page.
+        catch (JSException) { }
         catch (TaskCanceledException) { }
     }
 }

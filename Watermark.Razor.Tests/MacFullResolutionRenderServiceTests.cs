@@ -428,6 +428,64 @@ public sealed class WMFullResolutionRenderPipelineTests : IDisposable
     }
 
     [Fact]
+    public async Task RenderAsync_ExportsFixedPosterAtOriginalSizeWithoutDuplicatingMeasurementSurfaces()
+    {
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "fixed-poster-source.png");
+        WriteImage(sourcePath, 1086, 1448, SKColors.CornflowerBlue);
+        var source = new WMImageArtifact
+        {
+            Id = "fixed-poster-source",
+            FilePath = sourcePath,
+            SourceOperation = WMImageOperationKind.Source,
+            Width = 1086,
+            Height = 1448,
+            ContentHash = "fixed-poster-source-content"
+        };
+        var canvas = new WMCanvas
+        {
+            ID = "fixed-poster",
+            LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion,
+            CanvasSizing = new WMCanvasSizing
+            {
+                Mode = WMCanvasSizingMode.Fixed,
+                ReferenceWidth = 4500,
+                ReferenceHeight = 6000
+            }
+        };
+        var container = Assert.IsType<WMContainer>(
+            WMControlTree.Add(canvas, typeof(WMContainer), null));
+        container.Path = sourcePath;
+        container.Style.Position = WMPosition.Absolute;
+        container.Style.Width = WMStyleLength.Percent(100);
+        container.Style.Height = WMStyleLength.Percent(100);
+        container.WidthPercent = 100;
+        container.HeightPercent = 100;
+        var operation = WMImageOperation.Create(
+            WMImageOperationKind.Template,
+            [source.Id],
+            ["fixed-poster-output"],
+            new WMTemplateOperationSettings(canvas));
+        var outputPath = Path.Combine(root, "fixed-poster-output.jpg");
+        using var scheduler = new WMProcessingScheduler();
+
+        await CreateService(scheduler).RenderAsync(new WMFullResolutionRenderRequest(
+            new WMRenderPlan(source, [new WMRenderPlanStep(operation)], source),
+            outputPath,
+            sourcePath,
+            "default",
+            92,
+            Path.Combine(root, "fixed-poster-working"),
+            new WMOperationExecutionOptions { MaxConcurrentImages = 1, MaxPixelWorkers = 1 }));
+
+        using var output = SKBitmap.Decode(outputPath);
+        Assert.NotNull(output);
+        Assert.Equal(4500, output.Width);
+        Assert.Equal(6000, output.Height);
+        Assert.True(output.GetPixel(output.Width / 2, output.Height / 2).Blue > 150);
+    }
+
+    [Fact]
     public async Task RenderAsync_RepeatedJpegExportUsesFinalFileCacheWithoutRenderingAgain()
     {
         Directory.CreateDirectory(root);

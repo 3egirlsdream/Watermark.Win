@@ -40,7 +40,6 @@
     [Parameter] public EventCallback<WMMobileToolPresentation> PresentationChanged { get; set; }
     [Parameter] public EventCallback<WMApplyScope> ScopeChanged { get; set; }
     [Parameter] public EventCallback<WMWorkspaceTemplateEdit> TemplatePreviewChanged { get; set; }
-    [Parameter] public EventCallback<WMTemplateDesignerLaunchRequest> TemplateDesignerRequested { get; set; }
     [Parameter] public EventCallback<WMColorRecipe> ColorPreviewChanged { get; set; }
     [Parameter] public EventCallback ChooseReferenceRequested { get; set; }
     [Parameter] public EventCallback ClearReferenceRequested { get; set; }
@@ -128,6 +127,9 @@
     private RenderFragment ActiveToolContent => ActiveTool switch
     {
         WMMobileEditorTool.TemplatePicker => TemplatePickerContent,
+        WMMobileEditorTool.TemplateCanvas or WMMobileEditorTool.TemplateCanvasSize
+            or WMMobileEditorTool.TemplateCanvasInsets or WMMobileEditorTool.TemplateCanvasFrame
+            or WMMobileEditorTool.TemplateCanvasImage => TemplateParameterContent,
         WMMobileEditorTool.ColorScope => ScopeContent,
         WMMobileEditorTool.ColorStyle => ColorStyleContent,
         WMMobileEditorTool.ColorPresets => ColorPresetContent,
@@ -150,8 +152,24 @@
         _ => __builder => { }
     };
 
+    private RenderFragment TemplateParameterContent => __builder =>
+    {
+        <WMMobileAppliedTemplateControls Edit="State.TemplateEdit"
+                                         Section="@TemplateInspectorSection(ActiveTool)"
+                                         PreviewChanged="TemplatePreviewChanged" />
+    };
+
     private RenderFragment TemplatePickerContent => __builder =>
     {
+        @if (CurrentMediaIsFlattenedPoster)
+        {
+            <div class="wm-dock-unavailable" role="status">
+                <WmIcon Icon="warning-circle" />
+                <span>当前素材是已生成的海报成品，不能再次套用模板。请从模板库重新选择原始照片。</span>
+            </div>
+        }
+        else
+        {
         <div class="wm-dock-heading">
             <div><strong>选择模板</strong><small>@Templates.Count 个模板</small></div>
             <div class="wm-dock-template-actions">
@@ -173,6 +191,7 @@
                 </button>
             }
         </WMToolRail>
+        }
     };
 
     private RenderFragment ScopeContent => __builder =>
@@ -372,16 +391,13 @@
 
     private async Task SelectToolAsync(WMMobileEditorTool tool)
     {
-        if (State.Mode == WMWorkspaceMode.Template && TemplateDesignerToolId(tool) is { } initialToolId)
+        if (State.Mode == WMWorkspaceMode.Template
+            && tool != WMMobileEditorTool.TemplatePicker
+            && (string.IsNullOrWhiteSpace(State.TemplateId)
+                || string.IsNullOrWhiteSpace(State.TemplateEdit?.CanvasJson)))
         {
-            if (string.IsNullOrWhiteSpace(State.TemplateId) || State.HasTransientEdits)
-            {
-                templateTool = WMMobileEditorTool.TemplatePicker;
-                await PublishPresentationAsync();
-                return;
-            }
-
-            await TemplateDesignerRequested.InvokeAsync(new WMTemplateDesignerLaunchRequest(State.TemplateId, initialToolId));
+            templateTool = WMMobileEditorTool.TemplatePicker;
+            await PublishPresentationAsync();
             return;
         }
 
@@ -417,10 +433,14 @@
 
     private Task PreviewTemplateAsync(string? templateId)
     {
+        if (CurrentMediaIsFlattenedPoster) return Task.CompletedTask;
         if (string.Equals(State.TemplateId, templateId, StringComparison.Ordinal) && !State.HasTransientEdits)
             return Task.CompletedTask;
         return TemplatePreviewChanged.InvokeAsync(CreateTemplateEdit(templateId));
     }
+
+    private bool CurrentMediaIsFlattenedPoster =>
+        State.CurrentMedia?.Artifact.SourceOperation == WMImageOperationKind.Template;
 
     private WMWorkspaceTemplateEdit CreateTemplateEdit(string? templateId)
     {
@@ -587,7 +607,7 @@
         string Icon,
         WMMobileEditorSpace Space);
 
-    private static string? TemplateDesignerToolId(WMMobileEditorTool tool) => tool switch
+    private static string? TemplateConfigurationToolId(WMMobileEditorTool tool) => tool switch
     {
         WMMobileEditorTool.TemplateCanvas => "canvas",
         WMMobileEditorTool.TemplateCanvasSize => "canvas-size",
@@ -596,6 +616,16 @@
         WMMobileEditorTool.TemplateCanvasImage => "canvas-image",
         _ => null
     };
+
+    private static WMTemplateMobileInspectorSection? TemplateInspectorSection(WMMobileEditorTool tool)
+    {
+        var toolId = TemplateConfigurationToolId(tool);
+        return toolId is null
+            ? null
+            : WMPosterEditorPresentationState.CanvasConfigurationTools()
+                .FirstOrDefault(item => string.Equals(item.Id, toolId, StringComparison.Ordinal))
+                ?.InspectorSection;
+    }
 
     private static readonly MobileToolSpec[] TemplateTools =
     [

@@ -42,18 +42,36 @@
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>画布</h3></div>
-                <MacInspectorOptionGroup TValue="CanvasType" Label="类型"
-                                         Value="@Editor.Draft.CanvasType"
-                                         Options="@CanvasTypeOptions"
-                                         ValueChanged="value => SetCanvasType(value)" />
+                <MacInspectorOptionGroup TValue="WMCanvasSizingMode" Label="尺寸策略"
+                                         Value="@Editor.Draft.CanvasSizing.Mode"
+                                         Options="@CanvasSizingOptions"
+                                         ValueChanged="SetCanvasSizingMode" />
                 <MacColorInput Label="背景颜色"
                                Value="@Editor.Draft.BackgroundColor"
                                ValueChanged='value => Mutate("修改画布背景", () => Editor.Draft.BackgroundColor = value)' />
-                <div class="resource-field">
-                    <div><span>默认图片</span><small>@ResourceName(Editor.Draft.Path)</small></div>
-                    <MButton Text Small OnClick="PickCanvasImageAsync">选择</MButton>
-                    <MButton Text Small Disabled="@string.IsNullOrWhiteSpace(Editor.Draft.Path)" OnClick="ClearCanvasImage">清除</MButton>
-                </div>
+                <MacInspectorSwitch Label="启用主图"
+                                    Value="@Editor.Draft.HasPrimaryImage"
+                                    Disabled="@(Editor.Draft.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary)"
+                                    ValueChanged="SetPrimaryEnabled" />
+                @if (Editor.Draft.HasPrimaryImage)
+                {
+                    <div class="resource-field">
+                        <div><span>默认主图</span><small>@ResourceName(Editor.Draft.Path)</small></div>
+                        <MButton Text Small OnClick="PickCanvasImageAsync">选择</MButton>
+                        <MButton Text Small Disabled="@string.IsNullOrWhiteSpace(Editor.Draft.Path)" OnClick="ClearCanvasImage">清除</MButton>
+                    </div>
+                    @if (WMPosterAssetSlots.FindPrimary(Editor.Draft) is { } primarySlot)
+                    {
+                        <MacInspectorOptionGroup TValue="WMPosterAssetFit" Label="主图填充"
+                                                 Value="@primarySlot.Fit"
+                                                 Options="@AssetFitOptions"
+                                                 ValueChanged="value => SetPrimaryFit(primarySlot, value)" />
+                        <div class="inspector-two-column">
+                            <label class="inspector-field"><span>裁切比例（宽/高，0 为自由）</span><input type="number" min="0" max="10" step="0.01" value="@primarySlot.Crop.AspectRatio" @onchange="args => SetPrimaryCropAspect(primarySlot, args)" /></label>
+                            <label class="inspector-field"><span>微调旋转</span><input type="number" min="-30" max="30" step="0.1" value="@primarySlot.Crop.RotationDegrees" @onchange="args => SetPrimaryCropRotation(primarySlot, args)" /></label>
+                        </div>
+                    }
+                }
             </section>
             }
 
@@ -61,19 +79,27 @@
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>尺寸</h3></div>
-                <div class="inspector-two-column">
-                    <label class="inspector-field"><span>宽度（像素）</span><input type="number" value="@Editor.Draft.CustomWidth" min="1" @oninput="SetCanvasWidth" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
-                    <label class="inspector-field"><span>高度（像素）</span><input type="number" value="@Editor.Draft.CustomHeight" min="1" @oninput="SetCanvasHeight" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
-                </div>
-                <label class="inspector-field"><span>画布比例</span><input value="@Editor.Draft.LengthWidthRatio" placeholder="例如 3:2" @oninput="SetCanvasRatio" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
+                @if (Editor.Draft.CanvasSizing.Mode == WMCanvasSizingMode.Fixed)
+                {
+                    <div class="inspector-two-column">
+                        <label class="inspector-field"><span>宽度（像素）</span><input type="number" value="@Editor.Draft.CanvasSizing.ReferenceWidth" min="1" @oninput="SetCanvasWidth" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
+                        <label class="inspector-field"><span>高度（像素）</span><input type="number" value="@Editor.Draft.CanvasSizing.ReferenceHeight" min="1" @oninput="SetCanvasHeight" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
+                    </div>
+                    <label class="inspector-field"><span>画布比例</span><input value="@CanvasRatio" placeholder="例如 3:2" @onchange="SetCanvasRatio" @onfocus="BeginSliderAsync" @onblur="EndSliderAsync" /></label>
+                }
+                else
+                {
+                    <p class="inspector-operation-hint">最终尺寸由每张主图决定，并保留现有图片边距扩展。</p>
+                }
             </section>
             }
 
-            @if (Show(WMTemplateMobileInspectorSection.CanvasInsetTop)
+            @if (Editor.Draft.HasPrimaryImage
+                && (Show(WMTemplateMobileInspectorSection.CanvasInsetTop)
                 || Show(WMTemplateMobileInspectorSection.CanvasInsetRight)
                 || Show(WMTemplateMobileInspectorSection.CanvasInsetBottom)
                 || Show(WMTemplateMobileInspectorSection.CanvasInsetLeft)
-                || Show(WMTemplateMobileInspectorSection.CanvasInsets))
+                || Show(WMTemplateMobileInspectorSection.CanvasInsets)))
             {
             <section class="inspector-group">
                 <div class="inspector-group-heading"><h3>@CanvasInsetHeading</h3></div>
@@ -113,6 +139,10 @@
                         <MacInspectorSwitch Label="阴影" Value="@Editor.Draft.FrameProperties.EnableShadow" ValueChanged='value => Mutate("切换外框阴影", () => Editor.Draft.FrameProperties.EnableShadow = value)' />
                         <MacInspectorSwitch Label="背景模糊" Value="@Editor.Draft.FrameProperties.EnableGaussianBlur" ValueChanged='value => Mutate("切换外框模糊", () => Editor.Draft.FrameProperties.EnableGaussianBlur = value)' />
                     </div>
+                    @if (Editor.Draft.FrameProperties.Enabled)
+                    {
+                        <label class="inspector-field"><span>外层画幅比例</span><input value="@FrameRatio" placeholder="例如 3:2" @onchange="SetFrameRatio" /></label>
+                    }
                 }
                 @if (Show(WMTemplateMobileInspectorSection.CanvasFramePadding) || Show(WMTemplateMobileInspectorSection.CanvasFrame))
                 {
@@ -201,16 +231,25 @@
                     <div class="resource-field">
                         <div><span>图片</span><small>@ResourceName(container.Path)</small></div>
                         <MButton Text Small Disabled="@IsReadOnly" OnClick="() => RequestAssetEditAsync(container)">资源库</MButton>
-                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(container.Path))" OnClick='() => Mutate("清除容器图片", () => container.Path = string.Empty)'>清除</MButton>
+                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(container.Path))" OnClick="() => ClearControlImage(container)">清除</MButton>
                     </div>
                 }
                 <MacInspectorSwitch Label="允许作为可替换图片槽"
                                     Value="@(WMPosterAssetSlots.Find(Editor.Draft, container) is not null)"
                                     Disabled="@IsReadOnly"
                                     ValueChanged="value => SetAssetSlotAsync(container, value)" />
-                @if (Editor.Draft.CanvasType == CanvasType.Split)
+                @if (WMPosterAssetSlots.Find(Editor.Draft, container) is { } containerSlot)
                 {
-                    <MacInspectorSwitch Label="固定图片" Value="@container.ContainerProperties.FixImage" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换固定图片", () => container.ContainerProperties.FixImage = value)' />
+                    <MacInspectorOptionGroup TValue="WMPosterAssetPurpose" Label="素材用途"
+                                             Value="@containerSlot.Purpose"
+                                             Options="@AssetPurposeOptions"
+                                             Disabled="@IsReadOnly"
+                                             ValueChanged="value => SetAssetPurpose(containerSlot, value)" />
+                    <div class="resource-field">
+                        <div><span>自动填充顺序</span><small>照片槽按清单顺序填充</small></div>
+                        <MButton Text Small Disabled="@(IsReadOnly || IsFirstAssetSlot(containerSlot))" OnClick="() => MoveAssetSlot(containerSlot, -1)"><WmIcon Icon="arrow-up" /></MButton>
+                        <MButton Text Small Disabled="@(IsReadOnly || IsLastAssetSlot(containerSlot))" OnClick="() => MoveAssetSlot(containerSlot, 1)"><WmIcon Icon="arrow-down" /></MButton>
+                    </div>
                 }
                 <MacColorInput Label="背景颜色" Value="@container.BackgroundColor" Disabled="@IsReadOnly" ValueChanged='value => Mutate("修改容器背景", () => container.BackgroundColor = value)' />
                 @if (!IsV2)
@@ -382,7 +421,7 @@
                     <div class="resource-field">
                         <div><span>图片</span><small>@ResourceName(logo.Path)</small></div>
                         <MButton Text Small Disabled="@IsReadOnly" OnClick="() => RequestAssetEditAsync(logo)">资源库</MButton>
-                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" OnClick='() => Mutate("清除图标", () => logo.Path = string.Empty)'>清除</MButton>
+                        <MButton Text Small Disabled="@(IsReadOnly || string.IsNullOrWhiteSpace(logo.Path))" OnClick="() => ClearControlImage(logo)">清除</MButton>
                     </div>
                 }
                 @if (Show(WMTemplateMobileInspectorSection.Logo))
@@ -395,6 +434,19 @@
                         <MacInspectorSwitch Label="白色转透明" Value="@logo.White2Transparent" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换白色转透明", () => logo.White2Transparent = value)' />
                         <MacInspectorSwitch Label="自动识别品牌 Logo" Value="@logo.AutoSetLogo" Disabled="@IsReadOnly" ValueChanged='value => Mutate("切换自动识别品牌 Logo", () => logo.AutoSetLogo = value)' />
                     </div>
+                    @if (WMPosterAssetSlots.Find(Editor.Draft, logo) is { } logoSlot)
+                    {
+                        <MacInspectorOptionGroup TValue="WMPosterAssetPurpose" Label="素材用途"
+                                                 Value="@logoSlot.Purpose"
+                                                 Options="@AssetPurposeOptions"
+                                                 Disabled="@IsReadOnly"
+                                                 ValueChanged="value => SetAssetPurpose(logoSlot, value)" />
+                        <div class="resource-field">
+                            <div><span>自动填充顺序</span><small>图形槽不会被照片覆盖</small></div>
+                            <MButton Text Small Disabled="@(IsReadOnly || IsFirstAssetSlot(logoSlot))" OnClick="() => MoveAssetSlot(logoSlot, -1)"><WmIcon Icon="arrow-up" /></MButton>
+                            <MButton Text Small Disabled="@(IsReadOnly || IsLastAssetSlot(logoSlot))" OnClick="() => MoveAssetSlot(logoSlot, 1)"><WmIcon Icon="arrow-down" /></MButton>
+                        </div>
+                    }
                 }
                 @if (IsV2 && Show(WMTemplateMobileInspectorSection.LogoSizing))
                 {
@@ -479,7 +531,7 @@
                     : "width:min(980px,94vw);height:min(760px,92vh);")">
             <div class="exif-editor-shell" style="height:100%;min-height:0;overflow:hidden;position:relative;">
                 <ExifConfig mText="@exifText"
-                            CanvasType="@Editor.Draft.CanvasType"
+                            MultipleAssetSources="@(ContainerNames.Count > 1)"
                             ContainerId2Name="@ContainerNames"
                             OnClose="CompleteExifEditor"
                             OnCancel="CancelExifEditor" />
@@ -533,10 +585,22 @@
     private string Breadcrumb => SelectedControl is null
         ? "模板 / 画布"
         : $"模板 / {(WMControlTree.FindParent(Editor.Draft, SelectedControl.ID) is { } parent ? ControlName(parent) + " / " : string.Empty)}{ControlName(SelectedControl)}";
-    private Dictionary<string, string> ContainerNames => Editor.Draft.RootContainers
-        .SelectMany(root => new[] { root }.Concat(root.Controls.OfType<WMContainer>()))
-        .GroupBy(container => container.ID)
-        .ToDictionary(group => group.Key, group => ControlName(group.First()));
+    private Dictionary<string, string> ContainerNames
+    {
+        get
+        {
+            var names = Global.EnumerateControls(Editor.Draft)
+                .Where(control => WMPosterAssetSlots.Find(Editor.Draft, control)?.Purpose == WMPosterAssetPurpose.Photo)
+                .GroupBy(control => control.ID)
+                .ToDictionary(group => group.Key, group => ControlName(group.First()));
+            if (Editor.Draft.HasPrimaryImage)
+                names[Editor.Draft.ID] = Editor.Draft.Name;
+            return names;
+        }
+    }
+    private string CanvasRatio =>
+        $"{Editor.Draft.CanvasSizing.ReferenceWidth}:{Editor.Draft.CanvasSizing.ReferenceHeight}";
+    private string FrameRatio => Editor.Draft.FrameProperties.AspectRatio?.ToString() ?? string.Empty;
     private List<WmSelectOption<string>> FontOptions =>
         [new("默认字体", Global.DefaultFont), .. fontNames
             .Where(font => !string.Equals(font, Global.DefaultFont, StringComparison.Ordinal))
@@ -655,11 +719,64 @@
         Editor.Select(parentId);
     }
 
-    private Task SetCanvasType(CanvasType value)
+    private Task SetCanvasSizingMode(WMCanvasSizingMode value)
     {
-        Editor.Mutate("修改画布类型", () => Editor.Draft.CanvasType = value, WMTemplateChangeKind.Canvas);
+        Editor.Mutate("修改画布策略", () =>
+        {
+            Editor.Draft.CanvasSizing.Mode = value;
+            if (value == WMCanvasSizingMode.FollowPrimary)
+                WMPosterAssetSlots.EnsurePrimary(Editor.Draft);
+            WMPosterTemplateMigration.SynchronizeCompatibilityProperties(Editor.Draft);
+        }, WMTemplateChangeKind.Canvas);
         return Task.CompletedTask;
     }
+
+    private Task SetPrimaryEnabled(bool value)
+    {
+        Editor.Mutate("切换主图", () =>
+        {
+            if (Editor.Draft.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary)
+                value = true;
+            WMPosterAssetSlots.SetPrimaryEnabled(Editor.Draft, value);
+            WMPosterTemplateMigration.SynchronizeCompatibilityProperties(Editor.Draft);
+        }, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
+        return Task.CompletedTask;
+    }
+
+    private Task SetPrimaryFit(WMPosterAssetSlot slot, WMPosterAssetFit value)
+    {
+        Editor.Mutate(
+            "修改主图填充",
+            () => slot.Fit = value,
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint);
+        return Task.CompletedTask;
+    }
+
+    private void SetPrimaryCropAspect(WMPosterAssetSlot slot, ChangeEventArgs args) =>
+        Editor.Mutate(
+            "修改主图裁切比例",
+            () =>
+            {
+                slot.Crop ??= new WMPosterAssetCrop();
+                slot.Crop.Settings = null;
+                slot.Crop.AspectRatio = DoubleValue(args, slot.Crop.AspectRatio, 0, 10);
+            },
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint);
+
+    private void SetPrimaryCropRotation(WMPosterAssetSlot slot, ChangeEventArgs args) =>
+        Editor.Mutate(
+            "修改主图旋转",
+            () =>
+            {
+                slot.Crop ??= new WMPosterAssetCrop();
+                slot.Crop.Settings = null;
+                slot.Crop.RotationDegrees = DoubleValue(
+                    args,
+                    slot.Crop.RotationDegrees,
+                    -30,
+                    30);
+            },
+            WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint);
 
     private Task SetContainerOrientation(WMContainer container, Orientation value) =>
         MutateAsync("修改容器方向", () => container.Orientation = value);
@@ -712,24 +829,120 @@
         return Task.CompletedTask;
     }
 
+    private void ClearControlImage(IWMControl control)
+    {
+        Editor.Mutate(
+            "清除图片素材",
+            () =>
+            {
+                switch (control)
+                {
+                    case WMContainer container:
+                        container.Path = string.Empty;
+                        break;
+                    case WMLogo logo:
+                        logo.Path = string.Empty;
+                        break;
+                }
+                if (WMPosterAssetSlots.Find(Editor.Draft, control) is { } slot)
+                    slot.DefaultAssetId = null;
+            },
+            WMTemplateChangeKind.Resource | WMTemplateChangeKind.Paint,
+            [control.ID]);
+    }
+
+    private Task SetAssetPurpose(WMPosterAssetSlot slot, WMPosterAssetPurpose value)
+    {
+        Editor.Mutate(
+            "修改素材槽用途",
+            () => slot.Purpose = value,
+            WMTemplateChangeKind.Selection);
+        return Task.CompletedTask;
+    }
+
+    private void MoveAssetSlot(WMPosterAssetSlot slot, int delta)
+    {
+        Editor.Mutate(
+            "调整素材槽顺序",
+            () =>
+            {
+                var current = Editor.Draft.PosterManifest.AssetSlots.IndexOf(slot);
+                WMPosterAssetSlots.Move(Editor.Draft, slot.Id, current + delta);
+            },
+            WMTemplateChangeKind.Order);
+    }
+
+    private bool IsFirstAssetSlot(WMPosterAssetSlot slot)
+    {
+        var index = Editor.Draft.PosterManifest.AssetSlots.IndexOf(slot);
+        return index <= (Editor.Draft.HasPrimaryImage ? 1 : 0);
+    }
+
+    private bool IsLastAssetSlot(WMPosterAssetSlot slot) =>
+        Editor.Draft.PosterManifest.AssetSlots.IndexOf(slot)
+        >= Editor.Draft.PosterManifest.AssetSlots.Count - 1;
+
     private Task MutateAsync(string label, Action mutation)
     {
         Mutate(label, mutation);
         return Task.CompletedTask;
     }
 
-    private void SetCanvasWidth(ChangeEventArgs args) => Editor.Mutate("修改画布宽度", () => Editor.Draft.CustomWidth = IntValue(args, Editor.Draft.CustomWidth, 1), WMTemplateChangeKind.Canvas);
-    private void SetCanvasHeight(ChangeEventArgs args) => Editor.Mutate("修改画布高度", () => Editor.Draft.CustomHeight = IntValue(args, Editor.Draft.CustomHeight, 1), WMTemplateChangeKind.Canvas);
-    private void SetCanvasRatio(ChangeEventArgs args) => Editor.Mutate("修改画布比例", () => Editor.Draft.LengthWidthRatio = TextValue(args), WMTemplateChangeKind.Canvas);
+    private void SetCanvasWidth(ChangeEventArgs args) => Editor.Mutate(
+        "修改画布宽度",
+        () => Editor.Draft.CanvasSizing.ReferenceWidth = IntValue(
+            args,
+            Editor.Draft.CanvasSizing.ReferenceWidth,
+            1),
+        WMTemplateChangeKind.Canvas);
+
+    private void SetCanvasHeight(ChangeEventArgs args) => Editor.Mutate(
+        "修改画布高度",
+        () => Editor.Draft.CanvasSizing.ReferenceHeight = IntValue(
+            args,
+            Editor.Draft.CanvasSizing.ReferenceHeight,
+            1),
+        WMTemplateChangeKind.Canvas);
+
+    private void SetCanvasRatio(ChangeEventArgs args) => Editor.Mutate(
+        "修改画布比例",
+        () =>
+        {
+            if (WMAspectRatio.Parse(TextValue(args)) is { } ratio)
+                Editor.Draft.CanvasSizing.SetRatio(ratio.Width, ratio.Height);
+            WMPosterTemplateMigration.SynchronizeCompatibilityProperties(Editor.Draft);
+        },
+        WMTemplateChangeKind.Canvas);
+
+    private void SetFrameRatio(ChangeEventArgs args) => Editor.Mutate(
+        "修改外层画幅比例",
+        () =>
+        {
+            Editor.Draft.FrameProperties.AspectRatio = WMAspectRatio.Parse(TextValue(args));
+            WMPosterTemplateMigration.SynchronizeCompatibilityProperties(Editor.Draft);
+        },
+        WMTemplateChangeKind.Canvas);
 
     private async Task PickCanvasImageAsync()
     {
         if (DesignFunc?.SelectDefaultImageEvt is null) return;
         var path = await DesignFunc.SelectDefaultImageEvt();
-        if (!string.IsNullOrWhiteSpace(path)) Editor.Mutate("选择默认图片", () => Editor.Draft.Path = path, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
+        if (!string.IsNullOrWhiteSpace(path))
+            Editor.Mutate("选择默认图片", () =>
+            {
+                Editor.Draft.Path = path;
+                var primary = WMPosterAssetSlots.EnsurePrimary(Editor.Draft);
+                primary.DefaultAssetId = "default";
+                WMPosterTemplateMigration.SynchronizeCompatibilityProperties(Editor.Draft);
+            }, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
     }
 
-    private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () => Editor.Draft.Path = string.Empty, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
+    private void ClearCanvasImage() => Editor.Mutate("清除默认图片", () =>
+    {
+        Editor.Draft.Path = string.Empty;
+        if (WMPosterAssetSlots.FindPrimary(Editor.Draft) is { } primary)
+            primary.DefaultAssetId = null;
+    }, WMTemplateChangeKind.Canvas | WMTemplateChangeKind.Resource);
 
     private async Task RequestAssetEditAsync(IWMControl control)
     {
@@ -820,6 +1033,18 @@
 
     private static string TextValue(ChangeEventArgs args) => args.Value?.ToString() ?? string.Empty;
     private static int IntValue(ChangeEventArgs args, int fallback, int minimum = int.MinValue) => int.TryParse(TextValue(args), out var value) ? Math.Max(value, minimum) : fallback;
+    private static double DoubleValue(
+        ChangeEventArgs args,
+        double fallback,
+        double minimum,
+        double maximum) =>
+        double.TryParse(
+            TextValue(args),
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var value)
+            ? Math.Clamp(value, minimum, maximum)
+            : fallback;
     private static string ResourceName(string path) => string.IsNullOrWhiteSpace(path) ? "未选择" : Path.GetFileName(path);
     private static string TextContentSummary(WMText text)
     {
@@ -830,10 +1055,23 @@
     }
     private static string ControlName(IWMControl control) => string.IsNullOrWhiteSpace(control.Name) ? TypeName(control) : control.Name;
     private static string TypeName(IWMControl control) => control switch { WMContainer => "容器", WMText => "文字", WMLogo => "图标", WMLine => "分割线", _ => "图层" };
-    private static readonly List<MacInspectorOption<CanvasType>> CanvasTypeOptions =
+    private static readonly List<MacInspectorOption<WMCanvasSizingMode>> CanvasSizingOptions =
     [
-        new(CanvasType.Normal, "普通", "image"),
-        new(CanvasType.Split, "拼图", "grid-nine")
+        new(WMCanvasSizingMode.FollowPrimary, "跟随主图", "image"),
+        new(WMCanvasSizingMode.Fixed, "固定画布", "frame-corners")
+    ];
+
+    private static readonly List<MacInspectorOption<WMPosterAssetPurpose>> AssetPurposeOptions =
+    [
+        new(WMPosterAssetPurpose.Photo, "照片", "image"),
+        new(WMPosterAssetPurpose.Graphic, "图形", "shapes")
+    ];
+
+    private static readonly List<MacInspectorOption<WMPosterAssetFit>> AssetFitOptions =
+    [
+        new(WMPosterAssetFit.Cover, "覆盖", "crop"),
+        new(WMPosterAssetFit.Contain, "包含", "corners-out"),
+        new(WMPosterAssetFit.Fill, "拉伸", "resize")
     ];
 
     private static readonly List<MacInspectorOption<Orientation>> OrientationOptions =

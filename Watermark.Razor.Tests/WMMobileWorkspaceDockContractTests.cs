@@ -4,6 +4,8 @@ namespace Watermark.Razor.Tests;
 
 public sealed class WMMobileWorkspaceDockContractTests
 {
+    private const string ApprovedMasaVersion = "1.11.9";
+
     [Fact]
     public void Dock_IsControlledAndDoesNotOwnRenderingOrBusinessServices()
     {
@@ -104,6 +106,7 @@ public sealed class WMMobileWorkspaceDockContractTests
     {
         var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
         var rail = Read("Watermark.Razor", "Workspace", "Components", "WMPosterMobileToolRail.razor");
+        var railCss = Read("Watermark.Razor", "Workspace", "Components", "WMPosterMobileToolRail.razor.css");
         var contracts = Read("Watermark.Razor", "Workspace", "WMWorkspaceContracts.cs");
 
         Assert.Contains("<WMPosterMobileToolRail Items=\"@CurrentToolRailItems\"", dock, StringComparison.Ordinal);
@@ -112,6 +115,8 @@ public sealed class WMMobileWorkspaceDockContractTests
         Assert.Contains("TemplatePicker, \"模板\"", SliceArray(dock, "TemplateTools", "ColorTools"), StringComparison.Ordinal);
         Assert.Contains("public sealed record WMMobileToolRailItem", contracts, StringComparison.Ordinal);
         Assert.Contains("data-mobile-tool=\"@tool.Id\"", rail, StringComparison.Ordinal);
+        Assert.Contains(".wm-poster-tool-rail .tool-icon ::deep .wm-icon", railCss, StringComparison.Ordinal);
+        Assert.Contains("transition: none", railCss, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -174,20 +179,81 @@ public sealed class WMMobileWorkspaceDockContractTests
     }
 
     [Fact]
-    public void WorkspaceTemplateShortcut_OpensTheSharedTemplateDesignerInsteadOfASecondEditor()
+    public void TemplateUse_NavigatesToWorkspaceWithoutAutomaticPosterEditor()
     {
-        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var templates = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileTemplates.razor");
+
+        Assert.Contains("NavigationHistory.NavigateTo($\"/workspace/{sessionId}\");", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("posterEditor", templates, StringComparison.Ordinal);
+        Assert.DoesNotContain("posterTemplateId", templates, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WorkspaceInitialization_DoesNotOpenAppliedPosterDesigner()
+    {
         var page = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileWorkspace.razor");
 
-        Assert.Contains("EventCallback<WMTemplateDesignerLaunchRequest> TemplateDesignerRequested", dock, StringComparison.Ordinal);
-        Assert.Contains("TemplateDesignerToolId(tool)", dock, StringComparison.Ordinal);
-        Assert.Contains("new WMTemplateDesignerLaunchRequest(State.TemplateId, initialToolId)", dock, StringComparison.Ordinal);
-        Assert.Contains("TemplateDesignerRequested=\"OpenWorkspaceTemplateDesignerAsync\"", page, StringComparison.Ordinal);
-        Assert.Contains("<WMTemplateDesigner @ref=\"workspaceTemplateDesigner\"", page, StringComparison.Ordinal);
-        Assert.Contains("InitialMobileToolId=\"@workspaceDesignerInitialToolId\"", page, StringComparison.Ordinal);
-        Assert.Contains("OnClose=\"CloseWorkspaceTemplateDesignerAsync\"", page, StringComparison.Ordinal);
-        Assert.Contains("OnSaved=\"OnWorkspaceTemplateSavedAsync\"", page, StringComparison.Ordinal);
-        Assert.Contains("workspaceTemplateDesigner.CanNavigateAwayAsync", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("SupplyParameterFromQuery(Name = \"posterEditor\")", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("SupplyParameterFromQuery(Name = \"posterTemplateId\")", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenPosterEditor", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("RequestedPosterTemplateId", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenAppliedPosterDesignerIfAvailableAsync", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WorkspaceTemplateTools_EditTheAppliedInstanceInsideTheCurrentDock()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+        var controls = Read("Watermark.Razor", "Workspace", "Components", "WMMobileAppliedTemplateControls.razor");
+        var page = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileWorkspace.razor");
+
+        Assert.Contains("WMMobileAppliedTemplateControls", dock, StringComparison.Ordinal);
+        Assert.Contains("Section=\"@TemplateInspectorSection(ActiveTool)\"", dock, StringComparison.Ordinal);
+        Assert.Contains("WMPosterEditorPresentationState.CanvasConfigurationTools()", dock, StringComparison.Ordinal);
+        Assert.Contains("<WMTemplatePropertyPanel", controls, StringComparison.Ordinal);
+        Assert.Contains("PreviewChanged.InvokeAsync(edit)", controls, StringComparison.Ordinal);
+        Assert.Contains("TemplatePreviewChanged=\"PreviewTemplateAsync\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("TemplateDesignerRequested", dock, StringComparison.Ordinal);
+        Assert.DoesNotContain("showWorkspaceTemplateDesigner", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("InstanceMode=\"true\"", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TemplateFirstSingleSlot_KeepsOriginalMediaAndAppliesTemplateAsAWorkspaceOperation()
+    {
+        var templates = Read("Watermark.Razor", "BlazorPages", "Mobile", "MobileTemplates.razor");
+
+        Assert.Contains("@inject IWMWorkspaceLauncher WorkspaceLauncher", templates, StringComparison.Ordinal);
+        Assert.Contains("if (photoSlotCount == 1)", templates, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceLauncher.CreateFromSourcesAsync", templates, StringComparison.Ordinal);
+        Assert.Contains("template.ID", templates, StringComparison.Ordinal);
+        Assert.Contains("TemplateTabPath(activeTab)", templates, StringComparison.Ordinal);
+        Assert.Contains("if (photoSlotCount > 0 && files.Count == 0)", templates, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FlattenedPosterOutput_CannotBeUsedAsTheBaseOfAnotherTemplate()
+    {
+        var dock = Read("Watermark.Razor", "Workspace", "Components", "WMMobileWorkspaceDock.razor");
+
+        Assert.Contains("CurrentMediaIsFlattenedPoster", dock, StringComparison.Ordinal);
+        Assert.Contains("Artifact.SourceOperation == WMImageOperationKind.Template", dock, StringComparison.Ordinal);
+        Assert.Contains("不能再次套用模板", dock, StringComparison.Ordinal);
+        Assert.Contains("if (CurrentMediaIsFlattenedPoster) return Task.CompletedTask;", dock, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MasaBlazor_DirectReferencesUseTheApprovedVersion()
+    {
+        var projects = new[]
+        {
+            Read("Watermark.Razor", "Watermark.Razor.csproj"),
+            Read("Watermark.Shared", "Watermark.Shared.csproj"),
+            Read("Watermark.Web", "Watermark.Web.Client", "Watermark.Web.Client.csproj")
+        };
+        var expected = $"<PackageReference Include=\"Masa.Blazor\" Version=\"{ApprovedMasaVersion}\" />";
+
+        Assert.All(projects, project => Assert.Contains(expected, project, StringComparison.Ordinal));
     }
 
     [Fact]

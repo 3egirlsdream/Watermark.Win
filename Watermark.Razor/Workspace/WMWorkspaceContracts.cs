@@ -293,10 +293,25 @@ public sealed record WMWorkspaceTemplateEdit(
     string? TemplateId,
     string? CanvasJson);
 
+public sealed record WMPosterAssetBinding(
+    string SlotId,
+    string ArtifactId,
+    WMPosterAssetFit? FitOverride = null,
+    WMCropSettings? CropOverride = null);
+
+public sealed record WMPosterOutputPlan(
+    string Id,
+    string CanvasJson,
+    IReadOnlyList<WMPosterAssetBinding> Bindings,
+    string SuggestedFileName);
+
+public sealed record WMPosterApplicationPlan(
+    string TemplateId,
+    IReadOnlyList<WMPosterOutputPlan> Outputs);
+
 public enum WMDerivedMediaKind
 {
-    Collage,
-    TemplateCollage
+    Collage
 }
 
 public enum WMCollageDirection
@@ -318,18 +333,13 @@ public sealed record WMCollageDraft(
     public static WMCollageDraft Empty { get; } = new([], WMCollageDirection.Horizontal);
 }
 
-public sealed record WMTemplateCollageSettings(
-    string TemplateId,
-    string CanvasJson);
-
 public sealed record WMDerivedMediaRequest(
     WMDerivedMediaKind Kind,
     IReadOnlyList<string> SourceMediaIds,
     string Label,
     WMCollageSettings Collage,
     string? SuggestedFileName = null,
-    bool SelectResult = true,
-    WMTemplateCollageSettings? TemplateCollage = null);
+    bool SelectResult = true);
 
 public sealed record WMDerivedMediaOutput(
     WMImageArtifact Artifact,
@@ -341,6 +351,15 @@ public interface IWMDerivedMediaProcessor
     Task<WMDerivedMediaOutput> ExecuteAsync(
         WMDerivedMediaRequest request,
         IReadOnlyList<WMImageArtifact> inputs,
+        string sessionDirectory,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IWMPosterApplicationProcessor
+{
+    Task<IReadOnlyList<WMDerivedMediaOutput>> ExecuteAsync(
+        WMPosterApplicationPlan plan,
+        IReadOnlyDictionary<string, WMImageArtifact> artifacts,
         string sessionDirectory,
         CancellationToken cancellationToken = default);
 }
@@ -716,7 +735,8 @@ public interface IWMWorkspaceSessionStore
         WMWorkspaceMode mode,
         IReadOnlyList<IWMPhotoImportSource> sources,
         string? templateId = null,
-        CancellationToken token = default);
+        CancellationToken token = default,
+        string? returnPath = null);
     Task<WMWorkspaceOpenResult> OpenAsync(string sessionId, CancellationToken token = default);
     Task<WMWorkspaceOpenResult> RecoverAsync(
         string sessionId,
@@ -735,7 +755,8 @@ public interface IWMWorkspaceLauncher
         WMWorkspaceMode mode,
         IReadOnlyList<IWMPhotoImportSource> sources,
         string? templateId,
-        CancellationToken token);
+        CancellationToken token,
+        string? returnPath = null);
 }
 
 public interface IWMPhotoPicker
@@ -850,6 +871,15 @@ public interface IWMTemplateMarketplaceService
         IWMPhotoImportSource source,
         string name,
         CancellationToken cancellationToken = default);
+    Task<WMLocalTemplateResult> CreateLocalAsync(
+        WMNewPosterTemplateOptions options,
+        CancellationToken cancellationToken = default) =>
+        options.DefaultPrimarySource is not null
+        && options.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? CreateLocalAsync(options.DefaultPrimarySource, options.Name, cancellationToken)
+            : Task.FromResult(new WMLocalTemplateResult(
+                WMTemplateMarketplaceStatus.Failed,
+                Message: "当前模板服务尚不支持无主图或固定画布海报。"));
     Task<WMTemplateMarketplaceResult> UploadLocalAsync(
         WMTemplateUploadRequest request,
         CancellationToken cancellationToken = default);
@@ -863,6 +893,12 @@ public interface IWMTemplateMarketplaceService
         string undoToken,
         CancellationToken cancellationToken = default);
 }
+
+public sealed record WMNewPosterTemplateOptions(
+    string Name,
+    WMCanvasSizing CanvasSizing,
+    bool HasPrimaryAsset,
+    IWMPhotoImportSource? DefaultPrimarySource);
 
 public interface IWMExportSink
 {

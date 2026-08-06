@@ -80,7 +80,8 @@ public class WMTemplateLibraryService : IAsyncDisposable
             lock (entries)
             {
                 return entries.Values
-                    .OrderBy(item => item.Canvas.CanvasType)
+                    .OrderBy(item => item.Canvas.CanvasSizing.Mode)
+                    .ThenBy(item => WMPosterAssetSlots.OrderedPhotoSlots(item.Canvas).Count)
                     .ThenBy(item => item.Canvas.Name)
                     .Select(item => item.ToTemplateList())
                     .ToArray();

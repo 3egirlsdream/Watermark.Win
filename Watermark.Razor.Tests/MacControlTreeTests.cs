@@ -214,6 +214,26 @@ public sealed class WMControlTreeTests
     }
 
     [Fact]
+    public void Add_MultipleRootLeavesReceiveDistinctVisiblePositions()
+    {
+        var canvas = new WMCanvas { LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion };
+        _ = WMControlTree.Add(canvas, typeof(WMContainer), null);
+
+        var title = WMControlTree.Add(canvas, typeof(WMText), null);
+        var subtitle = WMControlTree.Add(canvas, typeof(WMText), null);
+        var divider = WMControlTree.Add(canvas, typeof(WMLine), null);
+
+        Assert.Equal(10, title.Style.Top!.Value);
+        Assert.Equal(20, subtitle.Style.Top!.Value);
+        Assert.Equal(30, divider.Style.Top!.Value);
+        Assert.All(new[] { title, subtitle, divider }, item =>
+        {
+            Assert.Equal(WMPosition.Absolute, item.Style.Position);
+            Assert.Equal(10, item.Style.Left!.Value);
+        });
+    }
+
+    [Fact]
     public void Move_InvalidIndexesLeaveSameParentUnchanged()
     {
         var canvas = new WMCanvas();

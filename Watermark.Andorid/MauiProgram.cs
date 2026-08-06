@@ -155,6 +155,7 @@ namespace Watermark.Andorid
             builder.Services.AddScoped<WMFullResolutionRenderService>();
             builder.Services.AddScoped<WMFullResolutionRenderPipeline>();
             builder.Services.AddScoped<IWMDerivedMediaProcessor, WMCollageDerivedMediaProcessor>();
+            builder.Services.AddScoped<IWMPosterApplicationProcessor, WMPosterApplicationProcessor>();
             builder.Services.AddScoped<IWMColorPresetLibrary, WMColorPresetLibrary>();
             builder.Services.AddScoped<WMTemplateSnapshotService>();
             builder.Services.AddScoped<WMWorkspaceController>();

@@ -135,7 +135,7 @@
     [Parameter] public EventCallback<string> OpenCommonDialog { get; set; }
 
     private string ModeTitle => Mode switch { WMWorkspaceMode.ColorGrade => "调色工作台", WMWorkspaceMode.MultiFrame => "多帧合成", _ => "模板预设" };
-    private string ModeSubtitle => Mode switch { WMWorkspaceMode.ColorGrade => "参考风格与精细调色", WMWorkspaceMode.MultiFrame => "星轨 · 降噪 · 静态星空", _ => "水印与拼图模板" };
+    private string ModeSubtitle => Mode switch { WMWorkspaceMode.ColorGrade => "参考风格与精细调色", WMWorkspaceMode.MultiFrame => "星轨 · 降噪 · 静态星空", _ => "统一海报模板" };
     private Task OpenWeb() => OpenLink.InvokeAsync("http://www.thankful.top");
     private Task OpenFeedback() => OpenLink.InvokeAsync("https://github.com/3egirlsdream/Watermark.Win/issues");
     private Task OpenAndroidQr() => OpenCommonDialog.InvokeAsync("https://cdn.thankful.top/andorid.png");

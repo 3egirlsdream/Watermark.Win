@@ -27,9 +27,9 @@
         <div class="sidebar-search"><span>⌕</span><input value="@Search" @oninput="OnSearch" placeholder="搜索模板" /></div>
         <div class="sidebar-scroll">
             <section class="asset-section">
-                <div class="section-title"><span>水印模板</span><small>@NormalTemplates.Count</small></div>
+                <div class="section-title"><span>海报模板</span><small>@PosterTemplates.Count</small></div>
                 <div class="template-grid">
-                    @foreach (var item in NormalTemplates)
+                    @foreach (var item in PosterTemplates)
                     {
                         <article class="@(TemplateId == item.ID ? "template-card active" : "template-card")">
                             <button type="button"
@@ -45,28 +45,11 @@
                                     <span class="template-preview-placeholder" aria-label="模板预览生成中"><WmIcon Small Icon="image" /></span>
                                 }
                                 <span class="template-name">@item.Canvas.Name</span>
+                                <small class="template-capability">@CapabilityLabel(item.Canvas)</small>
                             </button>
                             <button type="button" class="edit-chip" title="编辑模板"
                                     @onclick="() => EditTemplate.InvokeAsync(item)">
                                 <span class="edit-chip-icon">✎</span><span>编辑</span>
-                            </button>
-                        </article>
-                    }
-                </div>
-            </section>
-            <section class="asset-section">
-                <div class="section-title"><span>拼图模板</span><small>@SplitTemplates.Count</small></div>
-                <div class="template-grid">
-                    @foreach (var item in SplitTemplates)
-                    {
-                        <article class="template-card split">
-                            <button type="button"
-                                    class="template-card-apply"
-                                    aria-label="应用拼图模板 @item.Canvas.Name"
-                                    @onclick="() => SplitTemplateSelected.InvokeAsync(item)">
-                                @if (!string.IsNullOrWhiteSpace(item.Src)) { <img src="@item.Src" alt="" /> }
-                                else { <span class="template-preview-placeholder"><WmIcon Small Icon="image" /></span> }
-                                <span class="template-name">@item.Canvas.Name</span>
                             </button>
                         </article>
                     }
@@ -118,7 +101,6 @@
     [Parameter] public IReadOnlyList<string> SelectedFrameIds { get; set; } = [];
     [Parameter] public Func<string, string?> MediaPreviewUrl { get; set; } = _ => null;
     [Parameter] public EventCallback<WMTemplateList> TemplateSelected { get; set; }
-    [Parameter] public EventCallback<WMTemplateList> SplitTemplateSelected { get; set; }
     [Parameter] public EventCallback<WMTemplateList> EditTemplate { get; set; }
     [Parameter] public EventCallback CreateTemplate { get; set; }
     [Parameter] public EventCallback OpenTemplates { get; set; }
@@ -130,9 +112,22 @@
     private string Search { get; set; } = string.Empty;
     private string ModeTitle => Mode switch { WMWorkspaceMode.Crop => "裁切", WMWorkspaceMode.ColorGrade => "调色", WMWorkspaceMode.MultiFrame => "多帧合成", _ => "预设" };
     private string ModeKicker => Mode switch { WMWorkspaceMode.Crop => "Crop & Geometry", WMWorkspaceMode.ColorGrade => "Color Studio", WMWorkspaceMode.MultiFrame => "Multi-frame Stack", _ => "Templates" };
-    private List<WMTemplateList> NormalTemplates => Filter(CanvasType.Normal);
-    private List<WMTemplateList> SplitTemplates => Filter(CanvasType.Split);
-    private List<WMTemplateList> Filter(CanvasType type) => Templates.Where(x => x.Canvas?.CanvasType == type && (string.IsNullOrWhiteSpace(Search) || (x.Canvas.Name ?? string.Empty).Contains(Search, StringComparison.OrdinalIgnoreCase))).OrderBy(x => x.Canvas.Name).ToList();
+    private List<WMTemplateList> PosterTemplates => Templates
+        .Where(item => string.IsNullOrWhiteSpace(Search)
+                       || (item.Canvas.Name ?? string.Empty).Contains(
+                           Search,
+                           StringComparison.OrdinalIgnoreCase))
+        .OrderBy(item => item.Canvas.Name)
+        .ToList();
+
+    private static string CapabilityLabel(WMCanvas canvas)
+    {
+        var photos = WMPosterAssetSlots.OrderedPhotoSlots(canvas).Count;
+        var sizing = canvas.CanvasSizing.Mode == WMCanvasSizingMode.FollowPrimary
+            ? "跟随主图"
+            : "固定画布";
+        return photos == 0 ? $"{sizing} · 无照片槽" : $"{sizing} · {photos} 个照片槽";
+    }
     private void OnSearch(ChangeEventArgs args) => Search = args.Value?.ToString() ?? string.Empty;
     private int SelectionIndex(string id)
     {

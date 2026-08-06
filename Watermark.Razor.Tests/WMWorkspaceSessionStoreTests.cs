@@ -78,6 +78,33 @@ public sealed class WMWorkspaceSessionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task StreamPickerImport_PersistsInitialTemplateAndTemplateLibraryReturnPath()
+    {
+        var store = CreateStore(new WMWorkspacePerformanceCounters());
+        var source = CreateImage("template-first.png", 640, 480);
+        var bytes = await File.ReadAllBytesAsync(source);
+        var picked = new WMPhotoImportSource(
+            "template-first.png",
+            _ => Task.FromResult<Stream>(new MemoryStream(bytes, writable: false)));
+
+        var id = await store.CreateAsync(
+            WMWorkspaceMode.Template,
+            [picked],
+            "template-1",
+            CancellationToken.None,
+            "/templates?tab=local");
+        var session = Opened(await store.OpenAsync(id));
+
+        Assert.Equal("template-1", session.TemplateId);
+        Assert.Equal("/templates?tab=local", session.ReturnPath);
+        Assert.Single(session.Media);
+        Assert.Empty(session.Transactions);
+        Assert.Equal(
+            session.Media[0].Artifact.Id,
+            session.CurrentArtifactIdsByMediaId[session.Media[0].Id]);
+    }
+
+    [Fact]
     public async Task TemplateDesign_ReturnPathIsSanitizedAndPersistsForRecovery()
     {
         var store = CreateStore(new WMWorkspacePerformanceCounters());
