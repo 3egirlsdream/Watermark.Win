@@ -23,7 +23,12 @@ class Finding:
 NODE_ARRAYS = ("Containers", "Texts", "Logos", "Lines")
 COLOR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{8}$")
 ID_PATTERN = re.compile(r"^[0-9A-F]{32}$")
-NON_V2_CANVAS_FIELDS = {"EnableMarginXS"}
+NON_V2_CANVAS_FIELDS = {
+    "CanvasType",
+    "CustomWidth",
+    "CustomHeight",
+    "LengthWidthRatio",
+}
 NON_V2_COMMON_NODE_FIELDS = {"Margin", "Transform"}
 NON_V2_CONTAINER_FIELDS = {
     "Angle",
@@ -197,6 +202,149 @@ def validate_assets(findings: list[Finding], nodes: Iterable[tuple[str, dict[str
             findings.append(Finding(severity, f"node[{node_id}].Path", f"资源不存在：{resolved}"))
 
 
+def validate_canvas_sizing(
+    findings: list[Finding],
+    data: dict[str, Any],
+) -> int | None:
+    sizing = data.get("CanvasSizing")
+    if not isinstance(sizing, dict):
+        findings.append(Finding("error", "$.CanvasSizing", "新海报必须声明画布尺寸策略。"))
+        return None
+    mode = add_enum(
+        findings,
+        "$.CanvasSizing.Mode",
+        sizing.get("Mode"),
+        {"followprimary": 0, "fixed": 1},
+        {0, 1},
+    )
+    if mode == 1:
+        add_range(findings, "$.CanvasSizing.ReferenceWidth", sizing.get("ReferenceWidth"), 1, 32768)
+        add_range(findings, "$.CanvasSizing.ReferenceHeight", sizing.get("ReferenceHeight"), 1, 32768)
+    return mode
+
+
+def validate_frame_ratio(findings: list[Finding], data: dict[str, Any]) -> None:
+    frame = data.get("FrameProperties")
+    if frame is None:
+        return
+    if not isinstance(frame, dict):
+        findings.append(Finding("error", "$.FrameProperties", "必须是外层画幅配置对象。"))
+        return
+    ratio = frame.get("AspectRatio")
+    if ratio is None:
+        return
+    if not isinstance(ratio, dict):
+        findings.append(Finding("error", "$.FrameProperties.AspectRatio", "必须是 Width/Height 比例对象。"))
+        return
+    add_range(findings, "$.FrameProperties.AspectRatio.Width", ratio.get("Width"), 0.001, 1000)
+    add_range(findings, "$.FrameProperties.AspectRatio.Height", ratio.get("Height"), 0.001, 1000)
+
+
+def validate_poster_manifest(
+    findings: list[Finding],
+    data: dict[str, Any],
+    by_id: dict[str, tuple[str, dict[str, Any]]],
+    canvas_mode: int | None,
+    template_dir: Path,
+) -> None:
+    manifest = data.get("PosterManifest")
+    if not isinstance(manifest, dict):
+        findings.append(Finding("error", "$.PosterManifest", "必须是海报素材清单对象。"))
+        return
+    slots = manifest.get("AssetSlots")
+    if not isinstance(slots, list):
+        findings.append(Finding("error", "$.PosterManifest.AssetSlots", "必须存在且为数组。"))
+        return
+
+    slots_by_id: dict[str, dict[str, Any]] = {}
+    for index, slot in enumerate(slots):
+        location = f"$.PosterManifest.AssetSlots[{index}]"
+        if not isinstance(slot, dict):
+            findings.append(Finding("error", location, "素材槽必须是对象。"))
+            continue
+        slot_id = slot.get("Id")
+        if not isinstance(slot_id, str) or not slot_id.strip():
+            findings.append(Finding("error", f"{location}.Id", "素材槽 ID 不能为空。"))
+            continue
+        if slot_id in slots_by_id:
+            findings.append(Finding("error", f"{location}.Id", "素材槽 ID 必须唯一。"))
+            continue
+        slots_by_id[slot_id] = slot
+        accepted = slot.get("AcceptedMediaTypes")
+        if (
+            not isinstance(accepted, list)
+            or not accepted
+            or any(not isinstance(value, str) or not value.lower().startswith("image/") for value in accepted)
+        ):
+            findings.append(Finding("error", f"{location}.AcceptedMediaTypes", "至少声明一种 image/* 媒体类型。"))
+        add_enum(findings, f"{location}.Fit", slot.get("Fit"), {"cover": 0, "contain": 1, "fill": 2}, {0, 1, 2})
+        add_enum(findings, f"{location}.Purpose", slot.get("Purpose"), {"photo": 0, "graphic": 1}, {0, 1})
+        crop = slot.get("Crop")
+        if crop is not None and not isinstance(crop, dict):
+            findings.append(Finding("error", f"{location}.Crop", "必须是共享裁切配置对象。"))
+        elif isinstance(crop, dict) and isinstance(crop.get("Settings"), dict):
+            settings = crop["Settings"]
+            for key in ("CenterX", "CenterY"):
+                add_range(findings, f"{location}.Crop.Settings.{key}", settings.get(key), 0, 1)
+            for key in ("VisibleWidth", "VisibleHeight"):
+                add_range(findings, f"{location}.Crop.Settings.{key}", settings.get(key), 0.000001, 1)
+            add_range(
+                findings,
+                f"{location}.Crop.Settings.StraightenDegrees",
+                settings.get("StraightenDegrees", 0),
+                -45,
+                45,
+            )
+
+    primary_id = manifest.get("PrimaryAssetSlotId")
+    if primary_id is not None and (not isinstance(primary_id, str) or not primary_id.strip()):
+        findings.append(Finding("error", "$.PosterManifest.PrimaryAssetSlotId", "主图槽 ID 必须为非空字符串或 null。"))
+        primary_id = None
+    primary = slots_by_id.get(primary_id) if isinstance(primary_id, str) else None
+    if isinstance(primary_id, str) and primary is None:
+        findings.append(Finding("error", "$.PosterManifest.PrimaryAssetSlotId", "主图槽引用不存在。"))
+    if primary is not None:
+        if enum_value(primary.get("Purpose"), {"photo": 0, "graphic": 1}) != 0:
+            findings.append(Finding("error", "$.PosterManifest.PrimaryAssetSlotId", "主图槽必须使用 Photo 用途。"))
+        if not slots or not isinstance(slots[0], dict) or slots[0].get("Id") != primary_id:
+            findings.append(Finding("error", "$.PosterManifest.AssetSlots", "主图槽必须排在素材槽列表首位。"))
+    if canvas_mode == 0:
+        if primary is None:
+            findings.append(Finding("error", "$.PosterManifest.PrimaryAssetSlotId", "跟随主图画布必须声明主图槽。"))
+        elif not (template_dir / "default.jpg").is_file():
+            findings.append(Finding("error", "$.PosterManifest.PrimaryAssetSlotId", "跟随主图画布必须提供 default.jpg 默认主图。"))
+
+    owners: dict[str, str] = {}
+    if primary is not None and isinstance(primary_id, str):
+        owners[primary_id] = str(data.get("ID") or "canvas")
+    for node_id, (kind, node) in by_id.items():
+        metadata = node.get("PosterMetadata")
+        slot_id = metadata.get("AssetSlotId") if isinstance(metadata, dict) else None
+        if slot_id is None or slot_id == "":
+            continue
+        if kind not in {"Containers", "Logos"}:
+            findings.append(Finding("error", f"node[{node_id}].PosterMetadata.AssetSlotId", "只有容器背景和 Logo 可以拥有普通素材槽。"))
+            continue
+        if not isinstance(slot_id, str) or slot_id not in slots_by_id:
+            findings.append(Finding("error", f"node[{node_id}].PosterMetadata.AssetSlotId", "节点引用的素材槽不存在。"))
+            continue
+        if slot_id in owners:
+            findings.append(Finding("error", f"node[{node_id}].PosterMetadata.AssetSlotId", "一个素材槽不能同时绑定多个所有者。"))
+            continue
+        owners[slot_id] = node_id
+        slot = slots_by_id[slot_id]
+        has_default_id = isinstance(slot.get("DefaultAssetId"), str) and bool(slot["DefaultAssetId"].strip())
+        has_path = isinstance(node.get("Path"), str) and bool(node["Path"].strip())
+        if has_default_id and not has_path:
+            findings.append(Finding("error", f"node[{node_id}].Path", "素材槽声明了默认资源，但所属节点没有 Path。"))
+        elif has_path and not has_default_id:
+            findings.append(Finding("warning", f"node[{node_id}].PosterMetadata.AssetSlotId", "节点有默认图片，但素材槽未记录 DefaultAssetId。"))
+
+    for slot_id, slot in slots_by_id.items():
+        if slot_id not in owners:
+            findings.append(Finding("warning", f"slot[{slot_id}]", f"素材槽“{slot.get('Name') or slot_id}”没有所有者。"))
+
+
 def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) -> list[Finding]:
     findings: list[Finding] = []
     if not isinstance(data, dict):
@@ -206,10 +354,8 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
     for field in sorted(NON_V2_CANVAS_FIELDS):
         if field in data:
             findings.append(Finding("error", f"$.{field}", "V2 配置不得包含此画布字段。"))
-    canvas_type = add_enum(findings, "$.CanvasType", data.get("CanvasType"), {"normal": 0, "split": 1}, {0, 1})
-    if canvas_type == 1:
-        add_range(findings, "$.CustomWidth", data.get("CustomWidth"), 1, 100000)
-        add_range(findings, "$.CustomHeight", data.get("CustomHeight"), 1, 100000)
+    canvas_mode = validate_canvas_sizing(findings, data)
+    validate_frame_ratio(findings, data)
     validate_color(findings, "$.BackgroundColor", data.get("BackgroundColor"))
     validate_thickness(findings, "$.BorderThickness", data.get("BorderThickness"), 0, 50)
     canvas_id = data.get("ID")
@@ -365,9 +511,6 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
         if actual != expected:
             findings.append(Finding("error", f"parent[{pid}].SEQ", f"必须连续编号 0..{max(0, len(entries)-1)}，当前为 {actual}。"))
 
-    if not root_ids:
-        findings.append(Finding("error", "$", "至少需要一个 PID=0 的根节点。"))
-
     for node_id in by_id:
         seen: set[str] = set()
         current = node_id
@@ -378,6 +521,7 @@ def validate_config(data: Any, template_dir: Path, strict_assets: bool = False) 
             seen.add(current)
             current = parent_of.get(current, "0")
 
+    validate_poster_manifest(findings, data, by_id, canvas_mode, template_dir)
     validate_assets(findings, nodes, template_dir, strict_assets)
     return findings
 

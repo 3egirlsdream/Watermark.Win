@@ -66,6 +66,7 @@ Web端不用考虑，不报错即可。
 
 - 移动端所有具有 `Min`、`Max` 和 `Step` 的连续数值参数，统一使用公共组件 `Watermark.Razor/Components/Compatibility/WmNumericSlider.razor`；不得新增原生 `input[type="range"]`、Masa `MSlider` 或页面内自定义滑条作为平行实现。
 - `WmNumericSlider` 在桌面端显示范围轨道与可编辑数值；在触摸设备上显示数值按钮，点按展开以当前值居中的五档滚轮，按钮区或滚轮中上下滑动按 `Step` 微调。浮层必须位于所属移动面板、底部工具栏和抽屉之上，不能被滚动容器裁切。
+- 组件在数值实际切换到新的 `Step` 时统一触发一次轻触震动；到达边界、重复事件和外部数据回填不得震动。调用方不得另行叠加震动反馈。
 - 连续预览使用 `ValueChanged`；需要撤销事务的场景通过 `InteractionStarted` 和 `InteractionEnded` 开启、提交一次编辑。父级已经提供字段标题时使用 `ShowLabel="false"`，不得重复显示标题。
 - 非连续枚举、日期时间、颜色二维选择和单次开关不使用本组件，应使用相应的选择器或开关组件。
 

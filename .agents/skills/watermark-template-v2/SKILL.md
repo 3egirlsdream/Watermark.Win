@@ -1,6 +1,6 @@
 ---
 name: watermark-template-v2
-description: 为「轻影 / Watermark」生成、修改、解释和校验 LayoutSchemaVersion 2 水印模板。用于用户要求根据版式描述、参考图、EXIF 文本、Logo、分割线或背景装饰创建可导入的 config.json，调整 V2 Flex/Absolute 布局，解决动态文字遮挡、左右/上下锚定、双行对齐，或审查现有 V2 模板配置时；涉及模板编辑器的画布直属节点、Resize/Scale、文字、Logo、分割线原生尺寸与拖拽交互时也应使用。
+description: 为「轻影 / Watermark」生成、修改、解释和校验 LayoutSchemaVersion 2 海报模板。用于用户要求根据版式描述、参考图、画布策略、主图或普通素材槽、EXIF 文本、Logo、分割线或背景装饰创建可导入的 config.json，调整 V2 Flex/Absolute 布局，解决动态文字遮挡、左右/上下锚定、双行对齐，或审查现有 V2 模板配置时；涉及模板编辑器的画布直属节点、Resize/Scale、文字、Logo、分割线原生尺寸与拖拽交互时也应使用。
 ---
 
 # Watermark 模板 V2
@@ -20,6 +20,9 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 - `Watermark.Shared/Models/WMStyle.cs`
 - `Watermark.Shared/Models/WMText.cs`
 - `Watermark.Shared/Models/WMImage.cs`
+- `Watermark.Shared/Models/WMCanvasSizing.cs`
+- `Watermark.Shared/Models/WMPosterAssets.cs`
+- `Watermark.Shared/Models/WMPosterTemplateMigration.cs`
 - `Watermark.Shared/Models/WMLayoutEngine.cs`
 - `Watermark.Shared/Models/WatermarkHelper.cs`
 - `Watermark.Shared/Models/Global.cs`
@@ -31,7 +34,8 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 
 从用户输入或参考图提取：
 
-- 画布类型、参考宽高比、图片区和留白区；
+- 画布策略（跟随主图或固定尺寸）、参考宽高比、图片区和留白区；
+- 是否存在主图，以及每个可替换素材槽的用途、默认资源、适配、裁切和自动填充顺序；
 - 每个视觉分组的锚定边、占用范围和层叠关系；
 - 哪些节点参加连续布局，哪些是背景、印章或自由装饰；
 - 文本的 EXIF Key、前后缀、字体文件、大小、字距、颜色、粗斜体和换行策略；
@@ -59,6 +63,11 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 ### 3. 构造可持久化配置
 
 - 固定写入 `LayoutSchemaVersion: 2`。
+- 写入 `CanvasSizing.Mode`。跟随主图使用 `FollowPrimary`，固定画布使用 `Fixed` 并写入正数 `ReferenceWidth/ReferenceHeight`；比例预设以最长边 6000 生成参考尺寸。
+- 主图由 `PosterManifest.PrimaryAssetSlotId` 指向一个 `Purpose=Photo` 的槽位，并始终排在照片槽首位。固定画布允许没有主图；跟随主图必须有主图槽和可用默认主图。
+- 普通可替换照片或贴图使用 `PosterMetadata.AssetSlotId`；`Purpose=Photo` 才参加照片多选和自动填充，`Purpose=Graphic` 不会被批量照片覆盖。`AssetSlots` 数组顺序就是自动填充顺序。
+- 固定图片不声明槽位。可替换且有默认资源的节点同时保留节点资源与 `DefaultAssetId`；可选空槽两者都留空，运行时只跳过图片绘制，不能删除容器和子节点布局。
+- 外层画幅比例只写 `FrameProperties.AspectRatio`，不得再用旧 `LengthWidthRatio` 兼任画布比例。
 - 为所有节点写入统一 `Style`，即使叶子节点不会使用容器专属字段。
 - 使用唯一、非空 ID；新 ID 默认采用 32 位大写十六进制字符串。
 - 输出扁平的 `Containers/Texts/Logos/Lines` 数组，并为每个节点写入 `PNode.PID/SEQ`。
@@ -66,7 +75,8 @@ description: 为「轻影 / Watermark」生成、修改、解释和校验 Layout
 - 容器仍只可靠支持“根容器 → 可选二级容器 → 叶子节点”。禁止生成第三级容器；根级叶子不计入容器深度。
 - 二级自动宽度内容组设置 `Style.Width=Auto`；高度使用明确的 `Style.Height=Percent`，避免依赖尚未实现的完整 auto-height 测量。
 - 新文本显式写入 `LetterSpacing`。它按画布短边百分比换算，并参与真实测量、换行和 Flex 本征宽度；不要用拉宽图片或字符中手工插空格替代字距。
-- 当完整前景 PNG 定义了固定照片窗、且用户要求不同来源比例都不能出现黑边时，在 `ImageProperties` 写入 `CoverPhoto=true` 与正数 `CoverPhotoAspectRatio`。渲染器会对主照片做一次居中等比 cover 裁切；它不会拉伸图片，超出照片窗的边缘会被裁掉。该比例必须等于照片内容区的宽÷高，而不是整张卡片的宽÷高。
+- 当完整前景 PNG 定义固定照片窗且不同来源比例不能出现黑边时，在主图槽写入 `Fit=Cover` 和共享 `Crop.Settings`。渲染器按同一非破坏裁切矩阵处理主图；不得继续写旧 `CoverPhoto/CoverPhotoAspectRatio`。
+- 新保存配置不得写 `CanvasType`、`CustomWidth/CustomHeight`、`LengthWidthRatio`、`FixImage` 或 `CoverPhoto`。读取器负责迁移旧格式，生成器只输出新字段。
 - 参考图里的机型、镜头、光圈、焦距、快门、ISO、时间、坐标和照片编号都只是预览样本。承担照片信息语义的文字必须配置非空 EXIF `Key`，不得把参考值写进空 Key 的 `Prefix`。空 Key 只用于栏目名、标题等与照片无关的装饰文案。
 - 不使用 `order`、`flex-basis`、`min/max size`、`align-self` 或 `flex-wrap`；项目没有这些字段。
 - 只使用 `Style` 表达布局。不要输出容器顶层的 `ContainerAlignment/Orientation/HorizontalAlignment/VerticalAlignment/WidthPercent/HeightPercent/XOffset/YOffset/Angle`，也不要输出节点顶层的 `Margin/Transform`。
@@ -97,7 +107,7 @@ python3 .agents/skills/watermark-template-v2/scripts/validate_template_v2.py /ab
 
 1. 用 `Global.ReadConfig` 读取配置，再用 `Global.CanvasSerialize` 回写，确认节点、顺序和 Style 未丢失。
 2. 复用 `WatermarkHelper.GenerationDesignPreviewAsync` 或当前模板预览入口，不创建平行渲染器。
-3. 分别使用横图、竖图和至少两组 EXIF 样本渲染。启用 `CoverPhoto` 时，横图、竖图和方图都必须覆盖完整照片窗；确认没有黑边或透明露底，且源图没有被非等比拉伸。
+3. 分别使用横图、竖图和至少两组 EXIF 样本渲染。主图槽使用 `Fit=Cover` 时，横图、竖图和方图都必须覆盖完整照片窗；确认没有黑边或透明露底，且源图没有被非等比拉伸。
 4. 两组 EXIF 必须使用明显不同的机型、曝光、时间、坐标或编号，并确认相应文字像素确实随元数据变化；不能只检查配置里存在 Key。
 5. 使用空元数据再渲染一次：V2 动态片段缺少 Key 时，其 Prefix/Value/Suffix 应整体隐藏，不能留下 `F mm S` 一类占位符；装饰性固定文字仍应显示。
 6. 对动态文本使用最长样本，验证不重叠、不越界、右/左/上/下锚点不漂移。
@@ -127,6 +137,10 @@ python3 .agents/skills/watermark-template-v2/scripts/validate_template_v2.py /ab
 ## 不可违反的规则
 
 - 所有根节点必须是 Absolute；Flow 节点必须是 Static。
+- 海报行为只由 `CanvasSizing`、可选主图和有序素材槽三个独立维度决定，不得重新引入互斥的 Normal/Split 执行入口。
+- `FollowPrimary` 必须有主图槽和默认主图；`Fixed` 必须有正数参考尺寸，但可以没有任何图片。
+- 主图槽必须是照片槽并排在照片槽首位；普通照片槽按数组顺序自动填充，图形槽不得被照片批量选择覆盖。
+- 空槽只跳过图片层，保留容器背景色、布局、裁切和子节点；固定资源不声明槽位。
 - Flow 节点 Transform 必须保持默认值；缩放、旋转和平移只用于 Absolute。
 - 画布尺寸手柄写入 `Style.Width/Height` 或文字 `FontSize`、线条长度；文字左右手柄不得改字号，角点必须按文字内容尺寸计算，提交后 `Style.Height` 保持 Auto；Logo 侧边手柄不得联动另一轴，角点按比例锁定决定是否等比，渲染内容必须填满图片框且不保留 contain 空白；`Transform.ScaleX/Y` 仅作为高级整体缩放保留，Resize 保持当前 Scale 不变。
 - 分割线属性面板只提供方向、长度、粗细和颜色；长度与主轴尺寸是同一个属性，粗细与垂直轴尺寸是同一个属性。拖动线条或选框移动整个节点，拖动长度手柄只改变主轴尺寸并保持另一轴坐标稳定。

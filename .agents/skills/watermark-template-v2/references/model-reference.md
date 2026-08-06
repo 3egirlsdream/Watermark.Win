@@ -30,7 +30,10 @@ WMCanvasSerialize
 每个节点通过 `PNode` 指向父节点。`Global.ReadConfig` 会合并四个数组中的全部根节点，并重建最多两层容器；生成器不得输出更深的容器树。
 
 可替换图片不是新的布局节点。`WMLogo` 或 `WMContainer` 通过
-`PosterMetadata.AssetSlotId` 引用 `PosterManifest.AssetSlots` 中的槽位；槽位保存名称、接受的媒体类型、`Cover/Contain/Fill` 适配策略、是否必填和默认资产标识。一个槽位只能由一个节点拥有。复制节点时必须复制出新的槽位 ID，删除节点时必须清理不再被引用的槽位。
+`PosterMetadata.AssetSlotId` 引用 `PosterManifest.AssetSlots` 中的槽位；可选主图由
+`PosterManifest.PrimaryAssetSlotId` 引用。槽位保存名称、`Photo/Graphic` 用途、接受的媒体类型、`Cover/Contain/Fill` 适配策略、是否必填和默认资产标识。一个普通槽位只能由一个节点拥有；主图槽由画布拥有。复制节点时必须复制出新的槽位 ID，删除节点时必须清理不再被引用的槽位。
+
+`AssetSlots` 数组顺序就是自动填充顺序。主图槽必须为 `Photo` 且排在全部照片槽首位；`Photo` 参加照片多选、批量和合成，`Graphic` 用于贴图/Icon，不被照片自动覆盖。所有普通槽位都允许为空：没有运行时绑定且没有默认资源时只跳过图片绘制，所属容器的布局、背景和子节点仍保留。
 
 槽位的 `Crop.Settings` 直接使用图片编辑器的 `WMCropSettings`：归一化中心点、可见宽高、90° 旋转、水平/垂直翻转、±45° 拉直和比例预设都由 `WMCropPlanner` 解释。预览和最终模板渲染重放同一矩阵，不生成独立裁切图片。旧模板中的 `Crop.AspectRatio/RotationDegrees` 仅用于读取迁移；新编辑不得继续把它们作为裁切主数据。
 
@@ -43,17 +46,19 @@ WMCanvasSerialize
 | `ID` | 模板 ID，建议 32 位大写十六进制 |
 | `Name` | 中文模板名 |
 | `LayoutSchemaVersion` | 固定 `2` |
-| `CanvasType` | `0` 普通，`1` 拼图/自定义画布 |
-| `CustomWidth/CustomHeight` | `CanvasType=1` 时的参考尺寸 |
+| `CanvasSizing` | `Mode=FollowPrimary` 跟随每张主图，或 `Mode=Fixed` 使用参考画布尺寸 |
+| `CanvasSizing.ReferenceWidth/ReferenceHeight` | 固定画布的最终基础尺寸；比例预设以最长边 6000 生成 |
 | `BorderThickness` | 图片外边距，上右下左数值按画布边距规则计算 |
 | `BackgroundColor` | `#RRGGBBAA` |
-| `ImageProperties` | 主图片显示、圆角、阴影、模糊，以及可选的等比覆盖裁切 |
+| `ImageProperties` | 主图片显示、圆角、阴影和模糊；主图适配/裁切由主图槽保存 |
 | `BorderSameWidth` | 外边距等宽配置 |
-| `FrameProperties` | 外框配置 |
-| `PosterManifest` | 海报作者声明的可替换图片槽、主题标签和建议素材分类；没有槽位时保持空集合 |
+| `FrameProperties` | 外框配置；`AspectRatio` 独立保存外层画幅比例 |
+| `PosterManifest` | 可选主图槽 ID、有序可替换素材槽、主题标签和建议素材分类；没有槽位时保持空集合 |
 | `Containers/Texts/Logos/Lines` | 必须存在且为数组，空类型写 `[]` |
 
-不要在配置里写画布 `Path`；`WMCanvas.Path` 被 `JsonIgnore`，设计图片由应用会话提供。
+不要在配置里写画布 `Path`；`WMCanvas.Path` 被 `JsonIgnore`。跟随主图模板的默认主图由模板目录资源恢复，应用时运行时解析器把本次 Artifact 写入克隆画布。
+
+新保存配置只写上述新字段，不写 `CanvasType`、`CustomWidth/CustomHeight`、`LengthWidthRatio`、`FixImage`、`CoverPhoto/CoverPhotoAspectRatio`。`Global.ReadConfig` 仍识别这些旧字段并即时迁移；重新保存后不保证旧版应用可以读取。
 
 ## 3. 扁平层级
 
@@ -142,8 +147,13 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 |  | 3 | Baseline |
 | `Overflow` | 0 | Visible |
 |  | 1 | Hidden |
-| `CanvasType` | 0 | Normal |
-|  | 1 | Split |
+| `CanvasSizing.Mode` | 0 | FollowPrimary |
+|  | 1 | Fixed |
+| `AssetSlots[].Purpose` | 0 | Photo |
+|  | 1 | Graphic |
+| `AssetSlots[].Fit` | 0 | Cover |
+|  | 1 | Contain |
+|  | 2 | Fill |
 | 组件 `Orientation` | 0 | Horizontal |
 |  | 1 | Vertical |
 
@@ -179,23 +189,45 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 
 ## 7. 节点字段
 
-### 主图片等比覆盖（可选）
+### 画布策略与主图槽
 
-当模板使用完整透明前景层定义了异形、圆角或装饰溢出的照片窗，并且不同原图比例不能露出黑边时，顶层 `ImageProperties` 可写：
+海报的画布策略、主图存在性和普通素材槽是三个独立维度：
 
 ```json
-"ImageProperties": {
-  "Show": true,
-  "CoverPhoto": true,
-  "CoverPhotoAspectRatio": 1.5
+"CanvasSizing": {
+  "Mode": 1,
+  "ReferenceWidth": 6000,
+  "ReferenceHeight": 4000
+},
+"PosterManifest": {
+  "PrimaryAssetSlotId": "PRIMARY_SLOT_ID",
+  "AssetSlots": [
+    {
+      "Id": "PRIMARY_SLOT_ID",
+      "Name": "主图",
+      "AcceptedMediaTypes": ["image/*"],
+      "Fit": 0,
+      "Purpose": 0,
+      "Crop": {
+        "Settings": {
+          "CenterX": 0.5,
+          "CenterY": 0.5,
+          "VisibleWidth": 1.0,
+          "VisibleHeight": 1.0
+        }
+      },
+      "IsRequired": false,
+      "DefaultAssetId": "template:primary"
+    }
+  ]
 }
 ```
 
-- `CoverPhoto=false` 或缺失：保持历史行为，不改变输入照片比例。
-- `CoverPhoto=true`：主渲染入口按 `CoverPhotoAspectRatio` 居中裁切来源图片，然后再走既有布局、预览与导出管道。
-- `CoverPhotoAspectRatio` 必须为正数，表示**照片内容窗**的 `宽 / 高`，不是整张水印卡片的比例。
-- 此模式是 `cover`，不是拉伸或 contain：始终保持原图像素比例，超出照片窗的部分会裁掉；生成模板时必须分别用横图、竖图、方图确认无黑边。
-- 不要为普通无固定照片窗的模板开启它；不要用它替代容器背景的 `FixImage`。
+- `FollowPrimary` 根据每次主图素材解析基础画布尺寸，继续在其外应用 `BorderThickness`；它必须有主图槽和可用默认主图，确保未选照片也可导出。
+- `Fixed` 使用 `ReferenceWidth/ReferenceHeight`，可以没有主图，也可以创建纯文字/图形海报。
+- 主图仍使用画布 `ImageProperties`、`BorderThickness`、EXIF 和主图效果；是否存在只由 `PrimaryAssetSlotId` 决定。
+- 主图窗需要等比覆盖时使用 `Fit=Cover`；精确构图写入槽位 `Crop.Settings`。不要再写旧 `CoverPhoto`。
+- 外层画幅比例写 `FrameProperties.AspectRatio={Width,Height}`，与基础画布比例独立生效。
 
 ### 所有节点
 
@@ -208,7 +240,7 @@ JSON 使用 Newtonsoft 默认数值枚举。生成时使用数值，确保读取
 - `Controls` 在扁平配置中写 `[]` 或省略；层级由 `PNode` 重建。
 - `BackgroundColor` 使用 `#RRGGBBAA`，透明可用 `#00000000`。
 - `Path` 为容器背景资源的模板相对路径。
-- 容器背景允许由使用者替换时，为节点设置 `PosterMetadata.AssetSlotId`，并在顶层 `PosterManifest.AssetSlots` 提供同 ID 的声明；槽位的 `Fit` 描述填充策略，`Crop.Settings` 保存共享图片裁切参数，外部布局几何仍由 `Style` 与容器字段负责。
+- 容器背景允许由使用者替换时，为节点设置 `PosterMetadata.AssetSlotId`，并在顶层 `PosterManifest.AssetSlots` 提供同 ID 的声明；照片容器使用 `Purpose=Photo`，装饰贴图使用 `Purpose=Graphic`。槽位的 `Fit` 描述填充策略，`Crop.Settings` 保存共享图片裁切参数，外部布局几何仍由 `Style` 与容器字段负责。
 - `ContainerProperties` 控制背景图片的裁切、阴影、圆角和模糊。V2 的 `EnableGaussianBlur=true` 会模糊该容器下方已合成的像素，再按容器矩形/圆角裁切；`GaussianDeep` 使用设计像素并随输出比例缩放。
 - 背景模糊通常配合半透明 `BackgroundColor`。若背景色 Alpha 为 `FF`，模糊结果会被不透明填充遮住。
 - V2 排版读取 `Style.FlexDirection/JustifyContent/AlignItems/Gap`。
@@ -307,3 +339,12 @@ Prefix/Value/Suffix 各有可选 `WMFontStyle`。当前渲染会统一使用文�
 - 四个节点数组始终显式写出，即使为空也写 `[]`；读取器会把缺失/null 数组归一化为空集合，但生成器不得依赖该容错。
 - 资源路径应相对模板目录；禁止 `..` 逃逸。Logo 缺失在应用验证器中是 warning，容器背景缺失是 error。
 - 结构校验无法证明任意长度文本都完整显示。`Flex=Initial` 只负责收缩可用主轴尺寸，`TextWrap=false` 且 `Overflow=Hidden` 时超长内容最终会裁切。
+
+### 运行时应用契约
+
+- `WMPosterAssetBinding` 只保存 `SlotId`、工作台 `ArtifactId` 和可选 `FitOverride/CropOverride`；设备绝对路径不得进入模板、配置或历史记录。
+- `WMPosterOutputPlan` 表示一张成片的画布 JSON 快照与槽位绑定；`WMPosterApplicationPlan` 汇总一次批量或合成操作的全部输出。
+- 模板先选时：零照片槽生成一张默认/透明海报；一个照片槽将多选照片展开为批量输出；多个照片槽按槽位顺序填充并合成一张。
+- 照片先选时只自动绑定主图槽，多张照片生成批量实例；没有主图槽时不消费照片。
+- 运行时解析器克隆画布后写入主图/普通槽资源和对应 EXIF；无覆盖时保留默认资源，空槽只跳过图片层。
+- 最终仍走共享 `IWMTemplateRenderer`、V2 布局、调色与 EXIF/ICC 链。指纹必须包含实例 JSON、素材内容哈希、槽位顺序、Fit/Crop 和输出尺寸，预览、完成、导出复用相同缓存产物。
