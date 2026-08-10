@@ -21,6 +21,7 @@ public sealed record MacCanvasSceneItem(
     double ScaleY,
     double Rotation,
     bool Absolute,
+    bool Flow,
     bool Locked,
     bool Visible,
     bool HasSurface,
@@ -53,6 +54,22 @@ public static class MacCanvasBoundary
     private const double MaximumScale = 4;
 
     public static MacCanvasInteraction ConstrainTransform(WMDesignBounds bounds, MacCanvasInteraction interaction)
+        => ConstrainTransform(bounds, interaction, constrainRootFully: false);
+
+    /// <summary>
+    /// Constrains a V2 flow node to its complete containing box. Unlike an
+    /// absolute root node, a root-level flow container may not remain only
+    /// partially visible outside the canvas.
+    /// </summary>
+    public static MacCanvasInteraction ConstrainFlowDrag(
+        WMDesignBounds bounds,
+        MacCanvasInteraction interaction)
+        => ConstrainTransform(bounds, interaction, constrainRootFully: true);
+
+    private static MacCanvasInteraction ConstrainTransform(
+        WMDesignBounds bounds,
+        MacCanvasInteraction interaction,
+        bool constrainRootFully)
     {
         ArgumentNullException.ThrowIfNull(bounds);
         ArgumentNullException.ThrowIfNull(interaction);
@@ -73,7 +90,8 @@ public static class MacCanvasBoundary
             interaction.OffsetYPercent,
             scaleX,
             scaleY,
-            rotation);
+            rotation,
+            constrainRootFully);
         return interaction with
         {
             OffsetXPercent = offsetXPercent,
@@ -136,7 +154,8 @@ public static class MacCanvasBoundary
         double offsetYPercent,
         double scaleX,
         double scaleY,
-        double rotation)
+        double rotation,
+        bool constrainRootFully = false)
     {
         ArgumentNullException.ThrowIfNull(bounds);
         if (bounds.ParentWidth <= 0 || bounds.ParentHeight <= 0)
@@ -157,10 +176,10 @@ public static class MacCanvasBoundary
         var baseCenterY = bounds.Y + bounds.Height / 2d;
         var desiredCenterX = baseCenterX + bounds.ParentWidth * offsetXPercent / 100d;
         var desiredCenterY = baseCenterY + bounds.ParentHeight * offsetYPercent / 100d;
-        var centerX = bounds.ParentId is null
+        var centerX = bounds.ParentId is null && !constrainRootFully
             ? ClampRootCenter(desiredCenterX, halfWidth, bounds.ParentWidth)
             : ClampCenter(desiredCenterX, halfWidth, bounds.ParentWidth);
-        var centerY = bounds.ParentId is null
+        var centerY = bounds.ParentId is null && !constrainRootFully
             ? ClampRootCenter(desiredCenterY, halfHeight, bounds.ParentHeight)
             : ClampCenter(desiredCenterY, halfHeight, bounds.ParentHeight);
 
@@ -638,6 +657,28 @@ public static class MacCanvasTransform
         var transform = control.Style.Position == WMPosition.Absolute
             ? control.Style.Transform
             : control.EnsureTransform();
+        ApplyTo(transform, interaction);
+        if (control.Style.Position != WMPosition.Absolute && control is WMContainer container)
+            container.Angle = (int)Math.Round(transform.Rotation);
+    }
+
+    /// <summary>
+    /// Applies a visual transform to a V2 flow node without removing it from
+    /// Flex. Its original slot remains occupied, so moving the node cannot
+    /// reflow siblings or change the parent's measured size.
+    /// </summary>
+    public static void ApplyFlow(IWMControl control, MacCanvasInteraction interaction)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(interaction);
+        if (!string.Equals(control.ID, interaction.ControlId, StringComparison.Ordinal))
+            throw new ArgumentException("交互目标与控件不匹配。", nameof(interaction));
+
+        ApplyTo(control.Style.Transform, interaction);
+    }
+
+    private static void ApplyTo(WMTransform transform, MacCanvasInteraction interaction)
+    {
         transform.OffsetXPercent = ClampFinite(interaction.OffsetXPercent, transform.OffsetXPercent, -100, 100);
         transform.OffsetYPercent = ClampFinite(interaction.OffsetYPercent, transform.OffsetYPercent, -100, 100);
         transform.ScaleX = ClampFinite(interaction.ScaleX, transform.ScaleX, MinimumScale, MaximumScale);
@@ -645,8 +686,6 @@ public static class MacCanvasTransform
         transform.Rotation = double.IsFinite(interaction.Rotation)
             ? interaction.Rotation
             : transform.Rotation;
-        if (control.Style.Position != WMPosition.Absolute && control is WMContainer container)
-            container.Angle = (int)Math.Round(transform.Rotation);
     }
 
     private static double ClampFinite(double value, double fallback, double minimum, double maximum) =>
@@ -689,6 +728,12 @@ public static class MacCanvasResize
         else if (control is WMLine)
             requestedWidth = bounds.Width;
 
+        var appliedInteraction = ConstrainNestedSize(
+            bounds,
+            interaction with { Width = requestedWidth, Height = requestedHeight });
+        requestedWidth = appliedInteraction.Width;
+        requestedHeight = appliedInteraction.Height;
+
         switch (control)
         {
             case WMContainer:
@@ -707,8 +752,8 @@ public static class MacCanvasResize
             case WMText text:
                 if (changesWidth && changesHeight)
                 {
-                    var ratio = double.IsFinite(interaction.ResizeRatio) && interaction.ResizeRatio > 0
-                        ? interaction.ResizeRatio
+                    var ratio = double.IsFinite(appliedInteraction.ResizeRatio) && appliedInteraction.ResizeRatio > 0
+                        ? appliedInteraction.ResizeRatio
                         : requestedWidth / Math.Max(bounds.Width, MinimumLayoutPixels);
                     text.FontSize = Math.Clamp(
                         text.FontSize * (double.IsFinite(ratio) ? ratio : 1d),
@@ -737,21 +782,27 @@ public static class MacCanvasResize
                 throw new InvalidOperationException($"不支持调整 {control.GetType().Name} 的原生尺寸。");
         }
 
-        var appliedInteraction = control is WMLine
+        appliedInteraction = control is WMLine
             ? ResolveLineAnchorInteraction(
-                control,
                 bounds,
-                interaction,
+                appliedInteraction,
                 requestedWidth,
                 requestedHeight)
-            : interaction;
+            : appliedInteraction;
         if (control.Style.Position == WMPosition.Absolute)
+        {
+            appliedInteraction = ConstrainNestedPosition(
+                bounds,
+                appliedInteraction,
+                requestedWidth,
+                requestedHeight);
             ApplyAnchorPosition(
                 control,
                 bounds,
                 appliedInteraction,
                 requestedWidth,
                 requestedHeight);
+        }
 
         var appliedWidth = ResolvePixels(control.Style.Width, bounds.ParentWidth, requestedWidth);
         var appliedHeight = ResolvePixels(control.Style.Height, bounds.ParentHeight, requestedHeight);
@@ -768,7 +819,6 @@ public static class MacCanvasResize
     }
 
     private static MacCanvasInteraction ResolveLineAnchorInteraction(
-        IWMControl control,
         WMDesignBounds bounds,
         MacCanvasInteraction interaction,
         double requestedWidth,
@@ -777,22 +827,207 @@ public static class MacCanvasResize
         var handle = interaction.Handle ?? string.Empty;
         var directionX = handle.Contains('e') ? 1d : handle.Contains('w') ? -1d : 0d;
         var directionY = handle.Contains('s') ? 1d : handle.Contains('n') ? -1d : 0d;
-        var transform = bounds.Transform ?? control.Style.Transform;
+        var (centerDeltaX, centerDeltaY) = ResizeCenterDelta(
+            bounds,
+            directionX,
+            directionY,
+            requestedWidth,
+            requestedHeight);
+        return interaction with
+        {
+            CenterDeltaX = centerDeltaX,
+            CenterDeltaY = centerDeltaY
+        };
+    }
+
+    private static MacCanvasInteraction ConstrainNestedSize(
+        WMDesignBounds bounds,
+        MacCanvasInteraction interaction)
+    {
+        if (bounds.ParentId is null
+            || bounds.ParentWidth <= 0
+            || bounds.ParentHeight <= 0)
+            return interaction;
+
+        var handle = interaction.Handle ?? string.Empty;
+        var directionX = handle.Contains('e') ? 1d : handle.Contains('w') ? -1d : 0d;
+        var directionY = handle.Contains('s') ? 1d : handle.Contains('n') ? -1d : 0d;
+        var requestedWidth = Math.Max(MinimumLayoutPixels, interaction.Width);
+        var requestedHeight = Math.Max(MinimumLayoutPixels, interaction.Height);
+        if (ResizeFitsParent(
+                bounds,
+                directionX,
+                directionY,
+                requestedWidth,
+                requestedHeight))
+            return interaction with { Width = requestedWidth, Height = requestedHeight };
+
+        var nextWidth = requestedWidth;
+        var nextHeight = requestedHeight;
+        var progress = 1d;
+        if (ResizeFitsParent(
+                bounds,
+                directionX,
+                directionY,
+                bounds.Width,
+                bounds.Height))
+        {
+            var lower = 0d;
+            var upper = 1d;
+            for (var index = 0; index < 48; index++)
+            {
+                var candidate = (lower + upper) / 2d;
+                var candidateWidth = bounds.Width + (requestedWidth - bounds.Width) * candidate;
+                var candidateHeight = bounds.Height + (requestedHeight - bounds.Height) * candidate;
+                if (ResizeFitsParent(
+                        bounds,
+                        directionX,
+                        directionY,
+                        candidateWidth,
+                        candidateHeight))
+                    lower = candidate;
+                else
+                    upper = candidate;
+            }
+
+            progress = lower;
+            nextWidth = bounds.Width + (requestedWidth - bounds.Width) * progress;
+            nextHeight = bounds.Height + (requestedHeight - bounds.Height) * progress;
+        }
+        else
+        {
+            var transform = bounds.Transform ?? new WMTransform();
+            var radians = transform.Rotation * Math.PI / 180d;
+            var cosine = Math.Abs(Math.Cos(radians));
+            var sine = Math.Abs(Math.Sin(radians));
+            var rotatedWidth = cosine * nextWidth * Math.Abs(transform.ScaleX)
+                + sine * nextHeight * Math.Abs(transform.ScaleY);
+            var rotatedHeight = sine * nextWidth * Math.Abs(transform.ScaleX)
+                + cosine * nextHeight * Math.Abs(transform.ScaleY);
+            var fit = Math.Min(
+                1d,
+                Math.Min(
+                    bounds.ParentWidth / Math.Max(rotatedWidth, MinimumLayoutPixels),
+                    bounds.ParentHeight / Math.Max(rotatedHeight, MinimumLayoutPixels)));
+            nextWidth = Math.Max(MinimumLayoutPixels, nextWidth * fit);
+            nextHeight = Math.Max(MinimumLayoutPixels, nextHeight * fit);
+        }
+
+        var (centerDeltaX, centerDeltaY) = ResizeCenterDelta(
+            bounds,
+            directionX,
+            directionY,
+            nextWidth,
+            nextHeight);
+        var resizeRatio = double.IsFinite(interaction.ResizeRatio) && interaction.ResizeRatio > 0
+            ? 1d + (interaction.ResizeRatio - 1d) * progress
+            : interaction.ResizeRatio;
+        return interaction with
+        {
+            Width = nextWidth,
+            Height = nextHeight,
+            CenterDeltaX = centerDeltaX,
+            CenterDeltaY = centerDeltaY,
+            ResizeRatio = resizeRatio
+        };
+    }
+
+    private static MacCanvasInteraction ConstrainNestedPosition(
+        WMDesignBounds bounds,
+        MacCanvasInteraction interaction,
+        double width,
+        double height)
+    {
+        if (bounds.ParentId is null
+            || bounds.ParentWidth <= 0
+            || bounds.ParentHeight <= 0)
+            return interaction;
+
+        var transform = bounds.Transform ?? new WMTransform();
+        var radians = transform.Rotation * Math.PI / 180d;
+        var cosine = Math.Abs(Math.Cos(radians));
+        var sine = Math.Abs(Math.Sin(radians));
+        var halfWidth = (cosine * width * Math.Abs(transform.ScaleX)
+            + sine * height * Math.Abs(transform.ScaleY)) / 2d;
+        var halfHeight = (sine * width * Math.Abs(transform.ScaleX)
+            + cosine * height * Math.Abs(transform.ScaleY)) / 2d;
+        var baseCenterX = bounds.X + bounds.Width / 2d
+            + bounds.ParentWidth * transform.OffsetXPercent / 100d;
+        var baseCenterY = bounds.Y + bounds.Height / 2d
+            + bounds.ParentHeight * transform.OffsetYPercent / 100d;
+        var desiredCenterX = baseCenterX + FiniteOrZero(interaction.CenterDeltaX);
+        var desiredCenterY = baseCenterY + FiniteOrZero(interaction.CenterDeltaY);
+        var centerX = ClampCenter(desiredCenterX, halfWidth, bounds.ParentWidth);
+        var centerY = ClampCenter(desiredCenterY, halfHeight, bounds.ParentHeight);
+        return interaction with
+        {
+            CenterDeltaX = centerX - baseCenterX,
+            CenterDeltaY = centerY - baseCenterY
+        };
+    }
+
+    private static bool ResizeFitsParent(
+        WMDesignBounds bounds,
+        double directionX,
+        double directionY,
+        double width,
+        double height)
+    {
+        var transform = bounds.Transform ?? new WMTransform();
+        var (centerDeltaX, centerDeltaY) = ResizeCenterDelta(
+            bounds,
+            directionX,
+            directionY,
+            width,
+            height);
+        var radians = transform.Rotation * Math.PI / 180d;
+        var cosine = Math.Abs(Math.Cos(radians));
+        var sine = Math.Abs(Math.Sin(radians));
+        var halfWidth = (cosine * width * Math.Abs(transform.ScaleX)
+            + sine * height * Math.Abs(transform.ScaleY)) / 2d;
+        var halfHeight = (sine * width * Math.Abs(transform.ScaleX)
+            + cosine * height * Math.Abs(transform.ScaleY)) / 2d;
+        var centerX = bounds.X + bounds.Width / 2d
+            + bounds.ParentWidth * transform.OffsetXPercent / 100d
+            + centerDeltaX;
+        var centerY = bounds.Y + bounds.Height / 2d
+            + bounds.ParentHeight * transform.OffsetYPercent / 100d
+            + centerDeltaY;
+        const double epsilon = 0.0001;
+        return centerX - halfWidth >= -epsilon
+            && centerX + halfWidth <= bounds.ParentWidth + epsilon
+            && centerY - halfHeight >= -epsilon
+            && centerY + halfHeight <= bounds.ParentHeight + epsilon;
+    }
+
+    private static (double X, double Y) ResizeCenterDelta(
+        WMDesignBounds bounds,
+        double directionX,
+        double directionY,
+        double width,
+        double height)
+    {
+        var transform = bounds.Transform ?? new WMTransform();
         var localX = directionX
-            * (requestedWidth - bounds.Width) / 2d
+            * (width - bounds.Width) / 2d
             * transform.ScaleX;
         var localY = directionY
-            * (requestedHeight - bounds.Height) / 2d
+            * (height - bounds.Height) / 2d
             * transform.ScaleY;
         var radians = transform.Rotation * Math.PI / 180d;
         var cosine = Math.Cos(radians);
         var sine = Math.Sin(radians);
-        return interaction with
-        {
-            CenterDeltaX = localX * cosine - localY * sine,
-            CenterDeltaY = localX * sine + localY * cosine
-        };
+        return (
+            localX * cosine - localY * sine,
+            localX * sine + localY * cosine);
     }
+
+    private static double ClampCenter(double center, double halfExtent, double parentExtent) =>
+        halfExtent * 2d >= parentExtent
+            ? parentExtent / 2d
+            : Math.Clamp(center, halfExtent, parentExtent - halfExtent);
+
+    private static double FiniteOrZero(double value) => double.IsFinite(value) ? value : 0d;
 
     private static void ApplyAnchorPosition(
         IWMControl control,

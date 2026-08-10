@@ -1,3 +1,4 @@
+using SkiaSharp;
 using Watermark.Razor.Components.Mac.Editor;
 using Watermark.Shared.Enums;
 using Watermark.Shared.Models;
@@ -122,6 +123,18 @@ public sealed class MacCanvasTransformTests
     }
 
     [Fact]
+    public void ConstrainFlowDrag_KeepsRootContainerFullyInsideCanvas()
+    {
+        var bounds = Bounds("ROOT", null, 20, 30, 40, 20, 100, 100);
+        var interaction = new MacCanvasInteraction("ROOT", "drag", 175, -125, 1, 1, 0);
+
+        var constrained = MacCanvasBoundary.ConstrainFlowDrag(bounds, interaction);
+
+        Assert.Equal(40, constrained.OffsetXPercent, 6);
+        Assert.Equal(-30, constrained.OffsetYPercent, 6);
+    }
+
+    [Fact]
     public void ConstrainTransform_ShrinksResizedChildAndKeepsItInsideParent()
     {
         var bounds = Bounds("LOGO", "PARENT", 60, 60, 40, 40, 100, 100);
@@ -193,6 +206,35 @@ public sealed class MacCanvasTransformTests
         Assert.Equal(.75, container.Style.Transform.ScaleY);
         Assert.Equal(160, applied.Width, 6);
         Assert.Equal(80, applied.Height, 6);
+    }
+
+    [Fact]
+    public void Resize_NestedComponentStopsAtParentEdge()
+    {
+        var logo = new WMLogo { ID = "LOGO" };
+        logo.Style.Position = WMPosition.Absolute;
+        var bounds = Bounds(logo.ID, "PARENT", 40, 20, 100, 50, 300, 160);
+
+        var applied = MacCanvasResize.Apply(
+            logo,
+            bounds,
+            new MacCanvasInteraction(
+                logo.ID,
+                "resize",
+                0,
+                0,
+                1,
+                1,
+                0,
+                Width: 400,
+                Height: 50,
+                Handle: "e",
+                CenterDeltaX: 150));
+
+        Assert.Equal(260, applied.Width, 3);
+        Assert.Equal(260d / 300d * 100d, logo.Style.Width.Value, 3);
+        Assert.Equal(40d / 300d * 100d, logo.Style.Left!.Value, 3);
+        Assert.Equal(80, applied.CenterDeltaX, 3);
     }
 
     [Fact]
@@ -425,6 +467,148 @@ public sealed class MacCanvasTransformTests
     }
 
     [Fact]
+    public void ApplyFlow_MovesChildWithoutChangingItsFlexSlotOrParent()
+    {
+        var parent = new WMContainer { ID = "PARENT" };
+        parent.Style.Position = WMPosition.Absolute;
+        parent.Style.Transform.OffsetXPercent = 7;
+        var first = new WMText { ID = "FIRST" };
+        var dragged = new WMText { ID = "DRAGGED" };
+        dragged.Style.Margin = new WMThickness(3, 4, 5, 6);
+        parent.Controls.AddRange([first, dragged]);
+        var bounds = Bounds(dragged.ID, parent.ID, 20, 30, 40, 20, 100, 80);
+
+        var applied = MacCanvasBoundary.ConstrainDrag(
+            bounds,
+            new MacCanvasInteraction(dragged.ID, "drag", 100, -100, 1, 1, 0));
+        MacCanvasTransform.ApplyFlow(dragged, applied);
+
+        Assert.Equal(WMPosition.Static, dragged.Style.Position);
+        Assert.Equal([first, dragged], parent.Controls);
+        Assert.Equal(7, parent.Style.Transform.OffsetXPercent);
+        Assert.Equal(3, dragged.Style.Margin.Left);
+        Assert.Equal(4, dragged.Style.Margin.Top);
+        Assert.Equal(5, dragged.Style.Margin.Right);
+        Assert.Equal(6, dragged.Style.Margin.Bottom);
+        Assert.Equal(40, applied.OffsetXPercent, 6);
+        Assert.Equal(-37.5, applied.OffsetYPercent, 6);
+        Assert.Equal(applied.OffsetXPercent, dragged.Style.Transform.OffsetXPercent, 6);
+        Assert.Equal(applied.OffsetYPercent, dragged.Style.Transform.OffsetYPercent, 6);
+    }
+
+    [Fact]
+    public async Task FlowTransform_MovesNestedPixelsWithoutReflowingSibling()
+    {
+        var canvas = new WMCanvas
+        {
+            ID = "CANVAS",
+            LayoutSchemaVersion = WMLayoutMigration.CurrentSchemaVersion,
+            CanvasType = CanvasType.Split,
+            CustomWidth = 400,
+            CustomHeight = 300,
+            BackgroundColor = "#FFFFFFFF",
+            ImageProperties = new WMImage { Show = false }
+        };
+        var parent = new WMContainer
+        {
+            ID = "PARENT",
+            BackgroundColor = "#FFFFFFFF",
+            Style = new WMStyle
+            {
+                Position = WMPosition.Absolute,
+                Left = WMStyleLength.Percent(10),
+                Top = WMStyleLength.Percent(60),
+                Width = WMStyleLength.Percent(80),
+                Height = WMStyleLength.Percent(30),
+                Overflow = WMOverflow.Hidden,
+                FlexDirection = Orientation.Horizontal,
+                AlignItems = WMAlignItems.Center
+            }
+        };
+        var nested = new WMContainer
+        {
+            ID = "NESTED",
+            Style = new WMStyle
+            {
+                Width = WMStyleLength.Percent(50),
+                Height = WMStyleLength.Percent(100),
+                Overflow = WMOverflow.Hidden,
+                AlignItems = WMAlignItems.Center,
+                JustifyContent = WMJustifyContent.Center
+            }
+        };
+        nested.Controls.Add(new WMLine
+        {
+            ID = "CHILD",
+            Orientation = Orientation.Horizontal,
+            Color = "#E53935FF",
+            Thickness = 12,
+            Style = new WMStyle
+            {
+                Width = WMStyleLength.Percent(70),
+                Height = WMStyleLength.Percent(20)
+            }
+        });
+        var sibling = new WMLine
+        {
+            ID = "SIBLING",
+            Orientation = Orientation.Vertical,
+            Color = "#1976D2FF",
+            Thickness = 8,
+            Style = new WMStyle
+            {
+                Width = WMStyleLength.Percent(10),
+                Height = WMStyleLength.Percent(60)
+            }
+        };
+        parent.Controls.AddRange([nested, sibling]);
+        canvas.Children.Add(parent);
+        var renderer = new WMDesignSceneRenderer(new WatermarkHelper());
+        await using var session = await renderer.OpenSessionAsync(canvas);
+        var initialParent = Assert.Single(session.CurrentFrame.Layers, layer => layer.NodeId == parent.ID);
+        var initial = Assert.Single(session.CurrentFrame.Layers, layer => layer.NodeId == nested.ID);
+        var initialChild = Assert.Single(session.CurrentFrame.Layers, layer => layer.NodeId == "CHILD");
+        var initialSibling = Assert.Single(session.CurrentFrame.Layers, layer => layer.NodeId == sibling.ID);
+        Assert.True(initialParent.HasSurface);
+        Assert.False(initial.HasSurface);
+        Assert.False(initialChild.HasSurface);
+        Assert.False(initialSibling.HasSurface);
+        Assert.True(ContainsRedPixels(initialParent.SurfaceBytes));
+        var initialRedX = RedPixelCentroidX(initialParent.SurfaceBytes);
+
+        var constrained = MacCanvasBoundary.ConstrainDrag(
+            initial.Bounds,
+            new MacCanvasInteraction(nested.ID, "drag", 20, 0, 1, 1, 0));
+        MacCanvasTransform.ApplyFlow(nested, constrained);
+        var update = await session.UpdateAsync(
+            canvas,
+            new WMTemplateChangeSet(
+                2,
+                WMTemplateChangePhase.Commit,
+                WMTemplateChangeKind.Geometry,
+                [nested.ID],
+                "父容器内自由移动"),
+            WMDesignSceneQuality.Exact);
+
+        var movedParent = Assert.Single(update.Frame.Layers, layer => layer.NodeId == parent.ID);
+        var moved = Assert.Single(update.Frame.Layers, layer => layer.NodeId == nested.ID);
+        var movedSibling = Assert.Single(update.Frame.Layers, layer => layer.NodeId == sibling.ID);
+        Assert.True(movedParent.HasSurface);
+        Assert.False(moved.HasSurface);
+        Assert.True(ContainsRedPixels(movedParent.SurfaceBytes));
+        var movedRedX = RedPixelCentroidX(movedParent.SurfaceBytes);
+        Assert.NotEqual(initialParent.SurfaceKey, movedParent.SurfaceKey);
+        Assert.True(movedRedX > initialRedX + 20, $"Red child did not move: {initialRedX} -> {movedRedX}");
+        Assert.NotEqual(initial.Bounds.Transform.OffsetXPercent, moved.Bounds.Transform.OffsetXPercent);
+        Assert.Equal(initialSibling.Bounds.X, movedSibling.Bounds.X, 6);
+        Assert.Equal(initialSibling.Bounds.Y, movedSibling.Bounds.Y, 6);
+        Assert.Equal(initialParent.Bounds.X, movedParent.Bounds.X, 6);
+        Assert.Equal(initialParent.Bounds.Y, movedParent.Bounds.Y, 6);
+        Assert.Equal(WMPosition.Static, nested.Style.Position);
+        Assert.Equal(1, update.RasterizedLayerCount);
+    }
+
+    [Fact]
     public void FlowLayout_V2ReordersBeforeCalculatingCanvasUnitMargins()
     {
         var parent = new WMContainer { ID = "PARENT" };
@@ -586,4 +770,45 @@ public sealed class MacCanvasTransformTests
         double parentWidth,
         double parentHeight) =>
         new(id, parentId, "WMText", x, y, width, height, parentWidth, parentHeight, new WMTransform(), false, true);
+
+    private static bool ContainsRedPixels(byte[]? bytes)
+    {
+        if (bytes is not { Length: > 0 }) return false;
+        using var bitmap = SKBitmap.Decode(bytes);
+        if (bitmap is null) return false;
+        for (var y = 0; y < bitmap.Height; y++)
+        {
+            for (var x = 0; x < bitmap.Width; x++)
+            {
+                var color = bitmap.GetPixel(x, y);
+                if (color.Red > 180 && color.Green < 120 && color.Blue < 120 && color.Alpha > 180)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double RedPixelCentroidX(byte[]? bytes)
+    {
+        Assert.NotNull(bytes);
+        using var bitmap = SKBitmap.Decode(bytes);
+        Assert.NotNull(bitmap);
+        var sum = 0d;
+        var count = 0;
+        for (var y = 0; y < bitmap.Height; y++)
+        for (var x = 0; x < bitmap.Width; x++)
+        {
+            var pixel = bitmap.GetPixel(x, y);
+            if (pixel.Alpha > 0 && pixel.Red > 180 && pixel.Red > pixel.Green * 1.5 && pixel.Red > pixel.Blue * 1.5)
+            {
+                sum += x;
+                count++;
+            }
+        }
+
+        Assert.True(count > 0);
+        return sum / count;
+    }
+
 }

@@ -104,6 +104,7 @@ public sealed class WMWorkspaceArchitectureGuardTests
         var designer = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor");
         var designerCss = Read("Watermark.Razor/Workspace/Components/WMTemplateDesigner.razor.css");
         var toolRailCss = Read("Watermark.Razor/Workspace/Components/WMPosterMobileToolRail.razor.css");
+        var canvas = Read("Watermark.Razor/Components/Mac/MacCanvasEditor.razor");
         var canvasScript = Read("Watermark.Razor/wwwroot/js/mac-template-canvas.js");
         var sliderCss = Read("Watermark.Razor/Components/Mac/MacSlider.razor.css");
         var shell = Read("Watermark.Razor/Components/Layout/WMAppShellLayout.razor");
@@ -122,6 +123,8 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("min(232px, 30dvh)", designerCss, StringComparison.Ordinal);
         Assert.Contains("min(340px, 44dvh)", designerCss, StringComparison.Ordinal);
         Assert.Contains("min(480px, 62dvh)", designerCss, StringComparison.Ordinal);
+        Assert.Contains("--mobile-designer-properties-panel-height: min(320px, 40dvh", designerCss, StringComparison.Ordinal);
+        Assert.Contains("--mobile-designer-canvas-min-height: 160px", designerCss, StringComparison.Ordinal);
         Assert.DoesNotContain("mobile-designer-drawer-handle", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("role=\"separator\"", designer, StringComparison.Ordinal);
         Assert.DoesNotContain("attachDrawerResize", designer, StringComparison.Ordinal);
@@ -135,7 +138,10 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("min-width: 48px;", toolRailCss, StringComparison.Ordinal);
         Assert.Contains("touch-action: pan-x;", toolRailCss, StringComparison.Ordinal);
         Assert.Contains("mobile-space-large:not(.mobile-properties-panel) ::deep .designer-toolbar", designerCss, StringComparison.Ordinal);
-        Assert.Contains("mobile-space-large.mobile-properties-panel .designer-workspace", designerCss, StringComparison.Ordinal);
+        Assert.Contains("mobile-properties-panel .designer-workspace", designerCss, StringComparison.Ordinal);
+        Assert.Contains("AutoFitOnViewportResize=\"@Global.IsMobile\"", designer, StringComparison.Ordinal);
+        Assert.Contains("if (!Global.IsMobile && !string.IsNullOrWhiteSpace(observedSelectionId))", designer, StringComparison.Ordinal);
+        Assert.Contains("else if (Global.IsMobile || string.IsNullOrWhiteSpace(selectedId))", designer, StringComparison.Ordinal);
         Assert.Contains(".wm-template-designer ::deep *", designerCss, StringComparison.Ordinal);
         Assert.Contains("user-select: none", designerCss, StringComparison.Ordinal);
         Assert.Contains("::deep input", designerCss, StringComparison.Ordinal);
@@ -150,9 +156,16 @@ public sealed class WMWorkspaceArchitectureGuardTests
         Assert.Contains("WMPosterMobilePanel.AssetCrop", designer, StringComparison.Ordinal);
         Assert.Contains("WMMobileEditorSpace.Medium", designer, StringComparison.Ordinal);
         Assert.Contains("WMPosterAssetSelectionSession", designer, StringComparison.Ordinal);
+        Assert.Contains("MacCanvasTransform.ApplyFlow(control, constrained)", canvas, StringComparison.Ordinal);
         Assert.Contains("moveable.waitToChangeTarget()", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("shouldStartRawSelectedDrag(pointerStart, next, selectedId)", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("isSceneDescendant(itemsById, selectedId, hitControlId)", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("shouldApplyReleasePosition(interaction, event)", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("syncRawPointerSelectionFrame(interaction, moveable)", canvasScript, StringComparison.Ordinal);
         Assert.Contains("select(nextSelectedId);", canvasScript, StringComparison.Ordinal);
         Assert.Contains("new ResizeObserver", canvasScript, StringComparison.Ordinal);
+        Assert.Contains("FitCanvasAfterViewportResize", canvas, StringComparison.Ordinal);
+        Assert.Contains("invoke(\"FitCanvasAfterViewportResize\")", canvasScript, StringComparison.Ordinal);
         Assert.Contains("viewportResizeObserver?.disconnect();", canvasScript, StringComparison.Ordinal);
         Assert.Contains("EmbeddedMobilePanel=\"@Global.IsMobile\"", designer, StringComparison.Ordinal);
         Assert.Contains("desktop-text-content-open", designer, StringComparison.Ordinal);

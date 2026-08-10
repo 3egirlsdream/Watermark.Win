@@ -1,6 +1,8 @@
 @page "/profile"
 @using Watermark.Razor.Components.Layout
 @using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @layout WMAppShellLayout
 @implements IDisposable
 @inject IWMAccountService Accounts
@@ -8,6 +10,7 @@
 @inject IWMAppUpdateService Updates
 @inject IWMExternalActionService External
 @inject IWMAdminDashboardService Admin
+@inject IPopupService Popup
 @inject NavigationManager Navigation
 @inject IWMNavigationHistory NavigationHistory
 
@@ -82,9 +85,18 @@
             <span><strong>诊断与日志</strong><small>查看设备能力并导出脱敏日志</small></span>
             <WmIcon Icon="caret-right" />
         </button>
-        <button type="button" disabled="@checkingUpdate" @onclick="CheckUpdateAsync">
-            <span class="profile-list-icon is-slate"><WmIcon Icon="arrows-clockwise" /></span>
-            <span><strong>检查更新</strong><small>@updateDescription</small></span>
+        <button type="button" disabled="@UpdateBusy" aria-busy="@UpdateBusy" @onclick="CheckUpdateAsync">
+            <span class="profile-list-icon is-slate"><WmIcon Icon="@(Updates.State.UpdateAvailable ? "cloud-arrow-down" : "arrows-clockwise")" /></span>
+            <span>
+                <strong>@UpdateTitle</strong>
+                <small>@UpdateDescription</small>
+                @if (Updates.State.IsDownloading)
+                {
+                    <span class="profile-update-progress" role="progressbar" aria-label="更新下载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Updates.State.DownloadProgress">
+                        <span style="@($"width: {Updates.State.DownloadProgress}%")"></span>
+                    </span>
+                }
+            </span>
             <WmIcon Icon="caret-right" />
         </button>
         @if (Admin.IsAuthorized)
@@ -109,19 +121,28 @@
 </section>
 
 @code {
-    private bool checkingUpdate;
     private bool clearingCache;
     private bool avatarFailed;
-    private string updateDescription = "点击检查当前版本";
     private string cacheDescription = "计算中…";
     private WMAccountState Account => Accounts.State;
     private string DisplayName => Account.IsAuthenticated ? Account.DisplayName : "欢迎使用轻影";
     private string AccountSubtitle => Account.IsAuthenticated ? Account.UserName ?? "已登录" : "登录后同步会员与收藏";
+    private bool IsAndroid => Global.DeviceType == DeviceType.Andorid;
+    private bool UpdateBusy => Updates.State.IsChecking || Updates.State.IsDownloading;
+    private string UpdateTitle => Updates.State.IsDownloading
+        ? $"正在下载 {Updates.State.DownloadProgress}%"
+        : Updates.State.UpdateAvailable && IsAndroid
+            ? $"下载并安装 {Updates.State.AvailableVersion}"
+            : "检查更新";
+    private string UpdateDescription => Updates.State.Message ?? "点击检查当前版本";
 
     protected override async Task OnInitializedAsync()
     {
         Accounts.Changed += AccountChanged;
+        Updates.Changed += UpdateStateChanged;
         await RefreshCacheSizeAsync();
+        if (IsAndroid && !Updates.State.HasChecked)
+            await CheckUpdateAsync(showLatestToast: false);
     }
 
     private void OpenLogin() => NavigationHistory.NavigateTo("/account/login?returnUrl=/profile");
@@ -133,13 +154,46 @@
     private void OpenAdmin() => NavigationHistory.NavigateTo("/admin/dashboard?returnUrl=/profile");
     private void OnAvatarError() => avatarFailed = true;
 
-    private async Task CheckUpdateAsync()
+    private Task CheckUpdateAsync() => CheckUpdateAsync(showLatestToast: true);
+
+    private async Task CheckUpdateAsync(bool showLatestToast)
     {
-        if (checkingUpdate) return;
-        checkingUpdate = true;
+        if (UpdateBusy) return;
+        if (IsAndroid && Updates.State.UpdateAvailable && !Updates.State.HasError)
+        {
+            await ConfirmAndInstallUpdateAsync();
+            return;
+        }
+
         var state = await Updates.CheckAsync();
-        updateDescription = state.Message ?? "检查完成";
-        checkingUpdate = false;
+        if (state.HasError)
+        {
+            ShowToast(state.Message, true);
+            return;
+        }
+        if (state.UpdateAvailable && IsAndroid)
+        {
+            await ConfirmAndInstallUpdateAsync();
+            return;
+        }
+        if (showLatestToast || state.UpdateAvailable)
+            ShowToast(state.Message);
+    }
+
+    private async Task ConfirmAndInstallUpdateAsync()
+    {
+        if (!IsAndroid || UpdateBusy || !Updates.State.UpdateAvailable) return;
+        var notes = string.IsNullOrWhiteSpace(Updates.State.ReleaseNotes)
+            ? "是否立即下载并安装？"
+            : $"{Updates.State.ReleaseNotes.Trim()}\n\n是否立即下载并安装？";
+        var confirmed = await Popup.ConfirmAsync(
+            $"发现新版本 {Updates.State.AvailableVersion}",
+            notes,
+            AlertTypes.Info);
+        if (confirmed != true) return;
+
+        var result = await Updates.StartUpdateAsync();
+        ShowToast(result.Message, !result.Succeeded);
     }
 
     private async Task ClearCacheAsync()
@@ -159,9 +213,15 @@
 
     private Task OpenWebsiteAsync() => External.OpenUrlAsync("http://thankful.top/");
     private void AccountChanged() => _ = InvokeAsync(() => { avatarFailed = false; StateHasChanged(); });
+    private void UpdateStateChanged() => _ = InvokeAsync(StateHasChanged);
+    private void ShowToast(string? value, bool error = false) => Common.ShowToast(Popup, value, error);
     private static string FormatBytes(long value) => value < 1024 * 1024
         ? $"{value / 1024d:0.#} KB"
         : $"{value / 1024d / 1024d:0.#} MB";
 
-    public void Dispose() => Accounts.Changed -= AccountChanged;
+    public void Dispose()
+    {
+        Accounts.Changed -= AccountChanged;
+        Updates.Changed -= UpdateStateChanged;
+    }
 }

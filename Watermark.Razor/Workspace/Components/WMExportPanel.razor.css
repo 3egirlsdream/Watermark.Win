@@ -326,10 +326,11 @@
     background: var(--wm-export-accent);
     border-radius: 50%;
     color: #fff;
-    display: flex;
+    display: grid;
     height: 17px;
     justify-content: center;
     opacity: 0;
+    place-items: center;
     width: 17px;
 }
 .wm-export-destination-check ::deep .m-icon { color: #fff; font-size: 12px; }

@@ -151,6 +151,23 @@
 .profile-list button strong { font-size: .78rem; }
 .profile-list button small { color: var(--wm-text-muted); font-size: .64rem; margin-top: 3px; }
 
+.profile-update-progress {
+    background: var(--wm-divider);
+    border-radius: 999px;
+    display: block;
+    height: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+    width: 100%;
+}
+.profile-update-progress > span {
+    background: var(--wm-primary);
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    transition: width 120ms linear;
+}
+
 .profile-list-icon {
     align-items: center;
     border-radius: 11px;

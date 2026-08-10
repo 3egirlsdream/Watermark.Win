@@ -296,6 +296,8 @@
     }
 
     .designer-workspace {
+        --mobile-designer-canvas-min-height: 160px;
+        --mobile-designer-properties-panel-height: min(320px, 40vh, max(120px, calc(100% - var(--mobile-designer-canvas-min-height))));
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr) var(--mobile-designer-panel-height);
         transition: grid-template-rows 180ms cubic-bezier(.2, .7, .2, 1);
@@ -320,6 +322,12 @@
 
     .wm-template-designer.mobile-space-large .designer-workspace {
         --mobile-designer-panel-height: min(480px, 62vh);
+    }
+
+    /* Property tools must never consume the manipulation area. Their content
+       scrolls inside the inspector while a stable canvas slice stays visible. */
+    .wm-template-designer.mobile-properties-panel .designer-workspace {
+        --mobile-designer-panel-height: var(--mobile-designer-properties-panel-height);
     }
 
     .wm-template-designer.mobile-space-large:not(.mobile-properties-panel) {
@@ -474,10 +482,6 @@
         --mobile-designer-panel-height: calc(100vh - 126px - env(safe-area-inset-top));
     }
 
-    /* 属性编辑始终保留一段画布，避免横屏时退化成全屏表单。 */
-    .wm-template-designer.mobile-space-large.mobile-properties-panel .designer-workspace {
-        --mobile-designer-panel-height: min(320px, 58vh);
-    }
 }
 
 @supports (height: 100dvh) {
@@ -493,6 +497,11 @@
         .wm-template-designer.mobile-space-large .designer-workspace {
             --mobile-designer-panel-height: min(480px, 62dvh);
         }
+
+        .wm-template-designer.mobile-properties-panel .designer-workspace {
+            --mobile-designer-properties-panel-height: min(320px, 40dvh, max(120px, calc(100% - var(--mobile-designer-canvas-min-height))));
+            --mobile-designer-panel-height: var(--mobile-designer-properties-panel-height);
+        }
     }
 
     @media (max-width: 860px) and (max-height: 560px) {
@@ -500,9 +509,6 @@
             --mobile-designer-panel-height: calc(100dvh - 126px - env(safe-area-inset-top));
         }
 
-        .wm-template-designer.mobile-space-large.mobile-properties-panel .designer-workspace {
-            --mobile-designer-panel-height: min(320px, 58dvh);
-        }
     }
 }
 

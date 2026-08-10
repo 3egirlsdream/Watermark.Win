@@ -2,3 +2,4 @@
 .settings-range ::deep .settings-thread-slider{grid-column:2;min-width:132px}
 @media(max-width:719px){.settings-range ::deep .settings-thread-slider{min-width:80px}}
 .settings-card.mobile-number-picker-open{overflow:visible;position:relative;z-index:2147482500}
+.settings-update-progress{border-top:1px solid var(--wm-divider);padding:10px 2px 12px}.settings-update-progress>span{align-items:center;color:var(--wm-text-muted);display:flex;font-size:.66rem;justify-content:space-between;margin-bottom:7px}.settings-update-progress>span strong{color:var(--wm-primary);font-size:.7rem}

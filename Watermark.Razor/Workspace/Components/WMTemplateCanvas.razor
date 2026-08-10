@@ -8,6 +8,7 @@
                  PreviewUrl="PreviewUrl"
                  Scene="Scene"
                  Zoom="Zoom"
+                 AutoFitOnViewportResize="AutoFitOnViewportResize"
                  ZoomChanged="ZoomChanged"
                  SaveRequested="SaveRequested" />
 
@@ -17,6 +18,7 @@
     [Parameter] public string PreviewUrl { get; set; } = string.Empty;
     [Parameter] public WMDesignScenePresentation? Scene { get; set; }
     [Parameter] public double Zoom { get; set; } = 1;
+    [Parameter] public bool AutoFitOnViewportResize { get; set; }
     [Parameter] public EventCallback<double> ZoomChanged { get; set; }
     [Parameter] public EventCallback SaveRequested { get; set; }
 

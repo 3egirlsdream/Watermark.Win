@@ -47,9 +47,9 @@
                                 <span class="template-name">@item.Canvas.Name</span>
                                 <small class="template-capability">@CapabilityLabel(item.Canvas)</small>
                             </button>
-                            <button type="button" class="edit-chip" title="编辑模板"
+                            <button type="button" class="edit-chip" title="编辑模板" aria-label="编辑模板 @item.Canvas.Name"
                                     @onclick="() => EditTemplate.InvokeAsync(item)">
-                                <span class="edit-chip-icon">✎</span><span>编辑</span>
+                                <WmIcon Size="12" Icon="pencil" /><span>编辑</span>
                             </button>
                         </article>
                     }

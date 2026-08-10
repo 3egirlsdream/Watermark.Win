@@ -81,3 +81,5 @@ design-qa.md
 /Watermark.Andorid/Signing/AndroidSigning.props
 
 deliverables/
+.codegraph/
+.codex_artifacts/

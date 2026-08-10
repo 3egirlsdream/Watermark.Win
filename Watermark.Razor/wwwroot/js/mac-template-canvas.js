@@ -125,15 +125,18 @@ export function clampChildTranslation(
   const baseCenterY = asFinite(item.y, 0) + asFinite(item.height, 0) / 2;
   const desiredCenterX = baseCenterX + baseOffsetX + asFinite(deltaX, 0);
   const desiredCenterY = baseCenterY + baseOffsetY + asFinite(deltaY, 0);
-  const rootNode = !item.parentId;
+  // Absolute canvas nodes may remain partially visible by design. V2 flow
+  // nodes, including root-level containers, must remain fully inside their
+  // containing box so descendants can never pull the layout outside it.
+  const partiallyVisibleRoot = !item.parentId && item.absolute === true;
   const visibleX = Math.min(Math.max(0, minimumVisible), halfWidth);
   const visibleY = Math.min(Math.max(0, minimumVisible), halfHeight);
-  const centerX = rootNode
+  const centerX = partiallyVisibleRoot
     ? Math.min(
       Math.max(desiredCenterX, visibleX - halfWidth),
       item.parentWidth - visibleX + halfWidth)
     : clampCenter(desiredCenterX, halfWidth, item.parentWidth);
-  const centerY = rootNode
+  const centerY = partiallyVisibleRoot
     ? Math.min(
       Math.max(desiredCenterY, visibleY - halfHeight),
       item.parentHeight - visibleY + halfHeight)
@@ -290,6 +293,104 @@ export function resizeCenterDelta(start, direction, width, height) {
     localX * cosine - localY * sine,
     localX * sine + localY * cosine
   ];
+}
+
+function resizeFitsParent(start, direction, width, height) {
+  if (!start?.parentId || start.parentWidth <= 0 || start.parentHeight <= 0)
+    return true;
+
+  const [centerDeltaX, centerDeltaY] = resizeCenterDelta(
+    start,
+    direction,
+    width,
+    height);
+  const radians = asFinite(start.rotation, 0) * Math.PI / 180;
+  const cosine = Math.abs(Math.cos(radians));
+  const sine = Math.abs(Math.sin(radians));
+  const scaledWidth = Math.max(0, width) * Math.abs(asFinite(start.scaleX, 1));
+  const scaledHeight = Math.max(0, height) * Math.abs(asFinite(start.scaleY, 1));
+  const halfWidth = (cosine * scaledWidth + sine * scaledHeight) / 2;
+  const halfHeight = (sine * scaledWidth + cosine * scaledHeight) / 2;
+  const centerX = asFinite(start.x, 0)
+    + asFinite(start.width, 0) / 2
+    + asFinite(start.parentWidth, 0) * asFinite(start.offsetXPercent, 0) / 100
+    + centerDeltaX;
+  const centerY = asFinite(start.y, 0)
+    + asFinite(start.height, 0) / 2
+    + asFinite(start.parentHeight, 0) * asFinite(start.offsetYPercent, 0) / 100
+    + centerDeltaY;
+  const epsilon = 0.0001;
+  return centerX - halfWidth >= -epsilon
+    && centerX + halfWidth <= start.parentWidth + epsilon
+    && centerY - halfHeight >= -epsilon
+    && centerY + halfHeight <= start.parentHeight + epsilon;
+}
+
+export function constrainNestedResize(
+  start,
+  direction,
+  requestedWidth,
+  requestedHeight) {
+  const width = Math.max(0.000001, asFinite(requestedWidth, start?.width ?? 0));
+  const height = Math.max(0.000001, asFinite(requestedHeight, start?.height ?? 0));
+  if (!start?.parentId
+    || start.parentWidth <= 0
+    || start.parentHeight <= 0
+    || resizeFitsParent(start, direction, width, height)) {
+    return { width, height, constrained: false };
+  }
+
+  const startWidth = Math.max(0.000001, asFinite(start.width, width));
+  const startHeight = Math.max(0.000001, asFinite(start.height, height));
+  let nextWidth = width;
+  let nextHeight = height;
+
+  if (resizeFitsParent(start, direction, startWidth, startHeight)) {
+    // Keep the opposite resize anchor fixed. Since the rotated edge positions
+    // are linear in width and height, a bounded binary search produces the
+    // exact point where the active handle reaches its parent's edge.
+    let lower = 0;
+    let upper = 1;
+    for (let index = 0; index < 40; index++) {
+      const progress = (lower + upper) / 2;
+      const candidateWidth = startWidth + (width - startWidth) * progress;
+      const candidateHeight = startHeight + (height - startHeight) * progress;
+      if (resizeFitsParent(start, direction, candidateWidth, candidateHeight))
+        lower = progress;
+      else upper = progress;
+    }
+    nextWidth = startWidth + (width - startWidth) * lower;
+    nextHeight = startHeight + (height - startHeight) * lower;
+  } else {
+    // Repair a scene that already contains an oversized child. This fallback
+    // constrains its transformed extents; translation is clamped separately.
+    const radians = asFinite(start.rotation, 0) * Math.PI / 180;
+    const cosine = Math.abs(Math.cos(radians));
+    const sine = Math.abs(Math.sin(radians));
+    const rotatedWidth = cosine * nextWidth * Math.abs(asFinite(start.scaleX, 1))
+      + sine * nextHeight * Math.abs(asFinite(start.scaleY, 1));
+    const rotatedHeight = sine * nextWidth * Math.abs(asFinite(start.scaleX, 1))
+      + cosine * nextHeight * Math.abs(asFinite(start.scaleY, 1));
+    const fit = Math.min(
+      1,
+      start.parentWidth / Math.max(rotatedWidth, 0.000001),
+      start.parentHeight / Math.max(rotatedHeight, 0.000001));
+    nextWidth = Math.max(0.000001, nextWidth * fit);
+    nextHeight = Math.max(0.000001, nextHeight * fit);
+  }
+
+  const [centerDeltaX, centerDeltaY] = resizeCenterDelta(
+    start,
+    direction,
+    nextWidth,
+    nextHeight);
+  return {
+    width: nextWidth,
+    height: nextHeight,
+    centerDeltaX,
+    centerDeltaY,
+    constrained: true
+  };
 }
 
 export function resolveConstrainedResizeTranslation(
@@ -460,6 +561,17 @@ export function shouldFinishReleasedPointer(event, activePointerId) {
   return event?.pointerType !== "touch" && event?.buttons === 0;
 }
 
+export function shouldApplyReleasePosition(active, event, maximumJump = 64) {
+  const input = inputEventFor(event) || event;
+  const clientX = input?.clientX;
+  const clientY = input?.clientY;
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return false;
+  if (!Number.isFinite(active?.lastClientX) || !Number.isFinite(active?.lastClientY)) return true;
+  return Math.hypot(
+    clientX - active.lastClientX,
+    clientY - active.lastClientY) <= maximumJump;
+}
+
 export function shouldIgnoreSynthesizedMouse(
   pointerType,
   eventTime,
@@ -477,6 +589,68 @@ export function isPointerTap(start, end, threshold = 6) {
   const deltaX = asFinite(end.clientX, 0) - asFinite(start.clientX, 0);
   const deltaY = asFinite(end.clientY, 0) - asFinite(start.clientY, 0);
   return Math.hypot(deltaX, deltaY) < threshold;
+}
+
+export function resolveInteractionControlId(pointerStart, eventTarget, selectedId = null) {
+  return pointerStart?.controlId
+    || eventTarget?.dataset?.controlId
+    || selectedId
+    || null;
+}
+
+export function isSceneDescendant(itemsById, ancestorId, controlId) {
+  if (!itemsById || !ancestorId || !controlId || ancestorId === controlId) return false;
+  const visited = new Set();
+  let currentId = controlId;
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    const parentId = itemsById.get?.(currentId)?.parentId;
+    if (!parentId) return false;
+    if (parentId === ancestorId) return true;
+    currentId = parentId;
+  }
+  return false;
+}
+
+export function shouldDelegateSelectedParentDrag(
+  pointerStart,
+  selectedTarget,
+  moveableTarget) {
+  return Boolean(
+    pointerStart?.deferSelection
+    && selectedTarget
+    && moveableTarget === selectedTarget);
+}
+
+export function isSelectionTargetReady(selectedTarget, moveableTarget) {
+  return !selectedTarget || selectedTarget === moveableTarget;
+}
+
+export function shouldStartDeferredParentDrag(pointerStart, event, threshold = 6) {
+  return Boolean(
+    pointerStart?.deferSelection
+    && !isPointerTap(pointerStart, event, threshold));
+}
+
+export function shouldStartRawSelectedDrag(
+  pointerStart,
+  event,
+  selectedId,
+  threshold = 6) {
+  return Boolean(
+    pointerStart?.controlId
+    && pointerStart.controlId === selectedId
+    && !isPointerTap(pointerStart, event, threshold));
+}
+
+export function syncRawPointerSelectionFrame(active, moveable) {
+  if (!active?.rawPointer || typeof moveable?.updateRect !== "function") return false;
+  moveable.updateRect();
+  return true;
+}
+
+export function canDirectlyInteractWithSceneItem(item) {
+  return Boolean(item?.absolute || item?.flow);
 }
 
 export function touchPairMetrics(points) {
@@ -661,11 +835,20 @@ export async function createEditor(root, callback, interactionProfile = null) {
     const hitElement = event.target?.closest?.("[data-control-id]");
     const hitControlId = hitElement?.dataset.controlId || selectedId;
     const selectedTarget = selectedId ? overlays.get(selectedId) : null;
+    if (!isSelectionTargetReady(selectedTarget, moveable.target)) {
+      // Dynamic targets settle asynchronously. Do not combine a newly
+      // selected id with the previous target's measured control box.
+      event.preventDefault();
+      event.stopPropagation();
+      void select(selectedId, true);
+      return;
+    }
     const deferSelection = Boolean(
       selectedId
       && hitElement
       && hitControlId !== selectedId
-      && selectedTarget?.contains(hitElement));
+      && (isSceneDescendant(itemsById, selectedId, hitControlId)
+        || selectedTarget?.contains(hitElement)));
     const controlId = deferSelection ? selectedId : hitControlId;
     if (!controlId || !itemsById.has(controlId)) return;
     pointerStart = {
@@ -680,6 +863,14 @@ export async function createEditor(root, callback, interactionProfile = null) {
     if (!deferSelection && hitControlId && hitControlId !== selectedId) {
       select(hitControlId);
       void invoke("SelectCanvasControl", hitControlId);
+    }
+    if (shouldDelegateSelectedParentDrag(pointerStart, selectedTarget, moveable.target)) {
+      // A nested child can completely cover the selected container. Keep this
+      // pointer away from Moveable's nested-target bootstrap; on pointermove we
+      // start a direct parent drag from the original screen coordinates. A tap
+      // is still handed to the child by finishActivePointerInteraction.
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
@@ -713,7 +904,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
       return;
     }
 
-    if (interaction.kind === "drag") updateDrag(event);
+    if (interaction.kind === "drag" && shouldApplyReleasePosition(interaction, event))
+      updateDrag(event);
     const token = interaction.token;
     const kind = interaction.kind;
     setTimeout(() => {
@@ -744,12 +936,50 @@ export async function createEditor(root, callback, interactionProfile = null) {
   }
 
   function scheduleActivePointerPosition(event) {
+    // Start the selected node synchronously as soon as the pointer crosses the
+    // tap threshold. WKWebView/Moveable may omit dragStart for logical groups,
+    // and pointerup can arrive before the queued RAF when a child covers its
+    // selected parent. The raw path handles both cases without changing taps.
+    if (!interaction && shouldStartRawSelectedDrag(pointerStart, event, selectedId)) {
+      const deferred = pointerStart;
+      const target = deferred?.controlId ? overlays.get(deferred.controlId) : null;
+      if (target && beginInteraction("drag", {
+        target,
+        inputEvent: deferred,
+        stop() { }
+      }, deferred.controlId)) {
+        interaction.rawPointer = true;
+        if (pointerAnimationFrame != null) {
+          cancelAnimationFrame(pointerAnimationFrame);
+          pointerAnimationFrame = null;
+        }
+        pendingPointerEvent = null;
+        event.preventDefault?.();
+        updateDrag(event);
+        return;
+      }
+    }
+
     pendingPointerEvent = event;
     if (pointerAnimationFrame != null) return;
     pointerAnimationFrame = requestAnimationFrame(() => {
       pointerAnimationFrame = null;
       const next = pendingPointerEvent;
       pendingPointerEvent = null;
+      if (!interaction && shouldStartRawSelectedDrag(pointerStart, next, selectedId)) {
+        const deferred = pointerStart;
+        const target = deferred?.controlId ? overlays.get(deferred.controlId) : null;
+        if (target && beginInteraction("drag", {
+          target,
+          inputEvent: deferred,
+          stop() { }
+        }, deferred.controlId)) {
+          interaction.rawPointer = true;
+          next?.preventDefault?.();
+          updateDrag(next);
+          return;
+        }
+      }
       if (interaction?.kind === "drag") updateDrag(next);
     });
   }
@@ -838,7 +1068,8 @@ export async function createEditor(root, callback, interactionProfile = null) {
 
   function targetFor(event) {
     const eventTarget = event.target;
-    return eventTarget?.dataset?.controlId ? eventTarget : moveable.target || null;
+    const controlId = resolveInteractionControlId(pointerStart, eventTarget, selectedId);
+    return (controlId ? overlays.get(controlId) : null) || moveable.target || null;
   }
 
   function pointerMovement(event, active) {
@@ -979,20 +1210,22 @@ export async function createEditor(root, callback, interactionProfile = null) {
     pendingInteractionVisualTimer = setTimeout(clearPendingInteractionVisual, 2000);
   }
 
-  function beginInteraction(kind, event) {
+  function beginInteraction(kind, event, requestedControlId = null) {
     if (disposed || scenePending || interactionBusy || panMode) {
       event.stop?.();
       return false;
     }
 
-    const target = targetFor(event);
-    const controlId = target?.dataset.controlId;
+    const target = requestedControlId
+      ? overlays.get(requestedControlId)
+      : targetFor(event);
+    const controlId = requestedControlId || target?.dataset.controlId;
     const item = controlId ? itemsById.get(controlId) : null;
     const isAbsolute = Boolean(item?.absolute);
-    const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
-    // Any Absolute node supports direct transform interactions. Static children
-    // only support drag, which commits a flow-layout reorder plus margins.
-    if (!item || !item.visible || item.locked || (!isAbsolute && !isFlowChild)
+    // Any Absolute node supports direct transform interactions. A direct drag
+    // on a V2 flow child keeps its Flex slot and applies a bounded visual
+    // transform, so neither its parent nor siblings are reflowed.
+    if (!item || !item.visible || item.locked || !canDirectlyInteractWithSceneItem(item)
       || (kind === "rotate" && !isAbsolute)
       || (kind !== "drag" && kind !== "resize" && kind !== "rotate")) {
       event.stop?.();
@@ -1065,6 +1298,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
       interaction.rotation,
       24 / asPositiveScale(viewScale));
     updateInteractionVisual(interaction);
+    syncRawPointerSelectionFrame(interaction, moveable);
   }
 
   function updateDrag(event) {
@@ -1142,18 +1376,38 @@ export async function createEditor(root, callback, interactionProfile = null) {
         requestedHeight,
         interaction.ratioManagedByMoveable === true);
     }
-    const width = resolved.width;
-    const height = resolved.height;
-    interaction.keepAspectRatio = resolved.keepAspectRatio;
-    interaction.resizeRatio = asFinite(resolved.resizeRatio, 1);
-    interaction.width = width;
-    interaction.height = height;
-    const constrainedTranslation = resolveConstrainedResizeTranslation(
-      mode,
+    const constrainedResize = constrainNestedResize(
       interaction.start,
       direction,
-      width,
-      height);
+      resolved.width,
+      resolved.height);
+    const width = constrainedResize.width;
+    const height = constrainedResize.height;
+    interaction.keepAspectRatio = resolved.keepAspectRatio;
+    interaction.resizeRatio = constrainedResize.constrained
+      && mode === "text"
+      ? Math.max(
+        0.000001,
+        (width - asFinite(interaction.start.resizeInset, 0))
+          / Math.max(
+            0.000001,
+            interaction.start.width - asFinite(interaction.start.resizeInset, 0)))
+      : asFinite(resolved.resizeRatio, 1);
+    interaction.width = width;
+    interaction.height = height;
+    const constrainedTranslation = constrainedResize.constrained
+      ? {
+        centerDeltaX: constrainedResize.centerDeltaX,
+        centerDeltaY: constrainedResize.centerDeltaY,
+        deltaX: constrainedResize.centerDeltaX - (width - interaction.start.width) / 2,
+        deltaY: constrainedResize.centerDeltaY - (height - interaction.start.height) / 2
+      }
+      : resolveConstrainedResizeTranslation(
+        mode,
+        interaction.start,
+        direction,
+        width,
+        height);
     if (constrainedTranslation) {
       interaction.centerDeltaX = constrainedTranslation.centerDeltaX;
       interaction.centerDeltaY = constrainedTranslation.centerDeltaY;
@@ -1350,14 +1604,12 @@ export async function createEditor(root, callback, interactionProfile = null) {
     const target = overlays.get(id) || null;
     const lineDragTarget = target?.querySelector?.("[data-line-drag-target]") || null;
     const isAbsolute = Boolean(item?.absolute);
-    const isFlowChild = Boolean(item?.parentId) && !isAbsolute;
-    const nextTarget = item && item.visible && !item.locked && (isAbsolute || isFlowChild) ? target : null;
-    const targetReady = waitForTarget && moveable.target !== nextTarget
-      ? moveable.waitToChangeTarget()
-      : Promise.resolve();
+    const interactive = canDirectlyInteractWithSceneItem(item);
+    const nextTarget = item && item.visible && !item.locked && interactive ? target : null;
+    const targetChanged = moveable.target !== nextTarget;
     moveable.target = nextTarget;
     moveable.dragTarget = moveable.target ? lineDragTarget : null;
-    moveable.resizable = Boolean(item && (isAbsolute || isFlowChild));
+    moveable.resizable = Boolean(item && interactive);
     moveable.scalable = false;
     moveable.rotatable = isAbsolute;
     const allDirections = finePointerMode ? absoluteResizeDirections : coarseResizeDirections;
@@ -1374,14 +1626,20 @@ export async function createEditor(root, callback, interactionProfile = null) {
     // global keepRatio would also make side handles resize both axes.
     moveable.keepRatio = false;
     moveable.updateRect();
-    return targetReady;
+    if (!waitForTarget || !targetChanged) return Promise.resolve();
+    return moveable.waitToChangeTarget().then(() => {
+      if (!disposed && selectedId === id && moveable.target === nextTarget)
+        moveable.updateRect();
+    });
   }
 
   let viewportResizeFrame = 0;
+  let viewportFitTimer = 0;
   const canvasViewport = root.closest(".mac-canvas-viewport") || root.parentElement || root;
   const viewportResizeObserver = typeof ResizeObserver === "function"
     ? new ResizeObserver(() => {
         if (viewportResizeFrame) cancelAnimationFrame(viewportResizeFrame);
+        if (viewportFitTimer) clearTimeout(viewportFitTimer);
         viewportResizeFrame = requestAnimationFrame(() => {
           viewportResizeFrame = 0;
           if (disposed || scenePending || interaction) return;
@@ -1390,6 +1648,14 @@ export async function createEditor(root, callback, interactionProfile = null) {
           // canvas viewport settles, without rebuilding the rendered preview.
           select(selectedId);
         });
+        viewportFitTimer = setTimeout(() => {
+          viewportFitTimer = 0;
+          if (disposed || scenePending || interaction) return;
+          // Mobile configuration panels change the available canvas height.
+          // Refit only after the grid transition settles so the complete
+          // template remains visible and directly manipulable.
+          void invoke("FitCanvasAfterViewportResize");
+        }, 220);
       })
     : null;
   viewportResizeObserver?.observe(canvasViewport);
@@ -1469,7 +1735,10 @@ export async function createEditor(root, callback, interactionProfile = null) {
       }
       element.addEventListener("pointerdown", event => {
         if (panMode) return;
-        event.stopPropagation();
+        // Let the event bubble through a selected parent container so Moveable
+        // can begin dragging that parent even when a child fills its surface.
+        // The overlay root still stops the event before it reaches Blazor's
+        // viewport handler.
         root.closest(".mac-canvas-viewport")?.focus({ preventScroll: true });
       });
       overlays.set(item.id, element);
@@ -1506,7 +1775,13 @@ export async function createEditor(root, callback, interactionProfile = null) {
       });
     },
     setSelected(id) {
-      if (!disposed) select(id);
+      if (disposed) return Promise.resolve();
+      return select(id, true).then(() => new Promise(resolve => {
+        requestAnimationFrame(() => {
+          if (!disposed && selectedId === id) select(id);
+          resolve();
+        });
+      }));
     },
     setViewScale(value) {
       if (disposed) return;
@@ -1557,6 +1832,7 @@ export async function createEditor(root, callback, interactionProfile = null) {
         viewport?.removeEventListener("pointercancel", finishViewportGesture, true);
         viewportResizeObserver?.disconnect();
         if (viewportResizeFrame) cancelAnimationFrame(viewportResizeFrame);
+        if (viewportFitTimer) clearTimeout(viewportFitTimer);
         clearPendingInteractionVisual();
         if (pointerAnimationFrame != null) cancelAnimationFrame(pointerAnimationFrame);
         pointerAnimationFrame = null;

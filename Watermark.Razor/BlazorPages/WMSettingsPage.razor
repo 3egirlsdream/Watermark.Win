@@ -1,7 +1,10 @@
 @page "/settings"
 @using Watermark.Razor.Components.Layout
 @using Watermark.Razor.Workspace
+@using Watermark.Shared.Enums
+@using Watermark.Shared.Models
 @layout WMAppShellLayout
+@implements IDisposable
 @inject IWMAccountService Accounts
 @inject IWMAppSettingsService Settings
 @inject IWMCacheMaintenanceService Cache
@@ -57,10 +60,17 @@
 
             <section class="settings-card" id="update">
                 <h2><WmIcon Icon="arrows-clockwise" /><span>版本与诊断</span></h2>
-                <div class="settings-version"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "点击检查是否有新版本")</small></span><button type="button" disabled="@Updates.State.IsChecking" @onclick="CheckUpdateAsync">检查</button></div>
+                <div class="settings-version"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "点击检查是否有新版本")</small></span><button type="button" disabled="@UpdateBusy" @onclick="CheckUpdateAsync">检查</button></div>
+                @if (Updates.State.IsDownloading)
+                {
+                    <div class="settings-update-progress" role="progressbar" aria-label="更新下载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Updates.State.DownloadProgress">
+                        <span>正在下载更新<strong>@Updates.State.DownloadProgress%</strong></span>
+                        <MProgressLinear Value="@Updates.State.DownloadProgress" Indeterminate="@(Updates.State.DownloadProgress <= 0)" Color="primary" />
+                    </div>
+                }
                 @if (Updates.State.UpdateAvailable)
                 {
-                    <button class="is-primary" type="button" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><WmIcon Icon="arrow-square-out" /></button>
+                    <button class="is-primary" type="button" disabled="@Updates.State.IsDownloading" @onclick="ConfirmAndStartUpdateAsync"><span>@UpdateActionLabel</span><WmIcon Icon="@(IsAndroid ? "download-simple" : "arrow-square-out")" /></button>
                 }
                 <button type="button" @onclick="OpenDiagnostics"><span>诊断与日志</span><WmIcon Icon="caret-right" /></button>
             </section>
@@ -89,15 +99,26 @@
     private bool saving;
     private bool cacheBusy;
     private string ReturnTarget => WMReturnUrl.Normalize(ReturnUrl ?? QueryReturnUrl);
+    private bool IsAndroid => Global.DeviceType == DeviceType.Andorid;
+    private bool UpdateBusy => Updates.State.IsChecking || Updates.State.IsDownloading;
+    private string UpdateActionLabel => Updates.State.IsDownloading
+        ? $"正在下载 {Updates.State.DownloadProgress}%"
+        : IsAndroid
+            ? $"下载并安装 {Updates.State.AvailableVersion}"
+            : $"获取版本 {Updates.State.AvailableVersion}";
 
     protected override async Task OnInitializedAsync()
     {
+        Updates.Changed += UpdateStateChanged;
         draft = await Settings.LoadAsync();
         enhancedExif = draft.EnhancedExif;
         maximumThreads = draft.MaximumThreads;
         cacheSummary = await Cache.MeasureAsync();
         loading = false;
-        if (string.Equals(Section, "update", StringComparison.OrdinalIgnoreCase)) await CheckUpdateAsync();
+        if (IsAndroid && !Updates.State.HasChecked)
+            await CheckUpdateAsync(showLatestToast: false);
+        else if (string.Equals(Section, "update", StringComparison.OrdinalIgnoreCase))
+            await CheckUpdateAsync(showLatestToast: true);
     }
 
     private async Task SaveSettingsAsync()
@@ -149,14 +170,41 @@
         OpenLogin();
     }
 
-    private async Task CheckUpdateAsync()
+    private Task CheckUpdateAsync() => CheckUpdateAsync(showLatestToast: true);
+
+    private async Task CheckUpdateAsync(bool showLatestToast)
     {
-        await Updates.CheckAsync();
-        ShowToast(Updates.State.Message ?? "检查完成。", Updates.State.HasError);
+        if (UpdateBusy) return;
+        var state = await Updates.CheckAsync();
+        if (state.HasError)
+        {
+            ShowToast(state.Message, true);
+            return;
+        }
+        if (state.UpdateAvailable && IsAndroid)
+        {
+            await ConfirmAndStartUpdateAsync();
+            return;
+        }
+        if (showLatestToast || state.UpdateAvailable)
+            ShowToast(state.Message ?? "检查完成。");
     }
 
-    private async Task StartUpdateAsync()
+    private async Task ConfirmAndStartUpdateAsync()
     {
+        if (UpdateBusy || !Updates.State.UpdateAvailable) return;
+        if (IsAndroid)
+        {
+            var notes = string.IsNullOrWhiteSpace(Updates.State.ReleaseNotes)
+                ? "是否立即下载并安装？"
+                : $"{Updates.State.ReleaseNotes.Trim()}\n\n是否立即下载并安装？";
+            var confirmed = await Popup.ConfirmAsync(
+                $"发现新版本 {Updates.State.AvailableVersion}",
+                notes,
+                AlertTypes.Info);
+            if (confirmed != true) return;
+        }
+
         var result = await Updates.StartUpdateAsync();
         ShowToast(result.Message, !result.Succeeded);
     }
@@ -173,6 +221,9 @@
     private void OpenPrivacyPolicy() => NavigationHistory.NavigateTo($"/privacy-policy?returnUrl={Uri.EscapeDataString(CurrentPage)}");
     private Task OpenWebsiteAsync() => External.OpenUrlAsync("http://thankful.top/");
     private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowToast("群号已复制。"); }
+    private void UpdateStateChanged() => _ = InvokeAsync(StateHasChanged);
     private void ShowToast(string? value, bool error = false) => Common.ShowToast(Popup, value, error);
     private static string FormatBytes(long value) => value < 1024 * 1024 ? $"{value / 1024d:0.#} KB" : $"{value / 1024d / 1024d:0.#} MB";
+
+    public void Dispose() => Updates.Changed -= UpdateStateChanged;
 }

@@ -3,7 +3,21 @@
     height: 100dvh;
     min-height: 0;
     overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
     width: 100dvw;
+}
+
+.mac-workspace-viewport ::deep * {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.mac-workspace-viewport ::deep input,
+.mac-workspace-viewport ::deep textarea,
+.mac-workspace-viewport ::deep [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .mac-workspace-viewport ::deep .mac-workspace-shell {

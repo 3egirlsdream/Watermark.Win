@@ -225,12 +225,20 @@
     font-weight: 640;
     line-height: 24px;
     overflow: hidden;
-    padding-right: 56px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.template-card.split .template-name { padding-right: 0; }
+.template-capability {
+    color: #6f7b8d;
+    display: block;
+    font-size: 10px;
+    line-height: 1.4;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .edit-chip {
     align-items: center;
@@ -251,9 +259,10 @@
     min-width: 50px;
     padding: 0 7px;
     position: absolute;
-    bottom: 7px;
-    right: 7px;
+    right: 12px;
+    top: 12px;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    z-index: 1;
 }
 
 .edit-chip:hover,
@@ -265,12 +274,6 @@
 
 .edit-chip:active {
     transform: scale(0.97);
-}
-
-.edit-chip-icon {
-    font-size: 12px;
-    font-weight: 800;
-    line-height: 1;
 }
 
 .reference-card,

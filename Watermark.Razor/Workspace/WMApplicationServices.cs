@@ -629,52 +629,135 @@ public sealed class WMResourceLibraryService(APIHelper api) : IWMResourceLibrary
 
 public sealed record WMUpdateState(
     string CurrentVersion,
+    bool HasChecked = false,
     bool IsChecking = false,
     bool UpdateAvailable = false,
     string? AvailableVersion = null,
+    string? ReleaseNotes = null,
     string? Message = null,
-    bool HasError = false);
+    bool HasError = false,
+    bool IsDownloading = false,
+    int DownloadProgress = 0);
 
 public interface IWMAppUpdateService
 {
     WMUpdateState State { get; }
+    event Action? Changed;
     Task<WMUpdateState> CheckAsync(CancellationToken token = default);
     Task<WMResourceResult> StartUpdateAsync(CancellationToken token = default);
 }
 
 public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateService
 {
+    private readonly SemaphoreSlim updateGate = new(1, 1);
     public WMUpdateState State { get; private set; } = new(client.GetVersion().ToString());
+    public event Action? Changed;
 
     public async Task<WMUpdateState> CheckAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        State = State with { IsChecking = true, Message = "正在检查更新…", HasError = false };
+        if (State.IsDownloading) return State;
+        SetState(State with { IsChecking = true, Message = "正在检查更新…", HasError = false });
         try
         {
             var available = await client.CheckUpdate().ConfigureAwait(false);
-            State = State with
+            SetState(State with
             {
+                HasChecked = true,
                 IsChecking = false,
                 UpdateAvailable = available,
                 AvailableVersion = available ? client.UpdateVersion : null,
+                ReleaseNotes = available ? client.UpdateMessage : null,
                 Message = available ? $"发现新版本 {client.UpdateVersion}" : "已经是最新版本。",
                 HasError = false
-            };
+            });
         }
-        catch (Exception ex) { State = State with { IsChecking = false, Message = ex.Message, HasError = true }; }
+        catch (OperationCanceledException)
+        {
+            SetState(State with { IsChecking = false });
+            throw;
+        }
+        catch (Exception ex)
+        {
+            SetState(State with
+            {
+                HasChecked = true,
+                IsChecking = false,
+                UpdateAvailable = false,
+                AvailableVersion = null,
+                ReleaseNotes = null,
+                Message = $"检查更新失败：{ex.Message}",
+                HasError = true
+            });
+        }
         return State;
     }
 
     public async Task<WMResourceResult> StartUpdateAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        if (!State.UpdateAvailable || string.IsNullOrWhiteSpace(client.LinkPath))
+            return new WMResourceResult(false, "请先检查并确认有可用的新版本。");
+        if (!await updateGate.WaitAsync(0, token).ConfigureAwait(false))
+            return new WMResourceResult(false, "更新正在下载中，请稍候。");
         try
         {
-            await client.Update((_, _) => { }).ConfigureAwait(false);
-            return new WMResourceResult(true, "已打开更新页面。");
+            SetState(State with
+            {
+                IsDownloading = true,
+                DownloadProgress = 0,
+                Message = "正在下载更新…",
+                HasError = false
+            });
+            var lastProgress = -1;
+            await client.Update((downloaded, total) =>
+            {
+                var progress = total > 0
+                    ? Math.Clamp((int)(downloaded * 100L / total), 0, 100)
+                    : 0;
+                if (progress == lastProgress) return;
+                lastProgress = progress;
+                SetState(State with
+                {
+                    IsDownloading = true,
+                    DownloadProgress = progress,
+                    Message = progress > 0 ? $"正在下载更新… {progress}%" : "正在下载更新…"
+                });
+            }).ConfigureAwait(false);
+
+            var message = Global.DeviceType == DeviceType.Andorid
+                ? "下载完成，已打开系统安装程序。"
+                : "已打开更新页面。";
+            SetState(State with
+            {
+                IsDownloading = false,
+                DownloadProgress = 100,
+                Message = message,
+                HasError = false
+            });
+            return new WMResourceResult(true, message);
         }
-        catch (Exception ex) { return new WMResourceResult(false, ex.Message); }
+        catch (OperationCanceledException)
+        {
+            SetState(State with { IsDownloading = false, Message = "更新下载已取消。" });
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var message = $"下载更新失败：{ex.Message}";
+            SetState(State with { IsDownloading = false, DownloadProgress = 0, Message = message, HasError = true });
+            return new WMResourceResult(false, message);
+        }
+        finally
+        {
+            updateGate.Release();
+        }
+    }
+
+    private void SetState(WMUpdateState state)
+    {
+        State = state;
+        Changed?.Invoke();
     }
 }
 

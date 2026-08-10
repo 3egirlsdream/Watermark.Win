@@ -19,9 +19,9 @@ namespace Watermark.Shared.Models
             this.api = api;
             this.upgradeService = upgradeService;
         }   
-        public string LinkPath { get; set; }
-        public string UpdateMessage { get; set; }
-        public string UpdateVersion { get; set; }
+        public string LinkPath { get; set; } = string.Empty;
+        public string UpdateMessage { get; set; } = string.Empty;
+        public string UpdateVersion { get; set; } = string.Empty;
         public string Key()
         {
             var result = Convert.ToBase64String(Encoding.UTF8.GetBytes(GetAndroidId().Replace("-", "") + "CATLNMSL"));
@@ -111,30 +111,32 @@ namespace Watermark.Shared.Models
 
         public async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
         {
-            try
-            {
 #if MACCATALYST
-                client = "WatermarkMac";
+            client = "WatermarkMac";
 #endif
-                var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={client}", Encoding.Default);
-                if (version != null && version.success && version.data != null && version.data.VERSION != null)
-                {
-                    var v1 = GetVersion();
-                    var v2 = new Version(version.data.VERSION);
-                    LinkPath = version!.data!.PATH!;
-                    UpdateMessage = version.data.MEMO ?? "";
-                    UpdateVersion = version!.data!.VERSION;
-                    return v2 > v1;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch (Exception)
+            var version = await Connections.HttpGetAsync<WMClientVersion>(
+                APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={Uri.EscapeDataString(client)}",
+                Encoding.Default);
+            if (version?.success != true)
+                throw new InvalidOperationException(version?.message?.content ?? "更新服务暂时不可用。");
+            if (string.IsNullOrWhiteSpace(version.data?.VERSION)
+                || !Version.TryParse(version.data.VERSION, out var availableVersion))
+                throw new InvalidOperationException("更新服务返回了无效的版本信息。");
+
+            UpdateMessage = version.data.MEMO ?? string.Empty;
+            UpdateVersion = version.data.VERSION;
+            if (availableVersion <= GetVersion())
             {
+                LinkPath = string.Empty;
                 return false;
             }
+
+            if (!Uri.TryCreate(version.data.PATH, UriKind.Absolute, out var downloadUri)
+                || (!string.Equals(downloadUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(downloadUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("更新服务返回了无效的下载地址。");
+            LinkPath = downloadUri.AbsoluteUri;
+            return true;
         }
 
 

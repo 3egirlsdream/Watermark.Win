@@ -84,6 +84,7 @@
     [Parameter] public WMDesignScenePresentation? Scene { get; set; }
     [Parameter] public double Zoom { get; set; } = 1;
     [Parameter] public bool AllowViewportPan { get; set; } = true;
+    [Parameter] public bool AutoFitOnViewportResize { get; set; }
     [Parameter] public EventCallback<double> ZoomChanged { get; set; }
     [Parameter] public EventCallback SaveRequested { get; set; }
 
@@ -364,6 +365,9 @@
             || (Editor.Draft.LayoutSchemaVersion < WMLayoutMigration.CurrentSchemaVersion
                 && bounds.ParentId is null
                 && control is WMContainer);
+        var flow = !absolute
+            && (bounds.ParentId is not null
+                || Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion);
         var text = control as WMText;
         var textPixelScale = Math.Max(0, (RenderResult?.CanvasWidth ?? 0) / 1080d);
         var resizeInset = text?.EnableBorder == true
@@ -385,6 +389,7 @@
             transform.ScaleY,
             transform.Rotation,
             absolute,
+            flow,
             control?.IsLocked ?? bounds.IsLocked,
             control?.Enabled ?? bounds.IsVisible,
             sceneLayer?.HasSurface == true,
@@ -418,6 +423,15 @@
     {
         InteractionProfiles.ObservePointer(pointerType, hasHover, finePointer);
         return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task FitCanvasAfterViewportResize()
+    {
+        if (!AutoFitOnViewportResize || disposed || canvasInteractionActive)
+            return Task.CompletedTask;
+
+        return FitAsync();
     }
 
     [JSInvokable]
@@ -456,24 +470,28 @@
         if (canvasInteractionActive) return Task.FromResult(false);
         var control = WMControlTree.Find(Editor.Draft, controlId);
         var parent = control is null ? null : WMControlTree.FindParent(Editor.Draft, control.ID);
+        var absolute = IsAbsoluteNode(control);
+        var v2Flow = !absolute
+            && Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion;
         if (control is null
             || control.IsLocked
             || !control.Enabled
             || parent is { IsLocked: true }
             || parent is { Enabled: false }
-            || (!IsAbsoluteNode(control) && parent is null)) return Task.FromResult(false);
+            || (!absolute && !v2Flow && parent is null)) return Task.FromResult(false);
 
         try
         {
             Editor.Select(controlId);
             var resize = string.Equals(kind, "resize", StringComparison.Ordinal);
+            var v2FlowDrag = !resize && v2Flow;
             Editor.BeginTransaction(
                 resize ? "调整原生尺寸"
-                    : IsAbsoluteNode(control) ? "画布变换"
-                    : "调整流式顺序",
+                    : absolute ? "画布变换"
+                    : "父容器内自由移动",
                 resize
                     ? WMTemplateChangeKind.Layout | WMTemplateChangeKind.Paint
-                    : IsAbsoluteNode(control)
+                    : absolute || v2FlowDrag
                     ? WMTemplateChangeKind.Geometry
                     : WMTemplateChangeKind.Layout | WMTemplateChangeKind.Order,
                 [controlId]);
@@ -548,24 +566,44 @@
                 });
             }
 
-            // Children stay in their parent's flow layout: a drag first finds
-            // its new sibling slot, then stores the remaining visual offset as
-            // four-way margins. It never writes a canvas transform.
-            if (parent is null || interaction.Kind != "drag" || bounds is null)
+            // A V2 flow child keeps its original Flex slot and receives only a
+            // bounded visual transform. This moves the selected node (including
+            // all descendants) without reflowing its parent or siblings.
+            if (interaction.Kind != "drag" || bounds is null)
             {
                 Editor.CancelTransaction();
                 return Task.FromResult<MacCanvasInteraction?>(null);
             }
 
-            var drop = Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion
-                ? MacCanvasFlowLayout.ResolveV2Drop(
-                    parent,
-                    control,
-                    bounds,
-                    interaction,
-                    RenderResult?.Bounds ?? [],
-                    Math.Min(RenderResult?.CanvasWidth ?? 0, RenderResult?.CanvasHeight ?? 0))
-                : MacCanvasFlowLayout.ResolveDrop(parent, control, bounds, interaction, RenderResult?.Bounds ?? []);
+            if (Editor.Draft.LayoutSchemaVersion >= WMLayoutMigration.CurrentSchemaVersion)
+            {
+                var constrained = MacCanvasBoundary.ConstrainFlowDrag(bounds, interaction);
+                MacCanvasTransform.ApplyFlow(control, constrained);
+                Editor.CommitTransaction();
+                var transform = control.Style.Transform;
+                return Task.FromResult<MacCanvasInteraction?>(constrained with
+                {
+                    OffsetXPercent = transform.OffsetXPercent,
+                    OffsetYPercent = transform.OffsetYPercent,
+                    ScaleX = transform.ScaleX,
+                    ScaleY = transform.ScaleY,
+                    Rotation = transform.Rotation
+                });
+            }
+
+            // Restored pre-V2 drafts retain their compatibility reorder path.
+            if (parent is null)
+            {
+                Editor.CancelTransaction();
+                return Task.FromResult<MacCanvasInteraction?>(null);
+            }
+
+            var drop = MacCanvasFlowLayout.ResolveDrop(
+                parent,
+                control,
+                bounds,
+                interaction,
+                RenderResult?.Bounds ?? []);
             if (!MacCanvasFlowLayout.ApplyDrop(Editor.Draft, parent, control, drop))
             {
                 Editor.CancelTransaction();

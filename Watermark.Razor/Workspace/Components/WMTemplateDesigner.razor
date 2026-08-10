@@ -66,6 +66,7 @@
                                       PreviewUrl="@previewUrl"
                                       Scene="@scenePresentation"
                                       Zoom="@zoom"
+                                      AutoFitOnViewportResize="@Global.IsMobile"
                                       ZoomChanged="SetZoomAsync"
                                       SaveRequested="SaveAsync" />
                 </div>
@@ -383,7 +384,7 @@
                 // The workspace requested one of the canvas configuration
                 // sections; do not replace it with the last selected object.
             }
-            else if (!string.IsNullOrWhiteSpace(observedSelectionId))
+            else if (!Global.IsMobile && !string.IsNullOrWhiteSpace(observedSelectionId))
                 OpenDefaultProperties();
             PublishToolState();
             await RequestSceneAsync(
@@ -420,7 +421,7 @@
                 _ = InvokeAsync(async () =>
                 {
                     await CancelAssetSelectionAsync();
-                    if (!string.IsNullOrWhiteSpace(selectedId))
+                    if (!Global.IsMobile && !string.IsNullOrWhiteSpace(selectedId))
                         OpenDefaultProperties();
                     StateHasChanged();
                 });
@@ -431,13 +432,16 @@
                 _ = InvokeAsync(async () =>
                 {
                     await CancelMobileTextContent();
-                    if (!string.IsNullOrWhiteSpace(selectedId))
+                    if (!Global.IsMobile && !string.IsNullOrWhiteSpace(selectedId))
                         OpenDefaultProperties();
                     StateHasChanged();
                 });
             }
-            else if (string.IsNullOrWhiteSpace(selectedId))
+            else if (Global.IsMobile || string.IsNullOrWhiteSpace(selectedId))
             {
+                // A canvas selection is a positioning gesture first on mobile.
+                // Keep the template available for drag/resize and let the user
+                // explicitly choose an editing tool from the contextual rail.
                 presentation.ClosePanel();
             }
             else if (presentation.Panel is WMPosterMobilePanel.None
@@ -1184,7 +1188,11 @@
 
     private Task SetZoomAsync(double value)
     {
-        zoom = Math.Clamp(value, 0.1, 4);
+        var next = Math.Clamp(value, 0.1, 4);
+        if (Math.Abs(next - zoom) < 0.0005)
+            return Task.CompletedTask;
+
+        zoom = next;
         StateHasChanged();
         return Task.CompletedTask;
     }

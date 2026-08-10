@@ -110,6 +110,19 @@ public sealed class WMDesktopWorkspaceContractTests
     }
 
     [Fact]
+    public void DesktopWorkspaceShell_PreventsWholeInterfaceTextSelectionButKeepsEditorsSelectable()
+    {
+        var shellCss = Read("Watermark.Razor/Components/Mac/MacWorkspaceShell.razor.css");
+
+        Assert.Contains(".mac-workspace-viewport ::deep *", shellCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: none", shellCss, StringComparison.Ordinal);
+        Assert.Contains(".mac-workspace-viewport ::deep input", shellCss, StringComparison.Ordinal);
+        Assert.Contains(".mac-workspace-viewport ::deep textarea", shellCss, StringComparison.Ordinal);
+        Assert.Contains("[contenteditable=\"true\"]", shellCss, StringComparison.Ordinal);
+        Assert.Contains("user-select: text", shellCss, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DesktopMembership_UsesHistoricalDialogInsteadOfMobilePage()
     {
         var page = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
