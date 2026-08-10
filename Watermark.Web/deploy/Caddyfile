@@ -11,5 +11,11 @@ thankful.top {
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    reverse_proxy markweb:8080
+    handle /api/* {
+        reverse_proxy host.docker.internal:4396
+    }
+
+    handle {
+        reverse_proxy markweb:8080
+    }
 }

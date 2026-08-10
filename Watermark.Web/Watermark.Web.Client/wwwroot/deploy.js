@@ -1,7 +1,7 @@
 const apiBase = window.__LITOGRAPH_DEPLOY_API__
     ?? (["127.0.0.1", "localhost"].includes(window.location.hostname)
         ? "http://127.0.0.1:4396"
-        : "http://thankful.top:4396");
+        : window.location.origin);
 const maximumPackageSize = 2147483647;
 
 const platforms = {
@@ -112,7 +112,12 @@ export async function publishRelease(platform, version, memo) {
 }
 
 async function deployRequest(path, options = {}) {
-    const response = await fetch(`${apiBase}${path}`, options);
+    let response;
+    try {
+        response = await fetch(`${apiBase}${path}`, options);
+    } catch (error) {
+        throw new Error("无法连接发布 API，请检查官网 HTTPS 代理后重试。", { cause: error });
+    }
 
     let payload;
     try {

@@ -205,6 +205,7 @@ jobs:
               --detach \
               --restart unless-stopped \
               --network "$NETWORK" \
+              --add-host host.docker.internal:host-gateway \
               --publish 80:80 \
               --publish 443:443 \
               --volume "$DEPLOY_PATH/Caddyfile:/etc/caddy/Caddyfile:ro" \
