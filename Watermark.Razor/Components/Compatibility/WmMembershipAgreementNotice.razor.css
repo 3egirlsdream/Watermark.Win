@@ -1,0 +1,22 @@
+.membership-agreement-notice {
+    color: var(--wm-text-muted, #697587);
+    font-size: .72rem;
+    line-height: 1.45;
+    margin: 0 auto;
+    padding: 2px 12px;
+    text-align: center;
+}
+
+.membership-agreement-notice > a {
+    color: var(--wm-primary, #1769d2);
+    font: inherit;
+    font-weight: 720;
+    padding: 0 1px;
+    text-decoration: none;
+}
+
+.membership-agreement-notice > a:focus-visible {
+    border-radius: 3px;
+    outline: 2px solid var(--wm-primary, #1769d2);
+    outline-offset: 2px;
+}

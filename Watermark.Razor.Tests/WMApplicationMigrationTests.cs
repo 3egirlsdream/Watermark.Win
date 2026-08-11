@@ -289,6 +289,34 @@ public sealed class WMApplicationMigrationTests
     }
 
     [Fact]
+    public void MembershipCheckout_DisplaysTheMembershipAgreementOnEveryPlatform()
+    {
+        var mobile = Read("Watermark.Razor/BlazorPages/WMMembershipPage.razor");
+        var desktop = Read("Watermark.Razor/Components/Desktop/WMDesktopMembershipDialog.razor");
+        var notice = Read("Watermark.Razor/Components/Compatibility/WmMembershipAgreementNotice.razor");
+        var agreement = Read("Watermark.Razor/wwwroot/legal/membership-service-agreement.html");
+        var webHost = Read("Watermark.Web/Watermark.Web/Program.cs");
+
+        Assert.Contains("<WmMembershipAgreementNotice", mobile, StringComparison.Ordinal);
+        Assert.Contains("aria-describedby=\"mobile-membership-agreement-notice\"", mobile, StringComparison.Ordinal);
+        Assert.True(mobile.LastIndexOf("<WmMembershipAgreementNotice", StringComparison.Ordinal)
+                    > mobile.IndexOf("membership-benefits", StringComparison.Ordinal));
+        Assert.Contains("<WmMembershipAgreementNotice", desktop, StringComparison.Ordinal);
+        Assert.Contains("aria-describedby=\"desktop-membership-agreement-notice\"", desktop, StringComparison.Ordinal);
+        Assert.True(desktop.LastIndexOf("<WmMembershipAgreementNotice", StringComparison.Ordinal)
+                    > desktop.IndexOf("<footer class=\"vip-actions\">", StringComparison.Ordinal));
+        Assert.Contains("《会员服务协议》", notice, StringComparison.Ordinal);
+        Assert.Contains("https://thankful.top/membership-agreement", notice, StringComparison.Ordinal);
+        Assert.Contains("External.OpenUrlAsync(AgreementUrl)", notice, StringComparison.Ordinal);
+        Assert.Contains("app.MapGet(\"/membership-agreement\"", webHost, StringComparison.Ordinal);
+        Assert.Contains("_content/Watermark.Razor/legal/membership-service-agreement.html", webHost, StringComparison.Ordinal);
+        Assert.Contains("不会自动续费", agreement, StringComparison.Ordinal);
+        Assert.Contains("不会在到期后自动扣款", agreement, StringComparison.Ordinal);
+        Assert.DoesNotContain("轻影", mobile, StringComparison.Ordinal);
+        Assert.DoesNotContain("轻影", agreement, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void IconSystem_UsesOneSharedPhosphorDependencyWithoutMdiFallbacks()
     {
         var forbidden = new[]

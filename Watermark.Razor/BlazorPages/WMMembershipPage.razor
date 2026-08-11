@@ -8,7 +8,7 @@
 @inject IWMNavigationHistory NavigationHistory
 
 <section class="membership-page" aria-labelledby="membership-title">
-    <header><button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button><div><span>MEMBERSHIP</span><h1 id="membership-title">轻影会员</h1></div></header>
+    <header><button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button><div><span>MEMBERSHIP</span><h1 id="membership-title">水印相框软件会员</h1></div></header>
     <section class="membership-hero">
         <WmMembershipMark />
         <div><strong>@(Accounts.State.IsVip ? "会员权益已生效" : "让每次创作更从容")</strong><p>@StatusText</p></div>
@@ -22,7 +22,7 @@
         <section class="membership-plans" aria-label="会员套餐">
             @foreach (var plan in Membership.Plans)
             {
-                <button type="button" class="@(plan.Recommended ? "is-recommended" : null)" disabled="@busy" @onclick="() => PurchaseAsync(plan)">
+                <button type="button" class="@(plan.Recommended ? "is-recommended" : null)" disabled="@busy" aria-describedby="mobile-membership-agreement-notice" @onclick="() => PurchaseAsync(plan)">
                     @if (plan.Recommended) { <span class="plan-badge">推荐</span> }
                     <span><strong>@plan.Name</strong><small>@plan.Description</small></span><b>¥@plan.Price.ToString("0.##")</b>
                 </button>
@@ -42,6 +42,7 @@
     {
         <div class="membership-message @(messageIsError ? "is-error" : null)" role="status">@message</div>
     }
+    <WmMembershipAgreementNotice Id="mobile-membership-agreement-notice" />
 </section>
 
 @code {

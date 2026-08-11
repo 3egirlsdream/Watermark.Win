@@ -1,0 +1,15 @@
+@namespace Watermark.Razor.Components.Compatibility
+@using Watermark.Razor.Workspace
+@inject IWMExternalActionService External
+
+<p class="membership-agreement-notice" id="@Id" role="note">
+    开通或续费会员即表示您已阅读并同意
+    <a href="@AgreementUrl" @onclick="OpenAgreementAsync" @onclick:preventDefault="true">《会员服务协议》</a>
+</p>
+
+@code {
+    [Parameter] public string Id { get; set; } = "membership-agreement-notice";
+
+    private const string AgreementUrl = "https://thankful.top/membership-agreement";
+    private Task OpenAgreementAsync() => External.OpenUrlAsync(AgreementUrl);
+}

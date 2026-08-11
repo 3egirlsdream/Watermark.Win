@@ -48,6 +48,15 @@ namespace Watermark.Web
                     : Results.NotFound();
             });
 
+            app.MapGet("/membership-agreement", (IWebHostEnvironment environment) =>
+            {
+                var agreementFile = environment.WebRootFileProvider.GetFileInfo(
+                    "_content/Watermark.Razor/legal/membership-service-agreement.html");
+                return agreementFile.Exists
+                    ? Results.Stream(agreementFile.CreateReadStream(), "text/html; charset=utf-8")
+                    : Results.NotFound();
+            });
+
             app.MapRazorComponents<App>()
                 .AddInteractiveWebAssemblyRenderMode()
                 .AddInteractiveServerRenderMode()

@@ -92,10 +92,12 @@
         <MButton Text Class="vip-secondary-button" OnClick="RefreshStatusAsync" Disabled="@(!HasOrder || isPolling)">
             <WmIcon Left Small Icon="arrows-clockwise" />刷新状态
         </MButton>
-        <MButton Color="primary" Class="vip-primary-button" OnClick="CreateOrderAsync" Disabled="@IsBusy">
+        <MButton Color="primary" Class="vip-primary-button" OnClick="CreateOrderAsync" Disabled="@IsBusy" aria-describedby="desktop-membership-agreement-notice">
             <WmIcon Left Small Icon="arrow-square-out" />@PrimaryActionText
         </MButton>
     </footer>
+
+    <WmMembershipAgreementNotice Id="desktop-membership-agreement-notice" />
 </div>
 
 @code {
