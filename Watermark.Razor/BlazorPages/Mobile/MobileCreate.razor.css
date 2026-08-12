@@ -110,43 +110,117 @@
 
 .create-mode-grid {
     display: grid;
-    gap: 10px;
+    gap: 12px 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .create-mode-card {
     align-items: flex-start;
-    background: var(--wm-surface);
+    background: #111c2a;
     border: 1px solid var(--wm-divider);
-    border-radius: var(--wm-radius-card);
-    box-shadow: var(--wm-shadow-card);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(23, 39, 58, .07);
     color: var(--wm-text);
     display: flex;
     flex-direction: column;
     font: inherit;
-    min-height: 144px;
-    padding: 15px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
     text-align: left;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 
-.create-mode-card:active { background: var(--wm-surface-subtle); }
+.create-mode-card:active {
+    box-shadow: 0 4px 14px rgba(23, 39, 58, .08);
+    transform: scale(.985);
+}
 
-.mode-icon {
+.create-mode-card:disabled { opacity: .68; }
+
+.create-mode-card:focus-visible {
+    border-color: var(--wm-primary);
+    box-shadow: 0 0 0 3px var(--wm-primary-soft), 0 10px 26px rgba(23, 39, 58, .10);
+    outline: none;
+}
+
+.mode-visual {
     align-items: center;
-    border-radius: 12px;
+    aspect-ratio: 3 / 2;
+    background: var(--wm-surface-subtle);
     display: flex;
-    height: 42px;
     justify-content: center;
-    margin-bottom: 18px;
-    width: 42px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
 }
 
-.mode-icon.is-template { background: #eaf2ff; color: #155fcf; }
-.mode-icon.is-color { background: #fff1df; color: #a85e0a; }
-.mode-icon.is-stack { background: #e7f5ef; color: #187052; }
-.mode-icon.is-collage { background: #f2ebff; color: #7048a8; }
-.create-mode-card strong { font-size: .88rem; }
-.create-mode-card small { color: var(--wm-text-muted); font-size: .68rem; margin-top: 5px; }
+.mode-visual::after {
+    background: linear-gradient(180deg, rgba(7, 16, 28, .02), rgba(7, 16, 28, .12));
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+.mode-visual img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    transform: scale(1);
+    transition: transform .35s cubic-bezier(.2, .75, .25, 1);
+    user-select: none;
+    width: 100%;
+}
+
+.mode-copy {
+    background: linear-gradient(180deg, transparent 20%, rgba(7, 16, 28, .08) 45%, rgba(7, 16, 28, .88) 100%);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    inset: 0;
+    justify-content: flex-end;
+    min-height: 0;
+    padding: 34px 10px 9px;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    z-index: 1;
+}
+
+.mode-title-row {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.mode-action {
+    align-items: center;
+    color: rgba(255, 255, 255, .86);
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    opacity: 1;
+    transition: color .2s ease, transform .2s ease;
+}
+
+.create-mode-card strong {
+    color: white;
+    font-size: .82rem;
+    letter-spacing: -.015em;
+    text-shadow: 0 1px 7px rgba(0, 0, 0, .36);
+}
+.create-mode-card small {
+    color: rgba(255, 255, 255, .76);
+    font-size: .62rem;
+    line-height: 1.3;
+    margin-top: 3px;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, .42);
+}
 
 .recent-heading { margin-top: 30px; }
 
@@ -209,4 +283,21 @@
     .create-page { padding: 48px max(32px, calc((100vw - 860px) / 2)) 120px; }
     .create-header h1 { max-width: 520px; }
     .create-mode-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .create-mode-card:hover:not(:disabled) {
+        border-color: rgba(21, 95, 207, .24);
+        box-shadow: 0 13px 30px rgba(23, 39, 58, .11);
+        transform: translateY(-2px);
+    }
+
+    .create-mode-card:hover:not(:disabled) .mode-visual img { transform: scale(1.055); }
+    .create-mode-card:hover:not(:disabled) .mode-action { color: white; transform: translate(1px, -1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .create-mode-card,
+    .mode-action,
+    .mode-visual img { transition: none; }
 }

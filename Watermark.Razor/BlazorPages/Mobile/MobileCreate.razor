@@ -42,24 +42,52 @@
 
     <div class="create-mode-grid">
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Template)">
-            <span class="mode-icon is-template"><WmIcon Icon="article" /></span>
-            <strong>套用模板</strong>
-            <small>水印、边框与 EXIF</small>
+            <span class="mode-visual">
+                <img src="_content/Watermark.Razor/img/create/template.webp" alt="" aria-hidden="true" decoding="async" width="768" height="512" />
+            </span>
+            <span class="mode-copy">
+                <span class="mode-title-row">
+                    <strong>套用模板</strong>
+                    <span class="mode-action" aria-hidden="true"><WmIcon Icon="arrow-up-right" Size="16" /></span>
+                </span>
+                <small>水印、边框与 EXIF</small>
+            </span>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.ColorGrade)">
-            <span class="mode-icon is-color"><WmIcon Icon="sliders-horizontal" /></span>
-            <strong>照片调色</strong>
-            <small>基础调整与风格预设</small>
+            <span class="mode-visual">
+                <img src="_content/Watermark.Razor/img/create/color-grade.webp" alt="" aria-hidden="true" decoding="async" width="768" height="512" />
+            </span>
+            <span class="mode-copy">
+                <span class="mode-title-row">
+                    <strong>照片调色</strong>
+                    <span class="mode-action" aria-hidden="true"><WmIcon Icon="arrow-up-right" Size="16" /></span>
+                </span>
+                <small>基础调整与风格预设</small>
+            </span>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.MultiFrame)">
-            <span class="mode-icon is-stack"><WmIcon Icon="stack" /></span>
-            <strong>多帧合成</strong>
-            <small>@(CanUseMultiFrame ? "星轨、降噪与静态星空" : "已开放，运行前检查设备能力")</small>
+            <span class="mode-visual">
+                <img src="_content/Watermark.Razor/img/create/multi-frame.webp" alt="" aria-hidden="true" decoding="async" width="768" height="512" />
+            </span>
+            <span class="mode-copy">
+                <span class="mode-title-row">
+                    <strong>多帧合成</strong>
+                    <span class="mode-action" aria-hidden="true"><WmIcon Icon="arrow-up-right" Size="16" /></span>
+                </span>
+                <small>@(CanUseMultiFrame ? "星轨、降噪与静态星空" : "已开放，运行前检查设备能力")</small>
+            </span>
         </button>
         <button type="button" class="create-mode-card" disabled="@busy" @onclick="() => StartAsync(WMWorkspaceMode.Collage)">
-            <span class="mode-icon is-collage"><WmIcon Icon="columns" /></span>
-            <strong>照片拼图</strong>
-            <small>横向或纵向拼接多张照片</small>
+            <span class="mode-visual">
+                <img src="_content/Watermark.Razor/img/create/collage.webp" alt="" aria-hidden="true" decoding="async" width="768" height="512" />
+            </span>
+            <span class="mode-copy">
+                <span class="mode-title-row">
+                    <strong>照片拼图</strong>
+                    <span class="mode-action" aria-hidden="true"><WmIcon Icon="arrow-up-right" Size="16" /></span>
+                </span>
+                <small>横向或纵向拼接多张照片</small>
+            </span>
         </button>
     </div>
 
