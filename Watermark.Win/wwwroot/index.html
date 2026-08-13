@@ -9,7 +9,10 @@
     <!--<link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />-->
     <link href="css/app.css" rel="stylesheet" />
     <link href="_content/Masa.Blazor/css/masa-blazor.min.css" rel="stylesheet" />
-    <link href="Watermark.Win.styles.css" rel="stylesheet" />
+    <!-- The WPF host has no scoped component styles of its own. Load the
+         shared RCL bundle directly so WebView2 does not depend on a nested
+         @import from the generated Watermark.Win.styles.css shim. -->
+    <link href="_content/Watermark.Razor/Watermark.Razor.bundle.scp.css?v=20260813" rel="stylesheet" />
     <link href="css/google.css" rel="stylesheet" />
     <link href="_content/Watermark.Razor/css/wm-toast.css?v=20260722" rel="stylesheet" />
 </head>

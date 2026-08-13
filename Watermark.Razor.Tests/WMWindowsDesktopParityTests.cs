@@ -66,6 +66,7 @@ public sealed class WMWindowsDesktopParityTests
     public void WindowsDesktop_DeclaresNativeArchitecturesAndMacEquivalentSizing()
     {
         var project = Read("Watermark.Win/Watermark.Win.csproj");
+        var hostPage = Read("Watermark.Win/wwwroot/index.html");
         var window = Read("Watermark.Win/Views/MainWindow.xaml");
         var slider = Read("Watermark.Razor/Parts/SliderInput.razor");
         var color = Read("Watermark.Razor/Parts/ColorPicker.razor");
@@ -74,6 +75,8 @@ public sealed class WMWindowsDesktopParityTests
         Assert.Contains("native\\artifacts\\win-arm64\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
         Assert.Contains("MinHeight=\"600\"", window, StringComparison.Ordinal);
         Assert.Contains("MinWidth=\"900\"", window, StringComparison.Ordinal);
+        Assert.Contains("_content/Watermark.Razor/Watermark.Razor.bundle.scp.css", hostPage, StringComparison.Ordinal);
+        Assert.DoesNotContain("href=\"Watermark.Win.styles.css\"", hostPage, StringComparison.Ordinal);
         Assert.Contains("DeviceType.Mac or Shared.Enums.DeviceType.Win", slider, StringComparison.Ordinal);
         Assert.Contains("DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win", color, StringComparison.Ordinal);
     }
