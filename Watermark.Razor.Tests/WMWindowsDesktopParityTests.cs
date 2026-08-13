@@ -80,7 +80,8 @@ public sealed class WMWindowsDesktopParityTests
         Assert.Contains("AppContext.BaseDirectory", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("NativeLibrary.SetDllImportResolver", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("<ApplicationIcon>app.ico</ApplicationIcon>", project, StringComparison.Ordinal);
-        Assert.Contains("Icon=\"app.ico\"", window, StringComparison.Ordinal);
+        Assert.Contains("Icon=\"pack://application:,,,/app.ico\"", window, StringComparison.Ordinal);
+        Assert.DoesNotContain("Icon=\"app.ico\"", window, StringComparison.Ordinal);
         var icon = File.ReadAllBytes(Path.Combine(RepositoryRoot, "Watermark.Win", "app.ico"));
         Assert.Equal(0, icon[0]);
         Assert.Equal(0, icon[1]);
