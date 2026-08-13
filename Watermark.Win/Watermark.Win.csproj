@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 	<RootNamespace>Watermark.Win</RootNamespace>
-	<ApplicationIcon>leica.ico</ApplicationIcon>
+	<ApplicationIcon>app.ico</ApplicationIcon>
 	<Version>1.2.26</Version>
 	<AnalysisLevel>latest</AnalysisLevel>
 	<EnableNETAnalyzers>True</EnableNETAnalyzers>
@@ -27,8 +27,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WatermarkNativeRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</WatermarkNativeRuntimeIdentifier>
-    <WatermarkNativeRuntimeIdentifier Condition="'$(WatermarkNativeRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</WatermarkNativeRuntimeIdentifier>
+    <WatermarkNativeArchitecture Condition="'$(RuntimeIdentifier)' != '' And $([System.String]::Copy('$(RuntimeIdentifier)').Contains('arm64'))">arm64</WatermarkNativeArchitecture>
+    <WatermarkNativeArchitecture Condition="'$(WatermarkNativeArchitecture)' == '' And '$(RuntimeIdentifier)' != '' And $([System.String]::Copy('$(RuntimeIdentifier)').Contains('x64'))">x64</WatermarkNativeArchitecture>
+    <WatermarkNativeArchitecture Condition="'$(WatermarkNativeArchitecture)' == '' And $([System.String]::Copy('$(NETCoreSdkRuntimeIdentifier)').Contains('arm64'))">arm64</WatermarkNativeArchitecture>
+    <WatermarkNativeArchitecture Condition="'$(WatermarkNativeArchitecture)' == ''">x64</WatermarkNativeArchitecture>
+    <WatermarkNativeRuntimeIdentifier>win-$(WatermarkNativeArchitecture)</WatermarkNativeRuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -53,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="leica.ico" />
+    <Resource Include="app.ico" />
     <Content Include="..\THIRD-PARTY-NOTICES" Link="THIRD-PARTY-NOTICES" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\native\third_party\LibRaw-0.22.1\LICENSE.CDDL" Link="licenses\LibRaw-CDDL-1.0.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\native\third_party\LibRaw-0.22.1\COPYRIGHT" Link="licenses\LibRaw-COPYRIGHT.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />

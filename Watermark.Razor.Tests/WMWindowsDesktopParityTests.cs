@@ -68,11 +68,24 @@ public sealed class WMWindowsDesktopParityTests
         var project = Read("Watermark.Win/Watermark.Win.csproj");
         var hostPage = Read("Watermark.Win/wwwroot/index.html");
         var window = Read("Watermark.Win/Views/MainWindow.xaml");
+        var registrations = Read("Watermark.Win/Views/MainWindow.xaml.cs");
+        var nativeLoader = Read("Watermark.Win/Models/WMWindowsNativeLibraryLoader.cs");
         var slider = Read("Watermark.Razor/Parts/SliderInput.razor");
         var color = Read("Watermark.Razor/Parts/ColorPicker.razor");
 
         Assert.Contains("native\\artifacts\\win-x64\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
         Assert.Contains("native\\artifacts\\win-arm64\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
+        Assert.Contains("WatermarkNativeArchitecture", project, StringComparison.Ordinal);
+        Assert.Contains("WMWindowsNativeLibraryLoader.Register()", registrations, StringComparison.Ordinal);
+        Assert.Contains("AppContext.BaseDirectory", nativeLoader, StringComparison.Ordinal);
+        Assert.Contains("NativeLibrary.SetDllImportResolver", nativeLoader, StringComparison.Ordinal);
+        Assert.Contains("<ApplicationIcon>app.ico</ApplicationIcon>", project, StringComparison.Ordinal);
+        Assert.Contains("Icon=\"app.ico\"", window, StringComparison.Ordinal);
+        var icon = File.ReadAllBytes(Path.Combine(RepositoryRoot, "Watermark.Win", "app.ico"));
+        Assert.Equal(0, icon[0]);
+        Assert.Equal(0, icon[1]);
+        Assert.Equal(1, BitConverter.ToUInt16(icon, 2));
+        Assert.True(BitConverter.ToUInt16(icon, 4) >= 8, "Windows 应用图标必须包含完整的多尺寸帧。");
         Assert.Contains("MinHeight=\"600\"", window, StringComparison.Ordinal);
         Assert.Contains("MinWidth=\"900\"", window, StringComparison.Ordinal);
         Assert.Contains("_content/Watermark.Razor/Watermark.Razor.bundle.scp.css", hostPage, StringComparison.Ordinal);

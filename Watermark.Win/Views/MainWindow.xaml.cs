@@ -19,6 +19,7 @@ namespace Watermark.Win
         {
             try
             {
+				WMWindowsNativeLibraryLoader.Register();
 				Global.DeviceType = Watermark.Shared.Enums.DeviceType.Win;
 				IocHelper.GetIoc().AddSingleton<WatermarkHelper>();
                 IocHelper.GetIoc().AddSingleton<IWMWatermarkHelper>(provider => provider.GetRequiredService<WatermarkHelper>());
