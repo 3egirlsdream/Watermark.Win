@@ -47,6 +47,10 @@
                 <div><dt>可用内存</dt><dd>@FormatBytes(snapshot.AvailableMemoryBytes)</dd></div>
                 <div><dt>可用缓存空间</dt><dd>@FormatBytes(snapshot.AvailableDiskBytes)</dd></div>
             </dl>
+            @if (!string.IsNullOrWhiteSpace(snapshot.ErrorMessage))
+            {
+                <div class="backend-error" role="status"><span class="backend-error-icon"><WmIcon Icon="warning-circle" /></span><span>@snapshot.ErrorMessage</span></div>
+            }
         </section>
 
         <h2>功能状态</h2>

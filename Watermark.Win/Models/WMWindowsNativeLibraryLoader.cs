@@ -46,10 +46,34 @@ internal static class WMWindowsNativeLibraryLoader
         lock (Gate)
         {
             if (libraryHandle != IntPtr.Zero) return libraryHandle;
-            var packagedPath = Path.Combine(AppContext.BaseDirectory, LibraryFileName);
-            if (File.Exists(packagedPath) && NativeLibrary.TryLoad(packagedPath, out libraryHandle))
-                return libraryHandle;
+            foreach (var packagedPath in PackagedPaths())
+            {
+                if (File.Exists(packagedPath) && NativeLibrary.TryLoad(packagedPath, out libraryHandle))
+                    return libraryHandle;
+            }
             return NativeLibrary.TryLoad(LibraryName, out libraryHandle) ? libraryHandle : IntPtr.Zero;
         }
+    }
+
+    private static IEnumerable<string> PackagedPaths()
+    {
+        var runtimeIdentifier = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "win-x64",
+            Architecture.Arm64 => "win-arm64",
+            _ => null
+        };
+        if (runtimeIdentifier is not null)
+        {
+            yield return Path.Combine(
+                AppContext.BaseDirectory,
+                "runtimes",
+                runtimeIdentifier,
+                "native",
+                LibraryFileName);
+        }
+
+        // Retain compatibility with older packages that placed the DLL beside the executable.
+        yield return Path.Combine(AppContext.BaseDirectory, LibraryFileName);
     }
 }

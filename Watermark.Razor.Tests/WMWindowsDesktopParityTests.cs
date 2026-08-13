@@ -75,7 +75,11 @@ public sealed class WMWindowsDesktopParityTests
 
         Assert.Contains("native\\artifacts\\win-x64\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
         Assert.Contains("native\\artifacts\\win-arm64\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
-        Assert.Contains("WatermarkNativeArchitecture", project, StringComparison.Ordinal);
+        Assert.Contains("runtimes\\win-x64\\native\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
+        Assert.Contains("runtimes\\win-arm64\\native\\Watermark.Imaging.Native.dll", project, StringComparison.Ordinal);
+        Assert.Contains("RuntimeInformation.ProcessArchitecture", nativeLoader, StringComparison.Ordinal);
+        Assert.Contains("Architecture.X64", nativeLoader, StringComparison.Ordinal);
+        Assert.Contains("Architecture.Arm64", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("WMWindowsNativeLibraryLoader.Register()", registrations, StringComparison.Ordinal);
         Assert.Contains("AppContext.BaseDirectory", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("NativeLibrary.SetDllImportResolver", nativeLoader, StringComparison.Ordinal);

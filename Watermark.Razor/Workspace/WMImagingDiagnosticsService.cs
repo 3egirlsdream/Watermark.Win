@@ -5,7 +5,9 @@ using Watermark.Shared.Models;
 
 namespace Watermark.Razor.Workspace;
 
-public sealed class WMImagingDiagnosticsService(IWMImagingCapabilities capabilities)
+public sealed class WMImagingDiagnosticsService(
+    IWMImagingCapabilities capabilities,
+    IWMColorEngine? colorEngine = null)
     : IWMImagingDiagnosticsService
 {
     public Task<WMImagingDiagnosticSnapshot> CaptureAsync(
@@ -13,21 +15,23 @@ public sealed class WMImagingDiagnosticsService(IWMImagingCapabilities capabilit
     {
         cancellationToken.ThrowIfCancellationRequested();
         var current = capabilities.Current;
+        var native = (capabilities as WMNativeImagingCapabilities)?.Diagnostics;
+        var colorCapability = colorEngine?.Capability;
         var features = Enum.GetValues<WMImagingFeature>()
             .Select(feature => CreateStatus(feature, current))
             .ToArray();
         return Task.FromResult(new WMImagingDiagnosticSnapshot(
             Environment.OSVersion.Platform.ToString(),
             RuntimeInformation.ProcessArchitecture.ToString(),
-            0,
-            current.UnavailableReason is null,
-            "Managed/host capability provider",
-            0,
+            native?.AbiVersion ?? 0,
+            native?.IsLoaded ?? current.UnavailableReason is null,
+            native?.BackendVersion ?? "Managed/host capability provider",
+            native?.CapabilityBits ?? 0,
             0,
             0,
             features,
             DateTime.UtcNow,
-            current.UnavailableReason));
+            colorCapability?.Error ?? current.UnavailableReason));
     }
 
     private static WMImagingCapabilityStatus CreateStatus(
