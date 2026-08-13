@@ -1,141 +1,83 @@
-﻿using Microsoft.JSInterop;
-using System;
-using System.Linq;
-using System.Reflection;
+#nullable enable
+
+using Microsoft.JSInterop;
 using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Threading;
+using System.Windows.Media;
 using Application = System.Windows.Application;
 
+namespace Watermark.Win.Models;
 
-namespace Watermark.Win.Models
+public sealed class WindowService : IWindowService
 {
-    public class WindowService : IWindowService
+    private static bool isMoving;
+    private static Point startMouse;
+    private static Point startWindow;
+    private static Window? movingWindow;
+
+    [JSInvokable]
+    public static void StartMove()
     {
-        private static bool _isMoving;
-        private static double _startMouseX;
-        private static double _startMouseY;
-        private static double _startWindLeft;
-        private static double _startWindTop;
-        private static Tuple<decimal, decimal> point = new(1, 1);
-        public WindowService()
+        var window = GetActiveWindow();
+        if (window is null || window.WindowState == WindowState.Maximized) return;
+        movingWindow = window;
+        startMouse = GetMousePosition(window);
+        startWindow = new Point(window.Left, window.Top);
+        isMoving = true;
+    }
+
+    [JSInvokable]
+    public static void StopMove()
+    {
+        isMoving = false;
+        movingWindow = null;
+    }
+
+    [JSInvokable]
+    public static void UpdateWindowPos()
+    {
+        var window = movingWindow;
+        if (!isMoving || window is null) return;
+        var mouse = GetMousePosition(window);
+        window.Left = startWindow.X + mouse.X - startMouse.X;
+        window.Top = startWindow.Y + mouse.Y - startMouse.Y;
+    }
+
+    public void Minimize()
+    {
+        if (GetActiveWindow() is { } window) window.WindowState = WindowState.Minimized;
+    }
+
+    public void Maximize()
+    {
+        if (GetActiveWindow() is not { } window) return;
+        window.WindowState = window.WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
+
+    public bool IsMaximized() => GetActiveWindow()?.WindowState == WindowState.Maximized;
+
+    public void Close(bool allWindow = false)
+    {
+        if (allWindow)
         {
-            point = GetScreenScalingFactor();
+            Application.Current?.Shutdown();
+            return;
         }
-        [JSInvokable]
-        public static void StartMove()
-        {
-            _isMoving = true;
-            _startMouseX = GetX();
-            _startMouseY = GetY();
-            
-            var window = GetActiveWindow();
-            if (window == null)
-            {
-                return;
-            }
-            _startWindLeft = window.Left;
-            _startWindTop = window.Top;
-        }
+        GetActiveWindow()?.Close();
+    }
 
-        [JSInvokable]
-        public static void StopMove()
-        {
-            _isMoving = false;
-        }
+    private static Window? GetActiveWindow() => Application.Current?.Windows
+        .OfType<Window>()
+        .FirstOrDefault(window => window.IsActive)
+        ?? Application.Current?.MainWindow;
 
-
-        [JSInvokable]
-        public static void UpdateWindowPos()
-        {
-            if (!_isMoving)
-            {
-                return;
-            }
-
-            double moveX = GetX() - _startMouseX;
-            double moveY = GetY() - _startMouseY;
-            Window? window = GetActiveWindow();
-            if (window == null)
-            {
-                return;
-            }
-
-            window.Left = _startWindLeft + moveX;
-            window.Top = _startWindTop + moveY;
-        }
-
-        public void Minimize()
-        {
-            var window = GetActiveWindow();
-            if (window != null)
-            {
-                window.WindowState = WindowState.Minimized;
-            }
-        }
-
-        public void Maximize()
-        {
-            var window = GetActiveWindow();
-            if (window != null)
-            {
-                window.WindowState =
-                    window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-            }
-        }
-
-
-        public bool IsMaximized()
-        {
-            var window = GetActiveWindow();
-            if (window != null)
-            {
-                return window.WindowState == WindowState.Maximized;
-            }
-
-            return false;
-        }
-
-        public void Close(bool allWindow = false)
-        {
-            if (allWindow)
-            {
-                Application.Current?.Shutdown();
-                return;
-            }
-
-            var window = GetActiveWindow();
-            if (window != null)
-            {
-                window.Close();
-            }
-        }
-
-        private static int GetX()
-        {
-            return (int)(Control.MousePosition.X / point.Item1);
-        }
-
-        private static int GetY()
-        {
-            return (int)(Control.MousePosition.Y / point.Item2);
-        }
-
-        private static Window? GetActiveWindow()
-        {
-            return Application.Current.Windows.Cast<Window>().FirstOrDefault(currentWindow => currentWindow.IsActive);
-        }
-
-
-        private static Tuple<decimal, decimal> GetScreenScalingFactor()
-        {
-            var dpiXProperty = typeof(SystemParameters).GetProperty("DpiX", BindingFlags.NonPublic | BindingFlags.Static);
-            var dpiYProperty = typeof(SystemParameters).GetProperty("Dpi", BindingFlags.NonPublic | BindingFlags.Static);
-            var dpiX = (int)dpiXProperty.GetValue(null, null);
-            var dpiY = (int)dpiYProperty.GetValue(null, null);
-            var dpixRatio = dpiX / 96M;
-            var dpiyRatio = dpiY / 96M;
-            return Tuple.Create(dpixRatio, dpiyRatio);
-        }
+    private static Point GetMousePosition(Window window)
+    {
+        var screenPoint = System.Windows.Forms.Control.MousePosition;
+        var pixels = new Point(screenPoint.X, screenPoint.Y);
+        var transform = PresentationSource.FromVisual(window)?.CompositionTarget?.TransformFromDevice
+                        ?? Matrix.Identity;
+        return transform.Transform(pixels);
     }
 }

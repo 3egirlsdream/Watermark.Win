@@ -8,9 +8,22 @@
     <UseWPF>true</UseWPF>
 	<RootNamespace>Watermark.Win</RootNamespace>
 	<ApplicationIcon>leica.ico</ApplicationIcon>
-	<Version>1.2.20</Version>
+	<Version>1.2.26</Version>
 	<AnalysisLevel>latest</AnalysisLevel>
 	<EnableNETAnalyzers>True</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <!-- Keep the WPF desktop host on the same imaging feature surface as the
+       Mac Catalyst desktop host. Runtime capability probes still hide an
+       entry when the matching Windows native binary cannot be loaded. -->
+  <PropertyGroup>
+    <WMImagingMasterEnabled Condition="'$(WMImagingMasterEnabled)' == ''">true</WMImagingMasterEnabled>
+    <WMImagingRawEnabled Condition="'$(WMImagingRawEnabled)' == ''">true</WMImagingRawEnabled>
+    <WMImagingStarTrailEnabled Condition="'$(WMImagingStarTrailEnabled)' == ''">true</WMImagingStarTrailEnabled>
+    <WMImagingMultiFrameEnabled Condition="'$(WMImagingMultiFrameEnabled)' == ''">true</WMImagingMultiFrameEnabled>
+    <WMImagingPng16Enabled Condition="'$(WMImagingPng16Enabled)' == ''">true</WMImagingPng16Enabled>
+    <WMImagingTiff16Enabled Condition="'$(WMImagingTiff16Enabled)' == ''">true</WMImagingTiff16Enabled>
+    <WMImagingAllowQaOverride Condition="'$(WMImagingAllowQaOverride)' == ''">false</WMImagingAllowQaOverride>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -67,7 +80,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj" />
+    <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj">
+      <AdditionalProperties>WMImagingMasterEnabled=$(WMImagingMasterEnabled);WMImagingRawEnabled=$(WMImagingRawEnabled);WMImagingStarTrailEnabled=$(WMImagingStarTrailEnabled);WMImagingMultiFrameEnabled=$(WMImagingMultiFrameEnabled);WMImagingPng16Enabled=$(WMImagingPng16Enabled);WMImagingTiff16Enabled=$(WMImagingTiff16Enabled);WMImagingAllowQaOverride=$(WMImagingAllowQaOverride)</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

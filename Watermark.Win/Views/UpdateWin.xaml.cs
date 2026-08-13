@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using Watermark.Razor.Workspace;
 using Watermark.Win.Models;
-using Watermark.Win.Views;
 
 namespace Watermark.Win.Views
 {
@@ -35,7 +33,7 @@ namespace Watermark.Win.Views
         private void OK_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow.Resources[IocHelper.IocKey] is IServiceProvider services)
-                services.GetRequiredService<IWMHostNavigationBridge>().Navigate("/settings?section=update");
+                services.GetRequiredService<IWMHostNavigationBridge>().Navigate("/desktop/settings?returnUrl=%2Fdesktop");
             this.DialogResult = true;
         }
 

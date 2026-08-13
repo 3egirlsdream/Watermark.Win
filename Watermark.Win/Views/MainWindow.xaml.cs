@@ -1,19 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System.Text;
+using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Watermark.Razor.Workspace;
+using Watermark.Shared.Models;
 using Watermark.Win.Models;
 using Watermark.Win.Views;
-using System.IO;
-using Watermark.Shared.Models;
-using Watermark.Razor.Workspace;
 
 namespace Watermark.Win
 {
@@ -22,6 +13,8 @@ namespace Watermark.Win
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool updateCheckStarted;
+
         public MainWindow()
         {
             try
@@ -34,7 +27,8 @@ namespace Watermark.Win
                 IocHelper.GetIoc().AddScoped<MainInterop>();
                 IocHelper.GetIoc().AddSingleton<IClientInstance, ClientInstance>();
                 IocHelper.GetIoc().AddSingleton<IWMPhotoMetadataReader, WMMetadataExtractorReader>();
-                IocHelper.GetIoc().AddSingleton<IWMSourceStager, WMLocalSourceStager>();
+                IocHelper.GetIoc().AddSingleton<IWMSourceStager>(
+                    new WMLocalSourceStager(copyLocalSources: true));
                 IocHelper.GetIoc().AddSingleton<WMSkiaPhotoDecoder>();
                 IocHelper.GetIoc().AddSingleton<WMNativePhotoDecoder>();
                 IocHelper.GetIoc().AddSingleton<IWMPhotoDecoder, WMCompositePhotoDecoder>();
@@ -116,7 +110,7 @@ namespace Watermark.Win
                         serviceProvider.GetRequiredService<IWMWorkspaceTraceStore>());
                 }
                 InitializeComponent();
-                Loaded+=MainWindow_Loaded;
+                Loaded += MainWindow_Loaded;
             }
             catch (Exception ex)
             {
@@ -124,52 +118,65 @@ namespace Watermark.Win
             }
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            CheckUpdate();
+            if (updateCheckStarted) return;
+            updateCheckStarted = true;
+            await CheckUpdateAsync();
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            var path = Global.AppPath.ThumbnailFolder;
-            if(Directory.Exists(path))
+            try
             {
-                Directory.Delete(path, true);
+                var path = Global.AppPath.ThumbnailFolder;
+                if (Directory.Exists(path)) Directory.Delete(path, true);
             }
+            catch
+            {
+                // A preview can still be releasing a file handle during shutdown.
+            }
+            base.OnClosed(e);
         }
 
-        public void CheckUpdate()
+        public void CheckUpdate() => _ = CheckUpdateAsync();
+
+        public async Task CheckUpdateAsync()
         {
             var day = DateTime.Now.DayOfYear;
-            if (day % 3 == 0)
+            if (day % 3 != 0) return;
+            if (Resources[IocHelper.IocKey] is not IServiceProvider services) return;
+
+            try
             {
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-#pragma warning restore CS8602 // 解引用可能出现空引用。
-                var action = new Action<string, string>((t, m) =>
+                var client = services.GetRequiredService<IClientInstance>();
+                if (!await client.CheckUpdate("WatermarkV3")) return;
+
+                var updateWindow = new UpdateWin
                 {
-                    var win = new UpdateWin();
-                    win.updatelog.Text = m;
-                    win.msg.Content = t;
-                    win.ShowInTaskbar = false;
-                    win.Owner = this;
-                    win.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                    win.ShowDialog();
-                });
-
-                CheckUpdate(v, action);
+                    ShowInTaskbar = false,
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                updateWindow.updatelog.Text = client.UpdateMessage;
+                updateWindow.msg.Content = $"有新版本V{client.UpdateVersion}可以下载";
+                updateWindow.ShowDialog();
             }
-        }
-
-        public async void CheckUpdate(string nowv, Action<string, string> action)
-        {
-            var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + "/api/CloudSync/GetVersion?Client=WatermarkV3", Encoding.Default);
-            if (version != null && version.success && version.data != null && version.data.VERSION != null)
+            catch (Exception ex)
             {
-                var v1 = new Version(nowv);
-                var v2 = new Version(version.data.VERSION);
-                if (v2 > v1)
-                    action.Invoke($"有新版本V{version.data.VERSION}可以下载", version.data.MEMO);
+                var traces = services.GetService<IWMWorkspaceTraceStore>();
+                if (traces is not null)
+                {
+                    await traces.RecordLogAsync(new WMDiagnosticLogEvent(
+                        DateTime.UtcNow,
+                        WMDiagnosticLogLevel.Warning,
+                        "Application.WindowsUpdate",
+                        "windows-auto-update-check-failed",
+                        ex.Message,
+                        ex.GetType().FullName,
+                        $"0x{ex.HResult:X8}",
+                        StackTrace: ex.StackTrace));
+                }
             }
         }
     }

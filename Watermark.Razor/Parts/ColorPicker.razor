@@ -98,7 +98,7 @@
                                         <div class="wm-picker-color-dot wm-picker-color-dot-current wm-ripple">
                                             <div class="wm-picker-color-fill" style="@($"background: {Color};")"></div>
                                         </div>
-                                        @if (Watermark.Shared.Models.Global.DeviceType == Watermark.Shared.Enums.DeviceType.Mac)
+                                        @if (Watermark.Shared.Models.Global.DeviceType is Watermark.Shared.Enums.DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win)
                                         {
                                             <div style="width:220px;margin-left:4px">
                                                 <Watermark.Razor.Components.Mac.MacSlider Label="透明度"

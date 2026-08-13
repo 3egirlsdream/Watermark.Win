@@ -1,4 +1,6 @@
-﻿using Masa.Blazor;
+﻿#nullable enable
+
+using Masa.Blazor;
 using Masa.Blazor.Popup;
 using Masa.Blazor.Presets;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,21 +13,21 @@ namespace Watermark.Win.Models
     {
         public const string IocKey = "services";
 
-        private static ServiceCollection _services = null;
+        private static ServiceCollection? services;
 
         public static ServiceCollection GetIoc()
         {
-            if (_services != null)
+            if (services is not null)
             {
-                return _services!;
+                return services;
             }
 
-            _services = new ServiceCollection();
-            _services.AddWpfBlazorWebView();
+            services = new ServiceCollection();
+            services.AddWpfBlazorWebView();
 #if DEBUG
-            _services.AddBlazorWebViewDeveloperTools();
+            services.AddBlazorWebViewDeveloperTools();
 #endif
-            _services.AddWatermarkMasaBlazor(options =>
+            services.AddWatermarkMasaBlazor(options =>
             {
                 options.Defaults = new Dictionary<string, IDictionary<string, object?>?>()
                 {
@@ -55,7 +57,7 @@ namespace Watermark.Win.Models
                 };
             }, ServiceLifetime.Scoped);
 
-            return _services!;
+            return services;
         }
 
         public static void SetIoc(this ResourceDictionary resourceDictionary, ServiceCollection services)

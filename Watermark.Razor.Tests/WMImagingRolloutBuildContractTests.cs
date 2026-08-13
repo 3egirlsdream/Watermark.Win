@@ -36,6 +36,37 @@ public sealed class WMImagingRolloutBuildContractTests
             forwarded.OrderBy(value => value, StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void WindowsHost_ForwardsEveryImagingRolloutPropertyToRazor()
+    {
+        var root = FindRepositoryRoot();
+        var document = XDocument.Load(Path.Combine(root, "Watermark.Win", "Watermark.Win.csproj"));
+        var reference = document.Descendants("ProjectReference")
+            .Single(item => string.Equals(
+                (string?)item.Attribute("Include"),
+                "..\\Watermark.Razor\\Watermark.Razor.csproj",
+                StringComparison.Ordinal));
+        var forwarded = ((string?)reference.Element("AdditionalProperties"))
+            ?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => value.Split('=', 2)[0])
+            .ToHashSet(StringComparer.Ordinal)
+            ?? [];
+
+        var expected = new[]
+        {
+            "WMImagingMasterEnabled",
+            "WMImagingRawEnabled",
+            "WMImagingStarTrailEnabled",
+            "WMImagingMultiFrameEnabled",
+            "WMImagingPng16Enabled",
+            "WMImagingTiff16Enabled",
+            "WMImagingAllowQaOverride"
+        };
+        Assert.Equal(
+            expected.OrderBy(value => value, StringComparer.Ordinal),
+            forwarded.OrderBy(value => value, StringComparer.Ordinal));
+    }
+
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

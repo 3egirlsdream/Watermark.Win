@@ -9,6 +9,7 @@
 @page "/mac/admin"
 @page "/desktop/admin"
 @using Microsoft.AspNetCore.Components.Routing
+@using Watermark.Razor.Components
 @using Watermark.Razor.Components.Dashboard
 @using Watermark.Razor.Components.Desktop
 @using Watermark.Razor.Workspace
@@ -59,7 +60,7 @@
         <MDialog @bind-Value="showNewTemplate" Width="400" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">
             @if (showNewTemplate)
             {
-                <WMDesktopNewTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
+                <WMNewPosterTemplateDialog OnClose="CloseNewTemplateDialog" OnCreated="OnTemplateCreatedAsync" />
             }
         </MDialog>
         <MDialog @bind-Value="showAccount" Width="390" ContentStyle="padding:0;background:transparent;box-shadow:none;overflow:visible;">

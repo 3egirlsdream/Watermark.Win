@@ -47,7 +47,7 @@
 </style>
 
 
-@if (Global.DeviceType == Shared.Enums.DeviceType.Mac)
+@if (Global.DeviceType is Shared.Enums.DeviceType.Mac or Shared.Enums.DeviceType.Win)
 {
     <Watermark.Razor.Components.Mac.MacSlider Label="@Name"
                                                Value="@MacValue"
