@@ -70,6 +70,7 @@ public sealed class WMWindowsDesktopParityTests
         var window = Read("Watermark.Win/Views/MainWindow.xaml");
         var registrations = Read("Watermark.Win/Views/MainWindow.xaml.cs");
         var nativeLoader = Read("Watermark.Win/Models/WMWindowsNativeLibraryLoader.cs");
+        var sharedNativeLoader = Read("Watermark.Shared/Models/WMNativeImagingBackend.cs");
         var slider = Read("Watermark.Razor/Parts/SliderInput.razor");
         var color = Read("Watermark.Razor/Parts/ColorPicker.razor");
 
@@ -80,6 +81,10 @@ public sealed class WMWindowsDesktopParityTests
         Assert.Contains("RuntimeInformation.ProcessArchitecture", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("Architecture.X64", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("Architecture.Arm64", nativeLoader, StringComparison.Ordinal);
+        Assert.Contains("OperatingSystem.IsWindows()", sharedNativeLoader, StringComparison.Ordinal);
+        Assert.Contains("WindowsLibrary.Value", sharedNativeLoader, StringComparison.Ordinal);
+        Assert.Contains("RuntimeInformation.ProcessArchitecture", sharedNativeLoader, StringComparison.Ordinal);
+        Assert.Contains("\"runtimes\"", sharedNativeLoader, StringComparison.Ordinal);
         Assert.Contains("WMWindowsNativeLibraryLoader.Register()", registrations, StringComparison.Ordinal);
         Assert.Contains("AppContext.BaseDirectory", nativeLoader, StringComparison.Ordinal);
         Assert.Contains("NativeLibrary.SetDllImportResolver", nativeLoader, StringComparison.Ordinal);
