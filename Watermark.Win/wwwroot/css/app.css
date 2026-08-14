@@ -18,6 +18,7 @@
 * { box-sizing: border-box; }
 
 html, body, #app {
+    background: #fafafa;
     height: 100%;
     margin: 0;
     overflow: hidden;
@@ -75,19 +76,21 @@ a, .btn-link {
         top: 0.5rem;
     }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 2000;
-    display: flex;
+.wm-startup-splash {
     align-items: center;
+    background: #fafafa;
+    display: flex;
+    height: 100vh;
+    inset: 0;
     justify-content: center;
-    flex-direction: column;
-    --sk-color: white;
+    position: fixed;
+    width: 100%;
+}
+
+.wm-startup-splash img {
+    border-radius: 24px;
+    height: 108px;
+    width: 108px;
 }
 
 

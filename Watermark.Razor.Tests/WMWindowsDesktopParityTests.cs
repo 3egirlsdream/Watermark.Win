@@ -106,6 +106,24 @@ public sealed class WMWindowsDesktopParityTests
         Assert.Contains("DeviceType.Mac or Watermark.Shared.Enums.DeviceType.Win", color, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WindowsExportInspector_ConstrainsStickyActionsWithoutChangingSharedDesktopStyles()
+    {
+        var hostPage = Read("Watermark.Win/wwwroot/index.html");
+        var windowsCss = Read("Watermark.Win/wwwroot/css/windows.css");
+
+        var sharedStyles = hostPage.IndexOf("Watermark.Razor.bundle.scp.css", StringComparison.Ordinal);
+        var windowsStyles = hostPage.IndexOf("css/windows.css", StringComparison.Ordinal);
+
+        Assert.True(sharedStyles >= 0 && windowsStyles > sharedStyles,
+            "Windows overrides must load after the shared isolated CSS bundle.");
+        Assert.Contains(".export-inspector-scroll .wm-export-panel", windowsCss, StringComparison.Ordinal);
+        Assert.Contains(".export-inspector-scroll .wm-export-actions", windowsCss, StringComparison.Ordinal);
+        Assert.Contains(".export-inspector-scroll .wm-export-run", windowsCss, StringComparison.Ordinal);
+        Assert.Contains("box-sizing: border-box;", windowsCss, StringComparison.Ordinal);
+        Assert.Contains("max-width: 100%;", windowsCss, StringComparison.Ordinal);
+    }
+
     private static string Read(string relativePath) =>
         File.ReadAllText(Path.Combine(RepositoryRoot, relativePath.Replace('/', Path.DirectorySeparatorChar)));
 

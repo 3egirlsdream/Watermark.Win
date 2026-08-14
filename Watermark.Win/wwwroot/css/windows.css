@@ -1,0 +1,20 @@
+/* WebView2 includes the classic scrollbar in the desktop inspector's layout.
+   Keep the export panel and its sticky action row inside that available width. */
+.mac-mode-inspector .export-inspector-scroll,
+.mac-mode-inspector .export-inspector-scroll .inspector-block,
+.mac-mode-inspector .export-inspector-scroll .wm-export-panel,
+.mac-mode-inspector .export-inspector-scroll .wm-export-body,
+.mac-mode-inspector .export-inspector-scroll .wm-export-actions,
+.mac-mode-inspector .export-inspector-scroll .wm-export-run {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.mac-mode-inspector .export-inspector-scroll,
+.mac-mode-inspector .export-inspector-scroll .inspector-block,
+.mac-mode-inspector .export-inspector-scroll .wm-export-panel,
+.mac-mode-inspector .export-inspector-scroll .wm-export-actions,
+.mac-mode-inspector .export-inspector-scroll .wm-export-run {
+    width: 100%;
+}
