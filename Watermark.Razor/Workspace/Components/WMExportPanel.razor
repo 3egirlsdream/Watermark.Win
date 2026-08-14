@@ -87,9 +87,16 @@
                     <WmIcon Icon="folder-open" /><span><strong>默认目录</strong><small>快速保存</small></span><span class="wm-export-destination-check"><WmIcon Size="11" Icon="check" /></span>
                 </button>
                 <button type="button" class="@DestinationButtonClass(WMExportDestinationKind.SystemPicker)" aria-pressed="@AriaPressed(Destination == WMExportDestinationKind.SystemPicker)" @onclick="() => SelectDestinationAsync(WMExportDestinationKind.SystemPicker)">
-                    <WmIcon Icon="magnifying-glass" /><span><strong>选择位置</strong><small>每次询问</small></span><span class="wm-export-destination-check"><WmIcon Size="11" Icon="check" /></span>
+                    <WmIcon Icon="magnifying-glass" /><span><strong>选择位置</strong><small>@SelectedDirectoryLabel</small></span><span class="wm-export-destination-check"><WmIcon Size="11" Icon="check" /></span>
                 </button>
             </div>
+            @if (Destination == WMExportDestinationKind.SystemPicker && !string.IsNullOrWhiteSpace(DestinationPath))
+            {
+                <div class="wm-export-selected-directory" title="@DestinationPath">
+                    <WmIcon Icon="folder-open" />
+                    <span>@DestinationPath</span>
+                </div>
+            }
         </section>
 
         @if (FailedCount > 0)
@@ -140,6 +147,7 @@
     [Parameter] public int Quality { get; set; } = 92;
     [Parameter] public EventCallback<int> QualityChanged { get; set; }
     [Parameter] public WMExportDestinationKind Destination { get; set; } = WMExportDestinationKind.PlatformDefault;
+    [Parameter] public string? DestinationPath { get; set; }
     [Parameter] public EventCallback<WMExportDestinationKind> DestinationChanged { get; set; }
     [Parameter] public bool CanExportPng16 { get; set; }
     [Parameter] public bool CanExportTiff16 { get; set; }
@@ -153,7 +161,12 @@
 
     private string FormatLabel => Format switch { WMExportFormat.Png16 => "PNG 16", WMExportFormat.Tiff16 => "TIFF 16", _ => "JPEG" };
     private string ResolutionLabel => MaximumLongEdge switch { 0 => "原尺寸", -1 => $"{CustomMaximumLongEdge}px", _ => $"{MaximumLongEdge}px" };
-    private string ActionHint => Destination == WMExportDestinationKind.SystemPicker ? "导出时将询问保存位置" : "完成后保存到设备默认图片目录";
+    private string SelectedDirectoryLabel => string.IsNullOrWhiteSpace(DestinationPath)
+        ? "点击选择文件夹"
+        : "已选择文件夹";
+    private string ActionHint => Destination == WMExportDestinationKind.SystemPicker
+        ? string.IsNullOrWhiteSpace(DestinationPath) ? "请先选择保存文件夹" : "完成后保存到已选文件夹"
+        : "完成后保存到设备默认图片目录";
 
     private string FormatButtonClass(WMExportFormat value) => $"wm-export-choice {(Format == value ? "is-selected" : null)}";
     private string ResolutionButtonClass(int value) => $"wm-export-resolution {(MaximumLongEdge == value ? "is-selected" : null)}";

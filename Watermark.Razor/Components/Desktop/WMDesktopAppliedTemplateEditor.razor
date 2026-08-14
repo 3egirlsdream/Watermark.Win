@@ -187,13 +187,17 @@
     private async Task ApplyAsync()
     {
         if (busy || editor is null) return;
+        var committingEditor = editor;
         busy = true;
         try
         {
             previewCancellation?.Cancel();
-            var edit = new WMWorkspaceTemplateEdit(loadedTemplateId, Global.CanvasSerialize(editor.Draft));
+            var edit = new WMWorkspaceTemplateEdit(
+                loadedTemplateId,
+                Global.CanvasSerialize(committingEditor.Draft));
             await CommitRequested.InvokeAsync(edit);
-            editor.MarkSaved();
+            if (ReferenceEquals(editor, committingEditor))
+                committingEditor.MarkSaved();
         }
         finally
         {

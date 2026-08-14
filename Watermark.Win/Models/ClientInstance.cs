@@ -157,6 +157,19 @@ public sealed class ClientInstance(APIHelper api, IWindowService windows) : ICli
         return Task.FromResult(folder);
     }
 
+    public Task<bool> RevealFolderAsync(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return Task.FromResult(false);
+        var directory = Path.GetFullPath(path);
+        if (!Directory.Exists(directory)) return Task.FromResult(false);
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(directory)
+        {
+            UseShellExecute = true
+        });
+        return Task.FromResult(true);
+    }
+
     public void SetColor(string color = "#F5F5F5")
     {
         // WPF owns its native title bar; workspace colors are rendered by Blazor.

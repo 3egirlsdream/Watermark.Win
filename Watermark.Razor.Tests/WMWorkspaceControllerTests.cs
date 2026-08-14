@@ -349,13 +349,14 @@ public sealed class WMWorkspaceControllerTests : IDisposable
                     new WMColorGradeOperationProcessor(scheduler),
                     scheduler),
                 profiles);
+            var sink = new FailingSecondExportSink();
             var controller = new WMWorkspaceController(
                 store,
                 new StrictlyIncreasingRenderCoordinator(firstPath),
                 new NoopObjectUrlRegistry(),
                 CreatePreviewService(profiles),
                 exportService,
-                new FailingSecondExportSink());
+                sink);
             Assert.True(await controller.OpenAsync(initial.Id));
 
             var result = await controller.ExportAsync(new WMExportRequest(
@@ -363,7 +364,10 @@ public sealed class WMWorkspaceControllerTests : IDisposable
                 WMExportFormat.Jpeg8,
                 1920,
                 92,
-                WMExportDestinationKind.PlatformDefault));
+                WMExportDestinationKind.SystemPicker)
+            {
+                DestinationDirectory = exportRoot
+            });
 
             Assert.Equal(2, result.Items.Count);
             Assert.Equal(WMExportItemStatus.Succeeded, result.Items[0].Status);
@@ -371,6 +375,8 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             Assert.True(File.Exists(result.Items[0].RenderedPath));
             Assert.Contains("模拟保存失败", result.Items[1].ErrorMessage);
             Assert.Equal(WMWorkspaceActivity.Completed, controller.State.Activity);
+            Assert.Equal(2, sink.DestinationDirectories.Count);
+            Assert.All(sink.DestinationDirectories, directory => Assert.Equal(exportRoot, directory));
         }
         finally
         {
@@ -2052,6 +2058,8 @@ public sealed class WMWorkspaceControllerTests : IDisposable
 
     private sealed class FailingSecondExportSink : IWMExportSink
     {
+        public List<string?> DestinationDirectories { get; } = [];
+
         public Task<string> SaveAsync(
             string renderedPath,
             string suggestedFileName,
@@ -2063,6 +2071,18 @@ public sealed class WMWorkspaceControllerTests : IDisposable
             if (suggestedFileName.StartsWith("media-2", StringComparison.Ordinal))
                 throw new IOException("模拟保存失败");
             return Task.FromResult($"saved:{suggestedFileName}");
+        }
+
+        public Task<string> SaveAsync(
+            string renderedPath,
+            string suggestedFileName,
+            WMExportFormat format,
+            WMExportDestinationKind destination,
+            string? destinationDirectory,
+            CancellationToken cancellationToken = default)
+        {
+            DestinationDirectories.Add(destinationDirectory);
+            return SaveAsync(renderedPath, suggestedFileName, format, destination, cancellationToken);
         }
     }
 

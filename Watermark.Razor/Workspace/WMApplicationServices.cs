@@ -765,6 +765,9 @@ public interface IWMExternalActionService
 {
     Task OpenUrlAsync(string url);
     Task CopyTextAsync(string text);
+    Task<string?> PickFolderAsync() => Task.FromResult<string?>(null);
+    string? ResolveContainingFolder(string? path) => null;
+    Task<bool> RevealFolderAsync(string path) => Task.FromResult(false);
 }
 
 public interface IWMHostNavigationBridge
@@ -788,6 +791,24 @@ public sealed class WMExternalActionService(IClientInstance client) : IWMExterna
 {
     public Task OpenUrlAsync(string url) => client.OpenExternalUrlAsync(url);
     public Task CopyTextAsync(string text) => client.SetTextAsync(text);
+    public async Task<string?> PickFolderAsync() => await client.OpenFolder().ConfigureAwait(false);
+
+    public string? ResolveContainingFolder(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            var directory = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath);
+            return !string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory) ? directory : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Task<bool> RevealFolderAsync(string path) => client.RevealFolderAsync(path);
 }
 
 public sealed record WMMembershipPlan(string Id, string Name, decimal Price, string Description, bool Recommended = false);

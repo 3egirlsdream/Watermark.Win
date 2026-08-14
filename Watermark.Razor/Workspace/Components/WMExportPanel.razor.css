@@ -338,6 +338,21 @@
 .wm-export-destination:focus-visible { border-color: rgba(23, 105, 224, .28); outline: 0; }
 .wm-export-destination.is-selected { background: #eef5ff; border-color: rgba(23, 105, 224, .5); color: var(--wm-export-accent); }
 .wm-export-destination.is-selected .wm-export-destination-check { opacity: 1; }
+.wm-export-selected-directory {
+    align-items: center;
+    background: #f4f7fb;
+    border: 1px solid var(--wm-export-border);
+    border-radius: 11px;
+    color: #657186;
+    display: grid;
+    font-size: 9px;
+    gap: 7px;
+    grid-template-columns: 18px minmax(0, 1fr);
+    min-height: 34px;
+    padding: 6px 9px;
+}
+.wm-export-selected-directory ::deep .m-icon { color: var(--wm-export-accent); font-size: 16px; }
+.wm-export-selected-directory span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .wm-retry {
     align-items: center;

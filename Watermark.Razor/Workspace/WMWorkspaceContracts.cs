@@ -410,7 +410,10 @@ public sealed record WMExportRequest(
     WMExportFormat Format,
     int? MaximumLongEdge,
     int Quality,
-    WMExportDestinationKind Destination);
+    WMExportDestinationKind Destination)
+{
+    public string? DestinationDirectory { get; init; }
+}
 
 public sealed record WMExportItemResult(
     string MediaId,
@@ -432,6 +435,8 @@ public sealed record WMExportDraft(
     int Quality,
     WMExportDestinationKind Destination)
 {
+    public string? DestinationDirectory { get; init; }
+
     public static WMExportDraft Default { get; } = new(
         WMExportFormat.Jpeg8, null, 4096, 92, WMExportDestinationKind.PlatformDefault);
 }
@@ -908,6 +913,15 @@ public interface IWMExportSink
         WMExportFormat format,
         WMExportDestinationKind destination,
         CancellationToken cancellationToken = default);
+
+    Task<string> SaveAsync(
+        string renderedPath,
+        string suggestedFileName,
+        WMExportFormat format,
+        WMExportDestinationKind destination,
+        string? destinationDirectory,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(renderedPath, suggestedFileName, format, destination, cancellationToken);
 }
 
 public interface IWMWorkspaceFeatureFlags

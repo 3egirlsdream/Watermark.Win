@@ -1,3 +1,8 @@
+using System.Reflection;
+using Microsoft.AspNetCore.Components;
+using Watermark.Razor.Components.Desktop;
+using Watermark.Razor.Workspace;
+using Watermark.Shared.Models;
 using Xunit;
 
 namespace Watermark.Razor.Tests;
@@ -347,6 +352,8 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.Contains("wm-export-format-grid", panel, StringComparison.Ordinal);
         Assert.Contains("wm-export-resolution-grid", panel, StringComparison.Ordinal);
         Assert.Contains("wm-export-destination-grid", panel, StringComparison.Ordinal);
+        Assert.Contains("DestinationPath", panel, StringComparison.Ordinal);
+        Assert.Contains("wm-export-selected-directory", panel, StringComparison.Ordinal);
         Assert.Contains("<WmNumericSlider", panel, StringComparison.Ordinal);
         Assert.Contains("ValueChanged=\"ChangeQualityAsync\"", panel, StringComparison.Ordinal);
         Assert.Contains("aria-pressed=\"@AriaPressed", panel, StringComparison.Ordinal);
@@ -355,6 +362,12 @@ public sealed class WMDesktopWorkspaceContractTests
         Assert.DoesNotContain("input::-webkit-slider-runnable-track", css, StringComparison.Ordinal);
         Assert.Contains("workspace-export-drawer-handle", mobile, StringComparison.Ordinal);
         Assert.Contains("<WMExportPanel Expanded=\"true\"", desktop, StringComparison.Ordinal);
+        Assert.Contains("DestinationPath=\"ExportDraft.DestinationDirectory\"", desktop, StringComparison.Ordinal);
+
+        var workspace = Read("Watermark.Razor/BlazorPages/MainViewOSX.razor");
+        Assert.Contains("ExternalActions.PickFolderAsync()", workspace, StringComparison.Ordinal);
+        Assert.Contains("Common.ShowToast(Popup, message, \"打开目录\"", workspace, StringComparison.Ordinal);
+        Assert.Contains("ExternalActions.RevealFolderAsync(directory)", workspace, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -429,6 +442,37 @@ public sealed class WMDesktopWorkspaceContractTests
 
         Assert.Contains("PreviewUrl=\"@State.PreviewUrl\"", source, StringComparison.Ordinal);
         Assert.DoesNotContain("PreviewUrl=\"State.PreviewUrl\"", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AppliedTemplateEditor_CommitMayDisposeComponentWithoutDereferencingDetachedEditor()
+    {
+        var component = new WMDesktopAppliedTemplateEditor();
+        var editor = WMTemplateEditorState.Create(new WMCanvas
+        {
+            ID = "apply-dispose-regression",
+            Name = "apply-dispose-regression"
+        });
+        var editorField = typeof(WMDesktopAppliedTemplateEditor).GetField(
+            "editor",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(editorField);
+        editorField.SetValue(component, editor);
+
+        typeof(WMDesktopAppliedTemplateEditor)
+            .GetProperty(nameof(WMDesktopAppliedTemplateEditor.CommitRequested))!
+            .SetValue(
+                component,
+                EventCallback.Factory.Create<WMWorkspaceTemplateEdit>(
+                    new object(),
+                    async _ => await component.DisposeAsync()));
+        var apply = typeof(WMDesktopAppliedTemplateEditor).GetMethod(
+            "ApplyAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(apply);
+
+        var task = Assert.IsAssignableFrom<Task>(apply.Invoke(component, null));
+        await task;
     }
 
     [Fact]

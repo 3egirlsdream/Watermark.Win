@@ -563,7 +563,7 @@
         catch (Exception ex) { Common.ShowToast(Popup, ex.Message, isError: true); }
     }
 
-    private Task RetryFailedAsync() => Controller.RetryFailedExportAsync();
+    private Task RetryFailedAsync() => RunExportWithFeedbackAsync(State.ExportTool.FailedMediaIds);
 
     private Task SetExportFormatAsync(WMExportFormat value) =>
         Controller.UpdateExportDraftAsync(State.ExportTool.Draft with { Format = value });
@@ -577,11 +577,127 @@
     private Task SetExportQualityAsync(int value) =>
         Controller.UpdateExportDraftAsync(State.ExportTool.Draft with { Quality = value });
 
-    private Task SetExportDestinationAsync(WMExportDestinationKind value) =>
-        Controller.UpdateExportDraftAsync(State.ExportTool.Draft with { Destination = value });
+    private async Task SetExportDestinationAsync(WMExportDestinationKind value)
+    {
+        if (value == WMExportDestinationKind.PlatformDefault)
+        {
+            await Controller.UpdateExportDraftAsync(State.ExportTool.Draft with
+            {
+                Destination = value,
+                DestinationDirectory = null
+            });
+            return;
+        }
 
-    private Task ExportOrCancelAsync() =>
-        State.ExportTool.IsBusy ? Controller.CancelActiveJobAsync() : Controller.StartExportAsync();
+        await SelectExportDirectoryAsync();
+    }
+
+    private async Task ExportOrCancelAsync()
+    {
+        if (State.ExportTool.IsBusy)
+        {
+            await Controller.CancelActiveJobAsync();
+            return;
+        }
+
+        await RunExportWithFeedbackAsync();
+    }
+
+    private async Task RunExportWithFeedbackAsync(IReadOnlyList<string>? mediaIds = null)
+    {
+        try
+        {
+            if (!await EnsureExportDirectoryAsync()) return;
+            await Controller.StartExportAsync(mediaIds);
+            ShowExportCompletionToast();
+        }
+        catch (OperationCanceledException)
+        {
+            Common.ShowToast(Popup, "已取消导出。");
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, ex.Message, isError: true);
+        }
+    }
+
+    private async Task<bool> EnsureExportDirectoryAsync()
+    {
+        var draft = State.ExportTool.Draft;
+        var requiresSelectedDirectory = draft.Destination == WMExportDestinationKind.SystemPicker
+                                        || draft.Format == WMExportFormat.Tiff16;
+        if (!requiresSelectedDirectory || !string.IsNullOrWhiteSpace(draft.DestinationDirectory))
+            return true;
+        return await SelectExportDirectoryAsync();
+    }
+
+    private async Task<bool> SelectExportDirectoryAsync()
+    {
+        try
+        {
+            var directory = await ExternalActions.PickFolderAsync();
+            if (string.IsNullOrWhiteSpace(directory)) return false;
+            await Controller.UpdateExportDraftAsync(State.ExportTool.Draft with
+            {
+                Destination = WMExportDestinationKind.SystemPicker,
+                DestinationDirectory = directory
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, $"无法选择导出目录：{ex.Message}", isError: true);
+            return false;
+        }
+    }
+
+    private void ShowExportCompletionToast()
+    {
+        var results = State.ExportTool.Results;
+        var succeeded = results.Count(item => item.Status == WMExportItemStatus.Succeeded);
+        var failed = results.Count(item => item.Status == WMExportItemStatus.Failed);
+        if (succeeded == 0)
+        {
+            Common.ShowToast(Popup, failed > 0 ? $"导出失败，共 {failed} 张未能保存。" : "没有生成可保存的图片。", isError: true);
+            return;
+        }
+
+        var message = failed == 0
+            ? $"已导出 {succeeded} 张图片。"
+            : $"已导出 {succeeded} 张，失败 {failed} 张。";
+        var directory = ResolveExportDirectory(results);
+        if (directory is null)
+        {
+            Common.ShowToast(Popup, message);
+            return;
+        }
+
+        Common.ShowToast(Popup, message, "打开目录", () => RevealExportDirectoryAsync(directory));
+    }
+
+    private string? ResolveExportDirectory(IReadOnlyList<WMExportItemResult> results)
+    {
+        if (Global.DeviceType != Watermark.Shared.Enums.DeviceType.Win) return null;
+        foreach (var result in results.Where(item => item.Status == WMExportItemStatus.Succeeded))
+        {
+            var directory = ExternalActions.ResolveContainingFolder(result.DestinationHandle);
+            if (!string.IsNullOrWhiteSpace(directory)) return directory;
+        }
+        return null;
+    }
+
+    private async Task RevealExportDirectoryAsync(string directory)
+    {
+        try
+        {
+            if (!await ExternalActions.RevealFolderAsync(directory))
+                Common.ShowToast(Popup, "无法打开导出目录。", isError: true);
+        }
+        catch (Exception ex)
+        {
+            Common.ShowToast(Popup, $"无法打开导出目录：{ex.Message}", isError: true);
+        }
+    }
 
     private async Task RefreshTemplatesAsync() { var items = await TemplateLibrary.GetOrRefreshAsync(); templates.Clear(); templates.AddRange(items); }
     private void OnTemplatesChanged() => _ = InvokeAsync(() => { templates.Clear(); templates.AddRange(TemplateLibrary.Templates); StateHasChanged(); });

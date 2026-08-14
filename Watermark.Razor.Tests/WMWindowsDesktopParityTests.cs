@@ -36,6 +36,8 @@ public sealed class WMWindowsDesktopParityTests
         Assert.Contains("IWindowService windows", client, StringComparison.Ordinal);
         Assert.Contains("OpenFileDialog", client, StringComparison.Ordinal);
         Assert.Contains("OpenFolderDialog", client, StringComparison.Ordinal);
+        Assert.Contains("RevealFolderAsync", client, StringComparison.Ordinal);
+        Assert.Contains("UseShellExecute = true", client, StringComparison.Ordinal);
         Assert.Contains("Clipboard.SetText", client, StringComparison.Ordinal);
         Assert.Contains("GetWMDesignFunc", client, StringComparison.Ordinal);
         Assert.Contains("CopyTemplateAsset", client, StringComparison.Ordinal);

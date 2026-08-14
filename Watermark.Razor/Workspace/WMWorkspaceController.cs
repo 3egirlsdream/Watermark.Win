@@ -2640,7 +2640,12 @@ public sealed class WMWorkspaceController
             CustomMaximumLongEdge = Math.Clamp(draft.CustomMaximumLongEdge, 320, 16384),
             MaximumLongEdge = draft.MaximumLongEdge is null or -1 or 1920 or 3840
                 ? draft.MaximumLongEdge
-                : Math.Clamp(draft.MaximumLongEdge.Value, 320, 16384)
+                : Math.Clamp(draft.MaximumLongEdge.Value, 320, 16384),
+            DestinationDirectory = draft.Destination == WMExportDestinationKind.PlatformDefault
+                ? null
+                : string.IsNullOrWhiteSpace(draft.DestinationDirectory)
+                    ? null
+                    : draft.DestinationDirectory.Trim()
         };
         UpdateCurrent(value => value with
         {
@@ -2682,7 +2687,10 @@ public sealed class WMWorkspaceController
             draft.Quality,
             draft.Format == WMExportFormat.Tiff16
                 ? WMExportDestinationKind.SystemPicker
-                : draft.Destination);
+                : draft.Destination)
+        {
+            DestinationDirectory = draft.DestinationDirectory
+        };
         var task = RunExportJobAsync(request, cancellationToken);
         TrackOwned(task);
         return task;
@@ -3046,6 +3054,7 @@ public sealed class WMWorkspaceController
                         fileName,
                         request.Format,
                         request.Destination,
+                        request.DestinationDirectory,
                         operation.Token).ConfigureAwait(false);
                     results.Add(new WMExportItemResult(
                         media.Id,
