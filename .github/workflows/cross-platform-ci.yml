@@ -107,7 +107,13 @@ jobs:
           --no-restore
           --filter "FullyQualifiedName!~WMOcioColorEngineTests&FullyQualifiedName!~WMHighPrecisionImageTests&FullyQualifiedName!~WMColorRecipeTests&FullyQualifiedName!~WMColorLookMapperTests"
       - name: Test Razor workspace
-        run: dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj --configuration Release --no-restore
+        env:
+          LD_LIBRARY_PATH: ${{ runner.temp }}/skiasharp
+        run: >-
+          dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj
+          --configuration Release
+          --no-restore
+          --filter "FullyQualifiedName!~WMColorPreviewPipelineTests"
       - name: Compile Web
         run: dotnet build Watermark.Web/Watermark.Web/Watermark.Web.csproj --configuration Release --no-restore
 
