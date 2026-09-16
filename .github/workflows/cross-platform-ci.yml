@@ -178,6 +178,7 @@ jobs:
           --framework net8.0-android
           --configuration ${{ matrix.configuration }}
           --no-restore
+          -m:1
 
   apple:
     name: ${{ matrix.name }} Debug
@@ -270,6 +271,7 @@ jobs:
           --configuration Debug
           --no-restore
           -p:RuntimeIdentifier=${{ matrix.runtime }}
+          -m:1
           ${{ matrix.properties }}
 
   windows:
@@ -324,4 +326,4 @@ jobs:
       - name: Restore
         run: dotnet restore Watermark.Win/Watermark.Win.csproj
       - name: Build Windows host
-        run: dotnet build Watermark.Win/Watermark.Win.csproj --configuration Debug --no-restore
+        run: dotnet build Watermark.Win/Watermark.Win.csproj --configuration Debug --no-restore -m:1
