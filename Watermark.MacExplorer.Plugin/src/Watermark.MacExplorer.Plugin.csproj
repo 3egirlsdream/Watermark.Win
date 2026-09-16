@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="../sdk/src/SDK/Sdk.Version.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AssemblyName>Watermark.MacExplorer.Plugin</AssemblyName>
+    <RootNamespace>Watermark.MacExplorer.Plugin</RootNamespace>
+    <Version>1.0.4</Version>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MacExplorer.PluginUi" Version="$(PluginSdkVersion)" />
+    <ProjectReference Include="../../Watermark.Shared/Watermark.Shared.csproj" />
+    <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- 无头冒烟工具直接驱动内部服务，避免为测试放宽生产代码可见性。 -->
+    <InternalsVisibleTo Include="Watermark.Smoke" />
+  </ItemGroup>
+
+  <!--
+    Watermark.Shared 为了自己的 Blazor UI 引用了 Masa.Blazor，插件完全不触碰这条链路
+    （Global.Byte2Url 等 IJSRuntime 重载只有 Razor 侧才会调用）。
+    排除运行时资产即可把它们挡在输出目录与 deps.json 之外，省下约 3.8 MB。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Masa.Blazor" Version="1.11.9" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Forms" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Metadata" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.JSInterop" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <!-- 只被 Masa.Blazor 依赖的辅助库，随上面一起变成死重 -->
+    <PackageReference Include="BemIt" Version="2.2.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="DeepCloner.Core" Version="0.1.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Util.Reflection" Version="1.0.3" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="OneOf" Version="3.0.223" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.4.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    Avalonia 与 MicroCom 由宿主加载器固定共享：PluginWorker 的 ALC 对 Avalonia* 一律回落到默认上下文，
+    MicroCom.Runtime 只被 Avalonia.MicroCom 引用、也在宿主的默认上下文里解析。
+    插件目录里的副本永远加载不到，排除后包体再减约 1.9 MB。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.0.4" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Avalonia.Remote.Protocol" Version="12.0.4" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="MicroCom.Runtime" Version="0.11.4" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    SkiaSharp 的原生库是 x86_64+arm64 通用二进制（15.1 MB），清单只声明 arm64，
+    x86_64 切片是纯冗余。构建后按需瘦身，缺 lipo 或已是单架构时静默跳过。
+  -->
+  <Target Name="ThinSkiaSharpNative" AfterTargets="Build"
+          Condition="Exists('$(TargetDir)libSkiaSharp.dylib')">
+    <Exec Command="lipo -archs &quot;$(TargetDir)libSkiaSharp.dylib&quot; | grep -q x86_64 &amp;&amp; lipo -thin arm64 &quot;$(TargetDir)libSkiaSharp.dylib&quot; -output &quot;$(TargetDir)libSkiaSharp.dylib.thin&quot; &amp;&amp; mv -f &quot;$(TargetDir)libSkiaSharp.dylib.thin&quot; &quot;$(TargetDir)libSkiaSharp.dylib&quot; || true" />
+  </Target>
+
+</Project>

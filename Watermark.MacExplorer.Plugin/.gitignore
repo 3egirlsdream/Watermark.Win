@@ -1,0 +1,15 @@
+# 仓库根的 .gitignore 有 global.json 规则，会把插件自带的 .NET 10 SDK 约束一起忽略掉
+!global.json
+
+# 构建产物
+bin/
+obj/
+
+# 打包产物
+artifacts/
+
+# Mac Explorer 插件 SDK（按 README 下载解压，不入库）
+sdk/
+
+# 本地冒烟测试中间文件
+tools/Smoke/out/

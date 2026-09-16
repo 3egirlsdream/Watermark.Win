@@ -1,0 +1,29 @@
+{
+  "id": "com.thankful.litograph",
+  "name": "轻影水印",
+  "version": "1.0.5",
+  "apiVersion": 2,
+  "entry": "Watermark.MacExplorer.Plugin.dll",
+  "icon": "image",
+  "description": "使用轻影（Watermark）模板为选中的照片批量生成带水印的新图。",
+  "developer": "轻影",
+  "platform": "osx",
+  "architecture": "arm64",
+  "paid": true,
+  "trialDays": 7,
+  "hasUserInterface": true,
+  "commands": [
+    {
+      "id": "market",
+      "title": "下载水印模板…",
+      "icon": "apps",
+      "match": { "extensions": [".jpg", ".jpeg", ".png", ".webp"], "minSelection": 1, "maxSelection": 100 }
+    },
+    {
+      "id": "generate",
+      "title": "生成水印照片…",
+      "icon": "image",
+      "match": { "extensions": [".jpg", ".jpeg", ".png", ".webp"], "minSelection": 1, "maxSelection": 100 }
+    }
+  ]
+}
