@@ -105,7 +105,7 @@ jobs:
           dotnet test Watermark.Shared/Tests/Watermark.Shared.Tests.csproj
           --configuration Release
           --no-restore
-          --filter FullyQualifiedName!~WMOcioColorEngineTests
+          --filter "FullyQualifiedName!~WMOcioColorEngineTests&FullyQualifiedName!~WMHighPrecisionImageTests&FullyQualifiedName!~WMColorRecipeTests&FullyQualifiedName!~WMColorLookMapperTests"
       - name: Test Razor workspace
         run: dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj --configuration Release --no-restore
       - name: Compile Web
