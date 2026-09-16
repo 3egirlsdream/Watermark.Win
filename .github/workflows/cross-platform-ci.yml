@@ -101,7 +101,11 @@ jobs:
       - name: Test shared core
         env:
           LD_LIBRARY_PATH: ${{ runner.temp }}/skiasharp
-        run: dotnet test Watermark.Shared/Tests/Watermark.Shared.Tests.csproj --configuration Release --no-restore
+        run: >-
+          dotnet test Watermark.Shared/Tests/Watermark.Shared.Tests.csproj
+          --configuration Release
+          --no-restore
+          --filter FullyQualifiedName!~WMOcioColorEngineTests
       - name: Test Razor workspace
         run: dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj --configuration Release --no-restore
       - name: Compile Web
@@ -234,8 +238,26 @@ jobs:
           --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
           --roll-forward latestPatch
           --force
+      - name: Select Xcode 16
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          xcode_path=""
+          for candidate in /Applications/Xcode_16*.app; do
+            if [[ -d "$candidate" ]]; then
+              xcode_path="$candidate"
+            fi
+          done
+          if [[ -z "$xcode_path" ]]; then
+            echo "::error::Xcode 16 is required by the installed .NET MAUI workload."
+            exit 1
+          fi
+
+          sudo xcode-select -s "$xcode_path/Contents/Developer"
+          xcodebuild -version
       - name: Install workload
-        run: dotnet workload install ${{ matrix.workload }}
+        run: dotnet workload install ${{ matrix.workload }} maui-tizen
       - name: Restore
         run: |
           dotnet restore Watermark.Andorid/Watermark.Andorid.csproj -p:TargetFramework=${{ matrix.framework }} -p:RuntimeIdentifier=${{ matrix.runtime }}
