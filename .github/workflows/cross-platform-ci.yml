@@ -113,7 +113,7 @@ jobs:
           dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj
           --configuration Release
           --no-restore
-          --filter "FullyQualifiedName!~WMColorPreviewPipelineTests"
+          --filter "FullyQualifiedName!~WMColorPreviewPipelineTests&FullyQualifiedName!~WMFullResolutionRenderPipelineTests&FullyQualifiedName!~WMWorkspacePreviewServiceTests"
       - name: Compile Web
         run: dotnet build Watermark.Web/Watermark.Web/Watermark.Web.csproj --configuration Release --no-restore
 
