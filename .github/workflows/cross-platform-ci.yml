@@ -55,8 +55,15 @@ jobs:
           rm -f "$HOME/.ssh/watermark_submodule_key"
           git config --global --unset-all url."git@github.com:".insteadOf || true
       - uses: actions/setup-dotnet@v5
+        id: setup-dotnet
         with:
           dotnet-version: 8.0.x
+      - name: Pin .NET SDK for this run
+        run: >-
+          dotnet new globaljson
+          --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
+          --roll-forward latestPatch
+          --force
       - name: Repository architecture guards
         shell: bash
         run: |
@@ -77,7 +84,23 @@ jobs:
           dotnet restore Watermark.Shared/Tests/Watermark.Shared.Tests.csproj
           dotnet restore Watermark.Razor.Tests/Watermark.Razor.Tests.csproj
           dotnet restore Watermark.Web/Watermark.Web/Watermark.Web.csproj
+      - name: Prepare Linux SkiaSharp runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          native_dir="$RUNNER_TEMP/skiasharp"
+          package_path="$RUNNER_TEMP/SkiaSharp.NativeAssets.Linux.2.88.9.nupkg"
+          mkdir -p "$native_dir"
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors \
+            https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.linux/2.88.9/skiasharp.nativeassets.linux.2.88.9.nupkg \
+            --output "$package_path"
+          unzip -p "$package_path" \
+            runtimes/linux-x64/native/libSkiaSharp.so > "$native_dir/libSkiaSharp.so"
+          chmod 755 "$native_dir/libSkiaSharp.so"
       - name: Test shared core
+        env:
+          LD_LIBRARY_PATH: ${{ runner.temp }}/skiasharp
         run: dotnet test Watermark.Shared/Tests/Watermark.Shared.Tests.csproj --configuration Release --no-restore
       - name: Test Razor workspace
         run: dotnet test Watermark.Razor.Tests/Watermark.Razor.Tests.csproj --configuration Release --no-restore
@@ -124,8 +147,15 @@ jobs:
           rm -f "$HOME/.ssh/watermark_submodule_key"
           git config --global --unset-all url."git@github.com:".insteadOf || true
       - uses: actions/setup-dotnet@v5
+        id: setup-dotnet
         with:
           dotnet-version: 8.0.x
+      - name: Pin .NET SDK for this run
+        run: >-
+          dotnet new globaljson
+          --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
+          --roll-forward latestPatch
+          --force
       - name: Use runner Java
         shell: bash
         run: |
@@ -195,8 +225,15 @@ jobs:
           rm -f "$HOME/.ssh/watermark_submodule_key"
           git config --global --unset-all url."git@github.com:".insteadOf || true
       - uses: actions/setup-dotnet@v5
+        id: setup-dotnet
         with:
           dotnet-version: 8.0.x
+      - name: Pin .NET SDK for this run
+        run: >-
+          dotnet new globaljson
+          --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
+          --roll-forward latestPatch
+          --force
       - name: Install workload
         run: dotnet workload install ${{ matrix.workload }}
       - name: Restore
@@ -232,7 +269,7 @@ jobs:
             exit 1
           fi
 
-          install -m 700 -d "$HOME/.ssh"
+          mkdir -p "$HOME/.ssh"
           printf '%s\n' "$SUBMODULE_SSH_KEY" > "$HOME/.ssh/watermark_submodule_key"
           printf '%s\n' "$SUBMODULE_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/watermark_submodule_key" "$HOME/.ssh/known_hosts"
@@ -252,8 +289,16 @@ jobs:
           rm -f "$HOME/.ssh/watermark_submodule_key"
           git config --global --unset-all url."git@github.com:".insteadOf || true
       - uses: actions/setup-dotnet@v5
+        id: setup-dotnet
         with:
           dotnet-version: 8.0.x
+      - name: Pin .NET SDK for this run
+        shell: bash
+        run: >-
+          dotnet new globaljson
+          --sdk-version "${{ steps.setup-dotnet.outputs.dotnet-version }}"
+          --roll-forward latestPatch
+          --force
       - name: Restore
         run: dotnet restore Watermark.Win/Watermark.Win.csproj
       - name: Build Windows host
