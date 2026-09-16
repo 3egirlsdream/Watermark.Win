@@ -1,7 +1,9 @@
 using Watermark.Web.Client.Pages;
 using Watermark.Web.Components;
 using Watermark.Razor.Components.Compatibility;
+using Watermark.Razor.Workspace;
 using Watermark.Shared.Models;
+using Watermark.Web.Services;
 namespace Watermark.Web
 {
     public class Program
@@ -10,10 +12,16 @@ namespace Watermark.Web
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Kestrel 只监听明文 4396，对外统一走 Caddy 终结 TLS 的公共入口。
+            APIHelper.HOST = "https://thankful.top";
+
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveWebAssemblyComponents().AddInteractiveServerComponents();
             builder.Services.AddSingleton<APIHelper>();
+            builder.Services.AddScoped<IWMAccountService, WMWebAccountService>();
+            builder.Services.AddScoped<IWMExternalActionService, WMWebExternalActionService>();
+            builder.Services.AddScoped<IWMNavigationHistory, WMNavigationHistory>();
             builder.Services.AddSingleton<IClientInstance, ClientInstance>();
             builder.Services.AddSingleton<IWMImagingCapabilities>(
                 new WMStaticImagingCapabilities(WMImagingCapabilities.Unsupported));

@@ -1,0 +1,56 @@
+@page "/account/register"
+@rendermode InteractiveServer
+@using Watermark.Razor.BlazorPages
+@using Watermark.Razor.Workspace
+@implements IDisposable
+@inject IWMAccountService Accounts
+@inject NavigationManager Navigation
+
+<PageTitle>注册轻影账号｜Litograph</PageTitle>
+<HeadContent>
+    <meta name="description" content="注册轻影 Litograph 账号，在 macOS、Windows、Android、iOS 客户端登录同一账号，同步会员与模板权益。" />
+    <meta name="theme-color" content="#fcfbf8" />
+</HeadContent>
+
+<div class="wm-web-account">
+    <header class="wm-web-account-bar">
+        <a class="wm-web-account-brand" href="/" aria-label="返回轻影官网">
+            <img src="images/home/app-icon.svg" alt="" />
+            <span>轻影 <b>Litograph</b></span>
+        </a>
+    </header>
+
+    <main class="wm-web-account-body">
+        @if (Accounts.State.IsAuthenticated)
+        {
+            <section class="wm-web-account-done" role="status">
+                <span class="wm-web-account-done-symbol"><WmIcon Icon="check-circle" Size="34" /></span>
+                <h1>账号已创建</h1>
+                <p>用刚才的邮箱和密码在轻影客户端登录，会员、收藏与模板权益会在所有设备同步。</p>
+                <div class="wm-web-account-done-actions">
+                    <a class="wm-web-account-primary" href="/#download">下载轻影</a>
+                    <a class="wm-web-account-link" href="/">返回首页</a>
+                </div>
+            </section>
+        }
+        else
+        {
+            <WMAccountPage ModePath="/account/register" OnClose="LeaveAsync" />
+        }
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized() => Accounts.Changed += HandleAccountChanged;
+
+    private void HandleAccountChanged() => _ = InvokeAsync(StateHasChanged);
+
+    // 注册成功时 WMAccountPage 也会回调 OnClose，此时留在成功态，只有返回按钮才回首页。
+    private Task LeaveAsync()
+    {
+        if (!Accounts.State.IsAuthenticated) Navigation.NavigateTo("/");
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => Accounts.Changed -= HandleAccountChanged;
+}

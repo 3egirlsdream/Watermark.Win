@@ -1,0 +1,145 @@
+/* 复用 Watermark.Razor 的注册页本体，这里只提供官网外壳，
+   并把 App 主题变量映射到官网配色，避免改动共享组件。 */
+.wm-web-account {
+    --wm-primary: #2468df;
+    --wm-primary-pressed: #1556c5;
+    --wm-primary-soft: #eaf1ff;
+    --wm-surface: #ffffff;
+    --wm-surface-subtle: #f6f7f9;
+    --wm-text: #17181b;
+    --wm-text-muted: #686b73;
+    --wm-divider: rgba(23, 24, 27, .12);
+    --wm-shadow-card: 0 24px 64px rgba(24, 29, 38, .10);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--wm-bg);
+}
+
+.wm-web-account-bar {
+    display: flex;
+    align-items: center;
+    min-height: 74px;
+    padding: 10px max(32px, calc((100vw - 1320px) / 2));
+    border-bottom: 1px solid rgba(228, 227, 223, .75);
+}
+
+.wm-web-account-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    color: var(--wm-ink);
+    font-size: 15px;
+    letter-spacing: -.01em;
+    text-decoration: none;
+}
+
+.wm-web-account-brand img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.wm-web-account-brand b {
+    font-weight: 660;
+}
+
+.wm-web-account-body {
+    flex: 1;
+}
+
+.wm-web-account-done {
+    box-sizing: border-box;
+    max-width: 560px;
+    margin: 44px auto;
+    padding: 34px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    background: var(--wm-surface);
+    border: 1px solid rgba(228, 227, 223, .9);
+    border-radius: 20px;
+    box-shadow: var(--wm-shadow-card);
+}
+
+.wm-web-account-done-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--wm-primary-soft);
+    color: var(--wm-primary);
+}
+
+.wm-web-account-done h1 {
+    font-size: 1.5rem;
+    letter-spacing: -.03em;
+    margin: 0;
+}
+
+.wm-web-account-done p {
+    color: var(--wm-muted);
+    font-size: .82rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.wm-web-account-done-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.wm-web-account-primary {
+    min-height: 46px;
+    padding: 0 24px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--wm-blue);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 660;
+    text-decoration: none;
+}
+
+.wm-web-account-primary:hover {
+    background: var(--wm-blue-dark);
+}
+
+.wm-web-account-link {
+    color: var(--wm-blue);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.wm-web-account-primary:focus-visible,
+.wm-web-account-link:focus-visible,
+.wm-web-account-brand:focus-visible {
+    outline: 3px solid rgba(36, 104, 223, .28);
+    outline-offset: 4px;
+}
+
+@media (max-width: 720px) {
+    .wm-web-account-bar {
+        min-height: 62px;
+        padding: 8px 18px;
+    }
+
+    .wm-web-account-brand img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .wm-web-account-done {
+        margin: 22px 18px;
+        padding: 26px 20px;
+    }
+}
