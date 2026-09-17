@@ -413,7 +413,7 @@ namespace Watermark.Shared.Models
 #elif MACCATALYST
             // macOS updates are downloaded manually from the official website.
             // Do not open the package URL returned by the version API here.
-            await Browser.Default.OpenAsync("http://thankful.top/", BrowserLaunchMode.SystemPreferred);
+            await MainThread.InvokeOnMainThreadAsync(() => Browser.Default.OpenAsync("http://thankful.top/", BrowserLaunchMode.SystemPreferred));
 #endif
         }
 
@@ -425,7 +425,9 @@ namespace Watermark.Shared.Models
                 throw new ArgumentException("Only HTTP and HTTPS links can be opened.", nameof(url));
             }
 
-            await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
+            // Browser 底层走 UIApplication.OpenUrl（UIKit），必须在主线程调用；
+            // 会员购买等后台流程经 ConfigureAwait(false) 后已位于线程池线程。
+            await MainThread.InvokeOnMainThreadAsync(() => Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred));
         }
 
         public async Task<bool> Download(string directory, string fileName, string extension)
