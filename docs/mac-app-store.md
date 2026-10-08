@@ -37,3 +37,11 @@ dotnet publish Watermark.Andorid/Watermark.Andorid.csproj \
 提审前核对 ApplicationDisplayVersion / ApplicationVersion 与 App Store Connect，使用全新输出构建。
 通过 TestFlight 验证 Apple Silicon 冷启动、离线启动、导入、导出、官网会话和商店更新跳转。
 隐藏会员购买入口和提供官网账号入口并不构成外部支付资格；官网落地页及账号权益仍需按发行地区审核要求评估。
+
+## Transporter 91109：包内文件带 quarantine 属性
+
+签名校验通过并不代表包内资源没有 `com.apple.quarantine`。官网下载、拖入的素材可能携带该属性，复制资源时会传入 `.app`，Apple 会在上传后的处理阶段拒绝整个包。
+
+`MacAppStore` 发布配置在 `_CodesignAppBundle` 前仅清理构建产物中的 quarantine 元数据，再使用正式商店证书签名。打包后还需用 `pkgutil --expand-full` 解包，确认所有 Payload 文件均不含 quarantine，并对解出的 `.app` 再做 `codesign --verify --deep --strict`。
+
+若 Apple 的构建上传状态为 Failed，可修复后沿用同一构建号重新上传；不能把 Transporter 的 `UPLOAD SUCCEEDED` 当成 Apple 已处理成功。
