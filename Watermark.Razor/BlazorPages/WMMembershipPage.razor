@@ -2,11 +2,14 @@
 @using Watermark.Razor.Components.Layout
 @using Watermark.Razor.Workspace
 @layout WMAppShellLayout
+@inject Watermark.Shared.Models.IClientInstance Client
 @inject IWMMembershipService Membership
 @inject IWMAccountService Accounts
 @inject NavigationManager Navigation
 @inject IWMNavigationHistory NavigationHistory
 
+@if (!Client.IsMacAppStore)
+{
 <section class="membership-page" aria-labelledby="membership-title">
     <header><button type="button" @onclick="GoBack" aria-label="返回"><WmIcon Icon="arrow-left" /></button><div><span>MEMBERSHIP</span><h1 id="membership-title">水印相框软件会员</h1></div></header>
     <section class="membership-hero">
@@ -45,6 +48,8 @@
     <WmMembershipAgreementNotice Id="mobile-membership-agreement-notice" />
 </section>
 
+}
+
 @code {
     [Parameter] public string? ReturnUrl { get; set; }
     [SupplyParameterFromQuery(Name = "returnUrl")] private string? QueryReturnUrl { get; set; }
@@ -59,6 +64,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (Client.IsMacAppStore) { Navigation.NavigateTo("/mac/settings", replace: true); return; }
         busy = true;
         try
         {

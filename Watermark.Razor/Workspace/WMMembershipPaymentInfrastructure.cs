@@ -197,6 +197,22 @@ public static class WMAlipayOrderInfoParser
     }
 }
 
+/// <summary>
+/// 服务端按内部明文地址（http://域名:4396）拼支付页地址，而域名通过 Caddy 下发 HSTS，
+/// 浏览器会把 http 强制升级成 4396 端口上的 https 导致连接失败，这里统一改写到公共 HTTPS 入口。
+/// </summary>
+public static class WMPayPageUrlResolver
+{
+    public static string Resolve(string payUrl)
+    {
+        if (!Uri.TryCreate(payUrl, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || (uri.Scheme == Uri.UriSchemeHttps && uri.Port == 443))
+            return payUrl;
+        return new UriBuilder(uri) { Scheme = Uri.UriSchemeHttps, Port = -1 }.Uri.AbsoluteUri;
+    }
+}
+
 public interface IWMMembershipPaymentGateway
 {
     Task<API<string>> CreateAndroidOrderAsync(

@@ -656,6 +656,19 @@ public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateSer
     public async Task<WMUpdateState> CheckAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        if (client.IsMacAppStore)
+        {
+            try
+            {
+                await client.Update((_, _) => { }).ConfigureAwait(false);
+                SetState(new WMUpdateState(State.CurrentVersion, Message: "已打开 App Store，请在商店查看更新。"));
+            }
+            catch (Exception)
+            {
+                SetState(new WMUpdateState(State.CurrentVersion, Message: "无法打开 App Store，请稍后重试。", HasError: true));
+            }
+            return State;
+        }
         if (State.IsDownloading) return State;
         SetState(State with { IsChecking = true, Message = "正在检查更新…", HasError = false });
         try
@@ -696,6 +709,11 @@ public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateSer
     public async Task<WMResourceResult> StartUpdateAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        if (client.IsMacAppStore)
+        {
+            await CheckAsync(token).ConfigureAwait(false);
+            return new WMResourceResult(!State.HasError, State.Message ?? "请在 App Store 查看更新。");
+        }
         if (!State.UpdateAvailable || string.IsNullOrWhiteSpace(client.LinkPath))
             return new WMResourceResult(false, "请先检查并确认有可用的新版本。");
         if (!await updateGate.WaitAsync(0, token).ConfigureAwait(false))
@@ -764,6 +782,7 @@ public sealed class WMAppUpdateService(IClientInstance client) : IWMAppUpdateSer
 public interface IWMExternalActionService
 {
     Task OpenUrlAsync(string url);
+    Task OpenWebsiteAsync() => OpenUrlAsync("https://thankful.top/");
     Task CopyTextAsync(string text);
     Task<string?> PickFolderAsync() => Task.FromResult<string?>(null);
     string? ResolveContainingFolder(string? path) => null;
@@ -789,6 +808,7 @@ public sealed class WMHostNavigationBridge : IWMHostNavigationBridge
 
 public sealed class WMExternalActionService(IClientInstance client) : IWMExternalActionService
 {
+    public Task OpenWebsiteAsync() => client.OpenWebsiteAsync();
     public Task OpenUrlAsync(string url) => client.OpenExternalUrlAsync(url);
     public Task CopyTextAsync(string text) => client.SetTextAsync(text);
     public async Task<string?> PickFolderAsync() => await client.OpenFolder().ConfigureAwait(false);
@@ -828,7 +848,8 @@ public sealed class WMMembershipService(
     IWMMembershipPaymentClock clock,
     IWMAccountService accounts,
     IWMExternalActionService external,
-    IWMWorkspaceTraceStore? traces = null) : IWMMembershipService
+    IWMWorkspaceTraceStore? traces = null,
+    IClientInstance? client = null) : IWMMembershipService
 {
     private static readonly TimeSpan[] InteractiveQueryDelays =
     [
@@ -856,6 +877,7 @@ public sealed class WMMembershipService(
     private readonly SemaphoreSlim purchaseGate = new(1, 1);
 
     public IReadOnlyList<WMMembershipPlan> Plans =>
+        client?.IsMacAppStore == true ? [] :
         string.Equals(accounts.State.UserName, "xlz", StringComparison.OrdinalIgnoreCase)
             ? [.. RegularPlans, new WMMembershipPlan("test", "测试套餐", 0.01m, "支付成功后增加 1 分钟会员")]
             : RegularPlans;
@@ -863,6 +885,7 @@ public sealed class WMMembershipService(
     public async Task<WMMembershipResult> PurchaseAsync(string planId, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
+        if (client?.IsMacAppStore == true) return Failed("此版本不提供应用内会员购买。");
         var plan = Plans.FirstOrDefault(item => item.Id == planId);
         if (plan is null) return Failed("会员套餐不存在。");
         if (!accounts.State.IsAuthenticated) return Failed("请先登录后再开通会员。");
@@ -877,12 +900,13 @@ public sealed class WMMembershipService(
                 plan.Price, plan.Name, accounts.State.UserId ?? string.Empty, token).ConfigureAwait(false);
             if (order?.success != true || order.data is null || string.IsNullOrWhiteSpace(order.data.PayUrl))
                 return Failed(order?.message?.content ?? "暂时无法创建支付订单。");
-            await external.OpenUrlAsync(order.data.PayUrl).ConfigureAwait(false);
+            var payUrl = WMPayPageUrlResolver.Resolve(order.data.PayUrl);
+            await external.OpenUrlAsync(payUrl).ConfigureAwait(false);
             return new WMMembershipResult(
                 WMMembershipPaymentState.Pending,
                 "支付页面已打开。",
                 order.data.OutTradeNo,
-                order.data.PayUrl);
+                payUrl);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -899,6 +923,7 @@ public sealed class WMMembershipService(
 
     public async Task<WMMembershipResult> RefreshAsync(string orderId, CancellationToken token = default)
     {
+        if (client?.IsMacAppStore == true) return Failed("此版本不提供应用内会员购买。");
         token.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(orderId)) return Failed("没有待查询订单。");
         await purchaseGate.WaitAsync(token).ConfigureAwait(false);

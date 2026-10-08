@@ -15,7 +15,11 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\Watermark.Razor\Watermark.Razor.csproj" />
+    <Compile Include="..\Watermark.Web\Watermark.Web\Services\WMWebsiteLoginTickets.cs" Link="Web\WMWebsiteLoginTickets.cs" />
+    <Compile Include="..\Watermark.Web\Watermark.Web\Services\WMWebsiteBackend.cs" Link="Web\WMWebsiteBackend.cs" />
+    <Compile Include="..\Watermark.Web\Watermark.Web\Services\WMWebsiteLoginEndpoints.cs" Link="Web\WMWebsiteLoginEndpoints.cs" />
   </ItemGroup>
   <Import Project="..\native\Watermark.Native.Host.Tests.targets"
           Condition="Exists('..\native\Watermark.Native.Host.Tests.targets')" />

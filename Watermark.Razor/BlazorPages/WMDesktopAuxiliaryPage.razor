@@ -15,6 +15,7 @@
 @using Watermark.Razor.Workspace
 @implements IDisposable
 @inject NavigationManager Navigation
+@inject Watermark.Shared.Models.IClientInstance Client
 @inject IWMAccountService Accounts
 @inject IWMAdminDashboardService AdminDashboard
 @inject IWMDesktopStartupService DesktopStartup
@@ -153,6 +154,7 @@
 
     private void OpenMembershipDialog()
     {
+        if (Client.IsMacAppStore) return;
         if (!Accounts.State.IsAuthenticated) { OpenAccountDialog("login"); return; }
         showMembership = true;
     }

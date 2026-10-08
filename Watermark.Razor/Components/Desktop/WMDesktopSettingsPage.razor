@@ -6,6 +6,7 @@
 @inject IWMAppUpdateService Updates
 @inject IWMExternalActionService External
 @inject IPopupService Popup
+@inject Watermark.Shared.Models.IClientInstance Client
 
 <section class="desktop-settings" aria-labelledby="desktop-settings-title">
     <header class="settings-heading"><div><small>PREFERENCES</small><h1 id="desktop-settings-title">设置</h1><p>账号、处理性能、本地资源与版本维护。</p></div>@if (saving){<span class="saving-state"><MProgressCircular Indeterminate Size="16" Width="2" />正在保存</span>}</header>
@@ -22,7 +23,14 @@
                     @if (Accounts.State.IsAuthenticated)
                     {
                         <div class="account-summary"><div class="account-avatar">@Accounts.State.DisplayName.FirstOrDefault()</div><span><strong>@Accounts.State.DisplayName</strong><small>@Accounts.State.UserName · @(Accounts.State.IsVip ? "会员" : "免费版")</small></span></div>
-                        <button type="button" @onclick="OpenMembership"><span>会员与权益</span><WmIcon Small Icon="caret-right" /></button>
+                        @if (!Client.IsMacAppStore)
+                        {
+                            <button type="button" @onclick="OpenMembership"><span>会员与权益</span><WmIcon Small Icon="caret-right" /></button>
+                        }
+                        else
+                        {
+                            <button type="button" @onclick="OpenWebsiteAsync"><span>官网账号</span><WmIcon Small Icon="arrow-square-out" /></button>
+                        }
                         <button type="button" @onclick='() => OpenAccount.InvokeAsync("change-password")'><span>修改密码</span><WmIcon Small Icon="caret-right" /></button>
                         <button type="button" @onclick="SwitchAccountAsync"><span>切换账号</span><WmIcon Small Icon="sign-in" /></button>
                         <button type="button" class="danger" @onclick='() => OpenAccount.InvokeAsync("delete")'><span>永久删除账号</span><WmIcon Small Icon="caret-right" /></button>
@@ -51,12 +59,12 @@
 
                 <section class="settings-card update-card">
                     <header><span class="card-icon"><WmIcon Icon="arrows-clockwise" /></span><div><small>VERSION</small><h2>版本与帮助</h2></div></header>
-                    <div class="version-row"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "当前桌面版本")</small></span><button type="button" disabled="@Updates.State.IsChecking" @onclick="CheckUpdateAsync">检查更新</button></div>
-                    @if (Updates.State.UpdateAvailable)
+                    <div class="version-row"><span><strong>轻影 @Updates.State.CurrentVersion</strong><small>@(Updates.State.Message ?? "当前桌面版本")</small></span><button type="button" disabled="@Updates.State.IsChecking" @onclick="CheckUpdateAsync">@(Client.IsMacAppStore ? "在 App Store 查看" : "检查更新")</button></div>
+                    @if (!Client.IsMacAppStore && Updates.State.UpdateAvailable)
                     {
                         <button type="button" class="primary-row" @onclick="StartUpdateAsync"><span>获取版本 @Updates.State.AvailableVersion</span><WmIcon Small Icon="arrow-square-out" /></button>
                     }
-                    <button type="button" @onclick='() => External.OpenUrlAsync("http://thankful.top/protocol")'><span>用户协议</span><WmIcon Small Icon="arrow-square-out" /></button>
+                    <button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/protocol")'><span>用户协议</span><WmIcon Small Icon="arrow-square-out" /></button>
                     <button type="button" @onclick='() => External.OpenUrlAsync("https://thankful.top/private")'><span>隐私协议</span><WmIcon Small Icon="arrow-square-out" /></button>
                     <button type="button" @onclick="CopyGroupAsync"><span>交流群：836325187</span><WmIcon Small Icon="copy" /></button>
                     <button type="button" class="danger" @onclick="RevokePrivacyAsync"><span>撤回本地隐私授权</span><WmIcon Small Icon="shield-slash" /></button>
@@ -123,6 +131,11 @@
     }
 
     private async Task CheckUpdateAsync() { await Updates.CheckAsync(); ShowToast(Updates.State.Message ?? "检查完成。", Updates.State.HasError); }
+    private async Task OpenWebsiteAsync()
+    {
+        try { await External.OpenWebsiteAsync(); }
+        catch { ShowToast("暂时无法打开官网，请稍后重试。", true); }
+    }
     private async Task StartUpdateAsync() { var result = await Updates.StartUpdateAsync(); ShowToast(result.Message, !result.Succeeded); }
     private async Task CopyGroupAsync() { await External.CopyTextAsync("836325187"); ShowToast("群号已复制。"); }
     private async Task RevokePrivacyAsync()

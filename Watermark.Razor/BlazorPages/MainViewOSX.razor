@@ -14,6 +14,7 @@
 @inject IWMHapticFeedback HapticFeedback
 @inject IWMSystemAppearance SystemAppearance
 @inject NavigationManager Navigation
+@inject Watermark.Shared.Models.IClientInstance Client
 @inject IWMAccountService Accounts
 @inject IWMExternalActionService ExternalActions
 @inject IWMDesktopStartupService DesktopStartup
@@ -453,6 +454,7 @@
     }
     private void OpenVipDialog()
     {
+        if (Client.IsMacAppStore) return;
         if (!Accounts.State.IsAuthenticated)
         {
             OpenAccountDialog("login");

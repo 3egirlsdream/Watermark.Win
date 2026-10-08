@@ -32,8 +32,8 @@
         <ApplicationId>com.top.thankful.watermark.andorid</ApplicationId>
 		
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.2.27</ApplicationDisplayVersion>
-		<ApplicationVersion>11</ApplicationVersion>
+		<ApplicationDisplayVersion>1.2.26</ApplicationDisplayVersion>
+		<ApplicationVersion>10</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
@@ -48,6 +48,19 @@
         <ApplicationIdGuid>80e5e813-0f39-4d6a-a550-7f5c7d722c32</ApplicationIdGuid>
 		<AssemblyName>Litograph</AssemblyName>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">
+      <MacDistributionChannel Condition="'$(MacDistributionChannel)' == '' And '$(Configuration)' == 'Release'">AppStore</MacDistributionChannel>
+      <MacDistributionChannel Condition="'$(MacDistributionChannel)' == ''">Direct</MacDistributionChannel>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst' And '$(MacDistributionChannel)' == 'AppStore'">
+      <DefineConstants>$(DefineConstants);WM_MAC_APP_STORE</DefineConstants>
+    </PropertyGroup>
+    <Target Name="ValidateMacDistributionChannel" BeforeTargets="PrepareForBuild"
+            Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">
+      <Error Condition="'$(MacDistributionChannel)' != 'AppStore' And '$(MacDistributionChannel)' != 'Direct'"
+             Text="MacDistributionChannel must be AppStore or Direct." />
+    </Target>
 
     <!-- Heavy imaging is enabled for normal product builds. Runtime capability
          providers still reject work when the native ABI, memory or disk checks

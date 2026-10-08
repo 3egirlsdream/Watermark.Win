@@ -1,0 +1,52 @@
+@page "/account"
+@using System.Security.Claims
+@inject IHttpContextAccessor ContextAccessor
+
+<PageTitle>轻影官网账号与会员</PageTitle>
+<HeadContent><link rel="stylesheet" href="client-account.css" /></HeadContent>
+<div class="wm-web-account">
+    <header class="wm-web-account-bar"><a class="wm-web-account-brand" href="/" data-enhance-nav="false"><img src="images/home/app-icon.svg" alt="" /><span>轻影 <b>Litograph</b></span></a></header>
+    <main class="wm-web-account-body">
+        <section class="wm-web-account-done">
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <h1>@User.Identity.Name</h1>
+                <p>@User.FindFirstValue(ClaimTypes.Email)</p>
+                <p>会员到期：@(DateTime.TryParse(User.FindFirstValue("expires"), out var expires) ? expires.ToString("yyyy-MM-dd HH:mm") : "尚未开通")</p>
+                <p>请确认上方账号后购买。登录会话有效期为 30 分钟。</p>
+                <h2>开通会员</h2>
+                <div class="wm-web-membership-plans">
+                    <button type="button" data-plan="month">月度会员 <strong>¥8</strong></button>
+                    <button type="button" data-plan="quarter">季度会员 <strong>¥18</strong></button>
+                    <button type="button" data-plan="year">年度会员 <strong>¥28</strong></button>
+                </div>
+                <p>单次购买，不自动续费。已有会员将延长有效期。</p>
+                <label><input id="membership-agreement" type="checkbox" /> 我已阅读并同意<a href="/membership-agreement" target="_blank" rel="noopener noreferrer">会员服务协议</a></label>
+                <p id="payment-status" role="status" aria-live="polite"></p>
+                <a id="payment-link" hidden target="_blank" rel="noopener noreferrer">前往支付宝付款</a>
+                <button id="payment-refresh" type="button" hidden>我已付款，检查结果</button>
+                <p>付款后请检查结果；客户端重新登录后可获取最新会员状态。</p>
+                <form method="post" action="/account/sign-out" data-enhance="false"><button class="wm-web-account-primary" type="submit">退出登录</button></form>
+            }
+            else
+            {
+                <h1>登录轻影账号</h1>
+                <p>登录后可在官网开通会员，也可从已登录的客户端打开官网。</p>
+                <form id="website-login" class="wm-web-account-form">
+                    <label for="account-user">账号 / 邮箱</label>
+                    <input id="account-user" name="username" autocomplete="username" maxlength="254" required />
+                    <label for="account-password">密码</label>
+                    <input id="account-password" name="password" type="password" autocomplete="current-password" maxlength="128" required />
+                    <button type="submit">登录</button>
+                    <p id="login-status" role="status" aria-live="polite"></p>
+                </form>
+                <a class="wm-web-account-primary" href="/account/register" data-enhance-nav="false">注册账号</a>
+            }
+            <a class="wm-web-account-primary" href="/" data-enhance-nav="false">返回官网</a>
+        </section>
+    </main>
+</div>
+<script src="client-account.js"></script>
+@code {
+    private ClaimsPrincipal? User => ContextAccessor.HttpContext?.User;
+}

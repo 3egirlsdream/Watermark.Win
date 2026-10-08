@@ -1,0 +1,22 @@
+.wm-web-account { min-height: 100vh; background: var(--wm-bg, #fcfbf8); color: var(--wm-ink, #17181b); }
+.wm-web-account-bar { padding: 16px max(22px, calc((100vw - 1320px) / 2)); border-bottom: 1px solid #e4e3df; }
+.wm-web-account-brand { display: inline-flex; align-items: center; gap: 11px; color: inherit; text-decoration: none; }
+.wm-web-account-brand img { width: 42px; height: 42px; }
+.wm-web-account-done { box-sizing: border-box; max-width: 560px; margin: 44px auto; padding: 34px 24px; text-align: center; }
+.wm-web-account-done p { overflow-wrap: anywhere; line-height: 1.7; }
+.wm-web-account-primary { display: inline-block; margin: 12px; color: #2468df; }
+.wm-web-account-form { display: grid; gap: 12px; text-align: left; }
+.wm-web-account-form input { box-sizing: border-box; min-width: 0; padding: 12px; border: 1px solid #aaa; border-radius: 8px; font: inherit; }
+.wm-web-account button, #payment-link { padding: 12px 16px; border: 1px solid #b9c9dd; border-radius: 8px; background: #fff; color: #174c9c; font: inherit; cursor: pointer; }
+.wm-web-account button:disabled { opacity: .6; cursor: default; }
+.wm-web-membership-plans { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 24px 0; }
+.wm-web-membership-plans strong { display: block; font-size: 24px; margin-top: 8px; }
+.wm-web-account [hidden] { display: none; }
+.wm-web-account :focus-visible { outline: 3px solid #2468df; outline-offset: 3px; }
+#payment-status, #login-status { min-height: 1.7em; }
+@media (prefers-color-scheme: dark) {
+ .wm-web-account { background: #181b20; color: #eee; }
+ .wm-web-account-bar { border-color: #464b55; }
+ .wm-web-account button, .wm-web-account-form input { background: #242a33; color: #d9e8ff; border-color: #66758a; }
+ .wm-web-account a { color: #91bbff; }
+}

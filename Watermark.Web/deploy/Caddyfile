@@ -11,7 +11,8 @@ thankful.top {
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    handle /api/* {
+    @backend path /api/* /swagger /swagger/*
+    handle @backend {
         reverse_proxy host.docker.internal:4396
     }
 

@@ -9,6 +9,19 @@ public sealed class WMAppUpdateServiceTests
     private static readonly string RepositoryRoot = FindRepositoryRoot();
 
     [Fact]
+    public async Task AppStoreUpdate_OpensStoreWithoutCheckingOrDownloadingWebsiteUpdates()
+    {
+        var client = new UpdateClient { IsMacAppStore = true, CheckFailure = new Exception("Must not query website") };
+        var service = new WMAppUpdateService(client);
+        var state = await service.CheckAsync();
+        Assert.True(client.UpdateCalled);
+        Assert.False(state.UpdateAvailable);
+        Assert.False(state.IsDownloading);
+        Assert.Contains("App Store", state.Message);
+        Assert.True((await service.StartUpdateAsync()).Succeeded);
+    }
+
+    [Fact]
     public async Task StartUpdate_PublishesDownloadProgressUntilInstallerLaunch()
     {
         var client = new UpdateClient();
@@ -77,8 +90,9 @@ public sealed class WMAppUpdateServiceTests
         throw new DirectoryNotFoundException("Could not find the repository root.");
     }
 
-    private sealed class UpdateClient : IClientInstance
+    internal sealed class UpdateClient : IClientInstance
     {
+        public bool IsMacAppStore { get; init; }
         public Exception? CheckFailure { get; init; }
         public bool UpdateCalled { get; private set; }
         public string UpdateMessage { get; set; } = "更新内容";

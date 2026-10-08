@@ -301,6 +301,24 @@ public sealed class WMMembershipPaymentTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task AppStoreMembership_RejectsPurchasesAndPaymentQueriesAtServiceBoundary()
+    {
+        Global.DeviceType = DeviceType.Mac;
+        var gateway = Gateway();
+        var external = new FakeExternalActionService();
+        var service = new WMMembershipService(gateway, new FakeLauncher(), new MemoryPendingStore(),
+            new FakeClock(), AuthenticatedAccount(), external,
+            client: new WMAppUpdateServiceTests.UpdateClient { IsMacAppStore = true });
+
+        Assert.Empty(service.Plans);
+        Assert.Equal(WMMembershipPaymentState.Failed, (await service.PurchaseAsync("year")).State);
+        Assert.Equal(WMMembershipPaymentState.Failed, (await service.RefreshAsync(OrderId)).State);
+        Assert.Equal(0, gateway.CreateCount);
+        Assert.Equal(0, gateway.QueryCount);
+        Assert.Null(external.LastOpenedUrl);
+    }
+
     public void Dispose()
     {
         Global.DeviceType = originalDeviceType;
@@ -515,5 +533,30 @@ public sealed class WMMembershipPaymentTests : IDisposable
             return Task.CompletedTask;
         }
         public Task CopyTextAsync(string text) => Task.CompletedTask;
+    }
+}
+
+public sealed class WMPayPageUrlResolverTests
+{
+    [Fact]
+    public void Resolve_RewritesInternalPlainHttpAddressToPublicHttpsEntry()
+    {
+        var resolved = WMPayPageUrlResolver.Resolve("http://thankful.top:4396/api/Watermark/PayPage?outTradeNo=123");
+
+        Assert.Equal("https://thankful.top/api/Watermark/PayPage?outTradeNo=123", resolved);
+    }
+
+    [Fact]
+    public void Resolve_KeepsPublicHttpsUrl()
+    {
+        const string url = "https://thankful.top/api/Watermark/PayPage?outTradeNo=123";
+
+        Assert.Equal(url, WMPayPageUrlResolver.Resolve(url));
+    }
+
+    [Fact]
+    public void Resolve_KeepsNonHttpUrl()
+    {
+        Assert.Equal("not-a-url", WMPayPageUrlResolver.Resolve("not-a-url"));
     }
 }

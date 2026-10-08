@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using SkiaSharp;
 using System.Collections.Concurrent;
 using System.IO.Compression;
+using System.Net.Http.Json;
 using System.Text;
 using CommunityToolkit.Maui.Storage;
 using Watermark.Andorid;
@@ -12,6 +13,35 @@ namespace Watermark.Shared.Models
 {
     public class ClientInstance : IClientInstance
     {
+#if WM_MAC_APP_STORE
+        public bool IsMacAppStore => true;
+#else
+        public bool IsMacAppStore => false;
+#endif
+        private const string AppStoreUrl = "https://apps.apple.com/app/id6504527992";
+
+        public async Task OpenWebsiteAsync()
+        {
+            var account = await Global.ReadLocalAsync();
+            if (string.IsNullOrWhiteSpace(account.Item1) || string.IsNullOrWhiteSpace(account.Item2))
+            {
+                await OpenExternalUrlAsync("https://thankful.top/account");
+                return;
+            }
+
+            using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(15) };
+            using var response = await http.PostAsJsonAsync("https://thankful.top/account/client-session",
+                new { user = account.Item1, pwd = account.Item2 });
+            response.EnsureSuccessStatusCode();
+            var session = await response.Content.ReadFromJsonAsync<WebsiteSession>();
+            if (!Uri.TryCreate(session?.Url, UriKind.Absolute, out var uri)
+                || uri.Scheme != Uri.UriSchemeHttps || uri.Host != "thankful.top" || !uri.IsDefaultPort
+                || uri.AbsolutePath != "/account/client-login" || string.IsNullOrWhiteSpace(uri.Fragment))
+                throw new InvalidOperationException("官网返回了无效的登录地址。");
+            await OpenExternalUrlAsync(uri.AbsoluteUri);
+        }
+
+        private sealed record WebsiteSession(string Url);
         readonly APIHelper api;
         readonly IUpgradeService upgradeService;
         public ClientInstance(APIHelper api, IUpgradeService upgradeService) 
@@ -99,6 +129,7 @@ namespace Watermark.Shared.Models
 
         public async Task<bool> IsOutOfDate(string client = "Watermark_A")
         {
+            if (IsMacAppStore) return false;
             var version = await Connections.HttpGetAsync<WMClientVersion>(APIHelper.HOST + $"/api/CloudSync/GetVersion?Client={client}", Encoding.Default);
             if (version != null && version.success && version.data != null && version.data.VERSION != null)
             {
@@ -111,6 +142,13 @@ namespace Watermark.Shared.Models
 
         public async Task<bool> CheckUpdate(string client = "WatermarkAndroid")
         {
+            if (IsMacAppStore)
+            {
+                LinkPath = AppStoreUrl;
+                UpdateVersion = string.Empty;
+                UpdateMessage = "请在 App Store 查看更新。";
+                return false;
+            }
 #if MACCATALYST
             client = "WatermarkMac";
 #endif
@@ -406,6 +444,11 @@ namespace Watermark.Shared.Models
 
         public async Task Update(Action<long, long> DownloadProgressChanged)
         {
+            if (IsMacAppStore)
+            {
+                await OpenExternalUrlAsync(AppStoreUrl);
+                return;
+            }
 #if ANDROID
             Global.APK = DateTime.Now.ToString("yyyyMMddHHmmss") + ".apk";
             await upgradeService.DownloadFileAsync(LinkPath, DownloadProgressChanged);
@@ -413,7 +456,7 @@ namespace Watermark.Shared.Models
 #elif MACCATALYST
             // macOS updates are downloaded manually from the official website.
             // Do not open the package URL returned by the version API here.
-            await MainThread.InvokeOnMainThreadAsync(() => Browser.Default.OpenAsync("http://thankful.top/", BrowserLaunchMode.SystemPreferred));
+            await OpenExternalUrlAsync("https://thankful.top/");
 #endif
         }
 

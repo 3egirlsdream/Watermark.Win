@@ -159,7 +159,7 @@ public sealed class WMDesktopWorkspaceContractTests
         var titles = new[]
         {
             "新建模板", "我的模板", "模板市场", "图标库", "注册账号", "注销账号",
-            "设置", "运营看板", "网页版", "提交反馈", "安卓版", "交流群：836325187"
+            "设置", "运营看板", "官网", "提交反馈", "安卓版", "交流群：836325187"
         };
         var previous = -1;
         foreach (var title in titles)

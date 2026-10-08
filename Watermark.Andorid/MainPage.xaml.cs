@@ -74,11 +74,6 @@ namespace Watermark.Andorid
                 UIKit.UIScrollViewContentInsetAdjustmentBehavior.Never;
             e.WebView.ScrollView.ContentInset = UIKit.UIEdgeInsets.Zero;
             e.WebView.ScrollView.ScrollIndicatorInsets = UIKit.UIEdgeInsets.Zero;
-#elif MACCATALYST
-            // Configure WKWebView for macOS
-            e.WebView.Configuration.Preferences.SetValueForKey(
-                Foundation.NSObject.FromObject(true), 
-                new Foundation.NSString("developerExtrasEnabled"));
 #endif
 		}
     }

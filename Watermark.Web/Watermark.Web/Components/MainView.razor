@@ -1,5 +1,6 @@
 @page "/"
 @using Watermark.Shared.Models
+@inject IHttpContextAccessor ContextAccessor
 
 <PageTitle>轻影 Litograph｜摄影模板设计与专业影像处理</PageTitle>
 <HeadContent>
@@ -18,7 +19,14 @@
             <a href="#templates">模板</a>
             <a href="#ai-skill">AI 技能</a>
             <a href="#download">下载</a>
-            <a href="/account/register">注册账号</a>
+            @if (ContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true)
+            {
+                <a href="/account" data-enhance-nav="false">@ContextAccessor.HttpContext.User.Identity.Name</a>
+            }
+            else
+            {
+                <a href="/account" data-enhance-nav="false">登录 / 会员</a>
+            }
             <a href="#about">关于</a>
         </nav>
         <a class="wm-button wm-button-small" href="#download">免费下载</a>
@@ -320,7 +328,7 @@
                 <p>让创作更自由，让影像更动人。</p>
             </div>
             <nav aria-label="页脚导航">
-                <a href="/account/register">注册账号</a>
+                <a href="/account" data-enhance-nav="false">登录 / 会员</a>
                 <a href="/protocol">使用条款</a>
                 <a href="/private">隐私政策</a>
                 <a href="https://beian.miit.gov.cn/">蜀ICP备2024092556号</a>
